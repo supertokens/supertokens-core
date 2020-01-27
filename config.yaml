@@ -1,0 +1,87 @@
+# Config for SuperTokens service. Here you will set the config params for
+# the main service as well as your database.
+# Some parameters are compulsory and are indicated via a (COMPULSORY) tag.
+# Others are optional and are indicated via a (OPTIONAL) tag.
+# To see the default values of the optional params are mentioned in the tag itself
+
+core_config_version: 0
+
+
+# (OPTIONAL | Default: 3567) integer value. The port at which SuperTokens service runs.
+# port:
+
+
+# (OPTIONAL | Default: "localhost") string value. The host on which SuperTokens service runs. Values here can
+# be localhost, example.com, 0.0.0.0 or any IP address associated with your machine
+# host:
+
+
+# (OPTIONAL | Default: 3600) integer value. Time in seconds for how long an access token is valid for.
+# access_token_validity:
+
+
+# (OPTIONAL | Default: false) boolean value. If true, allows for immediate revocation of any access token.
+# Keep in mind that setting this to true will result in a db query for each API call that
+# requires authentication.
+# This feature is available in paid plans only.
+# access_token_blacklisting:
+
+
+# (OPTIONAL | Default: "/") string value. Set this to the prefix for all your APIs that require
+# authentication. For example, if your APIs have the path "/api/a", "/api/b" etc..
+# set this to "/api" or to "/"
+# access_token_path:
+
+
+# (OPTIONAL | Default: true) boolean value. If this is set to true, the JWT (access token)
+# signing key will change every fixed intervale of time.
+# This feature is available in paid plans only.
+# access_token_signing_key_dynamic:
+
+
+# (OPTIONAL | Default:24) integer value. Time in hours for how frequently the JWT (access token) signing key
+# will change. This value only makes sense if "access_token_signing_key_dynamic" is true.
+# This feature is available in paid plans only.
+# access_token_signing_key_update_interval:
+
+
+# (OPTIONAL | Default: true) boolean value. Protects against CSRF attack if this is set to true.
+# enable_anti_csrf:
+
+
+# (OPTIONAL | Default: 144000) double value. Time in mins for how long a refresh token is valid for.
+# refresh_token_validity:
+
+
+# (COMPULSORY) string value. Set this to be the path for your refresh API. For example,
+# if your refresh API URL is "https://api.example.com/session/refresh", then the
+# value of this param should be "/session/refresh"
+# refresh_api_path:
+
+
+# (OPTIONAL | Default: installation directory/logs/info.log) string value. Give the path to a file (on your local
+#  system) in which the SuperTokens service can write INFO logs to. Set it to "null" if you want it to log to
+# standard output instead.
+# info_log_path:
+
+
+# (OPTIONAL | Default: installation directory/logs/error.log) string value. Give the path to a file (on your local
+#  system) in which the SuperTokens service can write ERROR logs to. Set it to "null" if you want it to log to
+# standard error instead
+# error_log_path:
+
+
+# (COMPULSORY) string value. This is the domain to set for all the cookies.
+# This should be equal to the domain of your APIs. For example (api.example.com)
+# Do not set any port here and do not put http:// or https://
+# cookie_domain:
+
+
+# (OPTIONAL | Default: see the rest of this comment) boolean value. Sets if the cookies are secure or not.
+# If running in DEV mode (without --mode-production), this value by default is false.
+# In PRODUCTION mode (with --mode-production), the default value is true
+# cookie_secure:
+
+
+# (OPTIONAL | Default: 10) integer value. Sets the max thread pool size to incoming http serve requests.
+# max_server_pool_size:

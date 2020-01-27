@@ -1,0 +1,22 @@
+version: 2
+jobs:
+  test:
+    docker:
+      - image: rishabhpoddar/supertokens_core_testing
+    steps:
+      - add_ssh_keys:
+          fingerprints:
+            - "5a:6d:8f:6a:6d:e3:d6:b3:f9:64:92:db:e7:2a:63:09"
+      - checkout
+      - run: (cd .circleci/ && ./doTests.sh)
+
+workflows:
+  version: 2
+  tagged-build:
+    jobs:
+      - test:
+          filters:
+            tags:
+              only: /dev-v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
