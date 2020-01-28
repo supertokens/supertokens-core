@@ -17,5 +17,6 @@ while [ $i -lt $1 ]; do
         echo $response
         exit 1
     fi
+    echo $response
     echo $response >> pluginInterfaceExactVersionsOutput
 done
