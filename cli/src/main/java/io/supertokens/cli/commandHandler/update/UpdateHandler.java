@@ -256,8 +256,8 @@ public class UpdateHandler extends CommandHandler {
         }
 
 
-        // 6) Check the core folder within installation directory and check if there is even one file with “-sources
-        // .jar”
+        // 6) Check the core folder within installation directory and check if there is even one file with "-sources
+        // .jar"
         Logging.info("Update in progress...");
         List<String> commandList = new ArrayList<>();
         commandList.add(OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS ?
