@@ -79,6 +79,9 @@ do
     piX=$(cut -d'.' -f1 <<<"$currVersion")
     piY=$(cut -d'.' -f2 <<<"$currVersion")
     piVersion="$piX.$piY"
+
+    echo $line
+    echo $pinnedDBLength
     
     while [ $i -lt $pinnedDBLength ]; do 
         someTestsRan=true
