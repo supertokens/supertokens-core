@@ -7,11 +7,11 @@ while [ $i -lt $1 ]; do
     i=$((i+1))
     # now we have the current version like 0.0. 
     # We now have to find something that matches dev-v0.0.* or v0.0.*
+    echo $currVersion
     response=`curl -s -X GET \
     "https://api.supertokens.io/0/plugin-interface/latest?password=$SUPERTOKENS_API_KEY&planType=FREE&mode=DEV&version
     =$currVersion" \
     -H 'api-version: 0'`
-    echo "testing..."
     echo $response
     if [[ `echo $response | jq .tag` == "null" ]]
     then
