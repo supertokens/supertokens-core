@@ -88,8 +88,7 @@ do
         i=$((i+1))
  
         response=`curl -s -X GET \
-        "https://api.supertokens.io/0/plugin-interface/dependency/plugin/latest?password=$SUPERTOKENS_API_KEY
-        &planType=FREE&mode=DEV&version=$piVersion&pluginName=$currPinnedDb" \
+        "https://api.supertokens.io/0/plugin-interface/dependency/plugin/latest?password=$SUPERTOKENS_API_KEY&planType=FREE&mode=DEV&version=$piVersion&pluginName=$currPinnedDb" \
         -H 'api-version: 0'`
         if [[ `echo $response | jq .plugin` == "null" ]]
         then
@@ -99,8 +98,7 @@ do
         pinnedDbVersionX2=$(echo $response | jq .plugin | tr -d '"')
                 
         response=`curl -s -X GET \
-        "https://api.supertokens.io/0/plugin/latest?password=$SUPERTOKENS_API_KEY&planType=FREE&mode=DEV&version
-        =$pinnedDbVersionX2&name=$currPinnedDb" \
+        "https://api.supertokens.io/0/plugin/latest?password=$SUPERTOKENS_API_KEY&planType=FREE&mode=DEV&version=$pinnedDbVersionX2&name=$currPinnedDb" \
         -H 'api-version: 0'`
         if [[ `echo $response | jq .tag` == "null" ]]
         then
@@ -137,15 +135,13 @@ do
         cd ../
         rm -rf com-root
         curl -o supertokens.zip -s -X GET \
-        "https://api.supertokens.io/0/app/download?pluginName=$currPinnedDb&os=linux&mode=DEV&binary=FREE&targetCore
-        =$coreVersion&targetPlugin=$pinnedDbVersion" \
+        "https://api.supertokens.io/0/app/download?pluginName=$currPinnedDb&os=linux&mode=DEV&binary=FREE&targetCore=$coreVersion&targetPlugin=$pinnedDbVersion" \
         -H 'api-version: 0'
         unzip supertokens.zip -d .
         rm supertokens.zip
         cd supertokens
         curl -s -X GET \
-        "https://api.supertokens.io/0/development/license-key?password=$SUPERTOKENS_API_KEY&planType=FREE&onExpiry
-        =DOWNGRADE&expired=false" \
+        "https://api.supertokens.io/0/development/license-key?password=$SUPERTOKENS_API_KEY&planType=FREE&onExpiry=DOWNGRADE&expired=false" \
         -H 'api-version: 0' \
         -H 'cache-control: no-cache' > licenseKey
         ../project/.circleci/testCli.sh
