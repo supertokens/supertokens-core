@@ -5,7 +5,7 @@ while [ $i -lt $1 ]; do
     currVersion=`echo $2 | jq ".[$i]"`
     currVersion=`echo $currVersion | tr -d '"'`
     i=$((i+1))
-
+    echo $currVersion
     # now we have the current version like 0.0. 
     # We now have to find something that matches dev-v0.0.* or v0.0.*
     response=`curl -s -X GET \
@@ -17,6 +17,5 @@ while [ $i -lt $1 ]; do
         echo $response
         exit 1
     fi
-    echo $response
     echo $response >> pluginInterfaceExactVersionsOutput
 done
