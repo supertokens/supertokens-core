@@ -81,7 +81,7 @@ public class Main {
 
         // ------------
         String mode = licenseKeyParser.getMode();
-        String planType = "COMMERCIAL";
+        String planType = "FREE";
         Boolean withSource = installOptionsParser.installWithSource();
 
         String coreDependencyJarsGetURL = HTTPRequest

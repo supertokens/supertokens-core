@@ -24,7 +24,7 @@ core_config_version: 0
 # Keep in mind that setting this to true will result in a db query for each API call that
 # requires authentication.
 # This feature is available in paid plans only.
-# access_token_blacklisting:
+access_token_blacklisting: true
 
 
 # (OPTIONAL | Default: "/") string value. Set this to the prefix for all your APIs that require

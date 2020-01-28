@@ -101,7 +101,7 @@ public class LicenseKey {
     }
 
     public enum PLAN_TYPE {
-        FREE("FREE"), COMMERCIAL_TRIAL("COMMERCIAL_TRIAL"), COMMERCIAL("COMMERCIAL");
+        FREE("FREE");
 
         private String playType;
 

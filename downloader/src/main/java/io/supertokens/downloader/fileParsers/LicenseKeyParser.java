@@ -40,12 +40,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
 
-/**
- * {"info":{"userId":"XYZ-XYZ-XYZ-XYZ-XYZ-XYZ-XYZ","timeCreated":1575341246481,"expiryTime":157621623481,
- * "planType":"COMMERCIAL","onExpiry":"STOP","appId":"XYZ-XYZ-XYZ-XYZ-XYZ-XYZ",
- * "licenseKeyId":"XYZ-XYZ-XYZ-XYZ-XYZ-XYZ_v1","mode":"DEV"},"signature
- * ":"XYZ-XYZ-XYZ-XYZ-XYZ-XYZ-XYZ-XYZ-XYZ-XYZ-XYZ"}
- */
 public class LicenseKeyParser {
     private static final String FILE_TO_READ = "licenseKey";
     private static final String MODE = "mode";
