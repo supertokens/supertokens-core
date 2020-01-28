@@ -109,7 +109,7 @@ do
         pinnedDbVersion=$(echo $response | jq .version | tr -d '"')
         ./startDb.sh $currPinnedDb
         cd ../../
-        git clone https://github.com/supertokens/supertokens-core.git
+        git clone git@github.com:supertokens/supertokens-root.git
         cd supertokens-root
         coreX=$(cut -d'.' -f1 <<<"$coreVersion")
         coreY=$(cut -d'.' -f2 <<<"$coreVersion")
