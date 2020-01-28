@@ -109,17 +109,17 @@ do
         pinnedDbVersion=$(echo $response | jq .version | tr -d '"')
         ./startDb.sh $currPinnedDb
         cd ../../
-        git clone git@bitbucket.org:vrai-labs/com-root.git
-        cd com-root
+        git clone git@github.com:supertokens/supertokens-core.git
+        cd supertokens-root
         coreX=$(cut -d'.' -f1 <<<"$coreVersion")
         coreY=$(cut -d'.' -f2 <<<"$coreVersion")
         echo -e "core,$coreX.$coreY\nplugin-interface,$piVersion\n$currPinnedDb-plugin,$pinnedDbVersionX2" > modules.txt
         ./loadModules
-        cd com-core
+        cd supertokens-core
         git checkout dev-v$coreVersion
-        cd ../com-plugin-interface
+        cd ../supertokens-plugin-interface
         git checkout $currTag
-        cd ../com-$currPinnedDb-plugin
+        cd ../supertokens-$currPinnedDb-plugin
         git checkout $pinnedDbVersionTag
         cd ../
         echo $SUPERTOKENS_API_KEY > apiPassword
@@ -133,7 +133,7 @@ do
             exit 1
         fi
         cd ../
-        rm -rf com-root
+        rm -rf supertokens-root
         curl -o supertokens.zip -s -X GET \
         "https://api.supertokens.io/0/app/download?pluginName=$currPinnedDb&os=linux&mode=DEV&binary=FREE&targetCore=$coreVersion&targetPlugin=$pinnedDbVersion" \
         -H 'api-version: 0'
