@@ -1,0 +1,19 @@
+version: 2
+jobs:
+  test:
+    docker:
+      - image: rishabhpoddar/supertokens_core_testing
+    steps:
+      - checkout
+      - run: (cd .circleci/ && ./doTests.sh)
+
+workflows:
+  version: 2
+  tagged-build:
+    jobs:
+      - test:
+          filters:
+            tags:
+              only: /dev-v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/

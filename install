@@ -1,0 +1,11 @@
+./jre/bin/java -classpath "./downloader/*" io.supertokens.downloader.Main $@
+
+if [ $? -ne 0 ]
+then
+    echo "Installation failed. Please try again"
+	exit 1
+fi
+
+echo ""
+
+./jre/bin/java -classpath "./cli/*" io.supertokens.cli.Main true $@
