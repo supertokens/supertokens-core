@@ -63,7 +63,7 @@ then
     echo "failed core PUT API status code: $responseStatus. Exiting!"
 	exit 1
 fi
-
+cat pluginInterfaceExactVersionsOutput
 someTestsRan=false
 while read line
 do
@@ -79,9 +79,6 @@ do
     piX=$(cut -d'.' -f1 <<<"$currVersion")
     piY=$(cut -d'.' -f2 <<<"$currVersion")
     piVersion="$piX.$piY"
-
-    echo $line
-    echo $pinnedDBLength
     
     while [ $i -lt $pinnedDBLength ]; do 
         someTestsRan=true
