@@ -63,7 +63,7 @@ then
     echo "failed core PUT API status code: $responseStatus. Exiting!"
 	exit 1
 fi
-cat pluginInterfaceExactVersionsOutput
+
 someTestsRan=false
 while read line
 do

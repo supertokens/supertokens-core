@@ -11,6 +11,7 @@ while [ $i -lt $1 ]; do
     "https://api.supertokens.io/0/plugin-interface/latest?password=$SUPERTOKENS_API_KEY&planType=FREE&mode=DEV&version
     =$currVersion" \
     -H 'api-version: 0'`
+    cat $response
     if [[ `echo $response | jq .tag` == "null" ]]
     then
         echo $response
