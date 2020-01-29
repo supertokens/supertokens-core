@@ -46,6 +46,8 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotNull;
@@ -280,6 +282,97 @@ public class SessionAPITest {
         request.add("userDataInDatabase", userDataInDatabase);
         HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/session", request, 1000, 1000, null);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void deleteSessionBySessionHandleTest() throws InterruptedException, IOException, HttpResponseException {
+        String[] args = {"../", "DEV"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // create new session
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        JsonObject request = new JsonObject();
+        request.addProperty("userId", userId);
+        request.add("userDataInJWT", userDataInJWT);
+        request.add("userDataInDatabase", userDataInDatabase);
+
+        JsonObject response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/session", request, 1000, 1000, null);
+
+        String sessionHandle = response.get("session").getAsJsonObject().get("handle").getAsString();
+        String userIdFromResponse = response.get("session").getAsJsonObject().get("userId").getAsString();
+
+
+        // delete session using session handle
+        JsonObject request2 = new JsonObject();
+        request2.addProperty("sessionHandle", sessionHandle);
+        HttpRequest
+                .sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/session", request2, 1000, 1000,
+                        null);
+
+
+        // get all sessions for user
+        Map<String, String> request3 = new HashMap<>();
+        request3.put("userId", userIdFromResponse);
+        JsonObject multiResponse = HttpRequest
+                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/session/user", request3, 1000, 1000,
+                        null);
+
+        assertEquals(0, multiResponse.get("sessionHandles").getAsJsonArray().size());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void deleteSessionByUserIdTest() throws InterruptedException, IOException, HttpResponseException {
+        String[] args = {"../", "DEV"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // create new session
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        JsonObject request = new JsonObject();
+        request.addProperty("userId", userId);
+        request.add("userDataInJWT", userDataInJWT);
+        request.add("userDataInDatabase", userDataInDatabase);
+
+        JsonObject response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/session", request, 1000, 1000, null);
+
+        String userIdFromResponse = response.get("session").getAsJsonObject().get("userId").getAsString();
+
+
+        // delete session using session handle
+        JsonObject request2 = new JsonObject();
+        request2.addProperty("userId", userIdFromResponse);
+        HttpRequest
+                .sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/session", request2, 1000, 1000,
+                        null);
+
+
+        // get all sessions for user
+        Map<String, String> request3 = new HashMap<>();
+        request3.put("userId", userIdFromResponse);
+        JsonObject multiResponse = HttpRequest
+                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/session/user", request3, 1000, 1000,
+                        null);
+
+        assertEquals(0, multiResponse.get("sessionHandles").getAsJsonArray().size());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
