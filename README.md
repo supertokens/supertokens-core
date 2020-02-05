@@ -3,6 +3,10 @@
 
 # SuperTokens Community
 
+<a href="https://supertokens.io/discord">
+<img src="https://img.shields.io/discord/603466164219281420.svg?logo=discord"
+    alt="chat on Discord"></a>
+
 ## About
 SuperTokens is an advanced session management solution for web and mobile apps. It is different from most other
  solutions because it prevents all session related attacks, as well as detects session hijacking using rotating
