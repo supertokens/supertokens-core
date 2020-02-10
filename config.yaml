@@ -83,5 +83,5 @@ core_config_version: 0
 # cookie_secure:
 
 
-# (OPTIONAL | Default: 10) integer value. Sets the max thread pool size to incoming http serve requests.
+# (OPTIONAL | Default: 10) integer value. Sets the max thread pool size for incoming http server requests.
 # max_server_pool_size:
