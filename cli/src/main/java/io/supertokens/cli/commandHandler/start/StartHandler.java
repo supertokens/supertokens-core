@@ -40,11 +40,9 @@ import io.supertokens.cli.cliOptionsParsers.CLIOptionsParser;
 import io.supertokens.cli.commandHandler.CommandHandler;
 import io.supertokens.cli.exception.QuitProgramException;
 import io.supertokens.cli.logging.Logging;
-import io.supertokens.cli.processes.Processes;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -66,23 +64,6 @@ public class StartHandler extends CommandHandler {
                     "ERROR: Please specify only one of \"dev\" or \"production\" options, and not both.");
             Main.exitCode = 1;
             return;
-        }
-        if (isProductionMode) {
-            boolean preventFromStarting = false;
-            try {
-                List<Processes.RunningProcess> runningProcesses = Processes.getRunningProcesses(installationDir);
-                preventFromStarting = runningProcesses.size() > 0;
-            } catch (IOException e) {
-                preventFromStarting = true;
-            }
-            if (preventFromStarting) {
-                Logging.info(
-                        "ERROR: You can only run one instance in production mode on the Community version.\n\nIf you " +
-                                "want to multiple instances for production use, please upgrade to the Pro version by " +
-                                "visiting your SuperTokens dashboard.\n");
-                Main.exitCode = 1;
-                return;
-            }
         }
         String mode = isDevMode ? "DEV" : "PRODUCTION";
         String space = CLIOptionsParser.parseOption("--with-space", args);
