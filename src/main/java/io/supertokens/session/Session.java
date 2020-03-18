@@ -80,10 +80,9 @@ public class Session {
                 Utils.hashSHA256(Utils.hashSHA256(refreshToken.token)), userDataInDatabase, refreshToken.expiry,
                 userDataInJWT, refreshToken.createdTime);
 
-        // TODO: set cookie path, secure and domain as that of access token's value.
         TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(), refreshToken.expiry,
-                refreshToken.createdTime, null, null,
-                null);
+                refreshToken.createdTime, accessToken.cookiePath, accessToken.cookieSecure,
+                accessToken.domain, accessToken.sameSite);
         return new SessionInformationHolder(new SessionInfo(sessionHandle, userId, userDataInJWT), accessToken,
                 refreshToken, idRefreshToken, antiCsrfToken);
 
@@ -146,7 +145,8 @@ public class Session {
                                     new TokenInfo(newAccessToken.token, newAccessToken.expiry,
                                             newAccessToken.createdTime, Config.getConfig(main).getAccessTokenPath(),
                                             Config.getConfig(main).getCookieSecure(main),
-                                            Config.getConfig(main).getCookieDomain()), null, null, null);
+                                            Config.getConfig(main).getCookieDomain(),
+                                            Config.getConfig(main).getCookieSameSite()), null, null, null);
                         }
 
                         storage.commitTransaction(con);
@@ -211,8 +211,8 @@ public class Session {
 
                             TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(),
                                     newRefreshToken.expiry,
-                                    newRefreshToken.createdTime, null, null,
-                                    null);
+                                    newRefreshToken.createdTime, newAccessToken.cookiePath, newAccessToken.cookieSecure,
+                                    newAccessToken.domain, newAccessToken.sameSite);
 
                             return new SessionInformationHolder(
                                     new SessionInfo(sessionHandle, sessionInfo.userId, sessionInfo.userDataInJWT),

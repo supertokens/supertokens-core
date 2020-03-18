@@ -222,6 +222,85 @@ public class ConfigTest {
     }
 
     @Test
+    public void testThatInvalidSameSiteWillThrowAnError() throws Exception {
+        String[] args = {"../", "DEV"};
+        Utils.setValueInConfig("cookie_same_site", "random");
+        TestingProcess process = TestingProcessManager.start(args);
+        ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(e);
+
+        assertEquals(e.exception.getMessage(),
+                "'cookie_same_site' must be either \"none\", \"strict\" or \"lax\"");
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testAllValuesOfSameSite() throws Exception {
+        {
+            String[] args = {"../", "DEV"};
+            Utils.setValueInConfig("cookie_same_site", "none");
+            TestingProcess process = TestingProcessManager.start(args);
+            ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
+            assertNotNull(e);
+            assertEquals(Config.getConfig(process.getProcess()).getCookieSameSite(), "none");
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+        {
+            String[] args = {"../", "DEV"};
+            Utils.setValueInConfig("cookie_same_site", "NonE");
+            TestingProcess process = TestingProcessManager.start(args);
+            ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
+            assertNotNull(e);
+            assertEquals(Config.getConfig(process.getProcess()).getCookieSameSite(), "none");
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+        {
+            String[] args = {"../", "DEV"};
+            Utils.setValueInConfig("cookie_same_site", "lax");
+            TestingProcess process = TestingProcessManager.start(args);
+            ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
+            assertNotNull(e);
+            assertEquals(Config.getConfig(process.getProcess()).getCookieSameSite(), "lax");
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+        {
+            String[] args = {"../", "DEV"};
+            Utils.setValueInConfig("cookie_same_site", "LaX");
+            TestingProcess process = TestingProcessManager.start(args);
+            ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
+            assertNotNull(e);
+            assertEquals(Config.getConfig(process.getProcess()).getCookieSameSite(), "lax");
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+        {
+            String[] args = {"../", "DEV"};
+            Utils.setValueInConfig("cookie_same_site", "strict");
+            TestingProcess process = TestingProcessManager.start(args);
+            ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
+            assertNotNull(e);
+            assertEquals(Config.getConfig(process.getProcess()).getCookieSameSite(), "strict");
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+        {
+            String[] args = {"../", "DEV"};
+            Utils.setValueInConfig("cookie_same_site", "STrict");
+            TestingProcess process = TestingProcessManager.start(args);
+            ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
+            assertNotNull(e);
+            assertEquals(Config.getConfig(process.getProcess()).getCookieSameSite(), "strict");
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
     public void testThatMissingConfigFileThrowsError() throws Exception {
         String[] args = {"../", "DEV"};
 
@@ -269,9 +348,10 @@ public class ConfigTest {
 
     }
 
-    public static void checkConfigValues(CoreConfig config, TestingProcess process) {
+    private static void checkConfigValues(CoreConfig config, TestingProcess process) {
 
         assertEquals("Config version did not match default", config.getConfigVersion(), 0);
+        assertEquals("SameSite does not match the default", config.getCookieSameSite(), "none");
         assertEquals("Config access token validity did not match default", config.getAccessTokenValidity(),
                 3600 * 1000);
         assertFalse("Config access token blacklisting did not match default", config.getAccessTokenBlacklisting());

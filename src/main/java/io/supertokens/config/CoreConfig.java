@@ -79,6 +79,8 @@ public class CoreConfig {
     @JsonProperty
     private Boolean cookie_secure = null;
 
+    @JsonProperty
+    private String cookie_same_site = "none";
 
     @JsonProperty
     private int port = 3567;
@@ -123,6 +125,10 @@ public class CoreConfig {
 
     public String getRefreshAPIPath() {
         return refresh_api_path;
+    }
+
+    public String getCookieSameSite() {
+        return cookie_same_site.toLowerCase();
     }
 
     public String getInfoLogPath(Main main) {
@@ -224,6 +230,11 @@ public class CoreConfig {
         if (max_server_pool_size <= 0) {
             throw new QuitProgramException("'max_server_pool_size' must be >= 1. The config file can be found here: " +
                     getConfigFileLocation(main));
+        }
+
+        if (!cookie_same_site.toLowerCase().equals("none") && !cookie_same_site.toLowerCase().equals("lax") &&
+                !cookie_same_site.toLowerCase().equals("strict")) {
+            throw new QuitProgramException("'cookie_same_site' must be either \"none\", \"strict\" or \"lax\"");
         }
 
         if (!getInfoLogPath(main).equals("null")) {

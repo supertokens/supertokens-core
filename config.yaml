@@ -83,5 +83,10 @@ core_config_version: 0
 # cookie_secure:
 
 
+# (OPTIONAL | Default: "none") string value. Sets the sameSite attribute for cookies issued by SuperTokens. The values
+# can be "none" | "lax" | "strict"
+# cookie_same_site:
+
+
 # (OPTIONAL | Default: 10) integer value. Sets the max thread pool size for incoming http server requests.
 # max_server_pool_size:

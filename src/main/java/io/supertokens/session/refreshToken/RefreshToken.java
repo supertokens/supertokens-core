@@ -100,8 +100,8 @@ public class RefreshToken {
 
         return new TokenInfo(token, now + Config.getConfig(main).getRefreshTokenValidity(), now,
                 Config.getConfig(main).getRefreshAPIPath(),
-                Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain());
-
+                Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain(),
+                Config.getConfig(main).getCookieSameSite());
     }
 
     private static TYPE getTypeFromToken(String token) throws InvalidRefreshTokenFormatException {

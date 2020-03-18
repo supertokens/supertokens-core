@@ -248,7 +248,7 @@ public class SessionTest4 {
                 Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
         assertNotNull(sessionInfo.antiCsrfToken);
         assert sessionInfo.idRefreshToken != null;
-        assert sessionInfo.idRefreshToken.cookieSecure == null;
+        assert sessionInfo.idRefreshToken.cookieSecure != null;
 
 
         SessionInformationHolder refreshedSession = Session
@@ -273,7 +273,7 @@ public class SessionTest4 {
         assert refreshedSession.refreshToken.cookieSecure != null;
         assertFalse(refreshedSession.refreshToken.cookieSecure);
         assert refreshedSession.idRefreshToken != null;
-        assert refreshedSession.idRefreshToken.cookieSecure == null;
+        assert refreshedSession.idRefreshToken.cookieSecure != null;
 
         SessionInformationHolder newSession = Session.getSession(process.getProcess(),
                 refreshedSession.accessToken.token, refreshedSession.antiCsrfToken, true);
@@ -321,9 +321,7 @@ public class SessionTest4 {
         assertFalse(sessionInfo.refreshToken.cookieSecure);
         assertNotNull(sessionInfo.antiCsrfToken);
         assert sessionInfo.idRefreshToken != null;
-        assert sessionInfo.idRefreshToken.cookieSecure == null;
-        assert sessionInfo.idRefreshToken.domain == null;
-        assert sessionInfo.idRefreshToken.cookiePath == null;
+        assert sessionInfo.idRefreshToken.cookieSecure != null;
 
         SessionInformationHolder refreshedSession = Session
                 .refreshSession(process.getProcess(), sessionInfo.refreshToken.token);
@@ -342,9 +340,7 @@ public class SessionTest4 {
         assert refreshedSession.refreshToken.cookieSecure != null;
         assertFalse(refreshedSession.refreshToken.cookieSecure);
         assert refreshedSession.idRefreshToken != null;
-        assert refreshedSession.idRefreshToken.cookieSecure == null;
-        assert refreshedSession.idRefreshToken.domain == null;
-        assert refreshedSession.idRefreshToken.cookiePath == null;
+        assert refreshedSession.idRefreshToken.cookieSecure != null;
 
         SessionInformationHolder newSession = Session.getSession(process.getProcess(),
                 refreshedSession.accessToken.token, refreshedSession.antiCsrfToken, true);

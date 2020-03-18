@@ -83,5 +83,10 @@ cookie_domain: "supertokens.io"
 # cookie_secure:
 
 
+# (OPTIONAL | Default: "none") string value. Sets the sameSite attribute for cookies issued by SuperTokens. The values
+# can be "none" | "lax" | "strict"
+# cookie_same_site:
+
+
 # (OPTIONAL | Default: 10) integer value. Sets the max thread pool size to incoming http serve requests.
 # max_server_pool_size:

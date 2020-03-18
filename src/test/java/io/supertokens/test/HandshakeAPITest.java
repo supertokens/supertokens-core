@@ -112,7 +112,7 @@ public class HandshakeAPITest {
         assertEquals(response.get("status").getAsString(), "OK");
 
         //check number of values
-        assertEquals(response.entrySet().size(), 9);
+        assertEquals(response.entrySet().size(), 11);
 
         //check jwtSigningPublicKey
         assertEquals(response.get("jwtSigningPublicKey").getAsString(),
@@ -130,6 +130,10 @@ public class HandshakeAPITest {
         assertEquals(response.get("cookieSecure").getAsBoolean(),
                 Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
 
+        //check cookieSecure
+        assertEquals(response.get("cookieSameSite").getAsString(),
+                Config.getConfig(process.getProcess()).getCookieSameSite());
+
         //check accessTokenPath
         assertEquals(response.get("accessTokenPath").getAsString(),
                 Config.getConfig(process.getProcess()).getAccessTokenPath());
@@ -137,6 +141,10 @@ public class HandshakeAPITest {
         //check refreshTokenPath
         assertEquals(response.get("refreshTokenPath").getAsString(),
                 Config.getConfig(process.getProcess()).getRefreshAPIPath());
+
+        //check idRefreshTokenPath
+        assertEquals(response.get("idRefreshTokenPath").getAsString(),
+                Config.getConfig(process.getProcess()).getAccessTokenPath());
 
         //check enableAntiCsrf
         assertEquals(response.get("enableAntiCsrf").getAsBoolean(),

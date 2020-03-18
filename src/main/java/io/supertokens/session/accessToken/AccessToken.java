@@ -122,7 +122,8 @@ public class AccessToken {
                 LicenseKey.get(main).getPlanType() != PLAN_TYPE.FREE);
         String token = JWT.createJWT(new Gson().toJsonTree(accessToken), signingKey.privateKey);
         return new TokenInfo(token, expiryTime, now, Config.getConfig(main).getAccessTokenPath(),
-                Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain());
+                Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain(),
+                Config.getConfig(main).getCookieSameSite());
 
     }
 

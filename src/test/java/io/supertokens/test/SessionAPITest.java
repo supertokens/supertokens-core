@@ -106,7 +106,9 @@ public class SessionAPITest {
                 Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
         assertEquals(response.get("accessToken").getAsJsonObject().get("domain").getAsString(),
                 Config.getConfig(process.getProcess()).getCookieDomain());
-        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 6);
+        assertEquals(response.get("accessToken").getAsJsonObject().get("sameSite").getAsString(),
+                Config.getConfig(process.getProcess()).getCookieSameSite());
+        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 7);
 
         assertTrue(response.get("refreshToken").getAsJsonObject().has("token"));
         assertTrue(response.get("refreshToken").getAsJsonObject().has("expiry"));
@@ -119,12 +121,24 @@ public class SessionAPITest {
                 Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
         assertEquals(response.get("refreshToken").getAsJsonObject().get("domain").getAsString(),
                 Config.getConfig(process.getProcess()).getCookieDomain());
-        assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 6);
+        assertEquals(response.get("refreshToken").getAsJsonObject().get("sameSite").getAsString(),
+                Config.getConfig(process.getProcess()).getCookieSameSite());
+        assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 7);
 
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("token"));
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("createdTime"));
-        assertEquals(response.get("idRefreshToken").getAsJsonObject().entrySet().size(), 3);
+        assertTrue(response.get("idRefreshToken").getAsJsonObject().has("cookiePath"));
+        assertEquals(response.get("idRefreshToken").getAsJsonObject().get("cookiePath").getAsString(),
+                Config.getConfig(process.getProcess()).getAccessTokenPath());
+        assertTrue(response.get("idRefreshToken").getAsJsonObject().has("cookieSecure"));
+        assertEquals(response.get("idRefreshToken").getAsJsonObject().get("cookieSecure").getAsBoolean(),
+                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
+        assertEquals(response.get("idRefreshToken").getAsJsonObject().get("domain").getAsString(),
+                Config.getConfig(process.getProcess()).getCookieDomain());
+        assertEquals(response.get("idRefreshToken").getAsJsonObject().get("sameSite").getAsString(),
+                Config.getConfig(process.getProcess()).getCookieSameSite());
+        assertEquals(response.get("idRefreshToken").getAsJsonObject().entrySet().size(), 7);
 
         assertTrue(response.has("antiCsrfToken"));
         assertTrue(response.has("jwtSigningPublicKey"));
@@ -136,8 +150,10 @@ public class SessionAPITest {
     }
 
     @Test
-    public void successOutputCheckWithNoAntiCsrf() throws InterruptedException, IOException, HttpResponseException {
+    public void successOutputCheckWithNoAntiCsrfAndSameSiteDifferent()
+            throws InterruptedException, IOException, HttpResponseException {
         Utils.setValueInConfig("enable_anti_csrf", "false");
+        Utils.setValueInConfig("cookie_same_site", "lax");
 
         String[] args = {"../", "DEV"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -176,7 +192,9 @@ public class SessionAPITest {
                 Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
         assertEquals(response.get("accessToken").getAsJsonObject().get("domain").getAsString(),
                 Config.getConfig(process.getProcess()).getCookieDomain());
-        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 6);
+        assertEquals(response.get("accessToken").getAsJsonObject().get("sameSite").getAsString(),
+                Config.getConfig(process.getProcess()).getCookieSameSite());
+        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 7);
 
         assertTrue(response.get("refreshToken").getAsJsonObject().has("token"));
         assertTrue(response.get("refreshToken").getAsJsonObject().has("expiry"));
@@ -189,12 +207,24 @@ public class SessionAPITest {
                 Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
         assertEquals(response.get("refreshToken").getAsJsonObject().get("domain").getAsString(),
                 Config.getConfig(process.getProcess()).getCookieDomain());
-        assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 6);
+        assertEquals(response.get("refreshToken").getAsJsonObject().get("sameSite").getAsString(),
+                Config.getConfig(process.getProcess()).getCookieSameSite());
+        assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 7);
 
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("token"));
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("createdTime"));
-        assertEquals(response.get("idRefreshToken").getAsJsonObject().entrySet().size(), 3);
+        assertTrue(response.get("idRefreshToken").getAsJsonObject().has("cookiePath"));
+        assertEquals(response.get("idRefreshToken").getAsJsonObject().get("cookiePath").getAsString(),
+                Config.getConfig(process.getProcess()).getAccessTokenPath());
+        assertTrue(response.get("idRefreshToken").getAsJsonObject().has("cookieSecure"));
+        assertEquals(response.get("idRefreshToken").getAsJsonObject().get("cookieSecure").getAsBoolean(),
+                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
+        assertEquals(response.get("idRefreshToken").getAsJsonObject().get("domain").getAsString(),
+                Config.getConfig(process.getProcess()).getCookieDomain());
+        assertEquals(response.get("idRefreshToken").getAsJsonObject().get("sameSite").getAsString(),
+                Config.getConfig(process.getProcess()).getCookieSameSite());
+        assertEquals(response.get("idRefreshToken").getAsJsonObject().entrySet().size(), 7);
 
         assertNotNull(response.get("jwtSigningPublicKey").getAsString());
         assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));
