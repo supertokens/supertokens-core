@@ -436,28 +436,31 @@ public class WebserverTest extends Mockito {
             IOException, HttpResponseException {
 
         InetAddress inetAddress = InetAddress.getLocalHost();
+        if (!inetAddress.getHostAddress().equals("127.0.0.1")) {
+            Utils.setValueInConfig("host", "\"" + inetAddress.getHostAddress() + "\"");
+            hello(inetAddress.getHostAddress(), "3567");
+            try {
+                hello("localhost", "3567");
+                fail();
+            } catch (ConnectException ignored) {
+            }
+            try {
+                hello("127.0.0.1", "3567");
+                fail();
+            } catch (ConnectException ignored) {
+            }
 
-        Utils.setValueInConfig("host", "\"" + inetAddress.getHostAddress() + "\"");
-        hello(inetAddress.getHostAddress(), "3567");
-        try {
-            hello("localhost", "3567");
-            fail();
-        } catch (ConnectException ignored) {
+            Utils.reset();
         }
-        try {
-            hello("127.0.0.1", "3567");
-            fail();
-        } catch (ConnectException ignored) {
-        }
-
-        Utils.reset();
 
         Utils.setValueInConfig("host", "\"localhost\"");
         hello("localhost", "3567");
         hello("127.0.0.1", "3567");
         try {
             hello(inetAddress.getHostAddress(), "3567");
-            fail();
+            if (!inetAddress.getHostAddress().equals("127.0.0.1")) {
+                fail();
+            }
         } catch (ConnectException ignored) {
         }
 
@@ -468,7 +471,9 @@ public class WebserverTest extends Mockito {
         hello("127.0.0.1", "3567");
         try {
             hello(inetAddress.getHostAddress(), "3567");
-            fail();
+            if (!inetAddress.getHostAddress().equals("127.0.0.1")) {
+                fail();
+            }
         } catch (ConnectException ignored) {
         }
 
