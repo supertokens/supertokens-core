@@ -91,7 +91,14 @@ public class InstallHandler extends CommandHandler {
                                 "config.yaml");
             }
         } catch (Exception e) {
-            throw new QuitProgramException("error while installing SuperTokens. Please try again", e);
+            if (e.getMessage().toLowerCase().contains("permission denied") && !(e instanceof QuitProgramException)) {
+                throw new QuitProgramException(
+                        "Installation failed. Try again with" +
+                                ((OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) ? " root permissions." :
+                                        " sudo."), null);
+            } else {
+                throw new QuitProgramException("error while installing SuperTokens. Please try again", e);
+            }
         }
     }
 
