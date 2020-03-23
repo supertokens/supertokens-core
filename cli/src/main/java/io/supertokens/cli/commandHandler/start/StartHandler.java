@@ -60,11 +60,11 @@ public class StartHandler extends CommandHandler {
             return;
         }
         if (isDevMode && isProductionMode) {
-            Logging.info(
-                    "ERROR: Please specify only one of \"dev\" or \"production\" options, and not both.");
+            Logging.info("ERROR: Please specify only one of \"dev\" or \"production\" options, and not both.");
             Main.exitCode = 1;
             return;
         }
+
         String mode = isDevMode ? "DEV" : "PRODUCTION";
         String space = CLIOptionsParser.parseOption("--with-space", args);
         String configPath = CLIOptionsParser.parseOption("--with-config", args);
@@ -84,8 +84,8 @@ public class StartHandler extends CommandHandler {
                 commands.add("-Xmx" + space + "M");
             }
             commands.add("io.supertokens.Main");
-            commands.add(
-                    "\"" + installationDir + "\\\"");  // so many quotes at the end cause installationDir also ends in \
+            commands.add("\"" + installationDir + "\\\""); // so many quotes at the end cause installationDir also ends
+                                                           // in \
             commands.add(mode);
             if (configPath != null) {
                 configPath = configPath.replace("\\", "\\\\");
@@ -124,7 +124,7 @@ public class StartHandler extends CommandHandler {
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
                 try (InputStreamReader in = new InputStreamReader(process.getInputStream());
-                     BufferedReader reader = new BufferedReader(in)) {
+                        BufferedReader reader = new BufferedReader(in)) {
                     String line;
                     boolean success = false;
                     while ((line = reader.readLine()) != null) {
@@ -150,7 +150,8 @@ public class StartHandler extends CommandHandler {
                 process.waitFor();
                 int exitValue = process.exitValue();
                 if (process.exitValue() != 0 && exitValue != 130) {
-                    // 130 means user killed this process and that the shutdownHook will be called, and if
+                    // 130 means user killed this process and that the shutdownHook will be called,
+                    // and if
                     // we throw an error, then for some reason this process doesn't quit.
                     throw new QuitProgramException("", null);
                 }
@@ -167,13 +168,10 @@ public class StartHandler extends CommandHandler {
         return "Start an instance of SuperTokens";
     }
 
-
     @Override
     public String getUsage() {
-        return "supertokens start [dev | production] [--with-space=<amount in mb>] [--with-config=<config file path>]" +
-                " " +
-                "[--port=<value>] " +
-                "[--host=<value>] [--foreground]";
+        return "supertokens start [dev | production] [--with-space=<amount in mb>] [--with-config=<config file path>]"
+                + " " + "[--port=<value>] " + "[--host=<value>] [--foreground]";
     }
 
     @Override
@@ -183,33 +181,31 @@ public class StartHandler extends CommandHandler {
 
     @Override
     public String getLongDescription() {
-        return "Start an instance of SuperTokens for development or production use. By default the process will be " +
-                "started as a daemon";
+        return "Start an instance of SuperTokens for development or production use. By default the process will be "
+                + "started as a daemon";
     }
 
     @Override
     protected List<Option> getOptionsAndDescription() {
         List<Option> options = new ArrayList<>();
-        options.add(
-                new Option("dev",
-                        "Start an instance for development use. You can run unlimited number of instances in this " +
-                                "mode."));
+        options.add(new Option("dev",
+                "Start an instance for development use. You can run unlimited number of instances in this " + "mode."));
         options.add(new Option("production",
-                "Start an instance for production use. You can run unlimited number of instances in this mode only if" +
-                        " you have a non expired licenseKey. To get a new licenseKey, or check for expiry of your " +
-                        "current one, please visit your SuperTokens dashboard."));
+                "Start an instance for production use. You can run unlimited number of instances in this mode only if"
+                        + " you have a non expired licenseKey. To get a new licenseKey, or check for expiry of your "
+                        + "current one, please visit your SuperTokens dashboard."));
         options.add(new Option("--with-space",
-                "Sets the amount of space, in MB, to allocate to the JVM. Example to allocate 200MB: " +
-                        "\"--with-space=200\""));
+                "Sets the amount of space, in MB, to allocate to the JVM. Example to allocate 200MB: "
+                        + "\"--with-space=200\""));
         options.add(new Option("--with-config",
-                "Specify the location of the config file to load. Can be either relative or absolute. Example: " +
-                        "\"--with-config=/usr/config.yaml\""));
+                "Specify the location of the config file to load. Can be either relative or absolute. Example: "
+                        + "\"--with-config=/usr/config.yaml\""));
         options.add(new Option("--port",
                 "Sets the port on which this instance of SuperTokens should run. Example: \"--port=8080\""));
         options.add(new Option("--host",
                 "Sets the host on which this instance of SuperTokens should run. Example: \"--host=192.168.0.1\""));
-        options.add(new Option("--foreground",
-                "Runs this instance of SuperTokens in the foreground (not as a daemon)"));
+        options.add(
+                new Option("--foreground", "Runs this instance of SuperTokens in the foreground (not as a daemon)"));
         return options;
     }
 
