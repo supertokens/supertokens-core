@@ -189,7 +189,7 @@ public class InstallHandler extends CommandHandler {
                             "\n)" +
                             "\n:eof";
         } else {
-            content += "st_install_loc=" + installationDir + "\n";
+            content += "#!/bin/bash\n\nst_install_loc=" + installationDir + "\n";
             content +=
                     "${st_install_loc}jre/bin/java -classpath " +
                             "\"${st_install_loc}cli/*\" io.supertokens.cli.Main " +

@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ./jre/bin/java -classpath "./downloader/*" io.supertokens.downloader.Main $@
 
 if [ $? -ne 0 ]
