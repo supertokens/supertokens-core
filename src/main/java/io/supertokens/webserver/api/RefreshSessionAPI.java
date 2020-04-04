@@ -80,6 +80,14 @@ public class RefreshSessionAPI extends WebserverAPI {
                     .refreshSession(main, refreshToken);
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
+
+            result.getAsJsonObject("accessToken").remove("sameSite");
+            result.getAsJsonObject("refreshToken").remove("sameSite");
+            result.getAsJsonObject("idRefreshToken").remove("sameSite");
+            result.getAsJsonObject("idRefreshToken").remove("cookiePath");
+            result.getAsJsonObject("idRefreshToken").remove("cookieSecure");
+            result.getAsJsonObject("idRefreshToken").remove("domain");
+
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException e) {

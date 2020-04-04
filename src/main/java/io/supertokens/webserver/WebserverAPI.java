@@ -49,11 +49,20 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 public abstract class WebserverAPI extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
     protected final Main main;
+    protected String version = null;
+    private static final Set<String> supportedVersions = new HashSet<>();
+
+    static {
+        supportedVersions.add("1.0");
+        supportedVersions.add("2.0");
+    }
 
     public WebserverAPI(Main main) {
         super();
@@ -126,10 +135,27 @@ public abstract class WebserverAPI extends HttpServlet {
         this.sendTextResponse(405, "Method not supported", resp);
     }
 
+    private void assertThatVersionIsCompatible() throws ServletException {
+        if (this.version == null) {
+            throw new ServletException(new BadRequestException(
+                    "cdi-version not provided"));
+        }
+        if (!supportedVersions.contains(this.version)) {
+            throw new ServletException(new BadRequestException(
+                    "cdi-version " + this.version + " not supported"));
+        }
+    }
+
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
-            Logging.debug(main, "API called: " + this.getPath() + ". Method: " + req.getMethod());
+            String version = req.getHeader("cdi-version");
+            // in api spec 1.0.X, we did not have cdi-version header
+            this.version = version == null ? "1.0" : version;
+            assertThatVersionIsCompatible();
+
+            Logging.debug(main,
+                    "API called: " + this.getPath() + ". Method: " + req.getMethod() + ". Version: " + this.version);
             super.service(req, resp);
         } catch (Exception e) {
             Logging.error(main, "API threw an exception: " + this.getPath(),

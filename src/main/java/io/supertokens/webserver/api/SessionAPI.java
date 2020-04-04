@@ -83,6 +83,14 @@ public class SessionAPI extends WebserverAPI {
                     .createNewSession(main, userId, userDataInJWT, userDataInDatabase);
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
+
+            result.getAsJsonObject("accessToken").remove("sameSite");
+            result.getAsJsonObject("refreshToken").remove("sameSite");
+            result.getAsJsonObject("idRefreshToken").remove("sameSite");
+            result.getAsJsonObject("idRefreshToken").remove("cookiePath");
+            result.getAsJsonObject("idRefreshToken").remove("cookieSecure");
+            result.getAsJsonObject("idRefreshToken").remove("domain");
+
             result.addProperty("status", "OK");
             result.addProperty("jwtSigningPublicKey", AccessTokenSigningKey.getInstance(main).getKey().publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",

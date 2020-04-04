@@ -163,9 +163,7 @@ public class VerifySessionAPITest {
                 Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
         assertEquals(response.get("accessToken").getAsJsonObject().get("domain").getAsString(),
                 Config.getConfig(process.getProcess()).getCookieDomain());
-        assertEquals(response.get("accessToken").getAsJsonObject().get("sameSite").getAsString(),
-                Config.getConfig(process.getProcess()).getCookieSameSite());
-        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 7);
+        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 6);
 
         assertNotNull(response.get("jwtSigningPublicKey").getAsString());
         assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));
