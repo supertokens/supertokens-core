@@ -66,6 +66,13 @@ import java.util.HashMap;
 
 import static org.junit.Assert.*;
 
+/**
+ * TODO:
+ * - Give unsupported version and make sure it fails
+ * - Give all supported versions and make sure it passes
+ * - Give no version and makes sure it treats it as 1.0
+ */
+
 public class WebserverTest extends Mockito {
 
     @Rule

@@ -40,9 +40,11 @@ import io.supertokens.config.Config;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.licenseKey.LicenseKey;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.noSqlStorage.NoSQLStorage_1;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.accessToken.AccessToken.AccessTokenInfo;
@@ -165,6 +167,54 @@ public class Session {
                 }
                 throw e;
             }
+        } else if (StorageLayer.getStorageLayer(main).getType() == STORAGE_TYPE.NOSQL_1) {
+            NoSQLStorage_1 storage = (NoSQLStorage_1) StorageLayer.getStorageLayer(main);
+            while (true) {
+                try {
+
+                    NoSQLStorage_1.SessionInfoWithLastUpdated sessionInfo = storage
+                            .getSessionInfo_Transaction(accessToken.sessionHandle);
+
+                    if (sessionInfo == null) {
+                        throw new UnauthorisedException("Session missing in db");
+                    }
+
+                    boolean promote = sessionInfo.refreshTokenHash2
+                            .equals(Utils.hashSHA256(accessToken.parentRefreshTokenHash1));
+                    if (promote || sessionInfo.refreshTokenHash2.equals(accessToken.parentRefreshTokenHash1)) {
+                        if (promote) {
+                            boolean success = storage.updateSessionInfo_Transaction(accessToken.sessionHandle,
+                                    Utils.hashSHA256(accessToken.refreshTokenHash1),
+                                    System.currentTimeMillis() + Config.getConfig(main).getRefreshTokenValidity(),
+                                    sessionInfo.lastUpdatedSign);
+                            if (!success) {
+                                continue;
+                            }
+                        }
+
+                        TokenInfo newAccessToken = AccessToken.createNewAccessToken(main,
+                                accessToken.sessionHandle, accessToken.userId, accessToken.refreshTokenHash1,
+                                null, accessToken.userData, accessToken.antiCsrfToken);
+
+                        return new SessionInformationHolder(
+                                new SessionInfo(accessToken.sessionHandle, accessToken.userId,
+                                        accessToken.userData),
+                                new TokenInfo(newAccessToken.token, newAccessToken.expiry,
+                                        newAccessToken.createdTime, Config.getConfig(main).getAccessTokenPath(),
+                                        Config.getConfig(main).getCookieSecure(main),
+                                        Config.getConfig(main).getCookieDomain(),
+                                        Config.getConfig(main).getCookieSameSite()), null, null, null);
+                    }
+
+                    return new SessionInformationHolder(
+                            new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData),
+                            null, null,
+                            null, null);
+                } catch (NoSuchAlgorithmException | UnsupportedEncodingException |
+                        InvalidKeyException | InvalidKeySpecException | SignatureException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
+            }
         } else {
             throw new UnsupportedOperationException("");
         }
@@ -181,6 +231,12 @@ public class Session {
                                                                  RefreshToken.RefreshTokenInfo refreshTokenInfo)
             throws StorageTransactionLogicException, UnauthorisedException, StorageQueryException,
             TokenTheftDetectedException {
+        //////////////////////////////////////////SQL/////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////////
+        //////////////////////////////////////////////////////////////////////////////////////////////
         if (StorageLayer.getStorageLayer(main).getType() == STORAGE_TYPE.SQL) {
             SQLStorage storage = (SQLStorage) StorageLayer.getStorageLayer(main);
             try {
@@ -250,6 +306,71 @@ public class Session {
                 }
                 throw e;
             }
+
+            //////////////////////////////////////////NOSQL_1/////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////////
+            //////////////////////////////////////////////////////////////////////////////////////////////
+        } else if (StorageLayer.getStorageLayer(main).getType() == STORAGE_TYPE.NOSQL_1) {
+            NoSQLStorage_1 storage = (NoSQLStorage_1) StorageLayer.getStorageLayer(main);
+            while (true) {
+                try {
+                    LicenseKey.PLAN_TYPE playType = LicenseKey.get(main).getPlanType();
+                    String sessionHandle = refreshTokenInfo.sessionHandle;
+                    NoSQLStorage_1.SessionInfoWithLastUpdated sessionInfo = storage
+                            .getSessionInfo_Transaction(sessionHandle);
+
+                    if (sessionInfo == null || sessionInfo.expiry < System.currentTimeMillis()) {
+                        throw new UnauthorisedException("Session missing in db or has expired");
+                    }
+
+                    if (sessionInfo.refreshTokenHash2.equals(Utils.hashSHA256(Utils.hashSHA256(refreshToken)))) {
+                        // at this point, the input refresh token is the parent one.
+                        final TokenInfo newRefreshToken = RefreshToken.createNewRefreshToken(main, sessionHandle,
+                                Utils.hashSHA256(Utils.hashSHA256(refreshToken)));
+
+
+                        String antiCsrfToken =
+                                Config.getConfig(main).getEnableAntiCSRF() ? UUID.randomUUID().toString() : null;
+                        TokenInfo newAccessToken = AccessToken
+                                .createNewAccessToken(main, sessionHandle, sessionInfo.userId,
+                                        Utils.hashSHA256(newRefreshToken.token), Utils.hashSHA256(refreshToken),
+                                        sessionInfo.userDataInJWT, antiCsrfToken);
+
+                        TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(),
+                                newRefreshToken.expiry,
+                                newRefreshToken.createdTime, newAccessToken.cookiePath, newAccessToken.cookieSecure,
+                                newAccessToken.domain, newAccessToken.sameSite);
+
+                        return new SessionInformationHolder(
+                                new SessionInfo(sessionHandle, sessionInfo.userId, sessionInfo.userDataInJWT),
+                                newAccessToken,
+                                newRefreshToken, idRefreshToken, antiCsrfToken);
+                    }
+
+                    if (refreshTokenInfo.parentRefreshTokenHash2 != null &&
+                            refreshTokenInfo.parentRefreshTokenHash2
+                                    .equals(sessionInfo.refreshTokenHash2)) {
+                        boolean success = storage.updateSessionInfo_Transaction(sessionHandle,
+                                Utils.hashSHA256(Utils.hashSHA256(refreshToken)),
+                                System.currentTimeMillis() + Config.getConfig(main).getRefreshTokenValidity(),
+                                sessionInfo.lastUpdatedSign);
+                        if (!success) {
+                            continue;
+                        }
+                        return refreshSessionHelper(main, refreshToken, refreshTokenInfo);
+                    }
+
+                    throw new TokenTheftDetectedException(sessionHandle, sessionInfo.userId);
+
+                } catch (NoSuchAlgorithmException | InvalidKeyException |
+                        UnsupportedEncodingException | InvalidKeySpecException | SignatureException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
+            }
+
         } else {
             throw new UnsupportedOperationException("");
         }

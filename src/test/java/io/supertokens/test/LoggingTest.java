@@ -50,7 +50,6 @@ import org.junit.rules.TestRule;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
-import java.util.List;
 import java.util.Scanner;
 
 import static org.junit.Assert.*;
@@ -174,13 +173,12 @@ public class LoggingTest {
         Logger comInfoLog = (Logger) LoggerFactory
                 .getLogger("io.supertokens.Info." + process.getProcess().getProcessId());
         Logger comErrorLog = (Logger) LoggerFactory
-                .getLogger("io.supertokens.Error" + process.getProcess().getProcessId());
+                .getLogger("io.supertokens.Error." + process.getProcess().getProcessId());
 
 
         java.util.logging.Logger webLogger = java.util.logging.Logger.getLogger("org.apache");
 
-        assertTrue(List.of(comInfoLog.iteratorForAppenders()).size() == 1 && List.of(comErrorLog.iteratorForAppenders())
-                .size() == 1);
+        assertTrue(comInfoLog.iteratorForAppenders().hasNext() && comErrorLog.iteratorForAppenders().hasNext());
         assertEquals(1, webLogger.getHandlers().length);
 
         process.kill();

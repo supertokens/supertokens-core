@@ -40,10 +40,12 @@ import io.supertokens.ProcessState;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.KeyValueInfoWithLastUpdated;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.noSqlStorage.NoSQLStorage_1;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
@@ -180,6 +182,112 @@ public class StorageTest {
 
             assertTrue(!t1Failed.get() && !t2Failed.get());
 
+        } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
+            NoSQLStorage_1 noSqlStorage = (NoSQLStorage_1) storage;
+
+            noSqlStorage.setKeyValue_Transaction("Key", new KeyValueInfoWithLastUpdated("Value", null));
+
+            AtomicReference<String> t1State = new AtomicReference<>("init");
+            AtomicReference<String> t2State = new AtomicReference<>("init");
+            final Object syncObject = new Object();
+
+            AtomicBoolean t1Failed = new AtomicBoolean(true);
+            AtomicBoolean t2Failed = new AtomicBoolean(true);
+
+            Runnable r1 = () -> {
+                try {
+                    int numberOfLoops = 0;
+                    while (true) {
+                        KeyValueInfoWithLastUpdated k1 = noSqlStorage.getKeyValue_Transaction("Key");
+
+                        synchronized (syncObject) {
+                            t1State.set("read");
+                            syncObject.notifyAll();
+                        }
+
+
+                        try {
+                            Thread.sleep(1500);
+                        } catch (InterruptedException e) {
+                        }
+
+                        synchronized (syncObject) {
+                            assertEquals("before_read", t2State.get());
+                        }
+
+                        boolean success = noSqlStorage.setKeyValue_Transaction("Key",
+                                new KeyValueInfoWithLastUpdated("Value2", k1.lastUpdatedSign));
+
+                        if (!success) {
+                            numberOfLoops++;
+                            continue;
+                        }
+
+                        synchronized (syncObject) {
+                            t1State.set("after_set");
+                            syncObject.notifyAll();
+                        }
+
+
+                        t1Failed.set(numberOfLoops != 1);
+                        break;
+                    }
+                } catch (Exception ignored) {
+                }
+            };
+
+            Runnable r2 = () -> {
+                try {
+
+                    synchronized (syncObject) {
+                        while (!t1State.get().equals("read")) {
+                            try {
+                                syncObject.wait();
+                            } catch (InterruptedException e) {
+                            }
+                        }
+                    }
+
+                    KeyValueInfoWithLastUpdated val = noSqlStorage.getKeyValue_Transaction("Key");
+
+                    boolean success = noSqlStorage.setKeyValue_Transaction("Key",
+                            new KeyValueInfoWithLastUpdated("Value1", val.lastUpdatedSign));
+
+                    assert (success);
+
+                    synchronized (syncObject) {
+                        t2State.set("before_read");
+                    }
+
+
+                    synchronized (syncObject) {
+                        while (!t1State.get().equals("after_set")) {
+                            try {
+                                syncObject.wait();
+                            } catch (InterruptedException e) {
+                            }
+                        }
+                    }
+
+                    val = noSqlStorage.getKeyValue_Transaction("Key");
+
+                    assertEquals(val.value, "Value2");
+
+                    t2Failed.set(false);
+                } catch (Exception ignored) {
+                }
+            };
+
+            Thread t1 = new Thread(r1);
+            Thread t2 = new Thread(r2);
+
+            t1.start();
+            t2.start();
+
+            t1.join();
+            t2.join();
+
+            assertTrue(!t1Failed.get() && !t2Failed.get());
         } else {
             throw new UnsupportedOperationException();
         }
@@ -205,6 +313,29 @@ public class StorageTest {
             assertEquals(returnedValue, "returned value");
             KeyValueInfo value = storage.getKeyValue("Key");
             assertEquals(value.value, "Value");
+        } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
+            NoSQLStorage_1 noSqlStorage = (NoSQLStorage_1) storage;
+            {
+                noSqlStorage.setKeyValue_Transaction("Key", new KeyValueInfoWithLastUpdated("Value", null));
+                KeyValueInfo value = noSqlStorage.getKeyValue("Key");
+                assertEquals(value.value, "Value");
+            }
+            {
+                KeyValueInfoWithLastUpdated newKey = noSqlStorage.getKeyValue_Transaction("Key");
+                noSqlStorage
+                        .setKeyValue_Transaction("Key",
+                                new KeyValueInfoWithLastUpdated("Value2", newKey.lastUpdatedSign));
+                KeyValueInfo value = noSqlStorage.getKeyValue("Key");
+                assertEquals(value.value, "Value2");
+            }
+            {
+                KeyValueInfoWithLastUpdated newKey = noSqlStorage.getKeyValue_Transaction("Key");
+                noSqlStorage
+                        .setKeyValue_Transaction("Key",
+                                new KeyValueInfoWithLastUpdated("Value3", "someRandomLastUpdatedSign"));
+                KeyValueInfo value = noSqlStorage.getKeyValue("Key");
+                assertEquals(value.value, "Value2");
+            }
         } else {
             throw new UnsupportedOperationException();
         }
@@ -229,6 +360,8 @@ public class StorageTest {
             });
             KeyValueInfo value = storage.getKeyValue("Key");
             assertEquals(value.value, "Value");
+        } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
+            // not applicable
         } else {
             throw new UnsupportedOperationException();
         }
@@ -259,6 +392,8 @@ public class StorageTest {
             }
             KeyValueInfo value = storage.getKeyValue("Key");
             assertNull(value);
+        } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
+            // not applicable
         } else {
             throw new UnsupportedOperationException();
         }
@@ -289,6 +424,8 @@ public class StorageTest {
             }
             KeyValueInfo value = storage.getKeyValue("Key");
             assertNull(value);
+        } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
+            // not applicable
         } else {
             throw new UnsupportedOperationException();
         }
@@ -423,8 +560,8 @@ public class StorageTest {
                         "}";
                 HttpRequest
                         .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/handshake",
-                                new JsonParser().parse(jsonInput), 1000,
-                                10000,
+                                new JsonParser().parse(jsonInput), 10000,
+                                20000,
                                 null);
                 success = true;
             } catch (Exception ignored) {

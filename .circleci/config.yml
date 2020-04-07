@@ -3,6 +3,10 @@ jobs:
   test:
     docker:
       - image: rishabhpoddar/supertokens_core_testing
+      - image: mongo
+      environment:
+        MONGO_INITDB_ROOT_USERNAME: root
+        MONGO_INITDB_ROOT_PASSWORD: root
     steps:
       - checkout
       - run: (cd .circleci/ && ./doTests.sh)

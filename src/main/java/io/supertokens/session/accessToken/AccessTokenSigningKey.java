@@ -41,10 +41,12 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.KeyValueInfoWithLastUpdated;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.noSqlStorage.NoSQLStorage_1;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
@@ -133,6 +135,38 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 return key;
 
             });
+        } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
+            NoSQLStorage_1 noSQLStorage = (NoSQLStorage_1) storage;
+
+            while (true) {
+
+                KeyInfo key = null;
+                KeyValueInfoWithLastUpdated keyFromStorage = noSQLStorage.getAccessTokenSigningKey_Transaction();
+                if (keyFromStorage != null) {
+                    key = new KeyInfo(keyFromStorage.value, keyFromStorage.createdAtTime);
+                }
+
+                if (key == null) {
+                    String signingKey;
+                    try {
+                        Utils.PubPriKey rsaKeys = Utils.generateNewPubPriKey();
+                        signingKey = rsaKeys.toString();
+                    } catch (NoSuchAlgorithmException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                    key = new KeyInfo(signingKey, System.currentTimeMillis());
+                    boolean success = noSQLStorage.setAccessTokenSigningKey_Transaction(
+                            new KeyValueInfoWithLastUpdated(key.value, key.createdAtTime,
+                                    null));
+                    if (!success) {
+                        // something else already updated this particular field. So we must try again.
+                        continue;
+                    }
+                }
+
+                return key;
+
+            }
         }
 
         throw new QuitProgramException("Unsupported storage type detected");
