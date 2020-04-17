@@ -12,7 +12,7 @@ SuperTokens is an advanced session management solution for web and mobile apps. 
  solutions because it prevents all session related attacks, as well as detects session hijacking using rotating
   refresh tokens.
 
-Learn more at https://supertokens.io
+**Works with all web frameworks like NodeJS, Laravel etc.** Learn more at https://supertokens.io
 
 ## Documentation
 To see documentation, please click [here](https://supertokens.io/docs/community/tech-stack).
