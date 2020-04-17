@@ -371,6 +371,36 @@ public class StorageTest {
     }
 
     @Test
+    public void transactionDoNotInsertIfAlreadyExistsForNoSQL()
+            throws InterruptedException, StorageQueryException {
+        String[] args = {"../", "DEV"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+        if (storage.getType() == STORAGE_TYPE.SQL) {
+            // not applicable
+        } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
+            NoSQLStorage_1 noSqlStorage = (NoSQLStorage_1) storage;
+
+            boolean success = noSqlStorage
+                    .setKeyValue_Transaction("Key", new KeyValueInfoWithLastUpdated("Value", null));
+
+            assert (success);
+
+            success = noSqlStorage.setKeyValue_Transaction("Key", new KeyValueInfoWithLastUpdated("Value2", null));
+
+            assert (!success);
+
+        } else {
+            throw new UnsupportedOperationException();
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void transactionThrowCompileTimeErrorAndExpectRollbackTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../", "DEV"};
