@@ -38,7 +38,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -51,66 +50,54 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
 
-public class RefreshSessionAPI extends WebserverAPI {
-    private static final long serialVersionUID = 7142317017402226537L;
+public class SessionRegenerateAPI extends WebserverAPI {
 
-    public RefreshSessionAPI(Main main) {
+    private static final long serialVersionUID = -6614427303762598143L;
+
+    public SessionRegenerateAPI(Main main) {
         super(main);
     }
 
     @Override
     public String getPath() {
-        return "/session/refresh";
+        return "/session/regenerate";
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // Do not modify after and including this line
-        if (sendRandomUnauthorisedIfDevLicenseAndSomeTimeHasPassed(resp)) {
-            return;
+        if (this.version.equals("1.0")) {
+            throw new ServletException(
+                    new BadRequestException("CDI version not supported"));
         }
-        // Do not modify before and including this line
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String refreshToken = InputParser.parseStringOrThrowError(input, "refreshToken", false);
-        assert refreshToken != null;
+
+        String accessToken = InputParser.parseStringOrThrowError(input, "accessToken", false);
+        assert accessToken != null;
+
+        JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", true);
 
         try {
-            SessionInformationHolder sessionInfo = Session
-                    .refreshSession(main, refreshToken);
+            SessionInformationHolder sessionInfo = Session.regenerateToken(main, accessToken, userDataInJWT);
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
 
-            if (this.version.equals("1.0")) {
-                result.getAsJsonObject("accessToken").remove("sameSite");
-                result.getAsJsonObject("refreshToken").remove("sameSite");
-                result.getAsJsonObject("idRefreshToken").remove("sameSite");
-                result.getAsJsonObject("idRefreshToken").remove("cookiePath");
-                result.getAsJsonObject("idRefreshToken").remove("cookieSecure");
-                result.getAsJsonObject("idRefreshToken").remove("domain");
-            }
-
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+
+        } catch (StorageQueryException | StorageTransactionLogicException |
+                NoSuchAlgorithmException | InvalidKeyException | SignatureException | InvalidKeySpecException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
             super.sendJsonResponse(200, reply, resp);
-        } catch (TokenTheftDetectedException e) {
-            JsonObject reply = new JsonObject();
-            reply.addProperty("status", "TOKEN_THEFT_DETECTED");
-
-            JsonObject session = new JsonObject();
-            session.addProperty("handle", e.sessionHandle);
-            session.addProperty("userId", e.userId);
-            reply.add("session", session);
-
-            super.sendJsonResponse(200, reply, resp);
         }
-
-        super.saveDeviceDriverInfoIfPresent(input);
     }
+
 }

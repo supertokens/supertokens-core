@@ -37,57 +37,74 @@ package io.supertokens.session.jwt;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.utils.Utils;
 
-import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 
 public class JWT {
-    private static String HEADER = null;
+    private static String HEADERv1 = null;
+    private static String HEADERv2 = null;
 
-    private static void initHeader() throws UnsupportedEncodingException {
-        if (HEADER == null) {
+    private static void initHeader() {
+        if (HEADERv1 == null) {
             JsonObject header = new JsonObject();
             header.addProperty("alg", "RS256");
             header.addProperty("typ", "JWT");
             header.addProperty("version", "1");
-            JWT.HEADER = Utils.convertToBase64(header.toString());
+            JWT.HEADERv1 = Utils.convertToBase64(header.toString());
+        }
+        if (HEADERv2 == null) {
+            JsonObject header = new JsonObject();
+            header.addProperty("alg", "RS256");
+            header.addProperty("typ", "JWT");
+            header.addProperty("version", "2");
+            JWT.HEADERv2 = Utils.convertToBase64(header.toString());
         }
     }
 
-    public static String createJWT(JsonElement jsonObj, String privateSigningKey)
-            throws InvalidKeyException, NoSuchAlgorithmException, UnsupportedEncodingException,
+    public static String createJWT(JsonElement jsonObj, String privateSigningKey, AccessToken.VERSION version)
+            throws InvalidKeyException, NoSuchAlgorithmException,
             InvalidKeySpecException, SignatureException {
         initHeader();
         String payload = Utils.convertToBase64(jsonObj.toString());
-        String signature = Utils.signWithPrivateKey(JWT.HEADER + "." + payload, privateSigningKey);
-        return JWT.HEADER + "." + payload + "." + signature;
+        String header = version == AccessToken.VERSION.V1 ? JWT.HEADERv1 : JWT.HEADERv2;
+        String signature = Utils.signWithPrivateKey(header + "." + payload, privateSigningKey);
+        return header + "." + payload + "." + signature;
     }
 
-    public static JsonElement verifyJWTAndGetPayload(String jwt, String publicSigningKey)
-            throws InvalidKeyException, NoSuchAlgorithmException, JWTException, UnsupportedEncodingException {
+    public static JWTInfo verifyJWTAndGetPayload(String jwt, String publicSigningKey)
+            throws InvalidKeyException, NoSuchAlgorithmException, JWTException {
         initHeader();
         String[] splittedInput = jwt.split("\\.");
         if (splittedInput.length != 3) {
             throw new JWTException("Invalid JWT");
         }
         // checking header
-        if (!splittedInput[0].equals(JWT.HEADER)) {
+        if (!splittedInput[0].equals(JWT.HEADERv1) && !splittedInput[0].equals(JWT.HEADERv2)) {
             throw new JWTException("JWT header mismatch");
         }
         // verifying signature
         String payload = splittedInput[1];
         try {
-            if (!Utils.verifyWithPublicKey(JWT.HEADER + "." + payload, splittedInput[2], publicSigningKey)) {
+            if (!Utils.verifyWithPublicKey(splittedInput[0] + "." + payload, splittedInput[2], publicSigningKey)) {
                 throw new JWTException("JWT verification failed");
             }
         } catch (InvalidKeySpecException | SignatureException e) {
             throw new JWTException("JWT verification failed");
         }
-        return new JsonParser().parse(Utils.convertFromBase64(splittedInput[1]));
+        return new JWTInfo(new JsonParser().parse(Utils.convertFromBase64(splittedInput[1])),
+                splittedInput[0].equals(JWT.HEADERv1) ? AccessToken.VERSION.V1 : AccessToken.VERSION.V2);
+    }
+
+    public static JWTInfo getPayloadWithoutVerifying(String jwt) {
+        initHeader();
+        String[] splittedInput = jwt.split("\\.");
+        return new JWTInfo(new JsonParser().parse(Utils.convertFromBase64(splittedInput[1])),
+                splittedInput[0].equals(JWT.HEADERv1) ? AccessToken.VERSION.V1 : AccessToken.VERSION.V2);
     }
 
     public static class JWTException extends Exception {
@@ -96,6 +113,17 @@ public class JWT {
 
         JWTException(String err) {
             super(err);
+        }
+    }
+
+    public static class JWTInfo {
+        public final JsonElement payload;
+
+        public final AccessToken.VERSION version;
+
+        public JWTInfo(JsonElement payload, AccessToken.VERSION version) {
+            this.payload = payload;
+            this.version = version;
         }
     }
 }

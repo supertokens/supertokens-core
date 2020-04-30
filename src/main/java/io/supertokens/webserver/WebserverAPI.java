@@ -57,7 +57,7 @@ public abstract class WebserverAPI extends HttpServlet {
     private static final long serialVersionUID = 1L;
     protected final Main main;
     protected String version = null;
-    private static final Set<String> supportedVersions = new HashSet<>();
+    public static final Set<String> supportedVersions = new HashSet<>();
 
     static {
         supportedVersions.add("1.0");
@@ -146,16 +146,25 @@ public abstract class WebserverAPI extends HttpServlet {
         }
     }
 
+    protected boolean versionNeeded() {
+        return true;
+    }
+
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
-            String version = req.getHeader("cdi-version");
-            // in api spec 1.0.X, we did not have cdi-version header
-            this.version = version == null ? "1.0" : version;
-            assertThatVersionIsCompatible();
-
-            Logging.debug(main,
-                    "API called: " + this.getPath() + ". Method: " + req.getMethod() + ". Version: " + this.version);
+            if (this.versionNeeded()) {
+                String version = req.getHeader("cdi-version");
+                // in api spec 1.0.X, we did not have cdi-version header
+                this.version = version == null ? "1.0" : version;
+                assertThatVersionIsCompatible();
+                Logging.debug(main,
+                        "API called: " + this.getPath() + ". Method: " + req.getMethod() + ". Version: " +
+                                this.version);
+            } else {
+                Logging.debug(main,
+                        "API called: " + this.getPath() + ". Method: " + req.getMethod());
+            }
             super.service(req, resp);
         } catch (Exception e) {
             Logging.error(main, "API threw an exception: " + this.getPath(),

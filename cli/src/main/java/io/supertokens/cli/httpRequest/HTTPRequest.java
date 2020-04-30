@@ -68,7 +68,7 @@ public class HTTPRequest {
     }
 
     @SuppressWarnings("unchecked")
-    public static <T> T sendGETRequest(String url, Map<String, String> params, Integer version)
+    public static <T> T sendGETRequest(String url, Map<String, String> params, Integer version, String cdiVersion)
             throws IOException, HTTPResponseException {
         StringBuilder paramBuilder = new StringBuilder();
 
@@ -92,6 +92,9 @@ public class HTTPRequest {
             con = (HttpURLConnection) obj.openConnection();
             if (version != null) {
                 con.setRequestProperty("api-version", version + "");
+            }
+            if (cdiVersion != null) {
+                con.setRequestProperty("cdi-version", cdiVersion);
             }
 
             int responseCode = con.getResponseCode();

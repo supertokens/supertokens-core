@@ -86,7 +86,7 @@ public class VerifySessionAPI extends WebserverAPI {
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
 
-            if (result.has("accessToken")) {
+            if (result.has("accessToken") && this.version.equals("1.0")) {
                 result.getAsJsonObject("accessToken").remove("sameSite");
             }
 

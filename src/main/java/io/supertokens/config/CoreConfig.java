@@ -91,6 +91,9 @@ public class CoreConfig {
     @JsonProperty
     private int max_server_pool_size = 10;
 
+    @JsonProperty
+    private int session_expired_status_code = 440;
+
     //	TODO: add https in later version
 //	# (OPTIONAL) boolean value (true or false). Set to true if you want to enable https requests to SuperTokens.
 //	# If you are not running SuperTokens within a closed network along with your API process, for 
@@ -165,6 +168,10 @@ public class CoreConfig {
         return cookie_secure;
     }
 
+    public int getSessionExpiredStatusCode() {
+        return session_expired_status_code;
+    }
+
     public int getPort(Main main) {
         Integer cliPort = CLIOptions.get(main).getPort();
         if (cliPort != null) {
@@ -235,6 +242,11 @@ public class CoreConfig {
         if (!cookie_same_site.toLowerCase().equals("none") && !cookie_same_site.toLowerCase().equals("lax") &&
                 !cookie_same_site.toLowerCase().equals("strict")) {
             throw new QuitProgramException("'cookie_same_site' must be either \"none\", \"strict\" or \"lax\"");
+        }
+
+        if (session_expired_status_code < 400 || session_expired_status_code >= 600) {
+            throw new QuitProgramException(
+                    "'session_expired_status_code' must be a value between 400 and 599, inclusive");
         }
 
         if (!getInfoLogPath(main).equals("null")) {

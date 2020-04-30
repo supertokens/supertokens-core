@@ -91,7 +91,7 @@ public class SessionDataAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         try {
-            Session.updateSessionData(main, sessionHandle, userDataInDatabase);
+            Session.updateSession(main, sessionHandle, userDataInDatabase, null, null);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

@@ -90,3 +90,7 @@ cookie_domain: "supertokens.io"
 
 # (OPTIONAL | Default: 10) integer value. Sets the max thread pool size to incoming http serve requests.
 # max_server_pool_size:
+
+
+# (OPTIONAL | Default: 440) integer value. The status code your backend APIs send on session expiry
+# session_expired_status_code:

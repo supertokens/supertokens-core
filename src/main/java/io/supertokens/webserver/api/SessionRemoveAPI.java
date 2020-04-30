@@ -34,16 +34,12 @@
 
 package io.supertokens.webserver.api;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
-import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -51,73 +47,30 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
-import java.security.spec.InvalidKeySpecException;
 
-public class SessionAPI extends WebserverAPI {
-    private static final long serialVersionUID = 7142317017402226537L;
+public class SessionRemoveAPI extends WebserverAPI {
+    private static final long serialVersionUID = -2082970815993229316L;
 
-    public SessionAPI(Main main) {
+    public SessionRemoveAPI(Main main) {
         super(main);
     }
 
     @Override
     public String getPath() {
-        return "/session";
+        return "/session/remove";
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
-        assert userId != null;
-        JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", false);
-        assert userDataInJWT != null;
-        JsonObject userDataInDatabase = InputParser.parseJsonObjectOrThrowError(input, "userDataInDatabase", false);
-        assert userDataInDatabase != null;
-
-        try {
-            SessionInformationHolder sessionInfo = Session
-                    .createNewSession(main, userId, userDataInJWT, userDataInDatabase);
-
-            JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
-
-            if (this.version.equals("1.0")) {
-                result.getAsJsonObject("accessToken").remove("sameSite");
-                result.getAsJsonObject("refreshToken").remove("sameSite");
-                result.getAsJsonObject("idRefreshToken").remove("sameSite");
-                result.getAsJsonObject("idRefreshToken").remove("cookiePath");
-                result.getAsJsonObject("idRefreshToken").remove("cookieSecure");
-                result.getAsJsonObject("idRefreshToken").remove("domain");
-            }
-
-            result.addProperty("status", "OK");
-            result.addProperty("jwtSigningPublicKey", AccessTokenSigningKey.getInstance(main).getKey().publicKey);
-            result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
-            super.sendJsonResponse(200, result, resp);
-        } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException |
-                StorageTransactionLogicException | SignatureException e) {
-            throw new ServletException(e);
-        }
-
-        super.saveDeviceDriverInfoIfPresent(input);
-    }
-
-    @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        if (this.version.equals("2.0")) {
+        if (this.version.equals("1.0")) {
             throw new ServletException(
                     new BadRequestException(
-                            "/session DELETE is only available in CDI 1.0. Please call /session/remove POST instead"));
+                            "/session/remove POST is only available in >= CDI 2.0. Please call /session DELETE " +
+                                    "instead"));
         }
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", true);
-
-        String sessionHandle = InputParser.parseStringOrThrowError(input, "sessionHandle", true);
 
         JsonArray arr = InputParser.parseArrayOrThrowError(input, "sessionHandles", true);
         String[] sessionHandles = null;
@@ -133,44 +86,38 @@ public class SessionAPI extends WebserverAPI {
         if (userId != null) {
             numberOfNullItems++;
         }
-        if (sessionHandle != null) {
-            numberOfNullItems++;
-        }
         if (sessionHandles != null) {
             numberOfNullItems++;
         }
         if (numberOfNullItems == 0 || numberOfNullItems > 1) {
             throw new ServletException(new BadRequestException(
-                    "Invalid JSON input - use one of userId, sessionHandle, or sessionHandles array"));
+                    "Invalid JSON input - use one of userId or sessionHandles array"));
         }
 
         if (userId != null) {
             try {
-                int numberOfSessionsRevoked = Session.revokeAllSessionsForUser(main, userId).length;
+                String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(main, userId);
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
-                result.addProperty("numberOfSessionsRevoked", numberOfSessionsRevoked);
-                super.sendJsonResponse(200, result, resp);
-            } catch (StorageQueryException e) {
-                throw new ServletException(e);
-            }
-        } else if (sessionHandle != null) {
-            try {
-                int numberOfSessionsRevoked = Session
-                        .revokeSessionUsingSessionHandles(main, new String[]{sessionHandle}).length;
-                JsonObject result = new JsonObject();
-                result.addProperty("status", "OK");
-                result.addProperty("numberOfSessionsRevoked", numberOfSessionsRevoked);
+                JsonArray sessionHandlesRevokedJSON = new JsonArray();
+                for (String sessionHandle : sessionHandlesRevoked) {
+                    sessionHandlesRevokedJSON.add(new JsonPrimitive(sessionHandle));
+                }
+                result.add("sessionHandlesRevoked", sessionHandlesRevokedJSON);
                 super.sendJsonResponse(200, result, resp);
             } catch (StorageQueryException e) {
                 throw new ServletException(e);
             }
         } else {
             try {
-                int numberOfSessionsRevoked = Session.revokeSessionUsingSessionHandles(main, sessionHandles).length;
+                String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(main, sessionHandles);
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
-                result.addProperty("numberOfSessionsRevoked", numberOfSessionsRevoked);
+                JsonArray sessionHandlesRevokedJSON = new JsonArray();
+                for (String sessionHandle : sessionHandlesRevoked) {
+                    sessionHandlesRevokedJSON.add(new JsonPrimitive(sessionHandle));
+                }
+                result.add("sessionHandlesRevoked", sessionHandlesRevokedJSON);
                 super.sendJsonResponse(200, result, resp);
             } catch (StorageQueryException e) {
                 throw new ServletException(e);
@@ -178,3 +125,4 @@ public class SessionAPI extends WebserverAPI {
         }
     }
 }
+

@@ -155,6 +155,28 @@ public class InputParser {
         }
     }
 
+    public static Long parseLongOrThrowError(JsonObject element, String fieldName, boolean nullable)
+            throws ServletException {
+        try {
+            if (nullable && element.get(fieldName) == null) {
+                return null;
+
+            }
+            String stringified = element.toString();
+            if (!stringified.contains("\"")) {
+                throw new Exception();
+
+            }
+            return element.get(fieldName).getAsLong();
+
+        } catch (Exception e) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("Field name '" + fieldName + "' is invalid in JSON input"));
+
+        }
+
+    }
+
     public static DeviceDriverInfo parseDeviceDriverInfo(JsonObject element) throws ServletException {
         try {
             if (!element.has("deviceDriverInfo")) {

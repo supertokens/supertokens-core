@@ -10,7 +10,7 @@ plugins {
     id 'application'
 }
 
-version = "2.0.0"
+version = "2.1.0"
 
 repositories {
     jcenter()
@@ -46,6 +46,8 @@ dependencies {
     // https://mvnrepository.com/artifact/org.mockito/mockito-core
     testCompile group: 'org.mockito', name: 'mockito-core', version: '3.1.0'
 
+    // https://mvnrepository.com/artifact/org.jetbrains/annotations
+    compile group: 'org.jetbrains', name: 'annotations', version: '13.0'
 
 }
 

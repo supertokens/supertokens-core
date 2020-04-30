@@ -105,7 +105,7 @@ public class LoadLicenseHandler extends CommandHandler {
             Map<String, String> params = new HashMap<>();
             params.put("licenseKeyId", id);
             JsonObject response = HTTPRequest
-                    .sendGETRequest("https://api.supertokens.io/0/license-key/", params, 0);
+                    .sendGETRequest("https://api.supertokens.io/0/license-key/", params, 0, null);
             if (!response.has("latestLicenseKey")) {
                 throw new QuitProgramException("'latestLicenseKey' key missing from response JSON", null);
             }

@@ -35,7 +35,6 @@
 package io.supertokens.session.accessToken;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
@@ -69,10 +68,10 @@ public class AccessToken {
 
         Utils.PubPriKey signingKey = AccessTokenSigningKey.getInstance(main).getKey();
         try {
-            final JsonElement payload;
+            final JWT.JWTInfo jwtInfo;
             try {
-                payload = JWT.verifyJWTAndGetPayload(token, signingKey.publicKey);
-            } catch (InvalidKeyException | NoSuchAlgorithmException | JWTException | UnsupportedEncodingException e) {
+                jwtInfo = JWT.verifyJWTAndGetPayload(token, signingKey.publicKey);
+            } catch (InvalidKeyException | NoSuchAlgorithmException | JWTException e) {
                 if (retry) {
                     ProcessState.getInstance(main).addState(PROCESS_STATE.RETRYING_ACCESS_TOKEN_JWT_VERIFICATION, e);
 
@@ -83,19 +82,28 @@ public class AccessToken {
                     throw e;
                 }
             }
-            AccessTokenInfo tokenInfo = new Gson().fromJson(payload, AccessTokenInfo.class);
-            if (tokenInfo.sessionHandle == null || tokenInfo.userId == null || tokenInfo.refreshTokenHash1 == null
-                    || tokenInfo.userData == null
-                    || (doAntiCsrfCheck && tokenInfo.antiCsrfToken == null)) {
-                throw new TryRefreshTokenException(
-                        "Access token does not contain all the information. Maybe the structure has changed?");
+            AccessTokenInfo tokenInfo = new Gson().fromJson(jwtInfo.payload, AccessTokenInfo.class);
+            if (jwtInfo.version == VERSION.V1) {
+                if (tokenInfo.sessionHandle == null || tokenInfo.userId == null || tokenInfo.refreshTokenHash1 == null
+                        || tokenInfo.userData == null
+                        || (doAntiCsrfCheck && tokenInfo.antiCsrfToken == null)) {
+                    throw new TryRefreshTokenException(
+                            "Access token does not contain all the information. Maybe the structure has changed?");
+                }
+            } else {
+                if (tokenInfo.sessionHandle == null || tokenInfo.userId == null || tokenInfo.refreshTokenHash1 == null
+                        || tokenInfo.userData == null || tokenInfo.lmrt == null
+                        || (doAntiCsrfCheck && tokenInfo.antiCsrfToken == null)) {
+                    throw new TryRefreshTokenException(
+                            "Access token does not contain all the information. Maybe the structure has changed?");
+                }
             }
             if (tokenInfo.expiryTime < System.currentTimeMillis()) {
                 throw new TryRefreshTokenException("Access token expired");
             }
 
             return tokenInfo;
-        } catch (InvalidKeyException | NoSuchAlgorithmException | JWTException | UnsupportedEncodingException e) {
+        } catch (InvalidKeyException | NoSuchAlgorithmException | JWTException e) {
             throw new TryRefreshTokenException(e);
         }
 
@@ -107,24 +115,63 @@ public class AccessToken {
         return getInfoFromAccessToken(main, token, true, doAntiCsrfCheck);
     }
 
+    public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(@Nonnull String token) {
+        return new Gson()
+                .fromJson(JWT.getPayloadWithoutVerifying(token).payload, AccessTokenInfo.class);
+    }
+
     public static TokenInfo createNewAccessToken(@Nonnull Main main, @Nonnull String sessionHandle,
                                                  @Nonnull String userId, @Nonnull String refreshTokenHash1,
                                                  @Nullable String parentRefreshTokenHash1,
-                                                 @Nonnull JsonObject userData, @Nullable String antiCsrfToken)
+                                                 @Nonnull JsonObject userData, @Nullable String antiCsrfToken,
+                                                 long lmrt, @Nullable Long expiryTime)
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
 
         Utils.PubPriKey signingKey = AccessTokenSigningKey.getInstance(main).getKey();
         long now = System.currentTimeMillis();
-        long expiryTime = now + Config.getConfig(main).getAccessTokenValidity();
+        if (expiryTime == null) {
+            expiryTime = now + Config.getConfig(main).getAccessTokenValidity();
+        }
         AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime,
                 parentRefreshTokenHash1, userData, antiCsrfToken, now,
-                LicenseKey.get(main).getPlanType() != PLAN_TYPE.FREE);
-        String token = JWT.createJWT(new Gson().toJsonTree(accessToken), signingKey.privateKey);
+                LicenseKey.get(main).getPlanType() != PLAN_TYPE.FREE, lmrt);
+        String token = JWT.createJWT(new Gson().toJsonTree(accessToken), signingKey.privateKey, VERSION.V2);
         return new TokenInfo(token, expiryTime, now, Config.getConfig(main).getAccessTokenPath(),
                 Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain(),
                 Config.getConfig(main).getCookieSameSite());
 
+    }
+
+    public static TokenInfo createNewAccessTokenV1(@Nonnull Main main, @Nonnull String sessionHandle,
+                                                   @Nonnull String userId, @Nonnull String refreshTokenHash1,
+                                                   @Nullable String parentRefreshTokenHash1,
+                                                   @Nonnull JsonObject userData, @Nullable String antiCsrfToken)
+            throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
+            NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
+
+        Utils.PubPriKey signingKey = AccessTokenSigningKey.getInstance(main).getKey();
+        long now = System.currentTimeMillis();
+        AccessTokenInfo accessToken;
+
+        long expiryTime = now + Config.getConfig(main).getAccessTokenValidity();
+        accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime,
+                parentRefreshTokenHash1, userData, antiCsrfToken, now,
+                LicenseKey.get(main).getPlanType() != PLAN_TYPE.FREE, null);
+
+
+        String token = JWT.createJWT(new Gson().toJsonTree(accessToken), signingKey.privateKey, VERSION.V1);
+        return new TokenInfo(token, expiryTime, now, Config.getConfig(main).getAccessTokenPath(),
+                Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain(),
+                Config.getConfig(main).getCookieSameSite());
+
+    }
+
+    public static VERSION getAccessTokenVersion(AccessTokenInfo accessToken) {
+        if (accessToken.lmrt == null) {
+            return VERSION.V1;
+        }
+        return VERSION.V2;
     }
 
     public static class AccessTokenInfo {
@@ -140,13 +187,16 @@ public class AccessToken {
         public final JsonObject userData;
         @Nullable
         public final String antiCsrfToken;
-        final long expiryTime;
+        public final long expiryTime;
         final long timeCreated;
         final boolean isPaid;
+        @Nullable
+        public final Long lmrt; // lastManualRegenerationTime - nullable since v1 of JWT does not have this
 
         AccessTokenInfo(@Nonnull String sessionHandle, @Nonnull String userId, @Nonnull String refreshTokenHash1,
                         long expiryTime, @Nullable String parentRefreshTokenHash1, @Nonnull JsonObject userData,
-                        @Nullable String antiCsrfToken, long timeCreated, boolean isPaid) {
+                        @Nullable String antiCsrfToken, long timeCreated, boolean isPaid,
+                        @Nullable Long lmrt) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.refreshTokenHash1 = refreshTokenHash1;
@@ -156,6 +206,11 @@ public class AccessToken {
             this.antiCsrfToken = antiCsrfToken;
             this.timeCreated = timeCreated;
             this.isPaid = isPaid;
+            this.lmrt = lmrt;
         }
+    }
+
+    public enum VERSION {
+        V1, V2
     }
 }

@@ -35,6 +35,7 @@
 package io.supertokens.test;
 
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.PluginInterfaceTesting;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
@@ -83,8 +84,13 @@ abstract class Utils extends Mockito {
         }
     }
 
+    static String getCdiVersion2ForTests() {
+        return "2.0";
+    }
+
     public static void reset() {
         Main.isTesting = true;
+        PluginInterfaceTesting.isTesting = true;
         Main.makeConsolePrintSilent = true;
         String installDir = "../";
         try {
