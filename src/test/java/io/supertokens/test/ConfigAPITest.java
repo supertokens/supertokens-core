@@ -103,6 +103,46 @@ public class ConfigAPITest {
 
     }
 
+    @Test
+    public void testVersion2InputErrorConfigAPITest() throws Exception {
+        String[] args = {"../", "DEV"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        //null for parameters
+        try {
+            io.supertokens.test.httpRequest
+                    .HttpRequest
+                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", null, 1000, 1000, null,
+                            Utils.getCdiVersion2ForTests());
+            fail();
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertTrue(e.getMessage()
+                    .equals("Http error. Status Code: 400. Message: Field name 'pid' is missing in GET request") &&
+                    e.statusCode == 400);
+        }
+
+        //typo in parameter
+        try {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("pd", ProcessHandle.current().pid() + "");
+            io.supertokens.test.httpRequest
+                    .HttpRequest
+                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
+                            Utils.getCdiVersion2ForTests());
+            fail();
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertTrue(e.getMessage()
+                    .equals("Http error. Status Code: 400. Message: Field name 'pid' is missing in GET request") &&
+                    e.statusCode == 400);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+    }
+
 
     @Test
     public void testCustomConfigPath() throws Exception {
@@ -120,6 +160,33 @@ public class ConfigAPITest {
         //check regular output
         JsonObject response = HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null);
+
+        assertEquals(response.get("status").getAsString(), "OK");
+        assertEquals(response.get("path").getAsString(), path);
+        assertEquals(response.entrySet().size(), 2);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testVersion2TestCustomConfigPath() throws Exception {
+        String path = new File("../temp/config.yaml").getAbsolutePath();
+        String[] args = {"../", "DEV", "configFile=" + path};
+
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // map to store pid as parameter
+        Map<String, String> map = new HashMap<>();
+        map.put("pid", ProcessHandle.current().pid() + "");
+
+        //check regular output
+        JsonObject response = io.supertokens.test.httpRequest
+                .HttpRequest
+                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
+                        Utils.getCdiVersion2ForTests());
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.get("path").getAsString(), path);
@@ -161,6 +228,50 @@ public class ConfigAPITest {
 
         response = HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null);
+
+        assertEquals(response.get("status").getAsString(), "NOT ALLOWED");
+        assertEquals(response.entrySet().size(), 1);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testVersion2OutputPossibilitiesConfigAPITest() throws Exception {
+        String[] args = {"../", "DEV"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Main main = process.getProcess();
+        String path = CLIOptions.get(main).getConfigFilePath() == null
+                ? CLIOptions.get(main).getInstallationPath() + "config.yaml"
+                : CLIOptions.get(main).getConfigFilePath();
+        File f = new File(path);
+        path = f.getAbsolutePath();
+
+        //map to store pid as parameter
+        HashMap<String, String> map = new HashMap<>();
+        map.put("pid", ProcessHandle.current().pid() + "");
+
+        //check regular output
+        JsonObject response = io.supertokens.test.httpRequest
+                .HttpRequest
+                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
+                        Utils.getCdiVersion2ForTests());
+
+        assertEquals(response.get("status").getAsString(), "OK");
+        assertEquals(response.get("path").getAsString(), path);
+        assertEquals(response.entrySet().size(), 2);
+
+        //incorrect PID input in parameter
+        map = new HashMap<>();
+        map.put("pid", "-1");
+
+        response = io.supertokens.test.httpRequest
+                .HttpRequest
+                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
+                        Utils.getCdiVersion2ForTests());
 
         assertEquals(response.get("status").getAsString(), "NOT ALLOWED");
         assertEquals(response.entrySet().size(), 1);

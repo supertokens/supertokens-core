@@ -106,7 +106,7 @@ public class SessionTest3 {
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 2);
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 2);
 
-        Session.revokeSessionUsingSessionHandle(process.getProcess(), sessionInfo.session.handle);
+        Session.revokeSessionUsingSessionHandles(process.getProcess(), new String[]{sessionInfo.session.handle});
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 2);
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
@@ -151,7 +151,8 @@ public class SessionTest3 {
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
 
-        assertEquals(Session.revokeSessionUsingSessionHandle(process.getProcess(), sessionInfo.session.handle), 1);
+        assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(),
+                new String[]{sessionInfo.session.handle})[0], sessionInfo.session.handle);
 
         Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken,
                 true);
@@ -216,7 +217,7 @@ public class SessionTest3 {
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 4);
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 4);
 
-        assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), userId), 3);
+        assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), userId).length, 3);
 
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 4);
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);

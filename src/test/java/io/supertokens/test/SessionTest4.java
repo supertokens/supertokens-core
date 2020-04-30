@@ -101,7 +101,8 @@ public class SessionTest4 {
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
                 userDataInDatabase);
 
-        assertEquals(Session.revokeSessionUsingSessionHandle(process.getProcess(), sessionInfo.session.handle), 1);
+        assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(),
+                new String[]{sessionInfo.session.handle})[0], sessionInfo.session.handle);
 
         SessionInformationHolder sessionInfo2 = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
                 userDataInDatabase);
@@ -115,7 +116,17 @@ public class SessionTest4 {
                 userDataInDatabase);
 
         String[] handles = {sessionInfo2.session.handle, sessionInfo3.session.handle, sessionInfo4.session.handle};
-        assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(), handles), 3);
+        String[] actuallyRevoked = Session.revokeSessionUsingSessionHandles(process.getProcess(), handles);
+        boolean revokedAll = true;
+        assertEquals(actuallyRevoked.length, 3);
+        for (String str : handles) {
+            boolean revokedThis = false;
+            for (String revoked : actuallyRevoked) {
+                revokedThis = revokedThis || revoked.equals(str);
+            }
+            revokedAll = revokedAll && revokedThis;
+        }
+        assertTrue(revokedAll);
 
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 2);
 
@@ -126,17 +137,18 @@ public class SessionTest4 {
         Session.createNewSession(process.getProcess(), userId, userDataInJWT,
                 userDataInDatabase);
 
-        assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), userId), 4);
+        assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), userId).length, 4);
 
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
-        assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), "userId2"), 1);
+        assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), "userId2").length, 1);
 
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 0);
 
-        assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(), handles), 0);
-        assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), "userId2"), 0);
-        assertEquals(Session.revokeSessionUsingSessionHandle(process.getProcess(), sessionInfo.session.handle), 0);
+        assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(), handles).length, 0);
+        assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), "userId2").length, 0);
+        assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(),
+                new String[]{sessionInfo.session.handle}).length, 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -159,7 +171,7 @@ public class SessionTest4 {
         }
 
         try {
-            Session.updateSessionData(process.getProcess(), "random", new JsonObject());
+            Session.updateSession(process.getProcess(), "random", new JsonObject(), null, null);
             fail();
         } catch (UnauthorisedException e) {
             assertEquals(e.getMessage(), "Session does not exist.");

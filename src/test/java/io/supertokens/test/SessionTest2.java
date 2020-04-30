@@ -196,7 +196,7 @@ public class SessionTest2 {
         JsonArray arr = new JsonArray();
         userDataInDatabase2.add("key3", arr);
 
-        Session.updateSessionData(process.getProcess(), sessionInfo.session.handle, userDataInDatabase2);
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase2, null, null);
 
         JsonObject sessionDataAfterUpdate = Session.getSessionData(process.getProcess(), sessionInfo.session.handle);
         assertEquals(userDataInDatabase2.toString(), sessionDataAfterUpdate.toString());
@@ -235,7 +235,7 @@ public class SessionTest2 {
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 2);
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 2);
 
-        Session.revokeSessionUsingSessionHandle(process.getProcess(), sessionInfo.session.handle);
+        Session.revokeSessionUsingSessionHandles(process.getProcess(), new String[]{sessionInfo.session.handle});
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 2);
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 

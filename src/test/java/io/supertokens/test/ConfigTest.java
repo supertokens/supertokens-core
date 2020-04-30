@@ -72,6 +72,37 @@ public class ConfigTest {
         Utils.reset();
     }
 
+    // *  - test that if session_expired_status_code has a different, valid value, that is what is being set
+    @Test
+    public void testIfSessionExpiredStatusCodeWithDifferentValidValueIsBeingSet() throws Exception {
+        String[] args = {"../", "DEV"};
+        Utils.setValueInConfig("session_expired_status_code", "555");
+
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        assertEquals(Config.getConfig(process.getProcess()).getSessionExpiredStatusCode(), 555);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    //- test for session_expired_status_code config -> default is 440; range is >= 400, < 600;
+    @Test
+    public void testSessionExpiredStatusCodeRangeInConfig() throws Exception {
+        String[] args = {"../", "DEV"};
+        Utils.setValueInConfig("session_expired_status_code", "1000");
+        TestingProcess process = TestingProcessManager.start(args);
+        EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(e);
+        assertEquals(e.exception.getMessage(),
+                "'session_expired_status_code' must be a value between 400 and 599, inclusive");
+
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
     @Test
     public void testThatDefaultConfigLoadsCorrectly() throws Exception {
         String[] args = {"../", "DEV"};
@@ -369,6 +400,7 @@ public class ConfigTest {
 
         assertEquals(config.getHost(process.getProcess()), "localhost");
         assertEquals(config.getPort(process.getProcess()), 3567);
+        assertEquals(config.getSessionExpiredStatusCode(), 440);
         assertEquals(10, config.getMaxThreadPoolSize());
         assertFalse(config.getHttpsEnabled());
 

@@ -88,6 +88,85 @@ public class WebserverTest extends Mockito {
         Utils.reset();
     }
 
+    // * - Give all supported versions and make sure it passes
+// * - Give no version and makes sure it treats it as 1.0
+    @Test
+    public void testVersionSupport() throws Exception {
+        String[] args = {"../", "DEV"};
+
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+            private static final long serialVersionUID = -1495165001457526749L;
+
+            @Override
+            public String getPath() {
+                return "/testSupportedVersions";
+            }
+
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                    throws IOException, ServletException {
+                if (WebserverAPI.supportedVersions.contains(this.version)) {
+                    sendTextResponse(200, "version supported", resp);
+                } else {
+                    sendTextResponse(500, "should not come here", resp);
+                }
+            }
+        });
+
+        Object[] supportedVersions = WebserverAPI.supportedVersions.toArray();
+        for (int i = 0; i < supportedVersions.length; i++) {
+            String response = io.supertokens.test.httpRequest.HttpRequest.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/testSupportedVersions", null, 1000,
+                    1000, null, supportedVersions[i]
+                            .toString());
+            assertEquals(response, "version supported");
+        }
+
+        String unsupportedCdiVersion = "234243";
+        try {
+            io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/testSupportedVersions", null, 1000,
+                            1000, null, unsupportedCdiVersion);
+            fail();
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertEquals(e.getMessage(),
+                    "Http error. Status Code: 400. Message: cdi-version " + unsupportedCdiVersion + " not supported");
+        }
+
+    }
+
+    // * - Give no version and makes sure it treats it as 1.0
+    @Test
+    public void testNoVersionGiven() throws Exception {
+        String[] args = {"../", "DEV"};
+
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+            private static final long serialVersionUID = 2132771458741821984L;
+
+            @Override
+            public String getPath() {
+                return "/defaultVersion";
+            }
+
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                    throws IOException, ServletException {
+                sendTextResponse(200, this.version, resp);
+            }
+        });
+
+        String response = io.supertokens.test.httpRequest.HttpRequest
+                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/defaultVersion", null, 1000, 1000,
+                        null, null);
+        assertEquals(response, "1.0");
+    }
+
     @Test
     public void testInvalidJSONBadInput() throws Exception {
         String[] args = {"../", "DEV"};

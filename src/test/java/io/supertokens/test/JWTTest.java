@@ -35,6 +35,7 @@
 package io.supertokens.test;
 
 import com.google.gson.Gson;
+import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.jwt.JWT;
 import io.supertokens.session.jwt.JWT.JWTException;
 import org.junit.AfterClass;
@@ -67,26 +68,51 @@ public class JWTTest {
     // good use case
     @Test
     public void validUsage() throws Exception {
-        TestInput input = new TestInput("value");
-        io.supertokens.utils.Utils.PubPriKey rsa = io.supertokens.utils.Utils.generateNewPubPriKey();
-        String token = JWT.createJWT(new Gson().toJsonTree(input), rsa.privateKey);
-        TestInput output = new Gson().fromJson(JWT.verifyJWTAndGetPayload(token, rsa.publicKey), TestInput.class);
-        assertEquals(input, output);
+        {
+            TestInput input = new TestInput("value");
+            io.supertokens.utils.Utils.PubPriKey rsa = io.supertokens.utils.Utils.generateNewPubPriKey();
+            String token = JWT.createJWT(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V1);
+            TestInput output = new Gson()
+                    .fromJson(JWT.verifyJWTAndGetPayload(token, rsa.publicKey).payload, TestInput.class);
+            assertEquals(input, output);
+        }
+
+        {
+            TestInput input = new TestInput("value");
+            io.supertokens.utils.Utils.PubPriKey rsa = io.supertokens.utils.Utils.generateNewPubPriKey();
+            String token = JWT.createJWT(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V2);
+            TestInput output = new Gson()
+                    .fromJson(JWT.verifyJWTAndGetPayload(token, rsa.publicKey).payload, TestInput.class);
+            assertEquals(input, output);
+        }
     }
 
     // wrong signature error
     @Test
     public void wrongSignatureUsage() throws Exception {
-        TestInput input = new TestInput("value");
-        io.supertokens.utils.Utils.PubPriKey rsa = io.supertokens.utils.Utils.generateNewPubPriKey();
-        String token = JWT.createJWT(new Gson().toJsonTree(input), rsa.privateKey);
-        try {
-            JWT.verifyJWTAndGetPayload(token, "signingKey2");
-        } catch (JWTException e) {
-            assertEquals("JWT verification failed", e.getMessage());
-            return;
+        {
+            TestInput input = new TestInput("value");
+            io.supertokens.utils.Utils.PubPriKey rsa = io.supertokens.utils.Utils.generateNewPubPriKey();
+            String token = JWT.createJWT(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V1);
+            try {
+                JWT.verifyJWTAndGetPayload(token, "signingKey2");
+                fail();
+            } catch (JWTException e) {
+                assertEquals("JWT verification failed", e.getMessage());
+            }
         }
-        fail();
+
+        {
+            TestInput input = new TestInput("value");
+            io.supertokens.utils.Utils.PubPriKey rsa = io.supertokens.utils.Utils.generateNewPubPriKey();
+            String token = JWT.createJWT(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V2);
+            try {
+                JWT.verifyJWTAndGetPayload(token, "signingKey2");
+                fail();
+            } catch (JWTException e) {
+                assertEquals("JWT verification failed", e.getMessage());
+            }
+        }
     }
 
     @Test
