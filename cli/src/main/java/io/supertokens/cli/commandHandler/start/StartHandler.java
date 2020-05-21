@@ -74,6 +74,7 @@ public class StartHandler extends CommandHandler {
         String port = CLIOptionsParser.parseOption("--port", args);
         String host = CLIOptionsParser.parseOption("--host", args);
         boolean foreground = CLIOptionsParser.hasKey("--foreground", args);
+        boolean forceNoInMemDB = CLIOptionsParser.hasKey("--no-in-mem-db", args);
 
         List<String> commands = new ArrayList<>();
         if (OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) {
@@ -85,7 +86,7 @@ public class StartHandler extends CommandHandler {
             }
             commands.add("io.supertokens.Main");
             commands.add("\"" + installationDir + "\\\""); // so many quotes at the end cause installationDir also ends
-                                                           // in \
+            // in \
             commands.add(mode);
             if (configPath != null) {
                 configPath = configPath.replace("\\", "\\\\");
@@ -96,6 +97,9 @@ public class StartHandler extends CommandHandler {
             }
             if (port != null) {
                 commands.add("port=" + port);
+            }
+            if (forceNoInMemDB) {
+                commands.add("forceNoInMemDB=true");
             }
         } else {
             commands.add(installationDir + "jre/bin/java");
@@ -124,7 +128,7 @@ public class StartHandler extends CommandHandler {
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
                 try (InputStreamReader in = new InputStreamReader(process.getInputStream());
-                        BufferedReader reader = new BufferedReader(in)) {
+                     BufferedReader reader = new BufferedReader(in)) {
                     String line;
                     boolean success = false;
                     while ((line = reader.readLine()) != null) {

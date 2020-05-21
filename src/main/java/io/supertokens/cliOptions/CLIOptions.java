@@ -46,22 +46,29 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
     private static final String CONFIG_FILE_KEY = "configFile=";
     private static final String PORT_FILE_KEY = "port=";
     private static final String HOST_FILE_KEY = "host=";
+    private static final String FORCE_NO_IN_MEM_DB = "forceNoInMemDB=true";
+    public static final String MODE_PRODUCTION = "PRODUCTION";
+    public static final String MODE_DEV = "DEV";
     private final String installationPath;
     private final String userDevProductionMode;
     private final String configFilePath;
     private final Integer port;
     private final String host;
 
+    // if this is true, then even in DEV mode, we will not use in memory db, even if there is an error in the plugin
+    private final boolean forceNoInMemoryDB;
+
     private CLIOptions(String[] args) {
         checkIfArgsIsCorrect(args);
         String installationPath = args[0];
         String userDevProductionMode = args[1];
-        if (!userDevProductionMode.equals("DEV") && !userDevProductionMode.equals("PRODUCTION")) {
+        if (!userDevProductionMode.equals(MODE_DEV) && !userDevProductionMode.equals(MODE_PRODUCTION)) {
             throw new QuitProgramException("Invalid devProduction mode");
         }
         String configFilePathTemp = null;
         Integer portTemp = null;
         String hostTemp = null;
+        boolean forceNoInMemoryDBTemp = false;
         for (int i = 2; i < args.length; i++) {
             String curr = args[i];
             if (curr.startsWith(CONFIG_FILE_KEY)) {
@@ -73,6 +80,8 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
                 portTemp = Integer.parseInt(curr.split(PORT_FILE_KEY)[1]);
             } else if (curr.startsWith(HOST_FILE_KEY)) {
                 hostTemp = curr.split(HOST_FILE_KEY)[1];
+            } else if (curr.startsWith(FORCE_NO_IN_MEM_DB)) {
+                forceNoInMemoryDBTemp = true;
             }
         }
         this.configFilePath = configFilePathTemp;
@@ -80,6 +89,7 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
         this.userDevProductionMode = userDevProductionMode;
         this.port = portTemp;
         this.host = hostTemp;
+        this.forceNoInMemoryDB = forceNoInMemoryDBTemp;
     }
 
     private static CLIOptions getInstance(Main main) {
@@ -133,5 +143,9 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
 
     public String getHost() {
         return this.host;
+    }
+
+    public boolean isForceNoInMemoryDB() {
+        return this.forceNoInMemoryDB;
     }
 }

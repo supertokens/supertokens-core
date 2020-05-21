@@ -32,57 +32,38 @@
  *
  */
 
-package io.supertokens.config;
+package io.supertokens.inmemorydb.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
-import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.output.Logging;
+import io.supertokens.inmemorydb.Start;
+import io.supertokens.pluginInterface.exceptions.QuitProgramFromPluginException;
 
-import java.io.File;
-import java.io.IOException;
 
 public class Config extends ResourceDistributor.SingletonResource {
 
-    private static final String RESOURCE_KEY = "io.supertokens.config.Config";
-    private final Main main;
-    private final CoreConfig core;
+    private static final String RESOURCE_KEY = "io.supertokens.inmemorydb.config.Config";
+    private final SQLiteConfig config;
 
-    private Config(Main main, String configFilePath) {
-        this.main = main;
-        try {
-            this.core = loadCoreConfig(configFilePath);
-        } catch (IOException e) {
-            throw new QuitProgramException(e);
-        }
+    private Config() {
+        this.config = new SQLiteConfig();
     }
 
-    private static Config getInstance(Main main) {
-        return (Config) main.getResourceDistributor().getResource(RESOURCE_KEY);
+    private static Config getInstance(Start start) {
+        return (Config) start.getResourceDistributor().getResource(RESOURCE_KEY);
     }
 
-    public static void loadConfig(Main main, String configFilePath) {
-        if (getInstance(main) != null) {
+    public static void loadConfig(Start start) {
+        if (getInstance(start) != null) {
             return;
         }
-        main.getResourceDistributor().setResource(RESOURCE_KEY, new Config(main, configFilePath));
+        start.getResourceDistributor().setResource(RESOURCE_KEY, new Config());
     }
 
-    public static CoreConfig getConfig(Main main) {
-        if (getInstance(main) == null) {
-            throw new QuitProgramException("Please call loadConfig() before calling getConfig()");
+    public static SQLiteConfig getConfig(Start start) {
+        if (getInstance(start) == null) {
+            throw new QuitProgramFromPluginException("Please call loadConfig() before calling getConfig()");
         }
-        return getInstance(main).core;
-    }
-
-    private CoreConfig loadCoreConfig(String configFilePath) throws IOException {
-        Logging.info(main, "Loading supertokens config.");
-        final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        CoreConfig config = mapper.readValue(new File(configFilePath), CoreConfig.class);
-        config.validateAndInitialise(main);
-        return config;
+        return getInstance(start).config;
     }
 
 }

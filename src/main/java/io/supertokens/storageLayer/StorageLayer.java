@@ -36,7 +36,9 @@ package io.supertokens.storageLayer;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.inmemorydb.Start;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 
@@ -52,7 +54,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_KEY = "io.supertokens.storageLayer.StorageLayer";
     private final Storage storageLayer;
 
-    private StorageLayer(Main main, String pluginFolderPath) throws MalformedURLException {
+    private StorageLayer(Main main, String pluginFolderPath, String configFilePath) throws MalformedURLException {
         Logging.info(main, "Loading storage layer.");
         File loc = new File(pluginFolderPath);
 
@@ -84,19 +86,31 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         if (storageLayerTemp == null) {
             throw new QuitProgramException("No database plugin found. Please redownload and install SuperTokens");
         }
-        this.storageLayer = storageLayerTemp;
+
+        if (!main.isForceInMemoryDB() && (
+                storageLayerTemp.canBeUsed(configFilePath) ||
+                        CLIOptions.get(main).getUserDevProductionMode().equals(CLIOptions.MODE_PRODUCTION) ||
+                        CLIOptions.get(main).isForceNoInMemoryDB()
+        )) {
+            this.storageLayer = storageLayerTemp;
+        } else {
+            Logging.info(main, "Using in memory storage.");
+            this.storageLayer = new Start();
+        }
         this.storageLayer.constructor(main.getProcessId(), Main.makeConsolePrintSilent);
+        this.storageLayer.loadConfig(configFilePath);
     }
 
     private static StorageLayer getInstance(Main main) {
         return (StorageLayer) main.getResourceDistributor().getResource(RESOURCE_KEY);
     }
 
-    public static void init(Main main, String pluginFolderPath) throws MalformedURLException {
+    public static void init(Main main, String pluginFolderPath, String configFilePath) throws MalformedURLException {
         if (getInstance(main) != null) {
             return;
         }
-        main.getResourceDistributor().setResource(RESOURCE_KEY, new StorageLayer(main, pluginFolderPath));
+        main.getResourceDistributor()
+                .setResource(RESOURCE_KEY, new StorageLayer(main, pluginFolderPath, configFilePath));
     }
 
     public static Storage getStorageLayer(Main main) {

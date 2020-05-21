@@ -51,6 +51,7 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
 import java.util.Base64.Decoder;
 import java.util.Base64.Encoder;
+import java.util.UUID;
 
 public class Utils {
 
@@ -250,6 +251,10 @@ public class Utils {
         public String toString() {
             return publicKey + ";" + privateKey;
         }
+    }
+
+    public static String getUUID() {
+        return UUID.randomUUID().toString();
     }
 
 }

@@ -96,6 +96,8 @@ public class Main {
     private boolean waitToInitStorageModule = false;
     private final Object waitToInitStorageModuleLock = new Object();
 
+    private boolean forceInMemoryDB = false;
+
     public static void main(String[] args) {
         new Main().start(args);
     }
@@ -162,9 +164,12 @@ public class Main {
         LicenseKey.load(this, CLIOptions.get(this).getInstallationPath() + "licenseKey");   // Do not modify this line
 
         // loading storage layer
-        StorageLayer.init(this, CLIOptions.get(this).getInstallationPath() + "plugin/");
+        StorageLayer.init(this, CLIOptions.get(this).getInstallationPath() + "plugin/",
+                CLIOptions.get(this).getConfigFilePath() == null
+                        ? CLIOptions.get(this).getInstallationPath() + "config.yaml"
+                        : CLIOptions.get(this).getConfigFilePath());
 
-        // loading configs for core and storage layer.
+        // loading configs for core.
         Config.loadConfig(this,
                 CLIOptions.get(this).getConfigFilePath() == null
                         ? CLIOptions.get(this).getInstallationPath() + "config.yaml"
@@ -223,6 +228,18 @@ public class Main {
                 "Started SuperTokens on " + Config.getConfig(this).getHost(this) + ":" +
                         Config.getConfig(this).getPort(this) +
                         " with PID: " + ProcessHandle.current().pid());
+    }
+
+    public void setForceInMemoryDB() {
+        if (Main.isTesting) {
+            this.forceInMemoryDB = true;
+        } else {
+            throw new RuntimeException("Calling testing method in non-testing env");
+        }
+    }
+
+    public boolean isForceInMemoryDB() {
+        return this.forceInMemoryDB;
     }
 
     public void waitToInitStorageModule() {

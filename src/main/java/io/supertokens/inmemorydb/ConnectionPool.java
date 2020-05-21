@@ -32,57 +32,46 @@
  *
  */
 
-package io.supertokens.config;
+package io.supertokens.inmemorydb;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
-import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.output.Logging;
 
-import java.io.File;
-import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 
-public class Config extends ResourceDistributor.SingletonResource {
+class ConnectionPool extends ResourceDistributor.SingletonResource {
 
-    private static final String RESOURCE_KEY = "io.supertokens.config.Config";
-    private final Main main;
-    private final CoreConfig core;
+    private static final String RESOURCE_KEY = "io.supertokens.inmemorydb.ConnectionPool";
+    private static String URL = "jdbc:sqlite:file::memory:?cache=shared";
 
-    private Config(Main main, String configFilePath) {
-        this.main = main;
-        try {
-            this.core = loadCoreConfig(configFilePath);
-        } catch (IOException e) {
-            throw new QuitProgramException(e);
-        }
+    // we use this to keep all the information in memory across requests.
+    private Connection alwaysAlive = null;
+
+    public ConnectionPool() throws SQLException {
+        this.alwaysAlive = DriverManager.getConnection(URL);
     }
 
-    private static Config getInstance(Main main) {
-        return (Config) main.getResourceDistributor().getResource(RESOURCE_KEY);
+    static void initPool(Start start) throws SQLException {
+        start.getResourceDistributor().setResource(RESOURCE_KEY, new ConnectionPool());
     }
 
-    public static void loadConfig(Main main, String configFilePath) {
-        if (getInstance(main) != null) {
+    static Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(URL);
+    }
+
+    private static ConnectionPool getInstance(Start start) {
+        return (ConnectionPool) start.getResourceDistributor().getResource(RESOURCE_KEY);
+    }
+
+    static void close(Start start) {
+        if (getInstance(start) == null) {
             return;
         }
-        main.getResourceDistributor().setResource(RESOURCE_KEY, new Config(main, configFilePath));
-    }
-
-    public static CoreConfig getConfig(Main main) {
-        if (getInstance(main) == null) {
-            throw new QuitProgramException("Please call loadConfig() before calling getConfig()");
+        try {
+            getInstance(start).alwaysAlive.close();
+        } catch (Exception ignored) {
         }
-        return getInstance(main).core;
-    }
-
-    private CoreConfig loadCoreConfig(String configFilePath) throws IOException {
-        Logging.info(main, "Loading supertokens config.");
-        final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        CoreConfig config = mapper.readValue(new File(configFilePath), CoreConfig.class);
-        config.validateAndInitialise(main);
-        return config;
     }
 
 }
