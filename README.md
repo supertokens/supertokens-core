@@ -15,7 +15,7 @@ SuperTokens is an advanced session management solution for web and mobile apps. 
 **Works with all web frameworks like NodeJS, Laravel etc.** Learn more at https://supertokens.io
 
 ## Documentation
-To see documentation, please click [here](https://supertokens.io/docs/community/tech-stack).
+To see documentation, please click [here](https://supertokens.io/docs/community/getting-started/installation).
 
 ## Making changes
 Please see our [Contributing](https://github.com/supertokens/supertokens-core/blob/master/CONTRIBUTING.md) guide.
