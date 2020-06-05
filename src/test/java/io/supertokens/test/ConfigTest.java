@@ -162,40 +162,6 @@ public class ConfigTest {
 
         Utils.reset();
 
-
-        //out of range value for refresh_api_path
-        Utils.setValueInConfig("refresh_api_path", null);
-        process = TestingProcessManager.start(args);
-
-        e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
-        assertNotNull(e);
-        assertEquals(e.exception.getMessage(),
-                "'refresh_api_path' is not set in the config.yaml file. Please set this value and restart SuperTokens" +
-                        ". The config file can be found here: " + getConfigFileLocation(process.getProcess()));
-
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-
-        Utils.reset();
-
-
-        //out of range value for cookie_domain
-        Utils.setValueInConfig("cookie_domain", null);
-        process = TestingProcessManager.start(args);
-
-        e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
-        assertNotNull(e);
-        assertEquals(e.exception.getMessage(),
-                "'cookie_domain' is not set in the config.yaml file. Please set this value and restart SuperTokens. " +
-                        "The config file can be found here: " + getConfigFileLocation(process.getProcess()));
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-
-        Utils.reset();
-
-
         //out of range value for access_token_validity
         Utils.setValueInConfig("access_token_validity", "-1");
         process = TestingProcessManager.start(args);
@@ -395,7 +361,7 @@ public class ConfigTest {
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/info.log");
         assertEquals("Config error log path did not match default", config.getErrorLogPath(process.getProcess()),
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/error.log");
-        assertEquals("Config cookie domain did not match default", config.getCookieDomain(), "supertokens.io");
+        assertEquals("Config cookie domain did not match default", config.getCookieDomain(), "localhost");
         assertFalse("Config cookie secure did not match default", config.getCookieSecure(process.getProcess()));
 
         assertEquals(config.getHost(process.getProcess()), "localhost");

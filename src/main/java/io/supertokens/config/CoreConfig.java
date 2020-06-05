@@ -64,7 +64,7 @@ public class CoreConfig {
     private double refresh_token_validity = 60 * 2400; // in mins
 
     @JsonProperty
-    private String refresh_api_path = null;
+    private String refresh_api_path = "/refresh";
 
     private final String logDefault = "asdkfahbdfk3kjHS";
     @JsonProperty
@@ -74,7 +74,7 @@ public class CoreConfig {
     private String error_log_path = logDefault;
 
     @JsonProperty
-    private String cookie_domain = null;
+    private String cookie_domain = "localhost";
 
     @JsonProperty
     private Boolean cookie_secure = null;
@@ -207,16 +207,6 @@ public class CoreConfig {
             throw new QuitProgramException(
                     "'core_config_version' is not set in the config.yaml file. Please redownload and install " +
                             "SuperTokens");
-        }
-        if (getRefreshAPIPath() == null) {
-            throw new QuitProgramException(
-                    "'refresh_api_path' is not set in the config.yaml file. Please set this value and restart " +
-                            "SuperTokens. The config file can be found here: " + getConfigFileLocation(main));
-        }
-        if (getCookieDomain() == null) {
-            throw new QuitProgramException(
-                    "'cookie_domain' is not set in the config.yaml file. Please set this value and restart " +
-                            "SuperTokens. The config file can be found here: " + getConfigFileLocation(main));
         }
         if (access_token_validity < 1 || access_token_validity > 86400000) {
             throw new QuitProgramException(

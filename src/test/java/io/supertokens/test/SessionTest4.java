@@ -231,7 +231,7 @@ public class SessionTest4 {
             TokenTheftDetectedException, TryRefreshTokenException, SignatureException {
         Utils.setValueInConfig("refresh_api_path", "/refreshPath");
         Utils.setValueInConfig("access_token_path", "/accessPath");
-        Utils.setValueInConfig("cookie_domain", "supertokens.io");
+        Utils.setValueInConfig("cookie_domain", "localhost");
 
         String[] args = {"../", "DEV"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -249,12 +249,12 @@ public class SessionTest4 {
         assert sessionInfo.accessToken != null;
         assert sessionInfo.refreshToken != null;
         assertEquals(sessionInfo.accessToken.cookiePath, "/accessPath");
-        assertEquals(sessionInfo.accessToken.domain, "supertokens.io");
+        assertEquals(sessionInfo.accessToken.domain, "localhost");
         assert sessionInfo.accessToken.cookieSecure != null;
         assertEquals((boolean) sessionInfo.accessToken.cookieSecure,
                 Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
         assertEquals(sessionInfo.refreshToken.cookiePath, "/refreshPath");
-        assertEquals(sessionInfo.refreshToken.domain, "supertokens.io");
+        assertEquals(sessionInfo.refreshToken.domain, "localhost");
         assert sessionInfo.refreshToken.cookieSecure != null;
         assertEquals((boolean) sessionInfo.refreshToken.cookieSecure,
                 Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
@@ -276,12 +276,12 @@ public class SessionTest4 {
         assertEquals(refreshedSession.session.userId, sessionInfo.session.userId);
         assertEquals(refreshedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
         assertEquals(refreshedSession.accessToken.cookiePath, "/accessPath");
-        assertEquals(refreshedSession.accessToken.domain, "supertokens.io");
+        assertEquals(refreshedSession.accessToken.domain, "localhost");
         assert refreshedSession.accessToken.cookieSecure != null;
         assertEquals((boolean) refreshedSession.accessToken.cookieSecure,
                 Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
         assertEquals(refreshedSession.refreshToken.cookiePath, "/refreshPath");
-        assertEquals(refreshedSession.refreshToken.domain, "supertokens.io");
+        assertEquals(refreshedSession.refreshToken.domain, "localhost");
         assert refreshedSession.refreshToken.cookieSecure != null;
         assertFalse(refreshedSession.refreshToken.cookieSecure);
         assert refreshedSession.idRefreshToken != null;
@@ -296,7 +296,7 @@ public class SessionTest4 {
         assertNotEquals(newSession.accessToken.createdTime, refreshedSession.accessToken.createdTime);
         assertEquals(newSession.session.userDataInJWT.toString(), refreshedSession.session.userDataInJWT.toString());
         assertEquals(newSession.accessToken.cookiePath, "/accessPath");
-        assertEquals(newSession.accessToken.domain, "supertokens.io");
+        assertEquals(newSession.accessToken.domain, "localhost");
         assert newSession.accessToken.cookieSecure != null;
         assertFalse(newSession.accessToken.cookieSecure);
 

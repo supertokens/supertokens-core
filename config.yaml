@@ -53,9 +53,9 @@ core_config_version: 0
 # refresh_token_validity:
 
 
-# (COMPULSORY) string value. Set this to be the path for your refresh API. For example,
-# if your refresh API URL is "https://api.example.com/session/refresh", then the
-# value of this param should be "/session/refresh"
+# (OPTIONAL | Default: "/refresh") string value. Set this to be the path for your refresh API. For example,
+# if your refresh API URL is "https://api.example.com/refresh", then the
+# value of this param should be "/refresh"
 # refresh_api_path:
 
 
@@ -71,7 +71,7 @@ core_config_version: 0
 # error_log_path:
 
 
-# (COMPULSORY) string value. This is the domain to set for all the cookies.
+# (OPTIONAL | Default: "localhost") string value. This is the domain to set for all the cookies.
 # This should be equal to the domain of your APIs. For example (api.example.com)
 # Do not set any port here and do not put http:// or https://
 # cookie_domain:
