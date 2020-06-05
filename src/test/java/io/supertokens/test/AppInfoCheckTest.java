@@ -134,42 +134,4 @@ public class AppInfoCheckTest {
         stopEvent2 = process2.checkOrWaitForEvent(PROCESS_STATE.STOPPED);
         assertNotNull(stopEvent2);
     }
-
-    @Test
-    public void testThatUsingDifferentModesForMultipleProcessesCausesAnError() throws Exception {
-        String[] args1 = {"../", "DEV"};
-        String[] args2 = {"../", "PRODUCTION"};
-
-        TestingProcess process1 = TestingProcessManager.start(args1, false);
-
-        CronTaskTest testCheck1 = CronTaskTest.getInstance(process1.getProcess());
-        testCheck1.setIntervalInSeconds(AppInfoCheck.RESOURCE_KEY, 1);
-
-        process1.startProcess();
-        EventAndException startEvent1 = process1.checkOrWaitForEvent(PROCESS_STATE.STARTED);
-        assertNotNull(startEvent1);
-
-        Utils.setValueInConfig("port", "8081");
-        TestingProcess process2 = TestingProcessManager.start(args2, false);
-
-        CronTaskTest testCheck2 = CronTaskTest.getInstance(process2.getProcess());
-        testCheck2.setIntervalInSeconds(AppInfoCheck.RESOURCE_KEY, 1);
-
-        process2.startProcess();
-        EventAndException startEvent2 = process2.checkOrWaitForEvent(PROCESS_STATE.STARTED);
-        assertNotNull(startEvent2);
-
-        EventAndException modeEvent1 = process1.checkOrWaitForEvent(PROCESS_STATE.DEV_PROD_MODE_MISMATCH);
-        assertNotNull(modeEvent1);
-
-        EventAndException stopEvent1 = process1.checkOrWaitForEvent(PROCESS_STATE.STOPPED);
-        assertNotNull(stopEvent1);
-
-        EventAndException stopEvent2 = process2.checkOrWaitForEvent(PROCESS_STATE.STOPPED, 2000);
-        assertNull(stopEvent2);
-
-        process2.kill();
-        stopEvent2 = process2.checkOrWaitForEvent(PROCESS_STATE.STOPPED);
-        assertNotNull(stopEvent2);
-    }
 }

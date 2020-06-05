@@ -52,11 +52,6 @@ import io.supertokens.storageLayer.StorageLayer;
  * This task's purpose is to make sure that one app is only using one set of
  * licenseKeys - all of them should have the same appId. Failure of this results
  * in the shutting down of the service.
- * <p>
- * Note that this allows having unlimited DEV mode cores because that's useful for development purposes.
- * If a DEV mode is used along with a PRODUCTION mode, then it won't work. If a user only uses DEV mode,
- * then we can detect that via server pings and if that goes on for a long time, we can get in touch with
- * that user.
  */
 public class AppInfoCheck extends CronTask {
 
@@ -94,7 +89,6 @@ public class AppInfoCheck extends CronTask {
 
         String devProductionMode = CLIOptions.get(main).getUserDevProductionMode();
 
-        String devProductionModeInStorage = storage.getUserDevProductionMode();
         if (appIdInStorage == null || !ranOnce) {
             storage.setAppId(appId);
             storage.setUserDevProductionMode(devProductionMode);
@@ -103,12 +97,6 @@ public class AppInfoCheck extends CronTask {
                 ProcessState.getInstance(main).addState(PROCESS_STATE.APP_ID_MISMATCH, null);
                 Logging.error(main,
                         "Using different license keys from different apps for the same app. Quiting service!", true);
-                main.wakeUpMainThreadToShutdown();
-            }
-            if (!devProductionMode.equals(devProductionModeInStorage)) {
-                ProcessState.getInstance(main).addState(PROCESS_STATE.DEV_PROD_MODE_MISMATCH, null);
-                Logging.error(main, "Using SuperTokens in development mode for production use. Quitting service!",
-                        true);
                 main.wakeUpMainThreadToShutdown();
             }
         }
