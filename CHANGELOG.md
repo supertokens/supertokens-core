@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.2.0] - 2020-05-20
 ### Added
 - Uses in memory database in dev mode if database is not configured
+- Removes the need to specify dev / production when running the start command
 
 
 ## [2.1.0] - 2020-04-30
