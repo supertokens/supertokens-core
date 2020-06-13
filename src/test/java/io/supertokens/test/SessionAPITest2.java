@@ -64,7 +64,7 @@ public class SessionAPITest2 {
 
     @Test
     public void successOutputCheckWithAntiCsrf() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -97,7 +97,7 @@ public class SessionAPITest2 {
     public void successOutputCheckWithNoAntiCsrf() throws Exception {
         Utils.setValueInConfig("enable_anti_csrf", "false");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -127,7 +127,7 @@ public class SessionAPITest2 {
     // *  - check that config same site change is reflecting in the API
     @Test
     public void testThatConfigSameSiteChangeIsReflectedInAPI() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         Utils.setValueInConfig("cookie_same_site", "lax");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -159,7 +159,7 @@ public class SessionAPITest2 {
     // *  - check that version 2.0 is unsupported for /session DELETE
     @Test
     public void testThatVersion2IsNotSupportedBySessionDelete() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -200,7 +200,7 @@ public class SessionAPITest2 {
     @Test
     public void badInputTest() throws Exception {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

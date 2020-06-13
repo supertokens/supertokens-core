@@ -62,7 +62,7 @@ public class DeletePastOrphanedTokensTest {
 
     @Test
     public void intervalTimeSecondsDeletePastOrphanedTokensTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

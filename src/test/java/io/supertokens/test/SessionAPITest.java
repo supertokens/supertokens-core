@@ -69,7 +69,7 @@ public class SessionAPITest {
 
     @Test
     public void successOutputCheckWithAntiCsrf() throws InterruptedException, IOException, HttpResponseException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -140,7 +140,7 @@ public class SessionAPITest {
             throws InterruptedException, IOException, HttpResponseException {
         Utils.setValueInConfig("enable_anti_csrf", "false");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -208,7 +208,7 @@ public class SessionAPITest {
     @Test
     public void badInputTest() throws InterruptedException, IOException, HttpResponseException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -290,7 +290,7 @@ public class SessionAPITest {
 
     @Test
     public void deleteSessionBySessionHandleTest() throws InterruptedException, IOException, HttpResponseException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -336,7 +336,7 @@ public class SessionAPITest {
 
     @Test
     public void deleteSessionByUserIdTest() throws InterruptedException, IOException, HttpResponseException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

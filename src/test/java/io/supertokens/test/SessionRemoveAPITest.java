@@ -72,7 +72,7 @@ public class SessionRemoveAPITest {
     // *  only s1 and s3 are returned.
     @Test
     public void testRemovingMultipleSessionsGivesCorrectOutput() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -162,7 +162,7 @@ public class SessionRemoveAPITest {
 
     @Test
     public void testThatVersion1IsUnsupportedForSessionRemovePOST() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -186,7 +186,7 @@ public class SessionRemoveAPITest {
 
     @Test
     public void testRevoking1SessionUsingSessionHandle() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -244,7 +244,7 @@ public class SessionRemoveAPITest {
 
     @Test
     public void testRemovingSessionByUserId() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

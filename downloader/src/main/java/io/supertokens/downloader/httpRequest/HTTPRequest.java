@@ -136,17 +136,4 @@ public class HTTPRequest {
             }
         }
     }
-
-    public static String getWelcomeMessage() throws IOException, HTTPResponseException {
-        try {
-            return makeGETRequest(
-                    "https://api.supertokens.io/0/message?type=install-downloader", 0);
-        } catch (Exception e) {
-            if (Main.isTesting) {
-                throw e;
-            } else {
-                return null;
-            }
-        }
-    }
 }

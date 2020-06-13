@@ -66,7 +66,7 @@ public class JWTDataTest {
     //* handle -> check this is reflected
     @Test
     public void testVerifyJWTPayloadChangePayloadUsingSessionHandle() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -104,7 +104,7 @@ public class JWTDataTest {
     // *  session handle -> check this is reflected
     @Test
     public void testVerifyJWTPayloadChangeToEmptyPayloadUsingSessionHandle() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -140,7 +140,7 @@ public class JWTDataTest {
     // *  function -> check that JWT payload has not changed is reflected
     @Test
     public void testVerifyJWTPayloadSetPayloadToNullUsingSessionHandle() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -173,7 +173,7 @@ public class JWTDataTest {
     // error
     @Test
     public void testExpireSessionCallUpdateAndCheckUnauthorised() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_validity", "1");// 1 second validity
         Utils.setValueInConfig("refresh_token_validity", "" + 1.0 / 60);// 1 second validity (value in mins)
@@ -218,7 +218,7 @@ public class JWTDataTest {
     @Test
     public void testExpireSessionCallGetAndCheckUnauthorised() throws Exception {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_validity", "1");// 1 second validity
         Utils.setValueInConfig("refresh_token_validity", "" + 1.0 / 60);// 1 second validity (value in mins)

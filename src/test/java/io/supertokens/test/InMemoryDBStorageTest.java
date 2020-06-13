@@ -74,7 +74,7 @@ public class InMemoryDBStorageTest {
     @Test
     public void transactionIsolationTesting()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -193,7 +193,7 @@ public class InMemoryDBStorageTest {
 
     @Test
     public void transactionTest() throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -229,7 +229,7 @@ public class InMemoryDBStorageTest {
     @Test
     public void transactionDoNotInsertIfAlreadyExistsForNoSQL()
             throws InterruptedException, StorageQueryException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -253,7 +253,7 @@ public class InMemoryDBStorageTest {
 
     @Test
     public void multipleParallelTransactionTest() throws InterruptedException, IOException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00005");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();

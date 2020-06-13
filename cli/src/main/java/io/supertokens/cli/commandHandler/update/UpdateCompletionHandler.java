@@ -93,7 +93,6 @@ public class UpdateCompletionHandler extends CommandHandler {
         List<Processes.RunningProcess> runningProcesses = Processes.getRunningProcesses(originalInstallDir);
         for (Processes.RunningProcess runningProcess : runningProcesses) {
             runningProcess.fetchConfigFilePath();
-            runningProcess.fetchDevProductionMode();
         }
 
         // 2) Stop all the running processes
@@ -177,18 +176,17 @@ public class UpdateCompletionHandler extends CommandHandler {
             for (Processes.RunningProcess runningProcess : runningProcesses) {
                 Logging.info("Restarting process on: " + runningProcess.hostName + ":" + runningProcess.port);
                 ProcessBuilder pb;
-                String devMode = runningProcess.devProductionMode.equals("DEV") ? "dev" : "production";
                 if (OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) {
                     pb = new ProcessBuilder("cmd.exe", "/c",
                             "\"" + originalInstallDir +
                                     "jre\\bin\"\\java -classpath \"cli\\*\" io.supertokens.cli.Main false " +
-                                    ".\\ start " + devMode + "--with-config=" +
+                                    ".\\ start --with-config=" +
                                     runningProcess.configFilePath + " --port=" + runningProcess.port + " --host=" +
                                     runningProcess.hostName);
                 } else {
                     pb = new ProcessBuilder("bash", "-c",
                             "jre/bin/java -classpath \"./cli/*\" io.supertokens.cli.Main false " +
-                                    "./ start " + devMode + "--with-config=" +
+                                    "./ start --with-config=" +
                                     runningProcess.configFilePath + " --port=" + runningProcess.port + " --host=" +
                                     runningProcess.hostName);
                 }

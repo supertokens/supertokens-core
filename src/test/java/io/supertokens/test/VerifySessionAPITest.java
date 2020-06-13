@@ -67,7 +67,7 @@ public class VerifySessionAPITest {
 
     @Test
     public void successOutputCheckNoNewAccessToken() throws InterruptedException, IOException, HttpResponseException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -112,7 +112,7 @@ public class VerifySessionAPITest {
 
     @Test
     public void successOutputCheckNewAccessToken() throws InterruptedException, IOException, HttpResponseException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -178,7 +178,7 @@ public class VerifySessionAPITest {
 
         Utils.setValueInConfig("access_token_blacklisting", "true");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -202,7 +202,7 @@ public class VerifySessionAPITest {
 
     @Test
     public void badInputTest() throws InterruptedException, IOException, HttpResponseException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -296,7 +296,7 @@ public class VerifySessionAPITest {
 
     @Test
     public void devLicenseSessionExpiredTest() throws InterruptedException, IOException, HttpResponseException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         WebserverAPITest.getInstance(process.getProcess()).setRandomnessThreshold(0);
         WebserverAPITest.getInstance(process.getProcess()).setTimeAfterWhichToThrowUnauthorised(0);

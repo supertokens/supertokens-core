@@ -75,7 +75,7 @@ public class MemoryWatcherTest extends Mockito {
     //tests whether memInfo has the proper fields
     @Test
     public void testNormalMemoryWatcherWorking() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
@@ -142,7 +142,7 @@ public class MemoryWatcherTest extends Mockito {
 
     @Test
     public void testMemoryWatcherStartAndInterval() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -158,7 +158,7 @@ public class MemoryWatcherTest extends Mockito {
     //tests that memInfo fields contain correct values
     @Test
     public void testMemoryWatcherHourDeltaWorkingCorrectly() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 

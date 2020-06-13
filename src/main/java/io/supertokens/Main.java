@@ -119,10 +119,6 @@ public class Main {
             try {
                 try {
                     CLIOptions.load(this, args);
-                    Logging.info(this, "Starting SuperTokens for " +
-                            (CLIOptions.get(this).getUserDevProductionMode().equals("DEV") ? "development" :
-                                    "production") +
-                            " use");
                     init();
                 } catch (Exception e) {
                     ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.INIT_FAILURE, e);

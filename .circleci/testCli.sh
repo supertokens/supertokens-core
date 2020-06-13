@@ -8,13 +8,7 @@ then
     exit 1
 fi
 
-sed -i 's/# refresh_api_path:/refresh_api_path: \/refresh/g' /usr/lib/supertokens/config.yaml
-sed -i 's/# cookie_domain:/cookie_domain: supertokens.io/g' /usr/lib/supertokens/config.yaml
-sed -i 's/# mysql_user:/mysql_user: root/g' /usr/lib/supertokens/config.yaml
-sed -i 's/# mysql_password:/mysql_password: root/g' /usr/lib/supertokens/config.yaml
-sed -i 's/# mongodb_connection_uri:/mongodb_connection_uri: mongodb:\/\/root:root@localhost:27017/g' /usr/lib/supertokens/config.yaml
-
-supertokens start dev --port=8888
+supertokens start --port=8888
 
 if [[ $? -ne 0 ]]
 then
@@ -30,7 +24,11 @@ then
     exit 1
 fi
 
-supertokens start dev --port=8889
+sed -i 's/# mysql_user:/mysql_user: root/g' /usr/lib/supertokens/config.yaml
+sed -i 's/# mysql_password:/mysql_password: root/g' /usr/lib/supertokens/config.yaml
+sed -i 's/# mongodb_connection_uri:/mongodb_connection_uri: mongodb:\/\/root:root@localhost:27017/g' /usr/lib/supertokens/config.yaml
+
+supertokens start --port=8889
 
 supertokens list
 

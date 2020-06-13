@@ -98,7 +98,7 @@ public class LicenseKeyTest extends Mockito {
             }
         });
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args, false);
         HttpRequestMocking.getInstance(process.getProcess()).setMockURL(LicenseKeyVerify.REQUEST_ID, new URLGetter() {
 
@@ -125,7 +125,7 @@ public class LicenseKeyTest extends Mockito {
     // checking everything loads properly from licenseKey
     @Test
     public void loadLicense() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
@@ -150,7 +150,7 @@ public class LicenseKeyTest extends Mockito {
         content = content.replaceAll("DEV", "PRODUCTION");
         Files.writeString(path, content);
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertTrue(e != null && e.exception.getMessage()
@@ -169,7 +169,7 @@ public class LicenseKeyTest extends Mockito {
         content = content.replaceAll("signature", "signaturee");
         Files.writeString(path, content);
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertTrue(e != null && e.exception.getMessage().equals("licenseKey file error: signature missing"));
@@ -184,7 +184,7 @@ public class LicenseKeyTest extends Mockito {
         pb.directory(new File("../"));
         pb.start().waitFor();
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertTrue(e != null && e.exception.getMessage().equals(
@@ -200,7 +200,7 @@ public class LicenseKeyTest extends Mockito {
         pb.directory(new File("../"));
         pb.start().waitFor();
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertTrue(e != null && e.exception.getMessage().equals(
@@ -215,7 +215,7 @@ public class LicenseKeyTest extends Mockito {
     public void missingLicenseError() throws Exception {
         new File("../licenseKey").delete();
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertTrue(e != null && e.exception.getMessage()
@@ -239,7 +239,7 @@ public class LicenseKeyTest extends Mockito {
             }
         });
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args, false);
 
         HttpRequestMocking.getInstance(process.getProcess()).setMockURL(LicenseKeyVerify.REQUEST_ID, new URLGetter() {

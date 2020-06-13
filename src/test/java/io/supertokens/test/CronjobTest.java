@@ -180,7 +180,7 @@ public class CronjobTest {
 
     @Test
     public void testThatCronjobThrowsQuitProgramExceptionAndQuits() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
 
@@ -195,7 +195,7 @@ public class CronjobTest {
 
     @Test
     public void testThatCronjobThrowsError() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
@@ -220,7 +220,7 @@ public class CronjobTest {
 
     @Test
     public void testNormalCronjob() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

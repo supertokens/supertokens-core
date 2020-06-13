@@ -88,7 +88,7 @@ public class SessionTest1 {
             IOException, InvalidKeySpecException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -132,7 +132,7 @@ public class SessionTest1 {
 
         Utils.setValueInConfig("enable_anti_csrf", "false");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -172,7 +172,7 @@ public class SessionTest1 {
 
         Utils.setValueInConfig("access_token_validity", "1");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -206,7 +206,7 @@ public class SessionTest1 {
             IOException, InvalidKeySpecException,
             StorageTransactionLogicException, UnauthorisedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -251,7 +251,7 @@ public class SessionTest1 {
             UnsupportedEncodingException, InvalidKeySpecException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -287,7 +287,7 @@ public class SessionTest1 {
             UnsupportedEncodingException, InvalidKeySpecException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -336,7 +336,7 @@ public class SessionTest1 {
 
         Utils.setValueInConfig("access_token_validity", "1");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -429,7 +429,7 @@ public class SessionTest1 {
         Utils.setValueInConfig("access_token_validity", "1");
         Utils.setValueInConfig("enable_anti_csrf", "false");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -518,7 +518,7 @@ public class SessionTest1 {
             , BadPaddingException, UnsupportedEncodingException, InvalidKeySpecException, IllegalBlockSizeException,
             StorageTransactionLogicException, UnauthorisedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -554,7 +554,7 @@ public class SessionTest1 {
 
         Utils.setValueInConfig("refresh_token_validity", "" + 1.5 / 60.0);
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

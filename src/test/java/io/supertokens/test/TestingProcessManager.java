@@ -47,7 +47,7 @@ class TestingProcessManager {
 
     static void deleteAllInformation() throws Exception {
         System.out.println("----------DELETE ALL INFORMATION----------");
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         process.main.deleteAllInformationForTesting();

@@ -52,7 +52,6 @@ public class Processes {
         public final String port;
         public final String pid;
         public String configFilePath;  // set via an API call
-        public String devProductionMode; // set via an API call
 
         RunningProcess(String hostName, String port, String pid) {
             this.hostName = hostName;
@@ -66,15 +65,6 @@ public class Processes {
             JsonObject result = HTTPRequest
                     .sendGETRequest("http://" + this.hostName + ":" + this.port + "/config", params, null, "2.0");
             this.configFilePath = result.get("path").getAsString();
-        }
-
-        public void fetchDevProductionMode() throws IOException, HTTPResponseException {
-            Map<String, String> params = new HashMap<>();
-            params.put("pid", this.pid);
-            JsonObject result = HTTPRequest
-                    .sendGETRequest("http://" + this.hostName + ":" + this.port + "/devproductionmode", params, null,
-                            "2.0");
-            this.devProductionMode = result.get("mode").getAsString();
         }
     }
 

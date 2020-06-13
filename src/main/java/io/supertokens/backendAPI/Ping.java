@@ -41,14 +41,12 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.ResourceDistributor.SingletonResource;
-import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.memoryWatcher.MemoryWatcher;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.licenseKey.LicenseKey;
 import io.supertokens.licenseKey.LicenseKeyContent;
-import io.supertokens.session.refreshToken.RefreshToken;
 import io.supertokens.version.Version;
 import io.supertokens.version.VersionFile;
 import io.supertokens.webserver.RPMCalculator;
@@ -120,7 +118,6 @@ public class Ping extends ResourceDistributor.SingletonResource {
         String coreVersion = version.getCoreVersion();
         String pluginInterfaceVersion = version.getPluginInterfaceVersion();
         String appId = licenseKey.getAppId(main);
-        String userDevProductionMode = CLIOptions.get(main).getUserDevProductionMode();
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("instanceId", instanceId);
@@ -137,7 +134,6 @@ public class Ping extends ResourceDistributor.SingletonResource {
 
         requestBody.addProperty("coreVersion", coreVersion);
         requestBody.addProperty("pluginInterfaceVersion", pluginInterfaceVersion);
-        requestBody.addProperty("userDevProductionMode", userDevProductionMode);
 
         JsonArray memoryInfo = new JsonArray();
         this.memory.forEach(item -> {
@@ -192,7 +188,7 @@ public class Ping extends ResourceDistributor.SingletonResource {
 
         // send request
         HttpRequest.sendJsonPUTRequest(main, REQUEST_ID,
-                io.supertokens.utils.Constants.SERVER_URL + "/app/" + appId + "/ping", requestBody, 10000, 10000, 0);
+                io.supertokens.utils.Constants.SERVER_URL + "/app/" + appId + "/ping", requestBody, 10000, 10000, 1);
 
         this.memory = new ArrayList<>();
         this.rpm = new ArrayList<>();

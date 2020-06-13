@@ -66,7 +66,7 @@ public class SessionUserAPITest2 {
 
     @Test
     public void inputErrorsInSessionUserAPITest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -103,7 +103,7 @@ public class SessionUserAPITest2 {
 
     @Test
     public void differentPossibleSessionUserAPIOutputTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         String createSessionJsonInput = "{" +
                 "\"userId\": \"UserID\"," +
@@ -191,7 +191,7 @@ public class SessionUserAPITest2 {
 
     @Test
     public void multipleUsersMultipleSessionTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         HashMap<String, String> map = new HashMap<>();
 

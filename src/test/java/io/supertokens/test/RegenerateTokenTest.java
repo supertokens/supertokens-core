@@ -67,7 +67,7 @@ public class RegenerateTokenTest {
     // * check payload and lmrt is different.
     @Test
     public void testCrateSessionWithPayloadRegenerateWithDifferentPayloadAndCheck() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -118,7 +118,7 @@ public class RegenerateTokenTest {
     // * payload and lmrt is different & expiry time is same.
     @Test
     public void testSessionRegenerateWithEmptyPayload() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -168,7 +168,7 @@ public class RegenerateTokenTest {
     // * payload is same, but lmrt is different & expiry time is same.
     @Test
     public void testSessionRegenerateWithNoPayload() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -218,7 +218,7 @@ public class RegenerateTokenTest {
     // expiry time is same.
     @Test
     public void testSessionRegenerateWithTokenExpiryAndRefresh() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_validity", "1");// 1 second validity
 
@@ -292,7 +292,7 @@ public class RegenerateTokenTest {
 
     @Test
     public void testChangeJWTSigningKeyAndRegenerateWithDifferentPayload() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 second
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -361,7 +361,7 @@ public class RegenerateTokenTest {
 
     @Test
     public void testCreateSessionRemoveFromDBRegenerateShouldThrowUnauthorisedError() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -405,7 +405,7 @@ public class RegenerateTokenTest {
     // *  same & expiry time is same -> verify -> check payload and lmrt are same & expiry time is different.
     @Test
     public void testCreateSessionRefreshAndCheckAccessToken() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -485,7 +485,7 @@ public class RegenerateTokenTest {
     // * version 2
     @Test
     public void testAccessTokenVersions() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

@@ -38,7 +38,6 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.ResourceDistributor.SingletonResource;
-import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.licenseKey.LicenseKey;
@@ -87,11 +86,8 @@ public class AppInfoCheck extends CronTask {
 
         String appIdInStorage = storage.getAppId();
 
-        String devProductionMode = CLIOptions.get(main).getUserDevProductionMode();
-
         if (appIdInStorage == null || !ranOnce) {
             storage.setAppId(appId);
-            storage.setUserDevProductionMode(devProductionMode);
         } else {
             if (!appId.equals(appIdInStorage)) {
                 ProcessState.getInstance(main).addState(PROCESS_STATE.APP_ID_MISMATCH, null);

@@ -51,21 +51,6 @@ public class StartHandler extends CommandHandler {
 
     @Override
     public void doCommand(String installationDir, boolean viaInstaller, String[] args) {
-        boolean isDevMode = CLIOptionsParser.hasKey("dev", args);
-        boolean isProductionMode = CLIOptionsParser.hasKey("production", args);
-        if (!isDevMode && !isProductionMode) {
-            Logging.info("ERROR: Please specify if you are running this instance for development or production use");
-            super.printHelp();
-            Main.exitCode = 1;
-            return;
-        }
-        if (isDevMode && isProductionMode) {
-            Logging.info("ERROR: Please specify only one of \"dev\" or \"production\" options, and not both.");
-            Main.exitCode = 1;
-            return;
-        }
-
-        String mode = isDevMode ? "DEV" : "PRODUCTION";
         String space = CLIOptionsParser.parseOption("--with-space", args);
         String configPath = CLIOptionsParser.parseOption("--with-config", args);
         if (configPath != null) {
@@ -87,7 +72,6 @@ public class StartHandler extends CommandHandler {
             commands.add("io.supertokens.Main");
             commands.add("\"" + installationDir + "\\\""); // so many quotes at the end cause installationDir also ends
             // in \
-            commands.add(mode);
             if (configPath != null) {
                 configPath = configPath.replace("\\", "\\\\");
                 commands.add("configFile=" + configPath);
@@ -111,7 +95,6 @@ public class StartHandler extends CommandHandler {
             }
             commands.add("io.supertokens.Main");
             commands.add(installationDir);
-            commands.add(mode);
             if (configPath != null) {
                 commands.add("configFile=" + configPath);
             }
@@ -174,7 +157,7 @@ public class StartHandler extends CommandHandler {
 
     @Override
     public String getUsage() {
-        return "supertokens start [dev | production] [--with-space=<amount in mb>] [--with-config=<config file path>]"
+        return "supertokens start [--with-space=<amount in mb>] [--with-config=<config file path>]"
                 + " " + "[--port=<value>] " + "[--host=<value>] [--foreground]";
     }
 
@@ -185,19 +168,13 @@ public class StartHandler extends CommandHandler {
 
     @Override
     public String getLongDescription() {
-        return "Start an instance of SuperTokens for development or production use. By default the process will be "
+        return "Start an instance of SuperTokens. By default the process will be "
                 + "started as a daemon";
     }
 
     @Override
     protected List<Option> getOptionsAndDescription() {
         List<Option> options = new ArrayList<>();
-        options.add(new Option("dev",
-                "Start an instance for development use. You can run unlimited number of instances in this " + "mode."));
-        options.add(new Option("production",
-                "Start an instance for production use. You can run unlimited number of instances in this mode only if"
-                        + " you have a non expired licenseKey. To get a new licenseKey, or check for expiry of your "
-                        + "current one, please visit your SuperTokens dashboard."));
         options.add(new Option("--with-space",
                 "Sets the amount of space, in MB, to allocate to the JVM. Example to allocate 200MB: "
                         + "\"--with-space=200\""));

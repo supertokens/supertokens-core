@@ -77,7 +77,6 @@ public class Main {
         InstallOptionsParser installOptionsParser = new InstallOptionsParser(args);
         VersionFileParser versionFileParser = new VersionFileParser();
         LicenseKeyParser licenseKeyParser = new LicenseKeyParser();
-        printWelcomeMessage();
 
         // ------------
         String mode = licenseKeyParser.getMode();
@@ -96,17 +95,14 @@ public class Main {
                 .getDependencyJarLinksURLForCLI(versionFileParser.getCoreVersion(), planType, withSource, mode);
 
         // ------------
-        Logging.info("Fetching JAR locations for core for mode: " + mode);
+        Logging.info("Fetching dependency locations...");
         String[] coreDependencyJarsLinks = HTTPRequest.getDependencyJarLinks(coreDependencyJarsGetURL);
 
-        Logging.info("Fetching JAR locations for plugin-interface for mode: " + mode);
         String[] pluginInterfaceDependencyJarsLinks = HTTPRequest
                 .getDependencyJarLinks(pluginInterfaceDependencyJarsGetURL);
 
-        Logging.info("Fetching JAR locations for plugin for mode: " + mode);
         String[] pluginDependencyJarsLinks = HTTPRequest.getDependencyJarLinks(pluginDependencyJarsGetURL);
 
-        Logging.info("Fetching JAR locations for cli for mode: " + mode);
         String[] cliDependencyJarsLinks = HTTPRequest.getDependencyJarLinks(cliDependencyJarsGetURL);
 
         // ------------
@@ -132,13 +128,6 @@ public class Main {
         for (String link : cliDependencyJarsLinks) {
             current++;
             downloadFile(link, "cli", current, total);
-        }
-    }
-
-    private static void printWelcomeMessage() throws IOException, HTTPResponseException {
-        String info = HTTPRequest.getWelcomeMessage();
-        if (info != null) {
-            Logging.info(info);
         }
     }
 

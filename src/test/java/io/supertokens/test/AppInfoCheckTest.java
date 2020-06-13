@@ -65,7 +65,7 @@ public class AppInfoCheckTest {
 
     @Test
     public void testNonTestingIntervalAndStartTime() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -79,7 +79,7 @@ public class AppInfoCheckTest {
 
     @Test
     public void testThatTwoAppsStartAndStopCorrectly() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcess process1 = TestingProcessManager.start(args);
         EventAndException startEvent1 = process1.checkOrWaitForEvent(PROCESS_STATE.STARTED);
@@ -102,7 +102,7 @@ public class AppInfoCheckTest {
 
     @Test
     public void testThatUsingDifferentAppIdsForMultipleProcessesCausesAnError() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcess process1 = TestingProcessManager.start(args, false);
         CronTaskTest.getInstance(process1.getProcess()).setIntervalInSeconds(AppInfoCheck.RESOURCE_KEY, 1);

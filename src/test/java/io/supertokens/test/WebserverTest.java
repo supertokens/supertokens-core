@@ -92,7 +92,7 @@ public class WebserverTest extends Mockito {
 // * - Give no version and makes sure it treats it as 1.0
     @Test
     public void testVersionSupport() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -141,7 +141,7 @@ public class WebserverTest extends Mockito {
     // * - Give no version and makes sure it treats it as 1.0
     @Test
     public void testNoVersionGiven() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -169,7 +169,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void testInvalidJSONBadInput() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -207,7 +207,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void testValidJsonInput() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -241,7 +241,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void testInvalidGetInput() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -300,7 +300,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void testValidGetInput() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -333,7 +333,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void testRPMCalculator() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
@@ -433,7 +433,7 @@ public class WebserverTest extends Mockito {
 
     private void hello(String hostName, String port)
             throws InterruptedException, IOException, HttpResponseException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
         try {
@@ -463,7 +463,7 @@ public class WebserverTest extends Mockito {
     @Test
     public void serverQuitProgramException()
             throws InterruptedException, IOException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -495,7 +495,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void samePortTwoServersError() throws InterruptedException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -573,7 +573,7 @@ public class WebserverTest extends Mockito {
         Utils.reset();
 
         Utils.setValueInConfig("host", "\"182.168.29.69\"");
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertTrue(e != null && e.exception instanceof QuitProgramException && e.exception.getMessage().equals(
@@ -604,7 +604,7 @@ public class WebserverTest extends Mockito {
             IOException {
         Utils.setValueInConfig("max_server_pool_size", "1");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -652,7 +652,7 @@ public class WebserverTest extends Mockito {
             IOException {
         Utils.setValueInConfig("max_server_pool_size", "2");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -697,7 +697,7 @@ public class WebserverTest extends Mockito {
     @Test
     public void notFoundTest()
             throws InterruptedException, IOException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 

@@ -83,7 +83,7 @@ public class SessionTest2 {
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException,
             TokenTheftDetectedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -129,7 +129,7 @@ public class SessionTest2 {
             StorageTransactionLogicException, UnauthorisedException,
             TokenTheftDetectedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -174,7 +174,7 @@ public class SessionTest2 {
             IOException, InvalidKeySpecException,
             StorageTransactionLogicException, UnauthorisedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -214,7 +214,7 @@ public class SessionTest2 {
             StorageTransactionLogicException, TokenTheftDetectedException, TryRefreshTokenException,
             UnauthorisedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

@@ -77,9 +77,7 @@ core_config_version: 0
 # cookie_domain:
 
 
-# (OPTIONAL | Default: see the rest of this comment) boolean value. Sets if the cookies are secure or not.
-# If running in DEV mode (using supertokens start dev), this value by default is false.
-# In PRODUCTION mode (using supertokens start production), the default value is true
+# (OPTIONAL | Default: false) boolean value. Sets if the cookies are secure or not.
 # cookie_secure:
 
 

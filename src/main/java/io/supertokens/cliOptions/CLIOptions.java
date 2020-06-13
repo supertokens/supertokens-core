@@ -47,10 +47,7 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
     private static final String PORT_FILE_KEY = "port=";
     private static final String HOST_FILE_KEY = "host=";
     private static final String FORCE_NO_IN_MEM_DB = "forceNoInMemDB=true";
-    public static final String MODE_PRODUCTION = "PRODUCTION";
-    public static final String MODE_DEV = "DEV";
     private final String installationPath;
-    private final String userDevProductionMode;
     private final String configFilePath;
     private final Integer port;
     private final String host;
@@ -61,15 +58,11 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
     private CLIOptions(String[] args) {
         checkIfArgsIsCorrect(args);
         String installationPath = args[0];
-        String userDevProductionMode = args[1];
-        if (!userDevProductionMode.equals(MODE_DEV) && !userDevProductionMode.equals(MODE_PRODUCTION)) {
-            throw new QuitProgramException("Invalid devProduction mode");
-        }
         String configFilePathTemp = null;
         Integer portTemp = null;
         String hostTemp = null;
         boolean forceNoInMemoryDBTemp = false;
-        for (int i = 2; i < args.length; i++) {
+        for (int i = 1; i < args.length; i++) {
             String curr = args[i];
             if (curr.startsWith(CONFIG_FILE_KEY)) {
                 configFilePathTemp = curr.split(CONFIG_FILE_KEY)[1];
@@ -86,7 +79,6 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
         }
         this.configFilePath = configFilePathTemp;
         this.installationPath = installationPath;
-        this.userDevProductionMode = userDevProductionMode;
         this.port = portTemp;
         this.host = hostTemp;
         this.forceNoInMemoryDB = forceNoInMemoryDBTemp;
@@ -112,19 +104,12 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
     private void checkIfArgsIsCorrect(String[] args) {
         if (args.length == 0) {
             throw new QuitProgramException(
-                    "Please provide installation path location and dev/production mode for SuperTokens");
-        }
-        if (args.length == 1) {
-            throw new QuitProgramException("Please provide dev/production mode for SuperTokens");
+                    "Please provide installation path location for SuperTokens");
         }
     }
 
     public String getConfigFilePath() {
         return configFilePath;
-    }
-
-    public String getUserDevProductionMode() {
-        return userDevProductionMode;
     }
 
     // NOTE: this value will be fixed depending on operating system being used.. it

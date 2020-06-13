@@ -39,7 +39,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.backendAPI.Ping;
-import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.memoryWatcher.MemoryWatcher;
@@ -84,7 +83,7 @@ public class ServerPingTest extends Mockito {
     @Test
     public void testMemoryInfoAndRPMField() throws Exception {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
@@ -156,7 +155,7 @@ public class ServerPingTest extends Mockito {
 
     @Test
     public void testPingHappensWithRelevantInformation() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         ByteArrayOutputStream output = new ByteArrayOutputStream();
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -221,13 +220,10 @@ public class ServerPingTest extends Mockito {
                 pingData.get("pluginInterfaceVersion").getAsString(), version.getPluginInterfaceVersion());
         assertTrue(pingData.has("memoryInfo"));
         assertTrue(pingData.has("requestsPerMin"));
-        assertEquals("Server ping userDevProductionMode does not match process userDevProductionMode",
-                pingData.get("userDevProductionMode").getAsString(),
-                CLIOptions.get(process.getProcess()).getUserDevProductionMode());
         assertFalse("Server ping", pingData.get("hasMovedFromCommercialBinaryToFreeBinary").getAsBoolean());
         assertEquals("Server ping frontendSDK does not match process frontendSDK", 0,
                 pingData.get("frontendSDK").getAsJsonArray().size());
-        assertEquals(pingData.entrySet().size(), 13);
+        assertEquals(pingData.entrySet().size(), 12);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -235,7 +231,7 @@ public class ServerPingTest extends Mockito {
 
     @Test
     public void testIntervalAndStartTime() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -250,7 +246,7 @@ public class ServerPingTest extends Mockito {
 
     @Test
     public void testDeviceDriverInfoInServerPing() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         ByteArrayOutputStream output = new ByteArrayOutputStream();
 

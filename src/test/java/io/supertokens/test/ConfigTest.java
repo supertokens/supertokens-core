@@ -75,7 +75,7 @@ public class ConfigTest {
     // *  - test that if session_expired_status_code has a different, valid value, that is what is being set
     @Test
     public void testIfSessionExpiredStatusCodeWithDifferentValidValueIsBeingSet() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         Utils.setValueInConfig("session_expired_status_code", "555");
 
         TestingProcess process = TestingProcessManager.start(args);
@@ -90,7 +90,7 @@ public class ConfigTest {
     //- test for session_expired_status_code config -> default is 440; range is >= 400, < 600;
     @Test
     public void testSessionExpiredStatusCodeRangeInConfig() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         Utils.setValueInConfig("session_expired_status_code", "1000");
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
@@ -105,7 +105,7 @@ public class ConfigTest {
 
     @Test
     public void testThatDefaultConfigLoadsCorrectly() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
 
@@ -124,7 +124,7 @@ public class ConfigTest {
         Utils.setValueInConfig("refresh_api_path", "\"/testingRefresh\"");
         Utils.setValueInConfig("refresh_token_validity", "1");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
 
@@ -145,7 +145,7 @@ public class ConfigTest {
 
     @Test
     public void testThatInvalidConfigThrowRightError() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         //out of range core_config_version
         Utils.setValueInConfig("core_config_version", "-1");
@@ -200,7 +200,7 @@ public class ConfigTest {
 
     @Test
     public void testThatNonTestingConfigValuesThrowErrors() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         Utils.setValueInConfig("refresh_token_validity", "-1");
         TestingProcess process = TestingProcessManager.start(args, false);
         CoreConfigTestContent.getInstance(process.getProcess())
@@ -220,7 +220,7 @@ public class ConfigTest {
 
     @Test
     public void testThatInvalidSameSiteWillThrowAnError() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         Utils.setValueInConfig("cookie_same_site", "random");
         TestingProcess process = TestingProcessManager.start(args);
         ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
@@ -236,7 +236,7 @@ public class ConfigTest {
     @Test
     public void testAllValuesOfSameSite() throws Exception {
         {
-            String[] args = {"../", "DEV"};
+            String[] args = {"../"};
             Utils.setValueInConfig("cookie_same_site", "none");
             TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
@@ -246,7 +246,7 @@ public class ConfigTest {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
         }
         {
-            String[] args = {"../", "DEV"};
+            String[] args = {"../"};
             Utils.setValueInConfig("cookie_same_site", "NonE");
             TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
@@ -256,7 +256,7 @@ public class ConfigTest {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
         }
         {
-            String[] args = {"../", "DEV"};
+            String[] args = {"../"};
             Utils.setValueInConfig("cookie_same_site", "lax");
             TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
@@ -266,7 +266,7 @@ public class ConfigTest {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
         }
         {
-            String[] args = {"../", "DEV"};
+            String[] args = {"../"};
             Utils.setValueInConfig("cookie_same_site", "LaX");
             TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
@@ -276,7 +276,7 @@ public class ConfigTest {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
         }
         {
-            String[] args = {"../", "DEV"};
+            String[] args = {"../"};
             Utils.setValueInConfig("cookie_same_site", "strict");
             TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
@@ -286,7 +286,7 @@ public class ConfigTest {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
         }
         {
-            String[] args = {"../", "DEV"};
+            String[] args = {"../"};
             Utils.setValueInConfig("cookie_same_site", "STrict");
             TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
@@ -299,7 +299,7 @@ public class ConfigTest {
 
     @Test
     public void testThatMissingConfigFileThrowsError() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         ProcessBuilder pb = new ProcessBuilder("rm", "config.yaml");
         pb.directory(new File(args[0]));
@@ -321,7 +321,7 @@ public class ConfigTest {
     @Test
     public void testCustomLocationForConfigLoadsCorrectly() throws Exception {
         //relative file path
-        String[] args = {"../", "DEV", "configFile=../temp/config.yaml"};
+        String[] args = {"../", "configFile=../temp/config.yaml"};
 
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
@@ -333,7 +333,7 @@ public class ConfigTest {
 
         //absolute file path
         File f = new File("../temp/config.yaml");
-        args = new String[]{"../", "DEV", "configFile=" + f.getAbsolutePath()};
+        args = new String[]{"../", "configFile=" + f.getAbsolutePath()};
 
         process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -373,23 +373,9 @@ public class ConfigTest {
     }
 
     @Test
-    public void startedInProductionModeShouldMakeCookieSecureTrue() throws InterruptedException {
-        String[] args = {"../", "PRODUCTION"};
-
-        TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
-
-        assertTrue("Config cookie secure did not match default",
-                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-    }
-
-    @Test
     public void startedInProductionModeShouldMakeCookieSecureFalseIfSetInConfig()
             throws InterruptedException, IOException {
-        String[] args = {"../", "PRODUCTION"};
+        String[] args = {"../"};
 
         Utils.setValueInConfig("cookie_secure", "false");
 
@@ -404,9 +390,9 @@ public class ConfigTest {
     }
 
     @Test
-    public void startedInDevnModeShouldMakeCookieSecureTrueIfSetInConfig()
+    public void startedInDevModeShouldMakeCookieSecureTrueIfSetInConfig()
             throws InterruptedException, IOException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         Utils.setValueInConfig("cookie_secure", "true");
 

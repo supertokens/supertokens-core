@@ -85,7 +85,7 @@ public class SessionTest3 {
             StorageTransactionLogicException, TokenTheftDetectedException, TryRefreshTokenException,
             UnauthorisedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -136,7 +136,7 @@ public class SessionTest3 {
 
         Utils.setValueInConfig("access_token_validity", "1");   // 1 second
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -186,7 +186,7 @@ public class SessionTest3 {
             StorageTransactionLogicException, TryRefreshTokenException,
             UnauthorisedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -242,7 +242,7 @@ public class SessionTest3 {
 
         Utils.setValueInConfig("refresh_token_validity", "" + 1.0 / 60.0);
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
         CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeleteExpiredSessions.RESOURCE_KEY, 1);
@@ -295,7 +295,7 @@ public class SessionTest3 {
 
         Utils.setValueInConfig("refresh_token_validity", "" + 1.0 / 60.0);
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
         CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeleteExpiredSessions.RESOURCE_KEY, 1);
@@ -349,7 +349,7 @@ public class SessionTest3 {
             IOException, InvalidKeySpecException,
             StorageTransactionLogicException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
         CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeleteExpiredSessions.RESOURCE_KEY, 1);
@@ -405,7 +405,7 @@ public class SessionTest3 {
 
         Utils.setValueInConfig("refresh_token_validity", "" + 1.0 / 60.0);
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
         CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeletePastOrphanedTokens.RESOURCE_KEY, 1);
@@ -459,7 +459,7 @@ public class SessionTest3 {
             StorageTransactionLogicException, UnauthorisedException, TokenTheftDetectedException,
             TryRefreshTokenException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
         CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeletePastOrphanedTokens.RESOURCE_KEY, 1);

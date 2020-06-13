@@ -66,7 +66,7 @@ public class HandshakeAPITest {
 
     @Test
     public void inputErrorsInHandshakeAPITest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -86,7 +86,7 @@ public class HandshakeAPITest {
 
     @Test
     public void signingKeyHandshakeAPITest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

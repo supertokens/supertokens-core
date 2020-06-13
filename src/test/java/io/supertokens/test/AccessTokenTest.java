@@ -79,7 +79,7 @@ public class AccessTokenTest {
     // *  - create session with some data -> expire -> get access token without verifying, check payload is fine.
     @Test
     public void testCreateSessionWithDataExpireGetAccessTokenAndCheckPayload() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_validity", "1"); // 1 second validity
 
@@ -119,7 +119,7 @@ public class AccessTokenTest {
     // what you gave
     @Test
     public void testSessionWithOldExpiryTimeForAccessToken() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -156,7 +156,7 @@ public class AccessTokenTest {
     // *  - create access token version 1 -> get version -> should be 1
     @Test
     public void testCreateAccessTokenVersion1AndCheck() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -184,7 +184,7 @@ public class AccessTokenTest {
     // *  - create access token version 2 -> get version -> should be 2
     @Test
     public void testCreateAccessTokenVersion2AndCheck() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -217,7 +217,7 @@ public class AccessTokenTest {
     public void inputOutputTest() throws InterruptedException, InvalidKeyException,
             NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException,
             UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
@@ -247,7 +247,7 @@ public class AccessTokenTest {
     public void inputOutputTestv1() throws InterruptedException, InvalidKeyException,
             NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException,
             UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
@@ -274,7 +274,7 @@ public class AccessTokenTest {
             StorageQueryException, StorageTransactionLogicException, IOException {
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 second
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
@@ -292,7 +292,7 @@ public class AccessTokenTest {
             InvalidKeySpecException, SignatureException {
         Utils.setValueInConfig("access_token_validity", "1"); // 1 second
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
@@ -319,7 +319,7 @@ public class AccessTokenTest {
     @Test
     public void verifyRandomAccessTokenFailure() throws InterruptedException,
             StorageQueryException, StorageTransactionLogicException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 

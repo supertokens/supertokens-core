@@ -115,7 +115,7 @@ public class RefreshTokenTest {
     public void createRefreshTokenAndLoadAfterProcessRestart()
             throws InterruptedException, NoSuchAlgorithmException,
             StorageQueryException, UnauthorisedException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 

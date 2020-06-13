@@ -72,7 +72,7 @@ public class ApiVersionAPITest {
     // * being returned by this API.
     @Test
     public void testThatCoreDriverInterfaceSupportedVersionsAreBeingReturnedByTheAPI() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -106,7 +106,7 @@ public class ApiVersionAPITest {
     //- no version needed for this API.
     @Test
     public void testThatNoVersionIsNeededForThisAPI() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -134,7 +134,7 @@ public class ApiVersionAPITest {
     //- test that all returned versions are correct based on WebserverAPI's supportedVersions set
     @Test
     public void testThatApiVersionsAreBasedOnWebserverAPIsSupportedVersions() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -158,7 +158,7 @@ public class ApiVersionAPITest {
     // - check that all returned versions have X.Y format
     @Test
     public void testThatAllReturnedVersionsHaveXYFormat() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

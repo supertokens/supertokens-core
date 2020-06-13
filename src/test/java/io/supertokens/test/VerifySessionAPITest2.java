@@ -64,7 +64,7 @@ public class VerifySessionAPITest2 {
 
     @Test
     public void successOutputCheckNoNewAccessToken() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -113,7 +113,7 @@ public class VerifySessionAPITest2 {
 
     @Test
     public void successOutputCheckNewAccessToken() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -183,7 +183,7 @@ public class VerifySessionAPITest2 {
     @Test
     public void tryRefreshTokenOutputCheck() throws Exception {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -209,7 +209,7 @@ public class VerifySessionAPITest2 {
 
     @Test
     public void badInputTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -304,7 +304,7 @@ public class VerifySessionAPITest2 {
 
     @Test
     public void devLicenseSessionExpiredTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         WebserverAPITest.getInstance(process.getProcess()).setRandomnessThreshold(0);
         WebserverAPITest.getInstance(process.getProcess()).setTimeAfterWhichToThrowUnauthorised(0);

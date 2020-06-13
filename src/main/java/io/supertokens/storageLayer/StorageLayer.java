@@ -89,7 +89,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
         if (!main.isForceInMemoryDB() && (
                 storageLayerTemp.canBeUsed(configFilePath) ||
-                        CLIOptions.get(main).getUserDevProductionMode().equals(CLIOptions.MODE_PRODUCTION) ||
                         CLIOptions.get(main).isForceNoInMemoryDB()
         )) {
             this.storageLayer = storageLayerTemp;

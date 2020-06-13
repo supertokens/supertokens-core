@@ -69,7 +69,7 @@ public class DeviceDriverInAPITest {
 
     @Test
     public void sessionPostDeviceDriverInfoTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
@@ -260,7 +260,7 @@ public class DeviceDriverInAPITest {
 
     @Test
     public void badInputTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
@@ -342,7 +342,7 @@ public class DeviceDriverInAPITest {
 
     @Test
     public void sessionVerifyPostDeviceDriverInfoTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
@@ -406,7 +406,7 @@ public class DeviceDriverInAPITest {
 
     @Test
     public void badInputSessionVerifyTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
@@ -508,7 +508,7 @@ public class DeviceDriverInAPITest {
 
     @Test
     public void sessionRefreshPostDeviceDriverInfoTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
@@ -572,7 +572,7 @@ public class DeviceDriverInAPITest {
 
     @Test
     public void badInputSessionRefreshTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
@@ -672,7 +672,7 @@ public class DeviceDriverInAPITest {
 
     @Test
     public void handshakePostDeviceDriverInfoTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
 
         JsonObject frontendSDKEntry = new JsonObject();
@@ -717,7 +717,7 @@ public class DeviceDriverInAPITest {
 
     @Test
     public void badInputHandshakeTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
 
         JsonObject frontendSDKEntry = new JsonObject();

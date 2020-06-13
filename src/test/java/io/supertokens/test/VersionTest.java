@@ -67,7 +67,7 @@ public class VersionTest {
 
     @Test
     public void simpleLoadingOfVersionTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -104,7 +104,7 @@ public class VersionTest {
             process1 = pb.start();
             process1.waitFor();
 
-            String[] args = {"../", "DEV"};
+            String[] args = {"../"};
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
 
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);

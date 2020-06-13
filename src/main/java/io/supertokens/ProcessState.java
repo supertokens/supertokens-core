@@ -75,8 +75,7 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
      * INIT: Initialization started INIT_FAILURE: Initialization failed
      * STARTED: Initialized successfully SHUTTING_DOWN: Shut down signal received STOPPED
      * APP_ID_MISMATCH: Multiple processes with different appIds detected
-     * DEV_PROD_MODE_MISMATCH: Multiple processes with different modes(dev,
-     * production) detected RETRYING_ACCESS_TOKEN_JWT_VERIFICATION: When access
+     * RETRYING_ACCESS_TOKEN_JWT_VERIFICATION: When access
      * token verification fails due to change in signing key, so we retry it
      * CRON_TASK_ERROR_LOGGING: When an exception is thrown from a Cronjob
      * DEVICE_DRIVER_INFO_LOGGED:When program is saving deviceDriverInfo into ping
@@ -84,7 +83,7 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
      * WAITING_TO_INIT_STORAGE_MODULE: When the program is going to possibly wait to init the storage module
      */
     public enum PROCESS_STATE {
-        INIT, INIT_FAILURE, STARTED, SHUTTING_DOWN, STOPPED, APP_ID_MISMATCH, DEV_PROD_MODE_MISMATCH,
+        INIT, INIT_FAILURE, STARTED, SHUTTING_DOWN, STOPPED, APP_ID_MISMATCH,
         RETRYING_ACCESS_TOKEN_JWT_VERIFICATION, CRON_TASK_ERROR_LOGGING, DEVICE_DRIVER_INFO_SAVED,
         SERVER_PING, WAITING_TO_INIT_STORAGE_MODULE
     }

@@ -68,7 +68,7 @@ public class RefreshSessionAPITest {
 
     @Test
     public void badInputErrorTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -104,7 +104,7 @@ public class RefreshSessionAPITest {
 
     @Test
     public void successOutputWithInvalidRefreshTokenTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         JsonObject josnBody = new JsonObject();
         josnBody.addProperty("refreshToken", "");
@@ -140,7 +140,7 @@ public class RefreshSessionAPITest {
 
     @Test
     public void successOutputWithValidRefreshTokenTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
@@ -218,7 +218,7 @@ public class RefreshSessionAPITest {
 
     @Test
     public void throwsRandomSessionExpiredTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         WebserverAPITest.getInstance(process.getProcess()).setRandomnessThreshold(0);
         WebserverAPITest.getInstance(process.getProcess()).setTimeAfterWhichToThrowUnauthorised(0);

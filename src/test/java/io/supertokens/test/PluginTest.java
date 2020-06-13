@@ -80,7 +80,7 @@ public class PluginTest {
 
     @Test
     public void missingPluginFolderTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         try {
             //copy plugin directory to temp directory
@@ -110,7 +110,7 @@ public class PluginTest {
 
     @Test
     public void emptyPluginFolderTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         try {
             //copy plugin directory to temp/plugin directory
             copyDirectoryToDirectory(new File(args[0] + "plugin"), new File(args[0] + "temp/plugin"));
@@ -141,7 +141,7 @@ public class PluginTest {
 
     @Test
     public void doesNotContainPluginTest() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         String versionFilePath = args[0] + "version.yaml";
@@ -214,7 +214,7 @@ public class PluginTest {
 
 //    @Test
 //    public void moreThanOneStoragePluginTest() throws Exception {
-//        String[] args = {"../", "DEV"};
+//        String[] args = {"../"};
 //        String installDir = "../";
 //        final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 //        String versionFilePath = args[0] + "version.yaml";

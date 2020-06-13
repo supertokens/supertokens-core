@@ -88,7 +88,7 @@ public class SessionTest4 {
             IOException, InvalidKeySpecException,
             StorageTransactionLogicException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -159,7 +159,7 @@ public class SessionTest4 {
     public void gettingAndUpdatingSessionDataForNonExistantSession()
             throws InterruptedException, StorageQueryException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -189,7 +189,7 @@ public class SessionTest4 {
             StorageTransactionLogicException, InvalidKeyException, InvalidKeySpecException,
             UnauthorisedException, TokenTheftDetectedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
         CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeletePastOrphanedTokens.RESOURCE_KEY, 1);
@@ -233,7 +233,7 @@ public class SessionTest4 {
         Utils.setValueInConfig("access_token_path", "/accessPath");
         Utils.setValueInConfig("cookie_domain", "localhost");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -312,7 +312,7 @@ public class SessionTest4 {
             TokenTheftDetectedException, TryRefreshTokenException, SignatureException {
         Utils.setValueInConfig("cookie_secure", "false");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -379,7 +379,7 @@ public class SessionTest4 {
 
         Utils.setValueInConfig("access_token_validity", "1");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

@@ -77,7 +77,7 @@ public class CoreConfig {
     private String cookie_domain = "localhost";
 
     @JsonProperty
-    private Boolean cookie_secure = null;
+    private Boolean cookie_secure = false;
 
     @JsonProperty
     private String cookie_same_site = "none";
@@ -161,10 +161,6 @@ public class CoreConfig {
     }
 
     public boolean getCookieSecure(Main main) {
-        if (cookie_secure == null) {
-            // if developing return false so that users who are getting started have an easier time.
-            return !CLIOptions.get(main).getUserDevProductionMode().equals("DEV");
-        }
         return cookie_secure;
     }
 

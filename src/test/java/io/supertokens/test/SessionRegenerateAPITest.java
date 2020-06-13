@@ -65,7 +65,7 @@ public class SessionRegenerateAPITest {
 
     @Test
     public void testCallRegenerateAPIWithNewJwtPayloadAndCheckResponses() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -138,7 +138,7 @@ public class SessionRegenerateAPITest {
 
     @Test
     public void testWaitForAccessTokenToExpireCallRegenerateWithNewJWTPayloadAndCheckResponses() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_validity", "1");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -197,7 +197,7 @@ public class SessionRegenerateAPITest {
     @Test
     public void testRefreshTokenExpiryCallRegenerateAPIWithNewPayloadAndCheckResponse() throws Exception {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         Utils.setValueInConfig("refresh_token_validity", "" + 1.0 / 60);// 1 second validity (value in mins)
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);

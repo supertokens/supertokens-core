@@ -88,7 +88,7 @@ public class InMemoryDBTest {
             StorageTransactionLogicException, SignatureException {
 
         {
-            String[] args = {"../", "DEV"};
+            String[] args = {"../"};
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
             process.getProcess().setForceInMemoryDB();
             process.startProcess();
@@ -112,7 +112,7 @@ public class InMemoryDBTest {
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
         {
-            String[] args = {"../", "DEV"};
+            String[] args = {"../"};
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
             process.getProcess().setForceInMemoryDB();
             process.startProcess();
@@ -132,7 +132,7 @@ public class InMemoryDBTest {
             IOException, InvalidKeySpecException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -178,7 +178,7 @@ public class InMemoryDBTest {
 
         Utils.setValueInConfig("enable_anti_csrf", "false");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -220,7 +220,7 @@ public class InMemoryDBTest {
 
         Utils.setValueInConfig("access_token_validity", "1");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -256,7 +256,7 @@ public class InMemoryDBTest {
             IOException, InvalidKeySpecException,
             StorageTransactionLogicException, UnauthorisedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -303,7 +303,7 @@ public class InMemoryDBTest {
             UnsupportedEncodingException, InvalidKeySpecException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -341,7 +341,7 @@ public class InMemoryDBTest {
             UnsupportedEncodingException, InvalidKeySpecException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -392,7 +392,7 @@ public class InMemoryDBTest {
 
         Utils.setValueInConfig("access_token_validity", "1");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -487,7 +487,7 @@ public class InMemoryDBTest {
         Utils.setValueInConfig("access_token_validity", "1");
         Utils.setValueInConfig("enable_anti_csrf", "false");
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -578,7 +578,7 @@ public class InMemoryDBTest {
             , BadPaddingException, UnsupportedEncodingException, InvalidKeySpecException, IllegalBlockSizeException,
             StorageTransactionLogicException, UnauthorisedException, SignatureException {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -616,7 +616,7 @@ public class InMemoryDBTest {
 
         Utils.setValueInConfig("refresh_token_validity", "" + 1.5 / 60.0);
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -706,7 +706,7 @@ public class InMemoryDBTest {
 
     @Test
     public void forceInMemDBIsTrueIfSetToTrue() throws InterruptedException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -720,7 +720,7 @@ public class InMemoryDBTest {
 
     @Test
     public void forceInMemDBIsFalseByDefault() throws InterruptedException {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.startProcess();
         assertFalse(process.getProcess().isForceInMemoryDB());

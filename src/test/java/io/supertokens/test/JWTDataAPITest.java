@@ -68,7 +68,7 @@ public class JWTDataAPITest {
     // *   - create session with some JWT payload -> change JWT payload using API -> check this is reflected in db
     @Test
     public void testCreateSessionWithPayloadChangePayloadWithApiAndCheckChangeReflectedInDB() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -122,7 +122,7 @@ public class JWTDataAPITest {
     // reflected in db
     @Test
     public void testCreateSessionWithJwtPayloadChangePayloadToEmptyUsingSessionCheckIfReflectedInDB() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -172,7 +172,7 @@ public class JWTDataAPITest {
     // *  - create session -> let it expire, remove from db -> call update API -> make sure you get unauthorised error
     @Test
     public void testCreateSessionLetItExpireCallPutAPIAndCheckUnauthorised() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_validity", "1");// 1 second validity
         Utils.setValueInConfig("refresh_token_validity", "" + 1.0 / 60);// 1 second validity (value in mins)
@@ -233,7 +233,7 @@ public class JWTDataAPITest {
     @Test
     public void testCreateSessionLetItExpreRemoveFromDBCallGetAPIAndCheckUnauthorised() throws Exception {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_validity", "1");// 1 second validity
         Utils.setValueInConfig("refresh_token_validity", "" + 1.0 / 60);// 1 second validity (value in mins)
@@ -292,7 +292,7 @@ public class JWTDataAPITest {
     @Test
     public void testJWTDataAPI() throws Exception {
 
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -347,7 +347,7 @@ public class JWTDataAPITest {
 
     @Test
     public void testBapInputJWTDataAPI() throws Exception {
-        String[] args = {"../", "DEV"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
