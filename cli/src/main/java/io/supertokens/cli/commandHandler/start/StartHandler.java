@@ -104,6 +104,9 @@ public class StartHandler extends CommandHandler {
             if (port != null) {
                 commands.add("port=" + port);
             }
+            if (forceNoInMemDB) {
+                commands.add("forceNoInMemDB=true");
+            }
         }
         if (!foreground) {
             try {

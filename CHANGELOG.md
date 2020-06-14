@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2020-05-14
+### Fixed
+- Forcing of no in memory database flag to start command on Linux fixed
+
 ## [2.2.0] - 2020-05-20
 ### Added
 - Uses in memory database in dev mode if database is not configured
