@@ -92,7 +92,11 @@ public class UpdateCompletionHandler extends CommandHandler {
         // 1) Fetch all running processes and their information
         List<Processes.RunningProcess> runningProcesses = Processes.getRunningProcesses(originalInstallDir);
         for (Processes.RunningProcess runningProcess : runningProcesses) {
-            runningProcess.fetchConfigFilePath();
+            try {
+                runningProcess.fetchConfigFilePath();
+            } catch (Exception ignored) {
+                // this will cause an error to be thrown below where it will not be able to start all processes
+            }
         }
 
         // 2) Stop all the running processes
@@ -174,6 +178,9 @@ public class UpdateCompletionHandler extends CommandHandler {
         try {
             // TODO: if the update command is run via sudo, then that is also used for these children processes.
             for (Processes.RunningProcess runningProcess : runningProcesses) {
+                if (runningProcess.configFilePath == null) {
+                    throw new Exception("Config file location missing");
+                }
                 Logging.info("Restarting process on: " + runningProcess.hostName + ":" + runningProcess.port);
                 ProcessBuilder pb;
                 if (OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) {
