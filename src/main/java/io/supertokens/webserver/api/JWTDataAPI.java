@@ -62,7 +62,7 @@ public class JWTDataAPI extends WebserverAPI {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        if (this.version.equals("1.0")) {
+        if (super.getVersionFromRequest(req).equals("1.0")) {
             throw new ServletException(
                     new BadRequestException("CDI version not supported"));
         }
@@ -94,7 +94,7 @@ public class JWTDataAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        if (this.version.equals("1.0")) {
+        if (super.getVersionFromRequest(req).equals("1.0")) {
             throw new ServletException(
                     new BadRequestException("CDI version not supported"));
         }

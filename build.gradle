@@ -10,7 +10,7 @@ plugins {
     id 'application'
 }
 
-version = "2.2.1"
+version = "2.2.2"
 
 repositories {
     jcenter()

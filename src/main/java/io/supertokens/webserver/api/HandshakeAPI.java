@@ -75,7 +75,7 @@ public class HandshakeAPI extends WebserverAPI {
             result.addProperty("refreshTokenPath", Config.getConfig(main).getRefreshAPIPath());
             result.addProperty("enableAntiCsrf", Config.getConfig(main).getEnableAntiCSRF());
             result.addProperty("accessTokenBlacklistingEnabled", Config.getConfig(main).getAccessTokenBlacklisting());
-            if (!this.version.equals("1.0")) {
+            if (!super.getVersionFromRequest(req).equals("1.0")) {
                 result.addProperty("cookieSameSite", Config.getConfig(main).getCookieSameSite());
                 result.addProperty("idRefreshTokenPath", Config.getConfig(main).getAccessTokenPath());
                 result.addProperty("sessionExpiredStatusCode", Config.getConfig(main).getSessionExpiredStatusCode());

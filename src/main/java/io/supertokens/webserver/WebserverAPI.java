@@ -56,12 +56,12 @@ public abstract class WebserverAPI extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
     protected final Main main;
-    protected String version = null;
     public static final Set<String> supportedVersions = new HashSet<>();
 
     static {
         supportedVersions.add("1.0");
         supportedVersions.add("2.0");
+        supportedVersions.add("2.1");
     }
 
     public WebserverAPI(Main main) {
@@ -135,14 +135,14 @@ public abstract class WebserverAPI extends HttpServlet {
         this.sendTextResponse(405, "Method not supported", resp);
     }
 
-    private void assertThatVersionIsCompatible() throws ServletException {
-        if (this.version == null) {
+    private void assertThatVersionIsCompatible(String version) throws ServletException {
+        if (version == null) {
             throw new ServletException(new BadRequestException(
                     "cdi-version not provided"));
         }
-        if (!supportedVersions.contains(this.version)) {
+        if (!supportedVersions.contains(version)) {
             throw new ServletException(new BadRequestException(
-                    "cdi-version " + this.version + " not supported"));
+                    "cdi-version " + version + " not supported"));
         }
     }
 
@@ -154,13 +154,11 @@ public abstract class WebserverAPI extends HttpServlet {
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             if (this.versionNeeded()) {
-                String version = req.getHeader("cdi-version");
-                // in api spec 1.0.X, we did not have cdi-version header
-                this.version = version == null ? "1.0" : version;
-                assertThatVersionIsCompatible();
+                String version = getVersionFromRequest(req);
+                assertThatVersionIsCompatible(version);
                 Logging.debug(main,
                         "API called: " + this.getPath() + ". Method: " + req.getMethod() + ". Version: " +
-                                this.version);
+                                version);
             } else {
                 Logging.debug(main,
                         "API called: " + this.getPath() + ". Method: " + req.getMethod());
@@ -186,6 +184,12 @@ public abstract class WebserverAPI extends HttpServlet {
         }
         Logging.debug(main, "API ended: " + this.getPath() + ". Method: " + req.getMethod());
         RPMCalculator.getInstance(main).updateRPM();
+    }
+
+    protected String getVersionFromRequest(HttpServletRequest req) {
+        String version = req.getHeader("cdi-version");
+        // in api spec 1.0.X, we did not have cdi-version header
+        return version == null ? "1.0" : version;
     }
 
     protected static class BadRequestException extends Exception {

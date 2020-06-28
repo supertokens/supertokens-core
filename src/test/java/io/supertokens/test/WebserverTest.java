@@ -108,7 +108,7 @@ public class WebserverTest extends Mockito {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                     throws IOException, ServletException {
-                if (WebserverAPI.supportedVersions.contains(this.version)) {
+                if (WebserverAPI.supportedVersions.contains(super.getVersionFromRequest(req))) {
                     sendTextResponse(200, "version supported", resp);
                 } else {
                     sendTextResponse(500, "should not come here", resp);
@@ -157,7 +157,7 @@ public class WebserverTest extends Mockito {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                     throws IOException, ServletException {
-                sendTextResponse(200, this.version, resp);
+                sendTextResponse(200, super.getVersionFromRequest(req), resp);
             }
         });
 

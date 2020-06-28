@@ -81,7 +81,7 @@ public class RefreshSessionAPI extends WebserverAPI {
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
 
-            if (this.version.equals("1.0")) {
+            if (super.getVersionFromRequest(req).equals("1.0")) {
                 result.getAsJsonObject("accessToken").remove("sameSite");
                 result.getAsJsonObject("refreshToken").remove("sameSite");
                 result.getAsJsonObject("idRefreshToken").remove("sameSite");

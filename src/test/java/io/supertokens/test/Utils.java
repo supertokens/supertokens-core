@@ -85,7 +85,7 @@ abstract class Utils extends Mockito {
     }
 
     static String getCdiVersion2ForTests() {
-        return "2.0";
+        return "2.1";
     }
 
     public static void reset() {
