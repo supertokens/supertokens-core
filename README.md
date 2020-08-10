@@ -7,6 +7,13 @@
 <img src="https://img.shields.io/discord/603466164219281420.svg?logo=discord"
     alt="chat on Discord"></a>
 
+## Notice
+This community version has been deprecated for the time being. Please sign up on our website to get the Pro version
+ of SuperTokens.
+
+If you are already a user of the community version, please [contact us](mailto:team@supertokens.io), and we will help
+ you move to the Pro version (takes ~ 5 minutes).
+
 ## About
 SuperTokens is an advanced session management solution for web and mobile apps. It is different from most other
  solutions because it prevents all session related attacks, as well as detects session hijacking using rotating
