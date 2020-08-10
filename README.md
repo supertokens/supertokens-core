@@ -10,7 +10,7 @@
 ## Notice
 This community version has been deprecated for the time being. We will still be offering an open source version in the future, so if you like SuperTokens, please star us here!
 
-For new users, please sign up on our website to get the Pro version of SuperTokens. If you are already a user of the community version, please [contact us](mailto:team@supertokens.io), and we will help you move to the Pro version (takes ~ 5 minutes).
+For new users, please sign up on our [website](https://supertokens.io) to get the Pro version of SuperTokens. If you are already a user of the community version, please [contact us](mailto:team@supertokens.io), and we will help you move to the Pro version (takes ~ 5 minutes).
 
 ## About
 SuperTokens is an advanced session management solution for web and mobile apps. It is different from most other
