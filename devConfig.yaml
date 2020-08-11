@@ -90,5 +90,5 @@ core_config_version: 0
 # max_server_pool_size:
 
 
-# (OPTIONAL | Default: 440) integer value. The status code your backend APIs send on session expiry
+# (OPTIONAL | Default: 401) integer value. The status code your backend APIs send on session expiry
 # session_expired_status_code:

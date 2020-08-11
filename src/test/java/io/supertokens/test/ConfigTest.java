@@ -69,7 +69,7 @@ public class ConfigTest {
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
-    //- test for session_expired_status_code config -> default is 440; range is >= 400, < 600;
+    //- test for session_expired_status_code config -> default is 401; range is >= 400, < 600;
     @Test
     public void testSessionExpiredStatusCodeRangeInConfig() throws Exception {
         String[] args = {"../"};
@@ -348,7 +348,7 @@ public class ConfigTest {
 
         assertEquals(config.getHost(process.getProcess()), "localhost");
         assertEquals(config.getPort(process.getProcess()), 3567);
-        assertEquals(config.getSessionExpiredStatusCode(), 440);
+        assertEquals(config.getSessionExpiredStatusCode(), 401);
         assertEquals(10, config.getMaxThreadPoolSize());
         assertFalse(config.getHttpsEnabled());
 

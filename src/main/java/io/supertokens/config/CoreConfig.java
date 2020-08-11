@@ -74,7 +74,7 @@ public class CoreConfig {
     private int max_server_pool_size = 10;
 
     @JsonProperty
-    private int session_expired_status_code = 440;
+    private int session_expired_status_code = 401;
 
     //	TODO: add https in later version
 //	# (OPTIONAL) boolean value (true or false). Set to true if you want to enable https requests to SuperTokens.
