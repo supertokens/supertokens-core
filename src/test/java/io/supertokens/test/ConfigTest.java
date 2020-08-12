@@ -338,7 +338,7 @@ public class ConfigTest {
         assertTrue("Config enable anti CSRF did not match default", config.getEnableAntiCSRF());
         assertEquals("Config refresh token validity did not match default", config.getRefreshTokenValidity(),
                 60 * 2400 * 60 * (long) 1000);
-        assertEquals("Config refresh API path did not match default", config.getRefreshAPIPath(), "/refresh");
+        assertEquals("Config refresh API path did not match default", config.getRefreshAPIPath(), "/session/refresh");
         assertEquals("Config info log path did not match default", config.getInfoLogPath(process.getProcess()),
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/info.log");
         assertEquals("Config error log path did not match default", config.getErrorLogPath(process.getProcess()),

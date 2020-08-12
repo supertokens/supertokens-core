@@ -46,7 +46,7 @@ public class CoreConfig {
     private double refresh_token_validity = 60 * 2400; // in mins
 
     @JsonProperty
-    private String refresh_api_path = "/refresh";
+    private String refresh_api_path = "/session/refresh";
 
     private final String logDefault = "asdkfahbdfk3kjHS";
     @JsonProperty

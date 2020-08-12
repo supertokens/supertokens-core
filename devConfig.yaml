@@ -53,7 +53,7 @@ core_config_version: 0
 # refresh_token_validity:
 
 
-# (OPTIONAL | Default: "/refresh") string value. Set this to be the path for your refresh API. For example,
+# (OPTIONAL | Default: "/session/refresh") string value. Set this to be the path for your refresh API. For example,
 # if your refresh API URL is "https://api.example.com/refresh", then the
 # value of this param should be "/refresh"
 # refresh_api_path:

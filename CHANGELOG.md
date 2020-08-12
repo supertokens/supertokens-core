@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.3.0] - 2020-08-11
 ### Changed
 - Makes default session expiry status code 401
+- Makes default refresh API path "/session/refresh"
 
 ## [2.2.3] - 2020-08-10
 ### Changes
