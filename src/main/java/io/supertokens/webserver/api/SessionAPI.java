@@ -62,7 +62,8 @@ public class SessionAPI extends WebserverAPI {
 
         try {
             SessionInformationHolder sessionInfo = Session
-                    .createNewSession(main, userId, userDataInJWT, userDataInDatabase);
+                    .createNewSession(main, userId, userDataInJWT, userDataInDatabase,
+                            super.getVersionFromRequest(req));
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
 

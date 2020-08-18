@@ -144,7 +144,7 @@ public class VerifySessionAPITest {
         assertEquals(response.get("accessToken").getAsJsonObject().get("cookieSecure").getAsBoolean(),
                 Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
         assertEquals(response.get("accessToken").getAsJsonObject().get("domain").getAsString(),
-                Config.getConfig(process.getProcess()).getCookieDomain());
+                Config.getConfig(process.getProcess()).getCookieDomain(Utils.getCdiVersion1ForTests()));
         assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 6);
 
         assertNotNull(response.get("jwtSigningPublicKey").getAsString());

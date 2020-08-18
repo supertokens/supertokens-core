@@ -44,6 +44,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Objects;
 
 import static org.junit.Assert.*;
 
@@ -183,8 +184,9 @@ public class ServerPingTest extends Mockito {
 
         assertEquals("Server ping instanceID does not match process instanceID",
                 pingData.get("instanceId").getAsString(), process.getProcess().getProcessId());
+        String configCookieDomain = Config.getConfig(process.getProcess()).getCookieDomain(null);
         assertEquals("Server ping cookieDomain does not match process cookieDomain",
-                pingData.get("cookieDomain").getAsString(), Config.getConfig(process.getProcess()).getCookieDomain());
+                pingData.get("cookieDomain").getAsString(), Objects.requireNonNullElse(configCookieDomain, "not set"));
         assertEquals("Server ping instanceStartTime does not match process instanceStartTime",
                 pingData.get("instanceStartTime").getAsLong(), process.getProcess().getProcessStartTime());
         assertEquals("Server ping licenseKeyId does not match process licenseKeyId",

@@ -345,7 +345,7 @@ public class SessionTest4 {
         assertNotEquals(newSession.accessToken.createdTime, refreshedSession.accessToken.createdTime);
         assertEquals(newSession.session.userDataInJWT.toString(), refreshedSession.session.userDataInJWT.toString());
         assert newSession.accessToken.cookieSecure != null;
-        assert newSession.accessToken.domain != null;
+        assert newSession.accessToken.domain == null;
         assertFalse(newSession.accessToken.cookieSecure);
 
         process.kill();

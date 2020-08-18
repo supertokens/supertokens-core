@@ -138,7 +138,7 @@ public class InMemoryDBTest {
         assert sessionInfo.idRefreshToken != null;
         assert sessionInfo.idRefreshToken.cookieSecure != null;
         assert sessionInfo.idRefreshToken.cookiePath != null;
-        assert sessionInfo.idRefreshToken.domain != null;
+        assert sessionInfo.idRefreshToken.domain == null;
 
         SessionInformationHolder verifiedSession = Session.getSession(process.getProcess(),
                 sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, true);

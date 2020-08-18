@@ -106,7 +106,12 @@ public class Ping extends ResourceDistributor.SingletonResource {
         requestBody.addProperty("instanceStartTime", main.getProcessStartTime());
         requestBody.addProperty("licenseKeyId", licenseKeyId);
         requestBody.addProperty("currentlyRunningPlanType", currentlyRunningPlanType);
-        requestBody.addProperty("cookieDomain", Config.getConfig(main).getCookieDomain());
+        if (Config.getConfig(main).getCookieDomain(null) != null) {
+            requestBody.addProperty("cookieDomain",
+                    Config.getConfig(main).getCookieDomain(null));
+        } else {
+            requestBody.addProperty("cookieDomain", "not set");
+        }
 
         // form JSON body
         JsonObject pluginJson = new JsonObject();

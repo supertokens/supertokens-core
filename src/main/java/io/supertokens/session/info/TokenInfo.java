@@ -30,12 +30,13 @@ public class TokenInfo {
     @Nullable
     public final Boolean cookieSecure;
 
+    @Nullable
     public final String domain;
 
     public final String sameSite;
 
     public TokenInfo(String token, long expiry, long createdTime, String cookiePath, @Nullable
-            Boolean cookieSecure, String domain, String sameSite) {
+            Boolean cookieSecure, @Nullable String domain, String sameSite) {
         this.token = token;
         this.expiry = expiry;
         this.createdTime = createdTime;

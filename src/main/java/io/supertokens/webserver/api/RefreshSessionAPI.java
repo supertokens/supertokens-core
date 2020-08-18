@@ -59,7 +59,7 @@ public class RefreshSessionAPI extends WebserverAPI {
 
         try {
             SessionInformationHolder sessionInfo = Session
-                    .refreshSession(main, refreshToken);
+                    .refreshSession(main, refreshToken, super.getVersionFromRequest(req));
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
 

@@ -31,7 +31,7 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
-public class HandshakeAPITest2 {
+public class HandshakeAPITest2_2 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -57,7 +57,7 @@ public class HandshakeAPITest2 {
         try {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/handshake", null, 1000, 1000,
-                            null, Utils.getCdiVersion2ForTests());
+                            null, Utils.getCdiVersion2_2ForTests());
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 &&
                     e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
@@ -93,8 +93,45 @@ public class HandshakeAPITest2 {
         JsonObject handshakeResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/handshake", deviceDriverInfo,
                         1000, 1000,
-                        null, Utils.getCdiVersion2ForTests());
-        checkHandshakeAPIResponse(handshakeResponse, process);
+                        null, Utils.getCdiVersion2_2ForTests());
+        checkHandshakeAPIResponse(handshakeResponse, process, true);
+        assertEquals(handshakeResponse.entrySet().size(), 11);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+    }
+
+    @Test
+    public void signingKeyHandshakeAPIWithCookiesTest() throws Exception {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("cookie_domain", "localhost");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject frontendSDKEntry = new JsonObject();
+        frontendSDKEntry.addProperty("name", "testName");
+        frontendSDKEntry.addProperty("version", "testVersion");
+
+        JsonArray frontendSDK = new JsonArray();
+        frontendSDK.add(frontendSDKEntry);
+
+        JsonObject driver = new JsonObject();
+        driver.addProperty("name", "testName");
+        driver.addProperty("version", "testVersion");
+
+
+        JsonObject deviceDriverInfo = new JsonObject();
+        deviceDriverInfo.add("frontendSDK", frontendSDK);
+        deviceDriverInfo.add("driver", driver);
+
+        JsonObject handshakeResponse = io.supertokens.test.httpRequest.HttpRequest
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/handshake", deviceDriverInfo,
+                        1000, 1000,
+                        null, Utils.getCdiVersion2_2ForTests());
+        checkHandshakeAPIResponse(handshakeResponse, process, false);
         assertEquals(handshakeResponse.entrySet().size(), 12);
 
         process.kill();
@@ -103,7 +140,8 @@ public class HandshakeAPITest2 {
     }
 
 
-    private static void checkHandshakeAPIResponse(JsonObject response, TestingProcessManager.TestingProcess process)
+    private static void checkHandshakeAPIResponse(JsonObject response, TestingProcessManager.TestingProcess process,
+                                                  boolean cookieDomainShouldBeNull)
             throws StorageQueryException, StorageTransactionLogicException {
         //check status
         assertEquals(response.get("status").getAsString(), "OK");
@@ -117,8 +155,12 @@ public class HandshakeAPITest2 {
                 AccessTokenSigningKey.getInstance(process.getProcess()).getKeyExpiryTime());
 
         //check cookieDomain
-        assertEquals(response.get("cookieDomain").getAsString(),
-                Config.getConfig(process.getProcess()).getCookieDomain(Utils.getCdiVersion2ForTests()));
+        if (cookieDomainShouldBeNull) {
+            assertNull(response.get("cookieDomain"));
+        } else {
+            assertEquals(response.get("cookieDomain").getAsString(),
+                    Config.getConfig(process.getProcess()).getCookieDomain(Utils.getCdiVersion2_2ForTests()));
+        }
 
         //check cookieSecure
         assertEquals(response.get("cookieSecure").getAsBoolean(),

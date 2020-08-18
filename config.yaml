@@ -71,9 +71,9 @@ core_config_version: 0
 # error_log_path:
 
 
-# (OPTIONAL | Default: "localhost") string value. This is the domain to set for all the cookies.
-# This should be equal to the domain of your APIs. For example (api.example.com)
-# Do not set any port here and do not put http:// or https://
+# (OPTIONAL | Default: not set) string value. If not set, it automatically is set to the domain from where the
+# cookies were created. If this is set, it should be equal to the domain of your APIs.
+# For example (api.example.com). Do not set any port here and do not put http:// or https://
 # cookie_domain:
 
 

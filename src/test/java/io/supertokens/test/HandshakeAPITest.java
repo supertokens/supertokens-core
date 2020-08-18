@@ -106,7 +106,7 @@ public class HandshakeAPITest {
 
         //check cookieDomain
         assertEquals(response.get("cookieDomain").getAsString(),
-                Config.getConfig(process.getProcess()).getCookieDomain());
+                Config.getConfig(process.getProcess()).getCookieDomain(Utils.getCdiVersion1ForTests()));
 
         //check cookieSecure
         assertEquals(response.get("cookieSecure").getAsBoolean(),

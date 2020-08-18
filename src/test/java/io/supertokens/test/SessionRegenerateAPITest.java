@@ -104,7 +104,7 @@ public class SessionRegenerateAPITest {
         assertEquals(sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("cookieSecure").getAsBoolean(),
                 Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
         assertEquals(sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("domain").getAsString(),
-                Config.getConfig(process.getProcess()).getCookieDomain());
+                Config.getConfig(process.getProcess()).getCookieDomain(Utils.getCdiVersion2ForTests()));
         assertEquals(sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("sameSite").getAsString(),
                 Config.getConfig(process.getProcess()).getCookieSameSite());
 

@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.tokenInfo.PastTokenInfo;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -66,7 +67,8 @@ public class RefreshToken {
     }
 
     public static TokenInfo createNewRefreshToken(@Nonnull Main main, @Nonnull String sessionHandle,
-                                                  @Nullable String parentRefreshTokenHash2)
+                                                  @Nullable String parentRefreshTokenHash2,
+                                                  @Nullable String currCDIVersion)
             throws NoSuchAlgorithmException, StorageQueryException {
         if (LicenseKey.get(main).getPlanType() != PLAN_TYPE.FREE) {
             throw new UnsupportedOperationException("Using free create refresh function for non free version");
@@ -82,9 +84,17 @@ public class RefreshToken {
 
         return new TokenInfo(token, now + Config.getConfig(main).getRefreshTokenValidity(), now,
                 Config.getConfig(main).getRefreshAPIPath(),
-                Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain(),
+                Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain(currCDIVersion),
                 Config.getConfig(main).getCookieSameSite());
     }
+
+    @TestOnly
+    public static TokenInfo createNewRefreshToken(@Nonnull Main main, @Nonnull String sessionHandle,
+                                                  @Nullable String parentRefreshTokenHash2)
+            throws NoSuchAlgorithmException, StorageQueryException {
+        return createNewRefreshToken(main, sessionHandle, parentRefreshTokenHash2, null);
+    }
+
 
     private static TYPE getTypeFromToken(String token) throws InvalidRefreshTokenFormatException {
         try {

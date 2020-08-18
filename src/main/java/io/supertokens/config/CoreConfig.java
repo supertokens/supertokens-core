@@ -23,6 +23,8 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.licenseKey.LicenseKey;
 import io.supertokens.licenseKey.LicenseKey.MODE;
+import io.supertokens.utils.Utils;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -56,7 +58,7 @@ public class CoreConfig {
     private String error_log_path = logDefault;
 
     @JsonProperty
-    private String cookie_domain = "localhost";
+    private String cookie_domain = null; // default is null meaning that it gets set to whatever their API layer is.
 
     @JsonProperty
     private Boolean cookie_secure = false;
@@ -138,7 +140,10 @@ public class CoreConfig {
         return error_log_path;
     }
 
-    public String getCookieDomain() {
+    public String getCookieDomain(@Nullable String currCDIVersion) {
+        if (cookie_domain == null && Utils.CDIVersionNeedsToHaveCookieDomain(currCDIVersion)) {
+            return "localhost";
+        }
         return cookie_domain;
     }
 

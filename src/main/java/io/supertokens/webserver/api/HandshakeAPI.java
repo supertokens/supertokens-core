@@ -51,7 +51,10 @@ public class HandshakeAPI extends WebserverAPI {
             result.addProperty("jwtSigningPublicKey", AccessTokenSigningKey.getInstance(main).getKey().publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
                     AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
-            result.addProperty("cookieDomain", Config.getConfig(main).getCookieDomain());
+            if (Config.getConfig(main).getCookieDomain(super.getVersionFromRequest(req)) != null) {
+                result.addProperty("cookieDomain",
+                        Config.getConfig(main).getCookieDomain(super.getVersionFromRequest(req)));
+            }
             result.addProperty("cookieSecure", Config.getConfig(main).getCookieSecure(main));
             result.addProperty("accessTokenPath", Config.getConfig(main).getAccessTokenPath());
             result.addProperty("refreshTokenPath", Config.getConfig(main).getRefreshAPIPath());

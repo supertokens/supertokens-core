@@ -32,7 +32,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 
-public class RefreshSessionAPITest2 {
+public class RefreshSessionAPITest2_2 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

@@ -36,8 +36,7 @@ import java.io.IOException;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class ConfigTest {
 
@@ -343,7 +342,7 @@ public class ConfigTest {
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/info.log");
         assertEquals("Config error log path did not match default", config.getErrorLogPath(process.getProcess()),
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/error.log");
-        assertEquals("Config cookie domain did not match default", config.getCookieDomain(), "localhost");
+        assertNull("Config cookie domain did not match default", config.getCookieDomain(null));
         assertFalse("Config cookie secure did not match default", config.getCookieSecure(process.getProcess()));
 
         assertEquals(config.getHost(process.getProcess()), "localhost");
