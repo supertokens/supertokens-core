@@ -81,7 +81,7 @@ core_config_version: 0
 # cookie_secure:
 
 
-# (OPTIONAL | Default: "none") string value. Sets the sameSite attribute for cookies issued by SuperTokens. The values
+# (OPTIONAL | Default: "lax") string value. Sets the sameSite attribute for cookies issued by SuperTokens. The values
 # can be "none" | "lax" | "strict"
 # cookie_same_site:
 

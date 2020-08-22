@@ -64,7 +64,7 @@ public class CoreConfig {
     private Boolean cookie_secure = false;
 
     @JsonProperty
-    private String cookie_same_site = "none";
+    private String cookie_same_site = "lax";
 
     @JsonProperty
     private int port = 3567;

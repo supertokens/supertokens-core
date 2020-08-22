@@ -329,7 +329,7 @@ public class ConfigTest {
     private static void checkConfigValues(CoreConfig config, TestingProcess process) {
 
         assertEquals("Config version did not match default", config.getConfigVersion(), 0);
-        assertEquals("SameSite does not match the default", config.getCookieSameSite(), "none");
+        assertEquals("SameSite does not match the default", config.getCookieSameSite(), "lax");
         assertEquals("Config access token validity did not match default", config.getAccessTokenValidity(),
                 3600 * 1000);
         assertFalse("Config access token blacklisting did not match default", config.getAccessTokenBlacklisting());

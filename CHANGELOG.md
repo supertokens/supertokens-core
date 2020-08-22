@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Makes default session expiry status code 401
 - Makes default refresh API path "/session/refresh"
 - Compatibility with CDI 2.2. Makes `cookie_domain` default value to not set, so that it will work with any API
+- Makes sameSite = lax by default
 
 ## [2.2.3] - 2020-08-10
 ### Changes
