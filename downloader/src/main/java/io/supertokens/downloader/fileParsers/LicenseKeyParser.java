@@ -62,7 +62,7 @@ public class LicenseKeyParser {
 
     public String getMode() {
         if (this.mode == null) {
-            return "PRODUCTION";
+            return "DEV";
         }
         return this.mode;
     }
