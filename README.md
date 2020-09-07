@@ -168,7 +168,7 @@ Instructions coming soon...
 Instructions coming soon
 
 ## Development history
-Over the last few months, we have build out session management for SuperTokens. During this period, we have made our
+Over the last few months, we have built out session management for SuperTokens. During this period, we have made our
  fair share of mistakes:
  - Our first version was architected such that it tightly coupled the backend and database layer. So we had one
   `npm` library for NodeJS with MySQL, and another one for NodeJS with MongoDB etc. When adding support for a new
