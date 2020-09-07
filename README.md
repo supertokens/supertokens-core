@@ -22,8 +22,8 @@
 - [👥 Community](https://github.com/supertokens/supertokens-core#community)
     - [Contributors](https://github.com/supertokens/supertokens-core#contributors)
 - [👩‍💻 Contributing](https://github.com/supertokens/supertokens-core#contributing)
-- [📝 License](https://github.com/supertokens/supertokens-core#license)
 - [📜 Development history](https://github.com/supertokens/supertokens-core#development-history)
+- [📝 License](https://github.com/supertokens/supertokens-core#license)
 
 ## What is SuperTokens?
 SuperTokens is an open core alternative to proprietary login providers like Auth0 or AWS Cognito. We are
