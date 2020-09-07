@@ -89,7 +89,7 @@ Open source enables us to:
 - Quickly build more features. Examples of features that can be built via the community are:
     - Sending slack notifications on user signup
     - Integrating with sendgrid or mailchimp for email verification flows
-    - Building support various social logins
+    - Building support for various social logins
 - Ability to easily add and support more tech stacks.
 - Transparency is better for security (potentially 100s or 1000s of developers seeing the code versus a team of 10s of
  developers).
