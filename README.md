@@ -147,7 +147,7 @@ Instructions coming soon...
 
 ## Community
 - [Discord](https://supertokens.io/discord)
-- [Email](emailto:team@supertokens.io)
+- [Email](mailto:team@supertokens.io)
 
 ### Contributors
 <table>
