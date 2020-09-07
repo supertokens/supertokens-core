@@ -7,26 +7,63 @@
 <img src="https://img.shields.io/discord/603466164219281420.svg?logo=discord"
     alt="chat on Discord"></a>
 
-## Notice
-This community version has been deprecated for the time being. We will still be offering an open source version in the future, so if you like SuperTokens, please star us here!
+TODO: add GIF
 
-For new users, please sign up on our [website](https://supertokens.io) to get the Pro version of SuperTokens. If you are already a user of the community version, please [contact us](mailto:team@supertokens.io), and we will help you move to the Pro version (takes ~ 5 minutes).
+## Table of Contents
+- [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#what-is-supertokens)
+    - [Benefits](https://github.com/supertokens/supertokens-core#benefits)
+    - [Documentation](https://github.com/supertokens/supertokens-core#documentation)
+- [❓ Why yet another auth solution?](https://github.com/supertokens/supertokens-core#why-te-another-auth-solution)
+- [‍🎉 Why open source?](https://github.com/supertokens/supertokens-core#why-open-source)
+- [🏗️ Architecture](https://github.com/supertokens/supertokens-core#architecture)
+- [🔥 SuperTokens vs Others](https://github.com/supertokens/supertokens-core#supertokens-vs-others)
+- [💵 How will we make money?](https://github.com/supertokens/supertokens-core#how-will-we-make-money)
+    - [Backers](https://github.com/supertokens/supertokens-core#backers)
+- [☕ Why Java?](https://github.com/supertokens/supertokens-core#why-java)
+- [👥 Community](https://github.com/supertokens/supertokens-core#community)
+- [📝 License](https://github.com/supertokens/supertokens-core#license)
+- [✍️ Authors](https://github.com/supertokens/supertokens-core#authors)
 
-## About
-SuperTokens is an advanced session management solution for web and mobile apps. It is different from most other
- solutions because it prevents all session related attacks, as well as detects session hijacking using rotating
-  refresh tokens.
+## What is SuperTokens?
+TODO
 
-**Works with all web frameworks like NodeJS, Laravel etc.** Learn more at https://supertokens.io
+#### Benefits
+TODO
 
-## Documentation
-To see documentation, please click [here](https://supertokens.io/docs/community/getting-started/installation).
+#### Documentation
+TODO
 
-## Making changes
-Please see our [Contributing](https://github.com/supertokens/supertokens-core/blob/master/CONTRIBUTING.md) guide.
+## Why yet another auth solution?
+TODO
 
-## Contact us
-For any queries, or support requests, please email us at team@supertokens.io, or join our [Discord](supertokens.io/discord) server.
+## Why Open Source?
+TODO
 
-# Authors
+## Architecture
+TODO
+
+## SuperTokens vs others
+TODO
+
+## How will we make money?
+TODO
+
+#### Backers
+TODO: YC
+
+## Why Java?
+- Very mature ecosystem (no bugs in libraries, important for security)
+- Strong type system
+- Dynamically load plugins
+
+## Community
+- [Discord](https://supertokens.io/discord)
+- [Email](emailto:team@supertokens.io)
+
+## License
+Copyright (c) SuperTokens, Inc. All rights reserved.
+
+Licensed under the Apache 2.0 license.
+
+## Authors
 Created with :heart: by the folks at SuperTokens.io.
