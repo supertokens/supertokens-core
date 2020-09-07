@@ -183,8 +183,6 @@ Over the last few months, we have build out session management for SuperTokens. 
    
 - Our community version pinged our APIs (and still does) from time to time. This was done for us to understand
  adoption of our session management solution. However, it's become clear that that was a bad move, so we will remove it
- 
-- We realise the importance of building a community first, and then a product. That is something we plan to do now.
 
 ## License
 Copyright (c) SuperTokens, Inc. All rights reserved.
