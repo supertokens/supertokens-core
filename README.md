@@ -28,7 +28,8 @@
 ## What is SuperTokens?
 SuperTokens is an open core alternative to proprietary login providers like Auth0 or AWS Cognito. We are
  different because we offer:
-- Open source: SuperTokens can be run on premise, forever, for free, with no limits. You control 100% of your user data.
+- Open source: SuperTokens can be used for free, forever, with no limits.
+- An on prem deployment with no connection to our servers. You control 100% of your user data.
 - An end to end solution with login, sign ups, user and session management, without all the complexities of OAuth protocols.
 - Ease of implementation and higher security
 - Extensibility: Anyone can contribute and make SuperTokens better!
@@ -82,12 +83,12 @@ A short [implementation video](https://www.youtube.com/watch?v=kbC-QzxeZ4s&featu
 
 ## Why open source?
 Open source enables us to:
-- Enables us to provide maximum control to our users.
-- There are many features that can be built, and the best way to priorities, is to get direction from a community.
+- Provide maximum control to our users.
+- There are many features that can be built, and the best way to prioritize, is to get direction from a community.
 - Quickly build more features. Examples of features that can be built via the community are:
     - Sending slack notifications on user signup
     - Integrating with sendgrid or mailchimp for email verification flows
-    - Building support for various social logins
+    - Building support for social logins
 - Ability to easily add and support more tech stacks.
 - Transparency is better for security (potentially 100s or 1000s of developers seeing the code versus a team of 10s of
  developers).
