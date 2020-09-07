@@ -43,7 +43,7 @@ Authentication directly affects UX, dev experience and security of any app. We b
   
 We want to change that - we believe the only way is to provide a solution that has the right level of
  abstraction, gives you maximum control, is secure, and is simple to use - just like if you build it yourself,
-  from scratch (minus the time to learn, build and maintain 😆).
+  from scratch (minus the time to learn, build and maintain).
 
 ### Features
 - Login (coming soon):
