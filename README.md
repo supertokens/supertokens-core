@@ -53,6 +53,7 @@ We want to change that - we believe the only way is to provide a solution that h
     - Password management - hashing + salting.
     - Social and other types of login
     - Other community requests...
+<img src="https://raw.githubusercontent.com/supertokens/supertokens-logo/master/gifs/login-readme.gif" height="300px"/>
 
 - Session management
     - Create, verify, refresh & revoke sessions.
