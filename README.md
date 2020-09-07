@@ -35,7 +35,7 @@ SuperTokens is an open core alternative to proprietary login providers like Auth
   protocols.
  - Ease of implementation and higher security
 
-#### Philosophy
+### Philosophy
 Authentication directly affects UX, dev experience and security of any app. We believe that
  current solutions are unable to optimise for all three "pillars", leading to a large number of
   applications hand rolling their own auth. This not only leads to security issues, but is also a massive
@@ -45,7 +45,7 @@ We want to change that - we believe the only way is to provide a solution that h
  abstraction, gives you maximum control, is secure, and is simple to use - just like if you build it yourself,
   from scratch (minus the time to learn, build and maintain 😆).
 
-#### Features
+### Features
 - Login (coming soon):
     - A decoupled login & sign up form as React components - pretty by default, but fully customisable.
     - Email & password login with email verification, and forgot password flows
@@ -75,8 +75,8 @@ We want to change that - we believe the only way is to provide a solution that h
      treated as the same user).
     - Other community requests...
 
-#### Documentation
-**As of now, we only offer session management.**
+### Documentation
+As of now, we only offer session management.
 
 The docs can be seen [here](https://supertokens.io/docs/pro/getting-started/installation)
 
@@ -130,7 +130,7 @@ From a sustainability point of view, for us and for this open source project, it
     - Building custom features
 - Monthly sponsorship
 
-#### Backers
+### Backers
 <a href="https://www.ycombinator.com/"><img width="75" src="https://www.ycombinator.com/assets/ycdc/ycombinator-logo-7481412385fe6d0f7d4a3339d90fe12309432ca41983e8d350b232301d5d8684.png"></a>
 
 
@@ -149,7 +149,7 @@ Instructions coming soon...
 - [Discord](https://supertokens.io/discord)
 - [Email](emailto:team@supertokens.io)
 
-#### Contributors
+### Contributors
 <table>
   <tr>
     <td align="center"><a href="https://github.com/rishabhpoddar"><img src="https://avatars1.githubusercontent.com/u/2976287?s=460&u=d0cf2463df96fbdf1138cf74f88d7cf41415b238&v=4" width="100px;" alt=""/><br /><sub><b>Rishabh Poddar</b></sub></a></td>
