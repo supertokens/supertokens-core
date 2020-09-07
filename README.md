@@ -13,7 +13,7 @@ TODO: add GIF
 - [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#what-is-supertokens)
     - [Benefits](https://github.com/supertokens/supertokens-core#benefits)
     - [Documentation](https://github.com/supertokens/supertokens-core#documentation)
-- [❓ Why yet another auth solution?](/#why-yet-another-auth-solution)
+- [❓ Why yet another auth solution?](https://github.com/supertokens/supertokens-core#why-yet-another-auth-solution)
 - [🎉 Why open source?](https://github.com/supertokens/supertokens-core#why-open-source)
 - [🏗️ Architecture](https://github.com/supertokens/supertokens-core#architecture)
 - [🔥 SuperTokens vs Others](https://github.com/supertokens/supertokens-core#supertokens-vs-others)
@@ -22,6 +22,7 @@ TODO: add GIF
 - [☕ Why Java?](https://github.com/supertokens/supertokens-core#why-java)
 - [👥 Community](https://github.com/supertokens/supertokens-core#community)
 - [📝 License](https://github.com/supertokens/supertokens-core#license)
+- [📜 Development history](https://github.com/supertokens/supertokens-core#development-history)
 - [✍️ Authors](https://github.com/supertokens/supertokens-core#authors)
 
 ## What is SuperTokens?
@@ -36,7 +37,7 @@ TODO
 ## Why yet another auth solution?
 TODO
 
-## Why Open Source?
+## Why open source?
 TODO
 
 ## Architecture
@@ -59,6 +60,9 @@ TODO: YC
 ## Community
 - [Discord](https://supertokens.io/discord)
 - [Email](emailto:team@supertokens.io)
+
+## Development history
+TODO
 
 ## License
 Copyright (c) SuperTokens, Inc. All rights reserved.
