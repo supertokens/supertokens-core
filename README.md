@@ -12,7 +12,6 @@
     - [Philosophy](https://github.com/supertokens/supertokens-core#philosophy)
     - [Features](https://github.com/supertokens/supertokens-core#features)
     - [Documentation](https://github.com/supertokens/supertokens-core#documentation)
-- [🎉 Why open source?](https://github.com/supertokens/supertokens-core#why-open-source)
 - [🏗️ Architecture](https://github.com/supertokens/supertokens-core#architecture)
 - [🔥 SuperTokens vs Others](https://github.com/supertokens/supertokens-core#supertokens-vs-others)
 - [💵 How will we make money?](https://github.com/supertokens/supertokens-core#how-will-we-make-money)
@@ -24,6 +23,8 @@
 - [👩‍💻 Contributing](https://github.com/supertokens/supertokens-core#contributing)
 - [📜 Development history](https://github.com/supertokens/supertokens-core#development-history)
 - [📝 License](https://github.com/supertokens/supertokens-core#license)
+
+If you like our project, please :star2: this repository! For feedback, feel free to join our [Discord](https://supertokens.io/discord), or create an issue on this repo
 
 ## What is SuperTokens?
 SuperTokens is an open core alternative to proprietary login providers like Auth0 or AWS Cognito. We are
@@ -82,19 +83,6 @@ The docs can be seen [here](https://supertokens.io/docs/pro/getting-started/inst
 
 A short [implementation video](https://www.youtube.com/watch?v=kbC-QzxeZ4s&feature=emb_logo)
 
-## Why open source?
-Open source enables us to:
-- Provide maximum control to our users.
-- There are many features that can be built, and the best way to prioritize, is to get direction from a community.
-- Quickly build more features. Examples of features that can be built via the community are:
-    - Sending slack notifications on user signup
-    - Integrating with sendgrid or mailchimp for email verification flows
-    - Building support for social logins
-- Ability to easily add and support more tech stacks.
-- Transparency is better for security (potentially 100s or 1000s of developers seeing the code versus a team of 10s of
- developers).
-- Get social proof, quickly: This is important since a lot of developers pick solutions purely based on a library's
- popularity. This, inevitably leads to issues like JWTs being used for long lived sessions.
 
 ## Architecture
 We provide a fullstack solution:
@@ -148,6 +136,8 @@ Instructions coming soon...
 ## Community
 - [Discord](https://supertokens.io/discord)
 - [Email](mailto:team@supertokens.io)
+
+If you think this is a project you could use in the futrue, please :star2: this repository!
 
 ### Contributors
 <table>
