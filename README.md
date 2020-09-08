@@ -119,7 +119,7 @@ Please [contact us](mailto:team@supertokens.io) if any of the information listed
 | Unlimited Social Login                 	|       Coming soon       	|                    	|                    	| :heavy_check_mark: 	|                    	|                    	|                    	
 | Role & Attribute based access  control 	|       Coming Soon       	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	| 
 | Sessions using cookies                 	|    :heavy_check_mark:   	|                    	|                    	|                    	|                    	|                    	|                    	
-| Session hijacking detection            	|    :heavy_check_mark:   	|                    	|                    	|                    	|                    	|                    	|                    	
+| Session hijacking detection            	|    :heavy_check_mark:   	|    :heavy_check_mark:   	|                    	|                    	|                    	|                    	|                    	
 | No cloud lockin                        	|    :heavy_check_mark:   	| :heavy_check_mark: 	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|
 | Low feature lockin                        	|    :heavy_check_mark:   	|                    	|                    	|                    	|                    	|                    	|
 | Dedicated Support                      	|    :heavy_check_mark:   	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	| 
