@@ -121,6 +121,7 @@ Please [contact us](mailto:team@supertokens.io) if any of the information listed
 | Sessions using cookies                 	|    :heavy_check_mark:   	|                    	|                    	|                    	|                    	|                    	|                    	
 | Session hijacking detection            	|    :heavy_check_mark:   	|                    	|                    	|                    	|                    	|                    	|                    	
 | No cloud lockin                        	|    :heavy_check_mark:   	| :heavy_check_mark: 	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|
+| Low feature lockin                        	|    :heavy_check_mark:   	|                    	|                    	|                    	|                    	|                    	|
 | Dedicated Support                      	|    :heavy_check_mark:   	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	| 
 
                  	
