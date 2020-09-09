@@ -140,10 +140,6 @@ do
         unzip supertokens.zip -d .
         rm supertokens.zip
         cd supertokens
-        curl -s -X GET \
-        "https://api.supertokens.io/0/development/license-key?password=$SUPERTOKENS_API_KEY&planType=FREE&onExpiry=NA&expired=false" \
-        -H 'api-version: 0' \
-        -H 'cache-control: no-cache' > licenseKey
         ../project/.circleci/testCli.sh
         if [[ $? -ne 0 ]]
         then

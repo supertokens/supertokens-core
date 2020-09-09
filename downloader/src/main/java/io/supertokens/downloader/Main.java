@@ -18,7 +18,6 @@ package io.supertokens.downloader;
 
 import io.supertokens.downloader.cliParsers.InstallOptionsParser;
 import io.supertokens.downloader.exception.QuitProgramException;
-import io.supertokens.downloader.fileParsers.LicenseKeyParser;
 import io.supertokens.downloader.fileParsers.VersionFileParser;
 import io.supertokens.downloader.httpRequest.HTTPRequest;
 import io.supertokens.downloader.httpRequest.HTTPResponseException;
@@ -58,10 +57,9 @@ public class Main {
     private static void start(String[] args) throws IOException, HTTPResponseException {
         InstallOptionsParser installOptionsParser = new InstallOptionsParser(args);
         VersionFileParser versionFileParser = new VersionFileParser();
-        LicenseKeyParser licenseKeyParser = new LicenseKeyParser();
 
         // ------------
-        String mode = licenseKeyParser.getMode();
+        String mode = "DEV";
         String planType = "FREE";
         Boolean withSource = installOptionsParser.installWithSource();
 

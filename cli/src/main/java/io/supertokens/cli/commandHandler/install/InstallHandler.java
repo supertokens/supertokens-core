@@ -115,7 +115,6 @@ public class InstallHandler extends CommandHandler {
         Utils.copyFolderOrFile(new File("config.yaml"), new File(installationDir + "config.yaml"));
         Utils.copyFolderOrFile(new File("version.yaml"), new File(installationDir + "version.yaml"));
         Utils.copyFolderOrFile(new File("jre"), new File(installationDir + "jre"));
-        Utils.copyFolderOrFile(new File("licenseKey"), new File(installationDir + "licenseKey"));
         Utils.copyFolderOrFile(new File("config.yaml.original"), new File(installationDir + "config.yaml.original"));
         Utils.copyFolderOrFile(new File("LICENSE.md"), new File(installationDir + "LICENSE.md"));
 

@@ -35,16 +35,11 @@ abstract class Utils extends Mockito {
     public static void afterTesting() {
         String installDir = "../";
         try {
-            // we remove the license key file
-            ProcessBuilder pb = new ProcessBuilder("rm", "licenseKey");
-            pb.directory(new File(installDir));
-            Process process = pb.start();
-            process.waitFor();
 
             // remove config.yaml file
-            pb = new ProcessBuilder("rm", "config.yaml");
+            ProcessBuilder pb = new ProcessBuilder("rm", "config.yaml");
             pb.directory(new File(installDir));
-            process = pb.start();
+            Process process = pb.start();
             process.waitFor();
 
             // remove webserver-temp folders created by tomcat
@@ -88,15 +83,10 @@ abstract class Utils extends Mockito {
         Main.makeConsolePrintSilent = true;
         String installDir = "../";
         try {
-            // move from temp folder to installDir
-            ProcessBuilder pb = new ProcessBuilder("cp", "temp/licenseKey", "./licenseKey");
+
+            ProcessBuilder pb = new ProcessBuilder("cp", "temp/config.yaml", "./config.yaml");
             pb.directory(new File(installDir));
             Process process = pb.start();
-            process.waitFor();
-
-            pb = new ProcessBuilder("cp", "temp/config.yaml", "./config.yaml");
-            pb.directory(new File(installDir));
-            process = pb.start();
             process.waitFor();
 
             TestingProcessManager.killAll();

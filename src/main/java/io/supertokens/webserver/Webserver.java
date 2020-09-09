@@ -93,14 +93,6 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         connector.setPort(Config.getConfig(main).getPort(main));
         connector.setAttribute("address", Config.getConfig(main).getHost(main));
 
-//		if (Config.getConfig(main).getHttpsEnabled() && LicenseKey.get(main).getPlanType() != PLAN_TYPE.FREE) {
-//			connector.setSecure(true);
-//			connector.setScheme("https");
-//			connector.setAttribute("keystoreType", "PKCS12");
-//			connector.setAttribute("protocol", "org.apache.coyote.http11.Http11NioProtocol");
-//			// TODO: set https in connector in later version
-//		}
-
         tomcat.setConnector(connector);
 
         // we do this because we may run multiple tomcat servers in the same JVM

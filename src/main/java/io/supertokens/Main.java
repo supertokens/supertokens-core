@@ -153,7 +153,7 @@ public class Main {
         // init file logging
         Logging.initFileLogging(this);
 
-        Logging.info(this, "Completed config.yaml and licenseKey loading.");
+        Logging.info(this, "Completed config.yaml loading.");
 
         // initialise cron job handler
         Cronjobs.init(this);

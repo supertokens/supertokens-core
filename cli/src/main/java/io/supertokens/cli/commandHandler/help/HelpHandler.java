@@ -54,7 +54,6 @@ public class HelpHandler extends CommandHandler {
         Logging.info("");
         printFileInfo("Installation location", installationDir);
         printFileInfo("Default config file", installationDir + "config.yaml");
-        printFileInfo("License key file", installationDir + "licenseKey");
         printFileInfo("Legal license", installationDir + "LICENSE.md");
         Logging.info("");
         Logging.info("Thank you for checking out SuperTokens :)");
