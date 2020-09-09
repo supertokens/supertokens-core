@@ -12,6 +12,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Optimises refresh token to not store old tokens in the database
+- removes the need for a license key
+- removes API Pings
 
 ## [2.3.0] - 2020-08-11
 ### Changed
