@@ -47,15 +47,9 @@ public class InstallHandler extends CommandHandler {
                 if (thisIsDifferent) {
                     Logging.info(
                             "It seems that you want to override the current SuperTokens installation with a new one.");
-                    boolean dbIsSame = isTheDbForCurrentAndInstalledTheSame();
-                    if (dbIsSame) {
-                        Logging.info("You can do so using the following command and then delete this folder:");
-                        Logging.info(getUpdateCommand());
-                    } else {
-                        Logging.info("You can do so by running the following two commands in the current directory:");
-                        Logging.info("supertokens uninstall");
-                        Logging.info("install");
-                    }
+                    Logging.info("You can do so by running the following two commands in the current directory:");
+                    Logging.info("supertokens uninstall");
+                    Logging.info("install");
                 } else {
                     Logging.info(
                             "This version of SuperTokens is already installed! Run \"supertokens --help\" to see the " +
@@ -82,17 +76,6 @@ public class InstallHandler extends CommandHandler {
                 throw new QuitProgramException("error while installing SuperTokens. Please try again", e);
             }
         }
-    }
-
-    private String getUpdateCommand() throws IOException {
-        VersionFile version = VersionHandler.getVersion("");
-        return "supertokens update --core=" + version.getCoreVersion() + " --storage=" + version.getPluginVersion();
-    }
-
-    private boolean isTheDbForCurrentAndInstalledTheSame() throws IOException {
-        VersionFile otherVersionFile = getVersionFileForAlreadyInstalled();
-        VersionFile thisVersionFile = VersionHandler.getVersion("");
-        return otherVersionFile.getPluginName().equals(thisVersionFile.getPluginName());
     }
 
     private VersionFile getVersionFileForAlreadyInstalled() throws IOException {

@@ -20,7 +20,6 @@ import io.supertokens.cli.Main;
 import io.supertokens.cli.Utils;
 import io.supertokens.cli.commandHandler.CommandHandler;
 import io.supertokens.cli.commandHandler.install.InstallHandler;
-import io.supertokens.cli.commandHandler.update.UpdateCompletionHandler;
 import io.supertokens.cli.logging.Logging;
 
 import java.util.List;
@@ -38,7 +37,7 @@ public class HelpHandler extends CommandHandler {
         Logging.info("  Commands:");
         Logging.info("");
         for (CommandHandler command : Main.commandHandler.values()) {
-            if (command instanceof InstallHandler || command instanceof UpdateCompletionHandler) {
+            if (command instanceof InstallHandler) {
                 continue;
             }
             if (command != null) {

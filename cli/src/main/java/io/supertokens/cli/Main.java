@@ -20,12 +20,9 @@ import io.supertokens.cli.commandHandler.CommandHandler;
 import io.supertokens.cli.commandHandler.help.HelpHandler;
 import io.supertokens.cli.commandHandler.install.InstallHandler;
 import io.supertokens.cli.commandHandler.list.ListHandler;
-import io.supertokens.cli.commandHandler.loadLicense.LoadLicenseHandler;
 import io.supertokens.cli.commandHandler.start.StartHandler;
 import io.supertokens.cli.commandHandler.stop.StopHandler;
 import io.supertokens.cli.commandHandler.uninstall.UninstallHandler;
-import io.supertokens.cli.commandHandler.update.UpdateCompletionHandler;
-import io.supertokens.cli.commandHandler.update.UpdateHandler;
 import io.supertokens.cli.commandHandler.version.VersionHandler;
 import io.supertokens.cli.exception.QuitProgramException;
 import io.supertokens.cli.logging.Logging;
@@ -117,9 +114,6 @@ public class Main {
         commandHandler.put("start", new StartHandler());
         commandHandler.put("stop", new StopHandler());
         commandHandler.put("list", new ListHandler());
-        commandHandler.put("load-license", new LoadLicenseHandler()); // can take a string or license key file
-        commandHandler.put("update", new UpdateHandler());
-        commandHandler.put("update-complete", new UpdateCompletionHandler());
     }
 
     public static void removeShutdownHook() {

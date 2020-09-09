@@ -18,21 +18,13 @@ package io.supertokens.cli;
 
 import io.supertokens.cli.exception.QuitProgramException;
 
-import java.io.*;
-import java.net.URL;
-import java.net.URLConnection;
-import java.nio.charset.StandardCharsets;
+import java.io.File;
+import java.io.IOException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 public class Utils {
-
-    public final static String SERVER_URL = "https://api.supertokens.io/0";
 
     public static void copyFolderOrFile(File sourceFolder, File destinationFolder) throws IOException {
         if (!sourceFolder.exists()) {
@@ -130,112 +122,4 @@ public class Utils {
         return result.toString();
     }
 
-    private static boolean isZip(File f) {
-        int fileSignature = 0;
-        try (RandomAccessFile raf = new RandomAccessFile(f, "r")) {
-            fileSignature = raf.readInt();
-        } catch (IOException e) {
-            // handle if you like
-        }
-        return fileSignature == 0x504B0304;
-    }
-
-    private static String bytesToString(byte[] bArr) {
-        StringBuilder sb = new StringBuilder();
-        for (byte b : bArr) {
-            sb.append(String.format("%02x", b));
-        }
-        return sb.toString();
-    }
-
-    private static byte[] stringToBytes(String str) {
-        return str.getBytes(StandardCharsets.UTF_8);
-    }
-
-    public static String hashSHA256(String base) throws NoSuchAlgorithmException {
-        MessageDigest digest = MessageDigest.getInstance("SHA-256");
-        byte[] hash = digest.digest(stringToBytes(base));
-        return bytesToString(hash);
-    }
-
-    public static boolean isZipFile(File f) throws IOException {
-        int fileSignature = 0;
-        try (RandomAccessFile raf = new RandomAccessFile(f, "r")) {
-            fileSignature = raf.readInt();
-        }
-        return fileSignature == 0x504B0304 || fileSignature == 0x504B0506 || fileSignature == 0x504B0708;
-    }
-
-    public static void unzip(String zipFilePath, String destDirectory) throws IOException {
-        File destDir = new File(destDirectory);
-        if (!destDir.exists()) {
-            boolean success = destDir.mkdirs();
-            if (!success) {
-                throw new AccessDeniedException("Cannot create necessary folder");
-            }
-        }
-        ZipInputStream zipIn = new ZipInputStream(new FileInputStream(zipFilePath));
-        ZipEntry entry = zipIn.getNextEntry();
-        // iterates over entries in the zip file
-        while (entry != null) {
-            String filePath = destDirectory + File.separator + entry.getName();
-            if (!entry.isDirectory()) {
-                // if the entry is a file, extracts it
-                extractFile(zipIn, filePath);
-            } else {
-                // if the entry is a directory, make the directory
-                File dir = new File(filePath);
-                dir.mkdir();
-            }
-            zipIn.closeEntry();
-            entry = zipIn.getNextEntry();
-        }
-        zipIn.close();
-    }
-
-    private static void extractFile(ZipInputStream zipIn, String filePath) throws IOException {
-        File f = new File(filePath);
-        if (!f.exists()) {
-            File parent = f.getParentFile();
-            if (!parent.exists()) {
-                boolean ignored = parent.mkdirs();
-            }
-            boolean ignored = f.createNewFile();
-        }
-        BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(filePath));
-        byte[] bytesIn = new byte[4096];
-        int read = 0;
-        while ((read = zipIn.read(bytesIn)) != -1) {
-            bos.write(bytesIn, 0, read);
-        }
-        bos.close();
-    }
-
-    public static boolean internetIsAvailable() {
-        try {
-            final URL url = new URL("http://www.google.com");
-            final URLConnection conn = url.openConnection();
-            conn.connect();
-            conn.getInputStream().close();
-            return true;
-        } catch (IOException e) {
-            return false;
-        }
-    }
-
-    public static void makeAllExeFilesInFolderExecutable(File file) {
-        if (file.isDirectory()) {
-            File[] files = file.listFiles();
-            if (files == null) {
-                return;
-            }
-            for (File f : files) {
-                makeAllExeFilesInFolderExecutable(f);
-            }
-        } else {
-            if (file.getName().endsWith(".exe")) {
-                boolean ignored = file.setExecutable(true, false);
-            }
-        }
-    }
 }
