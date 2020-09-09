@@ -20,7 +20,6 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.licenseKey.LicenseKey;
 import io.supertokens.storageLayer.StorageLayer;
 
 public class DeleteExpiredSessions extends CronTask {
@@ -46,7 +45,7 @@ public class DeleteExpiredSessions extends CronTask {
 
     @Override
     public int getIntervalTimeSeconds() {
-        if (Main.isTesting && LicenseKey.get(main).getMode() == LicenseKey.MODE.DEV) {
+        if (Main.isTesting) {
             Integer interval = CronTaskTest.getInstance(main).getIntervalInSeconds(RESOURCE_KEY);
             if (interval != null) {
                 return interval;
@@ -57,7 +56,7 @@ public class DeleteExpiredSessions extends CronTask {
 
     @Override
     public int getInitialWaitTimeSeconds() {
-        if (LicenseKey.get(main).getMode() == LicenseKey.MODE.PRODUCTION) {
+        if (!Main.isTesting) {
             return getIntervalTimeSeconds();
         } else {
             return 0;

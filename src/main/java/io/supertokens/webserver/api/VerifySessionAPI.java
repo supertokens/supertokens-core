@@ -50,11 +50,6 @@ public class VerifySessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // Do not modify after and including this line
-        if (sendRandomUnauthorisedIfDevLicenseAndSomeTimeHasPassed(resp)) {
-            return;
-        }
-        // Do not modify before and including this line
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String accessToken = InputParser.parseStringOrThrowError(input, "accessToken", false);
         assert accessToken != null;
@@ -91,7 +86,5 @@ public class VerifySessionAPI extends WebserverAPI {
             reply.addProperty("message", e.getMessage());
             super.sendJsonResponse(200, reply, resp);
         }
-
-        super.saveDeviceDriverInfoIfPresent(input);
     }
 }

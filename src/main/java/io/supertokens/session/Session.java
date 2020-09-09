@@ -22,7 +22,6 @@ import io.supertokens.config.Config;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
-import io.supertokens.licenseKey.LicenseKey;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -101,7 +100,6 @@ public class Session {
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
         String sessionHandle = UUID.randomUUID().toString();
-        LicenseKey.PLAN_TYPE planType = LicenseKey.get(main).getPlanType();
         String antiCsrfToken = Config.getConfig(main).getEnableAntiCSRF() ? UUID.randomUUID().toString() : null;
 
         final TokenInfo refreshToken = RefreshToken

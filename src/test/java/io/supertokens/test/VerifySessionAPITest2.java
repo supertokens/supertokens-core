@@ -19,7 +19,6 @@ package io.supertokens.test;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
-import io.supertokens.webserver.WebserverAPITest;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -282,43 +281,4 @@ public class VerifySessionAPITest2 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    @Test
-    public void devLicenseSessionExpiredTest() throws Exception {
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        WebserverAPITest.getInstance(process.getProcess()).setRandomnessThreshold(0);
-        WebserverAPITest.getInstance(process.getProcess()).setTimeAfterWhichToThrowUnauthorised(0);
-        process.startProcess();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String userId = "userId";
-        JsonObject userDataInJWT = new JsonObject();
-        userDataInJWT.addProperty("key", "value");
-        JsonObject userDataInDatabase = new JsonObject();
-        userDataInDatabase.addProperty("key", "value");
-
-        JsonObject sessionRequest = new JsonObject();
-        sessionRequest.addProperty("userId", userId);
-        sessionRequest.add("userDataInJWT", userDataInJWT);
-        sessionRequest.add("userDataInDatabase", userDataInDatabase);
-
-        JsonObject sessionInfo = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/session", sessionRequest, 1000, 1000, null,
-                        Utils.getCdiVersion2ForTests());
-
-        JsonObject request = new JsonObject();
-        request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
-        request.addProperty("doAntiCsrfCheck", true);
-        JsonObject response = io.supertokens.test.httpRequest
-                .HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/verify", request, 1000,
-                        1000, null, Utils.getCdiVersion2ForTests());
-
-        assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
-        assertEquals(response.get("message").getAsString(), "");
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
 }

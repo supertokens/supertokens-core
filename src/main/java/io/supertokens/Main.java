@@ -20,13 +20,9 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
-import io.supertokens.cronjobs.appInfoCheck.AppInfoCheck;
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.cronjobs.deletePastOrphanedTokens.DeletePastOrphanedTokens;
-import io.supertokens.cronjobs.memoryWatcher.MemoryWatcher;
-import io.supertokens.cronjobs.serverPing.ServerPing;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.licenseKey.LicenseKey;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
@@ -139,9 +135,6 @@ public class Main {
         // Handle kill signal gracefully
         handleKillSignalForWhenItHappens();
 
-        // loading and verifying licenseKey file
-        LicenseKey.load(this, CLIOptions.get(this).getInstallationPath() + "licenseKey");   // Do not modify this line
-
         // loading storage layer
         StorageLayer.init(this, CLIOptions.get(this).getInstallationPath() + "plugin/",
                 CLIOptions.get(this).getConfigFilePath() == null
@@ -176,15 +169,6 @@ public class Main {
             }
         }
         StorageLayer.getStorageLayer(this).initStorage();
-
-        // start appId check cron job
-        Cronjobs.addCronjob(this, AppInfoCheck.getInstance(this));
-
-        // start ping cron job
-        Cronjobs.addCronjob(this, ServerPing.getInstance(this));    // Do not modify this line
-
-        // start memory watcher cron job
-        Cronjobs.addCronjob(this, MemoryWatcher.getInstance(this));
 
         // init signing keys
         AccessTokenSigningKey.init(this);

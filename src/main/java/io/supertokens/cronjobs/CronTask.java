@@ -20,8 +20,6 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.licenseKey.LicenseKey;
-import io.supertokens.licenseKey.LicenseKey.MODE;
 import io.supertokens.output.Logging;
 
 public abstract class CronTask extends ResourceDistributor.SingletonResource implements Runnable {
@@ -46,8 +44,7 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
             doTask();
         } catch (Exception e) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
-            Logging.error(main, "Cronjob threw an exception: " + this.jobName,
-                    LicenseKey.get(main).getMode() != MODE.PRODUCTION, e);
+            Logging.error(main, "Cronjob threw an exception: " + this.jobName, Main.isTesting, e);
             if (e instanceof QuitProgramException) {
                 main.wakeUpMainThreadToShutdown();
             }

@@ -17,18 +17,13 @@
 package io.supertokens.test;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
-import io.supertokens.backendAPI.Ping;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.httpRequest.HttpRequest;
-import io.supertokens.httpRequest.HttpRequestMocking;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import io.supertokens.webserver.InputParser;
-import io.supertokens.webserver.RPMCalculator;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
@@ -41,9 +36,10 @@ import org.mockito.Mockito;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.*;
-import java.net.*;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.InetAddress;
+import java.net.SocketTimeoutException;
 import java.util.HashMap;
 
 import static org.junit.Assert.*;
@@ -311,99 +307,6 @@ public class WebserverTest extends Mockito {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void testRPMCalculator() throws Exception {
-        String[] args = {"../"};
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-
-        final HttpURLConnection mockCon = mock(HttpURLConnection.class);
-        InputStream inputStrm = new ByteArrayInputStream("".getBytes(StandardCharsets.UTF_8));
-        when(mockCon.getInputStream()).thenReturn(inputStrm);
-        when(mockCon.getResponseCode()).thenReturn(200);
-        when(mockCon.getOutputStream()).thenReturn(new OutputStream() {
-            @Override
-            public void write(int b) {
-                output.write(b);
-            }
-        });
-
-        RPMCalculator.getInstance(process.getProcess()).RPM_MIN_DELTA = 0.033; //2 seconds
-        RPMCalculator.getInstance(process.getProcess()).RPM_HOUR_DELTA = 5;
-
-        HttpRequestMocking.getInstance(process.getProcess()).setMockURL(
-                Ping.REQUEST_ID, new HttpRequestMocking.URLGetter() {
-
-                    @Override
-                    public URL getUrl(String url) throws MalformedURLException {
-                        URLStreamHandler stubURLStreamHandler = new URLStreamHandler() {
-                            @Override
-                            protected URLConnection openConnection(URL u) {
-                                return mockCon;
-                            }
-                        };
-                        return new URL(null, url, stubURLStreamHandler);
-                    }
-                });
-
-
-        process.startProcess();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.SERVER_PING));
-        int lastIndexOf = output.toString().length();
-        {
-            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/hello", new JsonObject(),
-                    1000, 1000, null);
-            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/hello", new JsonObject(),
-                    1000, 1000, null);
-            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/hello", new JsonObject(),
-                    1000, 1000, null);
-
-            Thread.sleep(2000);
-
-            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/hello", new JsonObject(),
-                    1000, 1000, null);
-            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/hello", new JsonObject(),
-                    1000, 1000, null);
-
-
-            Thread.sleep(3000);
-            Ping.getInstance(process.getProcess()).doPing();
-
-            assertEquals(
-                    new JsonParser().parse(output.toString().substring(lastIndexOf)).getAsJsonObject()
-                            .get("requestsPerMin")
-                            .getAsJsonArray().get(0)
-                            .getAsJsonObject().get("value").getAsInt(), 3);
-        }
-        lastIndexOf = output.toString().length();
-        Thread.sleep(1000);
-        {
-            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/hello", new JsonObject(),
-                    1000, 1000, null);
-            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/hello", new JsonObject(),
-                    1000, 1000, null);
-
-            Thread.sleep(2000);
-
-            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/hello", new JsonObject(),
-                    1000, 1000, null);
-
-
-            Thread.sleep(3000);
-            Ping.getInstance(process.getProcess()).doPing();
-
-            assertEquals(
-                    new JsonParser().parse(output.toString().substring(lastIndexOf)).getAsJsonObject()
-                            .get("requestsPerMin")
-                            .getAsJsonArray().get(1)
-                            .getAsJsonObject().get("value").getAsInt(), 2);
-        }
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
 

@@ -48,11 +48,6 @@ public class RefreshSessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // Do not modify after and including this line
-        if (sendRandomUnauthorisedIfDevLicenseAndSomeTimeHasPassed(resp)) {
-            return;
-        }
-        // Do not modify before and including this line
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String refreshToken = InputParser.parseStringOrThrowError(input, "refreshToken", false);
         String antiCsrfToken = InputParser.parseStringOrThrowError(input, "antiCsrfToken", true);
@@ -93,7 +88,5 @@ public class RefreshSessionAPI extends WebserverAPI {
 
             super.sendJsonResponse(200, reply, resp);
         }
-
-        super.saveDeviceDriverInfoIfPresent(input);
     }
 }

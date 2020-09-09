@@ -19,7 +19,6 @@ package io.supertokens.test.httpRequest;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.licenseKey.LicenseKey;
 
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -34,7 +33,7 @@ public class HttpRequest {
 
     private static URL getURL(Main main, String requestID, String url) throws MalformedURLException {
         URL obj = new URL(url);
-        if (Main.isTesting && LicenseKey.get(main).getMode() == LicenseKey.MODE.DEV) {
+        if (Main.isTesting) {
             URL mock = HttpRequestMocking.getInstance(main).getMockURL(requestID, url);
             if (mock != null) {
                 obj = mock;

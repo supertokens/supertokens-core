@@ -21,8 +21,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.licenseKey.LicenseKey;
-import io.supertokens.licenseKey.LicenseKey.MODE;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.Nullable;
 
@@ -200,7 +198,7 @@ public class CoreConfig {
                 .getValue(CoreConfigTestContent.VALIDITY_TESTING);
         validityTesting = validityTesting == null ? false : validityTesting;
         if ((refresh_token_validity * 60) <= access_token_validity) {
-            if (!Main.isTesting || LicenseKey.get(main).getMode() != MODE.DEV || validityTesting) {
+            if (!Main.isTesting || validityTesting) {
                 throw new QuitProgramException(
                         "'refresh_token_validity' must be strictly greater than 'access_token_validity'. The config " +
                                 "file can be found here: " + getConfigFileLocation(main));

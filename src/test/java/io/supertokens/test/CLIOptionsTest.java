@@ -77,8 +77,7 @@ public class CLIOptionsTest {
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertTrue(e != null && e.exception.getMessage()
-                .equals("LicenseKey file is missing. Please visit https://supertokens.io/dashboard to get the " +
-                        "licenseKey for this app"));
+                .equals("No database plugin found. Please redownload and install SuperTokens"));
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
         process.kill();
     }

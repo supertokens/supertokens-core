@@ -90,8 +90,6 @@ public class SessionAPI extends WebserverAPI {
                 BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
             throw new ServletException(e);
         }
-
-        super.saveDeviceDriverInfoIfPresent(input);
     }
 
     @Override

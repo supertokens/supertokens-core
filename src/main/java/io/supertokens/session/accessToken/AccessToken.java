@@ -23,8 +23,6 @@ import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.TryRefreshTokenException;
-import io.supertokens.licenseKey.LicenseKey;
-import io.supertokens.licenseKey.LicenseKey.PLAN_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.info.TokenInfo;
@@ -118,7 +116,7 @@ public class AccessToken {
         }
         AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime,
                 parentRefreshTokenHash1, userData, antiCsrfToken, now,
-                LicenseKey.get(main).getPlanType() != PLAN_TYPE.FREE, lmrt);
+                false, lmrt);
         String token = JWT.createJWT(new Gson().toJsonTree(accessToken), signingKey.privateKey, VERSION.V2);
         return new TokenInfo(token, expiryTime, now, Config.getConfig(main).getAccessTokenPath(),
                 Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain(currCDIVersion),
@@ -152,7 +150,7 @@ public class AccessToken {
         long expiryTime = now + Config.getConfig(main).getAccessTokenValidity();
         accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime,
                 parentRefreshTokenHash1, userData, antiCsrfToken, now,
-                LicenseKey.get(main).getPlanType() != PLAN_TYPE.FREE, null);
+                false, null);
 
 
         String token = JWT.createJWT(new Gson().toJsonTree(accessToken), signingKey.privateKey, VERSION.V1);

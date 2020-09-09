@@ -21,7 +21,6 @@ import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
-import io.supertokens.webserver.WebserverAPITest;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -194,47 +193,6 @@ public class RefreshSessionAPITest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
-    }
-
-    @Test
-    public void throwsRandomSessionExpiredTest() throws Exception {
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        WebserverAPITest.getInstance(process.getProcess()).setRandomnessThreshold(0);
-        WebserverAPITest.getInstance(process.getProcess()).setTimeAfterWhichToThrowUnauthorised(0);
-        process.startProcess();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String userId = "userId";
-        JsonObject userDataInJWT = new JsonObject();
-        userDataInJWT.addProperty("key", "value");
-        JsonObject userDataInDatabase = new JsonObject();
-        userDataInDatabase.addProperty("key", "value");
-
-        JsonObject sessionRequest = new JsonObject();
-        sessionRequest.addProperty("userId", userId);
-        sessionRequest.add("userDataInJWT", userDataInJWT);
-        sessionRequest.add("userDataInDatabase", userDataInDatabase);
-
-        JsonObject sessionInfo = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/session", sessionRequest, 1000, 1000, null);
-
-        JsonObject request = new JsonObject();
-        request.addProperty("refreshToken",
-                sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
-
-        JsonObject response = HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh", request, 1000,
-                        1000,
-                        null);
-
-        assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
-        assertEquals(response.get("message").getAsString(), "");
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
 
     }
 

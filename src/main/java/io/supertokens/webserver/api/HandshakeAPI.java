@@ -69,7 +69,5 @@ public class HandshakeAPI extends WebserverAPI {
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             throw new ServletException(e);
         }
-
-        super.saveDeviceDriverInfoIfPresent(input);
     }
 }

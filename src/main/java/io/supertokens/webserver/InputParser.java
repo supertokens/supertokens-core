@@ -20,16 +20,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import io.supertokens.backendAPI.Ping;
 
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 public class InputParser {
     public static JsonObject parseJsonObjectOrThrowError(HttpServletRequest request)
@@ -157,47 +152,5 @@ public class InputParser {
 
         }
 
-    }
-
-    public static DeviceDriverInfo parseDeviceDriverInfo(JsonObject element) throws ServletException {
-        try {
-            if (!element.has("deviceDriverInfo")) {
-                return null;
-            }
-            List<Ping.NameVersion> frontendSDK = new ArrayList<>();
-            Ping.NameVersion driver = null;
-            JsonObject deviceDriverInfo = element.getAsJsonObject("deviceDriverInfo");
-            if (deviceDriverInfo.has("frontendSDK")) {
-                JsonArray info = deviceDriverInfo.getAsJsonArray("frontendSDK");
-                info.forEach(jsonElement -> {
-                    JsonObject obj = jsonElement.getAsJsonObject();
-                    Ping.NameVersion nv = new Ping.NameVersion(obj.get("name").getAsString(),
-                            obj.get("version").getAsString());
-                    if (!frontendSDK.contains(nv)) {
-                        frontendSDK.add(nv);
-                    }
-                });
-            }
-            if (deviceDriverInfo.has("driver")) {
-                JsonObject info = deviceDriverInfo.getAsJsonObject("driver");
-                driver = new Ping.NameVersion(info.get("name").getAsString(), info.get("version").getAsString());
-            }
-            return new DeviceDriverInfo(frontendSDK, driver);
-        } catch (Exception e) {
-            throw new ServletException(
-                    new WebserverAPI.BadRequestException("Error while parsing deviceDriverInfo"));
-        }
-    }
-
-    static class DeviceDriverInfo {
-        @Nonnull
-        List<Ping.NameVersion> frontendSDK;
-        @Nullable
-        Ping.NameVersion driver;
-
-        DeviceDriverInfo(@Nonnull List<Ping.NameVersion> frontendSDK, @Nullable Ping.NameVersion driver) {
-            this.frontendSDK = frontendSDK;
-            this.driver = driver;
-        }
     }
 }

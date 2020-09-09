@@ -152,10 +152,7 @@ public class DotStartedFileTest {
         String[] args = {"../"};
         String installDir = "../";
 
-        ProcessBuilder pb = new ProcessBuilder("rm", "./licenseKey");
-        pb.directory(new File(installDir));
-        Process process1 = pb.start();
-        process1.waitFor();
+        Utils.setValueInConfig("cookie_same_site", "none");
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE));

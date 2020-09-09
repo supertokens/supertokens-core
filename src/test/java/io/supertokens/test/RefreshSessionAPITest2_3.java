@@ -19,7 +19,6 @@ package io.supertokens.test;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
-import io.supertokens.webserver.WebserverAPITest;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -453,50 +452,6 @@ public class RefreshSessionAPITest2_3 {
 
     }
 
-
-    @Test
-    public void throwsRandomSessionExpiredTest() throws Exception {
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        WebserverAPITest.getInstance(process.getProcess()).setRandomnessThreshold(0);
-        WebserverAPITest.getInstance(process.getProcess()).setTimeAfterWhichToThrowUnauthorised(0);
-        process.startProcess();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String userId = "userId";
-        JsonObject userDataInJWT = new JsonObject();
-        userDataInJWT.addProperty("key", "value");
-        JsonObject userDataInDatabase = new JsonObject();
-        userDataInDatabase.addProperty("key", "value");
-
-        JsonObject sessionRequest = new JsonObject();
-        sessionRequest.addProperty("userId", userId);
-        sessionRequest.add("userDataInJWT", userDataInJWT);
-        sessionRequest.add("userDataInDatabase", userDataInDatabase);
-
-        JsonObject sessionInfo = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/session", sessionRequest, 1000, 1000, null,
-                        Utils.getCdiVersion2_3ForTests());
-
-        JsonObject request = new JsonObject();
-        request.addProperty("refreshToken",
-                sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
-
-        JsonObject response = io.supertokens.test.httpRequest
-                .HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh", request, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_3ForTests());
-
-        assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
-        assertEquals(response.get("message").getAsString(), "");
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
-
-    }
 
     private static void checkRefreshSessionResponse(JsonObject response,
                                                     TestingProcessManager.TestingProcess process, String userId,

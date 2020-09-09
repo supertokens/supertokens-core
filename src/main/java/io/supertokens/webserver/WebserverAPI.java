@@ -17,13 +17,8 @@
 package io.supertokens.webserver;
 
 import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.ProcessState;
-import io.supertokens.backendAPI.Ping;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.licenseKey.LicenseKey;
-import io.supertokens.licenseKey.LicenseKey.MODE;
 import io.supertokens.output.Logging;
 
 import javax.servlet.ServletException;
@@ -54,23 +49,6 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     public abstract String getPath();
-
-    protected void saveDeviceDriverInfoIfPresent(JsonObject input) {
-        try {
-            InputParser.DeviceDriverInfo deviceDriverInfo = InputParser.parseDeviceDriverInfo(input);
-            if (deviceDriverInfo != null) {
-                deviceDriverInfo.frontendSDK.forEach(nameVersion -> {
-                    Ping.getInstance(main).addFrontendSDK(nameVersion);
-                });
-                if (deviceDriverInfo.driver != null) {
-                    Ping.getInstance(main).addDriver(deviceDriverInfo.driver);
-                }
-                ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.DEVICE_DRIVER_INFO_SAVED, null);
-            }
-        } catch (Exception ignored) {
-            // if any error occurs, it's OK since this information is only used for analytics purposes.
-        }
-    }
 
     protected void sendTextResponse(int statusCode, String message, HttpServletResponse resp) throws IOException {
         resp.setStatus(statusCode);
@@ -150,7 +128,7 @@ public abstract class WebserverAPI extends HttpServlet {
             super.service(req, resp);
         } catch (Exception e) {
             Logging.error(main, "API threw an exception: " + this.getPath(),
-                    LicenseKey.get(main).getMode() != MODE.PRODUCTION, e);
+                    Main.isTesting, e);
 
             if (e instanceof QuitProgramException) {
                 main.wakeUpMainThreadToShutdown();
@@ -167,7 +145,6 @@ public abstract class WebserverAPI extends HttpServlet {
             }
         }
         Logging.debug(main, "API ended: " + this.getPath() + ". Method: " + req.getMethod());
-        RPMCalculator.getInstance(main).updateRPM();
     }
 
     protected String getVersionFromRequest(HttpServletRequest req) {
@@ -183,25 +160,4 @@ public abstract class WebserverAPI extends HttpServlet {
             super(msg);
         }
     }
-
-    // safeguard against misuse of DEV license key.
-    protected boolean sendRandomUnauthorisedIfDevLicenseAndSomeTimeHasPassed(HttpServletResponse resp)
-            throws IOException {
-        int timeAfterWhichToThrowUnauthorised =
-                WebserverAPITest.getInstance(main).getTimeAfterWhichToThrowUnauthorised() == null ? 3600 * 1000 :
-                        WebserverAPITest.getInstance(main).getTimeAfterWhichToThrowUnauthorised();
-        double randomnessThreshold = WebserverAPITest.getInstance(main).getRandomnessThreshold() == null ? 0.5 :
-                WebserverAPITest.getInstance(main).getRandomnessThreshold();
-        if (LicenseKey.get(main).getMode() == MODE.DEV &&
-                ((System.currentTimeMillis() - main.getProcessStartTime()) > timeAfterWhichToThrowUnauthorised) &&
-                Math.random() >= randomnessThreshold) {
-            JsonObject reply = new JsonObject();
-            reply.addProperty("status", "UNAUTHORISED");
-            reply.addProperty("message", "");
-            sendJsonResponse(200, reply, resp);
-            return true;
-        }
-        return false;
-    }
-
 }
