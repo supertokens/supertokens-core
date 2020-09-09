@@ -78,6 +78,10 @@ abstract class Utils extends Mockito {
         return "2.2";
     }
 
+    static String getCdiVersion2_3ForTests() {
+        return "2.3";
+    }
+
     public static void reset() {
         Main.isTesting = true;
         PluginInterfaceTesting.isTesting = true;

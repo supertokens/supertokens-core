@@ -53,6 +53,21 @@ public class ConfigTest {
         Utils.reset();
     }
 
+    @Test
+    public void testThatSameSiteNoneNeedsAntiCSRF() throws Exception {
+        String[] args = {"../"};
+        Utils.setValueInConfig("cookie_same_site", "none");
+        TestingProcess process = TestingProcessManager.start(args);
+        EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(e);
+        assertEquals(e.exception.getMessage(),
+                "please set 'enable_anti_csrf' to true if 'cookie_same_site' is set to 'none'");
+
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
     // *  - test that if session_expired_status_code has a different, valid value, that is what is being set
     @Test
     public void testIfSessionExpiredStatusCodeWithDifferentValidValueIsBeingSet() throws Exception {
