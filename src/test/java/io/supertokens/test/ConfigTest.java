@@ -219,6 +219,7 @@ public class ConfigTest {
         {
             String[] args = {"../"};
             Utils.setValueInConfig("cookie_same_site", "none");
+            Utils.setValueInConfig("enable_anti_csrf", "true");
             TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
             assertNotNull(e);
@@ -229,6 +230,7 @@ public class ConfigTest {
         {
             String[] args = {"../"};
             Utils.setValueInConfig("cookie_same_site", "NonE");
+            Utils.setValueInConfig("enable_anti_csrf", "true");
             TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
             assertNotNull(e);
@@ -334,7 +336,7 @@ public class ConfigTest {
                 3600 * 1000);
         assertFalse("Config access token blacklisting did not match default", config.getAccessTokenBlacklisting());
         assertEquals("Config access token path did not match default", config.getAccessTokenPath(), "/");
-        assertTrue("Config enable anti CSRF did not match default", config.getEnableAntiCSRF());
+        assertFalse("Config enable anti CSRF did not match default", config.getEnableAntiCSRF());
         assertEquals("Config refresh token validity did not match default", config.getRefreshTokenValidity(),
                 60 * 2400 * 60 * (long) 1000);
         assertEquals("Config refresh API path did not match default", config.getRefreshAPIPath(), "/session/refresh");

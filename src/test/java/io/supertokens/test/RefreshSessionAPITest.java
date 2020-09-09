@@ -30,8 +30,7 @@ import org.junit.rules.TestRule;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 
 public class RefreshSessionAPITest {
@@ -188,9 +187,9 @@ public class RefreshSessionAPITest {
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("createdTime"));
         assertEquals(response.get("idRefreshToken").getAsJsonObject().entrySet().size(), 3);
 
-        assertTrue(response.has("antiCsrfToken"));
+        assertFalse(response.has("antiCsrfToken"));
 
-        assertEquals(response.entrySet().size(), 6);
+        assertEquals(response.entrySet().size(), 5);
 
 
         process.kill();

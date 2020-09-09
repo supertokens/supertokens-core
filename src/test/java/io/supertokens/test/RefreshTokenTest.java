@@ -20,6 +20,7 @@ import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.session.refreshToken.RefreshToken;
 import io.supertokens.session.refreshToken.RefreshToken.RefreshTokenInfo;
@@ -88,20 +89,25 @@ public class RefreshTokenTest {
     public void freePaidVersionTest() {
         assertEquals("V0", TYPE.FREE.toString());
         assertEquals("V1", TYPE.PAID.toString());
+        assertEquals("V2", TYPE.FREE_OPTIMISED.toString());
         assertSame(TYPE.fromString("V0"), TYPE.FREE);
         assertSame(TYPE.fromString("V1"), TYPE.PAID);
+        assertSame(TYPE.fromString("V2"), TYPE.FREE_OPTIMISED);
         assertNull(TYPE.fromString("random"));
     }
 
     @Test
     public void createRefreshTokenAndLoadAfterProcessRestart()
-            throws InterruptedException, NoSuchAlgorithmException,
-            StorageQueryException, UnauthorisedException {
+            throws InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
+            InvalidKeySpecException, NoSuchPaddingException,
+            InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException, StorageQueryException,
+            StorageTransactionLogicException, UnauthorisedException {
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        TokenInfo tokenInfo = RefreshToken.createNewRefreshToken(process.getProcess(), "sessionHandle", null);
+        TokenInfo tokenInfo = RefreshToken.createNewRefreshToken(process.getProcess(), "sessionHandle", "userId",
+                "parentRefreshTokenHash1", "antiCsrfToken");
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -110,10 +116,12 @@ public class RefreshTokenTest {
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         RefreshTokenInfo infoFromToken = RefreshToken.getInfoFromRefreshToken(process.getProcess(), tokenInfo.token);
-        assertNull(infoFromToken.userId);
+        assertEquals("parentRefreshTokenHash1", infoFromToken.parentRefreshTokenHash1);
+        assertEquals("userId", infoFromToken.userId);
         assertEquals("sessionHandle", infoFromToken.sessionHandle);
-        assertNotNull(infoFromToken.parentRefreshTokenHash2);
-        assertSame(infoFromToken.type, TYPE.FREE);
+        assertEquals("antiCsrfToken", infoFromToken.antiCsrfToken);
+        assertNull(infoFromToken.parentRefreshTokenHash2);
+        assertSame(infoFromToken.type, TYPE.FREE_OPTIMISED);
         // -5000 for some grace period for creation and checking above
         assertTrue(tokenInfo.expiry > System.currentTimeMillis()
                 + Config.getConfig(process.getProcess()).getRefreshTokenValidity() - 5000);
@@ -121,6 +129,35 @@ public class RefreshTokenTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
 
+    }
+
+    @Test
+    public void createRefreshTokenButVerifyWithDifferentSigningKeyFailure() throws InterruptedException,
+            InvalidKeyException, NoSuchAlgorithmException,
+            InvalidKeySpecException, NoSuchPaddingException, InvalidAlgorithmParameterException,
+            IllegalBlockSizeException, BadPaddingException, StorageQueryException, StorageTransactionLogicException {
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        TokenInfo tokenInfo = RefreshToken.createNewRefreshToken(process.getProcess(), "sessionHandle", "userId",
+                "parentRefreshTokenHash1", "antiCsrfToken");
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+
+        Utils.reset();
+
+        process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        try {
+            RefreshToken.getInfoFromRefreshToken(process.getProcess(), tokenInfo.token);
+        } catch (UnauthorisedException e) {
+            assertEquals("javax.crypto.AEADBadTagException: Tag mismatch!", e.getMessage());
+            return;
+        }
+        fail();
     }
 
 }

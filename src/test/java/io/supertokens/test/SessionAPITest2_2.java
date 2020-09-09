@@ -49,6 +49,8 @@ public class SessionAPITest2_2 {
     public void successOutputCheckWithAntiCsrf() throws Exception {
         String[] args = {"../"};
 
+        Utils.setValueInConfig("enable_anti_csrf", "true");
+
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -81,6 +83,7 @@ public class SessionAPITest2_2 {
         String[] args = {"../"};
 
         Utils.setValueInConfig("cookie_domain", "localhost");
+        Utils.setValueInConfig("enable_anti_csrf", "true");
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

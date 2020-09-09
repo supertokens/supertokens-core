@@ -29,10 +29,14 @@ import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
@@ -82,7 +86,8 @@ public class SessionAPI extends WebserverAPI {
                     AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
             super.sendJsonResponse(200, result, resp);
         } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException |
-                StorageTransactionLogicException | SignatureException e) {
+                StorageTransactionLogicException | SignatureException | IllegalBlockSizeException |
+                BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
             throw new ServletException(e);
         }
 

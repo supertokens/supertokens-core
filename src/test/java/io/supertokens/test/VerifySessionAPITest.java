@@ -69,7 +69,6 @@ public class VerifySessionAPITest {
 
         JsonObject request = new JsonObject();
         request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
-        request.addProperty("antiCsrfToken", sessionInfo.get("antiCsrfToken").getAsString());
         request.addProperty("doAntiCsrfCheck", true);
         JsonObject response = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/verify", request, 1000,
@@ -119,7 +118,6 @@ public class VerifySessionAPITest {
 
         JsonObject request = new JsonObject();
         request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
-        request.addProperty("antiCsrfToken", sessionInfo.get("antiCsrfToken").getAsString());
         request.addProperty("doAntiCsrfCheck", true);
         JsonObject response = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/verify", request, 1000,
@@ -185,6 +183,7 @@ public class VerifySessionAPITest {
     @Test
     public void badInputTest() throws InterruptedException, IOException, HttpResponseException {
         String[] args = {"../"};
+        Utils.setValueInConfig("enable_anti_csrf", "true");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -301,7 +300,6 @@ public class VerifySessionAPITest {
 
         JsonObject request = new JsonObject();
         request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
-        request.addProperty("antiCsrfToken", sessionInfo.get("antiCsrfToken").getAsString());
         request.addProperty("doAntiCsrfCheck", true);
         JsonObject response = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/verify", request, 1000,

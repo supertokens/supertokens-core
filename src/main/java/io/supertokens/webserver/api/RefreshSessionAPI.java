@@ -55,11 +55,12 @@ public class RefreshSessionAPI extends WebserverAPI {
         // Do not modify before and including this line
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String refreshToken = InputParser.parseStringOrThrowError(input, "refreshToken", false);
+        String antiCsrfToken = InputParser.parseStringOrThrowError(input, "antiCsrfToken", true);
         assert refreshToken != null;
 
         try {
             SessionInformationHolder sessionInfo = Session
-                    .refreshSession(main, refreshToken, super.getVersionFromRequest(req));
+                    .refreshSession(main, refreshToken, antiCsrfToken, super.getVersionFromRequest(req));
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
 

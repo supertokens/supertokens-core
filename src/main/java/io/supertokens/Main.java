@@ -30,6 +30,7 @@ import io.supertokens.licenseKey.LicenseKey;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
@@ -187,6 +188,7 @@ public class Main {
 
         // init signing keys
         AccessTokenSigningKey.init(this);
+        RefreshTokenKey.init(this);
 
         // starts removing old session cronjob
         Cronjobs.addCronjob(this, DeleteExpiredSessions.getInstance(this));

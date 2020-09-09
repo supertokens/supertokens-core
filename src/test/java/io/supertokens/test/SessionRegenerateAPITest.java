@@ -71,7 +71,7 @@ public class SessionRegenerateAPITest {
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
         AccessToken.AccessTokenInfo accessTokenBefore = AccessToken
-                .getInfoFromAccessToken(process.getProcess(), accessToken, true);
+                .getInfoFromAccessToken(process.getProcess(), accessToken, false);
 
         JsonObject newUserDataInJWT = new JsonObject();
         newUserDataInJWT.addProperty("key2", "value2");
@@ -93,7 +93,7 @@ public class SessionRegenerateAPITest {
         AccessToken.AccessTokenInfo accessTokenAfter = AccessToken
                 .getInfoFromAccessToken(process.getProcess(),
                         sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("token").getAsString(),
-                        true);
+                        false);
 
         assertEquals(accessTokenBefore.expiryTime, accessTokenAfter.expiryTime);
         assertNotEquals(accessTokenBefore.lmrt, accessTokenAfter.lmrt);

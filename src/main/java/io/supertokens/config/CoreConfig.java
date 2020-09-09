@@ -42,7 +42,7 @@ public class CoreConfig {
     private String access_token_path = "/";
 
     @JsonProperty
-    private boolean enable_anti_csrf = true;
+    private boolean enable_anti_csrf = false;
 
     @JsonProperty
     private double refresh_token_validity = 60 * 2400; // in mins
@@ -220,6 +220,11 @@ public class CoreConfig {
         if (session_expired_status_code < 400 || session_expired_status_code >= 600) {
             throw new QuitProgramException(
                     "'session_expired_status_code' must be a value between 400 and 599, inclusive");
+        }
+
+        if (cookie_same_site.toLowerCase().equals("none") && !enable_anti_csrf) {
+            throw new QuitProgramException(
+                    "please set 'enable_anti_csrf' to true if 'cookie_same_site' is set to 'none'");
         }
 
         if (!getInfoLogPath(main).equals("null")) {

@@ -16,14 +16,12 @@
 
 package io.supertokens.session.refreshToken;
 
+import com.google.gson.Gson;
 import io.supertokens.Main;
-import io.supertokens.backendAPI.Ping;
 import io.supertokens.config.Config;
-import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.exceptions.UnauthorisedException;
-import io.supertokens.licenseKey.LicenseKey;
-import io.supertokens.licenseKey.LicenseKey.PLAN_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.tokenInfo.PastTokenInfo;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.storageLayer.StorageLayer;
@@ -32,17 +30,24 @@ import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+import javax.crypto.NoSuchPaddingException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.util.UUID;
 
 public class RefreshToken {
 
     public static RefreshTokenInfo getInfoFromRefreshToken(@Nonnull Main main, @Nonnull String token)
-            throws UnauthorisedException, StorageQueryException {
+            throws UnauthorisedException, StorageQueryException, StorageTransactionLogicException {
         try {
             TYPE tokenType = getTypeFromToken(token);
 
-            if (tokenType == TYPE.FREE) {   // Do not modify this line
+            if (tokenType == TYPE.FREE) {
+                // if it comes here, it means the token was issued via the older version..
 
                 // format of token is <random_uuid>.V0
                 PastTokenInfo pastTokenInfo = StorageLayer.getStorageLayer(main)
@@ -51,37 +56,50 @@ public class RefreshToken {
                     throw new UnauthorisedException(
                             "Refresh token not found in database. Please create a new session.");
                 }
-                return new RefreshTokenInfo(pastTokenInfo.sessionHandle, null,
-                        pastTokenInfo.parentRefreshTokenHash2, tokenType);
+                return new RefreshTokenInfo(pastTokenInfo.sessionHandle, null, null,
+                        pastTokenInfo.parentRefreshTokenHash2, null, tokenType);
 
             } else {    // Do not modify this line
-                Ping.getInstance(main).hadUsedProVersion = true;
-                throw new QuitProgramException(
-                        "ERROR: You have moved from a pro binary to a community binary. Please use the pro binary " +
-                                "with your current license key");
+                // format of token is <encrypted part>.<nonce>.V1
+                String key = RefreshTokenKey.getInstance(main).getKey();
+                String[] splittedToken = token.split("\\.");
+                if (splittedToken.length != 3) {
+                    throw new InvalidRefreshTokenFormatException(
+                            "Refresh token split with dot yielded an array of length: " + splittedToken.length);
+                }
+                String nonce = splittedToken[1];
+                String decrypted = Utils.decrypt(splittedToken[0], key);
+                RefreshTokenPayload tokenPayload = new Gson().fromJson(decrypted, RefreshTokenPayload.class);
+                if (tokenPayload.userId == null || tokenPayload.sessionHandle == null
+                        || !nonce.equals(tokenPayload.nonce)) {
+                    throw new UnauthorisedException("Invalid refresh token");
+                }
+                return new RefreshTokenInfo(tokenPayload.sessionHandle, tokenPayload.userId,
+                        tokenPayload.parentRefreshTokenHash1, null,
+                        tokenPayload.antiCsrfToken, tokenType);
 
             }
-        } catch (InvalidRefreshTokenFormatException | NoSuchAlgorithmException | NullPointerException e) {
+        } catch (InvalidRefreshTokenFormatException | InvalidKeyException | InvalidKeySpecException
+                | NoSuchPaddingException | InvalidAlgorithmParameterException | IllegalBlockSizeException
+                | BadPaddingException | NoSuchAlgorithmException | NullPointerException e) {
             throw new UnauthorisedException(e);
         }
     }
 
     public static TokenInfo createNewRefreshToken(@Nonnull Main main, @Nonnull String sessionHandle,
-                                                  @Nullable String parentRefreshTokenHash2,
-                                                  @Nullable String currCDIVersion)
-            throws NoSuchAlgorithmException, StorageQueryException {
-        if (LicenseKey.get(main).getPlanType() != PLAN_TYPE.FREE) {
-            throw new UnsupportedOperationException("Using free create refresh function for non free version");
-        }
-        String token = UUID.randomUUID().toString() + "." + TYPE.FREE.toString();
-        String refreshTokenHash2 = Utils.hashSHA256(Utils.hashSHA256(token));
-        parentRefreshTokenHash2 = parentRefreshTokenHash2 == null ? refreshTokenHash2 : parentRefreshTokenHash2;
-
+                                                  @Nonnull String userId, @Nullable String parentRefreshTokenHash1,
+                                                  @Nullable String antiCsrfToken, @Nullable String currCDIVersion)
+            throws NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException,
+            NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
+            InvalidKeyException, InvalidKeySpecException {
+        String key = RefreshTokenKey.getInstance(main).getKey();
+        String nonce = Utils.hashSHA256(UUID.randomUUID().toString());
+        RefreshTokenPayload payload = new RefreshTokenPayload(sessionHandle, userId, parentRefreshTokenHash1, nonce,
+                antiCsrfToken);
+        String payloadSerialised = new Gson().toJson(payload);
+        String encryptedPayload = Utils.encrypt(payloadSerialised, key);
+        String token = encryptedPayload + "." + nonce + "." + TYPE.FREE_OPTIMISED.toString();
         long now = System.currentTimeMillis();
-        PastTokenInfo pastTokenInfo = new PastTokenInfo(refreshTokenHash2, sessionHandle, parentRefreshTokenHash2,
-                now);
-        StorageLayer.getStorageLayer(main).insertPastToken(pastTokenInfo);
-
         return new TokenInfo(token, now + Config.getConfig(main).getRefreshTokenValidity(), now,
                 Config.getConfig(main).getRefreshAPIPath(),
                 Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain(currCDIVersion),
@@ -90,9 +108,12 @@ public class RefreshToken {
 
     @TestOnly
     public static TokenInfo createNewRefreshToken(@Nonnull Main main, @Nonnull String sessionHandle,
-                                                  @Nullable String parentRefreshTokenHash2)
-            throws NoSuchAlgorithmException, StorageQueryException {
-        return createNewRefreshToken(main, sessionHandle, parentRefreshTokenHash2, null);
+                                                  @Nonnull String userId, @Nullable String parentRefreshTokenHash1,
+                                                  @Nullable String antiCsrfToken)
+            throws NoSuchAlgorithmException, StorageQueryException, NoSuchPaddingException, InvalidKeyException,
+            IllegalBlockSizeException, BadPaddingException, StorageTransactionLogicException,
+            InvalidAlgorithmParameterException, InvalidKeySpecException {
+        return createNewRefreshToken(main, sessionHandle, userId, parentRefreshTokenHash1, antiCsrfToken, null);
     }
 
 
@@ -112,7 +133,7 @@ public class RefreshToken {
     }
 
     public enum TYPE {
-        FREE("V0"), PAID("V1");
+        FREE("V0"), PAID("V1"), FREE_OPTIMISED("V2");
 
         private String version;
 
@@ -135,22 +156,51 @@ public class RefreshToken {
         }
     }
 
+    static class RefreshTokenPayload {
+        @Nonnull
+        final String sessionHandle;
+        @Nonnull
+        final String userId;
+        @Nullable
+        final String parentRefreshTokenHash1;
+        @Nonnull
+        final String nonce;
+        @Nullable
+        public final String antiCsrfToken;
+
+        RefreshTokenPayload(@Nonnull String sessionHandle, @Nonnull String userId,
+                            @Nullable String parentRefreshTokenHash1, @Nonnull String nonce,
+                            @Nullable String antiCsrfToken) {
+            this.sessionHandle = sessionHandle;
+            this.userId = userId;
+            this.parentRefreshTokenHash1 = parentRefreshTokenHash1;
+            this.nonce = nonce;
+            this.antiCsrfToken = antiCsrfToken;
+        }
+    }
+
     public static class RefreshTokenInfo {
         @Nonnull
         public final String sessionHandle;
         @Nullable
         public final String userId;
         @Nullable
+        public final String parentRefreshTokenHash1;
+        @Nullable
         public final String parentRefreshTokenHash2;
         @Nonnull
         public final TYPE type;
+        @Nullable
+        public final String antiCsrfToken;
 
         RefreshTokenInfo(@Nonnull String sessionHandle, @Nullable String userId,
-                         @Nullable String parentRefreshTokenHash2,
-                         @Nonnull TYPE type) {
+                         @Nullable String parentRefreshTokenHash1, @Nullable String parentRefreshTokenHash2,
+                         @Nullable String antiCsrfToken, @Nonnull TYPE type) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
+            this.parentRefreshTokenHash1 = parentRefreshTokenHash1;
             this.parentRefreshTokenHash2 = parentRefreshTokenHash2;
+            this.antiCsrfToken = antiCsrfToken;
             this.type = type;
         }
     }

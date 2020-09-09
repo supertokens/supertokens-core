@@ -118,7 +118,7 @@ public class AccessTokenTest {
 
         assert sessionInfo.accessToken != null;
         AccessTokenInfo accessTokenInfo = AccessToken
-                .getInfoFromAccessToken(process.getProcess(), sessionInfo.accessToken.token, true);
+                .getInfoFromAccessToken(process.getProcess(), sessionInfo.accessToken.token, false);
 
         long value = System.currentTimeMillis() - 5000;
 
@@ -155,7 +155,7 @@ public class AccessTokenTest {
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfo = AccessToken
-                .getInfoFromAccessToken(process.getProcess(), sessionInfo.accessToken.token, true);
+                .getInfoFromAccessToken(process.getProcess(), sessionInfo.accessToken.token, false);
 
         assertEquals(AccessToken.getAccessTokenVersion(accessTokenInfo), AccessToken.VERSION.V1);
 
@@ -183,7 +183,7 @@ public class AccessTokenTest {
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfo = AccessToken
-                .getInfoFromAccessToken(process.getProcess(), sessionInfo.accessToken.token, true);
+                .getInfoFromAccessToken(process.getProcess(), sessionInfo.accessToken.token, false);
 
         assertEquals(AccessToken.getAccessTokenVersion(accessTokenInfo), AccessToken.VERSION.V2);
 

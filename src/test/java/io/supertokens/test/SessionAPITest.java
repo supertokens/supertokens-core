@@ -52,6 +52,7 @@ public class SessionAPITest {
     @Test
     public void successOutputCheckWithAntiCsrf() throws InterruptedException, IOException, HttpResponseException {
         String[] args = {"../"};
+        Utils.setValueInConfig("enable_anti_csrf", "true");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

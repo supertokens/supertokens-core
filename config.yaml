@@ -45,7 +45,8 @@ core_config_version: 0
 # access_token_signing_key_update_interval:
 
 
-# (OPTIONAL | Default: true) boolean value. Protects against CSRF attack if this is set to true.
+# (OPTIONAL | Default: false) boolean value. By default, sameSite is "lax", so we do not need to explicitly use
+# an anti-CSRF token.
 # enable_anti_csrf:
 
 

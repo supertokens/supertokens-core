@@ -45,6 +45,7 @@ public abstract class WebserverAPI extends HttpServlet {
         supportedVersions.add("2.0");
         supportedVersions.add("2.1");
         supportedVersions.add("2.2");
+        supportedVersions.add("2.3");
     }
 
     public WebserverAPI(Main main) {
