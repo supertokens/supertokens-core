@@ -118,10 +118,6 @@ public class InstallHandler extends CommandHandler {
         Utils.copyFolderOrFile(new File("licenseKey"), new File(installationDir + "licenseKey"));
         Utils.copyFolderOrFile(new File("config.yaml.original"), new File(installationDir + "config.yaml.original"));
         Utils.copyFolderOrFile(new File("LICENSE.md"), new File(installationDir + "LICENSE.md"));
-        Utils.copyFolderOrFile(new File("OpenSourceLicenses.pdf"),
-                new File(installationDir + "OpenSourceLicenses.pdf"));
-        Utils.copyFolderOrFile(new File("SuperTokensLicense.pdf"),
-                new File(installationDir + "SuperTokensLicense.pdf"));
 
         // create log folder for process to write
         // TODO: This still doesn't make it possible for app to run in non root mode in Windows
