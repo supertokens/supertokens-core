@@ -166,7 +166,7 @@ Instructions coming soon...
 
 If you think this is a project you could use in the future, please :star2: this repository!
 
-### Contributors
+### Contributors (across all SuperTokens repositories)
 <table>
   <tr>
     <td align="center"><a href="https://github.com/rishabhpoddar"><img src="https://avatars1.githubusercontent.com/u/2976287?s=460&u=d0cf2463df96fbdf1138cf74f88d7cf41415b238&v=4" width="100px;" alt=""/><br /><sub><b>Rishabh Poddar</b></sub></a></td>
