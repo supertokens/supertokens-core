@@ -180,6 +180,9 @@ If you think this is a project you could use in the future, please :star2: this 
 <td align="center"><a href="https://github.com/nkshah2"><img src="https://avatars2.githubusercontent.com/u/18233774?s=400&u=5befa41674cfcd6c6060103360ab323cdfa24dcb&v=4" width="100px;" alt=""/><br /><sub><b>Nemi Shah</b></sub></a></td>
 <td align="center"><a href="https://github.com/irohitb"><img src="https://avatars3.githubusercontent.com/u/32276134?s=400&u=0b72f6c4e6cfa749229a8e69ed86acb720a384e7&v=4" width="100px;" alt=""/><br /><sub><b>Rohit Bhatia</b></sub></a></td>
   </tr>
+  <tr>
+<td align="center"><a href="https://github.com/mmaha"><img src="https://avatars3.githubusercontent.com/u/297517?s=400&u=8c41caf46c511ed2054c3d14c23193eda0d996af&v=4" width="100px;" alt=""/><br /><sub><b>Madhu Mahadevan</b></sub></a></td>
+  </tr>
 </table>
 
 ## Contributing
