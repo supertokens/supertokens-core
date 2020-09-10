@@ -30,7 +30,7 @@ If you like our project, please :star2: this repository! For feedback, feel free
 SuperTokens is an open core alternative to proprietary login providers like Auth0 or AWS Cognito. We are
  different because we offer:
 - Open source: SuperTokens can be used for free, forever, with no limits.
-- An on prem deployment with no connection to our servers. You control 100% of your user data.
+- An on-premises deployment with no connection to our servers. You control 100% of your user data.
 - An end to end solution with login, sign ups, user and session management, without all the complexities of OAuth protocols.
 - Ease of implementation and higher security
 - Extensibility: Anyone can contribute and make SuperTokens better!
@@ -97,8 +97,7 @@ The frontend SDK talks to your API layer, which uses the backend SDK.
 
 The backend SDK talks to the SuperTokens core whenever necessary
 
-SuperTokens core talks to the installed database plugin to store information in the database. It can be run on
- premise, with or without Docker. You can also use our managed service to run this.
+SuperTokens core talks to the installed database plugin to store information in the database. It can be run on-premises, with or without Docker. You can also use our managed service to run this.
 
 ## SuperTokens vs others
 
@@ -107,7 +106,7 @@ Please [contact us](mailto:team@supertokens.io) if any of the information listed
 |                                	|       SuperTokens <img src="https://avatars2.githubusercontent.com/u/50478857?s=200&v=4" alt="Supertokens Logo" width="30" height="30">     	|        Auth0 <img src="https://cdn.auth0.com/website/assets/pages/press/img/auth0-badge-5c9de7e409.svg" alt="Auth0 Logo" width="25" height="25">       	|     AWS Cognito <img src="https://m.media-amazon.com/images/G/01/mobile-apps/dex/login-with-amazon/Cognito-Logo._TTH_.png" alt="Cognito Logo" width="35" height="35">    	|      Keycloak <img src="https://dyltqmyl993wv.cloudfront.net/assets/stacks/keycloak-gatekeeper/img/keycloak-gatekeeper-stack-220x234.png" alt="Keycloak Logo" width="30" height="30">     	|     FusionAuth <img src="https://res-3.cloudinary.com/crunchbase-production/image/upload/c_lpad,h_256,w_256,f_auto,q_auto:eco/zvhuxc69smizw7a9gggx" alt="FusionAuth Logo" width="35" height="35">    	|    Firebase Auth</br> <img src="https://static.dribbble.com/users/528264/screenshots/3140440/firebase_logo.png" alt="Firebase Logo" width="30" height="30">   	|
 |----------------------------------------	|:-----------------------:	|:------------------:	|:------------------:	|:------------------:	|:------------------:	|:------------------:	|
 | Open source                            	|    :heavy_check_mark:   	|                    	|                    	| :heavy_check_mark: 	|                    	|                    	|
-| On premise                             	|    :heavy_check_mark:   	|         :heavy_check_mark: [1]        	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|
+| On-premises                             	|    :heavy_check_mark:   	|         :heavy_check_mark: [1]        	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|
 | Managed service                        	|    :heavy_check_mark:   	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	
 | Managed service, with your database    	|       Coming Soon       	|                    	|                    	|                    	|                    	|                    	|                    	
 | Use with serverless                    	|    :heavy_check_mark:   	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	
@@ -165,7 +164,7 @@ Instructions coming soon...
 - [Discord](https://supertokens.io/discord)
 - [Email](mailto:team@supertokens.io)
 
-If you think this is a project you could use in the futrue, please :star2: this repository!
+If you think this is a project you could use in the future, please :star2: this repository!
 
 ### Contributors
 <table>
@@ -180,6 +179,9 @@ If you think this is a project you could use in the futrue, please :star2: this 
    <td align="center"><a href="https://twitter.com/mufassirkazi"><img src="https://i.stack.imgur.com/frlIf.png" width="100px;" alt=""/><br /><sub><b>Mufassir Kazi</b></sub></a></td>
 <td align="center"><a href="https://github.com/nkshah2"><img src="https://avatars2.githubusercontent.com/u/18233774?s=400&u=5befa41674cfcd6c6060103360ab323cdfa24dcb&v=4" width="100px;" alt=""/><br /><sub><b>Nemi Shah</b></sub></a></td>
 <td align="center"><a href="https://github.com/irohitb"><img src="https://avatars3.githubusercontent.com/u/32276134?s=400&u=0b72f6c4e6cfa749229a8e69ed86acb720a384e7&v=4" width="100px;" alt=""/><br /><sub><b>Rohit Bhatia</b></sub></a></td>
+  </tr>
+  <tr>
+<td align="center"><a href="https://github.com/mmaha"><img src="https://avatars3.githubusercontent.com/u/297517?s=400&u=8c41caf46c511ed2054c3d14c23193eda0d996af&v=4" width="100px;" alt=""/><br /><sub><b>Madhu Mahadevan</b></sub></a></td>
   </tr>
 </table>
 
@@ -207,6 +209,6 @@ Over the last few months, we have built out session management for SuperTokens. 
   compatibility. For all intents and purposes, a license key doesn't exist for this version, which means anyone can build from source, and use SuperTokens for free, forever. 
 
 ## License
-Copyright (c) SuperTokens, Inc. All rights reserved.
+&copy; 2020 SuperTokens, Inc. All rights reserved.
 
 Licensed under the Apache 2.0 license.
