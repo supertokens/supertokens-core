@@ -195,12 +195,16 @@ Over the last few months, we have built out session management for SuperTokens. 
     service in the middle. We do realise that adding this service means it's harder to get started and that there is
      an extra point of failure, however from the perspective of supporting each tech stack, this decision makes sense, since the failure problem can be addressed through easy to implement technical means.
  
-- A few weeks ago, our license was not truly open source. This was done as an experiment to get feedback on the
+- Until August, 2020, our license was not truly open source. This was done as an experiment to get feedback on the
   importance of software license for the startup community. Since then, it's become very clear that we must use a
    standard open source license, so we chose Apache 2.0
    
-- Our community version pinged our APIs (and still does) from time to time. This was done for us to understand
- adoption of our session management solution. However, it's become clear that that was a bad move, so we will remove it
+- Our community version used to ping our APIs from time to time. This was done for us to understand
+ adoption of our session management solution. However, it quickly became clear that that was a bad move.
+ 
+- We used to have a notion of a license key that was required to use the community version. This license key was
+ issued by us, and would never expire. Some parts of the code still refer to that, however, it's only for backwards
+  compatibility. For all intents and purposes, a license key doesn't exist for any new user.
 
 ## License
 Copyright (c) SuperTokens, Inc. All rights reserved.
