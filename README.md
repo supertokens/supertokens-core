@@ -12,7 +12,6 @@
     - [Philosophy](https://github.com/supertokens/supertokens-core#philosophy)
     - [Features](https://github.com/supertokens/supertokens-core#features)
     - [Documentation](https://github.com/supertokens/supertokens-core#documentation)
-- [🎉 Why open source?](https://github.com/supertokens/supertokens-core#why-open-source)
 - [🏗️ Architecture](https://github.com/supertokens/supertokens-core#architecture)
 - [🔥 SuperTokens vs Others](https://github.com/supertokens/supertokens-core#supertokens-vs-others)
 - [💵 How will we make money?](https://github.com/supertokens/supertokens-core#how-will-we-make-money)
@@ -25,10 +24,13 @@
 - [📜 Development history](https://github.com/supertokens/supertokens-core#development-history)
 - [📝 License](https://github.com/supertokens/supertokens-core#license)
 
+If you like our project, please :star2: this repository! For feedback, feel free to join our [Discord](https://supertokens.io/discord), or create an issue on this repo
+
 ## What is SuperTokens?
 SuperTokens is an open core alternative to proprietary login providers like Auth0 or AWS Cognito. We are
  different because we offer:
-- Open source: SuperTokens can be run on premise, forever, for free, with no limits. You control 100% of your user data.
+- Open source: SuperTokens can be used for free, forever, with no limits.
+- An on prem deployment with no connection to our servers. You control 100% of your user data.
 - An end to end solution with login, sign ups, user and session management, without all the complexities of OAuth protocols.
 - Ease of implementation and higher security
 - Extensibility: Anyone can contribute and make SuperTokens better!
@@ -52,6 +54,7 @@ We want to change that - we believe the only way is to provide a solution that h
     - Password management - hashing + salting.
     - Social and other types of login
     - Other community requests...
+<img src="https://raw.githubusercontent.com/supertokens/supertokens-logo/master/gifs/login-readme.gif" height="300px"/>
 
 - Session management
     - Create, verify, refresh & revoke sessions.
@@ -80,19 +83,6 @@ The docs can be seen [here](https://supertokens.io/docs/pro/getting-started/inst
 
 A short [implementation video](https://www.youtube.com/watch?v=kbC-QzxeZ4s&feature=emb_logo)
 
-## Why open source?
-Open source enables us to:
-- Enables us to provide maximum control to our users.
-- There are many features that can be built, and the best way to priorities, is to get direction from a community.
-- Quickly build more features. Examples of features that can be built via the community are:
-    - Sending slack notifications on user signup
-    - Integrating with sendgrid or mailchimp for email verification flows
-    - Building support for various social logins
-- Ability to easily add and support more tech stacks.
-- Transparency is better for security (potentially 100s or 1000s of developers seeing the code versus a team of 10s of
- developers).
-- Get social proof, quickly: This is important since a lot of developers pick solutions purely based on a library's
- popularity. This, inevitably leads to issues like JWTs being used for long lived sessions.
 
 ## Architecture
 We provide a fullstack solution:
@@ -111,7 +101,35 @@ SuperTokens core talks to the installed database plugin to store information in 
  premise, with or without Docker. You can also use our managed service to run this.
 
 ## SuperTokens vs others
-A comparison chart coming soon. Stay tuned!
+
+Please [contact us](mailto:team@supertokens.io) if any of the information listed below is incorrect.
+
+|                                	|       SuperTokens <img src="https://avatars2.githubusercontent.com/u/50478857?s=200&v=4" alt="Supertokens Logo" width="30" height="30">     	|        Auth0 <img src="https://cdn.auth0.com/website/assets/pages/press/img/auth0-badge-5c9de7e409.svg" alt="Auth0 Logo" width="25" height="25">       	|     AWS Cognito <img src="https://m.media-amazon.com/images/G/01/mobile-apps/dex/login-with-amazon/Cognito-Logo._TTH_.png" alt="Cognito Logo" width="35" height="35">    	|      Keycloak <img src="https://dyltqmyl993wv.cloudfront.net/assets/stacks/keycloak-gatekeeper/img/keycloak-gatekeeper-stack-220x234.png" alt="Keycloak Logo" width="30" height="30">     	|     FusionAuth <img src="https://res-3.cloudinary.com/crunchbase-production/image/upload/c_lpad,h_256,w_256,f_auto,q_auto:eco/zvhuxc69smizw7a9gggx" alt="FusionAuth Logo" width="35" height="35">    	|    Firebase Auth</br> <img src="https://static.dribbble.com/users/528264/screenshots/3140440/firebase_logo.png" alt="Firebase Logo" width="30" height="30">   	|
+|----------------------------------------	|:-----------------------:	|:------------------:	|:------------------:	|:------------------:	|:------------------:	|:------------------:	|
+| Open source                            	|    :heavy_check_mark:   	|                    	|                    	| :heavy_check_mark: 	|                    	|                    	|
+| On premise                             	|    :heavy_check_mark:   	|         :heavy_check_mark: [1]        	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|
+| Managed service                        	|    :heavy_check_mark:   	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	
+| Managed service, with your database    	|       Coming Soon       	|                    	|                    	|                    	|                    	|                    	|                    	
+| Use with serverless                    	|    :heavy_check_mark:   	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	
+| Free for unlimited users               	|    :heavy_check_mark:   	|                    	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|
+| Ease of configuration                  	|    :heavy_check_mark:   	| :heavy_check_mark: 	|                    	|                    	| :heavy_check_mark: 	|                    	|                    	
+| Support for distributed infra          	| :heavy_check_mark:  [2] 	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|                    	| :heavy_check_mark: 	|                    	
+| Database agnostic                      	|    :heavy_check_mark:   	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|                    	| :heavy_check_mark: 	|                    	
+| Customisable Login widget              	|       Coming soon       	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	
+| Unlimited Social Login                 	|       Coming soon       	|                    	|                    	| :heavy_check_mark: 	|                    	|                    	|                    	
+| Role & Attribute based access  control 	|       Coming Soon       	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	| 
+| Sessions using cookies                 	|    :heavy_check_mark:   	|                    	|                    	|                    	|                    	|                    	|                    	
+| Session hijacking detection            	|    :heavy_check_mark:   	|    :heavy_check_mark:   	|                    	|                    	|                    	|                    	|                    	
+| No cloud lockin                        	|    :heavy_check_mark:   	| :heavy_check_mark: 	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|
+| Low feature lockin                        	|    :heavy_check_mark:   	|                    	|                    	|                    	|                    	|                    	|
+| Dedicated Support                      	|    :heavy_check_mark:   	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	| 
+
+                 	
+
+[1]: For enterprise version only
+
+[2]: In a paid tier
+
 
 ## How will we make money?
 From a sustainability point of view, for us and for this open source project, it's important that we make profit. So far, we plan to charge for:
@@ -147,17 +165,19 @@ Instructions coming soon...
 - [Discord](https://supertokens.io/discord)
 - [Email](mailto:team@supertokens.io)
 
+If you think this is a project you could use in the futrue, please :star2: this repository!
+
 ### Contributors
 <table>
   <tr>
     <td align="center"><a href="https://github.com/rishabhpoddar"><img src="https://avatars1.githubusercontent.com/u/2976287?s=460&u=d0cf2463df96fbdf1138cf74f88d7cf41415b238&v=4" width="100px;" alt=""/><br /><sub><b>Rishabh Poddar</b></sub></a></td>
     <td align="center"><a href="https://twitter.com/Advait_Ruia"><img src="https://pbs.twimg.com/profile_images/1261970454685900800/ALVzsBQJ_400x400.jpg" width="100px;" alt=""/><br /><sub><b>Advait Ruia</b></sub></a></td>
     <td align="center"><a href="https://github.com/bhumilsarvaiya"><img src="https://avatars2.githubusercontent.com/u/21988812?s=460&u=c0bcde60a8bf1a99baafced55dd1a8d901fa7e4a&v=4" width="100px;" alt=""/><br /><sub><b>Bhumil Sarvaiya</b></sub></a></td>
-    <td align="center"><a href="https://github.com/jscyo"><img src="https://avatars2.githubusercontent.com/u/6310783?s=400&u=1661dadf66e1c611f92a4236d51e9e2a2c734267&v=4" width="100px;" alt=""/><br /><sub><b>Joel Coutinho</b></sub></a></td> 
+    <td align="center"><a href="https://github.com/jscyo"><img src="https://i.stack.imgur.com/frlIf.png" width="100px;" alt=""/><br /><sub><b>Joel Coutinho</b></sub></a></td> 
   </tr>
   <tr>
    <td align="center"><a href="https://github.com/RakeshUP"><img src="https://avatars1.githubusercontent.com/u/20946466?s=400&u=01d7d6d701eedd8345e491172e3af04578d18113&v=4" width="100px;" alt=""/><br /><sub><b>Rakesh UP</b></sub></a></td>
-   <td align="center"><a href="https://twitter.com/mufassirkazi"><img src="https://pbs.twimg.com/profile_images/1191391922255884288/KckuXWru_400x400.jpg" width="100px;" alt=""/><br /><sub><b>Mufassir Kazi</b></sub></a></td>
+   <td align="center"><a href="https://twitter.com/mufassirkazi"><img src="https://i.stack.imgur.com/frlIf.png" width="100px;" alt=""/><br /><sub><b>Mufassir Kazi</b></sub></a></td>
 <td align="center"><a href="https://github.com/nkshah2"><img src="https://avatars2.githubusercontent.com/u/18233774?s=400&u=5befa41674cfcd6c6060103360ab323cdfa24dcb&v=4" width="100px;" alt=""/><br /><sub><b>Nemi Shah</b></sub></a></td>
 <td align="center"><a href="https://github.com/irohitb"><img src="https://avatars3.githubusercontent.com/u/32276134?s=400&u=0b72f6c4e6cfa749229a8e69ed86acb720a384e7&v=4" width="100px;" alt=""/><br /><sub><b>Rohit Bhatia</b></sub></a></td>
   </tr>
@@ -167,7 +187,7 @@ Instructions coming soon...
 Instructions coming soon
 
 ## Development history
-Over the last few months, we have build out session management for SuperTokens. During this period, we have made our
+Over the last few months, we have built out session management for SuperTokens. During this period, we have made our
  fair share of mistakes:
  - Our first version was architected such that it tightly coupled the backend and database layer. So we had one
   `npm` library for NodeJS with MySQL, and another one for NodeJS with MongoDB etc. When adding support for a new
