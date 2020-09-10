@@ -204,7 +204,7 @@ Over the last few months, we have built out session management for SuperTokens. 
  
 - We used to have a notion of a license key that was required to use the community version. This license key was
  issued by us, and would never expire. Some parts of the code still refer to that, however, it's only for backwards
-  compatibility. For all intents and purposes, a license key doesn't exist for any new user.
+  compatibility. For all intents and purposes, a license key doesn't exist for this version, which means anyone can build from source, and use SuperTokens for free, forever. 
 
 ## License
 Copyright (c) SuperTokens, Inc. All rights reserved.
