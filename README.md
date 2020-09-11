@@ -46,6 +46,7 @@ We want to change that - we believe the only way is to provide a solution that h
   from scratch (minus the time to learn, build and maintain).
 
 ### Features
+#### ❗⭐❗⭐ We want to make features as decoupled as possible. This means, you can use SuperTokens for just login, or just session management, or both. In fact, we also offer session management integrations with other login providers like Auth0.
 - Login (coming soon):
     - A decoupled login & sign up form as React components - pretty by default, but fully customisable.
     - Email & password login with email verification, and forgot password flows
@@ -53,7 +54,6 @@ We want to change that - we believe the only way is to provide a solution that h
     - Extensibility to chain various login challenges
     - Password management - hashing + salting.
     - Social and other types of login
-    - Other community requests...
 <img src="https://raw.githubusercontent.com/supertokens/supertokens-logo/master/gifs/login-readme.gif" height="300px"/>
 
 - Session management
@@ -66,7 +66,6 @@ We want to change that - we believe the only way is to provide a solution that h
     - Ability to get all sessions given a user ID.
     - Reading session data on the frontend, securely.
     - Manipulation of session and JWT payloads
-    - Other community requests...
 
 - User management (coming soon)
     - (Un)banning & deleting users
@@ -74,7 +73,6 @@ We want to change that - we believe the only way is to provide a solution that h
     - Associating users with roles
     - Login identity consolidation (if a user logs in via google and via twitter, with the same email, they are
      treated as the same user).
-    - Other community requests...
 
 ### Documentation
 As of now, we only offer session management.
