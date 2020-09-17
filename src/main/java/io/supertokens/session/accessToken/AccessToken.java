@@ -115,8 +115,7 @@ public class AccessToken {
             expiryTime = now + Config.getConfig(main).getAccessTokenValidity();
         }
         AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime,
-                parentRefreshTokenHash1, userData, antiCsrfToken, now,
-                false, lmrt);
+                parentRefreshTokenHash1, userData, antiCsrfToken, now, lmrt);
         String token = JWT.createJWT(new Gson().toJsonTree(accessToken), signingKey.privateKey, VERSION.V2);
         return new TokenInfo(token, expiryTime, now, Config.getConfig(main).getAccessTokenPath(),
                 Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain(currCDIVersion),
@@ -150,7 +149,7 @@ public class AccessToken {
         long expiryTime = now + Config.getConfig(main).getAccessTokenValidity();
         accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime,
                 parentRefreshTokenHash1, userData, antiCsrfToken, now,
-                false, null);
+                null);
 
 
         String token = JWT.createJWT(new Gson().toJsonTree(accessToken), signingKey.privateKey, VERSION.V1);
@@ -182,14 +181,12 @@ public class AccessToken {
         public final String antiCsrfToken;
         public final long expiryTime;
         final long timeCreated;
-        final boolean isPaid;
         @Nullable
         public final Long lmrt; // lastManualRegenerationTime - nullable since v1 of JWT does not have this
 
         AccessTokenInfo(@Nonnull String sessionHandle, @Nonnull String userId, @Nonnull String refreshTokenHash1,
                         long expiryTime, @Nullable String parentRefreshTokenHash1, @Nonnull JsonObject userData,
-                        @Nullable String antiCsrfToken, long timeCreated, boolean isPaid,
-                        @Nullable Long lmrt) {
+                        @Nullable String antiCsrfToken, long timeCreated, @Nullable Long lmrt) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.refreshTokenHash1 = refreshTokenHash1;
@@ -198,7 +195,6 @@ public class AccessToken {
             this.userData = userData;
             this.antiCsrfToken = antiCsrfToken;
             this.timeCreated = timeCreated;
-            this.isPaid = isPaid;
             this.lmrt = lmrt;
         }
     }
