@@ -79,7 +79,7 @@ We also believe in the principle of least vendor lockin. Your having full contro
 ### Documentation
 As of now, we only offer session management.
 
-The docs can be seen [here](https://supertokens.io/docs/pro/getting-started/installation)
+The docs can be seen [here](https://supertokens.io/docs/community/getting-started/installation)
 
 A short [implementation video](https://www.youtube.com/watch?v=kbC-QzxeZ4s&feature=emb_logo)
 
