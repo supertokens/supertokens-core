@@ -99,6 +99,8 @@ The backend SDK talks to the SuperTokens core whenever necessary
 
 SuperTokens core talks to the installed database plugin to store information in the database. It can be run on-premises, with or without Docker. You can also use our managed service to run this.
 
+More information about this in the [wiki section](https://github.com/supertokens/supertokens-core/wiki/SuperTokens-Architecture)
+
 ## SuperTokens vs others
 
 Please [contact us](mailto:team@supertokens.io) if any of the information listed below is incorrect.
