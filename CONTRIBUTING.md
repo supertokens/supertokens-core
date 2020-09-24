@@ -7,7 +7,7 @@ We're so excited you're interested in helping with Supertokens! We are happy to 
 2. Familiarize yourself with the [SuperTokens Code of Conduct](https://github.com/supertokens/supertokens-core/blob/master/CODE_OF_CONDUCT.md)
 
 ## Where to ask Questions?
-1. Check our [Github Issues](https://github.com/supertokens/supertokens-core) to see if someone has already answered your question.  
+1. Check our [Github Issues](https://github.com/supertokens/supertokens-core/issues) to see if someone has already answered your question.  
 2. Join our community on [Discord](https://supertokens.io/discord) and feel free to ask us your questions  
   
   
@@ -73,7 +73,7 @@ As you gain experience with SuperTokens, please help answer other people's quest
 
 ## SuperTokens Community 
 SuperTokens is made possible by a passionate team and a strong community of developers. If you have any questions or would like to get more involved in the SuperTokens community you can check out:  
-  - [Github Issues](https://github.com/supertokens/supertokens-core)
+  - [Github Issues](https://github.com/supertokens/supertokens-core/issues)
   - [Discord](https://discord.com/invite/4WXseq7)
   - [Twitter](https://twitter.com/supertokensio)
   - or [email us](mailto:team@supertokens.io)
