@@ -8,7 +8,7 @@ Please note we have a code of conduct, please follow it in all your interactions
 ## Setup
 
 ### Prerequisites
-- OS: Linux
+- OS: Linux or macOS
 - JDK: openjdk 12.0.2
 - IDE:IntelliJ(we recommend) or equivalent IDE
 - Valid github account
