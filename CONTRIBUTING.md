@@ -21,11 +21,11 @@ Please note we have a code of conduct, please follow it in all your interactions
     - [core](https://github.com/supertokens/supertokens-core)
     - [plugin-interface](https://github.com/supertokens/supertokens-plugin-interface)
     - [sqlite-plugin](https://github.com/supertokens/supertokens-sqlite-plugin)
-    - Check repositories branches by clicking on the links listed above, click the branch tab and check for all the available versions 
-  - Add your github username separated by a comma after core,master in  modules.txt
+    - Check repository branches by clicking on the links listed above, click the branch tab and check for all the available versions 
+  - Add your github username separated by a ',' after core,master in  modules.txt
   - Final modules.txt should look like
     - Example  
-      // put module name like <module name>,<branch name>,<github username>(if contributing with a forked repository) and then call ./loadModules script  
+      // put module name like module name,branch name,github username(if contributing with a forked repository) and then call ./loadModules script  
 	core,master,your_github_username  
 	plugin-interface,master  
 	sqlite-plugin,master
@@ -39,9 +39,9 @@ Please note we have a code of conduct, please follow it in all your interactions
 ### Pull Request
 1. Before submitting a pull request make sure all tests are passing
   - In the project root run all the tests with command ./startTestingEnv
-  - The terminal output should display that all tests have passed
-![Successful test screenshot](/relative/path/to/img.jpg?raw=true "Successful test screenshot")  
-2.Reference relevant issue or pull requests and give a clear description of changes made/features added before submitting a pull request
+  - The terminal output should display that all tests have passed  
+  ![Successful test screenshot](/relative/path/to/img.jpg?raw=true "Successful test screenshot")  
+2. Reference relevant issue or pull requests and give a clear description of changes/features added when submitting a pull request
 
 
 ## Code of Conduct
