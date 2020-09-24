@@ -74,7 +74,7 @@ As you gain experience with SuperTokens, please help answer other people's quest
 ## SuperTokens Community 
 SuperTokens is made possible by a passionate team and a strong community of developers. If you have any questions or would like to get more involved in the SuperTokens community you can check out:  
   - [Github Issues](https://github.com/supertokens/supertokens-core/issues)
-  - [Discord](https://discord.com/invite/4WXseq7)
+  - [Discord](https://supertokens.io/discord)
   - [Twitter](https://twitter.com/supertokensio)
   - or [email us](mailto:team@supertokens.io)
   
