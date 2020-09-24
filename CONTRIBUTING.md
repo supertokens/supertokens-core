@@ -1,8 +1,5 @@
 # Contributing
 
-When contributing to this repository, please first discuss the change you wish to make via issue,
-email, or any other method with the owners of this repository before making a change. 
-
 Please note we have a code of conduct, please follow it in all your interactions with the project.
 
 ## Setup
@@ -10,7 +7,7 @@ Please note we have a code of conduct, please follow it in all your interactions
 ### Prerequisites
 - OS: Linux or macOS
 - JDK: openjdk 12.0.2
-- IDE:IntelliJ(we recommend) or equivalent IDE
+- IDE:IntelliJ(recommended) or equivalent IDE
 - Valid github account
 
 ### Project Setup
@@ -20,26 +17,31 @@ Please note we have a code of conduct, please follow it in all your interactions
   - git clone https://github.com/your_github_username/supertokens-root.git
 3. cd supertokens-root
 4. Open the modules.txt file in an editor:
-  - Get the latest versions for the core and plugin-interface and sqlite-plugin from the supertokens repository 
+  - By default the master branch is used but you can change the branch depending on which version you want to modify 
     - [core](https://github.com/supertokens/supertokens-core)
     - [plugin-interface](https://github.com/supertokens/supertokens-plugin-interface)
     - [sqlite-plugin](https://github.com/supertokens/supertokens-sqlite-plugin)
-    - Check for the latest version by clicking on branch tab and check for the latest x.x version
-      - Example: The latest version for core, plugin-interface and sqlite-plugin is 2.4, 2.2 and 1.1 respectively
-  - Set the sqlite-plugin and the latest versions for core and plugin-interface in the modules.txt file
-  - Add your github username separated by a comma after core,x.x in  modules.txt
+    - Check repositories branches by clicking on the links listed above, click the branch tab and check for all the available versions 
+  - Add your github username separated by a comma after core,master in  modules.txt
   - Final modules.txt should look like
-    - Example: 
-	    - // put module name like <module name>,<branch name> and then call ./loadModules script
-      - core,2.4,your_github_username
-      - plugin-interface,2.2
-      - sqlite-plugin,1.1
+    - Example  
+      // put module name like <module name>,<branch name>,<github username>(if contributing with a forked repository) and then call ./loadModules script  
+	core,master,your_github_username  
+	plugin-interface,master  
+	sqlite-plugin,master
+	
 5. run ./loadModules
 6. mkdir sqlite_db (directory required to run tests with sqlite-plugin)
 7. ./startTestingEnv (runs all the tests)
 8. Open the project in your IDE(we recommend using Intellij)
 9. After gradle has imported all the dependencies you can start modifying the code
 
+### Pull Request
+1. Before submitting a pull request make sure all tests are passing
+  - In the project root run all the tests with command ./startTestingEnv
+  - The terminal output should display that all tests have passed
+![Successful test screenshot](/relative/path/to/img.jpg?raw=true "Successful test screenshot")  
+2.Reference relevant issue or pull requests and give a clear description of changes made/features added before submitting a pull request
 
 
 ## Code of Conduct
