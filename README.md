@@ -133,19 +133,38 @@ Please [contact us](mailto:team@supertokens.io) if any of the information listed
 
 
 ## How will we make money?
-From a sustainability point of view, for us and for this open source project, it's important that we make profit. So far, we plan to charge for:
-- Hosting of the SuperTokens service. This can be done in a way that uses our database instances, or yours.
-- A pro version that has (this may be charged on a per user basis):
-    - Multi region & sharding support for scaled apps
-    - A dashboard for session and user management
-    - Feature for compliance requirements 
-    - Advanced threat detection features
-    - Feature roadmap is coming soon...
+Our philosophy is inspired by Gitlab's buyer-based model and by [Enterprise Ready](http://www.enterpriseready.io/). This means that we intend to monitise on features that are:
+- Only required by large or medium sized companies; or features that are
+- Targetted towards non technical users of this product;
+
+*It's important to realise that the features we intend to monetise are not necessary for the growth and sustainability of your business (unlike many other alternate solutions). This means that you can have a very large business, with millions of users, and still not have to pay us. However, these features are aimed to increase operational effeciency as your business grows - you don't have to use them, but if you do, you will save lots of time and money :)*
+
+Examples of features that will require a subscription:
+- Access control features for the dashboard (for managers and execs)
+    - SSO / LDAP / MFA login to the dashboard
+    - Roles to restrict access to parts of the dashboard.
+    - Creation of custom roles for dashboard operations.
+- Healthcheck and uptime monitoring (for IT dept.)
+    - Cluster health stats
+    - Integration with services like PagerDuty
+- Features to make operations easier for customer support agents
+    - Login as a user
+    - Manually send login OTPs
+- Advanced analytics features (for product management & design teams)
+    - Sign up form A/B testing
+- Advanced security (for compliance and security teams)
+    - Detailed audit logs of dashboard and end user actions
+    - Encryption of stored information
+
+Outside of the open core model, we will also charge for:
+- Hosting of the SuperTokens service on our cloud.
+- Completely managing the SuperTokens service on your cloud.
 - A commercial license that dictates:
     - Different levels of support
     - Liability agreement
     - Building custom features
-- Monthly sponsorship
+    - Backporting updates and security fixes
+
 
 ### Backers
 <a href="https://www.ycombinator.com/"><img width="75" src="https://www.ycombinator.com/assets/ycdc/ycombinator-logo-b603b0a270e12b1d42b7cca9d4527a9b206adf8293a77f9f3e8b6cb542fcbfa7.png"></a>
@@ -160,7 +179,7 @@ From a sustainability point of view, for us and for this open source project, it
  Docker image size.
 
 ## Building from source
-Instructions coming soon...
+Please see our [wiki](https://github.com/supertokens/supertokens-core/wiki/Building-from-source) for instructions.
 
 ## Community
 - [Discord](https://supertokens.io/discord)
@@ -188,7 +207,7 @@ If you think this is a project you could use in the future, please :star2: this 
 </table>
 
 ## Contributing
-Instructions coming soon
+Please see the [CONTRIBUTING.md](https://github.com/supertokens/supertokens-core/blob/master/CONTRIBUTING.md) file for instructions.
 
 ## Development history
 Over the last few months, we have built out session management for SuperTokens. During this period, we have made our
