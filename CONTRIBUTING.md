@@ -4,7 +4,8 @@ We're so excited you're interested in helping with Supertokens! We are happy to 
 
 ## New to Open Source?
 1. Take a look at [How to Contribute to an Open Source Project on GitHub](https://egghead.io/courses/how-to-contribute-to-an-open-source-project-on-github)
-2. Familiarize yourself with the [SuperTokens Code of Conduct](https://github.com/supertokens/supertokens-core/blob/master/CODE_OF_CONDUCT.md)
+2. Go thorugh the [SuperTokens Code of Conduct](https://github.com/supertokens/supertokens-core/blob/master/CODE_OF_CONDUCT.md)
+3. Familiarize yourself with the [SuperTokens code and file structure](https://github.com/supertokens/supertokens-core/wiki/Code-and-file-structure-overview)
 
 ## Where to ask Questions?
 1. Check our [Github Issues](https://github.com/supertokens/supertokens-core/issues) to see if someone has already answered your question.  
@@ -13,8 +14,12 @@ We're so excited you're interested in helping with Supertokens! We are happy to 
   
 As you gain experience with SuperTokens, please help answer other people's questions! :pray: 
 
+## What to Work On?
+You can get started by taking a look at our [Github issues](https://github.com/supertokens/supertokens-core/issues)  
+If you find one that looks interesting and no one else is already working on it, comment in the issue that you are going to work on it.  
+Please ask as many questions as you need, either directly in the issue or on [Discord](https://supertokens.io/discord). We're happy to help!:raised_hands:
 
-## What to Work on?  
+### Contributions that are ALWAYS welcome 
 
 1. More tests
 2. Contributing to discussions that can be found [here](https://github.com/supertokens/supertokens-core/issues?q=is%3Aissue+is%3Aopen+label%3Adiscussions)
@@ -27,22 +32,26 @@ As you gain experience with SuperTokens, please help answer other people's quest
 
 ### Prerequisites
 - OS: Linux or macOS
-- JDK: openjdk 12.0.2 for [Linux](https://download.java.net/java/GA/jdk12.0.2/e482c34c86bd4bf8b56c0b35558996b9/10/GPL/openjdk-12.0.2_osx-x64_bin.tar.gz) or [Mac](https://download.java.net/java/GA/jdk12.0.2/e482c34c86bd4bf8b56c0b35558996b9/10/GPL/openjdk-12.0.2_linux-x64_bin.tar.gz)
+- JDK: openjdk 12.0.2 for [Linux](https://linuxhint.com/install_jdk12_ubuntu_1904/) or [Mac](https://java.tutorials24x7.com/blog/how-to-install-openjdk-12-on-macos)
 - IDE: [IntelliJ](https://www.jetbrains.com/idea/download/)(recommended) or equivalent IDE
+
+### Notations
+You can find more information about the terms used and the architechture of SuperTokens over [here](https://github.com/supertokens/supertokens-core/wiki/Code-and-file-structure-overview)
 
 ### Project Setup
 1. Fork the [supertokens-core](https://github.com/supertokens/supertokens-core) repository
 2. `git clone https://github.com/supertokens/supertokens-root.git`
 3. `cd supertokens-root`
 4. Open the `modules.txt` file in an editor:
-    - The `modules.txt` file contains the core, plugin-interface, the type of plugin and their branchs(versions) 
-    - By default the master branch is used but you can change the branch depending on which version you want to modify 
+    - The `modules.txt` file contains the core, plugin-interface, the type of plugin and their branches(versions) 
+    - By default the `master` branch is used but you can change the branch depending on which version you want to modify 
+    - The `sqlite-plugin` is used as the default plugin as it is an in-memory database and requires minimum setup
       - [core](https://github.com/supertokens/supertokens-core)
       - [plugin-interface](https://github.com/supertokens/supertokens-plugin-interface)
       - [sqlite-plugin](https://github.com/supertokens/supertokens-sqlite-plugin)
-      - Check repository branches by clicking on the links listed above, click the branch tab and check for all the available versions 
-    - Add your github username separated by a ',' after `core,master` in  `modules.txt`
-    - If, for example, your github username is `helloworld` then modules.txt should look like...
+      - Check the repository branches by clicking on the links listed above, click the branch tab and check for all the available versions 
+    - Add your github `username` separated by a ',' after `core,master` in  `modules.txt`
+    - If, for example, your github `username` is `helloworld` then modules.txt should look like...
 
       ```
       // put module name like module name,branch name,github username(if contributing with a forked repository) and then call ./loadModules script        
@@ -53,7 +62,7 @@ As you gain experience with SuperTokens, please help answer other people's quest
 	
 5. Run loadModules to clone the required repositories  
 `./loadModules`
-6. Create a directory called sqlite_db, this directory required to run tests with the sqlite-plugin  
+6. Create a directory called sqlite_db, this directory is required to run tests with the sqlite-plugin  
 `mkdir sqlite_db`
 7. Run all tests   
 `./startTestingEnv`
@@ -61,7 +70,7 @@ As you gain experience with SuperTokens, please help answer other people's quest
 9. After gradle has imported all the dependencies you can start modifying the code
 
 ## Pull Request
-1. Before submitting a pull request make sure all tests are passing
+1. Before submitting a pull request make sure all tests have passed
     - In the directory `supertokens-root` run all the tests
       - `./startTestingEnv`
     - The terminal output should display that all tests have passed 
@@ -69,7 +78,7 @@ As you gain experience with SuperTokens, please help answer other people's quest
       ![core tests passing](https://github.com/supertokens/supertokens-logo/blob/master/images/core-tests-passing.png)  
       - plugin tests:  
       ![plugin tests passing](https://github.com/supertokens/supertokens-logo/blob/master/images/plugin-tests-passing.png)
-2. Reference relevant issue or pull requests and give a clear description of changes/features added when submitting a pull request
+2. Reference the relevant issue or pull request and give a clear description of changes/features added when submitting a pull request
 
 ## SuperTokens Community 
 SuperTokens is made possible by a passionate team and a strong community of developers. If you have any questions or would like to get more involved in the SuperTokens community you can check out:  
