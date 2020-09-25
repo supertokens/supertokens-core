@@ -52,8 +52,7 @@ Please ask as many questions as you need, either directly in the issue or on [Di
       - [sqlite-plugin](https://github.com/supertokens/supertokens-sqlite-plugin)
       - Check the repository branches by clicking on the links listed above, click the branch tab and check for all the available versions 
     - Add your github `username` separated by a ',' after `core,master` in  `modules.txt`
-    - If, for example, your github `username` is `helloworld` then modules.txt should look like...
-
+    - If, for example, your github `username` is `helloworld` then modules.txt should look like...  
       ```
       // put module name like module name,branch name,github username(if contributing with a forked repository) and then call ./loadModules script        
       core,master,helloworld  
@@ -65,20 +64,24 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 `./loadModules`
 6. Create a directory called sqlite_db, this directory is required to run tests with the sqlite-plugin  
 `mkdir sqlite_db`
-7. Run all tests   
-`./startTestingEnv`
-8. Open the project in your IDE
-9. After gradle has imported all the dependencies you can start modifying the code
+
+
+## Modifying code
+1. Open `supetokens-root` in your IDE
+2. After gradle has imported all the dependencies you can start modifying the code  
+
+## Testing  
+1. Navigate to the `supertokens-root` repository  
+2. Run all tests   
+`./startTestingEnv`  
+3. If all tests pass the terminal should display  
+- core tests:  
+![core tests passing](https://github.com/supertokens/supertokens-logo/blob/master/images/core-tests-passing.png)  
+- plugin tests:  
+![plugin tests passing](https://github.com/supertokens/supertokens-logo/blob/master/images/plugin-tests-passing.png)
 
 ## Pull Request
-1. Before submitting a pull request make sure all tests have passed
-    - In the directory `supertokens-root` run all the tests
-      - `./startTestingEnv`
-    - The terminal output should display that all tests have passed 
-      - core tests:  
-      ![core tests passing](https://github.com/supertokens/supertokens-logo/blob/master/images/core-tests-passing.png)  
-      - plugin tests:  
-      ![plugin tests passing](https://github.com/supertokens/supertokens-logo/blob/master/images/plugin-tests-passing.png)
+1. Before submitting a pull request make sure all tests have passed  
 2. Reference the relevant issue or pull request and give a clear description of changes/features added when submitting a pull request
 
 ## SuperTokens Community 
