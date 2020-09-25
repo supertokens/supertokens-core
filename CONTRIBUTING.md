@@ -10,13 +10,13 @@ We're so excited you're interested in helping with Supertokens! We are happy to 
 ## Where to ask Questions?
 1. Check our [Github Issues](https://github.com/supertokens/supertokens-core/issues) to see if someone has already answered your question.  
 2. Join our community on [Discord](https://supertokens.io/discord) and feel free to ask us your questions  
-  
-  
+
 As you gain experience with SuperTokens, please help answer other people's questions! :pray: 
 
 ## What to Work On?
 You can get started by taking a look at our [Github issues](https://github.com/supertokens/supertokens-core/issues)  
 If you find one that looks interesting and no one else is already working on it, comment in the issue that you are going to work on it.  
+
 Please ask as many questions as you need, either directly in the issue or on [Discord](https://supertokens.io/discord). We're happy to help!:raised_hands:
 
 ### Contributions that are ALWAYS welcome 
@@ -36,6 +36,10 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 - IDE: [IntelliJ](https://www.jetbrains.com/idea/download/)(recommended) or equivalent IDE
 
 ### Notations
+1. core: An http service built in java that handles the bulk of operations handled by SuperTokens.
+2. plugin-interface: A Java interface that allows communication between the core and plugin
+3. plugin: A plugin is a JAR extension to the core and allows the core to interface with an appropriate database  
+
 You can find more information about the terms used and the architechture of SuperTokens over [here](https://github.com/supertokens/supertokens-core/wiki/Code-and-file-structure-overview)
 
 ### Project Setup
