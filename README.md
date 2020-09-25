@@ -85,21 +85,7 @@ A short [implementation video](https://www.youtube.com/watch?v=kbC-QzxeZ4s&featu
 
 
 ## Architecture
-We provide a fullstack solution:
-- **Frontend SDK (React, iOS, Android etc)**: Provide a login / sign up UI, automatic refreshing of sessions
-- **Backend SDK (NodeJS, Flask, Laravel etc)**: APIs to handle login, sign up and session management.
-- **SuperTokens core (this repo)**: An http service that handles the bulk of operations handled by SuperTokens. The
- backend SDK is a minimal layer that makes it easy for you to interact with this service.
- - **Database plugins (MongoDB, MySQL etc)**: Is a JAR extension to the SuperTokens core, used to interface with the
-  appropriate database.
-
-The frontend SDK talks to your API layer, which uses the backend SDK.
-
-The backend SDK talks to the SuperTokens core whenever necessary
-
-SuperTokens core talks to the installed database plugin to store information in the database. It can be run on-premises, with or without Docker. You can also use our managed service to run this.
-
-More information about this in the [wiki section](https://github.com/supertokens/supertokens-core/wiki/SuperTokens-Architecture)
+Please find a writeup about this in the [wiki section](https://github.com/supertokens/supertokens-core/wiki/SuperTokens-Architecture)
 
 ## SuperTokens vs others
 
