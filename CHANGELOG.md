@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - set csrf config to `false` by default
 - compatibility with CDI 2.3
 
+### Fixed
+- When regenerating session, uses old access tokens' parentRefreshTokenHash1 instead of null 
+
 ### Changed
 - Optimises refresh token to not store old tokens in the database
 - removes the need for a license key

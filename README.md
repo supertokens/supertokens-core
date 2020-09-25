@@ -29,10 +29,10 @@ If you like our project, please :star2: this repository! For feedback, feel free
 ## What is SuperTokens?
 SuperTokens is an open core alternative to proprietary login providers like Auth0 or AWS Cognito. We are
  different because we offer:
-- Open source: SuperTokens can be used for free, forever, with no limits.
-- An on-premises deployment with no connection to our servers. You control 100% of your user data.
+- Open source: SuperTokens can be used for free, forever, with no limits on the number of users.
+- An on-premises deployment so that you control 100% of your user data, using your own database.
 - An end to end solution with login, sign ups, user and session management, without all the complexities of OAuth protocols.
-- Ease of implementation and higher security
+- Ease of implementation and higher security.
 - Extensibility: Anyone can contribute and make SuperTokens better!
 
 ### Philosophy
@@ -44,8 +44,11 @@ Authentication directly affects UX, dev experience and security of any app. We b
 We want to change that - we believe the only way is to provide a solution that has the right level of
  abstraction, gives you maximum control, is secure, and is simple to use - just like if you build it yourself,
   from scratch (minus the time to learn, build and maintain).
+  
+We also believe in the principle of least vendor lockin. Your having full control of your user's data means that you can switch away from SuperTokens without forcing your existing users to logout, reset their passwords or in the worst case, sign up again. 
 
 ### Features
+#### ❗⭐❗⭐ We want to make features as decoupled as possible. This means, you can use SuperTokens for just login, or just session management, or both. In fact, we also offer session management integrations with other login providers like Auth0.
 - Login (coming soon):
     - A decoupled login & sign up form as React components - pretty by default, but fully customisable.
     - Email & password login with email verification, and forgot password flows
@@ -53,7 +56,6 @@ We want to change that - we believe the only way is to provide a solution that h
     - Extensibility to chain various login challenges
     - Password management - hashing + salting.
     - Social and other types of login
-    - Other community requests...
 <img src="https://raw.githubusercontent.com/supertokens/supertokens-logo/master/gifs/login-readme.gif" height="300px"/>
 
 - Session management
@@ -66,7 +68,6 @@ We want to change that - we believe the only way is to provide a solution that h
     - Ability to get all sessions given a user ID.
     - Reading session data on the frontend, securely.
     - Manipulation of session and JWT payloads
-    - Other community requests...
 
 - User management (coming soon)
     - (Un)banning & deleting users
@@ -74,12 +75,11 @@ We want to change that - we believe the only way is to provide a solution that h
     - Associating users with roles
     - Login identity consolidation (if a user logs in via google and via twitter, with the same email, they are
      treated as the same user).
-    - Other community requests...
 
 ### Documentation
 As of now, we only offer session management.
 
-The docs can be seen [here](https://supertokens.io/docs/pro/getting-started/installation)
+The docs can be seen [here](https://supertokens.io/docs/community/getting-started/installation)
 
 A short [implementation video](https://www.youtube.com/watch?v=kbC-QzxeZ4s&feature=emb_logo)
 
@@ -98,6 +98,8 @@ The frontend SDK talks to your API layer, which uses the backend SDK.
 The backend SDK talks to the SuperTokens core whenever necessary
 
 SuperTokens core talks to the installed database plugin to store information in the database. It can be run on-premises, with or without Docker. You can also use our managed service to run this.
+
+More information about this in the [wiki section](https://github.com/supertokens/supertokens-core/wiki/SuperTokens-Architecture)
 
 ## SuperTokens vs others
 
@@ -131,22 +133,41 @@ Please [contact us](mailto:team@supertokens.io) if any of the information listed
 
 
 ## How will we make money?
-From a sustainability point of view, for us and for this open source project, it's important that we make profit. So far, we plan to charge for:
-- Hosting of the SuperTokens service. This can be done in a way that uses our database instances, or yours.
-- A pro version that has (this may be charged on a per user basis):
-    - Multi region & sharding support for scaled apps
-    - A dashboard for session and user management
-    - Feature for compliance requirements 
-    - Advanced threat detection features
-    - Feature roadmap is coming soon...
+Our philosophy is inspired by Gitlab's buyer-based model and by [Enterprise Ready](http://www.enterpriseready.io/). This means that we intend to monitise on features that are:
+- Only required by large or medium sized companies; or features that are
+- Targetted towards non technical users of this product;
+
+*It's important to realise that the features we intend to monetise are not necessary for the growth and sustainability of your business (unlike many other alternate solutions). This means that you can have a very large business, with millions of users, and still not have to pay us. However, these features are aimed to increase operational effeciency as your business grows - you don't have to use them, but if you do, you will save lots of time and money :)*
+
+Examples of features that will require a subscription:
+- Access control features for the dashboard (for managers and execs)
+    - SSO / LDAP / MFA login to the dashboard
+    - Roles to restrict access to parts of the dashboard.
+    - Creation of custom roles for dashboard operations.
+- Healthcheck and uptime monitoring (for IT dept.)
+    - Cluster health stats
+    - Integration with services like PagerDuty
+- Features to make operations easier for customer support agents
+    - Login as a user
+    - Manually send login OTPs
+- Advanced analytics features (for product management & design teams)
+    - Sign up form A/B testing
+- Advanced security (for compliance and security teams)
+    - Detailed audit logs of dashboard and end user actions
+    - Encryption of stored information
+
+Outside of the open core model, we will also charge for:
+- Hosting of the SuperTokens service on our cloud.
+- Completely managing the SuperTokens service on your cloud.
 - A commercial license that dictates:
     - Different levels of support
     - Liability agreement
     - Building custom features
-- Monthly sponsorship
+    - Backporting updates and security fixes
+
 
 ### Backers
-<a href="https://www.ycombinator.com/"><img width="75" src="https://www.ycombinator.com/assets/ycdc/ycombinator-logo-7481412385fe6d0f7d4a3339d90fe12309432ca41983e8d350b232301d5d8684.png"></a>
+<a href="https://www.ycombinator.com/"><img width="75" src="https://www.ycombinator.com/assets/ycdc/ycombinator-logo-b603b0a270e12b1d42b7cca9d4527a9b206adf8293a77f9f3e8b6cb542fcbfa7.png"></a>
 
 
 ## Why Java?
@@ -158,7 +179,7 @@ From a sustainability point of view, for us and for this open source project, it
  Docker image size.
 
 ## Building from source
-Instructions coming soon...
+Please see our [wiki](https://github.com/supertokens/supertokens-core/wiki/Building-from-source) for instructions.
 
 ## Community
 - [Discord](https://supertokens.io/discord)
@@ -166,7 +187,7 @@ Instructions coming soon...
 
 If you think this is a project you could use in the future, please :star2: this repository!
 
-### Contributors
+### Contributors (across all SuperTokens repositories)
 <table>
   <tr>
     <td align="center"><a href="https://github.com/rishabhpoddar"><img src="https://avatars1.githubusercontent.com/u/2976287?s=460&u=d0cf2463df96fbdf1138cf74f88d7cf41415b238&v=4" width="100px;" alt=""/><br /><sub><b>Rishabh Poddar</b></sub></a></td>
@@ -186,7 +207,7 @@ If you think this is a project you could use in the future, please :star2: this 
 </table>
 
 ## Contributing
-Instructions coming soon
+Please see the [CONTRIBUTING.md](https://github.com/supertokens/supertokens-core/blob/master/CONTRIBUTING.md) file for instructions.
 
 ## Development history
 Over the last few months, we have built out session management for SuperTokens. During this period, we have made our

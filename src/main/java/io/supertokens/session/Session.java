@@ -166,7 +166,7 @@ public class Session {
 
         TokenInfo newAccessToken = AccessToken.createNewAccessToken(main,
                 accessToken.sessionHandle, accessToken.userId, accessToken.refreshTokenHash1,
-                null, newJWTUserPayload, accessToken.antiCsrfToken, lmrt,
+                accessToken.parentRefreshTokenHash1, newJWTUserPayload, accessToken.antiCsrfToken, lmrt,
                 accessToken.expiryTime, currCDIVersion);
 
         return new SessionInformationHolder(
