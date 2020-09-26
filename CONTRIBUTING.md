@@ -30,7 +30,7 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 
 ### Prerequisites
 - OS: Linux or macOS
-- JDK: openjdk 12.0.2 for [Linux](https://linuxhint.com/install_jdk12_ubuntu_1904/) or [Mac](https://java.tutorials24x7.com/blog/how-to-install-openjdk-12-on-macos)
+- JDK: openjdk 12.0.2. Installation instructions for Mac and Linux can be found in [our wiki](https://github.com/supertokens/supertokens-core/wiki/Installing-OpenJDK-12.0.2-for-Mac-and-Linux)
 - IDE: [IntelliJ](https://www.jetbrains.com/idea/download/)(recommended) or equivalent IDE
 
 ### Familiarize yourself with SuperTokens
