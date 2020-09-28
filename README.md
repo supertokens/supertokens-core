@@ -119,11 +119,9 @@ Please [contact us](mailto:team@supertokens.io) if any of the information listed
 
 
 ## How will we make money?
-Our philosophy is inspired by Gitlab's buyer-based model and by [Enterprise Ready](http://www.enterpriseready.io/). This means that we intend to monitise on features that are:
-- Only required by large or medium sized companies; or features that are
-- Targetted towards non technical users of this product;
+Our philosophy is inspired by Gitlab's buyer-based model and by [Enterprise Ready](http://www.enterpriseready.io/). This means that we intend to monitise on features that are targetted towards users who are not developers, like product managers, customer support teams, designers, admin teams and IT operations.
 
-*It's important to realise that the features we intend to monetise are not necessary for the growth and sustainability of your business (unlike many other alternate solutions). This means that you can have a very large business, with millions of users, and still not have to pay us. However, these features are aimed to increase operational effeciency as your business grows - you don't have to use them, but if you do, you will save lots of time and money :)*
+This implies that most authentication / authorization features will be in the open source version for any scale - an unlimited number of end users, (social) logins, SSO integrations and much more.
 
 Examples of features that will require a subscription:
 - Access control features for the dashboard (for managers and execs)
