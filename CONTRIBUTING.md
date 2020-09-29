@@ -34,7 +34,7 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 - IDE: [IntelliJ](https://www.jetbrains.com/idea/download/)(recommended) or equivalent IDE
 
 ### Familiarize yourself with SuperTokens
-1. [Architechture of SuperTokens](https://github.com/supertokens/supertokens-core/wiki/Code-and-file-structure-overview)
+1. [Architecture of SuperTokens](https://github.com/supertokens/supertokens-core/wiki/SuperTokens-Architecture)
 2. [SuperTokens code and file structure overview](https://github.com/supertokens/supertokens-core/wiki/Code-and-file-structure-overview)
 3. [Versioning methodology](https://github.com/supertokens/supertokens-core/wiki/Versioning,-git-and-releases)
 
