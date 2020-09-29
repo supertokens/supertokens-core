@@ -100,7 +100,7 @@ Please [contact us](mailto:team@supertokens.io) if any of the information listed
 | Use with serverless                    	|    :heavy_check_mark:   	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	
 | Free for unlimited users               	|    :heavy_check_mark:   	|                    	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|
 | Ease of configuration                  	|    :heavy_check_mark:   	| :heavy_check_mark: 	|                    	|                    	| :heavy_check_mark: 	|                    	|                    	
-| Support for distributed infra          	| :heavy_check_mark:  [2] 	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|                    	| :heavy_check_mark: 	|                    	
+| Support for distributed infra          	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|                    	| :heavy_check_mark: 	|                    	
 | Database agnostic                      	|    :heavy_check_mark:   	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|                    	| :heavy_check_mark: 	|                    	
 | Customisable Login widget              	|       Coming soon       	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	
 | Unlimited Social Login                 	|       Coming soon       	|                    	|                    	| :heavy_check_mark: 	|                    	|                    	|                    	
@@ -114,9 +114,6 @@ Please [contact us](mailto:team@supertokens.io) if any of the information listed
                  	
 
 [1]: For enterprise version only
-
-[2]: In a paid tier
-
 
 ## How will we make money?
 Our philosophy is inspired by Gitlab's buyer-based model and by [Enterprise Ready](http://www.enterpriseready.io/). This means that we intend to monitise on features that are targetted towards users who are not developers, like product managers, customer support teams, designers, admin teams and IT operations.
