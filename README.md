@@ -211,6 +211,6 @@ Over the last few months, we have built out session management for SuperTokens. 
   compatibility. For all intents and purposes, a license key doesn't exist for this version, which means anyone can build from source, and use SuperTokens for free, forever. 
 
 ## License
-&copy; 2020 SuperTokens, Inc. All rights reserved.
+&copy; 2020 SuperTokens Inc and its contributors. All rights reserved.
 
 Licensed under the Apache 2.0 license.
