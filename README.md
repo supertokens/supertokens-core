@@ -19,7 +19,7 @@
 - [☕ Why Java?](https://github.com/supertokens/supertokens-core#why-java)
 - [🛠️ Building from source](https://github.com/supertokens/supertokens-core#building-from-source)
 - [👥 Community](https://github.com/supertokens/supertokens-core#community)
-    - [Contributors](https://github.com/supertokens/supertokens-core#contributors)
+    - [Contributors](https://github.com/supertokens/supertokens-core#contributors-across-all-supertokens-repositories)
 - [👩‍💻 Contributing](https://github.com/supertokens/supertokens-core#contributing)
 - [📜 Development history](https://github.com/supertokens/supertokens-core#development-history)
 - [📝 License](https://github.com/supertokens/supertokens-core#license)
