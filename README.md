@@ -184,6 +184,7 @@ If you think this is a project you could use in the future, please :star2: this 
   </tr>
   <tr>
 <td align="center"><a href="https://github.com/mmaha"><img src="https://avatars3.githubusercontent.com/u/297517?s=400&u=8c41caf46c511ed2054c3d14c23193eda0d996af&v=4" width="100px;" alt=""/><br /><sub><b>Madhu Mahadevan</b></sub></a></td>
+<td align="center"><a href="https://github.com/nugmanoff"><img src="https://avatars3.githubusercontent.com/u/20473743?s=460&u=2d33e10df1e8c3f38328e6e92d753363026f660f&v=4" width="100px;" alt=""/><br /><sub><b>Aidar Nugmanoff</b></sub></a></td>
   </tr>
 </table>
 
