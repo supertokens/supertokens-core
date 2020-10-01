@@ -40,10 +40,10 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 
 
 ### Project Setup
-1. Fork the [supertokens-core](https://github.com/supertokens/supertokens-core) repository
+1. Fork the [supertokens-core](https://github.com/supertokens/supertokens-core) repository (**Skip this step if you are NOT modifying supertokens-core**)
 2. `git clone https://github.com/supertokens/supertokens-root.git`
 3. `cd supertokens-root`
-4. Open the `modules.txt` file in an editor:
+4. Open the `modules.txt` file in an editor (**Skip this step if you are NOT modifying supertokens-core**):
     - The `modules.txt` file contains the core, plugin-interface, the type of plugin and their branches(versions) 
     - By default the `master` branch is used but you can change the branch depending on which version you want to modify 
     - The `sqlite-plugin` is used as the default plugin as it is an in-memory database and requires no setup
