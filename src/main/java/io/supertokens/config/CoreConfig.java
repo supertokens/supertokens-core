@@ -37,6 +37,9 @@ public class CoreConfig {
     private int access_token_validity = 3600; // in seconds
 
     @JsonProperty
+    private boolean access_token_blacklisting = false;
+
+    @JsonProperty
     private String access_token_path = "/";
 
     @JsonProperty
@@ -93,7 +96,7 @@ public class CoreConfig {
     }
 
     public boolean getAccessTokenBlacklisting() {
-        return false;
+        return access_token_blacklisting;
     }
 
     public String getAccessTokenPath() {

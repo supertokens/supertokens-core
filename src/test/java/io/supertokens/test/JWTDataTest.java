@@ -182,7 +182,7 @@ public class JWTDataTest {
 
 
         JsonObject newUserDataInJWT = new JsonObject();
-        userDataInJWT.addProperty("key", "value2");
+        newUserDataInJWT.addProperty("key", "value2");
 
         //call update function
         try {
@@ -233,6 +233,231 @@ public class JWTDataTest {
         } catch (UnauthorisedException e) {
             assertEquals(e.getMessage(), "Session does not exist.");
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUpdatePayloadGetSessionWithoutBlacklistingShouldNotChangeToken() throws Exception {
+
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        //createSession with JWT payload
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+
+        SessionInformationHolder sessionInfo = Session
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+
+        assert sessionInfo.accessToken != null;
+
+
+        JsonObject newUserDataInJWT = new JsonObject();
+        newUserDataInJWT.addProperty("key", "value2");
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJWT, null);
+
+        SessionInformationHolder newInfo = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
+                sessionInfo.antiCsrfToken, true);
+
+        assertNull(ProcessState.getInstance(process.getProcess())
+                .getLastEventByName(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
+        assertEquals(newInfo.session.userDataInJWT, sessionInfo.session.userDataInJWT);
+        assertNull(newInfo.accessToken);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUpdatePayloadGetSessionWithBlacklistingShouldNotChangeToken() throws Exception {
+
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("access_token_blacklisting", "true");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        //createSession with JWT payload
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+
+        SessionInformationHolder sessionInfo = Session
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+
+        assert sessionInfo.accessToken != null;
+
+
+        JsonObject newUserDataInJWT = new JsonObject();
+        newUserDataInJWT.addProperty("key", "value2");
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJWT, null);
+
+        SessionInformationHolder newInfo = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
+                sessionInfo.antiCsrfToken, true);
+
+        assertNotNull(ProcessState.getInstance(process.getProcess())
+                .getLastEventByName(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
+        assertEquals(newInfo.session.userDataInJWT, newUserDataInJWT);
+        assert newInfo.accessToken != null;
+        assertNotEquals(newInfo.accessToken, sessionInfo.accessToken);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+
+    @Test
+    public void testNormalRefreshAndGetShouldNotUpdateJWTPayload() throws Exception {
+
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        //createSession with JWT payload
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+
+        SessionInformationHolder sessionInfo = Session
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+
+        assert sessionInfo.accessToken != null;
+        assert sessionInfo.refreshToken != null;
+
+        SessionInformationHolder refreshedSession = Session.refreshSession(process.getProcess(),
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
+
+        assert refreshedSession.accessToken != null;
+
+        SessionInformationHolder newInfo = Session.getSession(process.getProcess(), refreshedSession.accessToken.token,
+                refreshedSession.antiCsrfToken, true);
+
+        assertNotNull(ProcessState.getInstance(process.getProcess())
+                .getLastEventByName(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
+        assertEquals(newInfo.session.userDataInJWT, sessionInfo.session.userDataInJWT);
+        assert newInfo.accessToken != null;
+        assertNotEquals(newInfo.accessToken, sessionInfo.accessToken);
+
+        ProcessState.getInstance(process.getProcess()).clear();
+
+        SessionInformationHolder newInfo2 = Session.getSession(process.getProcess(), newInfo.accessToken.token,
+                newInfo.antiCsrfToken, true);
+
+        assertNull(ProcessState.getInstance(process.getProcess())
+                .getLastEventByName(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
+        assertEquals(newInfo2.session.userDataInJWT, sessionInfo.session.userDataInJWT);
+        assert newInfo2.accessToken == null;
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testNormalRefreshAndGetShouldNotUpdateJWTPayloadWithBlacklisting() throws Exception {
+
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("access_token_blacklisting", "true");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        //createSession with JWT payload
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+
+        SessionInformationHolder sessionInfo = Session
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+
+        assert sessionInfo.accessToken != null;
+        assert sessionInfo.refreshToken != null;
+
+        SessionInformationHolder refreshedSession = Session.refreshSession(process.getProcess(),
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
+
+        assert refreshedSession.accessToken != null;
+
+        SessionInformationHolder newInfo = Session.getSession(process.getProcess(), refreshedSession.accessToken.token,
+                refreshedSession.antiCsrfToken, true);
+
+        assertNotNull(ProcessState.getInstance(process.getProcess())
+                .getLastEventByName(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
+        assertEquals(newInfo.session.userDataInJWT, sessionInfo.session.userDataInJWT);
+        assert newInfo.accessToken != null;
+        assertNotEquals(newInfo.accessToken, sessionInfo.accessToken);
+
+        ProcessState.getInstance(process.getProcess()).clear();
+
+        SessionInformationHolder newInfo2 = Session.getSession(process.getProcess(), newInfo.accessToken.token,
+                newInfo.antiCsrfToken, true);
+
+        assertNull(ProcessState.getInstance(process.getProcess())
+                .getLastEventByName(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
+        assertEquals(newInfo2.session.userDataInJWT, sessionInfo.session.userDataInJWT);
+        assert newInfo2.accessToken == null;
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRegenerateSessionAndGetSessionWithBlacklistingShouldNotChangeToken() throws Exception {
+
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("access_token_blacklisting", "true");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        //createSession with JWT payload
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+
+        SessionInformationHolder sessionInfo = Session
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+
+        assert sessionInfo.accessToken != null;
+
+
+        JsonObject newUserDataInJWT = new JsonObject();
+        newUserDataInJWT.addProperty("key", "value2");
+        sessionInfo = Session.regenerateToken(process.getProcess(), sessionInfo.accessToken.token,
+                newUserDataInJWT);
+
+        assert sessionInfo.accessToken != null;
+
+        SessionInformationHolder newInfo = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
+                sessionInfo.antiCsrfToken, true);
+
+        assertNull(ProcessState.getInstance(process.getProcess())
+                .getLastEventByName(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
+        assertEquals(newInfo.session.userDataInJWT, sessionInfo.session.userDataInJWT);
+        assertNull(newInfo.accessToken);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

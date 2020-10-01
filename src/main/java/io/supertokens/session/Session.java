@@ -18,6 +18,7 @@ package io.supertokens.session;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
@@ -203,13 +204,25 @@ public class Session {
             throw new TryRefreshTokenException("anti-csrf check failed");
         }
 
-        if (accessToken.parentRefreshTokenHash1 == null) {
+        SQLStorage.SessionInfo sessionInfoForBlacklisting = null;
+        if (Config.getConfig(main).getAccessTokenBlacklisting()) {
+            sessionInfoForBlacklisting = StorageLayer.getStorageLayer(main).getSession(accessToken.sessionHandle);
+            if (sessionInfoForBlacklisting == null) {
+                throw new UnauthorisedException("Either the session has ended or has been blacklisted");
+            }
+        }
+
+        boolean JWTPayloadNeedsUpdating = sessionInfoForBlacklisting != null &&
+                !accessToken.userData.equals(sessionInfoForBlacklisting.userDataInJWT);
+        if (accessToken.parentRefreshTokenHash1 == null && !JWTPayloadNeedsUpdating) {
             // this means that the refresh token associated with this access token is
-            // already the parent - most probably.
+            // already the parent - and JWT payload doesn't need to be updated.
             return new SessionInformationHolder(
                     new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData), null, null,
                     null, null);
         }
+
+        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS, null);
 
         if (StorageLayer.getStorageLayer(main).getType() == STORAGE_TYPE.SQL) {
             SQLStorage storage = (SQLStorage) StorageLayer.getStorageLayer(main);
@@ -225,9 +238,10 @@ public class Session {
                             throw new UnauthorisedException("Session missing in db");
                         }
 
-                        boolean promote = sessionInfo.refreshTokenHash2
+                        boolean promote = accessToken.parentRefreshTokenHash1 != null && sessionInfo.refreshTokenHash2
                                 .equals(Utils.hashSHA256(accessToken.parentRefreshTokenHash1));
-                        if (promote || sessionInfo.refreshTokenHash2.equals(accessToken.parentRefreshTokenHash1)) {
+                        if (promote || sessionInfo.refreshTokenHash2.equals(accessToken.parentRefreshTokenHash1) ||
+                                JWTPayloadNeedsUpdating) {
                             if (promote) {
                                 storage.updateSessionInfo_Transaction(con, accessToken.sessionHandle,
                                         Utils.hashSHA256(accessToken.refreshTokenHash1),
@@ -239,18 +253,18 @@ public class Session {
                             if (AccessToken.getAccessTokenVersion(accessToken) == AccessToken.VERSION.V1) {
                                 newAccessToken = AccessToken.createNewAccessTokenV1(main,
                                         accessToken.sessionHandle, accessToken.userId, accessToken.refreshTokenHash1,
-                                        null, accessToken.userData, accessToken.antiCsrfToken);
+                                        null, sessionInfo.userDataInJWT, accessToken.antiCsrfToken);
                             } else {
                                 assert accessToken.lmrt != null;
                                 newAccessToken = AccessToken.createNewAccessToken(main,
                                         accessToken.sessionHandle, accessToken.userId, accessToken.refreshTokenHash1,
-                                        null, accessToken.userData, accessToken.antiCsrfToken, accessToken.lmrt, null,
+                                        null, sessionInfo.userDataInJWT, accessToken.antiCsrfToken, accessToken.lmrt, null,
                                         currCDIVersion);
                             }
 
                             return new SessionInformationHolder(
                                     new SessionInfo(accessToken.sessionHandle, accessToken.userId,
-                                            accessToken.userData),
+                                            sessionInfo.userDataInJWT),
                                     new TokenInfo(newAccessToken.token, newAccessToken.expiry,
                                             newAccessToken.createdTime, Config.getConfig(main).getAccessTokenPath(),
                                             Config.getConfig(main).getCookieSecure(main),
@@ -261,6 +275,8 @@ public class Session {
                         storage.commitTransaction(con);
                         return new SessionInformationHolder(
                                 new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData),
+                                // here we purposely use accessToken.userData instead of sessionInfo.userDataInJWT
+                                // because we are not returning a new access token
                                 null, null,
                                 null, null);
                     } catch (UnauthorisedException | NoSuchAlgorithmException | UnsupportedEncodingException |
@@ -286,9 +302,10 @@ public class Session {
                         throw new UnauthorisedException("Session missing in db");
                     }
 
-                    boolean promote = sessionInfo.refreshTokenHash2
+                    boolean promote = accessToken.parentRefreshTokenHash1 != null && sessionInfo.refreshTokenHash2
                             .equals(Utils.hashSHA256(accessToken.parentRefreshTokenHash1));
-                    if (promote || sessionInfo.refreshTokenHash2.equals(accessToken.parentRefreshTokenHash1)) {
+                    if (promote || sessionInfo.refreshTokenHash2.equals(accessToken.parentRefreshTokenHash1) ||
+                        JWTPayloadNeedsUpdating) {
                         if (promote) {
                             boolean success = storage.updateSessionInfo_Transaction(accessToken.sessionHandle,
                                     Utils.hashSHA256(accessToken.refreshTokenHash1),
@@ -303,18 +320,18 @@ public class Session {
                         if (AccessToken.getAccessTokenVersion(accessToken) == AccessToken.VERSION.V1) {
                             newAccessToken = AccessToken.createNewAccessTokenV1(main,
                                     accessToken.sessionHandle, accessToken.userId, accessToken.refreshTokenHash1,
-                                    null, accessToken.userData, accessToken.antiCsrfToken);
+                                    null, sessionInfo.userDataInJWT, accessToken.antiCsrfToken);
                         } else {
                             assert accessToken.lmrt != null;
                             newAccessToken = AccessToken.createNewAccessToken(main,
                                     accessToken.sessionHandle, accessToken.userId, accessToken.refreshTokenHash1,
-                                    null, accessToken.userData, accessToken.antiCsrfToken, accessToken.lmrt, null,
+                                    null, sessionInfo.userDataInJWT, accessToken.antiCsrfToken, accessToken.lmrt, null,
                                     currCDIVersion);
                         }
 
                         return new SessionInformationHolder(
                                 new SessionInfo(accessToken.sessionHandle, accessToken.userId,
-                                        accessToken.userData),
+                                        sessionInfo.userDataInJWT),
                                 new TokenInfo(newAccessToken.token, newAccessToken.expiry,
                                         newAccessToken.createdTime, Config.getConfig(main).getAccessTokenPath(),
                                         Config.getConfig(main).getCookieSecure(main),
@@ -324,6 +341,8 @@ public class Session {
 
                     return new SessionInformationHolder(
                             new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData),
+                            // here we purposely use accessToken.userData instead of sessionInfo.userDataInJWT
+                            // because we are not returning a new access token
                             null, null,
                             null, null);
                 } catch (NoSuchAlgorithmException | UnsupportedEncodingException |
