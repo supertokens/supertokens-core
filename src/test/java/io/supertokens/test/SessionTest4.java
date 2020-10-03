@@ -19,8 +19,6 @@ package io.supertokens.test;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
-import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.cronjobs.deletePastOrphanedTokens.DeletePastOrphanedTokens;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
@@ -159,49 +157,6 @@ public class SessionTest4 {
         } catch (UnauthorisedException e) {
             assertEquals(e.getMessage(), "Session does not exist.");
         }
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
-    }
-
-    @Test
-    public void nonOrphanedChildNotRemoved()
-            throws InterruptedException, StorageQueryException, IOException,
-            NoSuchAlgorithmException,
-            StorageTransactionLogicException, InvalidKeyException, InvalidKeySpecException,
-            UnauthorisedException, TokenTheftDetectedException, SignatureException, IllegalBlockSizeException,
-            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
-
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-
-        CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeletePastOrphanedTokens.RESOURCE_KEY, 1);
-        DeletePastOrphanedTokens.getInstance(process.getProcess())
-                .setTimeInMSForHowLongToKeepThePastTokensForTesting(1000);
-
-        process.startProcess();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String userId = "userId";
-        JsonObject userDataInJWT = new JsonObject();
-        userDataInJWT.addProperty("key", "value");
-        JsonObject userDataInDatabase = new JsonObject();
-        userDataInDatabase.addProperty("key", "value");
-
-        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase);
-        assert sessionInfo.refreshToken != null;
-        assert sessionInfo.accessToken != null;
-
-        SessionInformationHolder refreshedSession = Session
-                .refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
-        assert refreshedSession.refreshToken != null;
-
-        Thread.sleep(2500);
-
-        Session.refreshSession(process.getProcess(), refreshedSession.refreshToken.token,
-                refreshedSession.antiCsrfToken);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -415,6 +370,63 @@ public class SessionTest4 {
             assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
             assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void verifyAccessTokenThatIsBelongsToGrandparentRefreshToken()
+            throws InterruptedException, StorageQueryException,
+            NoSuchAlgorithmException, InvalidKeyException,
+            IOException, InvalidKeySpecException,
+            StorageTransactionLogicException, UnauthorisedException, TryRefreshTokenException,
+            TokenTheftDetectedException, SignatureException, IllegalBlockSizeException, BadPaddingException,
+            InvalidAlgorithmParameterException, NoSuchPaddingException {
+
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase);
+        assertEquals(sessionInfo.session.userId, userId);
+        assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
+        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
+        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assert sessionInfo.accessToken != null;
+        assert sessionInfo.refreshToken != null;
+        assertNull(sessionInfo.antiCsrfToken);
+
+        SessionInformationHolder refreshedSession = Session
+                .refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
+        assert refreshedSession.refreshToken != null;
+        assert refreshedSession.accessToken != null;
+
+
+        SessionInformationHolder refreshedSession2 = Session
+                .refreshSession(process.getProcess(), refreshedSession.refreshToken.token,
+                        refreshedSession.antiCsrfToken);
+        assert refreshedSession2.refreshToken != null;
+
+        Session.refreshSession(process.getProcess(), refreshedSession2.refreshToken.token,
+                refreshedSession2.antiCsrfToken);
+
+
+        SessionInformationHolder verifiedSession = Session.getSession(process.getProcess(),
+                refreshedSession.accessToken.token, refreshedSession.antiCsrfToken, true);
+
+        assertEquals(verifiedSession.session.userDataInJWT.toString(), userDataInJWT.toString());
+        assertEquals(verifiedSession.session.userId, userId);
+        assertEquals(verifiedSession.session.handle, sessionInfo.session.handle);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
+
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

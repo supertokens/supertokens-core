@@ -22,9 +22,7 @@ import io.supertokens.config.Config;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.tokenInfo.PastTokenInfo;
 import io.supertokens.session.info.TokenInfo;
-import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
@@ -46,39 +44,24 @@ public class RefreshToken {
         try {
             TYPE tokenType = getTypeFromToken(token);
 
-            if (tokenType == TYPE.FREE) {
-                // if it comes here, it means the token was issued via the older version..
-
-                // format of token is <random_uuid>.V0
-                PastTokenInfo pastTokenInfo = StorageLayer.getStorageLayer(main)
-                        .getPastTokenInfo(Utils.hashSHA256(Utils.hashSHA256(token)));
-                if (pastTokenInfo == null) {
-                    throw new UnauthorisedException(
-                            "Refresh token not found in database. Please create a new session.");
-                }
-                return new RefreshTokenInfo(pastTokenInfo.sessionHandle, null, null,
-                        pastTokenInfo.parentRefreshTokenHash2, null, tokenType);
-
-            } else {    // Do not modify this line
-                // format of token is <encrypted part>.<nonce>.V1
-                String key = RefreshTokenKey.getInstance(main).getKey();
-                String[] splittedToken = token.split("\\.");
-                if (splittedToken.length != 3) {
-                    throw new InvalidRefreshTokenFormatException(
-                            "Refresh token split with dot yielded an array of length: " + splittedToken.length);
-                }
-                String nonce = splittedToken[1];
-                String decrypted = Utils.decrypt(splittedToken[0], key);
-                RefreshTokenPayload tokenPayload = new Gson().fromJson(decrypted, RefreshTokenPayload.class);
-                if (tokenPayload.userId == null || tokenPayload.sessionHandle == null
-                        || !nonce.equals(tokenPayload.nonce)) {
-                    throw new UnauthorisedException("Invalid refresh token");
-                }
-                return new RefreshTokenInfo(tokenPayload.sessionHandle, tokenPayload.userId,
-                        tokenPayload.parentRefreshTokenHash1, null,
-                        tokenPayload.antiCsrfToken, tokenType);
-
+            // format of token is <encrypted part>.<nonce>.V1
+            String key = RefreshTokenKey.getInstance(main).getKey();
+            String[] splittedToken = token.split("\\.");
+            if (splittedToken.length != 3) {
+                throw new InvalidRefreshTokenFormatException(
+                        "Refresh token split with dot yielded an array of length: " + splittedToken.length);
             }
+            String nonce = splittedToken[1];
+            String decrypted = Utils.decrypt(splittedToken[0], key);
+            RefreshTokenPayload tokenPayload = new Gson().fromJson(decrypted, RefreshTokenPayload.class);
+            if (tokenPayload.userId == null || tokenPayload.sessionHandle == null
+                    || !nonce.equals(tokenPayload.nonce)) {
+                throw new UnauthorisedException("Invalid refresh token");
+            }
+            return new RefreshTokenInfo(tokenPayload.sessionHandle, tokenPayload.userId,
+                    tokenPayload.parentRefreshTokenHash1, null,
+                    tokenPayload.antiCsrfToken, tokenType);
+
         } catch (InvalidRefreshTokenFormatException | InvalidKeyException | InvalidKeySpecException
                 | NoSuchPaddingException | InvalidAlgorithmParameterException | IllegalBlockSizeException
                 | BadPaddingException | NoSuchAlgorithmException | NullPointerException e) {

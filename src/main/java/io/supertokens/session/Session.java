@@ -240,7 +240,8 @@ public class Session {
 
                         boolean promote = accessToken.parentRefreshTokenHash1 != null && sessionInfo.refreshTokenHash2
                                 .equals(Utils.hashSHA256(accessToken.parentRefreshTokenHash1));
-                        if (promote || sessionInfo.refreshTokenHash2.equals(accessToken.parentRefreshTokenHash1) ||
+                        if (promote ||
+                                sessionInfo.refreshTokenHash2.equals(Utils.hashSHA256(accessToken.refreshTokenHash1)) ||
                                 JWTPayloadNeedsUpdating) {
                             if (promote) {
                                 storage.updateSessionInfo_Transaction(con, accessToken.sessionHandle,
@@ -258,8 +259,8 @@ public class Session {
                                 assert accessToken.lmrt != null;
                                 newAccessToken = AccessToken.createNewAccessToken(main,
                                         accessToken.sessionHandle, accessToken.userId, accessToken.refreshTokenHash1,
-                                        null, sessionInfo.userDataInJWT, accessToken.antiCsrfToken, accessToken.lmrt, null,
-                                        currCDIVersion);
+                                        null, sessionInfo.userDataInJWT, accessToken.antiCsrfToken, accessToken.lmrt,
+                                        null, currCDIVersion);
                             }
 
                             return new SessionInformationHolder(
@@ -304,8 +305,9 @@ public class Session {
 
                     boolean promote = accessToken.parentRefreshTokenHash1 != null && sessionInfo.refreshTokenHash2
                             .equals(Utils.hashSHA256(accessToken.parentRefreshTokenHash1));
-                    if (promote || sessionInfo.refreshTokenHash2.equals(accessToken.parentRefreshTokenHash1) ||
-                        JWTPayloadNeedsUpdating) {
+                    if (promote ||
+                            sessionInfo.refreshTokenHash2.equals(Utils.hashSHA256(accessToken.refreshTokenHash1)) ||
+                            JWTPayloadNeedsUpdating) {
                         if (promote) {
                             boolean success = storage.updateSessionInfo_Transaction(accessToken.sessionHandle,
                                     Utils.hashSHA256(accessToken.refreshTokenHash1),

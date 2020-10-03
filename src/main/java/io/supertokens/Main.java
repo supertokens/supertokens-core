@@ -21,7 +21,6 @@ import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
-import io.supertokens.cronjobs.deletePastOrphanedTokens.DeletePastOrphanedTokens;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -176,9 +175,6 @@ public class Main {
 
         // starts removing old session cronjob
         Cronjobs.addCronjob(this, DeleteExpiredSessions.getInstance(this));
-
-        // starts deleting past orphaned sessions
-        Cronjobs.addCronjob(this, DeletePastOrphanedTokens.getInstance(this));
 
         // start web server to accept incoming traffic
         Webserver.getInstance(this).start();
