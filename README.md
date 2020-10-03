@@ -189,6 +189,7 @@ If you think this is a project you could use in the future, please :star2: this 
 <td align="center"><a href="https://github.com/UbadahJ"><img src="https://avatars1.githubusercontent.com/u/26687928?s=460&u=ae1d3ae5fad6e4cfa71809f8ce4a99429321dcaf&v=4" width="100px;" alt=""/><br /><sub><b>LordChadiwala</b></sub></a></td>
 <td align="center"><a href="https://github.com/LuizDoPc"><img src="https://avatars0.githubusercontent.com/u/20651653?s=460&u=d673e5357da83e446311831efe107e695d3ef875&v=4" width="100px;" alt=""/><br /><sub><b>Luiz Soares</b></sub></a></td>
 <td align="center"><a href="https://github.com/sudiptog81"><img src="https://avatars0.githubusercontent.com/u/11232940?s=460&u=07b4989ae4c43e43f35730d7f8d59631f5ed933c&v=4" width="100px;" alt=""/><br /><sub><b>Sudipto Ghosh</b></sub></a></td>
+<td align="center"><a href="https://github.com/Fabricio20"><img src="https://avatars1.githubusercontent.com/u/7545720?s=400&v=4" width="100px;" alt=""/><br /><sub><b>Fabricio20</b></sub></a></td>
   </tr>
 </table>
 
