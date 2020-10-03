@@ -23,7 +23,6 @@ core_config_version: 0
 # (OPTIONAL | Default: false) boolean value. If true, allows for immediate revocation of any access token.
 # Keep in mind that setting this to true will result in a db query for each API call that
 # requires authentication.
-# This feature is available in paid plans only.
 # access_token_blacklisting:
 
 
