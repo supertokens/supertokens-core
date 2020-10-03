@@ -77,12 +77,9 @@ We also believe in the principle of least vendor lockin. Your having full contro
      treated as the same user).
 
 ### Documentation
-As of now, we only offer session management.
+The docs can be seen [on our website](https://supertokens.io/docs/community/getting-started/installation) along with an [implementation video](https://www.youtube.com/watch?v=kbC-QzxeZ4s&feature=emb_logo).
 
-The docs can be seen [here](https://supertokens.io/docs/community/getting-started/installation)
-
-A short [implementation video](https://www.youtube.com/watch?v=kbC-QzxeZ4s&feature=emb_logo)
-
+There is more information about SuperTokens on the [GitHub wiki section](https://github.com/supertokens/supertokens-core/wiki).
 
 ## Architecture
 Please find a writeup about this in the [wiki section](https://github.com/supertokens/supertokens-core/wiki/SuperTokens-Architecture)
