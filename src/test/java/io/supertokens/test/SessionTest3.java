@@ -65,12 +65,14 @@ public class SessionTest3 {
     }
 
     @Test
-    public void revokeSessionWithBlacklisting()
+    public void revokeSessionWithBlacklistingRefreshSessionAndGetSessionThrows()
             throws InterruptedException, StorageQueryException, NoSuchAlgorithmException, InvalidKeyException,
             IOException, InvalidKeySpecException,
             StorageTransactionLogicException, TokenTheftDetectedException, TryRefreshTokenException,
             UnauthorisedException, SignatureException, IllegalBlockSizeException, BadPaddingException,
             InvalidAlgorithmParameterException, NoSuchPaddingException {
+
+        Utils.setValueInConfig("access_token_blacklisting", "true");
 
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -104,11 +106,12 @@ public class SessionTest3 {
 
         }
 
-        SessionInformationHolder verifiedSession = Session
-                .getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, true);
-        assertEquals(verifiedSession.session.userId, sessionInfo.session.userId);
-        assertEquals(verifiedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
+        try {
+            Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, true);
+            fail();
+        } catch (UnauthorisedException e) {
 
+        }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
