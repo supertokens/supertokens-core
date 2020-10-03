@@ -188,6 +188,9 @@ If you think this is a project you could use in the future, please :star2: this 
 <td align="center"><a href="https://github.com/arnxv0"><img src="https://avatars2.githubusercontent.com/u/57629464?s=460&u=5f0cca1aed9fabb38bea74df73ed99dfcfec2f26&v=4" width="100px;" alt=""/><br /><sub><b>Arnav Dewan</b></sub></a></td>
 <td align="center"><a href="https://github.com/NkxxkN"><img src="https://avatars1.githubusercontent.com/u/5072452?s=460&u=eda6b25b674d20e3389bf19a0619d6e4c1e46670&v=4" width="100px;" alt=""/><br /><sub><b>NkxxkN</b></sub></a></td>
   </tr>
+  <tr>
+<td align="center"><a href="https://github.com/UbadahJ"><img src="https://avatars1.githubusercontent.com/u/26687928?s=460&u=ae1d3ae5fad6e4cfa71809f8ce4a99429321dcaf&v=4" width="100px;" alt=""/><br /><sub><b>LordChadiwala</b></sub></a></td>
+  </tr>
 </table>
 
 ## Contributing
