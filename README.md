@@ -190,6 +190,7 @@ If you think this is a project you could use in the future, please :star2: this 
   </tr>
   <tr>
 <td align="center"><a href="https://github.com/UbadahJ"><img src="https://avatars1.githubusercontent.com/u/26687928?s=460&u=ae1d3ae5fad6e4cfa71809f8ce4a99429321dcaf&v=4" width="100px;" alt=""/><br /><sub><b>LordChadiwala</b></sub></a></td>
+<td align="center"><a href="https://github.com/LuizDoPc"><img src="https://avatars0.githubusercontent.com/u/20651653?s=460&u=d673e5357da83e446311831efe107e695d3ef875&v=4" width="100px;" alt=""/><br /><sub><b>Luiz Soares</b></sub></a></td>
   </tr>
 </table>
 
