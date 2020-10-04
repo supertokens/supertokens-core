@@ -79,6 +79,9 @@ public class CoreConfig {
     @JsonProperty
     private int session_expired_status_code = 401;
 
+    @JsonProperty
+    private String api_keys = null;
+
     //	TODO: add https in later version
 //	# (OPTIONAL) boolean value (true or false). Set to true if you want to enable https requests to SuperTokens.
 //	# If you are not running SuperTokens within a closed network along with your API process, for 
@@ -156,6 +159,13 @@ public class CoreConfig {
         return session_expired_status_code;
     }
 
+    public String[] getAPIKeys() {
+        if (api_keys == null) {
+            return null;
+        }
+        return api_keys.trim().replaceAll("\\s", "").split(",");
+    }
+
     public int getPort(Main main) {
         Integer cliPort = CLIOptions.get(main).getPort();
         if (cliPort != null) {
@@ -226,6 +236,26 @@ public class CoreConfig {
         if (cookie_same_site.toLowerCase().equals("none") && !enable_anti_csrf) {
             throw new QuitProgramException(
                     "please set 'enable_anti_csrf' to true if 'cookie_same_site' is set to 'none'");
+        }
+
+        if (api_keys != null) {
+            String[] keys = api_keys.split(",");
+            for (int i = 0; i < keys.length; i++) {
+                String currKey = keys[i].trim();
+                if (currKey.length() < 20) {
+                    throw new QuitProgramException(
+                            "One of the API keys is too short. Please use at least 20 characters");
+                }
+                for (int y = 0; y < currKey.length(); y++) {
+                    char currChar = currKey.charAt(y);
+                    if (!(currChar == '=' || currChar == '-' || (currChar >= '0' && currChar <= '9') ||
+                            (currChar >= 'a' && currChar <= 'z') || (currChar >= 'A' && currChar <= 'Z'))) {
+                        throw new QuitProgramException(
+                                "Invalid characters in API key. Please only use '=', '-' and alpha-numeric (including" +
+                                        " capitals)");
+                    }
+                }
+            }
         }
 
         if (!getInfoLogPath(main).equals("null")) {
