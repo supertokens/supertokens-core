@@ -41,6 +41,11 @@ public class ConfigAPI extends WebserverAPI {
     }
 
     @Override
+    protected boolean checkAPIKey() {
+        return false;
+    }
+
+    @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         String pid = InputParser.getQueryParamOrThrowError(req, "pid", false);
 

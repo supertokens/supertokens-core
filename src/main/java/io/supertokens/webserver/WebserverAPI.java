@@ -18,6 +18,7 @@ package io.supertokens.webserver;
 
 import com.google.gson.JsonElement;
 import io.supertokens.Main;
+import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
 
@@ -112,9 +113,33 @@ public abstract class WebserverAPI extends HttpServlet {
         return true;
     }
 
+    private void assertThatAPIKeyCheckPasses(String apiKey) throws ServletException {
+        String[] keys = Config.getConfig(this.main).getAPIKeys();
+        if (keys != null) {
+            if (apiKey == null) {
+                throw new ServletException(new APIKeyUnauthorisedException());
+            }
+            apiKey = apiKey.trim();
+            boolean isAuthorised = false;
+            for (String key : keys) {
+                isAuthorised = isAuthorised || key.equals(apiKey);
+            }
+            if (!isAuthorised) {
+                throw new ServletException(new APIKeyUnauthorisedException());
+            }
+        }
+    }
+
+    protected boolean checkAPIKey() {
+        return true;
+    }
+
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
+            if (this.checkAPIKey()) {
+                assertThatAPIKeyCheckPasses(req.getHeader("api-key"));
+            }
             if (this.versionNeeded()) {
                 String version = getVersionFromRequest(req);
                 assertThatVersionIsCompatible(version);
@@ -137,6 +162,8 @@ public abstract class WebserverAPI extends HttpServlet {
                 Throwable rootCause = se.getRootCause();
                 if (rootCause instanceof BadRequestException) {
                     sendTextResponse(400, rootCause.getMessage(), resp);
+                } else if (rootCause instanceof APIKeyUnauthorisedException) {
+                    sendTextResponse(401, "Invalid API key", resp);
                 } else {
                     sendTextResponse(500, "Internal Error", resp);
                 }
@@ -160,4 +187,15 @@ public abstract class WebserverAPI extends HttpServlet {
             super(msg);
         }
     }
+
+    protected static class APIKeyUnauthorisedException extends Exception {
+
+        private static final long serialVersionUID = 6058119187747009809L;
+
+        public APIKeyUnauthorisedException() {
+            super();
+        }
+    }
+
+
 }

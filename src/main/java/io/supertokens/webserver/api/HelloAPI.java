@@ -39,6 +39,11 @@ public class HelloAPI extends WebserverAPI {
     }
 
     @Override
+    protected boolean checkAPIKey() {
+        return false;
+    }
+
+    @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         super.sendTextResponse(200, getMessage(), resp);
     }

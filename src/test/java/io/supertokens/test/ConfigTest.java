@@ -365,6 +365,7 @@ public class ConfigTest {
         assertEquals(config.getHost(process.getProcess()), "localhost");
         assertEquals(config.getPort(process.getProcess()), 3567);
         assertEquals(config.getSessionExpiredStatusCode(), 401);
+        assertNull(config.getAPIKeys());
         assertEquals(10, config.getMaxThreadPoolSize());
         assertFalse(config.getHttpsEnabled());
 
