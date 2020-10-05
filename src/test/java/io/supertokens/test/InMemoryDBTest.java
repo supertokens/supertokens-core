@@ -133,8 +133,7 @@ public class InMemoryDBTest {
 
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
         assert sessionInfo.idRefreshToken != null;
@@ -180,8 +179,7 @@ public class InMemoryDBTest {
 
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -259,8 +257,7 @@ public class InMemoryDBTest {
 
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -305,8 +302,7 @@ public class InMemoryDBTest {
 
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -354,8 +350,7 @@ public class InMemoryDBTest {
 
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -421,8 +416,7 @@ public class InMemoryDBTest {
         assertEquals(refreshedSession.session.handle, sessionInfo.session.handle);
         assertEquals(refreshedSession.session.userId, sessionInfo.session.userId);
         assertEquals(refreshedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
         SessionInformationHolder newSession = Session.getSession(process.getProcess(),
                 refreshedSession.accessToken.token, refreshedSession.antiCsrfToken, true);
@@ -449,8 +443,7 @@ public class InMemoryDBTest {
         SessionInformationHolder refreshedSession2 = Session
                 .refreshSession(process.getProcess(), refreshedSession.refreshToken.token,
                         refreshedSession.antiCsrfToken);
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
         assert refreshedSession2.accessToken != null;
         assertNotEquals(refreshedSession2.accessToken.token, newSession.accessToken.token);
@@ -520,8 +513,7 @@ public class InMemoryDBTest {
         assertEquals(refreshedSession.session.handle, sessionInfo.session.handle);
         assertEquals(refreshedSession.session.userId, sessionInfo.session.userId);
         assertEquals(refreshedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
         SessionInformationHolder newSession = Session.getSession(process.getProcess(),
                 refreshedSession.accessToken.token, null, true);
@@ -548,8 +540,7 @@ public class InMemoryDBTest {
         SessionInformationHolder refreshedSession2 = Session
                 .refreshSession(process.getProcess(), refreshedSession.refreshToken.token,
                         refreshedSession.antiCsrfToken);
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
         assert refreshedSession2.accessToken != null;
         assertNotEquals(refreshedSession2.accessToken.token, newSession.accessToken.token);
@@ -637,7 +628,6 @@ public class InMemoryDBTest {
                     .refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
             assert newRefreshedSession.refreshToken != null;
 
-            assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
             assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
             Session.getSession(main, sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, true);
@@ -650,7 +640,6 @@ public class InMemoryDBTest {
             } catch (UnauthorisedException ignored) {
 
             }
-            assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
             assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
         }
 
@@ -660,7 +649,6 @@ public class InMemoryDBTest {
                     userDataInDatabase);
             assert sessionInfo.refreshToken != null;
             assert sessionInfo.accessToken != null;
-            assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
             assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 2);
 
             SessionInformationHolder newRefreshedSession = Session
@@ -669,7 +657,6 @@ public class InMemoryDBTest {
             assert newRefreshedSession.accessToken != null;
             assertNotEquals(newRefreshedSession.accessToken.token, sessionInfo.accessToken.token);
             assertNotEquals(newRefreshedSession.refreshToken.token, sessionInfo.refreshToken.token);
-            assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
             assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 2);
 
             Thread.sleep(500);
@@ -680,7 +667,6 @@ public class InMemoryDBTest {
             assert newRefreshedSession2.accessToken != null;
             assertNotEquals(newRefreshedSession.accessToken.token, newRefreshedSession2.accessToken.token);
             assertNotEquals(newRefreshedSession.refreshToken.token, newRefreshedSession2.refreshToken.token);
-            assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
             assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 2);
 
             Thread.sleep(500);
@@ -691,7 +677,6 @@ public class InMemoryDBTest {
             assert newRefreshedSession3.accessToken != null;
             assertNotEquals(newRefreshedSession3.accessToken.token, newRefreshedSession2.accessToken.token);
             assertNotEquals(newRefreshedSession3.refreshToken.token, newRefreshedSession2.refreshToken.token);
-            assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
             assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 2);
         }
 

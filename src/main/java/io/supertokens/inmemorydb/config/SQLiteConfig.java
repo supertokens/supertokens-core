@@ -26,8 +26,4 @@ public class SQLiteConfig {
         return "session_info";
     }
 
-    public String getPastTokensTable() {
-        return "past_tokens";
-    }
-
 }

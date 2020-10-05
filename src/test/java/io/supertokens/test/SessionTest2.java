@@ -222,11 +222,9 @@ public class SessionTest2 {
         Session.createNewSession(process.getProcess(), userId, userDataInJWT,
                 userDataInDatabase);
 
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 2);
 
         Session.revokeSessionUsingSessionHandles(process.getProcess(), new String[]{sessionInfo.session.handle});
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfPastTokens(), 0);
         assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
         try {
