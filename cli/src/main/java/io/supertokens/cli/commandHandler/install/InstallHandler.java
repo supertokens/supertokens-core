@@ -142,11 +142,10 @@ public class InstallHandler extends CommandHandler {
         installationDir = Utils.normaliseDirectoryPath(new File(installationDir).getAbsolutePath());
         if (OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) {
             content += this.getResourceFileAsString("/install-windows.bat");
-            content = content.replace("$ST_INSTALL_LOC", installationDir);
         } else {
             content += this.getResourceFileAsString("/install-linux.sh");
-            content = content.replace("$ST_INSTALL_LOC", installationDir);
         }
+        content = content.replace("$ST_INSTALL_LOC", installationDir);
         File f = new File(location);
         if (!f.exists()) {
             boolean success = f.createNewFile();
@@ -171,9 +170,11 @@ public class InstallHandler extends CommandHandler {
      * @throws IOException if read fails for any reason
      */
     private String getResourceFileAsString(String fileName) throws IOException {
-        ClassLoader classLoader = ClassLoader.getSystemClassLoader();
-        try (InputStream is = classLoader.getResourceAsStream(fileName)) {
-            if (is == null) return null;
+        try (InputStream is = this.getClass().getResourceAsStream(fileName)) {
+            if (is == null) {
+                Logging.error("Failed to load resource named " + fileName);
+                return null;
+            }
             try (InputStreamReader isr = new InputStreamReader(is);
                  BufferedReader reader = new BufferedReader(isr)) {
                 return reader.lines().collect(Collectors.joining(System.lineSeparator()));
