@@ -28,6 +28,7 @@ import io.supertokens.cli.logging.Logging;
 import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class InstallHandler extends CommandHandler {
     @Override
@@ -140,32 +141,11 @@ public class InstallHandler extends CommandHandler {
         String location = getSupertokensScriptLocation(exeLoc);
         installationDir = Utils.normaliseDirectoryPath(new File(installationDir).getAbsolutePath());
         if (OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) {
-            content += "@echo off\n";
-            content += "set st_install_loc=" + installationDir + "\n";
-            content +=
-                    "\"%st_install_loc%jre\\bin\"\\java -classpath \"%st_install_loc%cli\\*\" io.supertokens.cli.Main" +
-                            " " +
-                            "false " +
-                            "\"%st_install_loc%\\\" %*\n" +
-                            "IF %errorlevel% NEQ 0 (\necho exiting\ngoto:eof\n)\nIF \"%1\" == \"uninstall\" (\nrmdir " +
-                            "/S /Q " +
-                            "\"%st_install_loc%\"\ndel \"%~f0\"\n)" +
-                            "\nIF \"%1\" == \"update\" (\n" +
-                            "\"%st_install_loc%.update\"\\supertokensExe.bat update-complete " +
-                            "--originalInstallDir=\"%st_install_loc%\\\"" +
-                            "\n)" +
-                            "\n:eof";
+            content += this.getResourceFileAsString("/install-windows.bat");
+            content = content.replace("$ST_INSTALL_LOC", installationDir);
         } else {
-            content += "#!/bin/bash\n\nst_install_loc=" + installationDir + "\n";
-            content +=
-                    "${st_install_loc}jre/bin/java -classpath " +
-                            "\"${st_install_loc}cli/*\" io.supertokens.cli.Main " +
-                            "false $st_install_loc $@\n" +
-                            "if [ $? -eq 0 ] && [ \"$#\" -ne 0 ] && [ $1 == update ]\n" +
-                            "then\n" +
-                            "${st_install_loc}/.update/supertokensExe update-complete " +
-                            "--originalInstallDir=$st_install_loc\n" +
-                            "fi\n";
+            content += this.getResourceFileAsString("/install-linux.sh");
+            content = content.replace("$ST_INSTALL_LOC", installationDir);
         }
         File f = new File(location);
         if (!f.exists()) {
@@ -180,6 +160,24 @@ public class InstallHandler extends CommandHandler {
         f.setExecutable(true, false);
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(f))) {
             writer.write(content);
+        }
+    }
+
+    /**
+     * Reads given resource file as a string.
+     *
+     * @param fileName path to the resource file
+     * @return the file's contents
+     * @throws IOException if read fails for any reason
+     */
+    private String getResourceFileAsString(String fileName) throws IOException {
+        ClassLoader classLoader = ClassLoader.getSystemClassLoader();
+        try (InputStream is = classLoader.getResourceAsStream(fileName)) {
+            if (is == null) return null;
+            try (InputStreamReader isr = new InputStreamReader(is);
+                 BufferedReader reader = new BufferedReader(isr)) {
+                return reader.lines().collect(Collectors.joining(System.lineSeparator()));
+            }
         }
     }
 
