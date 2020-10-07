@@ -251,8 +251,9 @@ public class AccessTokenTest {
     }
 
 
+    // short interval for signing key
     @Test
-    public void signingKeyShortIntervalDoesNotChange() throws InterruptedException,
+    public void signingKeyShortInterval() throws InterruptedException,
             StorageQueryException, StorageTransactionLogicException, IOException {
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 second
 
@@ -263,7 +264,7 @@ public class AccessTokenTest {
         String keyBefore = AccessTokenSigningKey.getInstance(process.getProcess()).getKey().toString();
         Thread.sleep(1500);
         String keyAfter = AccessTokenSigningKey.getInstance(process.getProcess()).getKey().toString();
-        assertEquals(keyBefore, keyAfter);
+        assertNotEquals(keyBefore, keyAfter);
         process.kill();
     }
 

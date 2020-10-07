@@ -76,6 +76,13 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         if (this.keyInfo == null) {
             this.keyInfo = maybeGenerateNewKeyAndUpdateInDb();
         }
+
+        CoreConfig config = Config.getConfig(main);
+        if (config.getAccessTokenSigningKeyDynamic() && System.currentTimeMillis() > (this.keyInfo.createdAtTime
+                + config.getAccessTokenSigningKeyUpdateInterval())) {
+            // key has expired, we need to change it.
+            this.keyInfo = maybeGenerateNewKeyAndUpdateInDb();
+        }
         return new Utils.PubPriKey(this.keyInfo.value);
     }
 
@@ -100,7 +107,16 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                     key = new KeyInfo(keyFromStorage.value, keyFromStorage.createdAtTime);
                 }
 
-                if (key == null) {
+                boolean generateNewKey = false;
+
+                if (key != null) {
+                    if (config.getAccessTokenSigningKeyDynamic() && System.currentTimeMillis() > key.createdAtTime
+                            + config.getAccessTokenSigningKeyUpdateInterval()) {
+                        generateNewKey = true;
+                    }
+                }
+
+                if (key == null || generateNewKey) {
                     String signingKey;
                     try {
                         Utils.PubPriKey rsaKeys = Utils.generateNewPubPriKey();
@@ -125,10 +141,20 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 KeyInfo key = null;
                 KeyValueInfoWithLastUpdated keyFromStorage = noSQLStorage.getAccessTokenSigningKey_Transaction();
                 if (keyFromStorage != null) {
+                    System.out.println(keyFromStorage.lastUpdatedSign);
                     key = new KeyInfo(keyFromStorage.value, keyFromStorage.createdAtTime);
                 }
 
-                if (key == null) {
+                boolean generateNewKey = false;
+
+                if (key != null) {
+                    if (config.getAccessTokenSigningKeyDynamic() && System.currentTimeMillis() > key.createdAtTime
+                            + config.getAccessTokenSigningKeyUpdateInterval()) {
+                        generateNewKey = true;
+                    }
+                }
+
+                if (key == null || generateNewKey) {
                     String signingKey;
                     try {
                         Utils.PubPriKey rsaKeys = Utils.generateNewPubPriKey();
@@ -139,7 +165,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                     key = new KeyInfo(signingKey, System.currentTimeMillis());
                     boolean success = noSQLStorage.setAccessTokenSigningKey_Transaction(
                             new KeyValueInfoWithLastUpdated(key.value, key.createdAtTime,
-                                    null));
+                                    keyFromStorage == null ? null : keyFromStorage.lastUpdatedSign));
                     if (!success) {
                         // something else already updated this particular field. So we must try again.
                         continue;

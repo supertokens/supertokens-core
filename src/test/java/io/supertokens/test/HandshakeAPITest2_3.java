@@ -18,6 +18,7 @@ package io.supertokens.test;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -193,6 +194,57 @@ public class HandshakeAPITest2_3 {
         //check sessionExpiredStatusCode
         assertEquals(response.get("sessionExpiredStatusCode").getAsInt(),
                 Config.getConfig(process.getProcess()).getSessionExpiredStatusCode());
+    }
+
+
+    @Test
+    public void changingSigningKeyHandshakeAPITest() throws Exception {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00081"); // 0.00027*3 = 3 seconds
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String jsonInput = "{" +
+                "\"deviceDriverInfo\": {" +
+                "\"frontendSDK\": [{" +
+                "\"name\": \"hName\"," +
+                "\"version\": \"hVersion\"" +
+                "}]," +
+                "\"driver\": {" +
+                "\"name\": \"hDName\"," +
+                "\"version\": \"nDVersion\"" +
+                "}" +
+                "}" +
+                "}";
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/handshake",
+                        new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2ForTests());
+
+
+        assertEquals(response.entrySet().size(), 12);
+
+        assertEquals(response.get("jwtSigningPublicKey").getAsString(),
+                AccessTokenSigningKey.getInstance(process.getProcess()).getKey().publicKey);
+
+        Thread.sleep(4000);
+
+        JsonObject changedResponse = io.supertokens.test.httpRequest
+                .HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/handshake",
+                        new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2ForTests());
+
+        assertEquals(changedResponse.entrySet().size(), 12);
+
+        //check that changed response has the same signing key as the current signing key and it is different from
+        // the previous signing key
+        assertTrue(changedResponse.get("jwtSigningPublicKey").getAsString()
+                .equals(AccessTokenSigningKey.getInstance(process.getProcess()).getKey().publicKey) &&
+                !(changedResponse.get("jwtSigningPublicKey").getAsString()
+                        .equals(response.get("jwtSigningPublicKey").getAsString())));
+
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
 }

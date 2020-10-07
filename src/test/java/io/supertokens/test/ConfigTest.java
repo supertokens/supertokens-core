@@ -361,6 +361,10 @@ public class ConfigTest {
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/error.log");
         assertNull("Config cookie domain did not match default", config.getCookieDomain(null));
         assertFalse("Config cookie secure did not match default", config.getCookieSecure(process.getProcess()));
+        assertTrue("Config access signing key dynamic did not match default", config.getAccessTokenSigningKeyDynamic());
+        assertEquals("Config access signing key interval did not match default",
+                config.getAccessTokenSigningKeyUpdateInterval(),
+                24 * 60 * 60 * 1000);
 
         assertEquals(config.getHost(process.getProcess()), "localhost");
         assertEquals(config.getPort(process.getProcess()), 3567);
