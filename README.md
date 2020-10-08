@@ -14,8 +14,6 @@
     - [Documentation](https://github.com/supertokens/supertokens-core#documentation)
 - [🏗️ Architecture](https://github.com/supertokens/supertokens-core#architecture)
 - [🔥 SuperTokens vs Others](https://github.com/supertokens/supertokens-core#supertokens-vs-others)
-- [💵 How will we make money?](https://github.com/supertokens/supertokens-core#how-will-we-make-money)
-    - [Backers](https://github.com/supertokens/supertokens-core#backers)
 - [☕ Why Java?](https://github.com/supertokens/supertokens-core#why-java)
 - [🛠️ Building from source](https://github.com/supertokens/supertokens-core#building-from-source)
 - [👥 Community](https://github.com/supertokens/supertokens-core#community)
@@ -85,68 +83,7 @@ There is more information about SuperTokens on the [GitHub wiki section](https:/
 Please find a writeup about this in the [wiki section](https://github.com/supertokens/supertokens-core/wiki/SuperTokens-Architecture)
 
 ## SuperTokens vs others
-
-Please [contact us](mailto:team@supertokens.io) if any of the information listed below is incorrect.
-
-|                                	|       SuperTokens <img src="https://avatars2.githubusercontent.com/u/50478857?s=200&v=4" alt="Supertokens Logo" width="30" height="30">     	|        Auth0 <img src="https://cdn.auth0.com/website/assets/pages/press/img/auth0-badge-5c9de7e409.svg" alt="Auth0 Logo" width="25" height="25">       	|     AWS Cognito <img src="https://m.media-amazon.com/images/G/01/mobile-apps/dex/login-with-amazon/Cognito-Logo._TTH_.png" alt="Cognito Logo" width="35" height="35">    	|      Keycloak <img src="https://dyltqmyl993wv.cloudfront.net/assets/stacks/keycloak-gatekeeper/img/keycloak-gatekeeper-stack-220x234.png" alt="Keycloak Logo" width="30" height="30">     	|     FusionAuth <img src="https://res-3.cloudinary.com/crunchbase-production/image/upload/c_lpad,h_256,w_256,f_auto,q_auto:eco/zvhuxc69smizw7a9gggx" alt="FusionAuth Logo" width="35" height="35">    	|    Firebase Auth</br> <img src="https://static.dribbble.com/users/528264/screenshots/3140440/firebase_logo.png" alt="Firebase Logo" width="30" height="30">   	|
-|----------------------------------------	|:-----------------------:	|:------------------:	|:------------------:	|:------------------:	|:------------------:	|:------------------:	|
-| Open source                            	|    :heavy_check_mark:   	|                    	|                    	| :heavy_check_mark: 	|                    	|                    	|
-| On-premises                             	|    :heavy_check_mark:   	|         :heavy_check_mark: [1]        	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|
-| Managed service                        	|    :heavy_check_mark:   	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	
-| Managed service, with your database    	|       Coming Soon       	|                    	|                    	|                    	|                    	|                    	|                    	
-| Use with serverless                    	|    :heavy_check_mark:   	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	
-| Free for unlimited users               	|    :heavy_check_mark:   	|                    	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|
-| Ease of configuration                  	|    :heavy_check_mark:   	| :heavy_check_mark: 	|                    	|                    	| :heavy_check_mark: 	|                    	|                    	
-| Support for distributed infra          	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|                    	| :heavy_check_mark: 	|                    	
-| Database agnostic                      	|    :heavy_check_mark:   	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|                    	| :heavy_check_mark: 	|                    	
-| Customisable Login widget              	|       Coming soon       	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	
-| Unlimited Social Login                 	|       Coming soon       	|                    	|                    	| :heavy_check_mark: 	|                    	|                    	|                    	
-| Role & Attribute based access  control 	|       Coming Soon       	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	| :heavy_check_mark: 	| 
-| Sessions using cookies                 	|    :heavy_check_mark:   	|                    	|                    	|                    	|                    	|                    	|                    	
-| Session hijacking detection            	|    :heavy_check_mark:   	|    :heavy_check_mark:   	|                    	|                    	|                    	|                    	|                    	
-| No cloud lockin                        	|    :heavy_check_mark:   	| :heavy_check_mark: 	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	|
-| Low feature lockin                        	|    :heavy_check_mark:   	|                    	|                    	|                    	|                    	|                    	|
-| Dedicated Support                      	|    :heavy_check_mark:   	| :heavy_check_mark: 	| :heavy_check_mark: 	|                    	| :heavy_check_mark: 	| :heavy_check_mark: 	| 
-
-                 	
-
-[1]: For enterprise version only
-
-## How will we make money?
-Our philosophy is inspired by Gitlab's buyer-based model and by [Enterprise Ready](http://www.enterpriseready.io/). This means that we intend to monitise on features that are targetted towards users who are not developers, like product managers, customer support teams, designers, admin teams and IT operations.
-
-This implies that most authentication / authorization features will be in the open source version for any scale - an unlimited number of end users, (social) logins, SSO integrations and much more.
-
-Examples of features that will require a subscription:
-- Access control features for the dashboard (for managers and execs)
-    - SSO / LDAP / MFA login to the dashboard
-    - Roles to restrict access to parts of the dashboard.
-    - Creation of custom roles for dashboard operations.
-- Healthcheck and uptime monitoring (for IT dept.)
-    - Cluster health stats
-    - Integration with services like PagerDuty
-- Features to make operations easier for customer support agents
-    - Login as a user
-    - Manually send login OTPs
-- Advanced analytics features (for product management & design teams)
-    - Sign up form A/B testing
-- Advanced security (for compliance and security teams)
-    - Detailed audit logs of dashboard and end user actions
-    - Encryption of stored information
-
-Outside of the open core model, we will also charge for:
-- Hosting of the SuperTokens service on our cloud.
-- Completely managing the SuperTokens service on your cloud.
-- A commercial license that dictates:
-    - Different levels of support
-    - Liability agreement
-    - Building custom features
-    - Backporting updates and security fixes
-
-
-### Backers
-<a href="https://www.ycombinator.com/"><img width="75" src="https://www.ycombinator.com/assets/ycdc/ycombinator-logo-b603b0a270e12b1d42b7cca9d4527a9b206adf8293a77f9f3e8b6cb542fcbfa7.png"></a>
-
+Please find a detailed comparison chart [on our website](https://supertokens.io/pricing#comparison-chart)
 
 ## Why Java?
 - Java has a very mature ecosystem. This implies that third party libraries have been battled tested since a very
