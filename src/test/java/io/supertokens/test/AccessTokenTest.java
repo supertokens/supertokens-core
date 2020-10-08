@@ -250,7 +250,6 @@ public class AccessTokenTest {
         process.kill();
     }
 
-
     // short interval for signing key
     @Test
     public void signingKeyShortInterval() throws InterruptedException,
@@ -266,6 +265,36 @@ public class AccessTokenTest {
         String keyAfter = AccessTokenSigningKey.getInstance(process.getProcess()).getKey().toString();
         assertNotEquals(keyBefore, keyAfter);
         process.kill();
+    }
+
+    @Test
+    public void signingKeyChangeThrowsRefreshTokenError()
+            throws IOException, InterruptedException,
+            InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException,
+            InvalidKeySpecException, SignatureException {
+        Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 second
+
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.start(args);
+        EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
+        assertNotNull(e);
+        JsonObject jsonObj = new JsonObject();
+        jsonObj.addProperty("key", "value");
+
+        TokenInfo tokenInfo = AccessToken.createNewAccessToken(process.getProcess(), "sessionHandle", "userId",
+                "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken", System.currentTimeMillis(),
+                null);
+        Thread.sleep(1500);
+
+        try {
+            AccessToken.getInfoFromAccessToken(process.getProcess(), tokenInfo.token, true);
+        } catch (TryRefreshTokenException ex) {
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.RETRYING_ACCESS_TOKEN_JWT_VERIFICATION));
+            process.kill();
+            return;
+        }
+        process.kill();
+        fail();
     }
 
     @Test

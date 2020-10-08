@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.config.Config;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
@@ -308,6 +309,86 @@ public class SessionTest1 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+
+    @Test
+    public void createAndGetSessionWithSigningKeyChange()
+            throws InterruptedException, StorageQueryException, NoSuchAlgorithmException, InvalidKeyException,
+            InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
+            IOException, InvalidKeySpecException, IllegalBlockSizeException,
+            StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException,
+            TokenTheftDetectedException, SignatureException {
+
+        Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027");  // 1 second
+
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase);
+
+        assert sessionInfo.accessToken != null;
+        assert sessionInfo.refreshToken != null;
+
+        Thread.sleep(1500);
+
+        try {
+            Session.getSession(process.getProcess(),
+                    sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, true);
+            fail();
+        } catch (TryRefreshTokenException ignored) {
+        }
+
+        SessionInformationHolder refreshedSession = Session
+                .refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
+
+        assert refreshedSession.accessToken != null;
+        assert refreshedSession.refreshToken != null;
+        assertNotEquals(refreshedSession.idRefreshToken, sessionInfo.idRefreshToken);
+        assertNotEquals(refreshedSession.accessToken.token, sessionInfo.accessToken.token);
+        assertNotEquals(refreshedSession.refreshToken.token, sessionInfo.refreshToken.token);
+        assertEquals(refreshedSession.session.handle, sessionInfo.session.handle);
+        assertEquals(refreshedSession.session.userId, sessionInfo.session.userId);
+        assertEquals(refreshedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
+        assertEquals(refreshedSession.accessToken.cookiePath,
+                Config.getConfig(process.getProcess()).getAccessTokenPath());
+        assert refreshedSession.accessToken.cookieSecure != null;
+        assertEquals((boolean) refreshedSession.accessToken.cookieSecure,
+                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
+        assertEquals(refreshedSession.refreshToken.cookiePath,
+                Config.getConfig(process.getProcess()).getRefreshAPIPath());
+        assert refreshedSession.refreshToken.cookieSecure != null;
+        assertEquals((boolean) refreshedSession.refreshToken.cookieSecure,
+                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
+        assert refreshedSession.idRefreshToken != null;
+        assert refreshedSession.idRefreshToken.cookiePath != null;
+        assert refreshedSession.idRefreshToken.domain == null;
+
+        SessionInformationHolder newSession = Session.getSession(process.getProcess(),
+                refreshedSession.accessToken.token, refreshedSession.antiCsrfToken, true);
+
+        assert newSession.accessToken != null;
+        assertNotEquals(newSession.accessToken.token, refreshedSession.accessToken.token);
+        assertNotEquals(newSession.accessToken.expiry, refreshedSession.accessToken.expiry);
+        assertNotEquals(newSession.accessToken.createdTime, refreshedSession.accessToken.createdTime);
+        assertEquals(newSession.session.userDataInJWT.toString(), refreshedSession.session.userDataInJWT.toString());
+        assertEquals(newSession.accessToken.cookiePath,
+                Config.getConfig(process.getProcess()).getAccessTokenPath());
+        assert newSession.accessToken.cookieSecure != null;
+        assertEquals((boolean) newSession.accessToken.cookieSecure,
+                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 
     @Test
     public void refreshSessionTestWithAntiCsrf()

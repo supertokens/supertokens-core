@@ -220,7 +220,7 @@ public class HandshakeAPITest2_2 {
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/handshake",
                         new JsonParser().parse(jsonInput), 1000,
-                        1000, null, Utils.getCdiVersion2_3ForTests());
+                        1000, null, Utils.getCdiVersion2_2ForTests());
 
         assertEquals(response.entrySet().size(), 11);
 
@@ -231,7 +231,7 @@ public class HandshakeAPITest2_2 {
 
         JsonObject changedResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/handshake",
-                        new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_3ForTests());
+                        new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_2ForTests());
 
         assertEquals(changedResponse.entrySet().size(), 11);
 
