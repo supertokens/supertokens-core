@@ -8,6 +8,6 @@ labels: 'enhancement'
 
 (A clear and concise description of what the feature is.)
 
-## Motivation
+## Implementation details
 
-(Please outline the motivation for the proposal.)
+(Please outline any details about how this feature would e implemented. If you don't know, you can just skip this section.)
