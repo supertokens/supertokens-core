@@ -251,7 +251,7 @@ public class VerifySessionAPITest2_2 {
         JsonObject sessionInfo = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/session", sessionRequest, 1000, 1000, null,
-                        Utils.getCdiVersion2_3ForTests());
+                        Utils.getCdiVersion2_2ForTests());
 
         String sessionRemoveBodyString = "{" +
                 " sessionHandles : [ " + sessionInfo.get("session").getAsJsonObject().get("handle").getAsString() +
@@ -261,14 +261,14 @@ public class VerifySessionAPITest2_2 {
 
         io.supertokens.test.httpRequest.HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/session/remove", deleteRequest, 1000, 1000, null,
-                Utils.getCdiVersion2_3ForTests());
+                Utils.getCdiVersion2_2ForTests());
 
         JsonObject request = new JsonObject();
         request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
         request.addProperty("doAntiCsrfCheck", true);
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/verify", request, 1000,
-                        1000, null, Utils.getCdiVersion2_3ForTests());
+                        1000, null, Utils.getCdiVersion2_2ForTests());
 
         assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
         assertEquals(response.get("message").getAsString(), "Either the session has ended or has been blacklisted");

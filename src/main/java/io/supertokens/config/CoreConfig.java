@@ -68,6 +68,12 @@ public class CoreConfig {
     private String cookie_same_site = "lax";
 
     @JsonProperty
+    private boolean access_token_signing_key_dynamic = true;
+
+    @JsonProperty
+    private double access_token_signing_key_update_interval = 24; // in hours
+
+    @JsonProperty
     private int port = 3567;
 
     @JsonProperty
@@ -155,6 +161,14 @@ public class CoreConfig {
         return cookie_secure;
     }
 
+    public boolean getAccessTokenSigningKeyDynamic() {
+        return access_token_signing_key_dynamic;
+    }
+
+    public long getAccessTokenSigningKeyUpdateInterval() {
+        return (long) (access_token_signing_key_update_interval * 3600 * 1000);
+    }
+
     public int getSessionExpiredStatusCode() {
         return session_expired_status_code;
     }
@@ -215,6 +229,14 @@ public class CoreConfig {
                 throw new QuitProgramException(
                         "'refresh_token_validity' must be strictly greater than 'access_token_validity'. The config " +
                                 "file can be found here: " + getConfigFileLocation(main));
+            }
+        }
+
+        if (!Main.isTesting || validityTesting) { // since in testing we make this really small
+            if (access_token_signing_key_update_interval < 1 || access_token_signing_key_update_interval > 720) {
+                throw new QuitProgramException(
+                        "'access_token_signing_key_update_interval' must be between 1 and 720 hours inclusive. The " +
+                                "config file can be found here: " + getConfigFileLocation(main));
             }
         }
 
