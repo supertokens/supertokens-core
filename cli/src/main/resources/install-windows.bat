@@ -9,7 +9,4 @@ IF "%1" == "uninstall" (
 rmdir /S /Q "%st_install_loc%"
 del "%~f0"
 )
-IF "%1" == "update" (
-"%st_install_loc%.update"\supertokensExe.bat update-complete --originalInstallDir="%st_install_loc%\"
-)
 :eof
