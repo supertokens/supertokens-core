@@ -130,6 +130,7 @@ If you think this is a project you could use in the future, please :star2: this 
   </tr>
   <tr>
 <td align="center"><a href="https://github.com/metallicmonkey"><img src="https://avatars0.githubusercontent.com/u/10272154?s=460&u=b6f5daefe3f3ce49e9ed094043674a2c2718af73&v=4" width="100px;" alt=""/><br /><sub><b>metallicmonkey</b></sub></a></td>
+<td align="center"><a href="https://github.com/vidu171"><img src="https://avatars1.githubusercontent.com/u/25363324?s=460&u=8d3ccde95f49579e893c8c12db22cdcd0fea36cb&v=4" width="100px;" alt=""/><br /><sub><b>Vidhyanshu Jain</b></sub></a></td>
   </tr>
 </table>
 
