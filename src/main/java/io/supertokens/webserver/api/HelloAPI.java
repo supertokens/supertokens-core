@@ -34,6 +34,11 @@ public class HelloAPI extends WebserverAPI {
     }
 
     @Override
+    protected boolean versionNeeded() {
+        return false;
+    }
+
+    @Override
     public String getPath() {
         return "/hello";
     }
