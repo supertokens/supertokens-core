@@ -40,6 +40,10 @@ public abstract class WebserverAPI extends HttpServlet {
         supportedVersions.add("2.4");
     }
 
+    public static String getLatestCDIVersion() {
+        return "2.4";
+    }
+
     public WebserverAPI(Main main) {
         super();
         this.main = main;
@@ -172,8 +176,10 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected String getVersionFromRequest(HttpServletRequest req) {
         String version = req.getHeader("cdi-version");
-        // in api spec 1.0.X, we did not have cdi-version header
-        return version == null ? "1.0" : version;
+        if (version == null) {
+            version = getLatestCDIVersion();
+        }
+        return version;
     }
 
     protected static class BadRequestException extends Exception {

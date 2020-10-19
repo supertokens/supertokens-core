@@ -116,7 +116,7 @@ public class WebserverTest extends Mockito {
 
     }
 
-    // * - Give no version and makes sure it treats it as 1.0
+    // * - Give no version and makes sure it treats it as the latest
     @Test
     public void testNoVersionGiven() throws Exception {
         String[] args = {"../"};
@@ -142,7 +142,7 @@ public class WebserverTest extends Mockito {
         String response = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/defaultVersion", null, 1000, 1000,
                         null, null);
-        assertEquals(response, "1.0");
+        assertEquals(response, Utils.getCdiVersionLatestForTests());
     }
 
     @Test

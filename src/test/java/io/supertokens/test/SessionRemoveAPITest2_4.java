@@ -21,7 +21,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.test.httpRequest.HttpRequest;
-import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -142,29 +141,6 @@ public class SessionRemoveAPITest2_4 {
 
     }
 
-    @Test
-    public void testThatVersion1IsUnsupportedForSessionRemovePOST() throws Exception {
-        String[] args = {"../"};
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        try {
-            HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/remove", null, 1000,
-                            1000, null, "1.0");
-            fail();
-        } catch (HttpResponseException e) {
-            assertEquals(
-                    "Http error. Status Code: 400. Message: /session/remove POST is only available in >= CDI 2.0. " +
-                            "Please call /session DELETE instead",
-                    e.getMessage());
-        }
-
-        process.kill();
-
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
 
     @Test
     public void testRevoking1SessionUsingSessionHandle() throws Exception {

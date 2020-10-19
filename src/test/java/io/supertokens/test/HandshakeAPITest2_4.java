@@ -96,7 +96,7 @@ public class HandshakeAPITest2_4 {
                         1000, 1000,
                         null, Utils.getCdiVersion2_4ForTests());
         checkHandshakeAPIResponse(handshakeResponse, process);
-        assertEquals(handshakeResponse.entrySet().size(), 11);
+        assertEquals(handshakeResponse.entrySet().size(), 7);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -133,7 +133,7 @@ public class HandshakeAPITest2_4 {
                         1000, 1000,
                         null, Utils.getCdiVersion2_4ForTests());
         checkHandshakeAPIResponse(handshakeResponse, process);
-        assertEquals(handshakeResponse.entrySet().size(), 12);
+        assertEquals(handshakeResponse.entrySet().size(), 7);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -165,7 +165,7 @@ public class HandshakeAPITest2_4 {
                         new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_4ForTests());
 
 
-        assertEquals(response.entrySet().size(), 11);
+        assertEquals(response.entrySet().size(), 7);
 
         assertEquals(response.get("jwtSigningPublicKey").getAsString(),
                 AccessTokenSigningKey.getInstance(process.getProcess()).getKey().publicKey);
@@ -176,7 +176,7 @@ public class HandshakeAPITest2_4 {
                 .HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/handshake",
                         new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_4ForTests());
 
-        assertEquals(changedResponse.entrySet().size(), 11);
+        assertEquals(changedResponse.entrySet().size(), 7);
 
         //check that changed response has the same signing key as the current signing key and it is different from
         // the previous signing key
@@ -210,10 +210,14 @@ public class HandshakeAPITest2_4 {
                 Config.getConfig(process.getProcess()).getEnableAntiCSRF());
 
         //check accessTokenBlacklistingEnabled
-        assertEquals(response.get("accessTokenBlacklistingEnable").getAsBoolean(),
+        assertEquals(response.get("accessTokenBlacklistingEnabled").getAsBoolean(),
                 Config.getConfig(process.getProcess()).getAccessTokenBlacklisting());
 
-        // TODO: add more checks for new values.
+        assertEquals(response.get("accessTokenValidity").getAsLong(),
+                Config.getConfig(process.getProcess()).getAccessTokenValidity());
+
+        assertEquals(response.get("refreshTokenValidity").getAsLong(),
+                Config.getConfig(process.getProcess()).getRefreshTokenValidity());
     }
 
 }

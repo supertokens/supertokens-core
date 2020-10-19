@@ -152,7 +152,7 @@ public class DotStartedFileTest {
         String[] args = {"../"};
         String installDir = "../";
 
-        Utils.setValueInConfig("cookie_same_site", "none");
+        Utils.setValueInConfig("access_token_validity", "-1");
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE));

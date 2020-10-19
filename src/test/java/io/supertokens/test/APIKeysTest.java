@@ -388,21 +388,17 @@ public class APIKeysTest {
         assertTrue(response.get("accessToken").getAsJsonObject().has("token"));
         assertTrue(response.get("accessToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("accessToken").getAsJsonObject().has("createdTime"));
-        assertTrue(response.get("accessToken").getAsJsonObject().has("cookiePath"));
-        assertTrue(response.get("accessToken").getAsJsonObject().has("cookieSecure"));
-        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 7);
+        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 3);
 
         assertTrue(response.get("refreshToken").getAsJsonObject().has("token"));
         assertTrue(response.get("refreshToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("refreshToken").getAsJsonObject().has("createdTime"));
-        assertTrue(response.get("refreshToken").getAsJsonObject().has("cookiePath"));
-        assertTrue(response.get("refreshToken").getAsJsonObject().has("cookieSecure"));
-        assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 7);
+        assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 3);
 
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("token"));
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("createdTime"));
-        assertEquals(response.get("idRefreshToken").getAsJsonObject().entrySet().size(), 7);
+        assertEquals(response.get("idRefreshToken").getAsJsonObject().entrySet().size(), 3);
 
         assertTrue(response.has("jwtSigningPublicKey"));
         assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));

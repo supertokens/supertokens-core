@@ -49,37 +49,6 @@ public class ConfigTest {
         Utils.reset();
     }
 
-    @Test
-    public void testThatSameSiteNoneNeedsAntiCSRF() throws Exception {
-        String[] args = {"../"};
-        Utils.setValueInConfig("cookie_same_site", "none");
-        TestingProcess process = TestingProcessManager.start(args);
-        EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
-        assertNotNull(e);
-        assertEquals(e.exception.getMessage(),
-                "please set 'enable_anti_csrf' to true if 'cookie_same_site' is set to 'none'");
-
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-    }
-
-
-    //- test for session_expired_status_code config -> default is 401; range is >= 400, < 600;
-    @Test
-    public void testSessionExpiredStatusCodeRangeInConfig() throws Exception {
-        String[] args = {"../"};
-        Utils.setValueInConfig("session_expired_status_code", "1000");
-        TestingProcess process = TestingProcessManager.start(args);
-        EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
-        assertNotNull(e);
-        assertEquals(e.exception.getMessage(),
-                "'session_expired_status_code' must be a value between 400 and 599, inclusive");
-
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-    }
 
     @Test
     public void testThatDefaultConfigLoadsCorrectly() throws Exception {
@@ -192,21 +161,6 @@ public class ConfigTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
 
-    }
-
-    @Test
-    public void testThatInvalidSameSiteWillThrowAnError() throws Exception {
-        String[] args = {"../"};
-        Utils.setValueInConfig("cookie_same_site", "random");
-        TestingProcess process = TestingProcessManager.start(args);
-        ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
-        assertNotNull(e);
-
-        assertEquals(e.exception.getMessage(),
-                "'cookie_same_site' must be either \"none\", \"strict\" or \"lax\"");
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
 

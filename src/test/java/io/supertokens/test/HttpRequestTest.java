@@ -65,6 +65,11 @@ public class HttpRequestTest {
             private static final long serialVersionUID = -7347714438908490973L;
 
             @Override
+            protected boolean checkAPIKey() {
+                return false;
+            }
+
+            @Override
             public String getPath() {
                 return "/jsonResponse";
             }
@@ -147,6 +152,11 @@ public class HttpRequestTest {
             private static final long serialVersionUID = -5953383281218376801L;
 
             @Override
+            protected boolean checkAPIKey() {
+                return false;
+            }
+
+            @Override
             public String getPath() {
                 return "/nonJsonResponse";
             }
@@ -217,6 +227,11 @@ public class HttpRequestTest {
         //error request api
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
             private static final long serialVersionUID = -9210034480396407612L;
+
+            @Override
+            protected boolean checkAPIKey() {
+                return false;
+            }
 
             @Override
             public String getPath() {
@@ -305,6 +320,11 @@ public class HttpRequestTest {
         //api to check with Body
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
             private static final long serialVersionUID = 6527072853102511509L;
+
+            @Override
+            protected boolean checkAPIKey() {
+                return false;
+            }
 
             @Override
             public String getPath() {
@@ -516,6 +536,11 @@ public class HttpRequestTest {
             private static final long serialVersionUID = 1L;
 
             @Override
+            protected boolean checkAPIKey() {
+                return false;
+            }
+
+            @Override
             public String getPath() {
                 return "/withVersion";
             }
@@ -695,6 +720,11 @@ public class HttpRequestTest {
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
 
             private static final long serialVersionUID = 1L;
+
+            @Override
+            protected boolean checkAPIKey() {
+                return false;
+            }
 
             @Override
             public String getPath() {

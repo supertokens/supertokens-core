@@ -467,18 +467,18 @@ public class RefreshSessionAPITest2_4 {
         assertTrue(response.get("accessToken").getAsJsonObject().has("token"));
         assertTrue(response.get("accessToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("accessToken").getAsJsonObject().has("createdTime"));
-        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 6);
+        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 3);
 
         assertTrue(response.get("refreshToken").getAsJsonObject().has("token"));
         assertTrue(response.get("refreshToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("refreshToken").getAsJsonObject().has("createdTime"));
-        assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 6);
+        assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 3);
 
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("token"));
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("createdTime"));
 
-        assertEquals(response.get("idRefreshToken").getAsJsonObject().entrySet().size(), 6);
+        assertEquals(response.get("idRefreshToken").getAsJsonObject().entrySet().size(), 3);
 
         assertEquals(response.has("antiCsrfToken"), hasAntiCsrf);
 

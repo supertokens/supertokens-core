@@ -137,11 +137,8 @@ public class VerifySessionAPITest2_4 {
         assertTrue(response.get("accessToken").getAsJsonObject().has("token"));
         assertTrue(response.get("accessToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("accessToken").getAsJsonObject().has("createdTime"));
-        assertTrue(response.get("accessToken").getAsJsonObject().has("cookiePath"));
-        assertTrue(response.get("accessToken").getAsJsonObject().has("cookieSecure"));
-        assertNull(response.get("accessToken").getAsJsonObject().get("domain"));
 
-        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 6);
+        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 3);
 
         assertNotNull(response.get("jwtSigningPublicKey").getAsString());
         assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));
@@ -199,10 +196,8 @@ public class VerifySessionAPITest2_4 {
         assertTrue(response.get("accessToken").getAsJsonObject().has("token"));
         assertTrue(response.get("accessToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("accessToken").getAsJsonObject().has("createdTime"));
-        assertTrue(response.get("accessToken").getAsJsonObject().has("cookiePath"));
-        assertTrue(response.get("accessToken").getAsJsonObject().has("cookieSecure"));
 
-        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 7);
+        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 3);
 
         assertNotNull(response.get("jwtSigningPublicKey").getAsString());
         assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));
