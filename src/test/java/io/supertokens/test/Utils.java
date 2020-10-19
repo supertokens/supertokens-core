@@ -18,6 +18,7 @@ package io.supertokens.test;
 
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
+import io.supertokens.webserver.WebserverAPI;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
@@ -61,20 +62,12 @@ abstract class Utils extends Mockito {
         }
     }
 
-    static String getCdiVersion1ForTests() {
-        return "1.0";
+    static String getCdiVersion2_4ForTests() {
+        return "2.4";
     }
 
-    static String getCdiVersion2ForTests() {
-        return "2.1";
-    }
-
-    static String getCdiVersion2_2ForTests() {
-        return "2.2";
-    }
-
-    static String getCdiVersion2_3ForTests() {
-        return "2.3";
+    static String getCdiVersionLatestForTests() {
+        return WebserverAPI.getLatestCDIVersion();
     }
 
     public static void reset() {

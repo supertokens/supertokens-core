@@ -18,10 +18,8 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.config.Config;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.test.httpRequest.HttpRequest;
-import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -31,7 +29,7 @@ import org.junit.rules.TestRule;
 import static org.junit.Assert.*;
 
 
-public class SessionRegenerateAPITest {
+public class SessionRegenerateAPITest2_4 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -66,7 +64,7 @@ public class SessionRegenerateAPITest {
 
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
-                        null, Utils.getCdiVersion2ForTests());
+                        null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
@@ -82,7 +80,7 @@ public class SessionRegenerateAPITest {
 
         JsonObject sessionRegenerateResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/regenerate",
-                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2ForTests());
+                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_4ForTests());
 
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
 
@@ -97,16 +95,6 @@ public class SessionRegenerateAPITest {
 
         assertEquals(accessTokenBefore.expiryTime, accessTokenAfter.expiryTime);
         assertNotEquals(accessTokenBefore.lmrt, accessTokenAfter.lmrt);
-
-        //all other cookie attributes
-        assertEquals(sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("cookiePath").getAsString(),
-                Config.getConfig(process.getProcess()).getAccessTokenPath());
-        assertEquals(sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("cookieSecure").getAsBoolean(),
-                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
-        assertEquals(sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("domain").getAsString(),
-                Config.getConfig(process.getProcess()).getCookieDomain(Utils.getCdiVersion2ForTests()));
-        assertEquals(sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("sameSite").getAsString(),
-                Config.getConfig(process.getProcess()).getCookieSameSite());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -140,7 +128,7 @@ public class SessionRegenerateAPITest {
 
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
-                        null, Utils.getCdiVersion2ForTests());
+                        null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
@@ -158,7 +146,7 @@ public class SessionRegenerateAPITest {
 
         JsonObject sessionRegenerateResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/regenerate",
-                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2ForTests());
+                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
 
         //session object and all has new payload info
@@ -199,7 +187,7 @@ public class SessionRegenerateAPITest {
 
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
-                        null, Utils.getCdiVersion2ForTests());
+                        null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
@@ -211,7 +199,7 @@ public class SessionRegenerateAPITest {
 
         JsonObject sessionRemovedResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/remove",
-                        removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2ForTests());
+                        removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionRemovedResponse.get("status").getAsString(), "OK");
 
 
@@ -225,21 +213,10 @@ public class SessionRegenerateAPITest {
 
         JsonObject sessionRegenerateResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/regenerate",
-                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2ForTests());
+                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_4ForTests());
 
         //throws UNAUTHORISED response.
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "UNAUTHORISED");
-
-        // - check that not supported CDI 1.0
-        try {
-            HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/regenerate",
-                            sessionRegenerateRequest, 1000, 1000, null, null);
-            fail();
-        } catch (HttpResponseException e) {
-            assertEquals(e.statusCode, 400);
-            assertEquals(e.getMessage(), "Http error. Status Code: 400. Message: CDI version not supported");
-        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

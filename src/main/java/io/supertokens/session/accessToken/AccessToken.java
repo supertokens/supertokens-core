@@ -29,7 +29,6 @@ import io.supertokens.session.info.TokenInfo;
 import io.supertokens.session.jwt.JWT;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.utils.Utils;
-import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -105,7 +104,7 @@ public class AccessToken {
                                                  @Nonnull String userId, @Nonnull String refreshTokenHash1,
                                                  @Nullable String parentRefreshTokenHash1,
                                                  @Nonnull JsonObject userData, @Nullable String antiCsrfToken,
-                                                 long lmrt, @Nullable Long expiryTime, @Nullable String currCDIVersion)
+                                                 long lmrt, @Nullable Long expiryTime)
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
 
@@ -117,22 +116,8 @@ public class AccessToken {
         AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime,
                 parentRefreshTokenHash1, userData, antiCsrfToken, now, lmrt);
         String token = JWT.createJWT(new Gson().toJsonTree(accessToken), signingKey.privateKey, VERSION.V2);
-        return new TokenInfo(token, expiryTime, now, Config.getConfig(main).getAccessTokenPath(),
-                Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain(currCDIVersion),
-                Config.getConfig(main).getCookieSameSite());
+        return new TokenInfo(token, expiryTime, now);
 
-    }
-
-    @TestOnly
-    public static TokenInfo createNewAccessToken(@Nonnull Main main, @Nonnull String sessionHandle,
-                                                 @Nonnull String userId, @Nonnull String refreshTokenHash1,
-                                                 @Nullable String parentRefreshTokenHash1,
-                                                 @Nonnull JsonObject userData, @Nullable String antiCsrfToken,
-                                                 long lmrt, @Nullable Long expiryTime)
-            throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
-            NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
-        return createNewAccessToken(main, sessionHandle, userId, refreshTokenHash1, parentRefreshTokenHash1, userData,
-                antiCsrfToken, lmrt, expiryTime, null);
     }
 
     public static TokenInfo createNewAccessTokenV1(@Nonnull Main main, @Nonnull String sessionHandle,
@@ -153,9 +138,7 @@ public class AccessToken {
 
 
         String token = JWT.createJWT(new Gson().toJsonTree(accessToken), signingKey.privateKey, VERSION.V1);
-        return new TokenInfo(token, expiryTime, now, Config.getConfig(main).getAccessTokenPath(),
-                Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain("1.0"),
-                Config.getConfig(main).getCookieSameSite());
+        return new TokenInfo(token, expiryTime, now);
 
     }
 

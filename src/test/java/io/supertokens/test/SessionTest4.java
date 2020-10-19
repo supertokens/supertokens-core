@@ -18,7 +18,6 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.config.Config;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
@@ -44,7 +43,6 @@ import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 
 import static junit.framework.TestCase.*;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class SessionTest4 {
@@ -163,150 +161,6 @@ public class SessionTest4 {
 
     }
 
-    @Test
-    public void checkingWithDifferentCookiePathAndDomain()
-            throws IOException, InterruptedException, StorageQueryException, NoSuchAlgorithmException,
-            InvalidKeyException, InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
-            InvalidKeySpecException, IllegalBlockSizeException, StorageTransactionLogicException, UnauthorisedException,
-            TokenTheftDetectedException, TryRefreshTokenException, SignatureException {
-        Utils.setValueInConfig("refresh_api_path", "/refreshPath");
-        Utils.setValueInConfig("access_token_path", "/accessPath");
-        Utils.setValueInConfig("cookie_domain", "localhost");
-
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String userId = "userId";
-        JsonObject userDataInJWT = new JsonObject();
-        userDataInJWT.addProperty("key", "value");
-        JsonObject userDataInDatabase = new JsonObject();
-        userDataInDatabase.addProperty("key", "value");
-
-        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase);
-
-        assert sessionInfo.accessToken != null;
-        assert sessionInfo.refreshToken != null;
-        assertEquals(sessionInfo.accessToken.cookiePath, "/accessPath");
-        assertEquals(sessionInfo.accessToken.domain, "localhost");
-        assert sessionInfo.accessToken.cookieSecure != null;
-        assertEquals((boolean) sessionInfo.accessToken.cookieSecure,
-                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
-        assertEquals(sessionInfo.refreshToken.cookiePath, "/refreshPath");
-        assertEquals(sessionInfo.refreshToken.domain, "localhost");
-        assert sessionInfo.refreshToken.cookieSecure != null;
-        assertEquals((boolean) sessionInfo.refreshToken.cookieSecure,
-                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
-        assertNull(sessionInfo.antiCsrfToken);
-        assert sessionInfo.idRefreshToken != null;
-        assert sessionInfo.idRefreshToken.cookieSecure != null;
-
-
-        SessionInformationHolder refreshedSession = Session
-                .refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
-
-        assert refreshedSession.accessToken != null;
-        assert refreshedSession.refreshToken != null;
-        assertNotEquals(refreshedSession.idRefreshToken, sessionInfo.idRefreshToken);
-        assertNotEquals(refreshedSession.accessToken.token, sessionInfo.accessToken.token);
-        assertNotEquals(refreshedSession.refreshToken.token, sessionInfo.refreshToken.token);
-        assertEquals(refreshedSession.session.handle, sessionInfo.session.handle);
-        assertEquals(refreshedSession.session.userId, sessionInfo.session.userId);
-        assertEquals(refreshedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
-        assertEquals(refreshedSession.accessToken.cookiePath, "/accessPath");
-        assertEquals(refreshedSession.accessToken.domain, "localhost");
-        assert refreshedSession.accessToken.cookieSecure != null;
-        assertEquals((boolean) refreshedSession.accessToken.cookieSecure,
-                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
-        assertEquals(refreshedSession.refreshToken.cookiePath, "/refreshPath");
-        assertEquals(refreshedSession.refreshToken.domain, "localhost");
-        assert refreshedSession.refreshToken.cookieSecure != null;
-        assertFalse(refreshedSession.refreshToken.cookieSecure);
-        assert refreshedSession.idRefreshToken != null;
-        assert refreshedSession.idRefreshToken.cookieSecure != null;
-
-        SessionInformationHolder newSession = Session.getSession(process.getProcess(),
-                refreshedSession.accessToken.token, refreshedSession.antiCsrfToken, true);
-
-        assert newSession.accessToken != null;
-        assertNotEquals(newSession.accessToken.token, refreshedSession.accessToken.token);
-        assertNotEquals(newSession.accessToken.expiry, refreshedSession.accessToken.expiry);
-        assertNotEquals(newSession.accessToken.createdTime, refreshedSession.accessToken.createdTime);
-        assertEquals(newSession.session.userDataInJWT.toString(), refreshedSession.session.userDataInJWT.toString());
-        assertEquals(newSession.accessToken.cookiePath, "/accessPath");
-        assertEquals(newSession.accessToken.domain, "localhost");
-        assert newSession.accessToken.cookieSecure != null;
-        assertFalse(newSession.accessToken.cookieSecure);
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void checkingWithCookieSecureFalse()
-            throws IOException, InterruptedException, StorageQueryException, NoSuchAlgorithmException,
-            InvalidKeyException, InvalidAlgorithmParameterException, NoSuchPaddingException, BadPaddingException,
-            InvalidKeySpecException, IllegalBlockSizeException, StorageTransactionLogicException, UnauthorisedException,
-            TokenTheftDetectedException, TryRefreshTokenException, SignatureException {
-        Utils.setValueInConfig("cookie_secure", "false");
-
-        String[] args = {"../"};
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String userId = "userId";
-        JsonObject userDataInJWT = new JsonObject();
-        userDataInJWT.addProperty("key", "value");
-        JsonObject userDataInDatabase = new JsonObject();
-        userDataInDatabase.addProperty("key", "value");
-
-        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase);
-
-        assert sessionInfo.accessToken != null;
-        assert sessionInfo.refreshToken != null;
-        assert sessionInfo.accessToken.cookieSecure != null;
-        assertFalse(sessionInfo.accessToken.cookieSecure);
-        assert sessionInfo.refreshToken.cookieSecure != null;
-        assertFalse(sessionInfo.refreshToken.cookieSecure);
-        assertNull(sessionInfo.antiCsrfToken);
-        assert sessionInfo.idRefreshToken != null;
-        assert sessionInfo.idRefreshToken.cookieSecure != null;
-
-        SessionInformationHolder refreshedSession = Session
-                .refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
-
-        assert refreshedSession.accessToken != null;
-        assert refreshedSession.refreshToken != null;
-        assertNotEquals(refreshedSession.idRefreshToken, sessionInfo.idRefreshToken);
-        assertNotEquals(refreshedSession.accessToken.token, sessionInfo.accessToken.token);
-        assertNotEquals(refreshedSession.refreshToken.token, sessionInfo.refreshToken.token);
-        assertEquals(refreshedSession.session.handle, sessionInfo.session.handle);
-        assertEquals(refreshedSession.session.userId, sessionInfo.session.userId);
-        assertEquals(refreshedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
-        assert refreshedSession.accessToken.cookieSecure != null;
-        assertFalse(refreshedSession.accessToken.cookieSecure);
-        assert refreshedSession.refreshToken.cookieSecure != null;
-        assertFalse(refreshedSession.refreshToken.cookieSecure);
-        assert refreshedSession.idRefreshToken != null;
-        assert refreshedSession.idRefreshToken.cookieSecure != null;
-
-        SessionInformationHolder newSession = Session.getSession(process.getProcess(),
-                refreshedSession.accessToken.token, refreshedSession.antiCsrfToken, true);
-
-        assert newSession.accessToken != null;
-        assertNotEquals(newSession.accessToken.token, refreshedSession.accessToken.token);
-        assertNotEquals(newSession.accessToken.expiry, refreshedSession.accessToken.expiry);
-        assertNotEquals(newSession.accessToken.createdTime, refreshedSession.accessToken.createdTime);
-        assertEquals(newSession.session.userDataInJWT.toString(), refreshedSession.session.userDataInJWT.toString());
-        assert newSession.accessToken.cookieSecure != null;
-        assert newSession.accessToken.domain == null;
-        assertFalse(newSession.accessToken.cookieSecure);
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
 
     @Test
     public void createVerifyRefreshVerifyRefresh() throws InterruptedException, StorageQueryException,

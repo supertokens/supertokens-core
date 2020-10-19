@@ -31,7 +31,7 @@ import java.util.HashMap;
 import static org.junit.Assert.*;
 
 
-public class SessionUserAPITest2_2 {
+public class SessionUserAPITest2_4 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -57,7 +57,7 @@ public class SessionUserAPITest2_2 {
         try {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/session/user", null, 1000, 1000,
-                            null, Utils.getCdiVersion2_2ForTests());
+                            null, Utils.getCdiVersion2_4ForTests());
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -71,7 +71,7 @@ public class SessionUserAPITest2_2 {
         try {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/session/user", map, 1000, 1000,
-                            null, Utils.getCdiVersion2_2ForTests());
+                            null, Utils.getCdiVersion2_4ForTests());
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -108,7 +108,7 @@ public class SessionUserAPITest2_2 {
 
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/session/user", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(0, response.get("sessionHandles").getAsJsonArray().size());
@@ -117,7 +117,7 @@ public class SessionUserAPITest2_2 {
         JsonObject sessionCreatedResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session",
                         new JsonParser().parse(createSessionJsonInput).getAsJsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals("OK", sessionCreatedResponse.get("status").getAsString());
 
@@ -125,7 +125,7 @@ public class SessionUserAPITest2_2 {
         map.put("userId", "UserID");
         response = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/session/user", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.entrySet().size(), 2);
@@ -139,7 +139,7 @@ public class SessionUserAPITest2_2 {
         JsonObject sessionCreatedResponse1 = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session",
                         new JsonParser().parse(createSessionJsonInput).getAsJsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals(sessionCreatedResponse1.get("status").getAsString(), "OK");
 
@@ -147,13 +147,13 @@ public class SessionUserAPITest2_2 {
         JsonObject sessionCreatedResponse2 = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session",
                         new JsonParser().parse(createSessionJsonInput).getAsJsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals(sessionCreatedResponse2.get("status").getAsString(), "OK");
 
         JsonObject multiResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/session/user", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals(multiResponse.get("status").getAsString(), "OK");
         assertEquals(multiResponse.entrySet().size(), 2);
@@ -219,7 +219,7 @@ public class SessionUserAPITest2_2 {
         JsonObject user1Response1 = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session",
                         new JsonParser().parse(userJsonInput1).getAsJsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals("OK", user1Response1.get("status").getAsString());
 
@@ -227,7 +227,7 @@ public class SessionUserAPITest2_2 {
         JsonObject user1Response2 = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session",
                         new JsonParser().parse(userJsonInput1).getAsJsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals("OK", user1Response2.get("status").getAsString());
 
@@ -235,7 +235,7 @@ public class SessionUserAPITest2_2 {
         JsonObject user1Response3 = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session",
                         new JsonParser().parse(userJsonInput1).getAsJsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals("OK", user1Response3.get("status").getAsString());
 
@@ -247,7 +247,7 @@ public class SessionUserAPITest2_2 {
         JsonObject user2Response1 = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session",
                         new JsonParser().parse(userJsonInput2).getAsJsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals("OK", user2Response1.get("status").getAsString());
 
@@ -256,7 +256,7 @@ public class SessionUserAPITest2_2 {
         JsonObject user2Response2 = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session",
                         new JsonParser().parse(userJsonInput2).getAsJsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals("OK", user2Response2.get("status").getAsString());
 
@@ -265,7 +265,7 @@ public class SessionUserAPITest2_2 {
         JsonObject user2Response3 = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session",
                         new JsonParser().parse(userJsonInput2).getAsJsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals("OK", user2Response3.get("status").getAsString());
 
@@ -277,7 +277,7 @@ public class SessionUserAPITest2_2 {
         JsonObject user3Response1 = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session",
                         new JsonParser().parse(userJsonInput3).getAsJsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals("OK", user3Response1.get("status").getAsString());
 
@@ -286,7 +286,7 @@ public class SessionUserAPITest2_2 {
         JsonObject user3Response2 = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session",
                         new JsonParser().parse(userJsonInput3).getAsJsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals("OK", user3Response2.get("status").getAsString());
 
@@ -295,7 +295,7 @@ public class SessionUserAPITest2_2 {
         JsonObject user3Response3 = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session",
                         new JsonParser().parse(userJsonInput3).getAsJsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals("OK", user3Response3.get("status").getAsString());
 
@@ -306,7 +306,7 @@ public class SessionUserAPITest2_2 {
 
         JsonObject multiResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/session/user", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
 
         assertEquals("OK", multiResponse.get("status").getAsString());
         assertEquals(multiResponse.get("sessionHandles").getAsJsonArray().size(), 3);
@@ -324,7 +324,7 @@ public class SessionUserAPITest2_2 {
 
         multiResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/session/user", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
         assertEquals("OK", multiResponse.get("status").getAsString());
 
         sessionArray = multiResponse.get("sessionHandles").getAsJsonArray();
@@ -339,7 +339,7 @@ public class SessionUserAPITest2_2 {
 
         multiResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/session/user", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_2ForTests());
+                        Utils.getCdiVersion2_4ForTests());
         assertEquals("OK", multiResponse.get("status").getAsString());
 
         sessionArray = multiResponse.get("sessionHandles").getAsJsonArray();

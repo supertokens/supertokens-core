@@ -21,8 +21,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.utils.Utils;
-import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.IOException;
@@ -40,16 +38,11 @@ public class CoreConfig {
     private boolean access_token_blacklisting = false;
 
     @JsonProperty
-    private String access_token_path = "/";
-
-    @JsonProperty
     private boolean enable_anti_csrf = false;
 
     @JsonProperty
     private double refresh_token_validity = 60 * 2400; // in mins
 
-    @JsonProperty
-    private String refresh_api_path = "/session/refresh";
 
     private final String logDefault = "asdkfahbdfk3kjHS";
     @JsonProperty
@@ -57,15 +50,6 @@ public class CoreConfig {
 
     @JsonProperty
     private String error_log_path = logDefault;
-
-    @JsonProperty
-    private String cookie_domain = null; // default is null meaning that it gets set to whatever their API layer is.
-
-    @JsonProperty
-    private Boolean cookie_secure = false;
-
-    @JsonProperty
-    private String cookie_same_site = "lax";
 
     @JsonProperty
     private boolean access_token_signing_key_dynamic = true;
@@ -81,9 +65,6 @@ public class CoreConfig {
 
     @JsonProperty
     private int max_server_pool_size = 10;
-
-    @JsonProperty
-    private int session_expired_status_code = 401;
 
     @JsonProperty
     private String api_keys = null;
@@ -108,10 +89,6 @@ public class CoreConfig {
         return access_token_blacklisting;
     }
 
-    public String getAccessTokenPath() {
-        return access_token_path;
-    }
-
     public boolean getEnableAntiCSRF() {
         return enable_anti_csrf;
     }
@@ -120,13 +97,6 @@ public class CoreConfig {
         return (long) (refresh_token_validity * 60 * 1000);
     }
 
-    public String getRefreshAPIPath() {
-        return refresh_api_path;
-    }
-
-    public String getCookieSameSite() {
-        return cookie_same_site.toLowerCase();
-    }
 
     public String getInfoLogPath(Main main) {
         if (info_log_path == null || info_log_path.equalsIgnoreCase("null")) {
@@ -150,27 +120,12 @@ public class CoreConfig {
         return error_log_path;
     }
 
-    public String getCookieDomain(@Nullable String currCDIVersion) {
-        if (cookie_domain == null && Utils.CDIVersionNeedsToHaveCookieDomain(currCDIVersion)) {
-            return "localhost";
-        }
-        return cookie_domain;
-    }
-
-    public boolean getCookieSecure(Main main) {
-        return cookie_secure;
-    }
-
     public boolean getAccessTokenSigningKeyDynamic() {
         return access_token_signing_key_dynamic;
     }
 
     public long getAccessTokenSigningKeyUpdateInterval() {
         return (long) (access_token_signing_key_update_interval * 3600 * 1000);
-    }
-
-    public int getSessionExpiredStatusCode() {
-        return session_expired_status_code;
     }
 
     public String[] getAPIKeys() {
@@ -245,20 +200,6 @@ public class CoreConfig {
                     getConfigFileLocation(main));
         }
 
-        if (!cookie_same_site.toLowerCase().equals("none") && !cookie_same_site.toLowerCase().equals("lax") &&
-                !cookie_same_site.toLowerCase().equals("strict")) {
-            throw new QuitProgramException("'cookie_same_site' must be either \"none\", \"strict\" or \"lax\"");
-        }
-
-        if (session_expired_status_code < 400 || session_expired_status_code >= 600) {
-            throw new QuitProgramException(
-                    "'session_expired_status_code' must be a value between 400 and 599, inclusive");
-        }
-
-        if (cookie_same_site.toLowerCase().equals("none") && !enable_anti_csrf) {
-            throw new QuitProgramException(
-                    "please set 'enable_anti_csrf' to true if 'cookie_same_site' is set to 'none'");
-        }
 
         if (api_keys != null) {
             String[] keys = api_keys.split(",");

@@ -24,7 +24,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.utils.Utils;
-import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -69,12 +68,13 @@ public class RefreshToken {
         }
     }
 
+
     public static TokenInfo createNewRefreshToken(@Nonnull Main main, @Nonnull String sessionHandle,
                                                   @Nonnull String userId, @Nullable String parentRefreshTokenHash1,
-                                                  @Nullable String antiCsrfToken, @Nullable String currCDIVersion)
-            throws NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException,
-            NoSuchPaddingException, InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException,
-            InvalidKeyException, InvalidKeySpecException {
+                                                  @Nullable String antiCsrfToken)
+            throws NoSuchAlgorithmException, StorageQueryException, NoSuchPaddingException, InvalidKeyException,
+            IllegalBlockSizeException, BadPaddingException, StorageTransactionLogicException,
+            InvalidAlgorithmParameterException, InvalidKeySpecException {
         String key = RefreshTokenKey.getInstance(main).getKey();
         String nonce = Utils.hashSHA256(UUID.randomUUID().toString());
         RefreshTokenPayload payload = new RefreshTokenPayload(sessionHandle, userId, parentRefreshTokenHash1, nonce,
@@ -83,20 +83,7 @@ public class RefreshToken {
         String encryptedPayload = Utils.encrypt(payloadSerialised, key);
         String token = encryptedPayload + "." + nonce + "." + TYPE.FREE_OPTIMISED.toString();
         long now = System.currentTimeMillis();
-        return new TokenInfo(token, now + Config.getConfig(main).getRefreshTokenValidity(), now,
-                Config.getConfig(main).getRefreshAPIPath(),
-                Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain(currCDIVersion),
-                Config.getConfig(main).getCookieSameSite());
-    }
-
-    @TestOnly
-    public static TokenInfo createNewRefreshToken(@Nonnull Main main, @Nonnull String sessionHandle,
-                                                  @Nonnull String userId, @Nullable String parentRefreshTokenHash1,
-                                                  @Nullable String antiCsrfToken)
-            throws NoSuchAlgorithmException, StorageQueryException, NoSuchPaddingException, InvalidKeyException,
-            IllegalBlockSizeException, BadPaddingException, StorageTransactionLogicException,
-            InvalidAlgorithmParameterException, InvalidKeySpecException {
-        return createNewRefreshToken(main, sessionHandle, userId, parentRefreshTokenHash1, antiCsrfToken, null);
+        return new TokenInfo(token, now + Config.getConfig(main).getRefreshTokenValidity(), now);
     }
 
 

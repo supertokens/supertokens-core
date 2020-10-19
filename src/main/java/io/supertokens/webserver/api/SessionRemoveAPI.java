@@ -44,12 +44,6 @@ public class SessionRemoveAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        if (super.getVersionFromRequest(req).equals("1.0")) {
-            throw new ServletException(
-                    new BadRequestException(
-                            "/session/remove POST is only available in >= CDI 2.0. Please call /session DELETE " +
-                                    "instead"));
-        }
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", true);

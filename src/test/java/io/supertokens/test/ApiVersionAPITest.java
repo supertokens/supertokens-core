@@ -104,7 +104,7 @@ public class ApiVersionAPITest {
         apiVersionResponse = HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000,
                         null,
-                        Utils.getCdiVersion2ForTests());
+                        Utils.getCdiVersionLatestForTests());
         assertNotNull(apiVersionResponse.getAsJsonArray("versions"));
         assertTrue(apiVersionResponse.getAsJsonArray("versions").size() >= 1);
 
