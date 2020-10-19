@@ -21,7 +21,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.config.Config;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
@@ -134,13 +133,10 @@ public class InMemoryDBTest {
 
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
         assert sessionInfo.idRefreshToken != null;
-        assert sessionInfo.idRefreshToken.cookieSecure != null;
-        assert sessionInfo.idRefreshToken.cookiePath != null;
-        assert sessionInfo.idRefreshToken.domain == null;
 
         SessionInformationHolder verifiedSession = Session.getSession(process.getProcess(),
                 sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, true);
@@ -180,7 +176,7 @@ public class InMemoryDBTest {
 
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -258,7 +254,7 @@ public class InMemoryDBTest {
 
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -303,7 +299,7 @@ public class InMemoryDBTest {
 
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -351,7 +347,7 @@ public class InMemoryDBTest {
 
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -416,19 +412,7 @@ public class InMemoryDBTest {
         assertEquals(refreshedSession.session.handle, sessionInfo.session.handle);
         assertEquals(refreshedSession.session.userId, sessionInfo.session.userId);
         assertEquals(refreshedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
-        assertEquals(refreshedSession.accessToken.cookiePath,
-                Config.getConfig(process.getProcess()).getAccessTokenPath());
-        assert refreshedSession.accessToken.cookieSecure != null;
-        assertEquals((boolean) refreshedSession.accessToken.cookieSecure,
-                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
-        assertEquals(refreshedSession.refreshToken.cookiePath,
-                Config.getConfig(process.getProcess()).getRefreshAPIPath());
-        assert refreshedSession.refreshToken.cookieSecure != null;
-        assertEquals((boolean) refreshedSession.refreshToken.cookieSecure,
-                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
         assert refreshedSession.idRefreshToken != null;
-        assert refreshedSession.idRefreshToken.cookiePath != null;
-        assert refreshedSession.idRefreshToken.domain == null;
 
         SessionInformationHolder newSession = Session.getSession(process.getProcess(),
                 refreshedSession.accessToken.token, refreshedSession.antiCsrfToken, true);
@@ -438,11 +422,6 @@ public class InMemoryDBTest {
         assertNotEquals(newSession.accessToken.expiry, refreshedSession.accessToken.expiry);
         assertNotEquals(newSession.accessToken.createdTime, refreshedSession.accessToken.createdTime);
         assertEquals(newSession.session.userDataInJWT.toString(), refreshedSession.session.userDataInJWT.toString());
-        assertEquals(newSession.accessToken.cookiePath,
-                Config.getConfig(process.getProcess()).getAccessTokenPath());
-        assert newSession.accessToken.cookieSecure != null;
-        assertEquals((boolean) newSession.accessToken.cookieSecure,
-                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -498,7 +477,7 @@ public class InMemoryDBTest {
         assertEquals(refreshedSession.session.handle, sessionInfo.session.handle);
         assertEquals(refreshedSession.session.userId, sessionInfo.session.userId);
         assertEquals(refreshedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
-    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
         SessionInformationHolder newSession = Session.getSession(process.getProcess(),
                 refreshedSession.accessToken.token, refreshedSession.antiCsrfToken, true);
@@ -525,7 +504,7 @@ public class InMemoryDBTest {
         SessionInformationHolder refreshedSession2 = Session
                 .refreshSession(process.getProcess(), refreshedSession.refreshToken.token,
                         refreshedSession.antiCsrfToken);
-    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
         assert refreshedSession2.accessToken != null;
         assertNotEquals(refreshedSession2.accessToken.token, newSession.accessToken.token);
@@ -595,7 +574,7 @@ public class InMemoryDBTest {
         assertEquals(refreshedSession.session.handle, sessionInfo.session.handle);
         assertEquals(refreshedSession.session.userId, sessionInfo.session.userId);
         assertEquals(refreshedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
-    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
         SessionInformationHolder newSession = Session.getSession(process.getProcess(),
                 refreshedSession.accessToken.token, null, true);
@@ -622,7 +601,7 @@ public class InMemoryDBTest {
         SessionInformationHolder refreshedSession2 = Session
                 .refreshSession(process.getProcess(), refreshedSession.refreshToken.token,
                         refreshedSession.antiCsrfToken);
-    assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
         assert refreshedSession2.accessToken != null;
         assertNotEquals(refreshedSession2.accessToken.token, newSession.accessToken.token);

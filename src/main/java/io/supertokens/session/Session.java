@@ -75,8 +75,7 @@ public class Session {
                 userDataInJWT, refreshToken.createdTime);   // TODO: add lmrt to database
 
         TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(), refreshToken.expiry,
-                refreshToken.createdTime, accessToken.cookiePath, accessToken.cookieSecure,
-                accessToken.domain, accessToken.sameSite);
+                refreshToken.createdTime);
         return new SessionInformationHolder(new SessionInfo(sessionHandle, userId, userDataInJWT), accessToken,
                 refreshToken, idRefreshToken, antiCsrfToken);
 
@@ -114,8 +113,7 @@ public class Session {
                 userDataInJWT, refreshToken.createdTime);
 
         TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(), refreshToken.expiry,
-                refreshToken.createdTime, accessToken.cookiePath, accessToken.cookieSecure,
-                accessToken.domain, accessToken.sameSite);
+                refreshToken.createdTime);
         return new SessionInformationHolder(new SessionInfo(sessionHandle, userId, userDataInJWT), accessToken,
                 refreshToken, idRefreshToken, antiCsrfToken);
 
@@ -174,10 +172,7 @@ public class Session {
                 new SessionInfo(accessToken.sessionHandle, accessToken.userId,
                         newJWTUserPayload),
                 new TokenInfo(newAccessToken.token, newAccessToken.expiry,
-                        newAccessToken.createdTime, Config.getConfig(main).getAccessTokenPath(),
-                        Config.getConfig(main).getCookieSecure(main),
-                        Config.getConfig(main).getCookieDomain(currCDIVersion),
-                        Config.getConfig(main).getCookieSameSite()), null, null, null);
+                        newAccessToken.createdTime), null, null, null);
     }
 
     @TestOnly
@@ -267,10 +262,7 @@ public class Session {
                                     new SessionInfo(accessToken.sessionHandle, accessToken.userId,
                                             sessionInfo.userDataInJWT),
                                     new TokenInfo(newAccessToken.token, newAccessToken.expiry,
-                                            newAccessToken.createdTime, Config.getConfig(main).getAccessTokenPath(),
-                                            Config.getConfig(main).getCookieSecure(main),
-                                            Config.getConfig(main).getCookieDomain(currCDIVersion),
-                                            Config.getConfig(main).getCookieSameSite()), null, null, null);
+                                            newAccessToken.createdTime), null, null, null);
                         }
 
                         storage.commitTransaction(con);
@@ -335,10 +327,7 @@ public class Session {
                                 new SessionInfo(accessToken.sessionHandle, accessToken.userId,
                                         sessionInfo.userDataInJWT),
                                 new TokenInfo(newAccessToken.token, newAccessToken.expiry,
-                                        newAccessToken.createdTime, Config.getConfig(main).getAccessTokenPath(),
-                                        Config.getConfig(main).getCookieSecure(main),
-                                        Config.getConfig(main).getCookieDomain(currCDIVersion),
-                                        Config.getConfig(main).getCookieSameSite()), null, null, null);
+                                        newAccessToken.createdTime), null, null, null);
                     }
 
                     return new SessionInformationHolder(
@@ -434,8 +423,7 @@ public class Session {
 
                             TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(),
                                     newRefreshToken.expiry,
-                                    newRefreshToken.createdTime, newAccessToken.cookiePath, newAccessToken.cookieSecure,
-                                    newAccessToken.domain, newAccessToken.sameSite);
+                                    newRefreshToken.createdTime);
 
                             return new SessionInformationHolder(
                                     new SessionInfo(sessionHandle, sessionInfo.userId, sessionInfo.userDataInJWT),
@@ -517,8 +505,7 @@ public class Session {
 
                         TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(),
                                 newRefreshToken.expiry,
-                                newRefreshToken.createdTime, newAccessToken.cookiePath, newAccessToken.cookieSecure,
-                                newAccessToken.domain, newAccessToken.sameSite);
+                                newRefreshToken.createdTime);
 
                         return new SessionInformationHolder(
                                 new SessionInfo(sessionHandle, sessionInfo.userId, sessionInfo.userDataInJWT),

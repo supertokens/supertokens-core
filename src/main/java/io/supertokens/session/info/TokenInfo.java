@@ -16,8 +16,6 @@
 
 package io.supertokens.session.info;
 
-import javax.annotation.Nullable;
-
 public class TokenInfo {
     public final String token;
 
@@ -25,24 +23,10 @@ public class TokenInfo {
 
     public final long createdTime;
 
-    public final String cookiePath;
 
-    @Nullable
-    public final Boolean cookieSecure;
-
-    @Nullable
-    public final String domain;
-
-    public final String sameSite;
-
-    public TokenInfo(String token, long expiry, long createdTime, String cookiePath, @Nullable
-            Boolean cookieSecure, @Nullable String domain, String sameSite) {
+    public TokenInfo(String token, long expiry, long createdTime) {
         this.token = token;
         this.expiry = expiry;
         this.createdTime = createdTime;
-        this.cookiePath = cookiePath;
-        this.cookieSecure = cookieSecure;
-        this.domain = domain;
-        this.sameSite = sameSite;
     }
 }

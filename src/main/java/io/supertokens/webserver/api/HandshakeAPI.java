@@ -51,20 +51,10 @@ public class HandshakeAPI extends WebserverAPI {
             result.addProperty("jwtSigningPublicKey", AccessTokenSigningKey.getInstance(main).getKey().publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
                     AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
-            if (Config.getConfig(main).getCookieDomain(super.getVersionFromRequest(req)) != null) {
-                result.addProperty("cookieDomain",
-                        Config.getConfig(main).getCookieDomain(super.getVersionFromRequest(req)));
-            }
-            result.addProperty("cookieSecure", Config.getConfig(main).getCookieSecure(main));
-            result.addProperty("accessTokenPath", Config.getConfig(main).getAccessTokenPath());
-            result.addProperty("refreshTokenPath", Config.getConfig(main).getRefreshAPIPath());
             result.addProperty("enableAntiCsrf", Config.getConfig(main).getEnableAntiCSRF());
             result.addProperty("accessTokenBlacklistingEnabled", Config.getConfig(main).getAccessTokenBlacklisting());
-            if (!super.getVersionFromRequest(req).equals("1.0")) {
-                result.addProperty("cookieSameSite", Config.getConfig(main).getCookieSameSite());
-                result.addProperty("idRefreshTokenPath", Config.getConfig(main).getAccessTokenPath());
-                result.addProperty("sessionExpiredStatusCode", Config.getConfig(main).getSessionExpiredStatusCode());
-            }
+            result.addProperty("accessTokenValidity", Config.getConfig(main).getAccessTokenValidity());
+            result.addProperty("refreshTokenValidity", Config.getConfig(main).getRefreshTokenValidity());
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             throw new ServletException(e);

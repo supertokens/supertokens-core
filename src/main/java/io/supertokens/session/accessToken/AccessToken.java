@@ -117,9 +117,7 @@ public class AccessToken {
         AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime,
                 parentRefreshTokenHash1, userData, antiCsrfToken, now, lmrt);
         String token = JWT.createJWT(new Gson().toJsonTree(accessToken), signingKey.privateKey, VERSION.V2);
-        return new TokenInfo(token, expiryTime, now, Config.getConfig(main).getAccessTokenPath(),
-                Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain(currCDIVersion),
-                Config.getConfig(main).getCookieSameSite());
+        return new TokenInfo(token, expiryTime, now);
 
     }
 
@@ -153,9 +151,7 @@ public class AccessToken {
 
 
         String token = JWT.createJWT(new Gson().toJsonTree(accessToken), signingKey.privateKey, VERSION.V1);
-        return new TokenInfo(token, expiryTime, now, Config.getConfig(main).getAccessTokenPath(),
-                Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain("1.0"),
-                Config.getConfig(main).getCookieSameSite());
+        return new TokenInfo(token, expiryTime, now);
 
     }
 

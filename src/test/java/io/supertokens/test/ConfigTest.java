@@ -25,14 +25,10 @@ import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.config.CoreConfigTestContent;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TestRule;
 
 import java.io.File;
-import java.io.IOException;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
@@ -68,20 +64,6 @@ public class ConfigTest {
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
-    // *  - test that if session_expired_status_code has a different, valid value, that is what is being set
-    @Test
-    public void testIfSessionExpiredStatusCodeWithDifferentValidValueIsBeingSet() throws Exception {
-        String[] args = {"../"};
-        Utils.setValueInConfig("session_expired_status_code", "555");
-
-        TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
-
-        assertEquals(Config.getConfig(process.getProcess()).getSessionExpiredStatusCode(), 555);
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-    }
 
     //- test for session_expired_status_code config -> default is 401; range is >= 400, < 600;
     @Test
@@ -117,7 +99,6 @@ public class ConfigTest {
 
     @Test
     public void testThatCustomValuesInConfigAreLoaded() throws Exception {
-        Utils.setValueInConfig("refresh_api_path", "\"/testingRefresh\"");
         Utils.setValueInConfig("refresh_token_validity", "1");
 
         String[] args = {"../"};
@@ -129,10 +110,9 @@ public class ConfigTest {
 
         CoreConfig config = Config.getConfig(process.getProcess());
 
-        String refreshAPIPath = config.getRefreshAPIPath();
         long refreshValidity = config.getRefreshTokenValidity();
 
-        assertTrue(refreshAPIPath.equals("/testingRefresh") && refreshValidity == 60 * 1000);
+        Assert.assertEquals(refreshValidity, 60 * 1000);
 
         process.kill();
         EventAndException stopEvent = process.checkOrWaitForEvent(PROCESS_STATE.STOPPED);
@@ -229,71 +209,6 @@ public class ConfigTest {
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
-    @Test
-    public void testAllValuesOfSameSite() throws Exception {
-        {
-            String[] args = {"../"};
-            Utils.setValueInConfig("cookie_same_site", "none");
-            Utils.setValueInConfig("enable_anti_csrf", "true");
-            TestingProcess process = TestingProcessManager.start(args);
-            ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
-            assertNotNull(e);
-            assertEquals(Config.getConfig(process.getProcess()).getCookieSameSite(), "none");
-            process.kill();
-            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-        }
-        {
-            String[] args = {"../"};
-            Utils.setValueInConfig("cookie_same_site", "NonE");
-            Utils.setValueInConfig("enable_anti_csrf", "true");
-            TestingProcess process = TestingProcessManager.start(args);
-            ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
-            assertNotNull(e);
-            assertEquals(Config.getConfig(process.getProcess()).getCookieSameSite(), "none");
-            process.kill();
-            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-        }
-        {
-            String[] args = {"../"};
-            Utils.setValueInConfig("cookie_same_site", "lax");
-            TestingProcess process = TestingProcessManager.start(args);
-            ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
-            assertNotNull(e);
-            assertEquals(Config.getConfig(process.getProcess()).getCookieSameSite(), "lax");
-            process.kill();
-            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-        }
-        {
-            String[] args = {"../"};
-            Utils.setValueInConfig("cookie_same_site", "LaX");
-            TestingProcess process = TestingProcessManager.start(args);
-            ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
-            assertNotNull(e);
-            assertEquals(Config.getConfig(process.getProcess()).getCookieSameSite(), "lax");
-            process.kill();
-            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-        }
-        {
-            String[] args = {"../"};
-            Utils.setValueInConfig("cookie_same_site", "strict");
-            TestingProcess process = TestingProcessManager.start(args);
-            ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
-            assertNotNull(e);
-            assertEquals(Config.getConfig(process.getProcess()).getCookieSameSite(), "strict");
-            process.kill();
-            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-        }
-        {
-            String[] args = {"../"};
-            Utils.setValueInConfig("cookie_same_site", "STrict");
-            TestingProcess process = TestingProcessManager.start(args);
-            ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED, 2000);
-            assertNotNull(e);
-            assertEquals(Config.getConfig(process.getProcess()).getCookieSameSite(), "strict");
-            process.kill();
-            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-        }
-    }
 
     @Test
     public void testThatMissingConfigFileThrowsError() throws Exception {
@@ -346,21 +261,16 @@ public class ConfigTest {
     private static void checkConfigValues(CoreConfig config, TestingProcess process) {
 
         assertEquals("Config version did not match default", config.getConfigVersion(), 0);
-        assertEquals("SameSite does not match the default", config.getCookieSameSite(), "lax");
         assertEquals("Config access token validity did not match default", config.getAccessTokenValidity(),
                 3600 * 1000);
         assertFalse("Config access token blacklisting did not match default", config.getAccessTokenBlacklisting());
-        assertEquals("Config access token path did not match default", config.getAccessTokenPath(), "/");
         assertFalse("Config enable anti CSRF did not match default", config.getEnableAntiCSRF());
         assertEquals("Config refresh token validity did not match default", config.getRefreshTokenValidity(),
                 60 * 2400 * 60 * (long) 1000);
-        assertEquals("Config refresh API path did not match default", config.getRefreshAPIPath(), "/session/refresh");
         assertEquals("Config info log path did not match default", config.getInfoLogPath(process.getProcess()),
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/info.log");
         assertEquals("Config error log path did not match default", config.getErrorLogPath(process.getProcess()),
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/error.log");
-        assertNull("Config cookie domain did not match default", config.getCookieDomain(null));
-        assertFalse("Config cookie secure did not match default", config.getCookieSecure(process.getProcess()));
         assertTrue("Config access signing key dynamic did not match default", config.getAccessTokenSigningKeyDynamic());
         assertEquals("Config access signing key interval did not match default",
                 config.getAccessTokenSigningKeyUpdateInterval(),
@@ -368,45 +278,10 @@ public class ConfigTest {
 
         assertEquals(config.getHost(process.getProcess()), "localhost");
         assertEquals(config.getPort(process.getProcess()), 3567);
-        assertEquals(config.getSessionExpiredStatusCode(), 401);
         assertNull(config.getAPIKeys());
         assertEquals(10, config.getMaxThreadPoolSize());
         assertFalse(config.getHttpsEnabled());
 
-    }
-
-    @Test
-    public void startedInProductionModeShouldMakeCookieSecureFalseIfSetInConfig()
-            throws InterruptedException, IOException {
-        String[] args = {"../"};
-
-        Utils.setValueInConfig("cookie_secure", "false");
-
-        TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
-
-        assertFalse("Config cookie secure did not match default",
-                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void startedInDevModeShouldMakeCookieSecureTrueIfSetInConfig()
-            throws InterruptedException, IOException {
-        String[] args = {"../"};
-
-        Utils.setValueInConfig("cookie_secure", "true");
-
-        TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
-
-        assertTrue("Config cookie secure did not match default",
-                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
 }

@@ -26,12 +26,6 @@ core_config_version: 0
 # access_token_blacklisting:
 
 
-# (OPTIONAL | Default: "/") string value. Set this to the prefix for all your APIs that require
-# authentication. For example, if your APIs have the path "/api/a", "/api/b" etc..
-# set this to "/api" or to "/"
-# access_token_path:
-
-
 # (OPTIONAL | Default: true) boolean value. If this is set to true, the JWT (access token)
 # signing key will change every fixed intervale of time.
 # access_token_signing_key_dynamic:
@@ -51,12 +45,6 @@ core_config_version: 0
 # refresh_token_validity:
 
 
-# (OPTIONAL | Default: "/session/refresh") string value. Set this to be the path for your refresh API. For example,
-# if your refresh API URL is "https://api.example.com/refresh", then the
-# value of this param should be "/refresh"
-# refresh_api_path:
-
-
 # (OPTIONAL | Default: installation directory/logs/info.log) string value. Give the path to a file (on your local
 #  system) in which the SuperTokens service can write INFO logs to. Set it to "null" if you want it to log to
 # standard output instead.
@@ -69,27 +57,8 @@ core_config_version: 0
 # error_log_path:
 
 
-# (OPTIONAL | Default: not set) string value. If not set, it automatically is set to the domain from where the
-# cookies were created. If this is set, it should be equal to the domain of your APIs.
-# For example (api.example.com). Do not set any port here and do not put http:// or https://
-# cookie_domain:
-
-
-# (OPTIONAL | Default: false) boolean value. Sets if the cookies are secure or not.
-# cookie_secure:
-
-
-# (OPTIONAL | Default: "lax") string value. Sets the sameSite attribute for cookies issued by SuperTokens. The values
-# can be "none" | "lax" | "strict"
-# cookie_same_site:
-
-
 # (OPTIONAL | Default: 10) integer value. Sets the max thread pool size for incoming http server requests.
 # max_server_pool_size:
-
-
-# (OPTIONAL | Default: 401) integer value. The status code your backend APIs send on session expiry
-# session_expired_status_code:
 
 
 # (OPTIONAL | Default: no API keys) comma separated string values. The API keys to query an instance using this config

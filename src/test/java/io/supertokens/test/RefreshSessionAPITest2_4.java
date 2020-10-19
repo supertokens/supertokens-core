@@ -18,7 +18,6 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.config.Config;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -27,9 +26,10 @@ import org.junit.rules.TestRule;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
-public class RefreshSessionAPITest2_3 {
+public class RefreshSessionAPITest2_4 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -65,7 +65,7 @@ public class RefreshSessionAPITest2_3 {
 
         JsonObject sessionInfo = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
-                        null, Utils.getCdiVersion2_3ForTests());
+                        null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
         process.kill();
@@ -85,9 +85,9 @@ public class RefreshSessionAPITest2_3 {
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
                             sessionRefreshBody, 1000,
-                            1000, null, Utils.getCdiVersion2_3ForTests());
+                            1000, null, Utils.getCdiVersion2_4ForTests());
 
-            checkRefreshSessionResponse(response, process, userId, userDataInJWT, true, true);
+            checkRefreshSessionResponse(response, process, userId, userDataInJWT, true);
         }
 
         process.kill();
@@ -118,7 +118,7 @@ public class RefreshSessionAPITest2_3 {
 
         JsonObject sessionInfo = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
-                        null, Utils.getCdiVersion2_3ForTests());
+                        null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
         process.kill();
@@ -138,9 +138,9 @@ public class RefreshSessionAPITest2_3 {
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
                             sessionRefreshBody, 1000,
-                            1000, null, Utils.getCdiVersion2_3ForTests());
+                            1000, null, Utils.getCdiVersion2_4ForTests());
 
-            checkRefreshSessionResponse(response, process, userId, userDataInJWT, true, false);
+            checkRefreshSessionResponse(response, process, userId, userDataInJWT, false);
         }
 
         process.kill();
@@ -160,7 +160,7 @@ public class RefreshSessionAPITest2_3 {
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
                             sessionRefreshBody, 1000,
-                            1000, null, Utils.getCdiVersion2_3ForTests());
+                            1000, null, Utils.getCdiVersion2_4ForTests());
 
             assertEquals(response.entrySet().size(), 2);
             assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
@@ -185,7 +185,7 @@ public class RefreshSessionAPITest2_3 {
             io.supertokens.test.httpRequest
                     .HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh", null, 1000,
-                            1000, null, Utils.getCdiVersion2_3ForTests());
+                            1000, null, Utils.getCdiVersion2_4ForTests());
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals("Http error. Status Code: 400. Message: Invalid Json Input", e.getMessage());
@@ -203,7 +203,7 @@ public class RefreshSessionAPITest2_3 {
                     .HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh", jsonBody,
                             1000,
-                            1000, null, Utils.getCdiVersion2_3ForTests());
+                            1000, null, Utils.getCdiVersion2_4ForTests());
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(e.getMessage(),
@@ -237,7 +237,7 @@ public class RefreshSessionAPITest2_3 {
         JsonObject response = io.supertokens.test.httpRequest
                 .HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh", josnBody, 1000,
-                        1000, null, Utils.getCdiVersion2_3ForTests());
+                        1000, null, Utils.getCdiVersion2_4ForTests());
 
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
@@ -271,7 +271,7 @@ public class RefreshSessionAPITest2_3 {
 
         JsonObject sessionInfo = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
-                        null, Utils.getCdiVersion2_3ForTests());
+                        null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
         JsonObject sessionRefreshBody = new JsonObject();
@@ -282,9 +282,9 @@ public class RefreshSessionAPITest2_3 {
         JsonObject sessionRefreshResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
                         sessionRefreshBody, 1000,
-                        1000, null, Utils.getCdiVersion2_3ForTests());
+                        1000, null, Utils.getCdiVersion2_4ForTests());
 
-        checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, true, false);
+        checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, false);
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
@@ -313,7 +313,7 @@ public class RefreshSessionAPITest2_3 {
 
         JsonObject sessionInfo = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
-                        null, Utils.getCdiVersion2_3ForTests());
+                        null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
         {
@@ -326,7 +326,7 @@ public class RefreshSessionAPITest2_3 {
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
                             sessionRefreshBody, 1000,
-                            1000, null, Utils.getCdiVersion2_3ForTests());
+                            1000, null, Utils.getCdiVersion2_4ForTests());
 
             assertEquals(response.entrySet().size(), 2);
             assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
@@ -343,7 +343,7 @@ public class RefreshSessionAPITest2_3 {
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
                             sessionRefreshBody, 1000,
-                            1000, null, Utils.getCdiVersion2_3ForTests());
+                            1000, null, Utils.getCdiVersion2_4ForTests());
 
             assertEquals(response.entrySet().size(), 2);
             assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
@@ -361,9 +361,9 @@ public class RefreshSessionAPITest2_3 {
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
                             sessionRefreshBody, 1000,
-                            1000, null, Utils.getCdiVersion2_3ForTests());
+                            1000, null, Utils.getCdiVersion2_4ForTests());
 
-            checkRefreshSessionResponse(response, process, userId, userDataInJWT, true, true);
+            checkRefreshSessionResponse(response, process, userId, userDataInJWT, true);
         }
 
         process.kill();
@@ -391,7 +391,7 @@ public class RefreshSessionAPITest2_3 {
 
         JsonObject sessionInfo = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
-                        null, Utils.getCdiVersion2_3ForTests());
+                        null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
         JsonObject sessionRefreshBody = new JsonObject();
@@ -403,9 +403,9 @@ public class RefreshSessionAPITest2_3 {
         JsonObject sessionRefreshResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
                         sessionRefreshBody, 1000,
-                        1000, null, Utils.getCdiVersion2_3ForTests());
+                        1000, null, Utils.getCdiVersion2_4ForTests());
 
-        checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, true, false);
+        checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, false);
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
@@ -433,7 +433,7 @@ public class RefreshSessionAPITest2_3 {
 
         JsonObject sessionInfo = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
-                        null, Utils.getCdiVersion2_3ForTests());
+                        null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
         JsonObject sessionRefreshBody = new JsonObject();
@@ -444,9 +444,9 @@ public class RefreshSessionAPITest2_3 {
         JsonObject sessionRefreshResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
                         sessionRefreshBody, 1000,
-                        1000, null, Utils.getCdiVersion2_3ForTests());
+                        1000, null, Utils.getCdiVersion2_4ForTests());
 
-        checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, false, false);
+        checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, false);
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
@@ -456,7 +456,6 @@ public class RefreshSessionAPITest2_3 {
     private static void checkRefreshSessionResponse(JsonObject response,
                                                     TestingProcessManager.TestingProcess process, String userId,
                                                     JsonObject userDataInJWT,
-                                                    boolean cookieDomainShouldBeNull,
                                                     boolean hasAntiCsrf) {
 
         assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
@@ -468,56 +467,18 @@ public class RefreshSessionAPITest2_3 {
         assertTrue(response.get("accessToken").getAsJsonObject().has("token"));
         assertTrue(response.get("accessToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("accessToken").getAsJsonObject().has("createdTime"));
-        assertEquals(response.get("accessToken").getAsJsonObject().get("cookiePath").getAsString(),
-                Config.getConfig(process.getProcess()).getAccessTokenPath());
-        assertEquals(response.get("accessToken").getAsJsonObject().get("cookieSecure").getAsBoolean(),
-                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
-        if (cookieDomainShouldBeNull) {
-            assertNull(response.get("accessToken").getAsJsonObject().get("domain"));
-        } else {
-            assertEquals(response.get("accessToken").getAsJsonObject().get("domain").getAsString(),
-                    Config.getConfig(process.getProcess()).getCookieDomain(Utils.getCdiVersion2_3ForTests()));
-        }
-        assertEquals(response.get("accessToken").getAsJsonObject().get("sameSite").getAsString(),
-                Config.getConfig(process.getProcess()).getCookieSameSite());
-        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), cookieDomainShouldBeNull ? 6 : 7);
+        assertEquals(response.get("accessToken").getAsJsonObject().entrySet().size(), 6);
 
         assertTrue(response.get("refreshToken").getAsJsonObject().has("token"));
         assertTrue(response.get("refreshToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("refreshToken").getAsJsonObject().has("createdTime"));
-        assertEquals(response.get("refreshToken").getAsJsonObject().get("cookiePath").getAsString(),
-                Config.getConfig(process.getProcess()).getRefreshAPIPath());
-        assertEquals(response.get("refreshToken").getAsJsonObject().get("cookieSecure").getAsBoolean(),
-                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
-        if (cookieDomainShouldBeNull) {
-            assertNull(response.get("refreshToken").getAsJsonObject().get("domain"));
-        } else {
-            assertEquals(response.get("refreshToken").getAsJsonObject().get("domain").getAsString(),
-                    Config.getConfig(process.getProcess()).getCookieDomain(Utils.getCdiVersion2_3ForTests()));
-        }
-        assertEquals(response.get("refreshToken").getAsJsonObject().get("sameSite").getAsString(),
-                Config.getConfig(process.getProcess()).getCookieSameSite());
-        assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(),
-                cookieDomainShouldBeNull ? 6 : 7);
+        assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 6);
 
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("token"));
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("idRefreshToken").getAsJsonObject().has("createdTime"));
-        assertEquals(response.get("idRefreshToken").getAsJsonObject().get("cookiePath").getAsString(),
-                Config.getConfig(process.getProcess()).getAccessTokenPath());
-        assertEquals(response.get("idRefreshToken").getAsJsonObject().get("cookieSecure").getAsBoolean(),
-                Config.getConfig(process.getProcess()).getCookieSecure(process.getProcess()));
-        if (cookieDomainShouldBeNull) {
-            assertNull(response.get("idRefreshToken").getAsJsonObject().get("domain"));
-        } else {
-            assertEquals(response.get("idRefreshToken").getAsJsonObject().get("domain").getAsString(),
-                    Config.getConfig(process.getProcess()).getCookieDomain(Utils.getCdiVersion2_3ForTests()));
-        }
-        assertEquals(response.get("idRefreshToken").getAsJsonObject().get("sameSite").getAsString(),
-                Config.getConfig(process.getProcess()).getCookieSameSite());
 
-        assertEquals(response.get("idRefreshToken").getAsJsonObject().entrySet().size(),
-                cookieDomainShouldBeNull ? 6 : 7);
+        assertEquals(response.get("idRefreshToken").getAsJsonObject().entrySet().size(), 6);
 
         assertEquals(response.has("antiCsrfToken"), hasAntiCsrf);
 

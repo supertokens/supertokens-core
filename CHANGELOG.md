@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.6.0] - 2020-10-18
 ### Changed
 - CDI version no longer needed for `/hello` API 
+- Changes as per CDI 2.4: https://github.com/supertokens/core-driver-interface/issues/1
 
 ## [2.5.1] - 2020-10-08
 ### Changed

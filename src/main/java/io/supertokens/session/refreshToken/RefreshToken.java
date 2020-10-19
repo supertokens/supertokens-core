@@ -83,10 +83,7 @@ public class RefreshToken {
         String encryptedPayload = Utils.encrypt(payloadSerialised, key);
         String token = encryptedPayload + "." + nonce + "." + TYPE.FREE_OPTIMISED.toString();
         long now = System.currentTimeMillis();
-        return new TokenInfo(token, now + Config.getConfig(main).getRefreshTokenValidity(), now,
-                Config.getConfig(main).getRefreshAPIPath(),
-                Config.getConfig(main).getCookieSecure(main), Config.getConfig(main).getCookieDomain(currCDIVersion),
-                Config.getConfig(main).getCookieSameSite());
+        return new TokenInfo(token, now + Config.getConfig(main).getRefreshTokenValidity(), now);
     }
 
     @TestOnly
