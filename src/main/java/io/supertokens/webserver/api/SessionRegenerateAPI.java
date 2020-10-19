@@ -52,10 +52,6 @@ public class SessionRegenerateAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        if (super.getVersionFromRequest(req).equals("1.0")) {
-            throw new ServletException(
-                    new BadRequestException("CDI version not supported"));
-        }
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String accessToken = InputParser.parseStringOrThrowError(input, "accessToken", false);
@@ -64,8 +60,7 @@ public class SessionRegenerateAPI extends WebserverAPI {
         JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", true);
 
         try {
-            SessionInformationHolder sessionInfo = Session.regenerateToken(main, accessToken, userDataInJWT,
-                    super.getVersionFromRequest(req));
+            SessionInformationHolder sessionInfo = Session.regenerateToken(main, accessToken, userDataInJWT);
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
 

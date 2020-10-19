@@ -135,34 +135,6 @@ public class AccessTokenTest {
 
     }
 
-    // *  - create access token version 1 -> get version -> should be 1
-    @Test
-    public void testCreateAccessTokenVersion1AndCheck() throws Exception {
-        String[] args = {"../"};
-
-        TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
-
-        // - create session with some data
-        String userId = "userId";
-        JsonObject userDataInJWT = new JsonObject();
-        userDataInJWT.addProperty("key", "value");
-        JsonObject userDataInDatabase = new JsonObject();
-        userDataInDatabase.addProperty("key", "value");
-
-        SessionInformationHolder sessionInfo = Session
-                .createNewSessionV1(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
-
-        assert sessionInfo.accessToken != null;
-        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken
-                .getInfoFromAccessToken(process.getProcess(), sessionInfo.accessToken.token, false);
-
-        assertEquals(AccessToken.getAccessTokenVersion(accessTokenInfo), AccessToken.VERSION.V1);
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-    }
-
     // *  - create access token version 2 -> get version -> should be 2
     @Test
     public void testCreateAccessTokenVersion2AndCheck() throws Exception {

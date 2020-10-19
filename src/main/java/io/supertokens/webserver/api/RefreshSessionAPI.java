@@ -55,19 +55,8 @@ public class RefreshSessionAPI extends WebserverAPI {
 
         try {
             SessionInformationHolder sessionInfo = Session
-                    .refreshSession(main, refreshToken, antiCsrfToken, super.getVersionFromRequest(req));
-
+                    .refreshSession(main, refreshToken, antiCsrfToken);
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
-
-            if (super.getVersionFromRequest(req).equals("1.0")) {
-                result.getAsJsonObject("accessToken").remove("sameSite");
-                result.getAsJsonObject("refreshToken").remove("sameSite");
-                result.getAsJsonObject("idRefreshToken").remove("sameSite");
-                result.getAsJsonObject("idRefreshToken").remove("cookiePath");
-                result.getAsJsonObject("idRefreshToken").remove("cookieSecure");
-                result.getAsJsonObject("idRefreshToken").remove("domain");
-            }
-
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException e) {
