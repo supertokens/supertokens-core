@@ -38,7 +38,7 @@ public class SessionDataAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/session/data";
+        return "/recipe/session/data";
     }
 
     @Override

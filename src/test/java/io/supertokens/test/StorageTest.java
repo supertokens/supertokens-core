@@ -37,6 +37,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.io.IOException;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -470,7 +471,8 @@ public class StorageTest {
 
         try {
             HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
+                            1000, 1000,
                             null, Utils.getCdiVersionLatestForTests());
             fail();
         } catch (HttpResponseException ex) {
@@ -481,7 +483,8 @@ public class StorageTest {
         storage.setStorageLayerEnabled(true);
 
         JsonObject sessionCreated = HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
+                        1000,
                         null, Utils.getCdiVersionLatestForTests());
 
 
@@ -492,7 +495,8 @@ public class StorageTest {
         storage.setStorageLayerEnabled(false);
 
         try {
-            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh", jsonBody,
+            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
+                    jsonBody,
                     1000,
                     1000, null, Utils.getCdiVersionLatestForTests());
             fail();
@@ -503,9 +507,10 @@ public class StorageTest {
 
         storage.setStorageLayerEnabled(true);
 
-        HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh", jsonBody,
-                1000,
-                1000, null, Utils.getCdiVersionLatestForTests());
+        HttpRequest
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh", jsonBody,
+                        1000,
+                        1000, null, Utils.getCdiVersionLatestForTests());
 
 
         process.kill();
@@ -557,27 +562,32 @@ public class StorageTest {
 
         @Override
         public void run() {
-            try {
-                String jsonInput = "{" +
-                        "\"deviceDriverInfo\": {" +
-                        "\"frontendSDK\": [{" +
-                        "\"name\": \"hName\"," +
-                        "\"version\": \"hVersion\"" +
-                        "}]," +
-                        "\"driver\": {" +
-                        "\"name\": \"hDName\"," +
-                        "\"version\": \"nDVersion\"" +
-                        "}" +
-                        "}" +
-                        "}";
-                HttpRequest
-                        .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/handshake",
-                                new JsonParser().parse(jsonInput), 10000,
-                                20000,
-                                null, Utils.getCdiVersionLatestForTests());
-                success = true;
-            } catch (Exception ignored) {
-                ignored.printStackTrace();
+            while (true) {
+                try {
+                    String jsonInput = "{" +
+                            "\"deviceDriverInfo\": {" +
+                            "\"frontendSDK\": [{" +
+                            "\"name\": \"hName\"," +
+                            "\"version\": \"hVersion\"" +
+                            "}]," +
+                            "\"driver\": {" +
+                            "\"name\": \"hDName\"," +
+                            "\"version\": \"nDVersion\"" +
+                            "}" +
+                            "}" +
+                            "}";
+                    HttpRequest
+                            .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
+                                    new JsonParser().parse(jsonInput), 10000,
+                                    20000,
+                                    null, Utils.getCdiVersionLatestForTests());
+                    success = true;
+                    break;
+                } catch (Exception error) {
+                    if (!(error instanceof SocketException)) {
+                        break;
+                    }
+                }
             }
         }
     }

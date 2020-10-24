@@ -43,7 +43,7 @@ public class RefreshSessionAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/session/refresh";
+        return "/recipe/session/refresh";
     }
 
     @Override

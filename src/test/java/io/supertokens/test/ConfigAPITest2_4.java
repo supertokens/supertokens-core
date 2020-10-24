@@ -211,7 +211,7 @@ public class ConfigAPITest2_4 {
         response = HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null);
 
-        assertEquals(response.get("status").getAsString(), "NOT ALLOWED");
+        assertEquals(response.get("status").getAsString(), "NOT_ALLOWED");
         assertEquals(response.entrySet().size(), 1);
 
         process.kill();
@@ -255,7 +255,7 @@ public class ConfigAPITest2_4 {
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
                         Utils.getCdiVersion2_4ForTests());
 
-        assertEquals(response.get("status").getAsString(), "NOT ALLOWED");
+        assertEquals(response.get("status").getAsString(), "NOT_ALLOWED");
         assertEquals(response.entrySet().size(), 1);
 
         process.kill();

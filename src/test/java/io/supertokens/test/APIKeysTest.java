@@ -163,7 +163,7 @@ public class APIKeysTest {
 
         try {
             HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request,
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                             1000,
                             1000, null, Utils.getCdiVersionLatestForTests(), null);
             fail();
@@ -173,7 +173,7 @@ public class APIKeysTest {
         }
 
         JsonObject sessionInfo = HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), apiKey);
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
@@ -181,7 +181,7 @@ public class APIKeysTest {
 
         try {
             HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request,
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                             1000,
                             1000, null, Utils.getCdiVersionLatestForTests(), "abd#%034t0g4in40t40v0j");
             fail();
@@ -258,14 +258,14 @@ public class APIKeysTest {
 
         // check that any one of the keys can be used
         JsonObject sessionInfo = HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), apiKey1);
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), apiKey2);
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
@@ -273,7 +273,7 @@ public class APIKeysTest {
 
 
         sessionInfo = HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), apiKey3);
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
@@ -283,7 +283,7 @@ public class APIKeysTest {
         // sending request with no api key
         try {
             HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request,
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                             1000,
                             1000, null, Utils.getCdiVersionLatestForTests(), null);
             fail();
@@ -295,7 +295,7 @@ public class APIKeysTest {
         // sending request with invalid api key
         try {
             HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request,
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                             1000,
                             1000, null, Utils.getCdiVersionLatestForTests(), "abd#%034t0g4in40t40v0j");
             fail();
@@ -340,7 +340,7 @@ public class APIKeysTest {
 
         // check that any one of the keys can be used
         JsonObject sessionInfo = HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), " " + apiKey1 + " ");
 
@@ -348,7 +348,7 @@ public class APIKeysTest {
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), " " + apiKey2);
 
@@ -357,7 +357,7 @@ public class APIKeysTest {
 
 
         sessionInfo = HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), apiKey3);
 
@@ -365,7 +365,7 @@ public class APIKeysTest {
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), apiKey4);
 

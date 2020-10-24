@@ -64,7 +64,8 @@ public class RefreshSessionAPITest2_4 {
         request.add("userDataInDatabase", userDataInDatabase);
 
         JsonObject sessionInfo = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
+                        1000,
                         null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -83,7 +84,7 @@ public class RefreshSessionAPITest2_4 {
                     sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
 
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
                             sessionRefreshBody, 1000,
                             1000, null, Utils.getCdiVersion2_4ForTests());
 
@@ -117,7 +118,8 @@ public class RefreshSessionAPITest2_4 {
         request.add("userDataInDatabase", userDataInDatabase);
 
         JsonObject sessionInfo = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
+                        1000,
                         null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -136,7 +138,7 @@ public class RefreshSessionAPITest2_4 {
                     sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
 
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
                             sessionRefreshBody, 1000,
                             1000, null, Utils.getCdiVersion2_4ForTests());
 
@@ -158,7 +160,7 @@ public class RefreshSessionAPITest2_4 {
                     sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
 
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
                             sessionRefreshBody, 1000,
                             1000, null, Utils.getCdiVersion2_4ForTests());
 
@@ -184,7 +186,8 @@ public class RefreshSessionAPITest2_4 {
         try {
             io.supertokens.test.httpRequest
                     .HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh", null, 1000,
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh", null,
+                            1000,
                             1000, null, Utils.getCdiVersion2_4ForTests());
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
@@ -201,7 +204,8 @@ public class RefreshSessionAPITest2_4 {
             jsonBody.addProperty("random", "random");
             io.supertokens.test.httpRequest
                     .HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh", jsonBody,
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
+                            jsonBody,
                             1000,
                             1000, null, Utils.getCdiVersion2_4ForTests());
             fail();
@@ -236,7 +240,8 @@ public class RefreshSessionAPITest2_4 {
 
         JsonObject response = io.supertokens.test.httpRequest
                 .HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh", josnBody, 1000,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh", josnBody,
+                        1000,
                         1000, null, Utils.getCdiVersion2_4ForTests());
 
         assertEquals(response.entrySet().size(), 2);
@@ -270,7 +275,8 @@ public class RefreshSessionAPITest2_4 {
         request.add("userDataInDatabase", userDataInDatabase);
 
         JsonObject sessionInfo = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
+                        1000,
                         null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -280,7 +286,7 @@ public class RefreshSessionAPITest2_4 {
                 sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
 
         JsonObject sessionRefreshResponse = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
                         sessionRefreshBody, 1000,
                         1000, null, Utils.getCdiVersion2_4ForTests());
 
@@ -312,7 +318,8 @@ public class RefreshSessionAPITest2_4 {
         request.add("userDataInDatabase", userDataInDatabase);
 
         JsonObject sessionInfo = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
+                        1000,
                         null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -324,7 +331,7 @@ public class RefreshSessionAPITest2_4 {
             sessionRefreshBody.addProperty("antiCsrfToken", "someRandomString");
 
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
                             sessionRefreshBody, 1000,
                             1000, null, Utils.getCdiVersion2_4ForTests());
 
@@ -341,7 +348,7 @@ public class RefreshSessionAPITest2_4 {
                     sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
 
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
                             sessionRefreshBody, 1000,
                             1000, null, Utils.getCdiVersion2_4ForTests());
 
@@ -359,7 +366,7 @@ public class RefreshSessionAPITest2_4 {
             sessionRefreshBody.addProperty("antiCsrfToken", sessionInfo.get("antiCsrfToken").getAsString());
 
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
                             sessionRefreshBody, 1000,
                             1000, null, Utils.getCdiVersion2_4ForTests());
 
@@ -390,7 +397,8 @@ public class RefreshSessionAPITest2_4 {
         request.add("userDataInDatabase", userDataInDatabase);
 
         JsonObject sessionInfo = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
+                        1000,
                         null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -401,7 +409,7 @@ public class RefreshSessionAPITest2_4 {
         sessionRefreshBody.addProperty("antiCsrfToken", "someRandomString");
 
         JsonObject sessionRefreshResponse = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
                         sessionRefreshBody, 1000,
                         1000, null, Utils.getCdiVersion2_4ForTests());
 
@@ -432,7 +440,8 @@ public class RefreshSessionAPITest2_4 {
         request.add("userDataInDatabase", userDataInDatabase);
 
         JsonObject sessionInfo = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
+                        1000,
                         null, Utils.getCdiVersion2_4ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -442,7 +451,7 @@ public class RefreshSessionAPITest2_4 {
                 sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
 
         JsonObject sessionRefreshResponse = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh",
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
                         sessionRefreshBody, 1000,
                         1000, null, Utils.getCdiVersion2_4ForTests());
 

@@ -55,7 +55,8 @@ public class SessionDataAPITest2_4 {
         //null is sent in parameters
         try {
             io.supertokens.test.httpRequest.HttpRequest
-                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/session/data", null, 1000, 1000,
+                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", null, 1000,
+                            1000,
                             null, Utils.getCdiVersion2_4ForTests());
             fail();
         } catch (HttpResponseException e) {
@@ -70,7 +71,8 @@ public class SessionDataAPITest2_4 {
 
         try {
             io.supertokens.test.httpRequest.HttpRequest
-                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/session/data", map, 1000, 1000,
+                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", map, 1000,
+                            1000,
                             null, Utils.getCdiVersion2_4ForTests());
             fail();
         } catch (HttpResponseException e) {
@@ -83,7 +85,8 @@ public class SessionDataAPITest2_4 {
 
         try {
             io.supertokens.test.httpRequest.HttpRequest
-                    .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/session/data", null, 1000,
+                    .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", null,
+                            1000,
                             1000,
                             null, Utils.getCdiVersion2_4ForTests());
             fail();
@@ -99,7 +102,8 @@ public class SessionDataAPITest2_4 {
 
         try {
             io.supertokens.test.httpRequest.HttpRequest
-                    .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/session/data", jsonBody, 1000,
+                    .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", jsonBody,
+                            1000,
                             1000, null, Utils.getCdiVersion2_4ForTests());
             fail();
         } catch (HttpResponseException e) {
@@ -116,7 +120,8 @@ public class SessionDataAPITest2_4 {
 
         try {
             io.supertokens.test.httpRequest.HttpRequest
-                    .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/session/data", jsonBody, 1000,
+                    .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", jsonBody,
+                            1000,
                             1000, null, Utils.getCdiVersion2_4ForTests());
             fail();
         } catch (HttpResponseException e) {
@@ -156,7 +161,8 @@ public class SessionDataAPITest2_4 {
         map.put("sessionHandle", "");
 
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/session/data", map, 1000, 1000, null,
+                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", map, 1000, 1000,
+                        null,
                         Utils.getCdiVersion2_4ForTests());
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
@@ -165,7 +171,7 @@ public class SessionDataAPITest2_4 {
 
         //Get request when session exists
         JsonObject session = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session",
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                         sessionBody, 1000, 1000, null, Utils.getCdiVersion2_4ForTests());
 
         assertEquals(session.get("status").getAsString(), "OK");
@@ -174,7 +180,8 @@ public class SessionDataAPITest2_4 {
         map.put("sessionHandle", session.get("session").getAsJsonObject().get("handle").getAsString());
 
         response = io.supertokens.test.httpRequest.HttpRequest
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/session/data", map, 1000, 1000, null,
+                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", map, 1000, 1000,
+                        null,
                         Utils.getCdiVersion2_4ForTests());
 
         assertEquals(response.get("status").getAsString(), "OK");
@@ -218,7 +225,8 @@ public class SessionDataAPITest2_4 {
         putRequestBody.add("userDataInDatabase", userDataInDatabase);
 
         JsonObject sessionDataResponse = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/session/data", putRequestBody,
+                .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data",
+                        putRequestBody,
                         1000, 1000, null, Utils.getCdiVersion2_4ForTests());
 
         assertEquals(sessionDataResponse.entrySet().size(), 2);
@@ -229,7 +237,7 @@ public class SessionDataAPITest2_4 {
         //updating session handle which exists
 
         JsonObject session = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session",
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                         new JsonParser().parse(sessionJsonInput), 1000, 1000, null, Utils.getCdiVersion2_4ForTests());
 
         assertEquals(session.get("status").getAsString(), "OK");
@@ -240,7 +248,8 @@ public class SessionDataAPITest2_4 {
         putRequestBody.add("userDataInDatabase", userDataInDatabase);
 
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/session/data", putRequestBody,
+                .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data",
+                        putRequestBody,
                         1000,
                         1000, null, Utils.getCdiVersion2_4ForTests());
 

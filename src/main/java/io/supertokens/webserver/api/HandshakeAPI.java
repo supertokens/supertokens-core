@@ -39,7 +39,7 @@ public class HandshakeAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/handshake";
+        return "/recipe/handshake";
     }
 
     @Override

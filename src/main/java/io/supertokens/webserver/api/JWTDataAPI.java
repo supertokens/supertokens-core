@@ -39,7 +39,7 @@ public class JWTDataAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/jwt/data";
+        return "/recipe/jwt/data";
     }
 
     @Override

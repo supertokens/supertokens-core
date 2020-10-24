@@ -40,7 +40,7 @@ public class SessionUserAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/session/user";
+        return "/recipe/session/user";
     }
 
     @Override
