@@ -206,7 +206,7 @@ public class APIKeysTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String response = HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/hello", null,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests());
         assertEquals(response, "Hello");
@@ -215,7 +215,7 @@ public class APIKeysTest {
         Map<String, String> map = new HashMap<>();
         map.put("pid", ProcessHandle.current().pid() + "");
         JsonObject response2 = HttpRequest
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/config", map, 1000, 1000, null,
+                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
                         Utils.getCdiVersionLatestForTests());
 
 
