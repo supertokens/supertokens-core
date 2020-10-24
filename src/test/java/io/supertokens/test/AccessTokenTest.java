@@ -264,6 +264,7 @@ public class AccessTokenTest {
         Thread.sleep(1500);
         String keyAfter = AccessTokenSigningKey.getInstance(process.getProcess()).getKey().toString();
         assertNotEquals(keyBefore, keyAfter);
+        assertTrue(AccessTokenSigningKey.getInstance(process.getProcess()).getKeyExpiryTime() != Long.MAX_VALUE);
         process.kill();
     }
 

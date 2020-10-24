@@ -37,6 +37,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.io.IOException;
+import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -557,27 +558,32 @@ public class StorageTest {
 
         @Override
         public void run() {
-            try {
-                String jsonInput = "{" +
-                        "\"deviceDriverInfo\": {" +
-                        "\"frontendSDK\": [{" +
-                        "\"name\": \"hName\"," +
-                        "\"version\": \"hVersion\"" +
-                        "}]," +
-                        "\"driver\": {" +
-                        "\"name\": \"hDName\"," +
-                        "\"version\": \"nDVersion\"" +
-                        "}" +
-                        "}" +
-                        "}";
-                HttpRequest
-                        .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/handshake",
-                                new JsonParser().parse(jsonInput), 10000,
-                                20000,
-                                null);
-                success = true;
-            } catch (Exception ignored) {
-                ignored.printStackTrace();
+            while (true) {
+                try {
+                    String jsonInput = "{" +
+                            "\"deviceDriverInfo\": {" +
+                            "\"frontendSDK\": [{" +
+                            "\"name\": \"hName\"," +
+                            "\"version\": \"hVersion\"" +
+                            "}]," +
+                            "\"driver\": {" +
+                            "\"name\": \"hDName\"," +
+                            "\"version\": \"nDVersion\"" +
+                            "}" +
+                            "}" +
+                            "}";
+                    HttpRequest
+                            .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/handshake",
+                                    new JsonParser().parse(jsonInput), 10000,
+                                    20000,
+                                    null);
+                    success = true;
+                    break;
+                } catch (Exception error) {
+                    if (!(error instanceof SocketException)) {
+                        break;
+                    }
+                }
             }
         }
     }
