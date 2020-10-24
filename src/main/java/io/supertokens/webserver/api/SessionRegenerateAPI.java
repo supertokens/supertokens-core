@@ -47,7 +47,7 @@ public class SessionRegenerateAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/session/regenerate";
+        return "/recipe/session/regenerate";
     }
 
     @Override

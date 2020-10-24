@@ -61,7 +61,7 @@ public class ConfigAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } else {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "NOT ALLOWED");
+            result.addProperty("status", "NOT_ALLOWED");
             super.sendJsonResponse(200, result, resp);
         }
     }

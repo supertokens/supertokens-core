@@ -45,7 +45,7 @@ public class VerifySessionAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/session/verify";
+        return "/recipe/session/verify";
     }
 
     @Override

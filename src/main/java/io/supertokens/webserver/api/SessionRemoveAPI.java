@@ -39,7 +39,7 @@ public class SessionRemoveAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/session/remove";
+        return "/recipe/session/remove";
     }
 
     @Override
