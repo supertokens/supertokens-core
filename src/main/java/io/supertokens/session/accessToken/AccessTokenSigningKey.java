@@ -88,7 +88,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
 
     public long getKeyExpiryTime() throws StorageQueryException, StorageTransactionLogicException {
         this.getKey();
-        return Long.MAX_VALUE;  // since keys never expire in free version
+        long createdAtTime = this.keyInfo.createdAtTime;
+        return createdAtTime + Config.getConfig(main).getAccessTokenSigningKeyUpdateInterval();
     }
 
     private KeyInfo maybeGenerateNewKeyAndUpdateInDb() throws StorageQueryException, StorageTransactionLogicException {
