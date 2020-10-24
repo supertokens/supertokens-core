@@ -130,6 +130,9 @@ If you think this is a project you could use in the future, please :star2: this 
   </tr>
   <tr>
 <td align="center"><a href="https://github.com/metallicmonkey"><img src="https://avatars0.githubusercontent.com/u/10272154?s=460&u=b6f5daefe3f3ce49e9ed094043674a2c2718af73&v=4" width="100px;" alt=""/><br /><sub><b>metallicmonkey</b></sub></a></td>
+<td align="center"><a href="https://github.com/vidu171"><img src="https://avatars1.githubusercontent.com/u/25363324?s=460&u=8d3ccde95f49579e893c8c12db22cdcd0fea36cb&v=4" width="100px;" alt=""/><br /><sub><b>Vidhyanshu Jain</b></sub></a></td>
+<td align="center"><a href="https://github.com/dlion"><img src="https://avatars3.githubusercontent.com/u/2125236?s=460&u=801df23e89718386a099ba60e15b61a562fdf334&v=4" width="100px;" alt=""/><br /><sub><b>Domenico Luciani</b></sub></a></td>
+<td align="center"><a href="https://github.com/EnzoBtv"><img src="https://avatars1.githubusercontent.com/u/40310156?s=460&u=f7c0e017293b0d57b8340dbfae36c078f0176e1a&v=4" width="100px;" alt=""/><br /><sub><b>Enzo Batrov</b></sub></a></td>
   </tr>
 </table>
 
