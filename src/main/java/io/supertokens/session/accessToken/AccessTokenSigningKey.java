@@ -141,7 +141,6 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 KeyInfo key = null;
                 KeyValueInfoWithLastUpdated keyFromStorage = noSQLStorage.getAccessTokenSigningKey_Transaction();
                 if (keyFromStorage != null) {
-                    System.out.println(keyFromStorage.lastUpdatedSign);
                     key = new KeyInfo(keyFromStorage.value, keyFromStorage.createdAtTime);
                 }
 

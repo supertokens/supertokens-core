@@ -470,7 +470,8 @@ public class StorageTest {
 
         try {
             HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
+                            1000, 1000,
                             null, Utils.getCdiVersionLatestForTests());
             fail();
         } catch (HttpResponseException ex) {
@@ -481,7 +482,8 @@ public class StorageTest {
         storage.setStorageLayerEnabled(true);
 
         JsonObject sessionCreated = HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session", request, 1000, 1000,
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
+                        1000,
                         null, Utils.getCdiVersionLatestForTests());
 
 
@@ -492,7 +494,8 @@ public class StorageTest {
         storage.setStorageLayerEnabled(false);
 
         try {
-            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh", jsonBody,
+            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
+                    jsonBody,
                     1000,
                     1000, null, Utils.getCdiVersionLatestForTests());
             fail();
@@ -503,9 +506,10 @@ public class StorageTest {
 
         storage.setStorageLayerEnabled(true);
 
-        HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/session/refresh", jsonBody,
-                1000,
-                1000, null, Utils.getCdiVersionLatestForTests());
+        HttpRequest
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh", jsonBody,
+                        1000,
+                        1000, null, Utils.getCdiVersionLatestForTests());
 
 
         process.kill();
@@ -571,7 +575,7 @@ public class StorageTest {
                         "}" +
                         "}";
                 HttpRequest
-                        .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/handshake",
+                        .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                                 new JsonParser().parse(jsonInput), 10000,
                                 20000,
                                 null, Utils.getCdiVersionLatestForTests());
