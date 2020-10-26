@@ -18,11 +18,10 @@ package io.supertokens.test;
 
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.KeyValueInfo;
-import io.supertokens.pluginInterface.KeyValueInfoWithLastUpdated;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.noSqlStorage.NoSQLStorage_1;
+import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -38,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 
 public class InMemoryDBStorageTest {
     @Rule
@@ -63,9 +63,12 @@ public class InMemoryDBStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Storage storage = StorageLayer.getStorageLayer(process.getProcess());
-        NoSQLStorage_1 noSqlStorage = (NoSQLStorage_1) storage;
-
-        noSqlStorage.setKeyValue_Transaction("Key", new KeyValueInfoWithLastUpdated("Value", null));
+        SQLStorage sqlStorage = (SQLStorage) storage;
+        sqlStorage.startTransaction(con -> {
+            sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+            sqlStorage.commitTransaction(con);
+            return null;
+        });
 
         AtomicReference<String> t1State = new AtomicReference<>("init");
         AtomicReference<String> t2State = new AtomicReference<>("init");
@@ -76,15 +79,17 @@ public class InMemoryDBStorageTest {
 
         Runnable r1 = () -> {
             try {
-                int numberOfLoops = 0;
-                while (true) {
-                    KeyValueInfoWithLastUpdated k1 = noSqlStorage.getKeyValue_Transaction("Key");
+                sqlStorage.startTransaction(con -> {
+
+                    sqlStorage.getKeyValue_Transaction(con, "Key");
+
 
                     synchronized (syncObject) {
                         t1State.set("read");
                         syncObject.notifyAll();
                     }
 
+                    sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value2"));
 
                     try {
                         Thread.sleep(1500);
@@ -95,65 +100,55 @@ public class InMemoryDBStorageTest {
                         assertEquals("before_read", t2State.get());
                     }
 
-                    boolean success = noSqlStorage.setKeyValue_Transaction("Key",
-                            new KeyValueInfoWithLastUpdated("Value2", k1.lastUpdatedSign));
+                    sqlStorage.commitTransaction(con);
 
-                    if (!success) {
-                        numberOfLoops++;
-                        continue;
+                    try {
+                        Thread.sleep(1500);
+                    } catch (InterruptedException e) {
                     }
+
 
                     synchronized (syncObject) {
-                        t1State.set("after_set");
-                        syncObject.notifyAll();
+                        assertEquals("after_read", t2State.get());
                     }
 
-
-                    t1Failed.set(numberOfLoops != 1);
-                    break;
-                }
+                    t1Failed.set(false);
+                    return null;
+                });
             } catch (Exception ignored) {
             }
         };
 
         Runnable r2 = () -> {
             try {
+                sqlStorage.startTransaction(con -> {
 
-                synchronized (syncObject) {
-                    while (!t1State.get().equals("read")) {
-                        try {
-                            syncObject.wait();
-                        } catch (InterruptedException e) {
+                    synchronized (syncObject) {
+                        while (!t1State.get().equals("read")) {
+                            try {
+                                syncObject.wait();
+                            } catch (InterruptedException e) {
+                            }
                         }
                     }
-                }
-
-                KeyValueInfoWithLastUpdated val = noSqlStorage.getKeyValue_Transaction("Key");
-
-                boolean success = noSqlStorage.setKeyValue_Transaction("Key",
-                        new KeyValueInfoWithLastUpdated("Value1", val.lastUpdatedSign));
-
-                assert (success);
-
-                synchronized (syncObject) {
-                    t2State.set("before_read");
-                }
 
 
-                synchronized (syncObject) {
-                    while (!t1State.get().equals("after_set")) {
-                        try {
-                            syncObject.wait();
-                        } catch (InterruptedException e) {
-                        }
+                    synchronized (syncObject) {
+                        t2State.set("before_read");
                     }
-                }
 
-                val = noSqlStorage.getKeyValue_Transaction("Key");
 
-                assertEquals(val.value, "Value2");
+                    KeyValueInfo val = sqlStorage.getKeyValue_Transaction(con, "Key");
 
-                t2Failed.set(false);
+                    synchronized (syncObject) {
+                        t2State.set("after_read");
+                    }
+
+                    assertEquals(val.value, "Value2");
+
+                    t2Failed.set(false);
+                    return null;
+                });
             } catch (Exception ignored) {
             }
         };
@@ -182,35 +177,22 @@ public class InMemoryDBStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Storage storage = StorageLayer.getStorageLayer(process.getProcess());
-        NoSQLStorage_1 noSqlStorage = (NoSQLStorage_1) storage;
-        {
-            noSqlStorage.setKeyValue_Transaction("Key", new KeyValueInfoWithLastUpdated("Value", null));
-            KeyValueInfo value = noSqlStorage.getKeyValue("Key");
-            assertEquals(value.value, "Value");
-        }
-        {
-            KeyValueInfoWithLastUpdated newKey = noSqlStorage.getKeyValue_Transaction("Key");
-            noSqlStorage
-                    .setKeyValue_Transaction("Key",
-                            new KeyValueInfoWithLastUpdated("Value2", newKey.lastUpdatedSign));
-            KeyValueInfo value = noSqlStorage.getKeyValue("Key");
-            assertEquals(value.value, "Value2");
-        }
-        {
-            KeyValueInfoWithLastUpdated newKey = noSqlStorage.getKeyValue_Transaction("Key");
-            noSqlStorage
-                    .setKeyValue_Transaction("Key",
-                            new KeyValueInfoWithLastUpdated("Value3", "someRandomLastUpdatedSign"));
-            KeyValueInfo value = noSqlStorage.getKeyValue("Key");
-            assertEquals(value.value, "Value2");
-        }
+        SQLStorage sqlStorage = (SQLStorage) storage;
+        String returnedValue = sqlStorage.startTransaction(con -> {
+            sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+            sqlStorage.commitTransaction(con);
+            return "returned value";
+        });
+        assertEquals(returnedValue, "returned value");
+        KeyValueInfo value = storage.getKeyValue("Key");
+        assertEquals(value.value, "Value");
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
-    public void transactionDoNotInsertIfAlreadyExistsForNoSQL()
-            throws InterruptedException, StorageQueryException {
+    public void transactionDoNotCommitButStillCommitsTest()
+            throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
@@ -218,20 +200,77 @@ public class InMemoryDBStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         Storage storage = StorageLayer.getStorageLayer(process.getProcess());
-        NoSQLStorage_1 noSqlStorage = (NoSQLStorage_1) storage;
 
-        boolean success = noSqlStorage
-                .setKeyValue_Transaction("Key", new KeyValueInfoWithLastUpdated("Value", null));
+        SQLStorage sqlStorage = (SQLStorage) storage;
+        sqlStorage.startTransaction(con -> {
+            sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+            return null;
+        });
+        KeyValueInfo value = storage.getKeyValue("Key");
+        assertEquals(value.value, "Value");
 
-        assert (success);
-
-        success = noSqlStorage.setKeyValue_Transaction("Key", new KeyValueInfoWithLastUpdated("Value2", null));
-
-        assert (!success);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void transactionThrowCompileTimeErrorAndExpectRollbackTest()
+            throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        process.getProcess().setForceInMemoryDB();
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+
+        SQLStorage sqlStorage = (SQLStorage) storage;
+        try {
+            sqlStorage.startTransaction(con -> {
+                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                throw new StorageTransactionLogicException(new Exception("error message"));
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (!e.actualException.getMessage().equals("error message")) {
+                throw e;
+            }
+        }
+        KeyValueInfo value = storage.getKeyValue("Key");
+        assertNull(value);
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void transactionThrowRunTimeErrorAndExpectRollbackTest()
+            throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        process.getProcess().setForceInMemoryDB();
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+
+        SQLStorage sqlStorage = (SQLStorage) storage;
+        try {
+            sqlStorage.startTransaction(con -> {
+                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                throw new RuntimeException("error message");
+            });
+        } catch (RuntimeException e) {
+            if (!e.getMessage().equals("error message")) {
+                throw e;
+            }
+        }
+        KeyValueInfo value = storage.getKeyValue("Key");
+        assertNull(value);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 
     @Test
     public void multipleParallelTransactionTest() throws InterruptedException, IOException {

@@ -29,6 +29,7 @@ class ConnectionPool extends ResourceDistributor.SingletonResource {
 
     // we use this to keep all the information in memory across requests.
     private Connection alwaysAlive = null;
+    private Lock lock = new Lock();
 
     public ConnectionPool() throws SQLException {
         this.alwaysAlive = DriverManager.getConnection(URL);
@@ -38,8 +39,8 @@ class ConnectionPool extends ResourceDistributor.SingletonResource {
         start.getResourceDistributor().setResource(RESOURCE_KEY, new ConnectionPool());
     }
 
-    static Connection getConnection() throws SQLException {
-        return DriverManager.getConnection(URL);
+    static Connection getConnection(Start start) throws SQLException {
+        return new ConnectionWithLocks(DriverManager.getConnection(URL), ConnectionPool.getInstance(start));
     }
 
     private static ConnectionPool getInstance(Start start) {
@@ -54,6 +55,14 @@ class ConnectionPool extends ResourceDistributor.SingletonResource {
             getInstance(start).alwaysAlive.close();
         } catch (Exception ignored) {
         }
+    }
+
+    public void lock(String key) {
+        this.lock.lock(key);
+    }
+
+    public void unlock(String key) {
+        this.lock.unlock(key);
     }
 
 }

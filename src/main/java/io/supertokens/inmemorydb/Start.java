@@ -17,19 +17,24 @@
 package io.supertokens.inmemorydb;
 
 import com.google.gson.JsonObject;
+import io.supertokens.Main;
+import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.KeyValueInfo;
-import io.supertokens.pluginInterface.KeyValueInfoWithLastUpdated;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.QuitProgramFromPluginException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.noSqlStorage.NoSQLStorage_1;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 
+import javax.annotation.Nullable;
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.sql.SQLTransactionRollbackException;
 
-public class Start extends NoSQLStorage_1 {
+public class Start extends SQLStorage {
 
     private static final Object appenderLock = new Object();
     private static boolean silent = false;
@@ -40,6 +45,11 @@ public class Start extends NoSQLStorage_1 {
     private static final String REFRESH_TOKEN_KEY_NAME = "refresh_token_key";
     public static boolean isTesting = false;
     private boolean enabled = true;
+    private Main main;
+
+    public Start(Main main) {
+        this.main = main;
+    }
 
     public ResourceDistributor getResourceDistributor() {
         return resourceDistributor;
@@ -57,7 +67,7 @@ public class Start extends NoSQLStorage_1 {
 
     @Override
     public STORAGE_TYPE getType() {
-        return STORAGE_TYPE.NOSQL_1;
+        return STORAGE_TYPE.SQL;
     }
 
     @Override
@@ -79,7 +89,7 @@ public class Start extends NoSQLStorage_1 {
     public void initStorage() {
         try {
             ConnectionPool.initPool(this);
-            Queries.createTablesIfNotExists(this);
+            Queries.createTablesIfNotExists(this, this.main);
         } catch (SQLException e) {
             throw new QuitProgramFromPluginException(e);
         }
@@ -108,44 +118,101 @@ public class Start extends NoSQLStorage_1 {
         }
     }
 
+    @Override
+    public <T> T startTransaction(TransactionLogic<T> logic)
+            throws StorageTransactionLogicException, StorageQueryException {
+        int tries = 0;
+        while (true) {
+            tries++;
+            try {
+                return startTransactionHelper(logic);
+            } catch (SQLException | StorageQueryException e) {
+                if ((e instanceof SQLTransactionRollbackException ||
+                        e.getMessage().toLowerCase().contains("deadlock")) &&
+                        tries < 3) {
+                    ProcessState.getInstance(this.main).addState(ProcessState.PROCESS_STATE.DEADLOCK_FOUND, e);
+                    continue;   // this because deadlocks are not necessarily a result of faulty logic. They can happen
+                }
+                if (e instanceof StorageQueryException) {
+                    throw (StorageQueryException) e;
+                }
+                throw new StorageQueryException(e);
+            }
+        }
+    }
+
+    private <T> T startTransactionHelper(TransactionLogic<T> logic)
+            throws StorageQueryException, StorageTransactionLogicException, SQLException {
+        Connection con = null;
+        try {
+            con = ConnectionPool.getConnection(this);
+            con.setAutoCommit(false);
+            return logic.mainLogicAndCommit(new TransactionConnection(con));
+        } catch (Exception e) {
+            if (con != null) {
+                con.rollback();
+            }
+            throw e;
+        } finally {
+            if (con != null) {
+                con.setAutoCommit(true);
+                con.close();
+            }
+        }
+    }
 
     @Override
-    public KeyValueInfoWithLastUpdated getAccessTokenSigningKey_Transaction() throws StorageQueryException {
+    public void commitTransaction(TransactionConnection con) throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
         try {
-            return Queries.getKeyValue_Transaction(this, ACCESS_TOKEN_SIGNING_KEY_NAME);
+            sqlCon.commit();
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+
+    }
+
+    @Override
+    public KeyValueInfo getAccessTokenSigningKey_Transaction(TransactionConnection con) throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return Queries.getKeyValue_Transaction(this, sqlCon, ACCESS_TOKEN_SIGNING_KEY_NAME);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public boolean setAccessTokenSigningKey_Transaction(KeyValueInfoWithLastUpdated info) throws StorageQueryException {
-        try {
-            return Queries.setKeyValue_Transaction(this, ACCESS_TOKEN_SIGNING_KEY_NAME, info);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public KeyValueInfoWithLastUpdated getRefreshTokenSigningKey_Transaction() throws StorageQueryException {
-        try {
-            return Queries.getKeyValue_Transaction(this, REFRESH_TOKEN_KEY_NAME);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public boolean setRefreshTokenSigningKey_Transaction(KeyValueInfoWithLastUpdated info)
+    public void setAccessTokenSigningKey_Transaction(TransactionConnection con, KeyValueInfo info)
             throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
         try {
-            return Queries.setKeyValue_Transaction(this, REFRESH_TOKEN_KEY_NAME, info);
+            Queries.setKeyValue_Transaction(this, sqlCon, ACCESS_TOKEN_SIGNING_KEY_NAME, info);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
+    @Override
+    public KeyValueInfo getRefreshTokenSigningKey_Transaction(TransactionConnection con) throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return Queries.getKeyValue_Transaction(this, sqlCon, REFRESH_TOKEN_KEY_NAME);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void setRefreshTokenSigningKey_Transaction(TransactionConnection con, KeyValueInfo info)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            Queries.setKeyValue_Transaction(this, sqlCon, REFRESH_TOKEN_KEY_NAME, info);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
 
     @Override
     public void deleteAllInformation() {
@@ -197,7 +264,6 @@ public class Start extends NoSQLStorage_1 {
         }
     }
 
-
     @Override
     public void deleteAllExpiredSessions() throws StorageQueryException {
         try {
@@ -231,7 +297,7 @@ public class Start extends NoSQLStorage_1 {
     }
 
     @Override
-    public SQLStorage.SessionInfo getSession(String sessionHandle) throws StorageQueryException {
+    public SessionInfo getSession(String sessionHandle) throws StorageQueryException {
         try {
             return Queries.getSession(this, sessionHandle);
         } catch (SQLException e) {
@@ -240,14 +306,13 @@ public class Start extends NoSQLStorage_1 {
     }
 
     @Override
-    public int updateSession(String sessionHandle, JsonObject sessionData, JsonObject jwtPayload)
+    public int updateSession(String sessionHandle, @Nullable JsonObject sessionData, @Nullable JsonObject jwtPayload)
             throws StorageQueryException {
         try {
             return Queries.updateSession(this, sessionHandle, sessionData, jwtPayload);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
-
     }
 
     @Override
@@ -256,39 +321,43 @@ public class Start extends NoSQLStorage_1 {
     }
 
     @Override
-    public SessionInfoWithLastUpdated getSessionInfo_Transaction(String sessionHandle) throws StorageQueryException {
+    public SessionInfo getSessionInfo_Transaction(TransactionConnection con, String sessionHandle)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
         try {
-            return Queries.getSessionInfo_Transaction(this, sessionHandle);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-
-    @Override
-    public boolean updateSessionInfo_Transaction(String sessionHandle, String refreshTokenHash2, long expiry,
-                                                 String lastUpdatedSign) throws StorageQueryException {
-        try {
-            return Queries.updateSessionInfo_Transaction(this, sessionHandle, refreshTokenHash2, expiry,
-                    lastUpdatedSign);
+            return Queries.getSessionInfo_Transaction(this, sqlCon, sessionHandle);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public boolean setKeyValue_Transaction(String key, KeyValueInfoWithLastUpdated info) throws StorageQueryException {
+    public void updateSessionInfo_Transaction(TransactionConnection con, String sessionHandle,
+                                              String refreshTokenHash2, long expiry) throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
         try {
-            return Queries.setKeyValue_Transaction(this, key, info);
+            Queries.updateSessionInfo_Transaction(this, sqlCon, sessionHandle, refreshTokenHash2, expiry);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public KeyValueInfoWithLastUpdated getKeyValue_Transaction(String key) throws StorageQueryException {
+    public void setKeyValue_Transaction(TransactionConnection con, String key, KeyValueInfo info)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
         try {
-            return Queries.getKeyValue_Transaction(this, key);
+            Queries.setKeyValue_Transaction(this, sqlCon, key, info);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public KeyValueInfo getKeyValue_Transaction(TransactionConnection con, String key) throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return Queries.getKeyValue_Transaction(this, sqlCon, key);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

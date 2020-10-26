@@ -76,7 +76,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             this.storageLayer = storageLayerTemp;
         } else {
             Logging.info(main, "Using in memory storage.");
-            this.storageLayer = new Start();
+            this.storageLayer = new Start(main);
         }
         this.storageLayer.constructor(main.getProcessId(), Main.makeConsolePrintSilent);
         this.storageLayer.loadConfig(configFilePath);
