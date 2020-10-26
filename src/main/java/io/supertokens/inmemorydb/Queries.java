@@ -37,7 +37,7 @@ public class Queries {
     private static boolean doesTableExists(Start start, String tableName) {
         try {
             String QUERY = "SELECT 1 FROM " + tableName + " LIMIT 1";
-            try (Connection con = ConnectionPool.getConnection();
+            try (Connection con = ConnectionPool.getConnection(start);
                  PreparedStatement pst = con.prepareStatement(QUERY)) {
                 pst.executeQuery();
             }
@@ -63,7 +63,7 @@ public class Queries {
     static void createTablesIfNotExists(Start start, Main main) throws SQLException {
         if (!doesTableExists(start, Config.getConfig(start).getKeyValueTable())) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
-            try (Connection con = ConnectionPool.getConnection();
+            try (Connection con = ConnectionPool.getConnection(start);
                  PreparedStatement pst = con.prepareStatement(getQueryToCreateKeyValueTable(start))) {
                 pst.executeUpdate();
             }
@@ -71,7 +71,7 @@ public class Queries {
 
         if (!doesTableExists(start, Config.getConfig(start).getSessionInfoTable())) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
-            try (Connection con = ConnectionPool.getConnection();
+            try (Connection con = ConnectionPool.getConnection(start);
                  PreparedStatement pst = con.prepareStatement(getQueryToCreateSessionInfoTable(start))) {
                 pst.executeUpdate();
             }
@@ -97,7 +97,7 @@ public class Queries {
 
     static void setKeyValue(Start start, String key, KeyValueInfo info)
             throws SQLException {
-        try (Connection con = ConnectionPool.getConnection()) {
+        try (Connection con = ConnectionPool.getConnection(start)) {
             setKeyValue_Transaction(start, con, key, info);
         }
     }
@@ -106,7 +106,7 @@ public class Queries {
         String QUERY = "SELECT value, created_at_time FROM "
                 + Config.getConfig(start).getKeyValueTable() + " WHERE name = ?";
 
-        try (Connection con = ConnectionPool.getConnection();
+        try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, key);
             ResultSet result = pst.executeQuery();
@@ -118,6 +118,9 @@ public class Queries {
     }
 
     static KeyValueInfo getKeyValue_Transaction(Start start, Connection con, String key) throws SQLException {
+
+        ((ConnectionWithLocks) con).lock(key);
+
         String QUERY = "SELECT value, created_at_time FROM "
                 + Config.getConfig(start).getKeyValueTable() + " WHERE name = ?";
 
@@ -140,7 +143,7 @@ public class Queries {
                 "created_at_time)"
                 + " VALUES(?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection con = ConnectionPool.getConnection();
+        try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, sessionHandle);
             pst.setString(2, userId);
@@ -155,6 +158,9 @@ public class Queries {
 
     static SQLStorage.SessionInfo getSessionInfo_Transaction(Start start, Connection con, String sessionHandle)
             throws SQLException {
+
+        ((ConnectionWithLocks) con).lock(sessionHandle);
+
         String QUERY = "SELECT session_handle, user_id, refresh_token_hash_2, session_data, expires_at, " +
                 "created_at_time, jwt_user_payload FROM "
                 + Config.getConfig(start).getSessionInfoTable() + " WHERE session_handle = ?";
@@ -190,7 +196,7 @@ public class Queries {
     static int getNumberOfSessions(Start start) throws SQLException {
         String QUERY = "SELECT count(*) as num FROM " + Config.getConfig(start).getSessionInfoTable();
 
-        try (Connection con = ConnectionPool.getConnection();
+        try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
             ResultSet result = pst.executeQuery();
             if (result.next()) {
@@ -214,7 +220,7 @@ public class Queries {
             }
         }
 
-        try (Connection con = ConnectionPool.getConnection();
+        try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY.toString())) {
             for (int i = 0; i < sessionHandles.length; i++) {
                 pst.setString(i + 1, sessionHandles[i]);
@@ -227,7 +233,7 @@ public class Queries {
         String QUERY = "SELECT session_handle FROM " + Config.getConfig(start).getSessionInfoTable() +
                 " WHERE user_id = ?";
 
-        try (Connection con = ConnectionPool.getConnection();
+        try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, userId);
             ResultSet result = pst.executeQuery();
@@ -248,7 +254,7 @@ public class Queries {
         String QUERY = "DELETE FROM " + Config.getConfig(start).getSessionInfoTable() +
                 " WHERE expires_at <= ?";
 
-        try (Connection con = ConnectionPool.getConnection();
+        try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setLong(1, System.currentTimeMillis());
             pst.executeUpdate();
@@ -260,7 +266,7 @@ public class Queries {
         String QUERY = "SELECT session_handle, user_id, refresh_token_hash_2, session_data, expires_at, " +
                 "created_at_time, jwt_user_payload FROM "
                 + Config.getConfig(start).getSessionInfoTable() + " WHERE session_handle = ?";
-        try (Connection con = ConnectionPool.getConnection();
+        try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, sessionHandle);
             ResultSet result = pst.executeQuery();
@@ -295,7 +301,7 @@ public class Queries {
         QUERY += " WHERE session_handle = ?";
 
         int currIndex = 1;
-        try (Connection con = ConnectionPool.getConnection();
+        try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
             if (sessionData != null) {
                 pst.setString(currIndex, sessionData.toString());

@@ -145,7 +145,7 @@ public class Start extends SQLStorage {
             throws StorageQueryException, StorageTransactionLogicException, SQLException {
         Connection con = null;
         try {
-            con = ConnectionPool.getConnection();
+            con = ConnectionPool.getConnection(this);
             con.setAutoCommit(false);
             return logic.mainLogicAndCommit(new TransactionConnection(con));
         } catch (Exception e) {
