@@ -49,6 +49,10 @@ import java.security.spec.InvalidKeySpecException;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
 
+/*
+ * TODO: Add tests for locks
+ * */
+
 public class InMemoryDBTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
