@@ -8,7 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.0.0] - 2020-10-25
 ### Changed
 - Changes as per CDI 2.4: https://github.com/supertokens/core-driver-interface/issues/1
-
+- In memory db uses the SQL interface
 
 ## [2.5.2] - 2020-10-25
 ### Fixed
