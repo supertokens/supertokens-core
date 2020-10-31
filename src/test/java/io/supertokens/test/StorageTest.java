@@ -75,7 +75,8 @@ public class StorageTest {
             String key = "Key" + i;
 
             Storage storage = StorageLayer.getStorageLayer(process.getProcess());
-            if (storage.getType() == STORAGE_TYPE.SQL) {
+            if (storage.getType() == STORAGE_TYPE.SQL &&
+                    !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
                 SQLStorage sqlStorage = (SQLStorage) storage;
 
                 AtomicReference<String> endValueOfCon1 = new AtomicReference<>("c1");
@@ -240,7 +241,7 @@ public class StorageTest {
                 if (Version.getVersion(process.getProcess()).getPluginName().equals("postgresql")) {
                     // Becasue FOR UPDATE does not wait in Postgresql. Instead if throws an error.
                     assertEquals(numberOfIterations.get(), 1);
-                } else if (Version.getVersion(process.getProcess()).getPluginName().equals("mysql")) {
+                } else {
                     assertEquals(numberOfIterations.get(), 0);
                 }
 
