@@ -22,7 +22,7 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.KeyValueInfo;
-import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
+import io.supertokens.pluginInterface.session.SessionInfo;
 
 import javax.annotation.Nullable;
 import java.sql.Connection;
@@ -156,7 +156,7 @@ public class Queries {
         }
     }
 
-    static SQLStorage.SessionInfo getSessionInfo_Transaction(Start start, Connection con, String sessionHandle)
+    static SessionInfo getSessionInfo_Transaction(Start start, Connection con, String sessionHandle)
             throws SQLException {
 
         ((ConnectionWithLocks) con).lock(sessionHandle);
@@ -168,7 +168,7 @@ public class Queries {
             pst.setString(1, sessionHandle);
             ResultSet result = pst.executeQuery();
             if (result.next()) {
-                return new SQLStorage.SessionInfo(result.getString("session_handle"), result.getString("user_id"),
+                return new SessionInfo(result.getString("session_handle"), result.getString("user_id"),
                         result.getString("refresh_token_hash_2"),
                         new JsonParser().parse(result.getString("session_data")).getAsJsonObject(),
                         result.getLong("expires_at"),
@@ -261,7 +261,7 @@ public class Queries {
         }
     }
 
-    static SQLStorage.SessionInfo getSession(Start start, String sessionHandle)
+    static SessionInfo getSession(Start start, String sessionHandle)
             throws SQLException {
         String QUERY = "SELECT session_handle, user_id, refresh_token_hash_2, session_data, expires_at, " +
                 "created_at_time, jwt_user_payload FROM "
@@ -271,7 +271,7 @@ public class Queries {
             pst.setString(1, sessionHandle);
             ResultSet result = pst.executeQuery();
             if (result.next()) {
-                return new SQLStorage.SessionInfo(result.getString("session_handle"), result.getString("user_id"),
+                return new SessionInfo(result.getString("session_handle"), result.getString("user_id"),
                         result.getString("refresh_token_hash_2"),
                         new JsonParser().parse(result.getString("session_data")).getAsJsonObject(),
                         result.getLong("expires_at"),

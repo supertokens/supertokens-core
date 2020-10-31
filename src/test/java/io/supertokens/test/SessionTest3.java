@@ -91,10 +91,10 @@ public class SessionTest3 {
         Session.createNewSession(process.getProcess(), userId, userDataInJWT,
                 userDataInDatabase);
 
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 2);
+        assertEquals(StorageLayer.getSessionStorageLayer(process.getProcess()).getNumberOfSessions(), 2);
 
         Session.revokeSessionUsingSessionHandles(process.getProcess(), new String[]{sessionInfo.session.handle});
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
         try {
             Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
@@ -203,11 +203,11 @@ public class SessionTest3 {
         Session.createNewSession(process.getProcess(), "userId2", userDataInJWT,
                 userDataInDatabase);
 
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 4);
+        assertEquals(StorageLayer.getSessionStorageLayer(process.getProcess()).getNumberOfSessions(), 4);
 
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), userId).length, 3);
 
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
         Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken,
                 true);
@@ -260,13 +260,13 @@ public class SessionTest3 {
         assert sessionInfo3.accessToken != null;
 
 
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 3);
+        assertEquals(StorageLayer.getSessionStorageLayer(process.getProcess()).getNumberOfSessions(), 3);
 
         Thread.sleep(2500);
         Session.createNewSession(process.getProcess(), userId, userDataInJWT,
                 userDataInDatabase);
 
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

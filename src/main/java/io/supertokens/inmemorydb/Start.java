@@ -26,7 +26,8 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.QuitProgramFromPluginException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
+import io.supertokens.pluginInterface.session.SessionInfo;
+import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 
 import javax.annotation.Nullable;
@@ -34,7 +35,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransactionRollbackException;
 
-public class Start extends SQLStorage {
+public class Start implements SessionSQLStorage {
 
     private static final Object appenderLock = new Object();
     private static boolean silent = false;
@@ -92,29 +93,6 @@ public class Start extends SQLStorage {
             Queries.createTablesIfNotExists(this, this.main);
         } catch (SQLException e) {
             throw new QuitProgramFromPluginException(e);
-        }
-    }
-
-    @Override
-    public String getAppId() throws StorageQueryException {
-        try {
-            KeyValueInfo result = Queries.getKeyValue(this, APP_ID_KEY_NAME);
-            if (result != null) {
-                return result.value;
-            }
-            return null;
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public void setAppId(String appId) throws StorageQueryException {
-        try {
-            KeyValueInfo keyInfo = new KeyValueInfo(appId, System.currentTimeMillis());
-            Queries.setKeyValue(this, APP_ID_KEY_NAME, keyInfo);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
         }
     }
 

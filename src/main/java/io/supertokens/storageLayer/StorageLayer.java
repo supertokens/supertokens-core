@@ -23,6 +23,7 @@ import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.session.SessionStorage;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -99,5 +100,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             throw new QuitProgramException("please call init() before calling getStorageLayer");
         }
         return getInstance(main).storageLayer;
+    }
+
+    public static SessionStorage getSessionStorageLayer(Main main) {
+        if (getInstance(main) == null) {
+            throw new QuitProgramException("please call init() before calling getStorageLayer");
+        }
+        return (SessionStorage) getInstance(main).storageLayer;
     }
 }

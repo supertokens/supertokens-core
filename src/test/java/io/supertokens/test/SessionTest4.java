@@ -107,7 +107,7 @@ public class SessionTest4 {
         }
         assertTrue(revokedAll);
 
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 2);
+        assertEquals(StorageLayer.getSessionStorageLayer(process.getProcess()).getNumberOfSessions(), 2);
 
         Session.createNewSession(process.getProcess(), userId, userDataInJWT,
                 userDataInDatabase);
@@ -118,11 +118,11 @@ public class SessionTest4 {
 
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), userId).length, 4);
 
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
 
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), "userId2").length, 1);
 
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 0);
+        assertEquals(StorageLayer.getSessionStorageLayer(process.getProcess()).getNumberOfSessions(), 0);
 
         assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(), handles).length, 0);
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), "userId2").length, 0);
@@ -186,7 +186,7 @@ public class SessionTest4 {
                 userDataInDatabase);
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
         assert sessionInfo.accessToken != null;
         assert sessionInfo.refreshToken != null;
         assertNull(sessionInfo.antiCsrfToken);
@@ -220,7 +220,7 @@ public class SessionTest4 {
             assert sessionInfo.refreshToken != null;
             assert sessionInfo.accessToken != null;
 
-            assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+            assertEquals(StorageLayer.getSessionStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
         }
 
         process.kill();
@@ -250,7 +250,7 @@ public class SessionTest4 {
                 userDataInDatabase);
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorageLayer(process.getProcess()).getNumberOfSessions(), 1);
         assert sessionInfo.accessToken != null;
         assert sessionInfo.refreshToken != null;
         assertNull(sessionInfo.antiCsrfToken);

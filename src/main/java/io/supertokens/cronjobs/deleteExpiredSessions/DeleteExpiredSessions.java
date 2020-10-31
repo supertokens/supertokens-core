@@ -40,7 +40,7 @@ public class DeleteExpiredSessions extends CronTask {
 
     @Override
     protected void doTask() throws Exception {
-        StorageLayer.getStorageLayer(this.main).deleteAllExpiredSessions();
+        StorageLayer.getSessionStorageLayer(this.main).deleteAllExpiredSessions();
     }
 
     @Override
