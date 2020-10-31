@@ -30,6 +30,7 @@ import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequest;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.version.Version;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -40,6 +41,7 @@ import java.io.IOException;
 import java.net.SocketException;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static junit.framework.TestCase.assertEquals;
@@ -59,6 +61,197 @@ public class StorageTest {
     @Before
     public void beforeEach() {
         Utils.reset();
+    }
+
+
+    @Test
+    public void transactionIsolationWithoutAnInitialRowTesting()
+            throws Exception {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        for (int i = 0; i < 10; i++) {
+            String key = "Key" + i;
+
+            Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+            if (storage.getType() == STORAGE_TYPE.SQL &&
+                    !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+                SQLStorage sqlStorage = (SQLStorage) storage;
+
+                AtomicReference<String> endValueOfCon1 = new AtomicReference<>("c1");
+                AtomicReference<String> endValueOfCon2 = new AtomicReference<>("c2");
+                AtomicInteger numberOfIterations = new AtomicInteger(-2);
+
+                Runnable r1 = () -> {
+                    try {
+                        sqlStorage.startTransaction(con -> {
+                            numberOfIterations.getAndIncrement();
+
+                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(con, key);
+
+                            try {
+                                Thread.sleep(300);
+                            } catch (InterruptedException e) {
+                            }
+
+                            if (info == null) {
+                                sqlStorage.setKeyValue_Transaction(con, key, new KeyValueInfo("Value1"));
+                            } else {
+                                endValueOfCon1.set(info.value);
+                                return null;
+                            }
+
+                            endValueOfCon1.set("Value1");
+                            return null;
+                        });
+                    } catch (Exception ignored) {
+                    }
+                };
+
+
+                Runnable r2 = () -> {
+                    try {
+                        sqlStorage.startTransaction(con -> {
+                            numberOfIterations.getAndIncrement();
+
+                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(con, key);
+
+                            if (numberOfIterations.get() != 1) {
+                                assert (info == null);
+                            } else {
+                                assert (info != null);
+                            }
+
+                            try {
+                                Thread.sleep(700);
+                            } catch (InterruptedException e) {
+                            }
+
+                            if (info == null) {
+                                sqlStorage.setKeyValue_Transaction(con, key, new KeyValueInfo("Value2"));
+                            } else {
+                                endValueOfCon2.set(info.value);
+                                return null;
+                            }
+
+                            endValueOfCon2.set("Value2");
+                            return null;
+                        });
+                    } catch (Exception ignored) {
+                    }
+                };
+
+                Thread t1 = new Thread(r1);
+                Thread t2 = new Thread(r2);
+
+                t1.start();
+                t2.start();
+
+                t1.join();
+                t2.join();
+
+                assertEquals(endValueOfCon1.get(), endValueOfCon2.get());
+                assertEquals(numberOfIterations.get(), 1);
+
+            }
+
+        }
+
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void transactionIsolationWithAnInitialRowTesting()
+            throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        for (int i = 0; i < 30; i++) {
+
+            Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+            if (storage.getType() == STORAGE_TYPE.SQL) {
+                SQLStorage sqlStorage = (SQLStorage) storage;
+                sqlStorage.startTransaction(con -> {
+                    sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                    sqlStorage.commitTransaction(con);
+                    return null;
+                });
+
+                AtomicReference<String> endValueOfCon1 = new AtomicReference<>("c1");
+                AtomicReference<String> endValueOfCon2 = new AtomicReference<>("c2");
+                AtomicInteger numberOfIterations = new AtomicInteger(-2);
+
+                Runnable r1 = () -> {
+                    try {
+                        sqlStorage.startTransaction(con -> {
+                            numberOfIterations.getAndIncrement();
+
+                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(con, "Key");
+
+                            if (info.value.equals("Value")) {
+                                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value1"));
+                            } else {
+                                endValueOfCon1.set(info.value);
+                                return null;
+                            }
+
+                            endValueOfCon1.set("Value1");
+                            return null;
+                        });
+                    } catch (Exception ignored) {
+                    }
+                };
+
+
+                Runnable r2 = () -> {
+                    try {
+                        sqlStorage.startTransaction(con -> {
+                            numberOfIterations.getAndIncrement();
+
+                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(con, "Key");
+
+                            if (info.value.equals("Value")) {
+                                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value2"));
+                            } else {
+                                endValueOfCon2.set(info.value);
+                                return null;
+                            }
+
+                            endValueOfCon2.set("Value2");
+                            return null;
+                        });
+                    } catch (Exception ignored) {
+                    }
+                };
+
+                Thread t1 = new Thread(r1);
+                Thread t2 = new Thread(r2);
+
+                t1.start();
+                t2.start();
+
+                t1.join();
+                t2.join();
+
+                assertEquals(endValueOfCon1.get(), endValueOfCon2.get());
+                if (Version.getVersion(process.getProcess()).getPluginName().equals("postgresql")) {
+                    // Becasue FOR UPDATE does not wait in Postgresql. Instead if throws an error.
+                    assertEquals(numberOfIterations.get(), 1);
+                } else {
+                    assertEquals(numberOfIterations.get(), 0);
+                }
+
+            }
+
+        }
+
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
