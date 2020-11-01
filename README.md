@@ -136,6 +136,7 @@ If you think this is a project you could use in the future, please :star2: this 
   </tr>
   <tr>
 <td align="center"><a href="https://github.com/IsautierEloise"><img src="https://avatars2.githubusercontent.com/u/44578188?s=400&u=2bda597af317d871d6b1017193956b40a6fe0412&v=4" width="100px;" alt=""/><br /><sub><b>Eloïse Isautier</b></sub></a></td>
+<td align="center"><a href="https://github.com/ocReaper"><img src="https://avatars2.githubusercontent.com/u/4038188?s=460&v=4" width="100px;" alt=""/><br /><sub><b>Ákos Resch</b></sub></a></td>
   </tr>
 </table>
 
