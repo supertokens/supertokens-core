@@ -25,6 +25,9 @@ import io.supertokens.inmemorydb.queries.GeneralQueries;
 import io.supertokens.inmemorydb.queries.SessionQueries;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
+import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.exceptions.QuitProgramFromPluginException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -37,7 +40,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransactionRollbackException;
 
-public class Start implements SessionSQLStorage {
+public class Start implements SessionSQLStorage, EmailPasswordSQLStorage {
 
     private static final Object appenderLock = new Object();
     private static boolean silent = false;
@@ -343,4 +346,9 @@ public class Start implements SessionSQLStorage {
         }
     }
 
+    @Override
+    public void signUp(String userId, String email, String passwordHash, long timeJoined)
+            throws StorageQueryException, DuplicateUserIdException, DuplicateEmailException {
+        // TODO:
+    }
 }

@@ -16,7 +16,6 @@
 
 package io.supertokens.utils;
 
-import javax.annotation.Nullable;
 import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
@@ -38,12 +37,9 @@ import java.util.UUID;
 
 public class Utils {
 
-    public static boolean CDIVersionNeedsToHaveCookieDomain(@Nullable String currVersion) {
-        if (currVersion == null) {
-            return false;
-        }
-        return currVersion.equals("1.0") || currVersion.equals("2.0") ||
-                currVersion.equals("2.1");
+    public static String normaliseEmail(String email) {
+        // TODO:
+        return email;
     }
 
     public static String convertToBase64(String str) {
