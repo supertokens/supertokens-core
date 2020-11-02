@@ -21,6 +21,8 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.inmemorydb.queries.GeneralQueries;
+import io.supertokens.inmemorydb.queries.SessionQueries;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.QuitProgramFromPluginException;
@@ -90,7 +92,7 @@ public class Start implements SessionSQLStorage {
     public void initStorage() {
         try {
             ConnectionPool.initPool(this);
-            Queries.createTablesIfNotExists(this, this.main);
+            GeneralQueries.createTablesIfNotExists(this, this.main);
         } catch (SQLException e) {
             throw new QuitProgramFromPluginException(e);
         }
@@ -154,7 +156,7 @@ public class Start implements SessionSQLStorage {
     public KeyValueInfo getAccessTokenSigningKey_Transaction(TransactionConnection con) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return Queries.getKeyValue_Transaction(this, sqlCon, ACCESS_TOKEN_SIGNING_KEY_NAME);
+            return GeneralQueries.getKeyValue_Transaction(this, sqlCon, ACCESS_TOKEN_SIGNING_KEY_NAME);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -165,7 +167,7 @@ public class Start implements SessionSQLStorage {
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            Queries.setKeyValue_Transaction(this, sqlCon, ACCESS_TOKEN_SIGNING_KEY_NAME, info);
+            GeneralQueries.setKeyValue_Transaction(this, sqlCon, ACCESS_TOKEN_SIGNING_KEY_NAME, info);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -175,7 +177,7 @@ public class Start implements SessionSQLStorage {
     public KeyValueInfo getRefreshTokenSigningKey_Transaction(TransactionConnection con) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return Queries.getKeyValue_Transaction(this, sqlCon, REFRESH_TOKEN_KEY_NAME);
+            return GeneralQueries.getKeyValue_Transaction(this, sqlCon, REFRESH_TOKEN_KEY_NAME);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -186,7 +188,7 @@ public class Start implements SessionSQLStorage {
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            Queries.setKeyValue_Transaction(this, sqlCon, REFRESH_TOKEN_KEY_NAME, info);
+            GeneralQueries.setKeyValue_Transaction(this, sqlCon, REFRESH_TOKEN_KEY_NAME, info);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -208,7 +210,7 @@ public class Start implements SessionSQLStorage {
                                  long createdAtTime)
             throws StorageQueryException {
         try {
-            Queries.createNewSession(this, sessionHandle, userId, refreshTokenHash2, userDataInDatabase, expiry,
+            SessionQueries.createNewSession(this, sessionHandle, userId, refreshTokenHash2, userDataInDatabase, expiry,
                     userDataInJWT, createdAtTime);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
@@ -218,7 +220,7 @@ public class Start implements SessionSQLStorage {
     @Override
     public int getNumberOfSessions() throws StorageQueryException {
         try {
-            return Queries.getNumberOfSessions(this);
+            return SessionQueries.getNumberOfSessions(this);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -227,7 +229,7 @@ public class Start implements SessionSQLStorage {
     @Override
     public int deleteSession(String[] sessionHandles) throws StorageQueryException {
         try {
-            return Queries.deleteSession(this, sessionHandles);
+            return SessionQueries.deleteSession(this, sessionHandles);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -236,7 +238,7 @@ public class Start implements SessionSQLStorage {
     @Override
     public String[] getAllSessionHandlesForUser(String userId) throws StorageQueryException {
         try {
-            return Queries.getAllSessionHandlesForUser(this, userId);
+            return SessionQueries.getAllSessionHandlesForUser(this, userId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -245,7 +247,7 @@ public class Start implements SessionSQLStorage {
     @Override
     public void deleteAllExpiredSessions() throws StorageQueryException {
         try {
-            Queries.deleteAllExpiredSessions(this);
+            SessionQueries.deleteAllExpiredSessions(this);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -254,7 +256,7 @@ public class Start implements SessionSQLStorage {
     @Override
     public KeyValueInfo getKeyValue(String key) throws StorageQueryException {
         try {
-            return Queries.getKeyValue(this, key);
+            return GeneralQueries.getKeyValue(this, key);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -263,7 +265,7 @@ public class Start implements SessionSQLStorage {
     @Override
     public void setKeyValue(String key, KeyValueInfo info) throws StorageQueryException {
         try {
-            Queries.setKeyValue(this, key, info);
+            GeneralQueries.setKeyValue(this, key, info);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -277,7 +279,7 @@ public class Start implements SessionSQLStorage {
     @Override
     public SessionInfo getSession(String sessionHandle) throws StorageQueryException {
         try {
-            return Queries.getSession(this, sessionHandle);
+            return SessionQueries.getSession(this, sessionHandle);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -287,7 +289,7 @@ public class Start implements SessionSQLStorage {
     public int updateSession(String sessionHandle, @Nullable JsonObject sessionData, @Nullable JsonObject jwtPayload)
             throws StorageQueryException {
         try {
-            return Queries.updateSession(this, sessionHandle, sessionData, jwtPayload);
+            return SessionQueries.updateSession(this, sessionHandle, sessionData, jwtPayload);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -303,7 +305,7 @@ public class Start implements SessionSQLStorage {
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return Queries.getSessionInfo_Transaction(this, sqlCon, sessionHandle);
+            return SessionQueries.getSessionInfo_Transaction(this, sqlCon, sessionHandle);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -314,7 +316,7 @@ public class Start implements SessionSQLStorage {
                                               String refreshTokenHash2, long expiry) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            Queries.updateSessionInfo_Transaction(this, sqlCon, sessionHandle, refreshTokenHash2, expiry);
+            SessionQueries.updateSessionInfo_Transaction(this, sqlCon, sessionHandle, refreshTokenHash2, expiry);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -325,7 +327,7 @@ public class Start implements SessionSQLStorage {
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            Queries.setKeyValue_Transaction(this, sqlCon, key, info);
+            GeneralQueries.setKeyValue_Transaction(this, sqlCon, key, info);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -335,7 +337,7 @@ public class Start implements SessionSQLStorage {
     public KeyValueInfo getKeyValue_Transaction(TransactionConnection con, String key) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return Queries.getKeyValue_Transaction(this, sqlCon, key);
+            return GeneralQueries.getKeyValue_Transaction(this, sqlCon, key);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
