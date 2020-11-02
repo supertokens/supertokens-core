@@ -26,4 +26,12 @@ public class SQLiteConfig {
         return "session_info";
     }
 
+    public String getUsersTable() {
+        return "email_password_users";
+    }
+
+    public String getPasswordResetTokensTable() {
+        return "email_password_pswd_reset_tokens";
+    }
+
 }

@@ -22,7 +22,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
 
-class ConnectionPool extends ResourceDistributor.SingletonResource {
+public class ConnectionPool extends ResourceDistributor.SingletonResource {
 
     private static final String RESOURCE_KEY = "io.supertokens.inmemorydb.ConnectionPool";
     private static String URL = "jdbc:sqlite:file::memory:?cache=shared";
@@ -39,7 +39,7 @@ class ConnectionPool extends ResourceDistributor.SingletonResource {
         start.getResourceDistributor().setResource(RESOURCE_KEY, new ConnectionPool());
     }
 
-    static Connection getConnection(Start start) throws SQLException {
+    public static Connection getConnection(Start start) throws SQLException {
         return new ConnectionWithLocks(DriverManager.getConnection(URL), ConnectionPool.getInstance(start));
     }
 

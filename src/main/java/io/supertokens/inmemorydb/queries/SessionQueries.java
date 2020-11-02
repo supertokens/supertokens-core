@@ -14,17 +14,16 @@
  *    under the License.
  */
 
-package io.supertokens.inmemorydb;
+package io.supertokens.inmemorydb.queries;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import io.supertokens.Main;
-import io.supertokens.ProcessState;
+import io.supertokens.inmemorydb.ConnectionPool;
+import io.supertokens.inmemorydb.ConnectionWithLocks;
+import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
-import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.session.SessionInfo;
 
-import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -32,27 +31,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Queries {
+public class SessionQueries {
 
-    private static boolean doesTableExists(Start start, String tableName) {
-        try {
-            String QUERY = "SELECT 1 FROM " + tableName + " LIMIT 1";
-            try (Connection con = ConnectionPool.getConnection(start);
-                 PreparedStatement pst = con.prepareStatement(QUERY)) {
-                pst.executeQuery();
-            }
-            return true;
-        } catch (SQLException e) {
-            return false;
-        }
-    }
-
-    private static String getQueryToCreateKeyValueTable(Start start) {
-        return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getKeyValueTable() + " (" + "name VARCHAR(128),"
-                + "value TEXT," + "created_at_time BIGINT UNSIGNED," + "PRIMARY KEY(name)" + " );";
-    }
-
-    private static String getQueryToCreateSessionInfoTable(Start start) {
+    static String getQueryToCreateSessionInfoTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getSessionInfoTable() + " ("
                 + "session_handle VARCHAR(255) NOT NULL," + "user_id VARCHAR(128) NOT NULL,"
                 + "refresh_token_hash_2 VARCHAR(128) NOT NULL," + "session_data TEXT,"
@@ -60,83 +41,9 @@ public class Queries {
                 "jwt_user_payload TEXT," + "PRIMARY KEY(session_handle)" + " );";
     }
 
-    static void createTablesIfNotExists(Start start, Main main) throws SQLException {
-        if (!doesTableExists(start, Config.getConfig(start).getKeyValueTable())) {
-            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
-            try (Connection con = ConnectionPool.getConnection(start);
-                 PreparedStatement pst = con.prepareStatement(getQueryToCreateKeyValueTable(start))) {
-                pst.executeUpdate();
-            }
-        }
-
-        if (!doesTableExists(start, Config.getConfig(start).getSessionInfoTable())) {
-            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
-            try (Connection con = ConnectionPool.getConnection(start);
-                 PreparedStatement pst = con.prepareStatement(getQueryToCreateSessionInfoTable(start))) {
-                pst.executeUpdate();
-            }
-        }
-    }
-
-    static void setKeyValue_Transaction(Start start, Connection con, String key, KeyValueInfo info)
-            throws SQLException {
-
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getKeyValueTable()
-                + "(name, value, created_at_time) VALUES(?, ?, ?) "
-                + "ON CONFLICT(name) DO UPDATE SET value = ?, created_at_time = ?";
-
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, key);
-            pst.setString(2, info.value);
-            pst.setLong(3, info.createdAtTime);
-            pst.setString(4, info.value);
-            pst.setLong(5, info.createdAtTime);
-            pst.executeUpdate();
-        }
-    }
-
-    static void setKeyValue(Start start, String key, KeyValueInfo info)
-            throws SQLException {
-        try (Connection con = ConnectionPool.getConnection(start)) {
-            setKeyValue_Transaction(start, con, key, info);
-        }
-    }
-
-    static KeyValueInfo getKeyValue(Start start, String key) throws SQLException {
-        String QUERY = "SELECT value, created_at_time FROM "
-                + Config.getConfig(start).getKeyValueTable() + " WHERE name = ?";
-
-        try (Connection con = ConnectionPool.getConnection(start);
-             PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, key);
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return new KeyValueInfo(result.getString("value"), result.getLong("created_at_time"));
-            }
-        }
-        return null;
-    }
-
-    static KeyValueInfo getKeyValue_Transaction(Start start, Connection con, String key) throws SQLException {
-
-        ((ConnectionWithLocks) con).lock(key);
-
-        String QUERY = "SELECT value, created_at_time FROM "
-                + Config.getConfig(start).getKeyValueTable() + " WHERE name = ?";
-
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, key);
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return new KeyValueInfo(result.getString("value"), result.getLong("created_at_time"));
-            }
-        }
-        return null;
-    }
-
-    static void createNewSession(Start start, String sessionHandle, String userId, String refreshTokenHash2,
-                                 JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT,
-                                 long createdAtTime)
+    public static void createNewSession(Start start, String sessionHandle, String userId, String refreshTokenHash2,
+                                        JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT,
+                                        long createdAtTime)
             throws SQLException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getSessionInfoTable()
                 + "(session_handle, user_id, refresh_token_hash_2, session_data, expires_at, jwt_user_payload, " +
@@ -156,7 +63,7 @@ public class Queries {
         }
     }
 
-    static SessionInfo getSessionInfo_Transaction(Start start, Connection con, String sessionHandle)
+    public static SessionInfo getSessionInfo_Transaction(Start start, Connection con, String sessionHandle)
             throws SQLException {
 
         ((ConnectionWithLocks) con).lock(sessionHandle);
@@ -179,8 +86,8 @@ public class Queries {
         return null;
     }
 
-    static void updateSessionInfo_Transaction(Start start, Connection con, String sessionHandle,
-                                              String refreshTokenHash2, long expiry) throws SQLException {
+    public static void updateSessionInfo_Transaction(Start start, Connection con, String sessionHandle,
+                                                     String refreshTokenHash2, long expiry) throws SQLException {
         String QUERY = "UPDATE " + Config.getConfig(start).getSessionInfoTable()
                 + " SET refresh_token_hash_2 = ?, expires_at = ?"
                 + " WHERE session_handle = ?";
@@ -193,7 +100,7 @@ public class Queries {
         }
     }
 
-    static int getNumberOfSessions(Start start) throws SQLException {
+    public static int getNumberOfSessions(Start start) throws SQLException {
         String QUERY = "SELECT count(*) as num FROM " + Config.getConfig(start).getSessionInfoTable();
 
         try (Connection con = ConnectionPool.getConnection(start);
@@ -206,7 +113,7 @@ public class Queries {
         }
     }
 
-    static int deleteSession(Start start, String[] sessionHandles) throws SQLException {
+    public static int deleteSession(Start start, String[] sessionHandles) throws SQLException {
         if (sessionHandles.length == 0) {
             return 0;
         }
@@ -229,7 +136,7 @@ public class Queries {
         }
     }
 
-    static String[] getAllSessionHandlesForUser(Start start, String userId) throws SQLException {
+    public static String[] getAllSessionHandlesForUser(Start start, String userId) throws SQLException {
         String QUERY = "SELECT session_handle FROM " + Config.getConfig(start).getSessionInfoTable() +
                 " WHERE user_id = ?";
 
@@ -250,7 +157,7 @@ public class Queries {
     }
 
 
-    static void deleteAllExpiredSessions(Start start) throws SQLException {
+    public static void deleteAllExpiredSessions(Start start) throws SQLException {
         String QUERY = "DELETE FROM " + Config.getConfig(start).getSessionInfoTable() +
                 " WHERE expires_at <= ?";
 
@@ -261,7 +168,7 @@ public class Queries {
         }
     }
 
-    static SessionInfo getSession(Start start, String sessionHandle)
+    public static SessionInfo getSession(Start start, String sessionHandle)
             throws SQLException {
         String QUERY = "SELECT session_handle, user_id, refresh_token_hash_2, session_data, expires_at, " +
                 "created_at_time, jwt_user_payload FROM "
@@ -282,8 +189,8 @@ public class Queries {
         return null;
     }
 
-    static int updateSession(Start start, String sessionHandle, @Nullable JsonObject sessionData,
-                             @Nullable JsonObject jwtPayload) throws SQLException {
+    public static int updateSession(Start start, String sessionHandle, JsonObject sessionData,
+                                    JsonObject jwtPayload) throws SQLException {
 
         if (sessionData == null && jwtPayload == null) {
             throw new SQLException("sessionData and jwtPayload are null when updating session info");
@@ -315,5 +222,4 @@ public class Queries {
             return pst.executeUpdate();
         }
     }
-
 }
