@@ -16,10 +16,18 @@
 
 package io.supertokens.test;
 
+import io.supertokens.ProcessState;
+import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
+import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import static org.junit.Assert.assertNotNull;
 
 /*
  * TODO:
@@ -46,4 +54,68 @@ public class EmailPasswordTest {
         Utils.reset();
     }
 
+    @Test
+    public void clashingUserIdDuringSignUp() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        StorageLayer.getEmailPasswordStorageLayer(process.getProcess()).signUp("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
+                "test@example.com", "passwordHash", System.currentTimeMillis());
+
+        try {
+            StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+                    .signUp("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
+                            "test1@example.com", "passwordHash", System.currentTimeMillis());
+            assert (false);
+        } catch (DuplicateUserIdException e) {
+
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void clashingEmailIdDuringSignUp() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+
+        try {
+            EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+            assert (false);
+        } catch (DuplicateEmailException e) {
+
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void clashingEmailAndUserIdDuringSignUp() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        StorageLayer.getEmailPasswordStorageLayer(process.getProcess()).signUp("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
+                "test@example.com", "passwordHash", System.currentTimeMillis());
+
+        try {
+            StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+                    .signUp("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
+                            "test@example.com", "passwordHash", System.currentTimeMillis());
+            assert (false);
+        } catch (DuplicateUserIdException e) {
+
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

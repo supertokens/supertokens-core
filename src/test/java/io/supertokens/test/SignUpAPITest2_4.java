@@ -28,8 +28,7 @@ import org.junit.rules.TestRule;
  *  - Test the normalise email function
  *  - Test that only the normalised email is saved in the db
  *  - Test that giving an empty password throws a bad input error
- *  - Test that giving an email that already exists throws an error
- *  - Test that if the same userId is generated, then it the storage layer throws the proper error
+ *  - Test that giving an email that already sends the right API output
  * */
 
 public class SignUpAPITest2_4 {
