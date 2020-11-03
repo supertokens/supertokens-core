@@ -16,8 +16,13 @@
 
 package io.supertokens.inmemorydb.queries;
 
+import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.SQLException;
 
 public class EmailPasswordQueries {
 
@@ -36,5 +41,21 @@ public class EmailPasswordQueries {
                 "(user_id) ON DELETE CASCADE ON UPDATE CASCADE);" +
                 "CREATE INDEX token_expiry_index ON " + Config.getConfig(start).getPasswordResetTokensTable() +
                 "(token_expiry);";
+    }
+
+    public static void signUp(Start start, String userId, String email, String passwordHash, long timeJoined)
+            throws SQLException {
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getUsersTable()
+                + "(user_id, email, password_hash, time_joined)"
+                + " VALUES(?, ?, ?, ?)";
+
+        try (Connection con = ConnectionPool.getConnection(start);
+             PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, userId);
+            pst.setString(2, email);
+            pst.setString(3, passwordHash);
+            pst.setLong(4, timeJoined);
+            pst.executeUpdate();
+        }
     }
 }
