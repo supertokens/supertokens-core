@@ -19,9 +19,11 @@ package io.supertokens.inmemorydb.queries;
 import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class EmailPasswordQueries {
@@ -57,5 +59,37 @@ public class EmailPasswordQueries {
             pst.setLong(4, timeJoined);
             pst.executeUpdate();
         }
+    }
+
+    public static UserInfo getUserInfoUsingId(Start start, String id) throws SQLException {
+        String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
+                + Config.getConfig(start).getUsersTable() + " WHERE user_id = ?";
+        try (Connection con = ConnectionPool.getConnection(start);
+             PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, id);
+            ResultSet result = pst.executeQuery();
+            if (result.next()) {
+                return new UserInfo(result.getString("user_id"), result.getString("email"),
+                        result.getString("password_hash"),
+                        result.getLong("time_joined"));
+            }
+        }
+        return null;
+    }
+
+    public static UserInfo getUserInfoUsingEmail(Start start, String email) throws SQLException {
+        String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
+                + Config.getConfig(start).getUsersTable() + " WHERE email = ?";
+        try (Connection con = ConnectionPool.getConnection(start);
+             PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, email);
+            ResultSet result = pst.executeQuery();
+            if (result.next()) {
+                return new UserInfo(result.getString("user_id"), result.getString("email"),
+                        result.getString("password_hash"),
+                        result.getLong("time_joined"));
+            }
+        }
+        return null;
     }
 }

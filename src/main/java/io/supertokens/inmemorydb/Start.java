@@ -371,13 +371,19 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage {
 
     @Override
     public UserInfo getUserInfoUsingId(String id) throws StorageQueryException {
-        // TODO:
-        return null;
+        try {
+            return EmailPasswordQueries.getUserInfoUsingId(this, id);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public UserInfo getUserInfoUsingEmail(String email) throws StorageQueryException {
-        // TODO:
-        return null;
+        try {
+            return EmailPasswordQueries.getUserInfoUsingEmail(this, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }
