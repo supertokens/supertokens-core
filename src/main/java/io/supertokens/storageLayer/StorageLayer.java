@@ -22,7 +22,9 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
 
 import java.io.File;
@@ -107,5 +109,16 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             throw new QuitProgramException("please call init() before calling getStorageLayer");
         }
         return (SessionStorage) getInstance(main).storageLayer;
+    }
+
+    public static EmailPasswordSQLStorage getEmailPasswordStorageLayer(Main main) {
+        if (getInstance(main) == null) {
+            throw new QuitProgramException("please call init() before calling getStorageLayer");
+        }
+        if (getInstance(main).storageLayer.getType() != STORAGE_TYPE.SQL) {
+            // we only support SQL for now
+            throw new UnsupportedOperationException("");
+        }
+        return (EmailPasswordSQLStorage) getInstance(main).storageLayer;
     }
 }

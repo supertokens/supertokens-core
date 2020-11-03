@@ -140,6 +140,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new ApiVersionAPI(main));
         addAPI(new SessionRegenerateAPI(main));
         addAPI(new JWTDataAPI(main));
+        addAPI(new SignUpAPI(main));
     }
 
     public void addAPI(WebserverAPI api) {

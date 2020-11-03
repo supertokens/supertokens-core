@@ -40,6 +40,9 @@ dependencies {
     // https://mvnrepository.com/artifact/org.xerial/sqlite-jdbc
     compile group: 'org.xerial', name: 'sqlite-jdbc', version: '3.30.1'
 
+    // https://mvnrepository.com/artifact/org.mindrot/jbcrypt
+    compile group: 'org.mindrot', name: 'jbcrypt', version: '0.4'
+
     compileOnly project(":supertokens-plugin-interface")
     testCompile project(":supertokens-plugin-interface")
 
