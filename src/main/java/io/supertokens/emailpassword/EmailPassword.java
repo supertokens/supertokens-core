@@ -17,6 +17,8 @@
 package io.supertokens.emailpassword;
 
 import io.supertokens.Main;
+import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -46,5 +48,17 @@ public class EmailPassword {
                 // we retry with a new userId (while loop)
             }
         }
+    }
+
+    public static User signIn(Main main, @Nonnull String email, @Nonnull String password) throws StorageQueryException,
+            WrongCredentialsException {
+
+        UserInfo user = StorageLayer.getEmailPasswordStorageLayer(main).getUserInfoUsingEmail(email);
+
+        if (user == null || !UpdatableBCrypt.verifyHash(password, user.passwordHash)) {
+            throw new WrongCredentialsException();
+        }
+
+        return new User(user.id, user.email);
     }
 }
