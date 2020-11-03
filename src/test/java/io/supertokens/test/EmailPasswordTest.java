@@ -38,7 +38,10 @@ import static org.junit.Assert.assertNotNull;
  *  - Test UpdatableBCrypt class
  *     - test time taken for hash
  *     - test hashing and verifying with short passwords and > 100 char password
- *  - Good input / output test
+ *  - Good input / output test for signUp
+ *  - Good input / output test for signIn
+ *  - Test wrong email provided to signIn
+ *  - Test wrong password provided to signIn
  * */
 
 public class EmailPasswordTest {
