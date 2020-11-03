@@ -26,6 +26,10 @@ import org.junit.rules.TestRule;
  *  - Check that StorageLayer.getEmailPasswordStorageLayer throws as exception if the storage type is not SQL (and
  *   vice versa)
  *  - Test normaliseEmail function
+ *  - Test UpdatableBCrypt class
+ *     - test time taken for hash
+ *     - test hashing and verifying with short passwords and > 100 char password
+ *  - Good input / output test
  * */
 
 public class EmailPasswordTest {

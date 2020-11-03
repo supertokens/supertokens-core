@@ -18,19 +18,33 @@ package io.supertokens.emailpassword;
 
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
-import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.utils.Utils;
 
 import javax.annotation.Nonnull;
 
 public class EmailPassword {
 
     public static User signUp(Main main, @Nonnull String email, @Nonnull String password) throws
-            DuplicateEmailException {
-        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorageLayer(main);
+            DuplicateEmailException, StorageQueryException {
 
-        // TODO:
+        String hashedPassword = UpdatableBCrypt.hash(password);
 
-        return null;
+        while (true) {
+
+            String userId = Utils.getUUID();
+
+            try {
+                StorageLayer.getEmailPasswordStorageLayer(main)
+                        .signUp(userId, email, hashedPassword, System.currentTimeMillis());
+
+                return new User(userId, email);
+
+            } catch (DuplicateUserIdException ignored) {
+                // we retry with a new userId (while loop)
+            }
+        }
     }
 }
