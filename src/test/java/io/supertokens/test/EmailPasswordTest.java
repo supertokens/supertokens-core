@@ -22,8 +22,10 @@ import org.junit.Rule;
 import org.junit.rules.TestRule;
 
 /*
- * TODO: Check that StorageLayer.getEmailPasswordStorageLayer throws as exception if the storage type is not SQL (and
+ * TODO:
+ *  - Check that StorageLayer.getEmailPasswordStorageLayer throws as exception if the storage type is not SQL (and
  *   vice versa)
+ *  - Test normaliseEmail function
  * */
 
 public class EmailPasswordTest {
