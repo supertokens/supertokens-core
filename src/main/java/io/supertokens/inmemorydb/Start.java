@@ -26,6 +26,7 @@ import io.supertokens.inmemorydb.queries.GeneralQueries;
 import io.supertokens.inmemorydb.queries.SessionQueries;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
@@ -366,5 +367,17 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage {
             }
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public UserInfo getUserInfoUsingId(String id) throws StorageQueryException {
+        // TODO:
+        return null;
+    }
+
+    @Override
+    public UserInfo getUserInfoUsingEmail(String email) throws StorageQueryException {
+        // TODO:
+        return null;
     }
 }
