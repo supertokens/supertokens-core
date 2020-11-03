@@ -18,6 +18,7 @@ package io.supertokens.test;
 
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -61,6 +62,10 @@ public class EmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         StorageLayer.getEmailPasswordStorageLayer(process.getProcess()).signUp("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
                 "test@example.com", "passwordHash", System.currentTimeMillis());
 
@@ -84,6 +89,10 @@ public class EmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
 
         try {
@@ -102,6 +111,10 @@ public class EmailPasswordTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         StorageLayer.getEmailPasswordStorageLayer(process.getProcess()).signUp("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
                 "test@example.com", "passwordHash", System.currentTimeMillis());
