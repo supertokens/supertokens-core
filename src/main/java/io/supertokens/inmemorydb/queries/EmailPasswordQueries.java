@@ -37,10 +37,25 @@ public class EmailPasswordQueries {
 
     static String getQueryToCreatePasswordResetTokensTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getPasswordResetTokensTable() + " ("
-                + "user_id CHAR(36) NOT NULL," + "token VARCHAR(80) NOT NULL UNIQUE,"
+                + "user_id CHAR(36) NOT NULL," + "token VARCHAR(128) NOT NULL UNIQUE,"
                 + "token_expiry BIGINT UNSIGNED NOT NULL," + "PRIMARY KEY (user_id, token),"
                 + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getUsersTable() +
                 "(user_id) ON DELETE CASCADE ON UPDATE CASCADE);";
+    }
+
+    public static void addPasswordResetToken(Start start, String userId, String tokenHash, long expiry)
+            throws SQLException {
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getPasswordResetTokensTable()
+                + "(user_id, token, token_expiry)"
+                + " VALUES(?, ?, ?)";
+
+        try (Connection con = ConnectionPool.getConnection(start);
+             PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, userId);
+            pst.setString(2, tokenHash);
+            pst.setLong(3, expiry);
+            pst.executeUpdate();
+        }
     }
 
     static String getQueryToCreatePasswordResetTokenExpiryIndex(Start start) {

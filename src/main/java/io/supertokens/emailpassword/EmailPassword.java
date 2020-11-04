@@ -18,16 +18,23 @@ package io.supertokens.emailpassword;
 
 import io.supertokens.Main;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
+import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 
 import javax.annotation.Nonnull;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
 public class EmailPassword {
+
+    public static final long PASSWORD_RESET_TOKEN_LIFETIME_MS = 3600 * 1000;
 
     public static User signUp(Main main, @Nonnull String email, @Nonnull String password) throws
             DuplicateEmailException, StorageQueryException {
@@ -60,5 +67,24 @@ public class EmailPassword {
         }
 
         return new User(user.id, user.email);
+    }
+
+    public static String generatePasswordResetToken(Main main, String userId)
+            throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException,
+            UnknownUserIdException {
+
+        while (true) {
+            String token = Utils.generateNewSigningKey();
+
+            String hashedToken = Utils.hashSHA256(token);
+
+            try {
+                StorageLayer.getEmailPasswordStorageLayer(main).addPasswordResetToken(
+                        new PasswordResetTokenInfo(userId, hashedToken,
+                                System.currentTimeMillis() + PASSWORD_RESET_TOKEN_LIFETIME_MS));
+                return token;
+            } catch (DuplicatePasswordResetTokenException ignored) {
+            }
+        }
     }
 }

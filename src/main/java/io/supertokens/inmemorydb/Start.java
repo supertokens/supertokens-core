@@ -393,6 +393,22 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage {
     @Override
     public void addPasswordResetToken(PasswordResetTokenInfo passwordResetTokenInfo)
             throws StorageQueryException, UnknownUserIdException, DuplicatePasswordResetTokenException {
-        // TODO:
+        try {
+            // SQLite is not compiled with foreign key constraint and so we must check for the userId manually
+            if (this.getUserInfoUsingId(passwordResetTokenInfo.userId) == null) {
+                throw new UnknownUserIdException();
+            }
+
+            EmailPasswordQueries.addPasswordResetToken(this, passwordResetTokenInfo.userId,
+                    passwordResetTokenInfo.token, passwordResetTokenInfo.tokenExpiry);
+        } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
+                            Config.getConfig(this).getPasswordResetTokensTable() +
+                            ".user_id, " + Config.getConfig(this).getPasswordResetTokensTable() + ".token)")) {
+                throw new DuplicatePasswordResetTokenException();
+            }
+            throw new StorageQueryException(e);
+        }
     }
 }

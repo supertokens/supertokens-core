@@ -272,4 +272,12 @@ public class Utils {
         return UUID.randomUUID().toString();
     }
 
+    public static String exceptionStacktraceToString(Exception e) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintStream ps = new PrintStream(baos);
+        e.printStackTrace(ps);
+        ps.close();
+        return baos.toString();
+    }
+
 }
