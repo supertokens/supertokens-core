@@ -68,7 +68,7 @@ public class SignInAPI extends WebserverAPI {
 
         } catch (WrongCredentialsException e) {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "WRONG_CREDENTIAL_ERROR");
+            result.addProperty("status", "WRONG_CREDENTIALS_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
