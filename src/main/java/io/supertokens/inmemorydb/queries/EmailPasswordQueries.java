@@ -35,13 +35,22 @@ public class EmailPasswordQueries {
                 + "PRIMARY KEY (user_id));";
     }
 
+    static String getQueryToCreateUserPaginationIndex(Start start) {
+        return "CREATE INDEX email_password_user_pagination ON " + Config.getConfig(start).getUsersTable() +
+                "(time_joined DESC, user_id DESC);";
+    }
+
     static String getQueryToCreatePasswordResetTokensTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getPasswordResetTokensTable() + " ("
                 + "user_id CHAR(36) NOT NULL," + "token VARCHAR(80) NOT NULL UNIQUE,"
                 + "token_expiry BIGINT UNSIGNED NOT NULL," + "PRIMARY KEY (user_id, token),"
                 + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getUsersTable() +
-                "(user_id) ON DELETE CASCADE ON UPDATE CASCADE);" +
-                "CREATE INDEX token_expiry_index ON " + Config.getConfig(start).getPasswordResetTokensTable() +
+                "(user_id) ON DELETE CASCADE ON UPDATE CASCADE);";
+    }
+
+    static String getQueryToCreatePasswordResetTokenExpiryIndex(Start start) {
+        return "CREATE INDEX email_password_token_expiry_index ON " +
+                Config.getConfig(start).getPasswordResetTokensTable() +
                 "(token_expiry);";
     }
 
