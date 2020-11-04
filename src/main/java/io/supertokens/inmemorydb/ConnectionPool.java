@@ -40,6 +40,9 @@ public class ConnectionPool extends ResourceDistributor.SingletonResource {
     }
 
     public static Connection getConnection(Start start) throws SQLException {
+        if (!start.enabled) {
+            throw new SQLException("Storage layer disabled");
+        }
         return new ConnectionWithLocks(DriverManager.getConnection(URL), ConnectionPool.getInstance(start));
     }
 

@@ -26,6 +26,7 @@ import io.supertokens.session.refreshToken.RefreshToken;
 import io.supertokens.session.refreshToken.RefreshToken.RefreshTokenInfo;
 import io.supertokens.session.refreshToken.RefreshToken.TYPE;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
+import io.supertokens.version.Version;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -111,6 +112,11 @@ public class RefreshTokenTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+
+        if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+            // in mem db cannot pass this test
+            return;
+        }
 
         process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
