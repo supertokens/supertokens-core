@@ -40,7 +40,7 @@ public class EmailPassword {
 
             try {
                 StorageLayer.getEmailPasswordStorageLayer(main)
-                        .signUp(userId, email, hashedPassword, System.currentTimeMillis());
+                        .signUp(new UserInfo(userId, email, hashedPassword, System.currentTimeMillis()));
 
                 return new User(userId, email);
 

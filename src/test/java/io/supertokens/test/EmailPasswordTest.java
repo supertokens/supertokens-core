@@ -21,6 +21,7 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.User;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -67,13 +68,14 @@ public class EmailPasswordTest {
             return;
         }
 
-        StorageLayer.getEmailPasswordStorageLayer(process.getProcess()).signUp("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
-                "test@example.com", "passwordHash", System.currentTimeMillis());
+        StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+                .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
+                        "test@example.com", "passwordHash", System.currentTimeMillis()));
 
         try {
             StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
-                    .signUp("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
-                            "test1@example.com", "passwordHash", System.currentTimeMillis());
+                    .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
+                            "test1@example.com", "passwordHash", System.currentTimeMillis()));
             assert (false);
         } catch (DuplicateUserIdException e) {
 
@@ -117,13 +119,14 @@ public class EmailPasswordTest {
             return;
         }
 
-        StorageLayer.getEmailPasswordStorageLayer(process.getProcess()).signUp("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
-                "test@example.com", "passwordHash", System.currentTimeMillis());
+        StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+                .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
+                        "test@example.com", "passwordHash", System.currentTimeMillis()));
 
         try {
             StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
-                    .signUp("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
-                            "test@example.com", "passwordHash", System.currentTimeMillis());
+                    .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
+                            "test@example.com", "passwordHash", System.currentTimeMillis()));
             assert (false);
         } catch (DuplicateUserIdException e) {
 

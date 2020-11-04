@@ -26,9 +26,12 @@ import io.supertokens.inmemorydb.queries.GeneralQueries;
 import io.supertokens.inmemorydb.queries.SessionQueries;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.exceptions.QuitProgramFromPluginException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -349,10 +352,10 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage {
     }
 
     @Override
-    public void signUp(String userId, String email, String passwordHash, long timeJoined)
+    public void signUp(UserInfo userInfo)
             throws StorageQueryException, DuplicateUserIdException, DuplicateEmailException {
         try {
-            EmailPasswordQueries.signUp(this, userId, email, passwordHash, timeJoined);
+            EmailPasswordQueries.signUp(this, userInfo.id, userInfo.email, userInfo.passwordHash, userInfo.timeJoined);
         } catch (SQLException e) {
             if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
@@ -385,5 +388,11 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage {
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public void addPasswordResetToken(PasswordResetTokenInfo passwordResetTokenInfo)
+            throws StorageQueryException, UnknownUserIdException, DuplicatePasswordResetTokenException {
+        // TODO:
     }
 }
