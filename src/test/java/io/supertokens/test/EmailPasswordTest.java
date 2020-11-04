@@ -44,8 +44,10 @@ import static org.junit.Assert.assertNotNull;
  *  - Test UpdatableBCrypt class
  *     - test time taken for hash
  *     - test hashing and verifying with short passwords and > 100 char password
- *
  *  - Test that password reset token is generated, and can be verified from the db
+ *  - Test that if 5 password reset tokens are created, there exist 5 against that user, after using any one, 0 exist
+ *  for that user.
+ *
  * */
 
 public class EmailPasswordTest {
@@ -89,7 +91,7 @@ public class EmailPasswordTest {
                             "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "token",
                             System.currentTimeMillis() + EmailPassword.PASSWORD_RESET_TOKEN_LIFETIME_MS));
             assert (false);
-        } catch (DuplicatePasswordResetTokenException e) {
+        } catch (DuplicatePasswordResetTokenException ignored) {
 
         }
 
@@ -111,7 +113,7 @@ public class EmailPasswordTest {
         try {
             EmailPassword.generatePasswordResetToken(process.getProcess(), "8ed86166-bfd8-4234-9dfe-abca9606dbd5");
             assert (false);
-        } catch (UnknownUserIdException e) {
+        } catch (UnknownUserIdException ignored) {
 
         }
 
@@ -161,7 +163,7 @@ public class EmailPasswordTest {
                     .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
                             "test1@example.com", "passwordHash", System.currentTimeMillis()));
             assert (false);
-        } catch (DuplicateUserIdException e) {
+        } catch (DuplicateUserIdException ignored) {
 
         }
 
@@ -185,7 +187,7 @@ public class EmailPasswordTest {
         try {
             EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
             assert (false);
-        } catch (DuplicateEmailException e) {
+        } catch (DuplicateEmailException ignored) {
 
         }
         process.kill();
@@ -212,7 +214,7 @@ public class EmailPasswordTest {
                     .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
                             "test@example.com", "passwordHash", System.currentTimeMillis()));
             assert (false);
-        } catch (DuplicateUserIdException e) {
+        } catch (DuplicateUserIdException ignored) {
 
         }
 
@@ -257,7 +259,7 @@ public class EmailPasswordTest {
         try {
             EmailPassword.signIn(process.getProcess(), "test@example.com", "password");
             assert (false);
-        } catch (WrongCredentialsException e) {
+        } catch (WrongCredentialsException ignored) {
 
         }
 
@@ -266,7 +268,7 @@ public class EmailPasswordTest {
         try {
             EmailPassword.signIn(process.getProcess(), "test@example.com", "password1");
             assert (false);
-        } catch (WrongCredentialsException e) {
+        } catch (WrongCredentialsException ignored) {
 
         }
 

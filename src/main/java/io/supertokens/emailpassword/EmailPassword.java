@@ -74,9 +74,15 @@ public class EmailPassword {
             UnknownUserIdException {
 
         while (true) {
-            String token = Utils.generateNewSigningKey();
+            String token = Utils.convertToBase64(Utils.generateNewSigningKey());
+
+            // we make it URL safe:
+            token = token.replace("=", "");
+            token = token.replace("/", "");
+            token = token.replace("+", "");
 
             String hashedToken = Utils.hashSHA256(token);
+
 
             try {
                 StorageLayer.getEmailPasswordStorageLayer(main).addPasswordResetToken(
