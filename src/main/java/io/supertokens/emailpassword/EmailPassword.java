@@ -30,6 +30,7 @@ import io.supertokens.utils.Utils;
 
 import javax.annotation.Nonnull;
 import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 
 public class EmailPassword {
@@ -74,9 +75,20 @@ public class EmailPassword {
             UnknownUserIdException {
 
         while (true) {
-            String token = Utils.convertToBase64(Utils.generateNewSigningKey());
+
+            // we first generate a password reset token
+            byte[] random = new byte[64];
+            byte[] salt = new byte[64];
+
+            new SecureRandom().nextBytes(random);
+            new SecureRandom().nextBytes(salt);
+
+            int iterations = 1000;
+            String token = Utils
+                    .toHex(Utils.pbkdf2(Utils.bytesToString(random).toCharArray(), salt, iterations, 64 * 6));
 
             // we make it URL safe:
+            token = Utils.convertToBase64(token);
             token = token.replace("=", "");
             token = token.replace("/", "");
             token = token.replace("+", "");
