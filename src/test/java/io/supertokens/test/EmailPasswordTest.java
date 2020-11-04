@@ -47,6 +47,8 @@ import static org.junit.Assert.assertNotNull;
  *  - Test that password reset token is generated, and can be verified from the db
  *  - Test that if 5 password reset tokens are created, there exist 5 against that user, after using any one, 0 exist
  *  for that user.
+ *  - Test that the reset password token length is 128 and has URL safe characters (generate a token 100 times and
+ * for each, check the above).
  *
  * */
 

@@ -142,6 +142,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new JWTDataAPI(main));
         addAPI(new SignUpAPI(main));
         addAPI(new SignInAPI(main));
+        addAPI(new GeneratePasswordResetTokenAPI(main));
     }
 
     public void addAPI(WebserverAPI api) {
