@@ -73,6 +73,13 @@ public class GeneralQueries {
                  PreparedStatement pst = con.prepareStatement(EmailPasswordQueries.getQueryToCreateUsersTable(start))) {
                 pst.executeUpdate();
             }
+            // index
+            try (Connection con = ConnectionPool.getConnection(start);
+                 PreparedStatement pstIndex = con
+                         .prepareStatement(
+                                 EmailPasswordQueries.getQueryToCreateUserPaginationIndex(start))) {
+                pstIndex.executeUpdate();
+            }
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getPasswordResetTokensTable())) {
@@ -81,6 +88,13 @@ public class GeneralQueries {
                  PreparedStatement pst = con
                          .prepareStatement(EmailPasswordQueries.getQueryToCreatePasswordResetTokensTable(start))) {
                 pst.executeUpdate();
+            }
+            // index
+            try (Connection con = ConnectionPool.getConnection(start);
+                 PreparedStatement pstIndex = con
+                         .prepareStatement(
+                                 EmailPasswordQueries.getQueryToCreatePasswordResetTokenExpiryIndex(start))) {
+                pstIndex.executeUpdate();
             }
         }
 
