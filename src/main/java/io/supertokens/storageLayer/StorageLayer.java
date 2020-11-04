@@ -42,37 +42,35 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     private StorageLayer(Main main, String pluginFolderPath, String configFilePath) throws MalformedURLException {
         Logging.info(main, "Loading storage layer.");
         File loc = new File(pluginFolderPath);
+        Storage storageLayerTemp = null;
 
         File[] flist = loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar"));
 
-        if (flist == null) {
-            throw new QuitProgramException("No database plugin found. Please redownload and install SuperTokens");
-        }
-        URL[] urls = new URL[flist.length];
-        for (int i = 0; i < flist.length; i++) {
-            urls[i] = flist[i].toURI().toURL();
-        }
-        URLClassLoader ucl = new URLClassLoader(urls);
+        if (flist != null) {
+            URL[] urls = new URL[flist.length];
+            for (int i = 0; i < flist.length; i++) {
+                urls[i] = flist[i].toURI().toURL();
+            }
+            URLClassLoader ucl = new URLClassLoader(urls);
 
-        ServiceLoader<Storage> sl = ServiceLoader.load(Storage.class, ucl);
-        Iterator<Storage> it = sl.iterator();
-        Storage storageLayerTemp = null;
-        while (it.hasNext()) {
-            Storage plugin = it.next();
-            if (storageLayerTemp == null) {
-                storageLayerTemp = plugin;
-            } else {
-                throw new QuitProgramException(
-                        "Multiple database plugins found. Please make sure that just one plugin is in the /plugin " +
-                                "folder of the installation. Alternatively, please redownload and install SuperTokens" +
-                                ".");
+            ServiceLoader<Storage> sl = ServiceLoader.load(Storage.class, ucl);
+            Iterator<Storage> it = sl.iterator();
+            while (it.hasNext()) {
+                Storage plugin = it.next();
+                if (storageLayerTemp == null) {
+                    storageLayerTemp = plugin;
+                } else {
+                    throw new QuitProgramException(
+                            "Multiple database plugins found. Please make sure that just one plugin is in the /plugin" +
+                                    " " +
+                                    "folder of the installation. Alternatively, please redownload and install " +
+                                    "SuperTokens" +
+                                    ".");
+                }
             }
         }
-        if (storageLayerTemp == null) {
-            throw new QuitProgramException("No database plugin found. Please redownload and install SuperTokens");
-        }
 
-        if (!main.isForceInMemoryDB() && (
+        if (storageLayerTemp != null && !main.isForceInMemoryDB() && (
                 storageLayerTemp.canBeUsed(configFilePath) ||
                         CLIOptions.get(main).isForceNoInMemoryDB()
         )) {

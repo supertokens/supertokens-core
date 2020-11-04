@@ -52,7 +52,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage {
     private static final String ACCESS_TOKEN_SIGNING_KEY_NAME = "access_token_signing_key";
     private static final String REFRESH_TOKEN_KEY_NAME = "refresh_token_key";
     public static boolean isTesting = false;
-    private boolean enabled = true;
+    boolean enabled = true;
     private Main main;
 
     public Start(Main main) {

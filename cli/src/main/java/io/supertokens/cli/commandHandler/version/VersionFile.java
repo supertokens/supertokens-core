@@ -35,7 +35,7 @@ public class VersionFile {
     private String plugin_name;
 
     void validate() {
-        if (core_version == null || plugin_interface_version == null || plugin_version == null || plugin_name == null) {
+        if (core_version == null || plugin_interface_version == null) {
             throw new QuitProgramException(
                     "version.yaml file seems to be corrupted. Please redownload and install SuperTokens from " +
                             "https://supertokens.io/dashboard",
@@ -52,10 +52,17 @@ public class VersionFile {
     }
 
     public String getPluginVersion() {
+        if (plugin_version == null) {
+            // in memory db
+            return getCoreVersion();
+        }
         return plugin_version;
     }
 
     public String getPluginName() {
+        if (plugin_name == null) {
+            return "sqlite";
+        }
         return plugin_name;
     }
 
