@@ -411,4 +411,41 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage {
             throw new StorageQueryException(e);
         }
     }
+
+    @Override
+    public PasswordResetTokenInfo getPasswordResetTokenInfo(String token) throws StorageQueryException {
+        // TODO:
+        return null;
+    }
+
+    @Override
+    public void deletePasswordResetTokensOlderThan(long timeMS) throws StorageQueryException {
+        // TODO:
+    }
+
+    @Override
+    public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser(String userId) throws StorageQueryException {
+        // TODO:
+        return new PasswordResetTokenInfo[0];
+    }
+
+    @Override
+    public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser_Transaction(TransactionConnection con,
+                                                                                    String userId)
+            throws StorageQueryException {
+        // TODO:
+        return new PasswordResetTokenInfo[0];
+    }
+
+    @Override
+    public void deleteAllPasswordResetTokensForUser_Transaction(TransactionConnection con, String userId)
+            throws StorageQueryException {
+        // TODO:
+    }
+
+    @Override
+    public void updateUsersPassword_Transaction(TransactionConnection con, String userId, String newPassword)
+            throws StorageQueryException {
+        // TODO:
+    }
 }

@@ -17,6 +17,7 @@
 package io.supertokens.emailpassword;
 
 import io.supertokens.Main;
+import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -24,7 +25,9 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailExc
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 
@@ -103,6 +106,60 @@ public class EmailPassword {
                 return token;
             } catch (DuplicatePasswordResetTokenException ignored) {
             }
+        }
+    }
+
+    public static void resetPassword(Main main, String token, String password)
+            throws ResetPasswordInvalidTokenException, NoSuchAlgorithmException, StorageQueryException,
+            StorageTransactionLogicException {
+
+        String hashedToken = Utils.hashSHA256(token);
+        String hashedPassword = UpdatableBCrypt.hash(password);
+
+        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorageLayer(main);
+
+        PasswordResetTokenInfo resetInfo = storage.getPasswordResetTokenInfo(hashedToken);
+
+        if (resetInfo == null) {
+            throw new ResetPasswordInvalidTokenException();
+        }
+
+        final String userId = resetInfo.userId;
+
+        try {
+            storage.startTransaction(con -> {
+
+                PasswordResetTokenInfo[] allTokens = storage
+                        .getAllPasswordResetTokenInfoForUser_Transaction(con, userId);
+
+                PasswordResetTokenInfo matchedToken = null;
+                for (PasswordResetTokenInfo tok : allTokens) {
+                    if (tok.token.equals(hashedToken)) {
+                        matchedToken = tok;
+                        break;
+                    }
+                }
+
+                if (matchedToken == null) {
+                    throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
+                }
+
+                storage.deleteAllPasswordResetTokensForUser_Transaction(con, userId);
+
+                if (matchedToken.tokenExpiry < System.currentTimeMillis()) {
+                    throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
+                }
+
+                storage.updateUsersPassword_Transaction(con, userId, hashedPassword);
+
+                storage.commitTransaction(con);
+                return null;
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof ResetPasswordInvalidTokenException) {
+                throw (ResetPasswordInvalidTokenException) e.actualException;
+            }
+            throw e;
         }
     }
 }

@@ -48,7 +48,15 @@ import static org.junit.Assert.assertNotNull;
  *  - Test that if 5 password reset tokens are created, there exist 5 against that user, after using any one, 0 exist
  *  for that user.
  *  - Test that the reset password token length is 128 and has URL safe characters (generate a token 100 times and
- * for each, check the above).
+ *  for each, check the above).
+ *
+ * TODO:
+ *  - Test that a wrong password reset token throws the right error.
+ *  - Test that if there are two transactions running with the same password reset token, only one of them succeed
+ *  and the other throws ResetPasswordInvalidTokenException, and that there are no more tokens left for that user.
+ *  - Check that an expired password reset token throws the right error and that at the end, there are no more tokens
+ *  for that user left.
+ *  - Test that resetting a user's password actually reflects in the db
  *
  * */
 
