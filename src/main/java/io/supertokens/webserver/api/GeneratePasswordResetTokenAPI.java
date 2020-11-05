@@ -16,15 +16,11 @@
 
 package io.supertokens.webserver.api;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.User;
-import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -32,45 +28,42 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
-public class SignInAPI extends WebserverAPI {
+public class GeneratePasswordResetTokenAPI extends WebserverAPI {
 
     private static final long serialVersionUID = -4641988458637882374L;
 
-    public SignInAPI(Main main) {
+    public GeneratePasswordResetTokenAPI(Main main) {
         super(main);
     }
 
     @Override
     public String getPath() {
-        return "/recipe/signin";
+        return "/recipe/user/password/reset/token";
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String email = InputParser.parseStringOrThrowError(input, "email", false);
-        String password = InputParser.parseStringOrThrowError(input, "password", false);
-        assert password != null;
-        assert email != null;
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        assert userId != null;
 
-        // logic according to https://github.com/supertokens/supertokens-core/issues/104
-
-        String normalisedEmail = Utils.normaliseEmail(email);
+        // logic according to https://github.com/supertokens/supertokens-core/issues/106
 
         try {
-            User user = EmailPassword.signIn(super.main, normalisedEmail, password);
+            String token = EmailPassword.generatePasswordResetToken(super.main, userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            result.add("user", new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject());
+            result.addProperty("token", token);
             super.sendJsonResponse(200, result, resp);
-
-        } catch (WrongCredentialsException e) {
+        } catch (UnknownUserIdException e) {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "WRONG_CREDENTIALS_ERROR");
+            result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new ServletException(e);
         }
 

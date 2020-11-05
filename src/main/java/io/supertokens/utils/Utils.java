@@ -109,7 +109,7 @@ public class Utils {
                 + toHex(pbkdf2(bytesToString(random).toCharArray(), salt, iterations, 64 * 8));
     }
 
-    private static String bytesToString(byte[] bArr) {
+    public static String bytesToString(byte[] bArr) {
         StringBuilder sb = new StringBuilder();
         for (byte b : bArr) {
             sb.append(String.format("%02x", b));
@@ -121,7 +121,7 @@ public class Utils {
         return str.getBytes(StandardCharsets.UTF_8);
     }
 
-    private static String toHex(byte[] array) {
+    public static String toHex(byte[] array) {
         BigInteger bi = new BigInteger(1, array);
         String hex = bi.toString(16);
         int paddingLength = (array.length * 2) - hex.length();
@@ -200,7 +200,7 @@ public class Utils {
         return new String(cipher.doFinal(cipherBytes));
     }
 
-    private static byte[] pbkdf2(char[] text, byte[] salt, int iterationCount, int keyLength)
+    public static byte[] pbkdf2(char[] text, byte[] salt, int iterationCount, int keyLength)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
 
         KeySpec spec = new PBEKeySpec(text, salt, iterationCount, keyLength);
@@ -270,6 +270,14 @@ public class Utils {
 
     public static String getUUID() {
         return UUID.randomUUID().toString();
+    }
+
+    public static String exceptionStacktraceToString(Exception e) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintStream ps = new PrintStream(baos);
+        e.printStackTrace(ps);
+        ps.close();
+        return baos.toString();
     }
 
 }

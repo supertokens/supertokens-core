@@ -17,17 +17,36 @@
 package io.supertokens.emailpassword;
 
 import io.supertokens.Main;
+import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
+import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 
 import javax.annotation.Nonnull;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.security.spec.InvalidKeySpecException;
 
 public class EmailPassword {
+
+    public static final long PASSWORD_RESET_TOKEN_LIFETIME_MS =
+            3600 * 1000; // this is related to the interval for the cronjob: DeleteExpiredPasswordResetTokens
+
+    private static long getPasswordResetTokenLifetime(Main main) {
+        if (Main.isTesting) {
+            return EmailPasswordTest.getInstance(main).getPasswordResetTokenLifetime();
+        }
+        return PASSWORD_RESET_TOKEN_LIFETIME_MS;
+    }
 
     public static User signUp(Main main, @Nonnull String email, @Nonnull String password) throws
             DuplicateEmailException, StorageQueryException {
@@ -40,7 +59,7 @@ public class EmailPassword {
 
             try {
                 StorageLayer.getEmailPasswordStorageLayer(main)
-                        .signUp(userId, email, hashedPassword, System.currentTimeMillis());
+                        .signUp(new UserInfo(userId, email, hashedPassword, System.currentTimeMillis()));
 
                 return new User(userId, email);
 
@@ -55,10 +74,111 @@ public class EmailPassword {
 
         UserInfo user = StorageLayer.getEmailPasswordStorageLayer(main).getUserInfoUsingEmail(email);
 
-        if (user == null || !UpdatableBCrypt.verifyHash(password, user.passwordHash)) {
+        if (user == null) {
+            throw new WrongCredentialsException();
+        }
+
+        try {
+            if (!UpdatableBCrypt.verifyHash(password, user.passwordHash)) {
+                throw new WrongCredentialsException();
+            }
+        } catch (WrongCredentialsException e) {
+            throw e;
+        } catch (Exception ignored) {
             throw new WrongCredentialsException();
         }
 
         return new User(user.id, user.email);
+    }
+
+    public static String generatePasswordResetToken(Main main, String userId)
+            throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException,
+            UnknownUserIdException {
+
+        while (true) {
+
+            // we first generate a password reset token
+            byte[] random = new byte[64];
+            byte[] salt = new byte[64];
+
+            new SecureRandom().nextBytes(random);
+            new SecureRandom().nextBytes(salt);
+
+            int iterations = 1000;
+            String token = Utils
+                    .toHex(Utils.pbkdf2(Utils.bytesToString(random).toCharArray(), salt, iterations, 64 * 6));
+
+            // we make it URL safe:
+            token = Utils.convertToBase64(token);
+            token = token.replace("=", "");
+            token = token.replace("/", "");
+            token = token.replace("+", "");
+
+            String hashedToken = Utils.hashSHA256(token);
+
+
+            try {
+                StorageLayer.getEmailPasswordStorageLayer(main).addPasswordResetToken(
+                        new PasswordResetTokenInfo(userId, hashedToken,
+                                System.currentTimeMillis() + getPasswordResetTokenLifetime(main)));
+                return token;
+            } catch (DuplicatePasswordResetTokenException ignored) {
+            }
+        }
+    }
+
+    public static void resetPassword(Main main, String token, String password)
+            throws ResetPasswordInvalidTokenException, NoSuchAlgorithmException, StorageQueryException,
+            StorageTransactionLogicException {
+
+        String hashedToken = Utils.hashSHA256(token);
+        String hashedPassword = UpdatableBCrypt.hash(password);
+
+        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorageLayer(main);
+
+        PasswordResetTokenInfo resetInfo = storage.getPasswordResetTokenInfo(hashedToken);
+
+        if (resetInfo == null) {
+            throw new ResetPasswordInvalidTokenException();
+        }
+
+        final String userId = resetInfo.userId;
+
+        try {
+            storage.startTransaction(con -> {
+
+                PasswordResetTokenInfo[] allTokens = storage
+                        .getAllPasswordResetTokenInfoForUser_Transaction(con, userId);
+
+                PasswordResetTokenInfo matchedToken = null;
+                for (PasswordResetTokenInfo tok : allTokens) {
+                    if (tok.token.equals(hashedToken)) {
+                        matchedToken = tok;
+                        break;
+                    }
+                }
+
+                if (matchedToken == null) {
+                    throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
+                }
+
+                storage.deleteAllPasswordResetTokensForUser_Transaction(con, userId);
+
+                if (matchedToken.tokenExpiry < System.currentTimeMillis()) {
+                    storage.commitTransaction(con);
+                    throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
+                }
+
+                storage.updateUsersPassword_Transaction(con, userId, hashedPassword);
+
+                storage.commitTransaction(con);
+                return null;
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof ResetPasswordInvalidTokenException) {
+                throw (ResetPasswordInvalidTokenException) e.actualException;
+            }
+            throw e;
+        }
     }
 }

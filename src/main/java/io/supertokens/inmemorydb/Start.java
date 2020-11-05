@@ -26,9 +26,12 @@ import io.supertokens.inmemorydb.queries.GeneralQueries;
 import io.supertokens.inmemorydb.queries.SessionQueries;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.exceptions.QuitProgramFromPluginException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -349,10 +352,10 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage {
     }
 
     @Override
-    public void signUp(String userId, String email, String passwordHash, long timeJoined)
+    public void signUp(UserInfo userInfo)
             throws StorageQueryException, DuplicateUserIdException, DuplicateEmailException {
         try {
-            EmailPasswordQueries.signUp(this, userId, email, passwordHash, timeJoined);
+            EmailPasswordQueries.signUp(this, userInfo.id, userInfo.email, userInfo.passwordHash, userInfo.timeJoined);
         } catch (SQLException e) {
             if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
@@ -382,6 +385,89 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage {
     public UserInfo getUserInfoUsingEmail(String email) throws StorageQueryException {
         try {
             return EmailPasswordQueries.getUserInfoUsingEmail(this, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void addPasswordResetToken(PasswordResetTokenInfo passwordResetTokenInfo)
+            throws StorageQueryException, UnknownUserIdException, DuplicatePasswordResetTokenException {
+        try {
+            // SQLite is not compiled with foreign key constraint and so we must check for the userId manually
+            if (this.getUserInfoUsingId(passwordResetTokenInfo.userId) == null) {
+                throw new UnknownUserIdException();
+            }
+
+            EmailPasswordQueries.addPasswordResetToken(this, passwordResetTokenInfo.userId,
+                    passwordResetTokenInfo.token, passwordResetTokenInfo.tokenExpiry);
+        } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
+                            Config.getConfig(this).getPasswordResetTokensTable() +
+                            ".user_id, " + Config.getConfig(this).getPasswordResetTokensTable() + ".token)")) {
+                throw new DuplicatePasswordResetTokenException();
+            }
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public PasswordResetTokenInfo getPasswordResetTokenInfo(String token) throws StorageQueryException {
+        try {
+            return EmailPasswordQueries.getPasswordResetTokenInfo(this, token);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser(String userId) throws StorageQueryException {
+        try {
+            return EmailPasswordQueries.getAllPasswordResetTokenInfoForUser(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser_Transaction(TransactionConnection con,
+                                                                                    String userId)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return EmailPasswordQueries.getAllPasswordResetTokenInfoForUser_Transaction(this, sqlCon, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteAllPasswordResetTokensForUser_Transaction(TransactionConnection con, String userId)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            EmailPasswordQueries.deleteAllPasswordResetTokensForUser_Transaction(this, sqlCon, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void updateUsersPassword_Transaction(TransactionConnection con, String userId, String newPassword)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            EmailPasswordQueries.updateUsersPassword_Transaction(this, sqlCon, userId, newPassword);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteExpiredPasswordResetTokens() throws StorageQueryException {
+        try {
+            EmailPasswordQueries.deleteExpiredPasswordResetTokens(this);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
