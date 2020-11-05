@@ -26,10 +26,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.webserver.api.core.ConfigAPI;
 import io.supertokens.webserver.api.core.HelloAPI;
 import io.supertokens.webserver.api.core.NotFoundAPI;
-import io.supertokens.webserver.api.emailpassword.GeneratePasswordResetTokenAPI;
-import io.supertokens.webserver.api.emailpassword.ResetPasswordAPI;
-import io.supertokens.webserver.api.emailpassword.SignInAPI;
-import io.supertokens.webserver.api.emailpassword.SignUpAPI;
+import io.supertokens.webserver.api.emailpassword.*;
 import io.supertokens.webserver.api.session.*;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
@@ -151,6 +148,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new SignInAPI(main));
         addAPI(new GeneratePasswordResetTokenAPI(main));
         addAPI(new ResetPasswordAPI(main));
+        addAPI(new UserAPI(main));
     }
 
     public void addAPI(WebserverAPI api) {

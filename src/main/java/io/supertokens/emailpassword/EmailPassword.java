@@ -181,4 +181,20 @@ public class EmailPassword {
             throw e;
         }
     }
+
+    public static User getUserUsingUsingId(Main main, String userId) throws StorageQueryException {
+        UserInfo info = StorageLayer.getEmailPasswordStorageLayer(main).getUserInfoUsingId(userId);
+        if (info == null) {
+            return null;
+        }
+        return new User(info.id, info.email);
+    }
+
+    public static User getUserUsingUsingEmail(Main main, String email) throws StorageQueryException {
+        UserInfo info = StorageLayer.getEmailPasswordStorageLayer(main).getUserInfoUsingEmail(email);
+        if (info == null) {
+            return null;
+        }
+        return new User(info.id, info.email);
+    }
 }
