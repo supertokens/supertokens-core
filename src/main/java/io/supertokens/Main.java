@@ -20,6 +20,7 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
+import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens;
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
@@ -175,6 +176,9 @@ public class Main {
 
         // starts removing old session cronjob
         Cronjobs.addCronjob(this, DeleteExpiredSessions.getInstance(this));
+
+        // starts removing old password reset tokens
+        Cronjobs.addCronjob(this, DeleteExpiredPasswordResetTokens.getInstance(this));
 
         // start web server to accept incoming traffic
         Webserver.getInstance(this).start();

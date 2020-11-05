@@ -47,6 +47,17 @@ public class EmailPasswordQueries {
                 "(user_id) ON DELETE CASCADE ON UPDATE CASCADE);";
     }
 
+    public static void deleteExpiredPasswordResetTokens(Start start) throws SQLException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getPasswordResetTokensTable() +
+                " WHERE token_expiry < ?";
+
+        try (Connection con = ConnectionPool.getConnection(start);
+             PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setLong(1, System.currentTimeMillis());
+            pst.executeUpdate();
+        }
+    }
+
     public static void updateUsersPassword_Transaction(Start start, Connection con,
                                                        String userId, String newPassword)
             throws SQLException {

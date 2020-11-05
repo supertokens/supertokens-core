@@ -465,7 +465,11 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage {
     }
 
     @Override
-    public void deletePasswordResetTokensOlderThan(long timeMS) throws StorageQueryException {
-        // TODO:
+    public void deleteExpiredPasswordResetTokens() throws StorageQueryException {
+        try {
+            EmailPasswordQueries.deleteExpiredPasswordResetTokens(this);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }
