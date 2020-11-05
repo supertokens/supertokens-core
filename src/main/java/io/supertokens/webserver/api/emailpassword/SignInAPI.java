@@ -14,14 +14,17 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api;
+package io.supertokens.webserver.api.emailpassword;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
+import io.supertokens.emailpassword.User;
+import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -29,57 +32,47 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
 
-public class ResetPasswordAPI extends WebserverAPI {
-    private static final long serialVersionUID = -7529428297450682549L;
+public class SignInAPI extends WebserverAPI {
 
-    public ResetPasswordAPI(Main main) {
+    private static final long serialVersionUID = -4641988458637882374L;
+
+    public SignInAPI(Main main) {
         super(main);
     }
 
     @Override
     public String getPath() {
-        return "/recipe/user/password/reset";
+        return "/recipe/signin";
     }
-
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String method = InputParser.parseStringOrThrowError(input, "method", false);
-        String token = InputParser.parseStringOrThrowError(input, "token", false);
-        String newPassword = InputParser.parseStringOrThrowError(input, "newPassword", false);
-        assert newPassword != null;
-        assert method != null;
-        assert token != null;
+        String email = InputParser.parseStringOrThrowError(input, "email", false);
+        String password = InputParser.parseStringOrThrowError(input, "password", false);
+        assert password != null;
+        assert email != null;
 
-        // logic according to https://github.com/supertokens/supertokens-core/issues/109
+        // logic according to https://github.com/supertokens/supertokens-core/issues/104
 
-        if (!method.equals("token")) {
-            throw new ServletException(new WebserverAPI.BadRequestException("Unsupported method for password reset"));
-        }
-
-        if (newPassword.equals("")) {
-            throw new ServletException(
-                    new WebserverAPI.BadRequestException("Password cannot be an empty string"));
-        }
+        String normalisedEmail = Utils.normaliseEmail(email);
 
         try {
-            EmailPassword.resetPassword(super.main, token, newPassword);
+            User user = EmailPassword.signIn(super.main, normalisedEmail, password);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
+            result.add("user", new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject());
             super.sendJsonResponse(200, result, resp);
 
-        } catch (ResetPasswordInvalidTokenException e) {
+        } catch (WrongCredentialsException e) {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "RESET_PASSWORD_INVALID_TOKEN_ERROR");
+            result.addProperty("status", "WRONG_CREDENTIALS_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
 
     }
-
 }

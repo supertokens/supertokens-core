@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api;
+package io.supertokens.webserver.api.session;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;

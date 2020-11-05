@@ -14,58 +14,55 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api;
+package io.supertokens.webserver.api.core;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.io.File;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 
-public class GeneratePasswordResetTokenAPI extends WebserverAPI {
-
+public class ConfigAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
-    public GeneratePasswordResetTokenAPI(Main main) {
+    public ConfigAPI(Main main) {
         super(main);
     }
 
     @Override
     public String getPath() {
-        return "/recipe/user/password/reset/token";
+        return "/config";
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
-        assert userId != null;
+    protected boolean checkAPIKey() {
+        return false;
+    }
 
-        // logic according to https://github.com/supertokens/supertokens-core/issues/106
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        String pid = InputParser.getQueryParamOrThrowError(req, "pid", false);
 
-        try {
-            String token = EmailPassword.generatePasswordResetToken(super.main, userId);
-
+        if ((ProcessHandle.current().pid() + "").equals(pid)) {
+            String path = CLIOptions.get(main).getConfigFilePath() == null
+                    ? CLIOptions.get(main).getInstallationPath() + "config.yaml"
+                    : CLIOptions.get(main).getConfigFilePath();
+            File f = new File(path);
+            path = f.getAbsolutePath();
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            result.addProperty("token", token);
+            result.addProperty("path", path);
             super.sendJsonResponse(200, result, resp);
-        } catch (UnknownUserIdException e) {
+        } else {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
+            result.addProperty("status", "NOT_ALLOWED");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeySpecException e) {
-            throw new ServletException(e);
         }
-
     }
 }

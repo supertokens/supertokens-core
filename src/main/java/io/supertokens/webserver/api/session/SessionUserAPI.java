@@ -14,55 +14,55 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api;
+package io.supertokens.webserver.api.session;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
-import io.supertokens.cliOptions.CLIOptions;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.session.Session;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
 import java.io.IOException;
 
-public class ConfigAPI extends WebserverAPI {
-    private static final long serialVersionUID = -4641988458637882374L;
+public class SessionUserAPI extends WebserverAPI {
 
-    public ConfigAPI(Main main) {
+    private static final long serialVersionUID = 3488492313129193443L;
+
+    public SessionUserAPI(Main main) {
         super(main);
     }
 
     @Override
     public String getPath() {
-        return "/config";
-    }
-
-    @Override
-    protected boolean checkAPIKey() {
-        return false;
+        return "/recipe/session/user";
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        String pid = InputParser.getQueryParamOrThrowError(req, "pid", false);
+        String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
+        assert userId != null;
 
-        if ((ProcessHandle.current().pid() + "").equals(pid)) {
-            String path = CLIOptions.get(main).getConfigFilePath() == null
-                    ? CLIOptions.get(main).getInstallationPath() + "config.yaml"
-                    : CLIOptions.get(main).getConfigFilePath();
-            File f = new File(path);
-            path = f.getAbsolutePath();
+        try {
+            String[] sessionHandles = Session.getAllSessionHandlesForUser(main, userId);
+
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            result.addProperty("path", path);
+            JsonArray arr = new JsonArray();
+            for (String s : sessionHandles) {
+                arr.add(new JsonPrimitive(s));
+            }
+            result.add("sessionHandles", arr);
             super.sendJsonResponse(200, result, resp);
-        } else {
-            JsonObject result = new JsonObject();
-            result.addProperty("status", "NOT_ALLOWED");
-            super.sendJsonResponse(200, result, resp);
+
+        } catch (StorageQueryException e) {
+            throw new ServletException(e);
         }
     }
+
 }

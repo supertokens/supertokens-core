@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api;
+package io.supertokens.webserver.api.core;
 
 import io.supertokens.Main;
 import io.supertokens.output.Logging;

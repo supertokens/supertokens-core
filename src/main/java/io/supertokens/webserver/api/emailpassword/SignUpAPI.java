@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api;
+package io.supertokens.webserver.api.emailpassword;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;

@@ -14,14 +14,17 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api;
+package io.supertokens.webserver.api.session;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.config.Config;
+import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.session.Session;
+import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -29,35 +32,50 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SignatureException;
+import java.security.spec.InvalidKeySpecException;
 
-public class HandshakeAPI extends WebserverAPI {
-    private static final long serialVersionUID = -3647598432179106404L;
+public class SessionRegenerateAPI extends WebserverAPI {
 
-    public HandshakeAPI(Main main) {
+    private static final long serialVersionUID = -6614427303762598143L;
+
+    public SessionRegenerateAPI(Main main) {
         super(main);
     }
 
     @Override
     public String getPath() {
-        return "/recipe/handshake";
+        return "/recipe/session/regenerate";
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+
+        String accessToken = InputParser.parseStringOrThrowError(input, "accessToken", false);
+        assert accessToken != null;
+
+        JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", true);
+
         try {
-            JsonObject result = new JsonObject();
+            SessionInformationHolder sessionInfo = Session.regenerateToken(main, accessToken, userDataInJWT);
+
+            JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
+
             result.addProperty("status", "OK");
-            result.addProperty("jwtSigningPublicKey", AccessTokenSigningKey.getInstance(main).getKey().publicKey);
-            result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
-            result.addProperty("enableAntiCsrf", Config.getConfig(main).getEnableAntiCSRF());
-            result.addProperty("accessTokenBlacklistingEnabled", Config.getConfig(main).getAccessTokenBlacklisting());
-            result.addProperty("accessTokenValidity", Config.getConfig(main).getAccessTokenValidity());
-            result.addProperty("refreshTokenValidity", Config.getConfig(main).getRefreshTokenValidity());
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+
+        } catch (StorageQueryException | StorageTransactionLogicException |
+                NoSuchAlgorithmException | InvalidKeyException | SignatureException | InvalidKeySpecException e) {
             throw new ServletException(e);
+        } catch (UnauthorisedException e) {
+            JsonObject reply = new JsonObject();
+            reply.addProperty("status", "UNAUTHORISED");
+            reply.addProperty("message", e.getMessage());
+            super.sendJsonResponse(200, reply, resp);
         }
     }
+
 }

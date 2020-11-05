@@ -14,9 +14,8 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api;
+package io.supertokens.webserver.api.session;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.exceptions.UnauthorisedException;
@@ -30,34 +29,29 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-public class JWTDataAPI extends WebserverAPI {
-    private static final long serialVersionUID = -4989144736402314280L;
+public class SessionDataAPI extends WebserverAPI {
+    private static final long serialVersionUID = -6901312482713647177L;
 
-    public JWTDataAPI(Main main) {
+    public SessionDataAPI(Main main) {
         super(main);
     }
 
     @Override
     public String getPath() {
-        return "/recipe/jwt/data";
+        return "/recipe/session/data";
     }
 
     @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-
-        String sessionHandle = InputParser.parseStringOrThrowError(input, "sessionHandle", false);
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
         assert sessionHandle != null;
 
-        JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", false);
-        assert userDataInJWT != null;
-
         try {
-            Session.updateSession(main, sessionHandle, null, userDataInJWT, null);
+            JsonObject userDataInDatabase = Session.getSessionData(main, sessionHandle);
 
             JsonObject result = new JsonObject();
-
             result.addProperty("status", "OK");
+            result.add("userDataInDatabase", userDataInDatabase);
             super.sendJsonResponse(200, result, resp);
 
         } catch (StorageQueryException e) {
@@ -71,17 +65,18 @@ public class JWTDataAPI extends WebserverAPI {
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        String sessionHandle = InputParser.parseStringOrThrowError(input, "sessionHandle", false);
         assert sessionHandle != null;
+        JsonObject userDataInDatabase = InputParser.parseJsonObjectOrThrowError(input, "userDataInDatabase", false);
+        assert userDataInDatabase != null;
 
         try {
-            JsonElement jwtPayload = Session.getJWTData(main, sessionHandle);
+            Session.updateSession(main, sessionHandle, userDataInDatabase, null, null);
 
             JsonObject result = new JsonObject();
-
             result.addProperty("status", "OK");
-            result.add("userDataInJWT", jwtPayload);
             super.sendJsonResponse(200, result, resp);
 
         } catch (StorageQueryException e) {

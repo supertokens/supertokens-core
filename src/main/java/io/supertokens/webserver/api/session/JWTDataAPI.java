@@ -14,17 +14,14 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api;
+package io.supertokens.webserver.api.session;
 
-import com.google.gson.Gson;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
-import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -32,43 +29,62 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
-import java.security.spec.InvalidKeySpecException;
 
-public class SessionRegenerateAPI extends WebserverAPI {
+public class JWTDataAPI extends WebserverAPI {
+    private static final long serialVersionUID = -4989144736402314280L;
 
-    private static final long serialVersionUID = -6614427303762598143L;
-
-    public SessionRegenerateAPI(Main main) {
+    public JWTDataAPI(Main main) {
         super(main);
     }
 
     @Override
     public String getPath() {
-        return "/recipe/session/regenerate";
+        return "/recipe/jwt/data";
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String accessToken = InputParser.parseStringOrThrowError(input, "accessToken", false);
-        assert accessToken != null;
+        String sessionHandle = InputParser.parseStringOrThrowError(input, "sessionHandle", false);
+        assert sessionHandle != null;
 
-        JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", true);
+        JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", false);
+        assert userDataInJWT != null;
 
         try {
-            SessionInformationHolder sessionInfo = Session.regenerateToken(main, accessToken, userDataInJWT);
+            Session.updateSession(main, sessionHandle, null, userDataInJWT, null);
 
-            JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
+            JsonObject result = new JsonObject();
 
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException |
-                NoSuchAlgorithmException | InvalidKeyException | SignatureException | InvalidKeySpecException e) {
+        } catch (StorageQueryException e) {
+            throw new ServletException(e);
+        } catch (UnauthorisedException e) {
+            JsonObject reply = new JsonObject();
+            reply.addProperty("status", "UNAUTHORISED");
+            reply.addProperty("message", e.getMessage());
+            super.sendJsonResponse(200, reply, resp);
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
+        assert sessionHandle != null;
+
+        try {
+            JsonElement jwtPayload = Session.getJWTData(main, sessionHandle);
+
+            JsonObject result = new JsonObject();
+
+            result.addProperty("status", "OK");
+            result.add("userDataInJWT", jwtPayload);
+            super.sendJsonResponse(200, result, resp);
+
+        } catch (StorageQueryException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             JsonObject reply = new JsonObject();
