@@ -47,6 +47,12 @@ public class EmailPasswordQueries {
                 "(user_id) ON DELETE CASCADE ON UPDATE CASCADE);";
     }
 
+    static String getQueryToCreatePasswordResetTokenExpiryIndex(Start start) {
+        return "CREATE INDEX email_password_password_reset_token_expiry_index ON " +
+                Config.getConfig(start).getPasswordResetTokensTable() +
+                "(token_expiry);";
+    }
+
     public static void deleteExpiredPasswordResetTokens(Start start) throws SQLException {
         String QUERY = "DELETE FROM " + Config.getConfig(start).getPasswordResetTokensTable() +
                 " WHERE token_expiry < ?";
@@ -163,12 +169,6 @@ public class EmailPasswordQueries {
             pst.setLong(3, expiry);
             pst.executeUpdate();
         }
-    }
-
-    static String getQueryToCreatePasswordResetTokenExpiryIndex(Start start) {
-        return "CREATE INDEX email_password_token_expiry_index ON " +
-                Config.getConfig(start).getPasswordResetTokensTable() +
-                "(token_expiry);";
     }
 
     public static void signUp(Start start, String userId, String email, String passwordHash, long timeJoined)
