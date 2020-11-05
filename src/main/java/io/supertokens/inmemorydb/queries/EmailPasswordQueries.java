@@ -17,14 +17,18 @@
 package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.ConnectionPool;
+import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class EmailPasswordQueries {
 
@@ -41,6 +45,98 @@ public class EmailPasswordQueries {
                 + "token_expiry BIGINT UNSIGNED NOT NULL," + "PRIMARY KEY (user_id, token),"
                 + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getUsersTable() +
                 "(user_id) ON DELETE CASCADE ON UPDATE CASCADE);";
+    }
+
+    public static void updateUsersPassword_Transaction(Start start, Connection con,
+                                                       String userId, String newPassword)
+            throws SQLException {
+        String QUERY = "UPDATE " + Config.getConfig(start).getUsersTable()
+                + " SET password_hash = ? WHERE user_id = ?";
+
+        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, newPassword);
+            pst.setString(2, userId);
+            pst.executeUpdate();
+        }
+    }
+
+    public static void deleteAllPasswordResetTokensForUser_Transaction(Start start,
+                                                                       Connection con, String userId)
+            throws SQLException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getPasswordResetTokensTable()
+                + " WHERE user_id = ?";
+
+        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, userId);
+            pst.executeUpdate();
+        }
+    }
+
+    public static PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser(Start start, String userId)
+            throws SQLException {
+        String QUERY =
+                "SELECT user_id, token, token_expiry FROM " + Config.getConfig(start).getPasswordResetTokensTable() +
+                        " WHERE user_id = ?";
+
+        try (Connection con = ConnectionPool.getConnection(start);
+             PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, userId);
+            ResultSet result = pst.executeQuery();
+            List<PasswordResetTokenInfo> temp = new ArrayList<>();
+            while (result.next()) {
+                temp.add(new PasswordResetTokenInfo(result.getString("user_id"),
+                        result.getString("token"),
+                        result.getLong("token_expiry")));
+            }
+            PasswordResetTokenInfo[] finalResult = new PasswordResetTokenInfo[temp.size()];
+            for (int i = 0; i < temp.size(); i++) {
+                finalResult[i] = temp.get(i);
+            }
+            return finalResult;
+        }
+    }
+
+    public static PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser_Transaction(Start start, Connection con,
+                                                                                           String userId)
+            throws SQLException {
+
+        ((ConnectionWithLocks) con).lock(userId);
+
+        String QUERY =
+                "SELECT user_id, token, token_expiry FROM " + Config.getConfig(start).getPasswordResetTokensTable() +
+                        " WHERE user_id = ?";
+
+        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, userId);
+            ResultSet result = pst.executeQuery();
+            List<PasswordResetTokenInfo> temp = new ArrayList<>();
+            while (result.next()) {
+                temp.add(new PasswordResetTokenInfo(result.getString("user_id"),
+                        result.getString("token"),
+                        result.getLong("token_expiry")));
+            }
+            PasswordResetTokenInfo[] finalResult = new PasswordResetTokenInfo[temp.size()];
+            for (int i = 0; i < temp.size(); i++) {
+                finalResult[i] = temp.get(i);
+            }
+            return finalResult;
+        }
+    }
+
+    public static PasswordResetTokenInfo getPasswordResetTokenInfo(Start start, String token) throws SQLException {
+        String QUERY = "SELECT user_id, token, token_expiry FROM "
+                + Config.getConfig(start).getPasswordResetTokensTable() + " WHERE token = ?";
+        try (Connection con = ConnectionPool.getConnection(start);
+             PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, token);
+            ResultSet result = pst.executeQuery();
+            if (result.next()) {
+                return new PasswordResetTokenInfo(result.getString("user_id"),
+                        result.getString("token"),
+                        result.getLong("token_expiry"));
+            }
+        }
+        return null;
     }
 
     public static void addPasswordResetToken(Start start, String userId, String tokenHash, long expiry)

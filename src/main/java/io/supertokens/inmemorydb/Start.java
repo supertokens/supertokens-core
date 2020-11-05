@@ -414,38 +414,58 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage {
 
     @Override
     public PasswordResetTokenInfo getPasswordResetTokenInfo(String token) throws StorageQueryException {
-        // TODO:
-        return null;
-    }
-
-    @Override
-    public void deletePasswordResetTokensOlderThan(long timeMS) throws StorageQueryException {
-        // TODO:
+        try {
+            return EmailPasswordQueries.getPasswordResetTokenInfo(this, token);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser(String userId) throws StorageQueryException {
-        // TODO:
-        return new PasswordResetTokenInfo[0];
+        try {
+            return EmailPasswordQueries.getAllPasswordResetTokenInfoForUser(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser_Transaction(TransactionConnection con,
                                                                                     String userId)
             throws StorageQueryException {
-        // TODO:
-        return new PasswordResetTokenInfo[0];
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return EmailPasswordQueries.getAllPasswordResetTokenInfoForUser_Transaction(this, sqlCon, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public void deleteAllPasswordResetTokensForUser_Transaction(TransactionConnection con, String userId)
             throws StorageQueryException {
-        // TODO:
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            EmailPasswordQueries.deleteAllPasswordResetTokensForUser_Transaction(this, sqlCon, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public void updateUsersPassword_Transaction(TransactionConnection con, String userId, String newPassword)
             throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            EmailPasswordQueries.updateUsersPassword_Transaction(this, sqlCon, userId, newPassword);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deletePasswordResetTokensOlderThan(long timeMS) throws StorageQueryException {
         // TODO:
     }
 }

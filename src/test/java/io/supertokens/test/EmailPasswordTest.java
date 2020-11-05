@@ -19,6 +19,7 @@ package io.supertokens.test;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.User;
+import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
@@ -34,6 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 /*
@@ -44,19 +46,10 @@ import static org.junit.Assert.assertNotNull;
  *  - Test UpdatableBCrypt class
  *     - test time taken for hash
  *     - test hashing and verifying with short passwords and > 100 char password
- *  - Test that password reset token is generated, and can be verified from the db
- *  - Test that if 5 password reset tokens are created, there exist 5 against that user, after using any one, 0 exist
- *  for that user.
  *  - Test that the reset password token length is 128 and has URL safe characters (generate a token 100 times and
  *  for each, check the above).
- *
- * TODO:
- *  - Test that a wrong password reset token throws the right error.
  *  - Test that if there are two transactions running with the same password reset token, only one of them succeed
  *  and the other throws ResetPasswordInvalidTokenException, and that there are no more tokens left for that user.
- *  - Check that an expired password reset token throws the right error and that at the end, there are no more tokens
- *  for that user left.
- *  - Test that resetting a user's password actually reflects in the db
  *
  * */
 
@@ -75,6 +68,128 @@ public class EmailPasswordTest {
     }
 
     @Test
+    public void passwordResetTokenExpiredCheck() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        io.supertokens.emailpassword.EmailPasswordTest.getInstance(process.getProcess())
+                .setPasswordResetTokenLifetime(10);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        User user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+
+        String tok = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
+
+        assert (StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+                .getAllPasswordResetTokenInfoForUser(user.id).length == 1);
+
+        Thread.sleep(20);
+
+        try {
+            EmailPassword.resetPassword(process.getProcess(), tok, "newPassword");
+            assert (false);
+        } catch (ResetPasswordInvalidTokenException ignored) {
+
+        }
+
+        assert (StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+                .getAllPasswordResetTokenInfoForUser(user.id).length == 0);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void multiplePasswordResetTokensPerUserAndThenVerifyWithSignin() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        User user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+
+
+        EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
+        String tok = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
+        EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
+
+        PasswordResetTokenInfo[] tokens = StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+                .getAllPasswordResetTokenInfoForUser(user.id);
+
+        assert (tokens.length == 3);
+
+        EmailPassword.resetPassword(process.getProcess(), tok, "newPassword");
+
+        tokens = StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+                .getAllPasswordResetTokenInfoForUser(user.id);
+        assert (tokens.length == 0);
+
+        try {
+            EmailPassword.signIn(process.getProcess(), "test1@example.com", "password");
+            assert (false);
+        } catch (WrongCredentialsException ignored) {
+
+        }
+
+        User user1 = EmailPassword.signIn(process.getProcess(), "test1@example.com", "newPassword");
+
+        assertEquals(user1.email, user.email);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void zeroPasswordTokens() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        PasswordResetTokenInfo[] tokens = StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+                .getAllPasswordResetTokenInfoForUser("8ed86166-bfd8-4234-9dfe-abca9606dbd5");
+
+        assert (tokens.length == 0);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void wrongPasswordResetToken() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        try {
+            EmailPassword.resetPassword(process.getProcess(), "token", "newPassword");
+            assert (false);
+        } catch (ResetPasswordInvalidTokenException ignored) {
+
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void clashingPassowordResetToken() throws Exception {
         String[] args = {"../"};
 
@@ -86,19 +201,17 @@ public class EmailPasswordTest {
         }
 
         // we add a user first.
-        StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
-                .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
-                        "test1@example.com", "passwordHash", System.currentTimeMillis()));
+        User user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
                 .addPasswordResetToken(new PasswordResetTokenInfo(
-                        "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "token",
+                        user.id, "token",
                         System.currentTimeMillis() + EmailPassword.PASSWORD_RESET_TOKEN_LIFETIME_MS));
 
         try {
             StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
                     .addPasswordResetToken(new PasswordResetTokenInfo(
-                            "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "token",
+                            user.id, "token",
                             System.currentTimeMillis() + EmailPassword.PASSWORD_RESET_TOKEN_LIFETIME_MS));
             assert (false);
         } catch (DuplicatePasswordResetTokenException ignored) {
@@ -132,28 +245,6 @@ public class EmailPasswordTest {
     }
 
     @Test
-    public void multiplePasswordResetTokensPerUserIsAllowed() throws Exception {
-        String[] args = {"../"};
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
-                .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
-                        "test1@example.com", "passwordHash", System.currentTimeMillis()));
-        EmailPassword.generatePasswordResetToken(process.getProcess(), "8ed86166-bfd8-4234-9dfe-abca9606dbd5");
-        EmailPassword.generatePasswordResetToken(process.getProcess(), "8ed86166-bfd8-4234-9dfe-abca9606dbd5");
-        EmailPassword.generatePasswordResetToken(process.getProcess(), "8ed86166-bfd8-4234-9dfe-abca9606dbd5");
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
     public void clashingUserIdDuringSignUp() throws Exception {
         String[] args = {"../"};
 
@@ -166,12 +257,12 @@ public class EmailPasswordTest {
 
         StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
                 .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
-                        "test@example.com", "passwordHash", System.currentTimeMillis()));
+                        "test@example.com", "password", System.currentTimeMillis()));
 
         try {
             StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
                     .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
-                            "test1@example.com", "passwordHash", System.currentTimeMillis()));
+                            "test1@example.com", "password", System.currentTimeMillis()));
             assert (false);
         } catch (DuplicateUserIdException ignored) {
 
@@ -217,12 +308,12 @@ public class EmailPasswordTest {
 
         StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
                 .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
-                        "test@example.com", "passwordHash", System.currentTimeMillis()));
+                        "test@example.com", "password", System.currentTimeMillis()));
 
         try {
             StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
                     .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
-                            "test@example.com", "passwordHash", System.currentTimeMillis()));
+                            "test@example.com", "password", System.currentTimeMillis()));
             assert (false);
         } catch (DuplicateUserIdException ignored) {
 

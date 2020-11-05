@@ -40,6 +40,13 @@ public class EmailPassword {
 
     public static final long PASSWORD_RESET_TOKEN_LIFETIME_MS = 3600 * 1000;
 
+    private static long getPasswordResetTokenLifetime(Main main) {
+        if (Main.isTesting) {
+            return EmailPasswordTest.getInstance(main).getPasswordResetTokenLifetime();
+        }
+        return PASSWORD_RESET_TOKEN_LIFETIME_MS;
+    }
+
     public static User signUp(Main main, @Nonnull String email, @Nonnull String password) throws
             DuplicateEmailException, StorageQueryException {
 
@@ -66,7 +73,17 @@ public class EmailPassword {
 
         UserInfo user = StorageLayer.getEmailPasswordStorageLayer(main).getUserInfoUsingEmail(email);
 
-        if (user == null || !UpdatableBCrypt.verifyHash(password, user.passwordHash)) {
+        if (user == null) {
+            throw new WrongCredentialsException();
+        }
+
+        try {
+            if (!UpdatableBCrypt.verifyHash(password, user.passwordHash)) {
+                throw new WrongCredentialsException();
+            }
+        } catch (WrongCredentialsException e) {
+            throw e;
+        } catch (Exception ignored) {
             throw new WrongCredentialsException();
         }
 
@@ -102,7 +119,7 @@ public class EmailPassword {
             try {
                 StorageLayer.getEmailPasswordStorageLayer(main).addPasswordResetToken(
                         new PasswordResetTokenInfo(userId, hashedToken,
-                                System.currentTimeMillis() + PASSWORD_RESET_TOKEN_LIFETIME_MS));
+                                System.currentTimeMillis() + getPasswordResetTokenLifetime(main)));
                 return token;
             } catch (DuplicatePasswordResetTokenException ignored) {
             }
@@ -147,6 +164,7 @@ public class EmailPassword {
                 storage.deleteAllPasswordResetTokensForUser_Transaction(con, userId);
 
                 if (matchedToken.tokenExpiry < System.currentTimeMillis()) {
+                    storage.commitTransaction(con);
                     throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
                 }
 
