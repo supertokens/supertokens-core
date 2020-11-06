@@ -777,7 +777,6 @@ public class StorageTest {
                     success = true;
                     break;
                 } catch (Exception error) {
-                    error.printStackTrace();
                     if (error instanceof HttpResponseException && ((HttpResponseException) error).statusCode == 500) {
                         continue;
                     }
