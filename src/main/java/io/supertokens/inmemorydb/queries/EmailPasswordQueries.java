@@ -48,7 +48,7 @@ public class EmailPasswordQueries {
     }
 
     static String getQueryToCreatePasswordResetTokenExpiryIndex(Start start) {
-        return "CREATE INDEX email_password_password_reset_token_expiry_index ON " +
+        return "CREATE INDEX emailpassword_password_reset_token_expiry_index ON " +
                 Config.getConfig(start).getPasswordResetTokensTable() +
                 "(token_expiry);";
     }

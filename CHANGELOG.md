@@ -9,6 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Changes as per CDI 2.4: https://github.com/supertokens/core-driver-interface/issues/1
 - In memory db uses the SQL interface
+- Emailpassword recipe functions and APIs
+- Deprecates the need for a separate SQLite repo (since the in mem one already exists within the core)
 
 ## [2.5.2] - 2020-10-25
 ### Fixed

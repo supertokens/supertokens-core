@@ -27,11 +27,11 @@ public class SQLiteConfig {
     }
 
     public String getUsersTable() {
-        return "email_password_users";
+        return "emailpassword_users";
     }
 
     public String getPasswordResetTokensTable() {
-        return "email_password_pswd_reset_tokens";
+        return "emailpassword_pswd_reset_tokens";
     }
 
 }
