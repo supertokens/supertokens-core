@@ -14,24 +14,35 @@
  *    under the License.
  */
 
-package io.supertokens.inmemorydb.config;
+package io.supertokens.test;
 
-public class SQLiteConfig {
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
 
-    public String getKeyValueTable() {
-        return "key_value";
+/*
+ * TODO:
+ *  - Check for bad input (missing fields)
+ *  - Check good input works
+ *  - Check for all types of output
+ *  - Check that invalid method throws 400 error
+ *  - Check that empty password throws 400 error
+ * */
+
+public class ResetPasswordAPITest2_4 {
+
+    @Rule
+    public TestRule watchman = Utils.getOnFailure();
+
+    @AfterClass
+    public static void afterTesting() {
+        Utils.afterTesting();
     }
 
-    public String getSessionInfoTable() {
-        return "session_info";
-    }
-
-    public String getUsersTable() {
-        return "email_password_users";
-    }
-
-    public String getPasswordResetTokensTable() {
-        return "email_password_pswd_reset_tokens";
+    @Before
+    public void beforeEach() {
+        Utils.reset();
     }
 
 }

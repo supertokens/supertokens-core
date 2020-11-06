@@ -14,14 +14,17 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api;
+package io.supertokens.webserver.api.emailpassword;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.config.Config;
+import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.User;
+import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -30,34 +33,46 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-public class HandshakeAPI extends WebserverAPI {
-    private static final long serialVersionUID = -3647598432179106404L;
+public class SignInAPI extends WebserverAPI {
 
-    public HandshakeAPI(Main main) {
+    private static final long serialVersionUID = -4641988458637882374L;
+
+    public SignInAPI(Main main) {
         super(main);
     }
 
     @Override
     public String getPath() {
-        return "/recipe/handshake";
+        return "/recipe/signin";
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        String email = InputParser.parseStringOrThrowError(input, "email", false);
+        String password = InputParser.parseStringOrThrowError(input, "password", false);
+        assert password != null;
+        assert email != null;
+
+        // logic according to https://github.com/supertokens/supertokens-core/issues/104
+
+        String normalisedEmail = Utils.normaliseEmail(email);
+
         try {
+            User user = EmailPassword.signIn(super.main, normalisedEmail, password);
+
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            result.addProperty("jwtSigningPublicKey", AccessTokenSigningKey.getInstance(main).getKey().publicKey);
-            result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
-            result.addProperty("enableAntiCsrf", Config.getConfig(main).getEnableAntiCSRF());
-            result.addProperty("accessTokenBlacklistingEnabled", Config.getConfig(main).getAccessTokenBlacklisting());
-            result.addProperty("accessTokenValidity", Config.getConfig(main).getAccessTokenValidity());
-            result.addProperty("refreshTokenValidity", Config.getConfig(main).getRefreshTokenValidity());
+            result.add("user", new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject());
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+
+        } catch (WrongCredentialsException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "WRONG_CREDENTIALS_ERROR");
+            super.sendJsonResponse(200, result, resp);
+        } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
+
     }
 }

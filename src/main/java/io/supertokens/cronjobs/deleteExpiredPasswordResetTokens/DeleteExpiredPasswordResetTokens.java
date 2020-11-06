@@ -14,33 +14,40 @@
  *    under the License.
  */
 
-package io.supertokens.cronjobs.deleteExpiredSessions;
+package io.supertokens.cronjobs.deleteExpiredPasswordResetTokens;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 
-public class DeleteExpiredSessions extends CronTask {
+public class DeleteExpiredPasswordResetTokens extends CronTask {
 
-    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions";
+    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredPasswordResetTokens" +
+            ".DeleteExpiredPasswordResetTokens";
 
-    private DeleteExpiredSessions(Main main) {
-        super("RemoveOldSessions", main);
+    private DeleteExpiredPasswordResetTokens(Main main) {
+        super("RemoveOldPasswordResetTokens", main);
     }
 
-    public static DeleteExpiredSessions getInstance(Main main) {
+    public static DeleteExpiredPasswordResetTokens getInstance(Main main) {
         ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
         if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new DeleteExpiredSessions(main));
+            instance = main.getResourceDistributor()
+                    .setResource(RESOURCE_KEY, new DeleteExpiredPasswordResetTokens(main));
         }
-        return (DeleteExpiredSessions) instance;
+        return (DeleteExpiredPasswordResetTokens) instance;
     }
 
     @Override
     protected void doTask() throws Exception {
-        StorageLayer.getSessionStorageLayer(this.main).deleteAllExpiredSessions();
+        if (StorageLayer.getStorageLayer(this.main).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        StorageLayer.getEmailPasswordStorageLayer(this.main)
+                .deleteExpiredPasswordResetTokens();
     }
 
     @Override
@@ -51,7 +58,7 @@ public class DeleteExpiredSessions extends CronTask {
                 return interval;
             }
         }
-        return (12 * 3600); // twice a day.
+        return 3600; // every hour.
     }
 
     @Override

@@ -14,24 +14,18 @@
  *    under the License.
  */
 
-package io.supertokens.inmemorydb.config;
+package io.supertokens.emailpassword;
 
-public class SQLiteConfig {
+import javax.annotation.Nonnull;
 
-    public String getKeyValueTable() {
-        return "key_value";
+public class User {
+
+    public final String id;
+
+    public final String email;
+
+    public User(@Nonnull String id, @Nonnull String email) {
+        this.id = id;
+        this.email = email;
     }
-
-    public String getSessionInfoTable() {
-        return "session_info";
-    }
-
-    public String getUsersTable() {
-        return "email_password_users";
-    }
-
-    public String getPasswordResetTokensTable() {
-        return "email_password_pswd_reset_tokens";
-    }
-
 }

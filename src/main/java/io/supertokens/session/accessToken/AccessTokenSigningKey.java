@@ -28,8 +28,8 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.noSqlStorage.NoSQLStorage_1;
-import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
+import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
+import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 
@@ -93,12 +93,12 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     }
 
     private KeyInfo maybeGenerateNewKeyAndUpdateInDb() throws StorageQueryException, StorageTransactionLogicException {
-        Storage storage = StorageLayer.getStorageLayer(main);
+        Storage storage = StorageLayer.getSessionStorageLayer(main);
         CoreConfig config = Config.getConfig(main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
 
-            SQLStorage sqlStorage = (SQLStorage) storage;
+            SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
 
             // start transaction
             return sqlStorage.startTransaction(con -> {
@@ -135,7 +135,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
 
             });
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
-            NoSQLStorage_1 noSQLStorage = (NoSQLStorage_1) storage;
+            SessionNoSQLStorage_1 noSQLStorage = (SessionNoSQLStorage_1) storage;
 
             while (true) {
 

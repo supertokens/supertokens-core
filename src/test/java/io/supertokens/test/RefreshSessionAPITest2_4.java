@@ -18,6 +18,7 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.version.Version;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -72,7 +73,13 @@ public class RefreshSessionAPITest2_4 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
+        if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+            // in mem db cannot pass this test
+            return;
+        }
+
         Utils.setValueInConfig("enable_anti_csrf", "true");
+
 
         process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -125,6 +132,11 @@ public class RefreshSessionAPITest2_4 {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+        if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+            // in mem db cannot pass this test
+            return;
+        }
 
         Utils.setValueInConfig("enable_anti_csrf", "false");
 

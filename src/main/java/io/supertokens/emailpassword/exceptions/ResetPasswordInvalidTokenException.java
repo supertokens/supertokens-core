@@ -14,24 +14,8 @@
  *    under the License.
  */
 
-package io.supertokens.inmemorydb.config;
+package io.supertokens.emailpassword.exceptions;
 
-public class SQLiteConfig {
-
-    public String getKeyValueTable() {
-        return "key_value";
-    }
-
-    public String getSessionInfoTable() {
-        return "session_info";
-    }
-
-    public String getUsersTable() {
-        return "email_password_users";
-    }
-
-    public String getPasswordResetTokensTable() {
-        return "email_password_pswd_reset_tokens";
-    }
-
+public class ResetPasswordInvalidTokenException extends Exception {
+    private static final long serialVersionUID = -7205953190075543040L;
 }

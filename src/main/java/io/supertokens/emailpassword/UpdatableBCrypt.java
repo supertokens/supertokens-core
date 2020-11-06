@@ -14,24 +14,26 @@
  *    under the License.
  */
 
-package io.supertokens.inmemorydb.config;
+package io.supertokens.emailpassword;
 
-public class SQLiteConfig {
+import org.mindrot.jbcrypt.BCrypt;
 
-    public String getKeyValueTable() {
-        return "key_value";
+
+// code from: https://dzone.com/articles/hashing-passwords-in-java-with-bcrypt#:~:text=BCrypt%20Features&text=One
+// %20way%20hashing%20%2D%20BCrypt%20is,hashes%20across%20each%20user's%20password.
+
+public class UpdatableBCrypt {
+
+
+    public static String hash(String password) {
+        // the number of iterations is 2^ the number below.
+        // https://security.stackexchange.com/a/83382/221626
+
+        return BCrypt.hashpw(password, BCrypt.gensalt(11));
     }
 
-    public String getSessionInfoTable() {
-        return "session_info";
-    }
-
-    public String getUsersTable() {
-        return "email_password_users";
-    }
-
-    public String getPasswordResetTokensTable() {
-        return "email_password_pswd_reset_tokens";
+    public static boolean verifyHash(String password, String hash) {
+        return BCrypt.checkpw(password, hash);
     }
 
 }

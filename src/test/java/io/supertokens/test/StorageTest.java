@@ -170,7 +170,7 @@ public class StorageTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        for (int i = 0; i < 30; i++) {
+        for (int i = 0; i < 100; i++) {
 
             Storage storage = StorageLayer.getStorageLayer(process.getProcess());
             if (storage.getType() == STORAGE_TYPE.SQL) {
@@ -240,7 +240,7 @@ public class StorageTest {
                 assertEquals(endValueOfCon1.get(), endValueOfCon2.get());
                 if (Version.getVersion(process.getProcess()).getPluginName().equals("postgresql")) {
                     // Becasue FOR UPDATE does not wait in Postgresql. Instead if throws an error.
-                    assertEquals(numberOfIterations.get(), 1);
+                    assert (numberOfIterations.get() == 1 || numberOfIterations.get() == 0);
                 } else {
                     assertEquals(numberOfIterations.get(), 0);
                 }
@@ -777,6 +777,9 @@ public class StorageTest {
                     success = true;
                     break;
                 } catch (Exception error) {
+                    if (error instanceof HttpResponseException && ((HttpResponseException) error).statusCode == 500) {
+                        continue;
+                    }
                     if (!(error instanceof SocketException)) {
                         break;
                     }

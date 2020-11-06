@@ -14,14 +14,13 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api;
+package io.supertokens.webserver.api.emailpassword;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.session.Session;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -29,40 +28,44 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
-public class SessionUserAPI extends WebserverAPI {
+public class GeneratePasswordResetTokenAPI extends WebserverAPI {
 
-    private static final long serialVersionUID = 3488492313129193443L;
+    private static final long serialVersionUID = -4641988458637882374L;
 
-    public SessionUserAPI(Main main) {
+    public GeneratePasswordResetTokenAPI(Main main) {
         super(main);
     }
 
     @Override
     public String getPath() {
-        return "/recipe/session/user";
+        return "/recipe/user/password/reset/token";
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         assert userId != null;
 
+        // logic according to https://github.com/supertokens/supertokens-core/issues/106
+
         try {
-            String[] sessionHandles = Session.getAllSessionHandlesForUser(main, userId);
+            String token = EmailPassword.generatePasswordResetToken(super.main, userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            JsonArray arr = new JsonArray();
-            for (String s : sessionHandles) {
-                arr.add(new JsonPrimitive(s));
-            }
-            result.add("sessionHandles", arr);
+            result.addProperty("token", token);
             super.sendJsonResponse(200, result, resp);
-
-        } catch (StorageQueryException e) {
+        } catch (UnknownUserIdException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
+            super.sendJsonResponse(200, result, resp);
+        } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeySpecException e) {
             throw new ServletException(e);
         }
-    }
 
+    }
 }

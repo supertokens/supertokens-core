@@ -71,18 +71,6 @@ public class CLIOptionsTest {
     }
 
     @Test
-    public void cliWrongArgsTest() throws InterruptedException {
-        String[] args = new String[1];
-        args[0] = "random";
-        TestingProcess process = TestingProcessManager.start(args);
-        EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
-        assertTrue(e != null && e.exception.getMessage()
-                .equals("No database plugin found. Please redownload and install SuperTokens"));
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-        process.kill();
-    }
-
-    @Test
     public void cli2ArgsTest() throws Exception {
         //testing that when badInput is given to second cli argument, default values for host and port are used
         String[] args = {"../", "random"};

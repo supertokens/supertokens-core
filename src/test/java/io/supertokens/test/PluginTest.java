@@ -33,7 +33,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 
-import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 /**
@@ -72,10 +71,9 @@ public class PluginTest {
             delete(new File(args[0] + "plugin"));
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-            ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+            ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(),
-                    "No database plugin found. Please redownload and install SuperTokens");
+
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -104,10 +102,8 @@ public class PluginTest {
             new File(args[0] + "plugin").mkdir();
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-            ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+            ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(),
-                    "No database plugin found. Please redownload and install SuperTokens");
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -132,34 +128,40 @@ public class PluginTest {
         String pluginName = versionFile.getPluginName() + "-plugin-" + versionFile.getPluginVersion() + ".jar";
 
         try {
-            //copy storage plugin file to temp
-            copyFile(new File(args[0] + "plugin/" + pluginName), new File(args[0] + "temp/"));
+            if (!versionFile.getPluginName().equals("sqlite")) {
 
-            //delete storage plugin
-            delete(new File(args[0] + "plugin/" + pluginName));
+                //copy storage plugin file to temp
+                copyFile(new File(args[0] + "plugin/" + pluginName), new File(args[0] + "temp/"));
+
+                //delete storage plugin
+                delete(new File(args[0] + "plugin/" + pluginName));
+            }
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-            ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+            ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(),
-                    "No database plugin found. Please redownload and install SuperTokens");
+
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         } finally {
-            //copy storage plugin in temp to plugin directory
-            copyFile(new File(args[0] + "temp/" + pluginName), new File(args[0] + "plugin/"));
+            if (!versionFile.getPluginName().equals("sqlite")) {
+                //copy storage plugin in temp to plugin directory
+                copyFile(new File(args[0] + "temp/" + pluginName), new File(args[0] + "plugin/"));
 
-            //delete storage plugin from temp
-            delete(new File(args[0] + "temp/" + pluginName));
+                //delete storage plugin from temp
+                delete(new File(args[0] + "temp/" + pluginName));
+            }
 
         }
     }
 
     private void copyDirectoryToDirectory(File src, File dest) throws IOException {
         File[] files = src.listFiles();
-        assert files != null;
+        if (files == null) {
+            return;
+        }
         for (File file : files) {
             if (file.isFile()) {
                 copyFile(file, dest);
