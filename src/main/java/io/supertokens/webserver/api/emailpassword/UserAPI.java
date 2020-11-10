@@ -47,7 +47,7 @@ public class UserAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        String userId = InputParser.getQueryParamOrThrowError(req, "sessionHandle", true);
+        String userId = InputParser.getQueryParamOrThrowError(req, "userId", true);
         String email = InputParser.getQueryParamOrThrowError(req, "email", true);
 
         // logic according to https://github.com/supertokens/supertokens-core/issues/111
