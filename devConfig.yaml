@@ -67,6 +67,7 @@ core_config_version: 0
 # api_keys:
 
 
-# (OPTIONAL | Default: false). Learn more about Telemetry here:
-# https://github.com/supertokens/supertokens-core/wiki/Telemetry
-# disable_telemetry:
+# Important: This is set to true here but is uncommented in config.yaml. The reason is that when testing with drivers or
+# in CICD, we do not want to send telemetry data. For unit tests, this is commented again in Utils.reset function (in
+# the test package)
+disable_telemetry: true

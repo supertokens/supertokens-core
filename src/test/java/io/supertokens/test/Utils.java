@@ -82,6 +82,10 @@ abstract class Utils extends Mockito {
             Process process = pb.start();
             process.waitFor();
 
+            // in devConfig, it's set to false. However, in config, it's commented. So we comment it out so that it
+            // mimics production. Refer to https://github.com/supertokens/supertokens-core/issues/118
+            commentConfigValue("disable_telemetry");
+
             TestingProcessManager.killAll();
             TestingProcessManager.deleteAllInformation();
             TestingProcessManager.killAll();
@@ -91,6 +95,26 @@ abstract class Utils extends Mockito {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    static void commentConfigValue(String key) throws IOException {
+        String oldStr = "((#\\s)?)" + key + "(:|((:\\s).+))\n";
+        String newStr = "# " + key + ":";
+
+        StringBuilder originalFileContent = new StringBuilder();
+        try (BufferedReader reader = new BufferedReader(new FileReader("../config.yaml"))) {
+            String currentReadingLine = reader.readLine();
+            while (currentReadingLine != null) {
+                originalFileContent.append(currentReadingLine).append(System.lineSeparator());
+                currentReadingLine = reader.readLine();
+            }
+            String modifiedFileContent = originalFileContent.toString().replaceAll(oldStr, newStr);
+            try (BufferedWriter writer = new BufferedWriter(new FileWriter("../config.yaml"))) {
+                writer.write(modifiedFileContent);
+            }
+        }
+
+
     }
 
     static void setValueInConfig(String key, String value) throws IOException {
