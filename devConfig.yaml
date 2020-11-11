@@ -65,3 +65,8 @@ core_config_version: 0
 # file. The format is "key1,key2,key3". Keys can only contain '=', '-' and alpha-numeric (including capital) chars.
 # Each key must have a minimum length of 20 chars
 # api_keys:
+
+
+# (OPTIONAL | Default: false). Learn more about Telemetry here:
+# https://github.com/supertokens/supertokens-core/wiki/Telemetry
+# disable_telemetry:
