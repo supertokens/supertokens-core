@@ -18,11 +18,13 @@ package io.supertokens.cronjobs.telemetry;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.httpRequest.HttpRequest;
+import io.supertokens.httpRequest.HttpRequestMocking;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -32,6 +34,8 @@ import io.supertokens.version.Version;
 public class Telemetry extends CronTask {
 
     private static final String TELEMETRY_ID_DB_KEY = "TELEMETRY_ID";
+
+    public static final String REQUEST_ID = "telemetry";
 
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.telemetry.Telemetry";
 
@@ -57,6 +61,8 @@ public class Telemetry extends CronTask {
             return;
         }
 
+        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENDING_TELEMETRY, null);
+
         Storage storage = StorageLayer.getStorageLayer(main);
 
         KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
@@ -75,8 +81,15 @@ public class Telemetry extends CronTask {
         json.addProperty("telemetryId", telemetryId.value);
         json.addProperty("superTokensVersion", coreVersion);
 
-        HttpRequest.sendJsonPOSTRequest(main, "telemetry", "https://api.supertokens.io/0/st/telemetry",
-                json, 10000, 10000, 0);
+        String url = "https://api.supertokens.io/0/st/telemetry";
+
+        // we call the API only if we are not testing the core, of if the request can be mocked (in case a test wants
+        // to use this)
+        if (!Main.isTesting || HttpRequestMocking.getInstance(main).getMockURL(REQUEST_ID, url) != null) {
+            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url,
+                    json, 10000, 10000, 0);
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENT_TELEMETRY, null);
+        }
     }
 
     @Override

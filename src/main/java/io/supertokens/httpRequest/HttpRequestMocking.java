@@ -46,7 +46,7 @@ public class HttpRequestMocking extends ResourceDistributor.SingletonResource {
         urlMap.put(key, urlGetter);
     }
 
-    URL getMockURL(String key, String url) throws MalformedURLException {
+    public URL getMockURL(String key, String url) throws MalformedURLException {
         URLGetter urlGetter = urlMap.get(key);
         if (urlGetter != null) {
             return urlGetter.getUrl(url);
