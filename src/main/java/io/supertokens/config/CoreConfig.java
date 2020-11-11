@@ -69,6 +69,9 @@ public class CoreConfig {
     @JsonProperty
     private String api_keys = null;
 
+    @JsonProperty
+    private boolean disable_telemetry = false;
+
     //	TODO: add https in later version
 //	# (OPTIONAL) boolean value (true or false). Set to true if you want to enable https requests to SuperTokens.
 //	# If you are not running SuperTokens within a closed network along with your API process, for 
@@ -97,6 +100,9 @@ public class CoreConfig {
         return (long) (refresh_token_validity * 60 * 1000);
     }
 
+    public boolean isTelemetryDisabled() {
+        return disable_telemetry;
+    }
 
     public String getInfoLogPath(Main main) {
         if (info_log_path == null || info_log_path.equalsIgnoreCase("null")) {

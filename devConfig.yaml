@@ -65,3 +65,9 @@ core_config_version: 0
 # file. The format is "key1,key2,key3". Keys can only contain '=', '-' and alpha-numeric (including capital) chars.
 # Each key must have a minimum length of 20 chars
 # api_keys:
+
+
+# Important: This is set to true here but is uncommented in config.yaml. The reason is that when testing with drivers or
+# in CICD, we do not want to send telemetry data. For unit tests, this is commented again in Utils.reset function (in
+# the test package)
+disable_telemetry: true

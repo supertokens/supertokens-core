@@ -22,6 +22,7 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens;
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
+import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -179,6 +180,11 @@ public class Main {
 
         // starts removing old password reset tokens
         Cronjobs.addCronjob(this, DeleteExpiredPasswordResetTokens.getInstance(this));
+
+        // starts Telemetry cronjob if the user has not disabled it
+        if (!Config.getConfig(this).isTelemetryDisabled()) {
+            Cronjobs.addCronjob(this, Telemetry.getInstance(this));
+        }
 
         // start web server to accept incoming traffic
         Webserver.getInstance(this).start();

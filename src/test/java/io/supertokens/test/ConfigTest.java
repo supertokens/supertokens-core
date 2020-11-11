@@ -235,6 +235,7 @@ public class ConfigTest {
         assertNull(config.getAPIKeys());
         assertEquals(10, config.getMaxThreadPoolSize());
         assertFalse(config.getHttpsEnabled());
+        assertFalse(config.isTelemetryDisabled());
 
     }
 
