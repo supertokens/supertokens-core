@@ -205,7 +205,7 @@ public class ConfigTest {
         process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        checkConfigValues(Config.getConfig(process.getProcess()), process);
+        checkConfigValues(Config.getConfig(process.getProcess()), process, true);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -213,6 +213,10 @@ public class ConfigTest {
     }
 
     private static void checkConfigValues(CoreConfig config, TestingProcess process) {
+        checkConfigValues(config, process, false);
+    }
+
+    private static void checkConfigValues(CoreConfig config, TestingProcess process, boolean telemetryDisabled) {
 
         assertEquals("Config version did not match default", config.getConfigVersion(), 0);
         assertEquals("Config access token validity did not match default", config.getAccessTokenValidity(),
@@ -235,7 +239,7 @@ public class ConfigTest {
         assertNull(config.getAPIKeys());
         assertEquals(10, config.getMaxThreadPoolSize());
         assertFalse(config.getHttpsEnabled());
-        assertFalse(config.isTelemetryDisabled());
+        assert (config.isTelemetryDisabled() == telemetryDisabled);
 
     }
 
