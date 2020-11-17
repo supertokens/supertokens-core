@@ -67,7 +67,7 @@ public class Session {
                 Utils.hashSHA256(refreshToken.token), null, userDataInJWT, antiCsrfToken, System.currentTimeMillis(),
                 null);
 
-        StorageLayer.getSessionStorageLayer(main).createNewSession(sessionHandle, userId,
+        StorageLayer.getSessionStorage(main).createNewSession(sessionHandle, userId,
                 Utils.hashSHA256(Utils.hashSHA256(refreshToken.token)), userDataInDatabase, refreshToken.expiry,
                 userDataInJWT, refreshToken.createdTime);   // TODO: add lmrt to database
 
@@ -150,7 +150,7 @@ public class Session {
 
         io.supertokens.pluginInterface.session.SessionInfo sessionInfoForBlacklisting = null;
         if (Config.getConfig(main).getAccessTokenBlacklisting()) {
-            sessionInfoForBlacklisting = StorageLayer.getSessionStorageLayer(main)
+            sessionInfoForBlacklisting = StorageLayer.getSessionStorage(main)
                     .getSession(accessToken.sessionHandle);
             if (sessionInfoForBlacklisting == null) {
                 throw new UnauthorisedException("Either the session has ended or has been blacklisted");
@@ -169,8 +169,8 @@ public class Session {
 
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS, null);
 
-        if (StorageLayer.getSessionStorageLayer(main).getType() == STORAGE_TYPE.SQL) {
-            SessionSQLStorage storage = (SessionSQLStorage) StorageLayer.getSessionStorageLayer(main);
+        if (StorageLayer.getSessionStorage(main).getType() == STORAGE_TYPE.SQL) {
+            SessionSQLStorage storage = (SessionSQLStorage) StorageLayer.getSessionStorage(main);
             try {
                 return storage.startTransaction(con -> {
                     try {
@@ -233,8 +233,8 @@ public class Session {
                 }
                 throw e;
             }
-        } else if (StorageLayer.getSessionStorageLayer(main).getType() == STORAGE_TYPE.NOSQL_1) {
-            SessionNoSQLStorage_1 storage = (SessionNoSQLStorage_1) StorageLayer.getSessionStorageLayer(main);
+        } else if (StorageLayer.getSessionStorage(main).getType() == STORAGE_TYPE.NOSQL_1) {
+            SessionNoSQLStorage_1 storage = (SessionNoSQLStorage_1) StorageLayer.getSessionStorage(main);
             while (true) {
                 try {
 
@@ -322,8 +322,8 @@ public class Session {
         //////////////////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////
-        if (StorageLayer.getSessionStorageLayer(main).getType() == STORAGE_TYPE.SQL) {
-            SessionSQLStorage storage = (SessionSQLStorage) StorageLayer.getSessionStorageLayer(main);
+        if (StorageLayer.getSessionStorage(main).getType() == STORAGE_TYPE.SQL) {
+            SessionSQLStorage storage = (SessionSQLStorage) StorageLayer.getSessionStorage(main);
             try {
                 return storage.startTransaction(con -> {
                     try {
@@ -406,8 +406,8 @@ public class Session {
             //////////////////////////////////////////////////////////////////////////////////////////////
             //////////////////////////////////////////////////////////////////////////////////////////////
             //////////////////////////////////////////////////////////////////////////////////////////////
-        } else if (StorageLayer.getSessionStorageLayer(main).getType() == STORAGE_TYPE.NOSQL_1) {
-            SessionNoSQLStorage_1 storage = (SessionNoSQLStorage_1) StorageLayer.getSessionStorageLayer(main);
+        } else if (StorageLayer.getSessionStorage(main).getType() == STORAGE_TYPE.NOSQL_1) {
+            SessionNoSQLStorage_1 storage = (SessionNoSQLStorage_1) StorageLayer.getSessionStorage(main);
             while (true) {
                 try {
                     String sessionHandle = refreshTokenInfo.sessionHandle;
@@ -476,7 +476,7 @@ public class Session {
 
     public static String[] revokeSessionUsingSessionHandles(Main main, String[] sessionHandles)
             throws StorageQueryException {
-        int numberOfSessionsRevoked = StorageLayer.getSessionStorageLayer(main).deleteSession(sessionHandles);
+        int numberOfSessionsRevoked = StorageLayer.getSessionStorage(main).deleteSession(sessionHandles);
 
         // most of the time we will enter the below if statement
         if (numberOfSessionsRevoked == sessionHandles.length) {
@@ -490,7 +490,7 @@ public class Session {
                 break;
             }
 
-            if (StorageLayer.getSessionStorageLayer(main).getSession(sessionHandle) == null) {
+            if (StorageLayer.getSessionStorage(main).getSession(sessionHandle) == null) {
                 result[indexIntoResult] = sessionHandle;
                 indexIntoResult++;
             }
@@ -505,12 +505,12 @@ public class Session {
     }
 
     public static String[] getAllSessionHandlesForUser(Main main, String userId) throws StorageQueryException {
-        return StorageLayer.getSessionStorageLayer(main).getAllSessionHandlesForUser(userId);
+        return StorageLayer.getSessionStorage(main).getAllSessionHandlesForUser(userId);
     }
 
     public static JsonObject getSessionData(Main main, String sessionHandle)
             throws StorageQueryException, UnauthorisedException {
-        io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorageLayer(main)
+        io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
                 .getSession(sessionHandle);
         if (session == null) {
             throw new UnauthorisedException("Session does not exist.");
@@ -520,7 +520,7 @@ public class Session {
 
     public static JsonObject getJWTData(Main main, String sessionHandle)
             throws StorageQueryException, UnauthorisedException {
-        io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorageLayer(main)
+        io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
                 .getSession(sessionHandle);
         if (session == null) {
             throw new UnauthorisedException("Session does not exist.");
@@ -531,7 +531,7 @@ public class Session {
     public static void updateSession(Main main, String sessionHandle, @Nullable JsonObject sessionData,
                                      @Nullable JsonObject jwtData, @Nullable Long lmrt)
             throws StorageQueryException, UnauthorisedException {
-        int numberOfRowsAffected = StorageLayer.getSessionStorageLayer(main)
+        int numberOfRowsAffected = StorageLayer.getSessionStorage(main)
                 .updateSession(sessionHandle, sessionData, jwtData);    // TODO: update lmrt as well
         if (numberOfRowsAffected != 1) {
             throw new UnauthorisedException("Session does not exist.");

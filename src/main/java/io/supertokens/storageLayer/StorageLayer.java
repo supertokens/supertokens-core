@@ -37,7 +37,7 @@ import java.util.ServiceLoader;
 public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     private static final String RESOURCE_KEY = "io.supertokens.storageLayer.StorageLayer";
-    private final Storage storageLayer;
+    private final Storage storage;
 
     private StorageLayer(Main main, String pluginFolderPath, String configFilePath) throws MalformedURLException {
         Logging.info(main, "Loading storage layer.");
@@ -74,16 +74,16 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 storageLayerTemp.canBeUsed(configFilePath) ||
                         CLIOptions.get(main).isForceNoInMemoryDB()
         )) {
-            this.storageLayer = storageLayerTemp;
+            this.storage = storageLayerTemp;
         } else {
             Logging.info(main, "Using in memory storage.");
-            this.storageLayer = new Start(main);
+            this.storage = new Start(main);
         }
-        this.storageLayer.constructor(main.getProcessId(), Main.makeConsolePrintSilent);
-        this.storageLayer.loadConfig(configFilePath);
+        this.storage.constructor(main.getProcessId(), Main.makeConsolePrintSilent);
+        this.storage.loadConfig(configFilePath);
     }
 
-    private static StorageLayer getInstance(Main main) {
+    public static StorageLayer getInstance(Main main) {
         return (StorageLayer) main.getResourceDistributor().getResource(RESOURCE_KEY);
     }
 
@@ -95,28 +95,32 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 .setResource(RESOURCE_KEY, new StorageLayer(main, pluginFolderPath, configFilePath));
     }
 
-    public static Storage getStorageLayer(Main main) {
+    public static Storage getStorage(Main main) {
         if (getInstance(main) == null) {
             throw new QuitProgramException("please call init() before calling getStorageLayer");
         }
-        return getInstance(main).storageLayer;
+        return getInstance(main).storage;
     }
 
-    public static SessionStorage getSessionStorageLayer(Main main) {
+    public static SessionStorage getSessionStorage(Main main) {
         if (getInstance(main) == null) {
             throw new QuitProgramException("please call init() before calling getStorageLayer");
         }
-        return (SessionStorage) getInstance(main).storageLayer;
+        return (SessionStorage) getInstance(main).storage;
     }
 
-    public static EmailPasswordSQLStorage getEmailPasswordStorageLayer(Main main) {
+    public static EmailPasswordSQLStorage getEmailPasswordStorage(Main main) {
         if (getInstance(main) == null) {
             throw new QuitProgramException("please call init() before calling getStorageLayer");
         }
-        if (getInstance(main).storageLayer.getType() != STORAGE_TYPE.SQL) {
+        if (getInstance(main).storage.getType() != STORAGE_TYPE.SQL) {
             // we only support SQL for now
             throw new UnsupportedOperationException("");
         }
-        return (EmailPasswordSQLStorage) getInstance(main).storageLayer;
+        return (EmailPasswordSQLStorage) getInstance(main).storage;
+    }
+
+    public boolean isInMemDb() {
+        return this.storage instanceof Start;
     }
 }

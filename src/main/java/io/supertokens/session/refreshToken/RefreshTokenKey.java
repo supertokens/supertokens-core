@@ -74,7 +74,7 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
     }
 
     private String maybeGenerateNewKeyAndUpdateInDb() throws StorageQueryException, StorageTransactionLogicException {
-        SessionStorage storage = StorageLayer.getSessionStorageLayer(main);
+        SessionStorage storage = StorageLayer.getSessionStorage(main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
 

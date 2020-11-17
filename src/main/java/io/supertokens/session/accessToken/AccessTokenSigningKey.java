@@ -93,7 +93,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     }
 
     private KeyInfo maybeGenerateNewKeyAndUpdateInDb() throws StorageQueryException, StorageTransactionLogicException {
-        Storage storage = StorageLayer.getSessionStorageLayer(main);
+        Storage storage = StorageLayer.getSessionStorage(main);
         CoreConfig config = Config.getConfig(main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {

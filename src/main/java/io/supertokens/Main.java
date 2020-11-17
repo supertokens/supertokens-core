@@ -169,7 +169,7 @@ public class Main {
                 }
             }
         }
-        StorageLayer.getStorageLayer(this).initStorage();
+        StorageLayer.getStorage(this).initStorage();
 
         // init signing keys
         AccessTokenSigningKey.init(this);
@@ -272,7 +272,7 @@ public class Main {
     public void deleteAllInformationForTesting() throws Exception {
         assertIsTesting();
         try {
-            StorageLayer.getStorageLayer(this).deleteAllInformation();
+            StorageLayer.getStorage(this).deleteAllInformation();
         } catch (StorageQueryException e) {
             throw new Exception(e);
         }
@@ -291,7 +291,7 @@ public class Main {
         try {
             Webserver.getInstance(this).stop();
             Cronjobs.shutdownAndAwaitTermination(this);
-            StorageLayer.getStorageLayer(this).close();
+            StorageLayer.getStorage(this).close();
             if (this.shutdownHook != null) {
                 try {
                     Runtime.getRuntime().removeShutdownHook(this.shutdownHook);

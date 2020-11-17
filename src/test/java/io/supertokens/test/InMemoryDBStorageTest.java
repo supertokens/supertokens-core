@@ -62,7 +62,7 @@ public class InMemoryDBStorageTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+        Storage storage = StorageLayer.getStorage(process.getProcess());
         SQLStorage sqlStorage = (SQLStorage) storage;
         sqlStorage.startTransaction(con -> {
             sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
@@ -176,7 +176,7 @@ public class InMemoryDBStorageTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+        Storage storage = StorageLayer.getStorage(process.getProcess());
         SQLStorage sqlStorage = (SQLStorage) storage;
         String returnedValue = sqlStorage.startTransaction(con -> {
             sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
@@ -199,7 +199,7 @@ public class InMemoryDBStorageTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+        Storage storage = StorageLayer.getStorage(process.getProcess());
 
         SQLStorage sqlStorage = (SQLStorage) storage;
         sqlStorage.startTransaction(con -> {
@@ -223,7 +223,7 @@ public class InMemoryDBStorageTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+        Storage storage = StorageLayer.getStorage(process.getProcess());
 
         SQLStorage sqlStorage = (SQLStorage) storage;
         try {
@@ -251,7 +251,7 @@ public class InMemoryDBStorageTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+        Storage storage = StorageLayer.getStorage(process.getProcess());
 
         SQLStorage sqlStorage = (SQLStorage) storage;
         try {

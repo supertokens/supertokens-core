@@ -57,7 +57,7 @@ public class DeleteExpiredPasswordResetTokensCronjobTest {
         );
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
@@ -72,13 +72,13 @@ public class DeleteExpiredPasswordResetTokensCronjobTest {
         EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
         EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
 
-        assert (StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+        assert (StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .getAllPasswordResetTokenInfoForUser(user.id).length == 4);
 
 
         Thread.sleep(3000);
 
-        PasswordResetTokenInfo[] tokens = StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+        PasswordResetTokenInfo[] tokens = StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .getAllPasswordResetTokenInfoForUser(user.id);
 
         assert (tokens.length == 2);

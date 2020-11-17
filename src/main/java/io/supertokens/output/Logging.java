@@ -45,7 +45,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
                 createLoggerForConsole(main, "io.supertokens.Error." + main.getProcessId()) :
                 createLoggerForFile(main, Config.getConfig(main).getErrorLogPath(main),
                         "io.supertokens.Error." + main.getProcessId());
-        Storage storage = StorageLayer.getStorageLayer(main);
+        Storage storage = StorageLayer.getStorage(main);
         if (storage != null) {
             storage.initFileLogging(Config.getConfig(main).getInfoLogPath(main),
                     Config.getConfig(main).getErrorLogPath(main));
@@ -66,7 +66,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
     public static void initFileLogging(Main main) {
         if (getInstance(main) == null) {
             main.getResourceDistributor().setResource(RESOURCE_ID, new Logging(main));
-            StorageLayer.getStorageLayer(main).initFileLogging(Config.getConfig(main).getInfoLogPath(main),
+            StorageLayer.getStorage(main).initFileLogging(Config.getConfig(main).getInfoLogPath(main),
                     Config.getConfig(main).getErrorLogPath(main));
         }
     }
@@ -154,7 +154,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
         getInstance(main).infoLogger.detachAndStopAllAppenders();
         getInstance(main).errorLogger.detachAndStopAllAppenders();
         Webserver.getInstance(main).closeLogger();
-        Storage storage = StorageLayer.getStorageLayer(main);
+        Storage storage = StorageLayer.getStorage(main);
         if (storage != null) {
             storage.stopLogging();
         }

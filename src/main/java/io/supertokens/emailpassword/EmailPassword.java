@@ -58,7 +58,7 @@ public class EmailPassword {
             String userId = Utils.getUUID();
 
             try {
-                StorageLayer.getEmailPasswordStorageLayer(main)
+                StorageLayer.getEmailPasswordStorage(main)
                         .signUp(new UserInfo(userId, email, hashedPassword, System.currentTimeMillis()));
 
                 return new User(userId, email);
@@ -72,7 +72,7 @@ public class EmailPassword {
     public static User signIn(Main main, @Nonnull String email, @Nonnull String password) throws StorageQueryException,
             WrongCredentialsException {
 
-        UserInfo user = StorageLayer.getEmailPasswordStorageLayer(main).getUserInfoUsingEmail(email);
+        UserInfo user = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingEmail(email);
 
         if (user == null) {
             throw new WrongCredentialsException();
@@ -118,7 +118,7 @@ public class EmailPassword {
 
 
             try {
-                StorageLayer.getEmailPasswordStorageLayer(main).addPasswordResetToken(
+                StorageLayer.getEmailPasswordStorage(main).addPasswordResetToken(
                         new PasswordResetTokenInfo(userId, hashedToken,
                                 System.currentTimeMillis() + getPasswordResetTokenLifetime(main)));
                 return token;
@@ -134,7 +134,7 @@ public class EmailPassword {
         String hashedToken = Utils.hashSHA256(token);
         String hashedPassword = UpdatableBCrypt.hash(password);
 
-        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorageLayer(main);
+        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
 
         PasswordResetTokenInfo resetInfo = storage.getPasswordResetTokenInfo(hashedToken);
 
@@ -183,7 +183,7 @@ public class EmailPassword {
     }
 
     public static User getUserUsingUsingId(Main main, String userId) throws StorageQueryException {
-        UserInfo info = StorageLayer.getEmailPasswordStorageLayer(main).getUserInfoUsingId(userId);
+        UserInfo info = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingId(userId);
         if (info == null) {
             return null;
         }
@@ -191,7 +191,7 @@ public class EmailPassword {
     }
 
     public static User getUserUsingUsingEmail(Main main, String email) throws StorageQueryException {
-        UserInfo info = StorageLayer.getEmailPasswordStorageLayer(main).getUserInfoUsingEmail(email);
+        UserInfo info = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingEmail(email);
         if (info == null) {
             return null;
         }

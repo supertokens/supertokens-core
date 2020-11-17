@@ -74,7 +74,7 @@ public class StorageTest {
         for (int i = 0; i < 10; i++) {
             String key = "Key" + i;
 
-            Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+            Storage storage = StorageLayer.getStorage(process.getProcess());
             if (storage.getType() == STORAGE_TYPE.SQL &&
                     !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
                 SQLStorage sqlStorage = (SQLStorage) storage;
@@ -172,7 +172,7 @@ public class StorageTest {
 
         for (int i = 0; i < 100; i++) {
 
-            Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+            Storage storage = StorageLayer.getStorage(process.getProcess());
             if (storage.getType() == STORAGE_TYPE.SQL) {
                 SQLStorage sqlStorage = (SQLStorage) storage;
                 sqlStorage.startTransaction(con -> {
@@ -261,7 +261,7 @@ public class StorageTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+        Storage storage = StorageLayer.getStorage(process.getProcess());
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SQLStorage sqlStorage = (SQLStorage) storage;
             sqlStorage.startTransaction(con -> {
@@ -478,7 +478,7 @@ public class StorageTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+        Storage storage = StorageLayer.getStorage(process.getProcess());
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SQLStorage sqlStorage = (SQLStorage) storage;
             String returnedValue = sqlStorage.startTransaction(con -> {
@@ -527,7 +527,7 @@ public class StorageTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+        Storage storage = StorageLayer.getStorage(process.getProcess());
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SQLStorage sqlStorage = (SQLStorage) storage;
             sqlStorage.startTransaction(con -> {
@@ -553,7 +553,7 @@ public class StorageTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+        Storage storage = StorageLayer.getStorage(process.getProcess());
         if (storage.getType() == STORAGE_TYPE.SQL) {
             // not applicable
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
@@ -583,7 +583,7 @@ public class StorageTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+        Storage storage = StorageLayer.getStorage(process.getProcess());
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SQLStorage sqlStorage = (SQLStorage) storage;
             try {
@@ -615,7 +615,7 @@ public class StorageTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+        Storage storage = StorageLayer.getStorage(process.getProcess());
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SQLStorage sqlStorage = (SQLStorage) storage;
             try {
@@ -659,7 +659,7 @@ public class StorageTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Storage storage = StorageLayer.getStorageLayer(process.getProcess());
+        Storage storage = StorageLayer.getStorage(process.getProcess());
         storage.setStorageLayerEnabled(false);
 
         try {

@@ -77,7 +77,7 @@ public class EmailPasswordTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
@@ -85,7 +85,7 @@ public class EmailPasswordTest {
 
         String tok = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
 
-        assert (StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+        assert (StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .getAllPasswordResetTokenInfoForUser(user.id).length == 1);
 
         Thread.sleep(20);
@@ -97,7 +97,7 @@ public class EmailPasswordTest {
 
         }
 
-        assert (StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+        assert (StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .getAllPasswordResetTokenInfoForUser(user.id).length == 0);
 
         process.kill();
@@ -111,7 +111,7 @@ public class EmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
@@ -122,14 +122,14 @@ public class EmailPasswordTest {
         String tok = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
         EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
 
-        PasswordResetTokenInfo[] tokens = StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+        PasswordResetTokenInfo[] tokens = StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .getAllPasswordResetTokenInfoForUser(user.id);
 
         assert (tokens.length == 3);
 
         EmailPassword.resetPassword(process.getProcess(), tok, "newPassword");
 
-        tokens = StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+        tokens = StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .getAllPasswordResetTokenInfoForUser(user.id);
         assert (tokens.length == 0);
 
@@ -155,10 +155,10 @@ public class EmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        PasswordResetTokenInfo[] tokens = StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+        PasswordResetTokenInfo[] tokens = StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .getAllPasswordResetTokenInfoForUser("8ed86166-bfd8-4234-9dfe-abca9606dbd5");
 
         assert (tokens.length == 0);
@@ -174,7 +174,7 @@ public class EmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
@@ -196,20 +196,20 @@ public class EmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
         // we add a user first.
         User user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
-        StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+        StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .addPasswordResetToken(new PasswordResetTokenInfo(
                         user.id, "token",
                         System.currentTimeMillis() + EmailPassword.PASSWORD_RESET_TOKEN_LIFETIME_MS));
 
         try {
-            StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+            StorageLayer.getEmailPasswordStorage(process.getProcess())
                     .addPasswordResetToken(new PasswordResetTokenInfo(
                             user.id, "token",
                             System.currentTimeMillis() + EmailPassword.PASSWORD_RESET_TOKEN_LIFETIME_MS));
@@ -229,7 +229,7 @@ public class EmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
@@ -251,16 +251,16 @@ public class EmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+        StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
                         "test@example.com", "password", System.currentTimeMillis()));
 
         try {
-            StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+            StorageLayer.getEmailPasswordStorage(process.getProcess())
                     .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
                             "test1@example.com", "password", System.currentTimeMillis()));
             assert (false);
@@ -279,7 +279,7 @@ public class EmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
@@ -302,16 +302,16 @@ public class EmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+        StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
                         "test@example.com", "password", System.currentTimeMillis()));
 
         try {
-            StorageLayer.getEmailPasswordStorageLayer(process.getProcess())
+            StorageLayer.getEmailPasswordStorage(process.getProcess())
                     .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
                             "test@example.com", "password", System.currentTimeMillis()));
             assert (false);
@@ -330,7 +330,7 @@ public class EmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
@@ -353,7 +353,7 @@ public class EmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorageLayer(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 

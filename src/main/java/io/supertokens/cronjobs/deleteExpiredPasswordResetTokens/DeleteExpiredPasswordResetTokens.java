@@ -43,10 +43,10 @@ public class DeleteExpiredPasswordResetTokens extends CronTask {
 
     @Override
     protected void doTask() throws Exception {
-        if (StorageLayer.getStorageLayer(this.main).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(this.main).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        StorageLayer.getEmailPasswordStorageLayer(this.main)
+        StorageLayer.getEmailPasswordStorage(this.main)
                 .deleteExpiredPasswordResetTokens();
     }
 

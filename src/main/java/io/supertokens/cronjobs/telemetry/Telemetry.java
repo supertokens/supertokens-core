@@ -55,7 +55,7 @@ public class Telemetry extends CronTask {
     protected void doTask() throws Exception {
         String plugin = Version.getVersion(main).getPluginName();
 
-        if (plugin.equals("sqlite") || Config.getConfig(main).isTelemetryDisabled()) {
+        if (StorageLayer.getInstance(main).isInMemDb() || Config.getConfig(main).isTelemetryDisabled()) {
             // we do not send any info in this case since it's not under development / production env or the user has
             // disabled Telemetry
             return;
@@ -63,7 +63,7 @@ public class Telemetry extends CronTask {
 
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENDING_TELEMETRY, null);
 
-        Storage storage = StorageLayer.getStorageLayer(main);
+        Storage storage = StorageLayer.getStorage(main);
 
         KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
 

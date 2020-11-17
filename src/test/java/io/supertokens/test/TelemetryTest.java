@@ -87,6 +87,26 @@ public class TelemetryTest extends Mockito {
     }
 
     @Test
+    public void testThatTelemetryDoesNotSendOneIfInMemDbButActualDBThere() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcess process = TestingProcessManager.start(args, false);
+        process.getProcess().setForceInMemoryDB();
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+            // we are testing with in mem db which is already done above.
+            return;
+        }
+
+        assertNull(process.checkOrWaitForEvent(PROCESS_STATE.SENDING_TELEMETRY, 2000));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testThatTelemetryWorks() throws Exception {
         String[] args = {"../"};
 
