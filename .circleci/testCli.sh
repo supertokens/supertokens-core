@@ -27,6 +27,7 @@ fi
 sed -i 's/# mysql_user:/mysql_user: root/g' /usr/lib/supertokens/config.yaml
 sed -i 's/# mysql_password:/mysql_password: root/g' /usr/lib/supertokens/config.yaml
 sed -i 's/# mongodb_connection_uri:/mongodb_connection_uri: mongodb:\/\/root:root@localhost:27017/g' /usr/lib/supertokens/config.yaml
+sed -i 's/# disable_telemetry:/disable_telemetry: true/g' /usr/lib/supertokens/config.yaml
 
 supertokens start --port=8889
 

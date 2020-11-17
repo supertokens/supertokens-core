@@ -45,7 +45,7 @@ public class Processes {
             Map<String, String> params = new HashMap<>();
             params.put("pid", this.pid);
             JsonObject result = HTTPRequest
-                    .sendGETRequest("http://" + this.hostName + ":" + this.port + "/config", params, null, "2.0");
+                    .sendGETRequest("http://" + this.hostName + ":" + this.port + "/config", params, null);
             this.configFilePath = result.get("path").getAsString();
         }
     }
