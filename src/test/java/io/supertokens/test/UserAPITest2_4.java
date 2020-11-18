@@ -26,11 +26,9 @@ import org.junit.rules.TestRule;
  *  - Check for bad input (missing fields)
  *  - Check good input works and that user is there in db (and then call sign in)
  *  - Test the normalise email function
- *  - Test that only the normalised email is saved in the db
- *  - Test that giving an empty password throws a bad input error
  * */
 
-public class SignUpAPITest2_4 {
+public class UserAPITest2_4 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();

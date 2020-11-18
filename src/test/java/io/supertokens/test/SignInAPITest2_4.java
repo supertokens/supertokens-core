@@ -26,7 +26,7 @@ import org.junit.rules.TestRule;
  *  - Check for bad input (missing fields)
  *  - Check good input works
  *  - Test that sign in with unnormalised email like Test@gmail.com should also work
- *  - Test that giving an empty password, empty email, invalid email, missing email or wrong password throws a wrong
+ *  - Test that giving an empty password, empty email, invalid email, random email or wrong password throws a wrong
  *      credentials error
  *  - Test that an empty password yields a WRONG_CREDENTIALS_ERROR output.
  * */

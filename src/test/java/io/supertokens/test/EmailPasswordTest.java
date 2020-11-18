@@ -40,17 +40,20 @@ import static org.junit.Assert.assertNotNull;
 
 /*
  * TODO:
- *  - Check that StorageLayer.getEmailPasswordStorageLayer throws as exception if the storage type is not SQL (and
+ *  - Check that StorageLayer.getEmailPasswordStorageLayer throws an exception if the storage type is not SQL (and
  *   vice versa)
  *  - Test normaliseEmail function
- *  - Test UpdatableBCrypt class
+ *  - (later) Test UpdatableBCrypt class
  *     - test time taken for hash
  *     - test hashing and verifying with short passwords and > 100 char password
  *  - Test that the reset password token length is 128 and has URL safe characters (generate a token 100 times and
  *  for each, check the above).
- *  - Test that if there are two transactions running with the same password reset token, only one of them succeed
- *  and the other throws ResetPasswordInvalidTokenException, and that there are no more tokens left for that user.
- *
+ *  - (later) Test that if there are two transactions running with the same password reset token, only one of them
+ *  succeed and the other throws ResetPasswordInvalidTokenException, and that there are no more tokens left for that
+ *  user.
+ *  - After sign up, check that the password is hashed in the db
+ *  - After reset password generate token, check that the token is hased in the db
+ *  - After reset password completed, check that the password is hashed in the db
  * */
 
 public class EmailPasswordTest {
