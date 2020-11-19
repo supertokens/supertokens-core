@@ -18,6 +18,7 @@ package io.supertokens.test;
 
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.UpdatableBCrypt;
 import io.supertokens.emailpassword.User;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
@@ -35,8 +36,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /*
  * TODO:
@@ -68,6 +68,154 @@ public class EmailPasswordTest {
     @Before
     public void beforeEach() {
         Utils.reset();
+    }
+
+    // Check that StorageLayer.getEmailPasswordStorageLayer throws an exception if the storage type is not SQL (and
+    // vice versa)
+    @Test
+    public void testStorageLayerGetMailPasswordStorageLayerThrowsExceptionIfTypeIsNotSQL() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.NOSQL_1) {
+            try {
+                StorageLayer.getEmailPasswordStorage(process.getProcess());
+                throw new Exception("Should not come here");
+            } catch (UnsupportedOperationException e) {
+            }
+        } else {
+            StorageLayer.getEmailPasswordStorage(process.getProcess());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Test normaliseEmail function
+    @Test
+    public void testTheNormaliseEmailFunction() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String normaliseEmail = io.supertokens.utils.Utils.normaliseEmail("RaNdOm@gmail.com");
+        assertEquals(normaliseEmail, "random@gmail.com");
+
+        normaliseEmail = io.supertokens.utils.Utils.normaliseEmail("RaNdOm@hotmail.com");
+        assertEquals(normaliseEmail, "random@hotmail.com");
+
+        normaliseEmail = io.supertokens.utils.Utils.normaliseEmail("RaNdOm@googlemail.com");
+        assertEquals(normaliseEmail, "random@googlemail.com");
+
+        normaliseEmail = io.supertokens.utils.Utils.normaliseEmail("RaNdOm@outlook.com");
+        assertEquals(normaliseEmail, "random@outlook.com");
+
+        normaliseEmail = io.supertokens.utils.Utils.normaliseEmail("RaNdOm@yahoo.com");
+        assertEquals(normaliseEmail, "random@yahoo.com");
+
+        normaliseEmail = io.supertokens.utils.Utils.normaliseEmail("RaNdOm@icloud.com");
+        assertEquals(normaliseEmail, "random@icloud.com");
+
+
+        normaliseEmail = io.supertokens.utils.Utils.normaliseEmail("RaNdOm@random.com");
+        assertEquals(normaliseEmail, "RaNdOm@random.com");
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    //Test that the reset password token length is 128 and has URL safe characters (generate a token 100 times and
+    // *  for each, check the above).
+    @Test
+    public void testResetPasswordToken() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        User userInfo = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+        assertEquals(userInfo.email, "random@gmail.com");
+        assertNotNull(userInfo.id);
+
+        for (int i = 0; i < 100; i++) {
+            String generatedResetToken = EmailPassword.generatePasswordResetToken(process.getProcess(), userInfo.id);
+
+            assertEquals(generatedResetToken.length(), 128);
+            assertFalse(generatedResetToken.contains("+"));
+            assertFalse(generatedResetToken.contains("="));
+            assertFalse(generatedResetToken.contains("/"));
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    //After sign up, check that the password is hashed in the db
+    @Test
+    public void testThatAfterSignUpThePasswordIsHashedAndStoredInTheDatabase() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        User user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+
+        UserInfo userInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
+                .getUserInfoUsingEmail(user.email);
+        assertNotEquals(userInfo.passwordHash, "validPass123");
+        assertTrue(UpdatableBCrypt.verifyHash("validPass123", userInfo.passwordHash));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    //After reset password generate token, check that the token is hased in the db
+    @Test
+    public void testThatAfterResetPasswordGenerateTokenTheTokenIsHashedInTheDatabase() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        User user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+
+        String resetToken = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
+        PasswordResetTokenInfo resetTokenInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
+                .getPasswordResetTokenInfo(
+                        io.supertokens.utils.Utils.hashSHA256(resetToken));
+
+        assertNotEquals(resetToken, resetTokenInfo.token);
+        assertEquals(io.supertokens.utils.Utils.hashSHA256(resetToken), resetTokenInfo.token);
+
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // After reset password completed, check that the password is hashed in the db
+    @Test
+    public void testThatAfterResetPasswordIsCompletedThePasswordIsHashedInTheDatabase() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        User user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+
+        String resetToken = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
+
+        EmailPassword.resetPassword(process.getProcess(), resetToken, "newValidPass123");
+
+        UserInfo userInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
+                .getUserInfoUsingEmail(user.email);
+        assertNotEquals(userInfo.passwordHash, "newValidPass123");
+
+        assertTrue(UpdatableBCrypt.verifyHash("newValidPass123", userInfo.passwordHash));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
