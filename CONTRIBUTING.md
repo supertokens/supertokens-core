@@ -49,7 +49,6 @@ Please ask as many questions as you need, either directly in the issue or on [Di
     - The `sqlite-plugin` is used as the default plugin as it is an in-memory database and requires no setup
       - [core](https://github.com/supertokens/supertokens-core)
       - [plugin-interface](https://github.com/supertokens/supertokens-plugin-interface)
-      - [sqlite-plugin](https://github.com/supertokens/supertokens-sqlite-plugin)
       - Check the repository branches by clicking on the links listed above, click the branch tab and check for all the available versions 
     - Add your github `username` separated by a ',' after `core,master` in  `modules.txt`
     - If, for example, your github `username` is `helloworld` then modules.txt should look like...  
@@ -62,8 +61,6 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 	
 5. Run loadModules to clone the required repositories  
 `./loadModules`
-6. Create a directory called sqlite_db, this directory is required to run tests with the sqlite-plugin  
-`mkdir sqlite_db`
 
 
 ## Modifying code
