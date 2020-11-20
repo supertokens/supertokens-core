@@ -197,4 +197,25 @@ public class SignUpAPITest2_4 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testSignUpWithDupicateEMail() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
+        assertEquals(signUpResponse.get("status").getAsString(), "OK");
+
+        JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
+        assertEquals(signUpUser.get("email").getAsString(), "random@gmail.com");
+        assertNotNull(signUpUser.get("id"));
+
+        JsonObject response = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
+        assertEquals(response.get("status").getAsString(), "EMAIL_ALREADY_EXISTS_ERROR");
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
