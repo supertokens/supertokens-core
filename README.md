@@ -47,13 +47,13 @@ We also believe in the principle of least vendor lockin. Your having full contro
 
 ### Features
 #### ❗⭐❗⭐ We want to make features as decoupled as possible. This means, you can use SuperTokens for just login, or just session management, or both. In fact, we also offer session management integrations with other login providers like Auth0.
-- Login (coming soon):
-    - A decoupled login & sign up form as React components - pretty by default, but fully customisable.
-    - Email & password login with email verification, and forgot password flows
+- Login:
+    - A login & sign up form as React components - pretty by default, but fully customisable.
+    - Email & password login with forgot password flows
     - Extensibility to build other methods of login - for example passwordless login.
-    - Extensibility to chain various login challenges
     - Password management - hashing + salting.
-    - Social and other types of login
+    - Email verification (coming soon)
+    - Social and other types of login (coming soon)
 <img src="https://raw.githubusercontent.com/supertokens/supertokens-logo/master/gifs/login-readme.gif" height="300px"/>
 
 - Session management
