@@ -45,7 +45,7 @@ We want to change that - we believe the only way is to provide a solution that h
   
 We also believe in the principle of least vendor lockin. Your having full control of your user's data means that you can switch away from SuperTokens without forcing your existing users to logout, reset their passwords or in the worst case, sign up again. 
 
-### Features
+### Features - [Click here](https://emailpassword.demo.supertokens.io/) to see the demo app.
 #### ❗⭐❗⭐ We want to make features as decoupled as possible. This means, you can use SuperTokens for just login, or just session management, or both. In fact, we also offer session management integrations with other login providers like Auth0.
 - Login:
     - A login & sign up form as React components - pretty by default, but fully customisable.
@@ -155,9 +155,6 @@ Over the last few months, we have built out session management for SuperTokens. 
 - Until August, 2020, our license was not truly open source. This was done as an experiment to get feedback on the
   importance of software license for the startup community. Since then, it's become very clear that we must use a
    standard open source license, so we chose Apache 2.0
-   
-- Our community version used to ping our APIs from time to time. This was done for us to understand
- adoption of our session management solution. However, it quickly became clear that that was a bad move.
  
 - We used to have a notion of a license key that was required to use the community version. This license key was
  issued by us, and would never expire. Some parts of the code still refer to that, however, it's only for backwards
