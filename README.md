@@ -10,7 +10,7 @@
 ## Table of Contents
 - [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#what-is-supertokens)
     - [Philosophy](https://github.com/supertokens/supertokens-core#philosophy)
-    - [Features](https://github.com/supertokens/supertokens-core#features)
+    - [Features + Demo app](https://github.com/supertokens/supertokens-core#features---click-here-to-see-the-demo-app)
     - [Documentation](https://github.com/supertokens/supertokens-core#documentation)
 - [🏗️ Architecture](https://github.com/supertokens/supertokens-core#architecture)
 - [🔥 SuperTokens vs Others](https://github.com/supertokens/supertokens-core#supertokens-vs-others)
