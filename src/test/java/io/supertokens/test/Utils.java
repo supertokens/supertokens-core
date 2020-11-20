@@ -16,8 +16,10 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.webserver.WebserverAPI;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.junit.rules.TestRule;
@@ -141,6 +143,20 @@ abstract class Utils extends Mockito {
                 System.out.println(byteArrayOutputStream.toString(StandardCharsets.UTF_8));
             }
         };
+    }
+
+    public static JsonObject signUpRequest(TestingProcessManager.TestingProcess process, String email, String password)
+            throws IOException, HttpResponseException {
+
+        JsonObject signUpRequestBody = new JsonObject();
+        signUpRequestBody.addProperty("email", email);
+        signUpRequestBody.addProperty("password", password);
+
+        return io.supertokens.test.httpRequest.HttpRequest
+                .sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signup", signUpRequestBody, 1000,
+                        1000,
+                        null, getCdiVersion2_4ForTests());
     }
 
 }

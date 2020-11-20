@@ -18,8 +18,6 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.User;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -119,10 +117,13 @@ public class GeneratePasswordResetTokenAPITest2_4 {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        
+        JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
+        assertEquals(signUpResponse.get("status").getAsString(), "OK");
+        String userId = signUpResponse.getAsJsonObject("user").get("id").getAsString();
 
-        User user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("userId", user.id);
+        requestBody.addProperty("userId", userId);
 
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "",
