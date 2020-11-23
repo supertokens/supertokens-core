@@ -72,6 +72,8 @@ public class EmailPasswordTest {
 
     // Check that StorageLayer.getEmailPasswordStorageLayer throws an exception if the storage type is not SQL (and
     // vice versa)
+    // Failure condition: If the StorageLayer type is NOSQL and if the EmailPasswordStorageLayer is called and it
+    // does not throw an Error, the test will fail
     @Test
     public void testStorageLayerGetMailPasswordStorageLayerThrowsExceptionIfTypeIsNotSQL() throws Exception {
         String[] args = {"../"};
@@ -79,7 +81,7 @@ public class EmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.NOSQL_1) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             try {
                 StorageLayer.getEmailPasswordStorage(process.getProcess());
                 throw new Exception("Should not come here");
@@ -129,6 +131,8 @@ public class EmailPasswordTest {
 
     //Test that the reset password token length is 128 and has URL safe characters (generate a token 100 times and
     // *  for each, check the above).
+    // Failure condition: the test will fail if the generatePasswordResetToken function returns a token whose length
+    // is not 128 characters long and is not URL sage
     @Test
     public void testResetPasswordToken() throws Exception {
         String[] args = {"../"};
@@ -153,6 +157,8 @@ public class EmailPasswordTest {
     }
 
     //After sign up, check that the password is hashed in the db
+    // Failure condition: If the password data returned from the database is not hashed or the hash value does not
+    // match the check, the test will fail
     @Test
     public void testThatAfterSignUpThePasswordIsHashedAndStoredInTheDatabase() throws Exception {
         String[] args = {"../"};
@@ -171,7 +177,9 @@ public class EmailPasswordTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //After reset password generate token, check that the token is hased in the db
+    //After reset password generate token, check that the token is hashed in the db
+    // Failure condition: If the token returned from the database is not hashed or the hash value does not
+    // match the check, the test will fail
     @Test
     public void testThatAfterResetPasswordGenerateTokenTheTokenIsHashedInTheDatabase() throws Exception {
         String[] args = {"../"};
@@ -195,6 +203,8 @@ public class EmailPasswordTest {
     }
 
     // After reset password completed, check that the password is hashed in the db
+    // Failure condition: If the password data returned from the database is not hashed or the hash value does not
+    // match the check, the test will fail
     @Test
     public void testThatAfterResetPasswordIsCompletedThePasswordIsHashedInTheDatabase() throws Exception {
         String[] args = {"../"};

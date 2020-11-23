@@ -105,26 +105,55 @@ public class GetUserAPITest2_4 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
-        assertEquals(signUpResponse.get("status").getAsString(), "OK");
+        {
+            JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
+            assertEquals(signUpResponse.get("status").getAsString(), "OK");
+            assertEquals(signUpResponse.entrySet().size(), 2);
 
-        JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
-        assertEquals(signUpUser.get("email").getAsString(), "random@gmail.com");
-        assertNotNull(signUpUser.get("id"));
+            JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
+            assertEquals(signUpUser.get("email").getAsString(), "random@gmail.com");
+            assertNotNull(signUpUser.get("id"));
 
-        HashMap<String, String> map = new HashMap<>();
-        map.put("email", "random@gmail.com");
+            HashMap<String, String> map = new HashMap<>();
+            map.put("email", "random@gmail.com");
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
-                .sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/user", map, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_4ForTests());
-        assertEquals(response.get("status").getAsString(), "OK");
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/user", map, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_4ForTests());
+            assertEquals(response.get("status").getAsString(), "OK");
+            assertEquals(response.entrySet().size(), 2);
 
-        JsonObject userInfo = signUpResponse.get("user").getAsJsonObject();
-        assertEquals(signUpUser.get("email").getAsString(), userInfo.get("email").getAsString());
-        assertEquals(signUpUser.get("id").getAsString(), userInfo.get("id").getAsString());
+            JsonObject userInfo = signUpResponse.get("user").getAsJsonObject();
+            assertEquals(signUpUser.get("email").getAsString(), userInfo.get("email").getAsString());
+            assertEquals(signUpUser.get("id").getAsString(), userInfo.get("id").getAsString());
+        }
+
+        {
+            JsonObject signUpResponse = Utils.signUpRequest(process, "random2@gmail.com", "validPass123");
+            assertEquals(signUpResponse.get("status").getAsString(), "OK");
+            assertEquals(signUpResponse.entrySet().size(), 2);
+
+            JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
+            assertEquals(signUpUser.get("email").getAsString(), "random2@gmail.com");
+            assertNotNull(signUpUser.get("id"));
+
+            HashMap<String, String> map = new HashMap<>();
+            map.put("userId", signUpUser.get("id").getAsString());
+
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/user", map, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_4ForTests());
+            assertEquals(response.get("status").getAsString(), "OK");
+            assertEquals(response.entrySet().size(), 2);
+
+            JsonObject userInfo = signUpResponse.get("user").getAsJsonObject();
+            assertEquals(signUpUser.get("email").getAsString(), userInfo.get("email").getAsString());
+            assertEquals(signUpUser.get("id").getAsString(), userInfo.get("id").getAsString());
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -148,6 +177,7 @@ public class GetUserAPITest2_4 {
                             1000,
                             null, Utils.getCdiVersion2_4ForTests());
             assertEquals(response.get("status").getAsString(), "UNKNOWN_EMAIL_ERROR");
+            assertEquals(response.entrySet().size(), 1);
         }
 
         {
@@ -160,6 +190,7 @@ public class GetUserAPITest2_4 {
                             1000,
                             null, Utils.getCdiVersion2_4ForTests());
             assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
+            assertEquals(response.entrySet().size(), 1);
         }
 
 

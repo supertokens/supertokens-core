@@ -122,6 +122,7 @@ public class SignInAPITest2_4 {
 
         JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
+        assertEquals(signUpResponse.entrySet().size(), 2);
 
         JsonObject userInfo = signUpResponse.get("user").getAsJsonObject();
 
@@ -136,6 +137,8 @@ public class SignInAPITest2_4 {
                         null, Utils.getCdiVersion2_4ForTests());
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");
+        assertEquals(signInResponse.entrySet().size(), 2);
+
         assertEquals(signInResponse.get("user").getAsJsonObject().get("id").getAsString(),
                 userInfo.get("id").getAsString());
         assertEquals(signInResponse.get("user").getAsJsonObject().get("email").getAsString(),
@@ -155,6 +158,7 @@ public class SignInAPITest2_4 {
 
         JsonObject signUpResponse = Utils.signUpRequest(process, "test@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
+        assertEquals(signUpResponse.entrySet().size(), 2);
 
         JsonObject userInfo = signUpResponse.get("user").getAsJsonObject();
 
@@ -169,6 +173,7 @@ public class SignInAPITest2_4 {
                         null, Utils.getCdiVersion2_4ForTests());
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");
+        assertEquals(signInResponse.entrySet().size(), 2);
         assertEquals(signInResponse.get("user").getAsJsonObject().get("id").getAsString(),
                 userInfo.get("id").getAsString());
         assertEquals(signInResponse.get("user").getAsJsonObject().get("email").getAsString(),
@@ -199,6 +204,7 @@ public class SignInAPITest2_4 {
                             null, Utils.getCdiVersion2_4ForTests());
 
             assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
+            assertEquals(signInResponse.entrySet().size(), 1);
         }
 
         {
@@ -213,6 +219,7 @@ public class SignInAPITest2_4 {
                             null, Utils.getCdiVersion2_4ForTests());
 
             assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
+            assertEquals(signInResponse.entrySet().size(), 1);
         }
 
         {
@@ -227,11 +234,13 @@ public class SignInAPITest2_4 {
                             null, Utils.getCdiVersion2_4ForTests());
 
             assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
+            assertEquals(signInResponse.entrySet().size(), 1);
         }
 
         {
             JsonObject signUpResponse = Utils.signUpRequest(process, "test@gmail.com", "validPass123");
             assertEquals(signUpResponse.get("status").getAsString(), "OK");
+            assertEquals(signUpResponse.entrySet().size(), 2);
 
             JsonObject responseBody = new JsonObject();
             responseBody.addProperty("email", "test@gmail.com");
@@ -244,10 +253,11 @@ public class SignInAPITest2_4 {
                             null, Utils.getCdiVersion2_4ForTests());
 
             assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
+            assertEquals(signInResponse.entrySet().size(), 1);
         }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
-    
+
 }

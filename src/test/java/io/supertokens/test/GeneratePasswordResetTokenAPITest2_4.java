@@ -117,9 +117,10 @@ public class GeneratePasswordResetTokenAPITest2_4 {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        
+
         JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
+        assertEquals(signUpResponse.entrySet().size(), 2);
         String userId = signUpResponse.getAsJsonObject("user").get("id").getAsString();
 
         JsonObject requestBody = new JsonObject();
@@ -133,6 +134,7 @@ public class GeneratePasswordResetTokenAPITest2_4 {
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertNotNull(response.get("token"));
+        assertEquals(response.entrySet().size(), 2);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -156,6 +158,7 @@ public class GeneratePasswordResetTokenAPITest2_4 {
                         null, Utils.getCdiVersion2_4ForTests());
 
         assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
+        assertEquals(response.entrySet().size(), 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

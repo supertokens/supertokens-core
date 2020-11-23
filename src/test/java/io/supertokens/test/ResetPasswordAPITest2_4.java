@@ -132,7 +132,7 @@ public class ResetPasswordAPITest2_4 {
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("method", "token");
             requestBody.addProperty("token", "randomToken");
-            
+
             try {
                 io.supertokens.test.httpRequest.HttpRequest
                         .sendJsonPOSTRequest(process.getProcess(), "",
@@ -163,6 +163,8 @@ public class ResetPasswordAPITest2_4 {
 
         JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
+        assertEquals(signUpResponse.entrySet().size(), 2);
+
         String userId = signUpResponse.getAsJsonObject("user").get("id").getAsString();
 
         JsonObject requestBody = new JsonObject();
@@ -175,6 +177,7 @@ public class ResetPasswordAPITest2_4 {
                         null, Utils.getCdiVersion2_4ForTests());
 
         assertEquals(response.get("status").getAsString(), "OK");
+        assertEquals(response.entrySet().size(), 2);
 
         String token = response.get("token").getAsString();
 
@@ -189,6 +192,7 @@ public class ResetPasswordAPITest2_4 {
                         1000,
                         null, Utils.getCdiVersion2_4ForTests());
         assertEquals(passwordResetResponse.get("status").getAsString(), "OK");
+        assertEquals(passwordResetResponse.entrySet().size(), 1);
 
         JsonObject signInRequestBody = new JsonObject();
         signInRequestBody.addProperty("email", "random@gmail.com");
@@ -201,6 +205,7 @@ public class ResetPasswordAPITest2_4 {
                         null, Utils.getCdiVersion2_4ForTests());
 
         assertEquals(response.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
+        assertEquals(response.entrySet().size(), 1);
 
         signInRequestBody = new JsonObject();
         signInRequestBody.addProperty("email", "random@gmail.com");
@@ -213,6 +218,7 @@ public class ResetPasswordAPITest2_4 {
                         null, Utils.getCdiVersion2_4ForTests());
 
         assertEquals(response.get("status").getAsString(), "OK");
+        assertEquals(response.entrySet().size(), 2);
 
 
         process.kill();
@@ -239,6 +245,7 @@ public class ResetPasswordAPITest2_4 {
                         null, Utils.getCdiVersion2_4ForTests());
 
         assertEquals(passwordResetResponse.get("status").getAsString(), "RESET_PASSWORD_INVALID_TOKEN_ERROR");
+        assertEquals(passwordResetResponse.entrySet().size(), 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

@@ -123,6 +123,7 @@ public class SignUpAPITest2_4 {
 
         JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
+        assertEquals(signUpResponse.entrySet().size(), 2);
 
         JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
         assertEquals(signUpUser.get("email").getAsString(), "random@gmail.com");
@@ -144,6 +145,8 @@ public class SignUpAPITest2_4 {
                         null, Utils.getCdiVersion2_4ForTests());
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");
+        assertEquals(signInResponse.entrySet().size(), 2);
+
         assertEquals(signInResponse.get("user").getAsJsonObject().get("id").getAsString(),
                 signUpUser.get("id").getAsString());
         assertEquals(signInResponse.get("user").getAsJsonObject().get("email").getAsString(),
@@ -164,6 +167,7 @@ public class SignUpAPITest2_4 {
 
         JsonObject signUpResponse = Utils.signUpRequest(process, "RaNdOm@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
+        assertEquals(signUpResponse.entrySet().size(), 2);
 
         JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
         assertEquals(signUpUser.get("email").getAsString(), "random@gmail.com");
@@ -207,6 +211,7 @@ public class SignUpAPITest2_4 {
 
         JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
+        assertEquals(signUpResponse.entrySet().size(), 2);
 
         JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
         assertEquals(signUpUser.get("email").getAsString(), "random@gmail.com");
@@ -214,6 +219,7 @@ public class SignUpAPITest2_4 {
 
         JsonObject response = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
         assertEquals(response.get("status").getAsString(), "EMAIL_ALREADY_EXISTS_ERROR");
+        assertEquals(response.entrySet().size(), 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
