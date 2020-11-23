@@ -141,6 +141,7 @@ public class GeneratePasswordResetTokenAPITest2_4 {
     }
 
     //Check for all types of output
+    // Failure condition: passing a valid userId will cause the test to fail
     @Test
     public void testForAllTypesOfOutput() throws Exception {
         String[] args = {"../"};

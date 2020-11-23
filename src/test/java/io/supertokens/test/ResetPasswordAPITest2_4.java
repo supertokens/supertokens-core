@@ -226,6 +226,7 @@ public class ResetPasswordAPITest2_4 {
     }
 
     // Check for all types of output
+    // Failure condition: passing a valid password reset token will fail the test
     @Test
     public void testALLTypesOfOutPut() throws Exception {
         String[] args = {"../"};
@@ -252,6 +253,7 @@ public class ResetPasswordAPITest2_4 {
     }
 
     // Check that invalid method throws 400 error
+    // Failure condition: passing a valid method will fail the test
     @Test
     public void testInvalidMethodThrows400Error() throws Exception {
         String[] args = {"../"};
@@ -281,6 +283,7 @@ public class ResetPasswordAPITest2_4 {
     }
 
     //Check that empty password throws 400 error
+    // Failure condition: submitting a valid password will fail the test
     @Test
     public void testEmptyPasswordThrows400Error() throws Exception {
         String[] args = {"../"};

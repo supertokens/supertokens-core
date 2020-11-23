@@ -158,6 +158,7 @@ public class SignUpAPITest2_4 {
 
     // Test the normalise email function
     // Test that only the normalised email is saved in the db
+    //Failure condition: If the email retrieved from the data is not normalised the test will fail
     @Test
     public void testTheNormaliseEmailFunction() throws Exception {
         String[] args = {"../"};
