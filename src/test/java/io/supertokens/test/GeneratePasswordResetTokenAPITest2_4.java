@@ -16,10 +16,15 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonObject;
+import io.supertokens.ProcessState;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import static org.junit.Assert.*;
 
 /*
  * TODO:
@@ -43,4 +48,120 @@ public class GeneratePasswordResetTokenAPITest2_4 {
         Utils.reset();
     }
 
+    //Check for bad input (missing fields)
+    @Test
+    public void testBadInput() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        {
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendJsonPOSTRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/user/password/reset/token", null, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_4ForTests());
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
+            }
+        }
+
+        {
+            JsonObject requestBody = new JsonObject();
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendJsonPOSTRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_4ForTests());
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: Field name 'userId' is invalid in " +
+                                        "JSON input"));
+
+            }
+        }
+
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.add("userId", null);
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendJsonPOSTRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_4ForTests());
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: Field name 'userId' is invalid in " +
+                                        "JSON input"));
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Check good input works
+    @Test
+    public void testGoodInput() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
+        assertEquals(signUpResponse.get("status").getAsString(), "OK");
+        assertEquals(signUpResponse.entrySet().size(), 2);
+        String userId = signUpResponse.getAsJsonObject("user").get("id").getAsString();
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("userId", userId);
+
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                .sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
+                        1000,
+                        null, Utils.getCdiVersion2_4ForTests());
+
+        assertEquals(response.get("status").getAsString(), "OK");
+        assertNotNull(response.get("token"));
+        assertEquals(response.entrySet().size(), 2);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    //Check for all types of output
+    // Failure condition: passing a valid userId will cause the test to fail
+    @Test
+    public void testForAllTypesOfOutput() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("userId", "randomUserId");
+
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                .sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
+                        1000,
+                        null, Utils.getCdiVersion2_4ForTests());
+
+        assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
+        assertEquals(response.entrySet().size(), 1);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

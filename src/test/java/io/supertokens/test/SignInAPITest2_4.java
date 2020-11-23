@@ -16,17 +16,22 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonObject;
+import io.supertokens.ProcessState;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import static org.junit.Assert.*;
 
 /*
  * TODO:
  *  - Check for bad input (missing fields)
  *  - Check good input works
  *  - Test that sign in with unnormalised email like Test@gmail.com should also work
- *  - Test that giving an empty password, empty email, invalid email, missing email or wrong password throws a wrong
+ *  - Test that giving an empty password, empty email, invalid email, random email or wrong password throws a wrong
  *      credentials error
  *  - Test that an empty password yields a WRONG_CREDENTIALS_ERROR output.
  * */
@@ -44,6 +49,215 @@ public class SignInAPITest2_4 {
     @Before
     public void beforeEach() {
         Utils.reset();
+    }
+
+    //Check for bad input (missing fields)
+    @Test
+    public void testBadInput() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        {
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendJsonPOSTRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/signin", null, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_4ForTests());
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
+            }
+        }
+
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", "random@gmail.com");
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendJsonPOSTRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/signin", requestBody, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_4ForTests());
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: Field name 'password' is invalid in " +
+                                        "JSON input"));
+            }
+        }
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("password", "validPass123");
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendJsonPOSTRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/signin", requestBody, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_4ForTests());
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: Field name 'email' is invalid in " +
+                                        "JSON input"));
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    //Check good input works
+    @Test
+    public void testGoodInput() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
+        assertEquals(signUpResponse.get("status").getAsString(), "OK");
+        assertEquals(signUpResponse.entrySet().size(), 2);
+
+        JsonObject userInfo = signUpResponse.get("user").getAsJsonObject();
+
+        JsonObject responseBody = new JsonObject();
+        responseBody.addProperty("email", "random@gmail.com");
+        responseBody.addProperty("password", "validPass123");
+
+        JsonObject signInResponse = io.supertokens.test.httpRequest.HttpRequest
+                .sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signin", responseBody, 1000,
+                        1000,
+                        null, Utils.getCdiVersion2_4ForTests());
+
+        assertEquals(signInResponse.get("status").getAsString(), "OK");
+        assertEquals(signInResponse.entrySet().size(), 2);
+
+        assertEquals(signInResponse.get("user").getAsJsonObject().get("id").getAsString(),
+                userInfo.get("id").getAsString());
+        assertEquals(signInResponse.get("user").getAsJsonObject().get("email").getAsString(),
+                userInfo.get("email").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    //Test that sign in with unnormalised email like Test@gmail.com should also work
+    @Test
+    public void testThatUnnormalisedEmailShouldAlsoWork() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject signUpResponse = Utils.signUpRequest(process, "test@gmail.com", "validPass123");
+        assertEquals(signUpResponse.get("status").getAsString(), "OK");
+        assertEquals(signUpResponse.entrySet().size(), 2);
+
+        JsonObject userInfo = signUpResponse.get("user").getAsJsonObject();
+
+        JsonObject responseBody = new JsonObject();
+        responseBody.addProperty("email", "Test@gmail.com");
+        responseBody.addProperty("password", "validPass123");
+
+        JsonObject signInResponse = io.supertokens.test.httpRequest.HttpRequest
+                .sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signin", responseBody, 1000,
+                        1000,
+                        null, Utils.getCdiVersion2_4ForTests());
+
+        assertEquals(signInResponse.get("status").getAsString(), "OK");
+        assertEquals(signInResponse.entrySet().size(), 2);
+        assertEquals(signInResponse.get("user").getAsJsonObject().get("id").getAsString(),
+                userInfo.get("id").getAsString());
+        assertEquals(signInResponse.get("user").getAsJsonObject().get("email").getAsString(),
+                userInfo.get("email").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    //Test that giving an empty password, empty email, invalid email, random email or wrong password throws a wrong
+    // *      credentials error
+    @Test
+    public void testInputsToSignInAPI() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        {
+            JsonObject responseBody = new JsonObject();
+            responseBody.addProperty("email", "random@gmail.com");
+            responseBody.addProperty("password", "");
+
+            JsonObject signInResponse = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonPOSTRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/signin", responseBody, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_4ForTests());
+
+            assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
+            assertEquals(signInResponse.entrySet().size(), 1);
+        }
+
+        {
+            JsonObject responseBody = new JsonObject();
+            responseBody.addProperty("email", "");
+            responseBody.addProperty("password", "validPass123");
+
+            JsonObject signInResponse = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonPOSTRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/signin", responseBody, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_4ForTests());
+
+            assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
+            assertEquals(signInResponse.entrySet().size(), 1);
+        }
+
+        {
+            JsonObject responseBody = new JsonObject();
+            responseBody.addProperty("email", "random@gmail.com");
+            responseBody.addProperty("password", "randomPassword123");
+
+            JsonObject signInResponse = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonPOSTRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/signin", responseBody, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_4ForTests());
+
+            assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
+            assertEquals(signInResponse.entrySet().size(), 1);
+        }
+
+        {
+            JsonObject signUpResponse = Utils.signUpRequest(process, "test@gmail.com", "validPass123");
+            assertEquals(signUpResponse.get("status").getAsString(), "OK");
+            assertEquals(signUpResponse.entrySet().size(), 2);
+
+            JsonObject responseBody = new JsonObject();
+            responseBody.addProperty("email", "test@gmail.com");
+            responseBody.addProperty("password", "wrongPassword");
+
+            JsonObject signInResponse = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonPOSTRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/signin", responseBody, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_4ForTests());
+
+            assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
+            assertEquals(signInResponse.entrySet().size(), 1);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
 }

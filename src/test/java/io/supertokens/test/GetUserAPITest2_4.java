@@ -16,10 +16,17 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonObject;
+import io.supertokens.ProcessState;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.util.HashMap;
+
+import static org.junit.Assert.*;
 
 /*
  * TODO: /recipe/user GET API
@@ -43,4 +50,152 @@ public class GetUserAPITest2_4 {
         Utils.reset();
     }
 
+    //Check for bad input (missing fields)
+    @Test
+    public void testBadInput() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        {
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendGETRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/user", null, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_4ForTests());
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: Please provide one of userId or " +
+                                        "email"));
+            }
+        }
+
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("userId", "randomID");
+            map.put("email", "random@gmail.com");
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendGETRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/user", map, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_4ForTests());
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: Please provide only one of userId or " +
+                                        "email"));
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    //Check good input works
+    @Test
+    public void testGoodInput() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        {
+            JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
+            assertEquals(signUpResponse.get("status").getAsString(), "OK");
+            assertEquals(signUpResponse.entrySet().size(), 2);
+
+            JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
+            assertEquals(signUpUser.get("email").getAsString(), "random@gmail.com");
+            assertNotNull(signUpUser.get("id"));
+
+            HashMap<String, String> map = new HashMap<>();
+            map.put("email", "random@gmail.com");
+
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/user", map, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_4ForTests());
+            assertEquals(response.get("status").getAsString(), "OK");
+            assertEquals(response.entrySet().size(), 2);
+
+            JsonObject userInfo = signUpResponse.get("user").getAsJsonObject();
+            assertEquals(signUpUser.get("email").getAsString(), userInfo.get("email").getAsString());
+            assertEquals(signUpUser.get("id").getAsString(), userInfo.get("id").getAsString());
+        }
+
+        {
+            JsonObject signUpResponse = Utils.signUpRequest(process, "random2@gmail.com", "validPass123");
+            assertEquals(signUpResponse.get("status").getAsString(), "OK");
+            assertEquals(signUpResponse.entrySet().size(), 2);
+
+            JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
+            assertEquals(signUpUser.get("email").getAsString(), "random2@gmail.com");
+            assertNotNull(signUpUser.get("id"));
+
+            HashMap<String, String> map = new HashMap<>();
+            map.put("userId", signUpUser.get("id").getAsString());
+
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/user", map, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_4ForTests());
+            assertEquals(response.get("status").getAsString(), "OK");
+            assertEquals(response.entrySet().size(), 2);
+
+            JsonObject userInfo = signUpResponse.get("user").getAsJsonObject();
+            assertEquals(signUpUser.get("email").getAsString(), userInfo.get("email").getAsString());
+            assertEquals(signUpUser.get("id").getAsString(), userInfo.get("id").getAsString());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    //Check for all types of output
+    // Failure condition: passing a valid email/userId will cause the test to fail
+    @Test
+    public void testForAllTypesOfOutput() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("email", "random@gmail.com");
+
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/user", map, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_4ForTests());
+            assertEquals(response.get("status").getAsString(), "UNKNOWN_EMAIL_ERROR");
+            assertEquals(response.entrySet().size(), 1);
+        }
+
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("userId", "randomId");
+
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/user", map, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_4ForTests());
+            assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
+            assertEquals(response.entrySet().size(), 1);
+        }
+
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
