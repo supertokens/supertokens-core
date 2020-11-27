@@ -140,6 +140,10 @@ public class EmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         User userInfo = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
         assertEquals(userInfo.email, "random@gmail.com");
         assertNotNull(userInfo.id);
@@ -166,6 +170,10 @@ public class EmailPasswordTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         User user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
         UserInfo userInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
@@ -186,6 +194,10 @@ public class EmailPasswordTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         User user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
@@ -211,6 +223,10 @@ public class EmailPasswordTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         User user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
