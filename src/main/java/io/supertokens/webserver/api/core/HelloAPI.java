@@ -17,8 +17,12 @@
 package io.supertokens.webserver.api.core;
 
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
 
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
@@ -49,26 +53,34 @@ public class HelloAPI extends WebserverAPI {
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        super.sendTextResponse(200, getMessage(), resp);
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        handleRequest(resp);
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        super.sendTextResponse(200, getMessage(), resp);
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        handleRequest(resp);
     }
 
     @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        super.sendTextResponse(200, getMessage(), resp);
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        handleRequest(resp);
     }
 
     @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        super.sendTextResponse(200, getMessage(), resp);
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        handleRequest(resp);
     }
 
-    private String getMessage() {
-        return "Hello";
+    private void handleRequest(HttpServletResponse resp) throws IOException, ServletException {
+
+        Storage storage = StorageLayer.getStorage(main);
+        try {
+            storage.getKeyValue("Test");
+            super.sendTextResponse(200, "Hello", resp);
+        } catch (StorageQueryException e) {
+            // we send 500 status code
+            throw new ServletException(e);
+        }
     }
 }

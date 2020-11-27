@@ -22,6 +22,7 @@ import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.Webserver;
@@ -314,6 +315,53 @@ public class WebserverTest extends Mockito {
     public void serverHello()
             throws InterruptedException, IOException, HttpResponseException {
         hello("localhost", "3567");
+    }
+
+    @Test
+    public void serverHelloWithoutDB()
+            throws Exception {
+        String hostName = "localhost";
+        String port = "3567";
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        StorageLayer.getStorage(process.getProcess()).setStorageLayerEnabled(false);
+        try {
+
+            try {
+                HttpRequest.sendGETRequest(process.getProcess(), "",
+                        "http://" + hostName + ":" + port + "/hello", null, 1000, 1000, null);
+                throw new Exception("fail");
+            } catch (HttpResponseException ex) {
+                assert (ex.statusCode == 500);
+            }
+
+            try {
+                HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://" + hostName + ":" + port + "/hello", null, 1000, 1000, null);
+            } catch (HttpResponseException ex) {
+                assert (ex.statusCode == 500);
+            }
+
+            try {
+                HttpRequest.sendJsonPUTRequest(process.getProcess(), "",
+                        "http://" + hostName + ":" + port + "/hello", null, 1000, 1000, null);
+            } catch (HttpResponseException ex) {
+                assert (ex.statusCode == 500);
+            }
+
+            try {
+                HttpRequest.sendJsonDELETERequest(process.getProcess(), "",
+                        "http://" + hostName + ":" + port + "/hello", null, 1000, 1000, null);
+            } catch (HttpResponseException ex) {
+                assert (ex.statusCode == 500);
+            }
+
+        } finally {
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
     }
 
     private void hello(String hostName, String port)
