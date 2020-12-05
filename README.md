@@ -24,7 +24,7 @@
 
 If you like our project, please :star2: this repository! For feedback, feel free to join our [Discord](https://supertokens.io/discord), or create an issue on this repo
 
-## What is SuperTokens?
+## 🚀 What is SuperTokens?
 SuperTokens is an open core alternative to proprietary login providers like Auth0 or AWS Cognito. We are
  different because we offer:
 - Open source: SuperTokens can be used for free, forever, with no limits on the number of users.
@@ -79,10 +79,16 @@ The docs can be seen [on our website](https://supertokens.io/docs/emailpassword/
 
 There is more information about SuperTokens on the [GitHub wiki section](https://github.com/supertokens/supertokens-core/wiki).
 
-## Architecture
-Please find a writeup about this in the [wiki section](https://github.com/supertokens/supertokens-core/wiki/SuperTokens-Architecture)
+## 🏗️ Architecture
+<img width="700px" src="https://supertokens.io/docs/static/assets/emailpassword/architecture.png" />
 
-## SuperTokens vs others
+- **Frontend SDK**: Responsible for rendering the login UI widgets and managing session tokens automatically.
+- **Backend SDK**: Provides APIs for sign-up, sign-in, signout, session refreshing etc... You can also disable these default APIs and build your own using the provided functions from this SDK.
+- **SuperTokens Core**: This is an HTTP service that contains the core logic for auth and sessions. It's also responsible for interfacing with the database.
+
+**For more information, please visit our [GitHub wiki section](https://github.com/supertokens/supertokens-core/wiki/SuperTokens-Architecture).**
+
+## 🔥 SuperTokens vs others
 Please find a detailed comparison chart [on our website](https://supertokens.io/pricing#comparison-chart)
 
 ## Why Java?
@@ -93,10 +99,10 @@ Please find a detailed comparison chart [on our website](https://supertokens.io/
 - Ability to dynamically load JARs allows us to distribute only the right database plugin, minimising the final
  Docker image size.
 
-## Building from source
+## 🛠️ Building from source
 Please see our [wiki](https://github.com/supertokens/supertokens-core/wiki/Building-from-source) for instructions.
 
-## Community
+## 👥 Community
 - [Discord](https://supertokens.io/discord)
 - [Email](mailto:team@supertokens.io)
 
@@ -140,10 +146,10 @@ If you think this is a project you could use in the future, please :star2: this 
   </tr>
 </table>
 
-## Contributing
+## 👩‍💻 Contributing
 Please see the [CONTRIBUTING.md](https://github.com/supertokens/supertokens-core/blob/master/CONTRIBUTING.md) file for instructions.
 
-## Development history
+## 📜 Development history
 Over the last few months, we have built out session management for SuperTokens. During this period, we have made our
  fair share of mistakes:
  - Our first version was architected such that it tightly coupled the backend and database layer. So we had one
@@ -160,7 +166,7 @@ Over the last few months, we have built out session management for SuperTokens. 
  issued by us, and would never expire. Some parts of the code still refer to that, however, it's only for backwards
   compatibility. For all intents and purposes, a license key doesn't exist for this version, which means anyone can build from source, and use SuperTokens for free, forever. 
 
-## License
+## 📝 License
 &copy; 2020 SuperTokens Inc and its contributors. All rights reserved.
 
 Licensed under the Apache 2.0 license.
