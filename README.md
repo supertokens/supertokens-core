@@ -8,19 +8,19 @@
     alt="chat on Discord"></a>
 
 ## Table of Contents
-- [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#what-is-supertokens)
+- [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#-what-is-supertokens)
     - [Philosophy](https://github.com/supertokens/supertokens-core#philosophy)
     - [Features + Demo app](https://github.com/supertokens/supertokens-core#features---click-here-to-see-the-demo-app)
     - [Documentation](https://github.com/supertokens/supertokens-core#documentation)
-- [🏗️ Architecture](https://github.com/supertokens/supertokens-core#architecture)
-- [🔥 SuperTokens vs Others](https://github.com/supertokens/supertokens-core#supertokens-vs-others)
-- [☕ Why Java?](https://github.com/supertokens/supertokens-core#why-java)
-- [🛠️ Building from source](https://github.com/supertokens/supertokens-core#building-from-source)
-- [👥 Community](https://github.com/supertokens/supertokens-core#community)
+- [🏗️ Architecture](https://github.com/supertokens/supertokens-core#%EF%B8%8F-architecture)
+- [🔥 SuperTokens vs Others](https://github.com/supertokens/supertokens-core#-supertokens-vs-others)
+- [☕ Why Java?](https://github.com/supertokens/supertokens-core#-why-java)
+- [🛠️ Building from source](https://github.com/supertokens/supertokens-core#%EF%B8%8F-building-from-source)
+- [👥 Community](https://github.com/supertokens/supertokens-core#%EF%B8%8F-building-from-source)
     - [Contributors](https://github.com/supertokens/supertokens-core#contributors-across-all-supertokens-repositories)
-- [👩‍💻 Contributing](https://github.com/supertokens/supertokens-core#contributing)
-- [📜 Development history](https://github.com/supertokens/supertokens-core#development-history)
-- [📝 License](https://github.com/supertokens/supertokens-core#license)
+- [👩‍💻 Contributing](https://github.com/supertokens/supertokens-core#-contributing)
+- [📜 Development history](https://github.com/supertokens/supertokens-core#-development-history)
+- [📝 License](https://github.com/supertokens/supertokens-core#-license)
 
 If you like our project, please :star2: this repository! For feedback, feel free to join our [Discord](https://supertokens.io/discord), or create an issue on this repo
 
@@ -91,7 +91,7 @@ There is more information about SuperTokens on the [GitHub wiki section](https:/
 ## 🔥 SuperTokens vs others
 Please find a detailed comparison chart [on our website](https://supertokens.io/pricing#comparison-chart)
 
-## Why Java?
+## ☕ Why Java?
 - Java has a very mature ecosystem. This implies that third party libraries have been battled tested since a very
  long time. This adds an additional security benefit.
 - Java's strong type system ensures fewer bugs and easier maintainability. This is especially important when
