@@ -13,8 +13,8 @@
     - [Features + Demo app](https://github.com/supertokens/supertokens-core#features---click-here-to-see-the-demo-app)
     - [Documentation](https://github.com/supertokens/supertokens-core#documentation)
 - [🏗️ Architecture](https://github.com/supertokens/supertokens-core#%EF%B8%8F-architecture)
-- [🔥 SuperTokens vs Others](https://github.com/supertokens/supertokens-core#-supertokens-vs-others)
 - [☕ Why Java?](https://github.com/supertokens/supertokens-core#-why-java)
+- [🔥 SuperTokens vs Others](https://github.com/supertokens/supertokens-core#-supertokens-vs-others)
 - [🛠️ Building from source](https://github.com/supertokens/supertokens-core#%EF%B8%8F-building-from-source)
 - [👥 Community](https://github.com/supertokens/supertokens-core#-community)
     - [Contributors](https://github.com/supertokens/supertokens-core#contributors-across-all-supertokens-repositories)
@@ -46,33 +46,9 @@ We want to change that - we believe the only way is to provide a solution that h
 We also believe in the principle of least vendor lockin. Your having full control of your user's data means that you can switch away from SuperTokens without forcing your existing users to logout, reset their passwords or in the worst case, sign up again. 
 
 ### Features - [Click here](https://emailpassword.demo.supertokens.io/) to see the demo app.
-#### ❗⭐❗⭐ We want to make features as decoupled as possible. This means, you can use SuperTokens for just login, or just session management, or both. In fact, we also offer session management integrations with other login providers like Auth0.
-- Login:
-    - A login & sign up form as React components - pretty by default, but fully customisable.
-    - Email & password login with forgot password flows
-    - Extensibility to build other methods of login - for example passwordless login.
-    - Password management - hashing + salting.
-    - Email verification (coming soon)
-    - Social and other types of login (coming soon)
-<img src="https://raw.githubusercontent.com/supertokens/supertokens-logo/master/gifs/login-readme.gif" height="300px"/>
+- Please visit [our website](https://supertokens.io/pricing) to see the list of features.
+- We want to make features as decoupled as possible. This means, you can use SuperTokens for just login, or just session management, or both. In fact, we also offer session management integrations with other login providers like Auth0.
 
-- Session management
-    - Create, verify, refresh & revoke sessions.
-    - Follows all session best practices like using `httpOnly` cookies.
-    - Prevents common session vulnerabilities like session fixation, CSRF or brute force attacks.
-    - Detects session hijacking using [rotating refresh tokens](https://youtu.be/6Vzit514kZY?t=547).
-    - Optimal time and space complexity - session verifications < 1 MS
-    - Automatic JWT signing key rotation, without logging users out
-    - Ability to get all sessions given a user ID.
-    - Reading session data on the frontend, securely.
-    - Manipulation of session and JWT payloads
-
-- User management (coming soon)
-    - (Un)banning & deleting users
-    - Resetting user passwords
-    - Associating users with roles
-    - Login identity consolidation (if a user logs in via google and via twitter, with the same email, they are
-     treated as the same user).
 
 ### Documentation
 The docs can be seen [on our website](https://supertokens.io/docs/emailpassword/introduction).
@@ -88,16 +64,14 @@ There is more information about SuperTokens on the [GitHub wiki section](https:/
 
 **For more information, please visit our [GitHub wiki section](https://github.com/supertokens/supertokens-core/wiki/SuperTokens-Architecture).**
 
+## ☕ Why Java?
+- ✅ Whilst running Java can seem difficult, we provide the JDK along with the binary / docker image when distributing it. This makes running SuperTokens just like running any other http microservice.
+- ✅ Java has a very mature ecosystem. This implies that third party libraries have been battled tested.
+- ✅ Java's strong type system ensures fewer bugs and easier maintainability. This is especially important when many people are expected to work on the same project.
+- ✅ Our team is most comfortable with Java and hiring for great Java developers is relatively easy as well.
+
 ## 🔥 SuperTokens vs others
 Please find a detailed comparison chart [on our website](https://supertokens.io/pricing#comparison-chart)
-
-## ☕ Why Java?
-- Java has a very mature ecosystem. This implies that third party libraries have been battled tested since a very
- long time. This adds an additional security benefit.
-- Java's strong type system ensures fewer bugs and easier maintainability. This is especially important when
- many people are expected to work on the same project.
-- Ability to dynamically load JARs allows us to distribute only the right database plugin, minimising the final
- Docker image size.
 
 ## 🛠️ Building from source
 Please see our [wiki](https://github.com/supertokens/supertokens-core/wiki/Building-from-source) for instructions.
