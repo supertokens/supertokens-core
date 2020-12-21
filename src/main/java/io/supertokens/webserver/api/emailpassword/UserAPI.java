@@ -63,10 +63,10 @@ public class UserAPI extends WebserverAPI {
         try {
             User user = null;
             if (userId != null) {
-                user = EmailPassword.getUserUsingUsingId(main, userId);
+                user = EmailPassword.getUserUsingId(main, userId);
             } else {
                 String normalisedEmail = Utils.normaliseEmail(email);
-                user = EmailPassword.getUserUsingUsingEmail(main, normalisedEmail);
+                user = EmailPassword.getUserUsingEmail(main, normalisedEmail);
             }
 
             if (user == null) {

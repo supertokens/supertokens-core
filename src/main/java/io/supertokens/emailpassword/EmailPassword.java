@@ -182,7 +182,7 @@ public class EmailPassword {
         }
     }
 
-    public static User getUserUsingUsingId(Main main, String userId) throws StorageQueryException {
+    public static User getUserUsingId(Main main, String userId) throws StorageQueryException {
         UserInfo info = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingId(userId);
         if (info == null) {
             return null;
@@ -190,7 +190,7 @@ public class EmailPassword {
         return new User(info.id, info.email);
     }
 
-    public static User getUserUsingUsingEmail(Main main, String email) throws StorageQueryException {
+    public static User getUserUsingEmail(Main main, String email) throws StorageQueryException {
         UserInfo info = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingEmail(email);
         if (info == null) {
             return null;
