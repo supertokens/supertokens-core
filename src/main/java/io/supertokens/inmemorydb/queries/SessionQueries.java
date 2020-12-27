@@ -23,8 +23,8 @@ import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
-import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.session.SessionInfo;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -77,8 +77,8 @@ public class SessionQueries {
             pst.setString(1, sessionHandle);
             ResultSet result = pst.executeQuery();
             if (result.next()) {
-                SessionInfoRowMapper.getInstance().mapOrThrow(result);
-           }
+                return SessionInfoRowMapper.getInstance().mapOrThrow(result);
+            }
         }
         return null;
     }
@@ -218,7 +218,8 @@ public class SessionQueries {
     private static class SessionInfoRowMapper implements RowMapper<SessionInfo, ResultSet> {
         private static final SessionInfoRowMapper INSTANCE = new SessionInfoRowMapper();
 
-        private SessionInfoRowMapper() {}
+        private SessionInfoRowMapper() {
+        }
 
         private static SessionInfoRowMapper getInstance() {
             return INSTANCE;
@@ -228,11 +229,11 @@ public class SessionQueries {
         public SessionInfo map(ResultSet result) throws Exception {
             JsonParser jp = new JsonParser();
             return new SessionInfo(result.getString("session_handle"), result.getString("user_id"),
-                result.getString("refresh_token_hash_2"),
-                jp.parse(result.getString("session_data")).getAsJsonObject(),
-                result.getLong("expires_at"),
-                jp.parse(result.getString("jwt_user_payload")).getAsJsonObject(),
-                result.getLong("created_at_time"));
+                    result.getString("refresh_token_hash_2"),
+                    jp.parse(result.getString("session_data")).getAsJsonObject(),
+                    result.getLong("expires_at"),
+                    jp.parse(result.getString("jwt_user_payload")).getAsJsonObject(),
+                    result.getLong("created_at_time"));
         }
     }
 }
