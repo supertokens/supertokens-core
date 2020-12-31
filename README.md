@@ -19,7 +19,6 @@
 - [👥 Community](https://github.com/supertokens/supertokens-core#-community)
     - [Contributors](https://github.com/supertokens/supertokens-core#contributors-across-all-supertokens-repositories)
 - [👩‍💻 Contributing](https://github.com/supertokens/supertokens-core#-contributing)
-- [📜 Development history](https://github.com/supertokens/supertokens-core#-development-history)
 - [📝 License](https://github.com/supertokens/supertokens-core#-license)
 
 If you like our project, please :star2: this repository! For feedback, feel free to join our [Discord](https://supertokens.io/discord), or create an issue on this repo
@@ -123,23 +122,6 @@ If you think this is a project you could use in the future, please :star2: this 
 
 ## 👩‍💻 Contributing
 Please see the [CONTRIBUTING.md](https://github.com/supertokens/supertokens-core/blob/master/CONTRIBUTING.md) file for instructions.
-
-## 📜 Development history
-Over the last few months, we have built out session management for SuperTokens. During this period, we have made our
- fair share of mistakes:
- - Our first version was architected such that it tightly coupled the backend and database layer. So we had one
-  `npm` library for NodeJS with MySQL, and another one for NodeJS with MongoDB etc. When adding support for a new
-   backend framework, majority of the logic and tests needed to be rewritten. It became clear that we needed to add a
-    service in the middle. We do realise that adding this service means it's harder to get started and that there is
-     an extra point of failure, however from the perspective of supporting each tech stack, this decision makes sense, since the failure problem can be addressed through easy to implement technical means.
- 
-- Until August, 2020, our license was not truly open source. This was done as an experiment to get feedback on the
-  importance of software license for the startup community. Since then, it's become very clear that we must use a
-   standard open source license, so we chose Apache 2.0
- 
-- We used to have a notion of a license key that was required to use the community version. This license key was
- issued by us, and would never expire. Some parts of the code still refer to that, however, it's only for backwards
-  compatibility. For all intents and purposes, a license key doesn't exist for this version, which means anyone can build from source, and use SuperTokens for free, forever. 
 
 ## 📝 License
 &copy; 2020 SuperTokens Inc and its contributors. All rights reserved.
