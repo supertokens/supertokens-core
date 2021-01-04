@@ -20,9 +20,9 @@ import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
-import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 
 import java.sql.Connection;
@@ -38,7 +38,7 @@ public class EmailPasswordQueries {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getUsersTable() + " ("
                 + "user_id CHAR(36) NOT NULL," + "email VARCHAR(256) NOT NULL UNIQUE,"
                 + "password_hash VARCHAR(128) NOT NULL," + "time_joined BIGINT UNSIGNED NOT NULL,"
-                + "PRIMARY KEY (user_id));";
+                + "is_email_verified INTEGER NOT NULL," + "PRIMARY KEY (user_id));";
     }
 
     static String getQueryToCreatePasswordResetTokensTable(Start start) {
@@ -52,6 +52,21 @@ public class EmailPasswordQueries {
     static String getQueryToCreatePasswordResetTokenExpiryIndex(Start start) {
         return "CREATE INDEX emailpassword_password_reset_token_expiry_index ON " +
                 Config.getConfig(start).getPasswordResetTokensTable() +
+                "(token_expiry);";
+    }
+
+    static String getQueryToCreateEmailVerificationTokensTable(Start start) {
+        return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getEmailVerificationTokensTable() + " ("
+                + "user_id CHAR(36) NOT NULL," + "token VARCHAR(128) NOT NULL UNIQUE,"
+                + "token_expiry BIGINT UNSIGNED NOT NULL," + "email VARCHAR(256)," +
+                "PRIMARY KEY (user_id, token),"
+                + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getUsersTable() +
+                "(user_id) ON DELETE CASCADE ON UPDATE CASCADE);";
+    }
+
+    static String getQueryToCreateEmailVerificationTokenExpiryIndex(Start start) {
+        return "CREATE INDEX emailpassword_email_verification_token_expiry_index ON " +
+                Config.getConfig(start).getEmailVerificationTokensTable() +
                 "(token_expiry);";
     }
 
@@ -138,7 +153,8 @@ public class EmailPasswordQueries {
         }
     }
 
-    public static PasswordResetTokenInfo getPasswordResetTokenInfo(Start start, String token) throws SQLException, StorageQueryException {
+    public static PasswordResetTokenInfo getPasswordResetTokenInfo(Start start, String token)
+            throws SQLException, StorageQueryException {
         String QUERY = "SELECT user_id, token, token_expiry FROM "
                 + Config.getConfig(start).getPasswordResetTokensTable() + " WHERE token = ?";
         try (Connection con = ConnectionPool.getConnection(start);
@@ -167,11 +183,12 @@ public class EmailPasswordQueries {
         }
     }
 
-    public static void signUp(Start start, String userId, String email, String passwordHash, long timeJoined)
+    public static void signUp(Start start, String userId, String email, String passwordHash, long timeJoined,
+                              boolean isEmailVerified)
             throws SQLException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getUsersTable()
-                + "(user_id, email, password_hash, time_joined)"
-                + " VALUES(?, ?, ?, ?)";
+                + "(user_id, email, password_hash, time_joined, is_email_verified)"
+                + " VALUES(?, ?, ?, ?, ?)";
 
         try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
@@ -179,12 +196,13 @@ public class EmailPasswordQueries {
             pst.setString(2, email);
             pst.setString(3, passwordHash);
             pst.setLong(4, timeJoined);
+            pst.setInt(5, isEmailVerified ? 1 : 0);
             pst.executeUpdate();
         }
     }
 
     public static UserInfo getUserInfoUsingId(Start start, String id) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
+        String QUERY = "SELECT user_id, email, password_hash, time_joined, is_email_verified FROM "
                 + Config.getConfig(start).getUsersTable() + " WHERE user_id = ?";
         try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
@@ -198,7 +216,7 @@ public class EmailPasswordQueries {
     }
 
     public static UserInfo getUserInfoUsingEmail(Start start, String email) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
+        String QUERY = "SELECT user_id, email, password_hash, time_joined, is_email_verified FROM "
                 + Config.getConfig(start).getUsersTable() + " WHERE email = ?";
         try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
@@ -215,7 +233,8 @@ public class EmailPasswordQueries {
     private static class PasswordResetTokenInfoRowMapper implements RowMapper<PasswordResetTokenInfo, ResultSet> {
         private static final PasswordResetTokenInfoRowMapper INSTANCE = new PasswordResetTokenInfoRowMapper();
 
-        private PasswordResetTokenInfoRowMapper() {}
+        private PasswordResetTokenInfoRowMapper() {
+        }
 
         private static PasswordResetTokenInfoRowMapper getInstance() {
             return INSTANCE;
@@ -224,25 +243,26 @@ public class EmailPasswordQueries {
         @Override
         public PasswordResetTokenInfo map(ResultSet result) throws Exception {
             return new PasswordResetTokenInfo(result.getString("user_id"),
-                result.getString("token"),
-                result.getLong("token_expiry"));
+                    result.getString("token"),
+                    result.getLong("token_expiry"));
         }
     }
 
     private static class UserInfoRowMapper implements RowMapper<UserInfo, ResultSet> {
         private static final UserInfoRowMapper INSTANCE = new UserInfoRowMapper();
 
-        private UserInfoRowMapper(){}
+        private UserInfoRowMapper() {
+        }
 
-        private static UserInfoRowMapper getInstance(){
+        private static UserInfoRowMapper getInstance() {
             return INSTANCE;
         }
 
         @Override
         public UserInfo map(ResultSet result) throws Exception {
             return new UserInfo(result.getString("user_id"), result.getString("email"),
-                result.getString("password_hash"),
-                result.getLong("time_joined"));
+                    result.getString("password_hash"),
+                    result.getLong("time_joined"), result.getInt("is_email_verified") != 0);
         }
     }
 }

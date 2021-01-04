@@ -34,4 +34,8 @@ public class SQLiteConfig {
         return "emailpassword_pswd_reset_tokens";
     }
 
+    public String getEmailVerificationTokensTable() {
+        return "emailpassword_email_verification_tokens";
+    }
+
 }
