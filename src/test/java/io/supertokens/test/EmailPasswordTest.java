@@ -47,6 +47,11 @@ import static org.junit.Assert.*;
  *  succeed and the other throws ResetPasswordInvalidTokenException, and that there are no more tokens left for that
  *  user.
  *  - When a new user is signed up, check that email verified is false
+ *  - Create an email verification token two times, and check that there are two entries in the db for that user with
+ *  the right values
+ *  - Call the save email verification token with the same token and check that the right error is thrown
+ *  - Call the same email verification token with an unknown userId and check that the right error is thrown
+ *  - Verify the email successfully, then create an email verification token and check that the right error is thrown.
  * */
 
 public class EmailPasswordTest {
