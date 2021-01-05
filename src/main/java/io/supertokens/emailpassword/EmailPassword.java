@@ -294,7 +294,7 @@ public class EmailPassword {
                     throw new StorageTransactionLogicException(new EmailVerificationInvalidTokenException());
                 }
 
-                UserInfo userInfo = storage.getUser_Transaction(con, userId);
+                UserInfo userInfo = storage.getUserInfoUsingId_Transaction(con, userId);
 
                 if (!userInfo.email.equals(tokenInfo.email)) {
                     throw new StorageTransactionLogicException(new EmailVerificationInvalidTokenException());
