@@ -183,6 +183,23 @@ public class EmailPasswordQueries {
         }
     }
 
+    public static void addEmailVerificationToken(Start start, String userId, String tokenHash, long expiry,
+                                                 String email)
+            throws SQLException {
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getEmailVerificationTokensTable()
+                + "(user_id, token, token_expiry, email)"
+                + " VALUES(?, ?, ?, ?)";
+
+        try (Connection con = ConnectionPool.getConnection(start);
+             PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, userId);
+            pst.setString(2, tokenHash);
+            pst.setLong(3, expiry);
+            pst.setString(4, email);
+            pst.executeUpdate();
+        }
+    }
+
     public static void signUp(Start start, String userId, String email, String passwordHash, long timeJoined,
                               boolean isEmailVerified)
             throws SQLException {

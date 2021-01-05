@@ -22,6 +22,7 @@ import io.supertokens.ResourceDistributor;
 public class EmailPasswordTest extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_ID = "io.supertokens.emailpassword.EmailPasswordTest";
     private long passwordResetTokenLifetimeMS = EmailPassword.PASSWORD_RESET_TOKEN_LIFETIME_MS;
+    private long emailVerificationTokenLifetimeMS = EmailPassword.EMAIL_VERIFICATION_TOKEN_LIFETIME_MS;
 
     private EmailPasswordTest() {
     }
@@ -40,5 +41,13 @@ public class EmailPasswordTest extends ResourceDistributor.SingletonResource {
 
     public long getPasswordResetTokenLifetime() {
         return this.passwordResetTokenLifetimeMS;
+    }
+
+    public void setEmailVerificationTokenLifetime(long intervalMS) {
+        this.emailVerificationTokenLifetimeMS = intervalMS;
+    }
+
+    public long getEmailVerificationTokenLifetime() {
+        return this.emailVerificationTokenLifetimeMS;
     }
 }
