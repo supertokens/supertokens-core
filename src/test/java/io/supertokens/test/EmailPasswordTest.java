@@ -52,6 +52,7 @@ import static org.junit.Assert.*;
  *  - Call the save email verification token with the same token and check that the right error is thrown
  *  - Call the same email verification token with an unknown userId and check that the right error is thrown
  *  - Verify the email successfully, then create an email verification token and check that the right error is thrown.
+ *  - Email verify double lock test. First we lock the token table, then the user table. Does this work?
  * */
 
 public class EmailPasswordTest {

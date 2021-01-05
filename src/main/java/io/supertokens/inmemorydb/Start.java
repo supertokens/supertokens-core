@@ -486,6 +486,43 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage {
     }
 
     @Override
+    public EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser_Transaction(TransactionConnection con,
+                                                                                            String userId)
+            throws StorageQueryException {
+        // TODO:
+        return new EmailVerificationTokenInfo[0];
+    }
+
+    @Override
+    public void deleteAllEmailVerificationTokensForUser_Transaction(TransactionConnection con, String userId)
+            throws StorageQueryException {
+        // TODO:
+    }
+
+    @Override
+    public void updateUsersIsEmailVerified_Transaction(TransactionConnection con, String userId,
+                                                       boolean isEmailVerified) throws StorageQueryException {
+        // TODO:
+    }
+
+    @Override
+    public UserInfo getUser_Transaction(TransactionConnection con, String userId) throws StorageQueryException {
+        // TODO:
+        return null;
+    }
+
+    @Override
+    public EmailVerificationTokenInfo getEmailVerificationTokenInfo(String token) throws StorageQueryException {
+        // TODO:
+        return null;
+    }
+
+    @Override
+    public void deleteExpiredEmailVerificationTokens() throws StorageQueryException {
+        // TODO:
+    }
+
+    @Override
     public void deleteExpiredPasswordResetTokens() throws StorageQueryException {
         try {
             EmailPasswordQueries.deleteExpiredPasswordResetTokens(this);
