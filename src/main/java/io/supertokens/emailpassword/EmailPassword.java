@@ -312,4 +312,15 @@ public class EmailPassword {
             throw e;
         }
     }
+
+    public static boolean isEmailVerified(Main main, String userId) throws UnknownUserIdException,
+            StorageQueryException {
+        UserInfo user = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingId(userId);
+
+        if (user == null) {
+            throw new UnknownUserIdException();
+        }
+
+        return user.isEmailVerified;
+    }
 }

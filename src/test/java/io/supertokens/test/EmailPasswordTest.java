@@ -572,7 +572,7 @@ public class EmailPasswordTest {
 
         User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
 
-        // TODO: check that the email is not verified
+        assert (!EmailPassword.isEmailVerified(process.getProcess(), user.id));
 
         String token = EmailPassword.generateEmailVerificationToken(process.getProcess(), user.id);
 
@@ -580,7 +580,7 @@ public class EmailPasswordTest {
 
         EmailPassword.verifyEmail(process.getProcess(), token);
 
-        // TODO: check that the email is verified
+        assert (EmailPassword.isEmailVerified(process.getProcess(), user.id));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
