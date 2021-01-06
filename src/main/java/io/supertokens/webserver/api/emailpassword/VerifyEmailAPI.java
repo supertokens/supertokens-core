@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.EmailVerificationInvalidTokenException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.webserver.InputParser;
@@ -70,6 +71,28 @@ public class VerifyEmailAPI extends WebserverAPI {
             result.addProperty("status", "EMAIL_VERIFICATION_INVALID_TOKEN_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException e) {
+            throw new ServletException(e);
+        }
+
+    }
+
+    @Override
+    public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+        String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
+
+        try {
+            boolean isVerified = EmailPassword.isEmailVerified(super.main, userId);
+
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "OK");
+            result.addProperty("isVerified", isVerified);
+            super.sendJsonResponse(200, result, resp);
+
+        } catch (UnknownUserIdException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
+            super.sendJsonResponse(200, result, resp);
+        } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
 
