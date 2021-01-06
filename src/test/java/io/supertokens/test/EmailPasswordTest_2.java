@@ -72,7 +72,9 @@ public class EmailPasswordTest_2 {
         }
 
         try {
-            EmailPassword.generateEmailVerificationToken(process.getProcess(), "8ed86166-bfd8-4234-9dfe-abca9606dbd5");
+            StorageLayer.getEmailPasswordStorage(process.getProcess()).addEmailVerificationToken(
+                    new EmailVerificationTokenInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5", "token",
+                            0, "test@supertokens.io"));
             assert (false);
         } catch (UnknownUserIdException ignored) {
 
