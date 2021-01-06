@@ -42,7 +42,7 @@ public class EmailPassword {
             3600 * 1000; // this is related to the interval for the cronjob: DeleteExpiredPasswordResetTokens
 
     public static final long EMAIL_VERIFICATION_TOKEN_LIFETIME_MS =
-            5 * 3600 * 1000; // this is related to the interval for the cronjob: DeleteExpiredEmailVerificationTokens
+            24 * 3600 * 1000; // this is related to the interval for the cronjob: DeleteExpiredEmailVerificationTokens
 
     private static long getPasswordResetTokenLifetime(Main main) {
         if (Main.isTesting) {
@@ -262,7 +262,7 @@ public class EmailPassword {
 
         EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
 
-        final EmailVerificationTokenInfo tokenInfo = storage.getEmailVerificationTokenInfo(token);
+        final EmailVerificationTokenInfo tokenInfo = storage.getEmailVerificationTokenInfo(hashedToken);
         if (tokenInfo == null) {
             throw new EmailVerificationInvalidTokenException();
         }

@@ -53,6 +53,12 @@ import static org.junit.Assert.*;
  *  - Call the same email verification token with an unknown userId and check that the right error is thrown
  *  - Verify the email successfully, then create an email verification token and check that the right error is thrown.
  *  - Email verify double lock test. First we lock the token table, then the user table. Does this work?
+ *  - Do all password reset token tests with email verification token. For example:
+ *    - Give invalid token
+ *    - Generate two tokens, verify with one token, the other token should throw an invalid token error
+ *    - Use an expired token, it should throw an error
+ *    - Test the format of the email verification token
+ *    - Create token, change email of user, use the token -> should fail with invalid token
  * */
 
 public class EmailPasswordTest {
@@ -548,6 +554,33 @@ public class EmailPasswordTest {
         } catch (WrongCredentialsException ignored) {
 
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void verifyEmail() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+
+        // TODO: check that the email is not verified
+
+        String token = EmailPassword.generateEmailVerificationToken(process.getProcess(), user.id);
+
+        assert (token != null);
+
+        EmailPassword.verifyEmail(process.getProcess(), token);
+
+        // TODO: check that the email is verified
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
