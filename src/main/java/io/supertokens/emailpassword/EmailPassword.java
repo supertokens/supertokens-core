@@ -18,6 +18,7 @@ package io.supertokens.emailpassword;
 
 import io.supertokens.Main;
 import io.supertokens.emailpassword.exceptions.EmailAlreadyVerifiedException;
+import io.supertokens.emailpassword.exceptions.EmailVerificationInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.emailpassword.EmailVerificationTokenInfo;
@@ -41,7 +42,7 @@ public class EmailPassword {
             3600 * 1000; // this is related to the interval for the cronjob: DeleteExpiredPasswordResetTokens
 
     public static final long EMAIL_VERIFICATION_TOKEN_LIFETIME_MS =
-            5 * 3600 * 1000; // this is related to the interval for the cronjob: DeleteExpiredEmailVerificationTokens
+            24 * 3600 * 1000; // this is related to the interval for the cronjob: DeleteExpiredEmailVerificationTokens
 
     private static long getPasswordResetTokenLifetime(Main main) {
         if (Main.isTesting) {
@@ -250,6 +251,65 @@ public class EmailPassword {
                 return token;
             } catch (DuplicateEmailVerificationTokenException ignored) {
             }
+        }
+    }
+
+    public static void verifyEmail(Main main, String token)
+            throws StorageQueryException, EmailVerificationInvalidTokenException, NoSuchAlgorithmException,
+            StorageTransactionLogicException {
+
+        String hashedToken = Utils.hashSHA256(token);
+
+        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
+
+        final EmailVerificationTokenInfo tokenInfo = storage.getEmailVerificationTokenInfo(hashedToken);
+        if (tokenInfo == null) {
+            throw new EmailVerificationInvalidTokenException();
+        }
+
+        final String userId = tokenInfo.userId;
+
+        try {
+            storage.startTransaction(con -> {
+
+                EmailVerificationTokenInfo[] allTokens = storage
+                        .getAllEmailVerificationTokenInfoForUser_Transaction(con, userId);
+
+                EmailVerificationTokenInfo matchedToken = null;
+                for (EmailVerificationTokenInfo tok : allTokens) {
+                    if (tok.token.equals(hashedToken)) {
+                        matchedToken = tok;
+                        break;
+                    }
+                }
+
+                if (matchedToken == null) {
+                    throw new StorageTransactionLogicException(new EmailVerificationInvalidTokenException());
+                }
+
+                storage.deleteAllEmailVerificationTokensForUser_Transaction(con, userId);
+
+                if (matchedToken.tokenExpiry < System.currentTimeMillis()) {
+                    storage.commitTransaction(con);
+                    throw new StorageTransactionLogicException(new EmailVerificationInvalidTokenException());
+                }
+
+                UserInfo userInfo = storage.getUserInfoUsingId_Transaction(con, userId);
+
+                if (!userInfo.email.equals(tokenInfo.email)) {
+                    throw new StorageTransactionLogicException(new EmailVerificationInvalidTokenException());
+                }
+
+                storage.updateUsersIsEmailVerified_Transaction(con, userId, true);
+
+                storage.commitTransaction(con);
+                return null;
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof EmailVerificationInvalidTokenException) {
+                throw (EmailVerificationInvalidTokenException) e.actualException;
+            }
+            throw e;
         }
     }
 }
