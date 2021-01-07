@@ -37,13 +37,13 @@ import static org.junit.Assert.assertNotNull;
  *  - Create an email verification token two times, and check that there are two entries in the db for that user with
  *  the right values
  *  - Verify the email successfully, then create an email verification token and check that the right error is thrown.
- *  - Email verify double lock test. First we lock the token table, then the user table. Does this work?
+ *  - (later) Email verify double lock test. First we lock the token table, then the user table. Does this work?
  *  - Do all password reset token tests with email verification token. For example:
  *    - Give invalid token
  *    - Generate two tokens, verify with one token, the other token should throw an invalid token error
  *    - Use an expired token, it should throw an error
  *    - Test the format of the email verification token
- *    - Create token, change email of user, use the token -> should fail with invalid token
+ *    - (later) Create token, change email of user, use the token -> should fail with invalid token
  * */
 
 public class EmailPasswordTest_2 {
