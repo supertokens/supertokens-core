@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed
 - Used rowmapper for in memory db
+- Adds email verification APIs
 
 ## [3.0.1] - 2020-10-27
 ### Changed
@@ -22,7 +23,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [2.5.2] - 2020-10-25
 ### Fixed
 - Issue #84 - Correct access token signing key expiry not being sent by APIs 
->>>>>>> master
 
 ## [2.5.1] - 2020-10-08
 ### Changed

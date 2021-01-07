@@ -14,28 +14,32 @@
  *    under the License.
  */
 
-package io.supertokens.inmemorydb.config;
+package io.supertokens.test;
 
-public class SQLiteConfig {
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.rules.TestRule;
 
-    public String getKeyValueTable() {
-        return "key_value";
+/*
+ * TODO:
+ *  - Check for bad input (missing fields)
+ *  - Check good input works
+ *  - Check for all types of output
+ * */
+
+public class GenerateEmailVerificationTokenAPITest2_5 {
+
+    @Rule
+    public TestRule watchman = Utils.getOnFailure();
+
+    @AfterClass
+    public static void afterTesting() {
+        Utils.afterTesting();
     }
 
-    public String getSessionInfoTable() {
-        return "session_info";
+    @Before
+    public void beforeEach() {
+        Utils.reset();
     }
-
-    public String getUsersTable() {
-        return "emailpassword_users";
-    }
-
-    public String getPasswordResetTokensTable() {
-        return "emailpassword_pswd_reset_tokens";
-    }
-
-    public String getEmailVerificationTokensTable() {
-        return "emailpassword_email_verification_tokens";
-    }
-
 }

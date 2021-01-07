@@ -93,6 +93,22 @@ public class GeneralQueries {
             }
         }
 
+        if (!doesTableExists(start, Config.getConfig(start).getEmailVerificationTokensTable())) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
+            try (Connection con = ConnectionPool.getConnection(start);
+                 PreparedStatement pst = con
+                         .prepareStatement(EmailPasswordQueries.getQueryToCreateEmailVerificationTokensTable(start))) {
+                pst.executeUpdate();
+            }
+            // index
+            try (Connection con = ConnectionPool.getConnection(start);
+                 PreparedStatement pstIndex = con
+                         .prepareStatement(
+                                 EmailPasswordQueries.getQueryToCreateEmailVerificationTokenExpiryIndex(start))) {
+                pstIndex.executeUpdate();
+            }
+        }
+
     }
 
     public static void setKeyValue_Transaction(Start start, Connection con, String key, KeyValueInfo info)
@@ -135,7 +151,8 @@ public class GeneralQueries {
         return null;
     }
 
-    public static KeyValueInfo getKeyValue_Transaction(Start start, Connection con, String key) throws SQLException, StorageQueryException {
+    public static KeyValueInfo getKeyValue_Transaction(Start start, Connection con, String key)
+            throws SQLException, StorageQueryException {
 
         ((ConnectionWithLocks) con).lock(key);
 
@@ -155,9 +172,10 @@ public class GeneralQueries {
     private static class KeyValueInfoRowMapper implements RowMapper<KeyValueInfo, ResultSet> {
         private static final KeyValueInfoRowMapper INSTANCE = new KeyValueInfoRowMapper();
 
-        private KeyValueInfoRowMapper() {}
+        private KeyValueInfoRowMapper() {
+        }
 
-        private static KeyValueInfoRowMapper getInstance(){
+        private static KeyValueInfoRowMapper getInstance() {
             return INSTANCE;
         }
 

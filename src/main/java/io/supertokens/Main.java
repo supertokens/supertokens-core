@@ -20,6 +20,7 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
+import io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpiredEmailVerificationTokens;
 import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens;
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.cronjobs.telemetry.Telemetry;
@@ -180,6 +181,9 @@ public class Main {
 
         // starts removing old password reset tokens
         Cronjobs.addCronjob(this, DeleteExpiredPasswordResetTokens.getInstance(this));
+
+        // starts removing expired email verification tokens
+        Cronjobs.addCronjob(this, DeleteExpiredEmailVerificationTokens.getInstance(this));
 
         // starts Telemetry cronjob if the user has not disabled it
         if (!Config.getConfig(this).isTelemetryDisabled()) {
