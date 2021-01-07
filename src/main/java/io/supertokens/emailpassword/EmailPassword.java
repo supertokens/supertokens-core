@@ -254,7 +254,7 @@ public class EmailPassword {
         }
     }
 
-    public static void verifyEmail(Main main, String token)
+    public static User verifyEmail(Main main, String token)
             throws StorageQueryException, EmailVerificationInvalidTokenException, NoSuchAlgorithmException,
             StorageTransactionLogicException {
 
@@ -270,7 +270,7 @@ public class EmailPassword {
         final String userId = tokenInfo.userId;
 
         try {
-            storage.startTransaction(con -> {
+            return storage.startTransaction(con -> {
 
                 EmailVerificationTokenInfo[] allTokens = storage
                         .getAllEmailVerificationTokenInfoForUser_Transaction(con, userId);
@@ -303,7 +303,7 @@ public class EmailPassword {
                 storage.updateUsersIsEmailVerified_Transaction(con, userId, true);
 
                 storage.commitTransaction(con);
-                return null;
+                return new User(userInfo.id, userInfo.email);
             });
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof EmailVerificationInvalidTokenException) {

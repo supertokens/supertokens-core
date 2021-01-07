@@ -16,9 +16,12 @@
 
 package io.supertokens.webserver.api.emailpassword;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.User;
 import io.supertokens.emailpassword.exceptions.EmailVerificationInvalidTokenException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -60,10 +63,11 @@ public class VerifyEmailAPI extends WebserverAPI {
         }
 
         try {
-            EmailPassword.verifyEmail(super.main, token);
+            User user = EmailPassword.verifyEmail(super.main, token);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
+            result.add("user", new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject());
             super.sendJsonResponse(200, result, resp);
 
         } catch (EmailVerificationInvalidTokenException e) {
