@@ -66,12 +66,13 @@ public class EmailPassword {
         while (true) {
 
             String userId = Utils.getUUID();
+            long timeJoined = System.currentTimeMillis();
 
             try {
                 StorageLayer.getEmailPasswordStorage(main)
-                        .signUp(new UserInfo(userId, email, hashedPassword, System.currentTimeMillis()));
+                        .signUp(new UserInfo(userId, email, hashedPassword, timeJoined));
 
-                return new User(userId, email);
+                return new User(userId, email, timeJoined);
 
             } catch (DuplicateUserIdException ignored) {
                 // we retry with a new userId (while loop)
@@ -98,7 +99,7 @@ public class EmailPassword {
             throw new WrongCredentialsException();
         }
 
-        return new User(user.id, user.email);
+        return new User(user.id, user.email, user.timeJoined);
     }
 
     public static String generatePasswordResetToken(Main main, String userId)
@@ -198,7 +199,7 @@ public class EmailPassword {
         if (info == null) {
             return null;
         }
-        return new User(info.id, info.email);
+        return new User(info.id, info.email, info.timeJoined);
     }
 
     public static User getUserUsingEmail(Main main, String email) throws StorageQueryException {
@@ -206,7 +207,7 @@ public class EmailPassword {
         if (info == null) {
             return null;
         }
-        return new User(info.id, info.email);
+        return new User(info.id, info.email, info.timeJoined);
     }
 
     public static String generateEmailVerificationToken(Main main, String userId)
@@ -303,7 +304,7 @@ public class EmailPassword {
                 storage.updateUsersIsEmailVerified_Transaction(con, userId, true);
 
                 storage.commitTransaction(con);
-                return new User(userInfo.id, userInfo.email);
+                return new User(userInfo.id, userInfo.email, userInfo.timeJoined);
             });
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof EmailVerificationInvalidTokenException) {

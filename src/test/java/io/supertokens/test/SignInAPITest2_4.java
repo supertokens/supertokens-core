@@ -130,7 +130,7 @@ public class SignInAPITest2_4 {
             return;
         }
 
-        JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
+        JsonObject signUpResponse = Utils.signUpRequest_2_4(process, "random@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
         assertEquals(signUpResponse.entrySet().size(), 2);
 
@@ -153,6 +153,7 @@ public class SignInAPITest2_4 {
                 userInfo.get("id").getAsString());
         assertEquals(signInResponse.get("user").getAsJsonObject().get("email").getAsString(),
                 userInfo.get("email").getAsString());
+        assertEquals(signInResponse.get("user").getAsJsonObject().entrySet().size(), 2);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -170,7 +171,7 @@ public class SignInAPITest2_4 {
             return;
         }
 
-        JsonObject signUpResponse = Utils.signUpRequest(process, "test@gmail.com", "validPass123");
+        JsonObject signUpResponse = Utils.signUpRequest_2_4(process, "test@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
         assertEquals(signUpResponse.entrySet().size(), 2);
 
@@ -192,6 +193,7 @@ public class SignInAPITest2_4 {
                 userInfo.get("id").getAsString());
         assertEquals(signInResponse.get("user").getAsJsonObject().get("email").getAsString(),
                 userInfo.get("email").getAsString());
+        assertEquals(signInResponse.get("user").getAsJsonObject().entrySet().size(), 2);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -256,7 +258,7 @@ public class SignInAPITest2_4 {
         }
 
         {
-            JsonObject signUpResponse = Utils.signUpRequest(process, "test@gmail.com", "validPass123");
+            JsonObject signUpResponse = Utils.signUpRequest_2_4(process, "test@gmail.com", "validPass123");
             assertEquals(signUpResponse.get("status").getAsString(), "OK");
             assertEquals(signUpResponse.entrySet().size(), 2);
 

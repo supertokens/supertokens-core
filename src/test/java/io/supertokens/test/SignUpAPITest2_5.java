@@ -38,7 +38,7 @@ import static org.junit.Assert.*;
  *  - Test that giving an empty password throws a bad input error
  * */
 
-public class SignUpAPITest2_4 {
+public class SignUpAPITest2_5 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -71,7 +71,7 @@ public class SignUpAPITest2_4 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signup", null, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_4ForTests());
+                                null, Utils.getCdiVersion2_5ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -87,7 +87,7 @@ public class SignUpAPITest2_4 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signup", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_4ForTests());
+                                null, Utils.getCdiVersion2_5ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -104,7 +104,7 @@ public class SignUpAPITest2_4 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signup", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_4ForTests());
+                                null, Utils.getCdiVersion2_5ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -130,7 +130,7 @@ public class SignUpAPITest2_4 {
             return;
         }
 
-        JsonObject signUpResponse = Utils.signUpRequest_2_4(process, "random@gmail.com", "validPass123");
+        JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "random@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
         assertEquals(signUpResponse.entrySet().size(), 2);
 
@@ -151,7 +151,7 @@ public class SignUpAPITest2_4 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signin", responseBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_4ForTests());
+                        null, Utils.getCdiVersion2_5ForTests());
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");
         assertEquals(signInResponse.entrySet().size(), 2);
@@ -160,7 +160,8 @@ public class SignUpAPITest2_4 {
                 signUpUser.get("id").getAsString());
         assertEquals(signInResponse.get("user").getAsJsonObject().get("email").getAsString(),
                 signUpUser.get("email").getAsString());
-        assertEquals(signInResponse.get("user").getAsJsonObject().entrySet().size(), 2);
+        signInResponse.get("user").getAsJsonObject().get("timeJoined").getAsLong();
+        assertEquals(signInResponse.get("user").getAsJsonObject().entrySet().size(), 3);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -180,7 +181,7 @@ public class SignUpAPITest2_4 {
             return;
         }
 
-        JsonObject signUpResponse = Utils.signUpRequest_2_4(process, "RaNdOm@gmail.com", "validPass123");
+        JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "RaNdOm@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
         assertEquals(signUpResponse.entrySet().size(), 2);
 
@@ -210,7 +211,7 @@ public class SignUpAPITest2_4 {
         }
 
         try {
-            Utils.signUpRequest_2_4(process, "random@gmail.com", "");
+            Utils.signUpRequest_2_5(process, "random@gmail.com", "");
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 &&
@@ -232,7 +233,7 @@ public class SignUpAPITest2_4 {
             return;
         }
 
-        JsonObject signUpResponse = Utils.signUpRequest_2_4(process, "random@gmail.com", "validPass123");
+        JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "random@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
         assertEquals(signUpResponse.entrySet().size(), 2);
 
@@ -240,7 +241,7 @@ public class SignUpAPITest2_4 {
         assertEquals(signUpUser.get("email").getAsString(), "random@gmail.com");
         assertNotNull(signUpUser.get("id"));
 
-        JsonObject response = Utils.signUpRequest_2_4(process, "random@gmail.com", "validPass123");
+        JsonObject response = Utils.signUpRequest_2_5(process, "random@gmail.com", "validPass123");
         assertEquals(response.get("status").getAsString(), "EMAIL_ALREADY_EXISTS_ERROR");
         assertEquals(response.entrySet().size(), 1);
 

@@ -24,8 +24,11 @@ public class User {
 
     public final String email;
 
-    public User(@Nonnull String id, @Nonnull String email) {
+    public final long timeJoined;
+
+    public User(@Nonnull String id, @Nonnull String email, long timeJoined) {
         this.id = id;
         this.email = email;
+        this.timeJoined = timeJoined;
     }
 }

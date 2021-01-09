@@ -149,7 +149,8 @@ abstract class Utils extends Mockito {
         };
     }
 
-    public static JsonObject signUpRequest(TestingProcessManager.TestingProcess process, String email, String password)
+    public static JsonObject signUpRequest_2_4(TestingProcessManager.TestingProcess process, String email,
+                                               String password)
             throws IOException, HttpResponseException {
 
         JsonObject signUpRequestBody = new JsonObject();
@@ -161,6 +162,21 @@ abstract class Utils extends Mockito {
                         "http://localhost:3567/recipe/signup", signUpRequestBody, 1000,
                         1000,
                         null, getCdiVersion2_4ForTests());
+    }
+
+    public static JsonObject signUpRequest_2_5(TestingProcessManager.TestingProcess process, String email,
+                                               String password)
+            throws IOException, HttpResponseException {
+
+        JsonObject signUpRequestBody = new JsonObject();
+        signUpRequestBody.addProperty("email", email);
+        signUpRequestBody.addProperty("password", password);
+
+        return io.supertokens.test.httpRequest.HttpRequest
+                .sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signup", signUpRequestBody, 1000,
+                        1000,
+                        null, getCdiVersion2_5ForTests());
     }
 
 }
