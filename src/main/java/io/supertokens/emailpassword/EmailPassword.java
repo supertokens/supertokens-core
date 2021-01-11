@@ -324,4 +324,11 @@ public class EmailPassword {
 
         return user.isEmailVerified;
     }
+
+    public static UserPaginationContainer getUsers(Main main, String paginationToken, Integer limit,
+                                                   String timeJoinedOrder) {
+        // UserInfo[] user = StorageLayer.getEmailPasswordStorage(main).getUsers(limit + 1, timeJoinedOrder);
+        // TODO:
+        return null;
+    }
 }

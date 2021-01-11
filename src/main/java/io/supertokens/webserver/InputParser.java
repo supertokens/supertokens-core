@@ -53,6 +53,22 @@ public class InputParser {
         return value;
     }
 
+    public static Integer getIntQueryParamOrThrowError(HttpServletRequest request, String fieldName, boolean nullable)
+            throws ServletException {
+        String key = getQueryParamOrThrowError(request, fieldName, nullable);
+        if (key == null && nullable) {
+            return null;
+        }
+        try {
+            assert key != null;
+            return Integer.parseInt(key);
+        } catch (Exception e) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException(
+                            "Field name '" + fieldName + "' must be an int in the GET request"));
+        }
+    }
+
     public static JsonObject parseJsonObjectOrThrowError(JsonObject element, String fieldName, boolean nullable)
             throws ServletException {
         try {
