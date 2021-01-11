@@ -16,6 +16,9 @@
 
 package io.supertokens.emailpassword;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.exceptions.EmailAlreadyVerifiedException;
 import io.supertokens.emailpassword.exceptions.EmailVerificationInvalidTokenException;
@@ -30,11 +33,15 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import io.supertokens.webserver.WebserverAPI;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.servlet.ServletException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Base64;
 
 public class EmailPassword {
 
@@ -325,10 +332,45 @@ public class EmailPassword {
         return user.isEmailVerified;
     }
 
-    public static UserPaginationContainer getUsers(Main main, String paginationToken, Integer limit,
-                                                   String timeJoinedOrder) {
-        // UserInfo[] user = StorageLayer.getEmailPasswordStorage(main).getUsers(limit + 1, timeJoinedOrder);
-        // TODO:
-        return null;
+    public static UserPaginationContainer getUsers(Main main, @Nullable String paginationToken, Integer limit,
+                                                   String timeJoinedOrder) throws StorageQueryException, IllegalArgumentException, IllegalStateException {
+        if (paginationToken != null) {
+            try {
+                String decodedPaginationToken = new String(Base64.getDecoder().decode(paginationToken));
+                JsonObject g = new JsonParser().parse(decodedPaginationToken).getAsJsonObject();
+                if (!(g.has("userId") && g.has("timeJoined"))) {
+                    throw new IllegalArgumentException();
+                }
+                String userId = g.get("userId").getAsString();
+                g.get("timeJoined").getAsLong();
+                if (userId == null) {
+                    throw new IllegalArgumentException();
+                }
+            } catch (IllegalArgumentException | IllegalStateException e) {
+                throw new IllegalArgumentException();
+            }
+        }
+        UserInfo[] users;
+        if (paginationToken == null) {
+            users = StorageLayer.getEmailPasswordStorage(main).getUsers(limit + 1, timeJoinedOrder);
+        } else {
+            String decodedPaginationToken = new String(Base64.getDecoder().decode(paginationToken));
+            JsonObject token = new JsonParser().parse(decodedPaginationToken).getAsJsonObject();
+            String userId = token.get("userId").getAsString();
+            Long timeJoined = token.get("timeJoined").getAsLong();
+            users = StorageLayer.getEmailPasswordStorage(main).getUsers(userId, timeJoined,limit + 1, timeJoinedOrder);
+        }
+        String nextPaginationToken = null;
+        if (users.length == limit + 1) {
+            JsonObject token = new JsonObject();
+            token.addProperty("userId", users[limit].id);
+            token.addProperty("timeJoined", users[limit].timeJoined);
+            nextPaginationToken = new String(Base64.getEncoder().encode((new Gson().toJson(token)).getBytes()));
+        }
+        User[] ResultUsers = new User[users.length];
+        for (int i = 0; i < users.length; i++) {
+            ResultUsers[i] = new User(users[i].id, users[i].email, users[i].timeJoined);
+        }
+        return new UserPaginationContainer(ResultUsers, nextPaginationToken);
     }
 }

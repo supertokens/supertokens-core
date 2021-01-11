@@ -151,6 +151,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new UserAPI(main));
         addAPI(new GenerateEmailVerificationTokenAPI(main));
         addAPI(new VerifyEmailAPI(main));
+        addAPI(new UsersAPI(main));
     }
 
     public void addAPI(WebserverAPI api) {

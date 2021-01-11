@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.emailpassword.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -351,7 +352,7 @@ public class EmailPasswordQueries {
     public static EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser(Start start, String userId)
             throws SQLException, StorageQueryException {
         String QUERY =
-                "SELECT user_id, token, token_expiry, email FROM " +
+                "SELECT user_id, email, password_hash, time_joined, is_email_verified FROM " +
                         Config.getConfig(start).getEmailVerificationTokensTable() +
                         " WHERE user_id = ?";
 
@@ -364,6 +365,61 @@ public class EmailPasswordQueries {
                 temp.add(EmailVerificationTokenInfoRowMapper.getInstance().mapOrThrow(result));
             }
             EmailVerificationTokenInfo[] finalResult = new EmailVerificationTokenInfo[temp.size()];
+            for (int i = 0; i < temp.size(); i++) {
+                finalResult[i] = temp.get(i);
+            }
+            return finalResult;
+        }
+    }
+
+    public static UserInfo[] getUsersInfo(Start start, @NotNull Integer limit, @NotNull String timeJoinedOrder)
+            throws SQLException, StorageQueryException {
+        String QUERY =
+                "SELECT user_id, token, token_expiry, email FROM " +
+                        Config.getConfig(start).getEmailVerificationTokensTable() +
+                        " ORDER BY time_joined ?, uid DESC LIMIT ?";
+
+        try (Connection con = ConnectionPool.getConnection(start);
+             PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, timeJoinedOrder);
+            pst.setInt(2, limit);
+            ResultSet result = pst.executeQuery();
+            List<UserInfo> temp = new ArrayList<>();
+            while (result.next()) {
+                temp.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+            }
+            UserInfo[] finalResult = new UserInfo[temp.size()];
+            for (int i = 0; i < temp.size(); i++) {
+                finalResult[i] = temp.get(i);
+            }
+            return finalResult;
+        }
+    }
+
+    public static UserInfo[] getUsersInfo(Start start, @NotNull String userId, @NotNull Long timeJoined, @NotNull Integer limit,
+                                          @NotNull String timeJoinedOrder)
+            throws SQLException, StorageQueryException {
+        String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
+        String QUERY =
+                "SELECT user_id, token, token_expiry, email FROM " +
+                        Config.getConfig(start).getEmailVerificationTokensTable() +
+                        "WHERE time_joined " +
+                        timeJoinedOrderSymbol +
+                        " ? OR (time_joined = ? AND uid <= ?) ORDER BY time_joined ?, uid DESC LIMIT ?";
+
+        try (Connection con = ConnectionPool.getConnection(start);
+             PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setLong(1, timeJoined);
+            pst.setLong(2, timeJoined);
+            pst.setString(3, userId);
+            pst.setString(4, timeJoinedOrder);
+            pst.setInt(5, limit);
+            ResultSet result = pst.executeQuery();
+            List<UserInfo> temp = new ArrayList<>();
+            while (result.next()) {
+                temp.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+            }
+            UserInfo[] finalResult = new UserInfo[temp.size()];
             for (int i = 0; i < temp.size(); i++) {
                 finalResult[i] = temp.get(i);
             }

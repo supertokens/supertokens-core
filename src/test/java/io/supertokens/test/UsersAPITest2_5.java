@@ -16,15 +16,29 @@
 
 package io.supertokens.test;
 
+import io.supertokens.ProcessState;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.util.HashMap;
+
+import static org.junit.Assert.*;
 
 /*
  * TODO:
  *  - Check for bad input (missing fields)
- *  - Check good input works and that user is there in db (and then call sign in)
+ *  - Check good input works (add 5 users)
+ *    - no params passed should return 5 users
+ *    - only limit passed (limit: 2. users are returned in ASC order based on timeJoined)
+ *    - limit and timeJoinedOrder passed (limit: 2, timeJoinedOrder: DESC. users are returned in DESC order based on timeJoined)
+ *    - limit = 5, nextPaginationToken should not be present in the response
+ *    - remove all users from db, response should not have any user and nextPaginationToken should not be present
+ *    - set limit 2, call the API, from the response use nextPaginationToken to call API again. from the response use nextPaginationToken to call API again. in the response of the final (3rd) API call, only one item is returned and nextPaginationToken is not present in the response
  * */
 
 public class UsersAPITest2_5 {
@@ -42,5 +56,136 @@ public class UsersAPITest2_5 {
         Utils.reset();
     }
 
+    @Test
+    public void testBadInput() throws Exception {
+        String[] args = {"../"};
 
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        {
+            HashMap<String, String> QueryParams = new HashMap<String, String>();
+            QueryParams.put("limit", "1001");
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendGETRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/users", QueryParams, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_4ForTests());
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: max limit allowed is 1000"));
+            }
+        }
+
+        {
+            HashMap<String, String> QueryParams = new HashMap<String, String>();
+            QueryParams.put("limit", "-1");
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendGETRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/users", QueryParams, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_4ForTests());
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: limit must a positive integer with max value 1000"));
+            }
+        }
+
+        {
+            HashMap<String, String> QueryParams = new HashMap<String, String>();
+            QueryParams.put("timeJoinedOrder", "AESC");
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendGETRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/users", QueryParams, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_4ForTests());
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: timeJoinedOrder can be either ASC OR DESC"));
+            }
+        }
+
+        {
+            HashMap<String, String> QueryParams = new HashMap<String, String>();
+            QueryParams.put("paginationToken", "randomString");
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendGETRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/users", QueryParams, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_4ForTests());
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: invalid pagination token"));
+            }
+        }
+
+        {
+            HashMap<String, String> QueryParams = new HashMap<String, String>();
+            QueryParams.put("paginationToken", "cmFuZG9tU3RyaW5n"); // echo -n "randomString" | base64
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendGETRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/users", QueryParams, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_4ForTests());
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: invalid pagination token"));
+            }
+        }
+
+        {
+            HashMap<String, String> QueryParams = new HashMap<String, String>();
+            QueryParams.put("paginationToken", "eyJ1c2VySWQiOiAicmFuZG9tU3RyaW5nIn0="); // echo -n '{"userId": "randomString"}' | base64
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendGETRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/users", QueryParams, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_4ForTests());
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: invalid pagination token"));
+            }
+        }
+
+        {
+            HashMap<String, String> QueryParams = new HashMap<String, String>();
+            QueryParams.put("paginationToken",
+                    "eyJ1c2VySWQiOiAiOWIxZGViNGQtM2I3ZC00YmFkLTliZGQtMmIwZDdiM2RjYjZkIiwgdGltZUpvaW5lZDogIjM0MjM0MjM0In0=\n"); // echo -n '{"userId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d", timeJoined: "34234234"}' | base64
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendGETRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/users", QueryParams, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_4ForTests());
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: invalid pagination token"));
+            }
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

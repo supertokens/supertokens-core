@@ -44,6 +44,13 @@ import static org.junit.Assert.assertNotNull;
  *    - Use an expired token, it should throw an error
  *    - Test the format of the email verification token
  *    - (later) Create token, change email of user, use the token -> should fail with invalid token
+ *  - Tests for getUsers function (add 5 users);
+ *    - invalid nextPaginationToken should throw IllegalArgumentException
+ *    - limit: 2, timeJoinedOrder: ASC. users are returned in ASC order based on timeJoined
+ *    - limit: 2, timeJoinedOrder: DESC. users are returned in DESC order based on timeJoined
+ *    - limit = 5, nextPaginationToken should not be present in the result
+ *    - remove all users from db, response should not have any user and nextPaginationToken should not be present
+ *    - limit: 2, timeJoinedOrder: ASC. call the function. from the result use nextPaginationToken to call the function again. from the result use nextPaginationToken to call the function again. the result of the final (3rd) function call should only have one item and nextPaginationToken is not present in the result
  * */
 
 public class EmailPasswordTest_2 {
@@ -141,6 +148,25 @@ public class EmailPasswordTest_2 {
         EmailPassword.verifyEmail(process.getProcess(), token);
 
         assert (EmailPassword.isEmailVerified(process.getProcess(), user.id));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void getUsers() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+
+        assert (!EmailPassword.isEmailVerified(process.getProcess(), user.id));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

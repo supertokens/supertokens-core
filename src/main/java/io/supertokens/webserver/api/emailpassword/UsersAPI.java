@@ -16,7 +16,13 @@
 
 package io.supertokens.webserver.api.emailpassword;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.UserPaginationContainer;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -24,6 +30,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Base64;
 
 public class UsersAPI extends WebserverAPI {
 
@@ -40,18 +47,28 @@ public class UsersAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        String userId = InputParser.getQueryParamOrThrowError(req, "userId", true);
-        String email = InputParser.getQueryParamOrThrowError(req, "email", true);
-
+        /*
+         * pagination token can be null or string.
+         * if string, it should be a base64 encoded JSON object.
+         * pagination token will corresponds to the first item of the users' list.
+         */
         String paginationToken = InputParser.getQueryParamOrThrowError(req, "paginationToken", true);
+        /*
+         * limit can be null or an integer with maximum value 1000.
+         * default value will be 100.
+         */
         Integer limit = InputParser.getIntQueryParamOrThrowError(req, "limit", true);
+        /*
+         * timeJoinedOrder can be null or string.
+         * if not null, the value should be either "ASC" or "DESC".
+         * default value will be "ASC"
+         */
         String timeJoinedOrder = InputParser.getQueryParamOrThrowError(req, "timeJoinedOrder", true);
-
-        // logic according to TODO
 
         if (timeJoinedOrder != null) {
             if (!timeJoinedOrder.equals("ASC") && !timeJoinedOrder.equals("DESC")) {
-                // TODO: throw bad input
+                throw new ServletException(
+                        new WebserverAPI.BadRequestException("timeJoinedOrder can be either ASC OR DESC"));
             }
         } else {
             timeJoinedOrder = "ASC";
@@ -59,42 +76,31 @@ public class UsersAPI extends WebserverAPI {
 
         if (limit != null) {
             if (limit > 1000) {
-                // TODO: throw bad request
+                throw new ServletException(
+                        new WebserverAPI.BadRequestException("max limit allowed is 1000"));
+            } else if (limit < 1) {
+                throw new ServletException(
+                        new WebserverAPI.BadRequestException("limit must a positive integer with max value 1000"));
             }
         } else {
             limit = 100;
         }
 
-
-        //  try {
-        // TODO:
-//
-//            User user = null;
-//            if (userId != null) {
-//                user = EmailPassword.getUserUsingId(main, userId);
-//            } else {
-//                String normalisedEmail = Utils.normaliseEmail(email);
-//                user = EmailPassword.getUserUsingEmail(main, normalisedEmail);
-//            }
-//
-//            if (user == null) {
-//                JsonObject result = new JsonObject();
-//                result.addProperty("status", userId != null ? "UNKNOWN_USER_ID_ERROR" : "UNKNOWN_EMAIL_ERROR");
-//                super.sendJsonResponse(200, result, resp);
-//            } else {
-//                JsonObject result = new JsonObject();
-//                result.addProperty("status", "OK");
-//                JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
-//                if (super.getVersionFromRequest(req).equals("2.4")) {
-//                    userJson.remove("timeJoined");
-//                }
-//                result.add("user", userJson);
-//                super.sendJsonResponse(200, result, resp);
-//            }
-
-        // } catch (StorageQueryException e) {
-        //   throw new ServletException(e);
-        //  }
-
+        try {
+            UserPaginationContainer users = EmailPassword.getUsers(super.main, paginationToken, limit, timeJoinedOrder);
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "OK");
+            JsonObject usersJson = new JsonParser().parse(new Gson().toJson(users.users)).getAsJsonObject();
+            result.add("users", usersJson);
+            if (users.nextPaginationToken != null) {
+                result.addProperty("nextPaginationToken", users.nextPaginationToken);
+            }
+            super.sendJsonResponse(200, result, resp);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("invalid pagination token"));
+        } catch (StorageQueryException e) {
+            throw new ServletException(e);
+        }
     }
 }
