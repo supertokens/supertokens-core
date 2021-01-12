@@ -47,15 +47,6 @@ import static org.junit.Assert.assertNotNull;
  *    - (later) Create token, change email of user, use the token -> should fail with invalid token
  *  - Tests for getUsers function (add 5 users):
  *    - invalid nextPaginationToken should throw IllegalArgumentException
- *    - limit: 2, timeJoinedOrder: ASC. users are returned in ASC order based on timeJoined
- *    - limit: 2, timeJoinedOrder: DESC. users are returned in DESC order based on timeJoined
- *    - limit = 5, nextPaginationToken should not be present in the result
- *    - remove all users from db, response should not have any user and nextPaginationToken should not be present
- *    - limit: 2, timeJoinedOrder: ASC. call the function. from the result use nextPaginationToken to call the function again. from the result use nextPaginationToken to call the function again. the result of the final (3rd) function call should only have one item and nextPaginationToken is not present in the result
- *    - limit: 2, timeJoinedOrder: DESC. call the function. from the result use nextPaginationToken to call the function again. make sure the users obtained are in descending order based on the timeJoined. from the result use nextPaginationToken to call the function again. the result of the final (3rd) function call should only have one item and nextPaginationToken is not present in the result
- *  - Tests for getUsersCount function:
- *    - no users, the function should return 0
- *    - add 5 users, the function should return 5
  * */
 
 public class EmailPasswordTest_2 {

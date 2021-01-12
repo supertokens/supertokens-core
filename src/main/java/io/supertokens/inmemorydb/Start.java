@@ -563,7 +563,6 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage {
     public UserInfo[] getUsers(@NotNull String userId, @NotNull Long timeJoined, @NotNull Integer limit,
                                @NotNull String timeJoinedOrder) throws StorageQueryException {
         try {
-            System.out.println(timeJoined.toString());
             return EmailPasswordQueries.getUsersInfo(this, userId, timeJoined, limit, timeJoinedOrder);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
