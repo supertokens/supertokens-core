@@ -111,6 +111,8 @@ public class GenerateEmailVerificationTokenAPITest2_5 {
                                         "JSON input"));
             }
         }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     // Check good input works
@@ -143,6 +145,9 @@ public class GenerateEmailVerificationTokenAPITest2_5 {
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "OK");
         assertNotNull(response.get("token"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     // Check for all types of output
@@ -201,5 +206,7 @@ public class GenerateEmailVerificationTokenAPITest2_5 {
             assertEquals(response2.get("status").getAsString(), "EMAIL_ALREADY_VERIFIED_ERROR");
         }
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }

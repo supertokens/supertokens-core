@@ -94,6 +94,9 @@ public class IsEmailVerifiedAPITest2_5 {
                                         " request"));
             }
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     // Check good input works
@@ -162,6 +165,9 @@ public class IsEmailVerifiedAPITest2_5 {
         assertEquals(verifyResponse.entrySet().size(), 2);
         assertEquals(verifyResponse.get("status").getAsString(), "OK");
         assertEquals(verifyResponse.get("isVerified").getAsBoolean(), true);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     // Check for all types of output
@@ -189,5 +195,7 @@ public class IsEmailVerifiedAPITest2_5 {
             assertEquals(response2.entrySet().size(), 1);
         }
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }

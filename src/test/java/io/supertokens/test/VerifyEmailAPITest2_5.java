@@ -110,6 +110,9 @@ public class VerifyEmailAPITest2_5 {
                                         "JSON input"));
             }
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     // Check good input works
@@ -159,6 +162,9 @@ public class VerifyEmailAPITest2_5 {
         assertEquals(response2.get("user").getAsJsonObject().entrySet().size(), 2);
         assertEquals(response2.get("user").getAsJsonObject().get("id").getAsString(), userId);
         assertEquals(response2.get("user").getAsJsonObject().get("email").getAsString(), "random@gmail.com");
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     // Check for all types of output
@@ -206,7 +212,9 @@ public class VerifyEmailAPITest2_5 {
             assertEquals(response2.get("status").getAsString(), "EMAIL_VERIFICATION_INVALID_TOKEN_ERROR");
             assertEquals(response2.entrySet().size(), 1);
         }
-
+        
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
 }
