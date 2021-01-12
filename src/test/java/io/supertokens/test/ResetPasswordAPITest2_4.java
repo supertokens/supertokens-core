@@ -171,7 +171,7 @@ public class ResetPasswordAPITest2_4 {
             return;
         }
 
-        JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
+        JsonObject signUpResponse = Utils.signUpRequest_2_4(process, "random@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
         assertEquals(signUpResponse.entrySet().size(), 2);
 

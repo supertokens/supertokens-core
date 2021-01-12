@@ -37,6 +37,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
+import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.sql.Connection;
@@ -553,6 +554,34 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage {
             throws StorageQueryException {
         try {
             return EmailPasswordQueries.getAllEmailVerificationTokenInfoForUser(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public UserInfo[] getUsers(@NotNull String userId, @NotNull Long timeJoined, @NotNull Integer limit,
+                               @NotNull String timeJoinedOrder) throws StorageQueryException {
+        try {
+            return EmailPasswordQueries.getUsersInfo(this, userId, timeJoined, limit, timeJoinedOrder);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public UserInfo[] getUsers(@NotNull Integer limit, @NotNull String timeJoinedOrder) throws StorageQueryException {
+        try {
+            return EmailPasswordQueries.getUsersInfo(this, limit, timeJoinedOrder);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public long getUsersCount() throws StorageQueryException {
+        try {
+            return EmailPasswordQueries.getUsersCount(this);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

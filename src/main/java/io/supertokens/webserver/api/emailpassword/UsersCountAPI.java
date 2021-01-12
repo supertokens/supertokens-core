@@ -21,10 +21,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.User;
-import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
+import io.supertokens.emailpassword.UserPaginationContainer;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -33,50 +31,30 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-public class SignInAPI extends WebserverAPI {
+public class UsersCountAPI extends WebserverAPI {
 
-    private static final long serialVersionUID = -4641988458637882374L;
+    private static final long serialVersionUID = -2225750492558064634L;
 
-    public SignInAPI(Main main) {
+    public UsersCountAPI(Main main) {
         super(main);
     }
 
     @Override
     public String getPath() {
-        return "/recipe/signin";
+        return "/recipe/users/count";
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String email = InputParser.parseStringOrThrowError(input, "email", false);
-        String password = InputParser.parseStringOrThrowError(input, "password", false);
-        assert password != null;
-        assert email != null;
-
-        // logic according to https://github.com/supertokens/supertokens-core/issues/104
-
-        String normalisedEmail = Utils.normaliseEmail(email);
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
 
         try {
-            User user = EmailPassword.signIn(super.main, normalisedEmail, password);
-
+            long count = EmailPassword.getUsersCount(super.main);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
-            if (super.getVersionFromRequest(req).equals("2.4")) {
-                userJson.remove("timeJoined");
-            }
-            result.add("user", userJson);
-            super.sendJsonResponse(200, result, resp);
-
-        } catch (WrongCredentialsException e) {
-            JsonObject result = new JsonObject();
-            result.addProperty("status", "WRONG_CREDENTIALS_ERROR");
+            result.addProperty("count", count);
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
-
     }
 }
