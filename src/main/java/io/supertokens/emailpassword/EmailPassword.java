@@ -333,44 +333,28 @@ public class EmailPassword {
     }
 
     public static UserPaginationContainer getUsers(Main main, @Nullable String paginationToken, Integer limit,
-                                                   String timeJoinedOrder) throws StorageQueryException, IllegalArgumentException, IllegalStateException {
-        if (paginationToken != null) {
-            try {
-                String decodedPaginationToken = new String(Base64.getDecoder().decode(paginationToken));
-                JsonObject g = new JsonParser().parse(decodedPaginationToken).getAsJsonObject();
-                if (!(g.has("userId") && g.has("timeJoined"))) {
-                    throw new IllegalArgumentException();
-                }
-                String userId = g.get("userId").getAsString();
-                g.get("timeJoined").getAsLong();
-                if (userId == null) {
-                    throw new IllegalArgumentException();
-                }
-            } catch (IllegalArgumentException | IllegalStateException e) {
-                throw new IllegalArgumentException();
-            }
-        }
+                                                   String timeJoinedOrder) throws StorageQueryException, IllegalArgumentException {
         UserInfo[] users;
         if (paginationToken == null) {
             users = StorageLayer.getEmailPasswordStorage(main).getUsers(limit + 1, timeJoinedOrder);
         } else {
-            String decodedPaginationToken = new String(Base64.getDecoder().decode(paginationToken));
-            JsonObject token = new JsonParser().parse(decodedPaginationToken).getAsJsonObject();
-            String userId = token.get("userId").getAsString();
-            Long timeJoined = token.get("timeJoined").getAsLong();
-            users = StorageLayer.getEmailPasswordStorage(main).getUsers(userId, timeJoined,limit + 1, timeJoinedOrder);
+            UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
+            users = StorageLayer.getEmailPasswordStorage(main).getUsers(tokenInfo.userId, tokenInfo.timeJoined, limit + 1, timeJoinedOrder);
         }
         String nextPaginationToken = null;
+        int maxLoop = users.length;
         if (users.length == limit + 1) {
-            JsonObject token = new JsonObject();
-            token.addProperty("userId", users[limit].id);
-            token.addProperty("timeJoined", users[limit].timeJoined);
-            nextPaginationToken = new String(Base64.getEncoder().encode((new Gson().toJson(token)).getBytes()));
+            maxLoop = limit;
+            nextPaginationToken = new UserPaginationToken(users[limit].id, users[limit].timeJoined).generateToken();
         }
-        User[] ResultUsers = new User[users.length];
-        for (int i = 0; i < users.length; i++) {
-            ResultUsers[i] = new User(users[i].id, users[i].email, users[i].timeJoined);
+        User[] resultUsers = new User[maxLoop];
+        for (int i = 0; i < maxLoop; i++) {
+            resultUsers[i] = new User(users[i].id, users[i].email, users[i].timeJoined);
         }
-        return new UserPaginationContainer(ResultUsers, nextPaginationToken);
+        return new UserPaginationContainer(resultUsers, nextPaginationToken);
+    }
+
+    public static long getUsersCount(Main main) throws StorageQueryException {
+        return StorageLayer.getEmailPasswordStorage(main).getUsersCount();
     }
 }

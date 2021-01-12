@@ -36,9 +36,6 @@ import static org.junit.Assert.*;
  *    - no params passed should return 5 users
  *    - only limit passed (limit: 2. users are returned in ASC order based on timeJoined)
  *    - limit and timeJoinedOrder passed (limit: 2, timeJoinedOrder: DESC. users are returned in DESC order based on timeJoined)
- *    - limit = 5, nextPaginationToken should not be present in the response
- *    - remove all users from db, response should not have any user and nextPaginationToken should not be present
- *    - set limit 2, call the API, from the response use nextPaginationToken to call API again. from the response use nextPaginationToken to call API again. in the response of the final (3rd) API call, only one item is returned and nextPaginationToken is not present in the response
  * */
 
 public class UsersAPITest2_5 {
@@ -153,25 +150,8 @@ public class UsersAPITest2_5 {
 
         {
             HashMap<String, String> QueryParams = new HashMap<String, String>();
-            QueryParams.put("paginationToken", "eyJ1c2VySWQiOiAicmFuZG9tU3RyaW5nIn0="); // echo -n '{"userId": "randomString"}' | base64
-            try {
-                io.supertokens.test.httpRequest.HttpRequest
-                        .sendGETRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/users", QueryParams, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_4ForTests());
-                throw new Exception("Should not come here");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: invalid pagination token"));
-            }
-        }
-
-        {
-            HashMap<String, String> QueryParams = new HashMap<String, String>();
             QueryParams.put("paginationToken",
-                    "eyJ1c2VySWQiOiAiOWIxZGViNGQtM2I3ZC00YmFkLTliZGQtMmIwZDdiM2RjYjZkIiwgdGltZUpvaW5lZDogIjM0MjM0MjM0In0=\n"); // echo -n '{"userId": "9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d", timeJoined: "34234234"}' | base64
+                    "OWIxZGViNGQtM2I3ZC00YmFkLTliZGQtMmIwZDdiM2RjYjZkOzNzZHNkczQyMzQyMzQ="); // echo -n '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d;3sdsds4234234' | base64
             try {
                 io.supertokens.test.httpRequest.HttpRequest
                         .sendGETRequest(process.getProcess(), "",

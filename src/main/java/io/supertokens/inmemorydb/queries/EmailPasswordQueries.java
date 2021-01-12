@@ -375,14 +375,12 @@ public class EmailPasswordQueries {
     public static UserInfo[] getUsersInfo(Start start, @NotNull Integer limit, @NotNull String timeJoinedOrder)
             throws SQLException, StorageQueryException {
         String QUERY =
-                "SELECT user_id, token, token_expiry, email FROM " +
-                        Config.getConfig(start).getEmailVerificationTokensTable() +
-                        " ORDER BY time_joined ?, uid DESC LIMIT ?";
-
+                "SELECT user_id, email, password_hash, time_joined, is_email_verified FROM " +
+                        Config.getConfig(start).getUsersTable() +
+                        " ORDER BY time_joined " + timeJoinedOrder + ", user_id DESC LIMIT ?";
         try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, timeJoinedOrder);
-            pst.setInt(2, limit);
+            pst.setInt(1, limit);
             ResultSet result = pst.executeQuery();
             List<UserInfo> temp = new ArrayList<>();
             while (result.next()) {
@@ -401,19 +399,15 @@ public class EmailPasswordQueries {
             throws SQLException, StorageQueryException {
         String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
         String QUERY =
-                "SELECT user_id, token, token_expiry, email FROM " +
-                        Config.getConfig(start).getEmailVerificationTokensTable() +
-                        "WHERE time_joined " +
-                        timeJoinedOrderSymbol +
-                        " ? OR (time_joined = ? AND uid <= ?) ORDER BY time_joined ?, uid DESC LIMIT ?";
-
+                "SELECT user_id, email, password_hash, time_joined, is_email_verified FROM " +
+                        Config.getConfig(start).getUsersTable() +
+                        " WHERE time_joined " + timeJoinedOrderSymbol + " ? OR (time_joined = ? AND user_id <= ?) ORDER BY time_joined " + timeJoinedOrder + ", user_id DESC LIMIT ?";
         try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setLong(1, timeJoined);
             pst.setLong(2, timeJoined);
             pst.setString(3, userId);
-            pst.setString(4, timeJoinedOrder);
-            pst.setInt(5, limit);
+            pst.setInt(4, limit);
             ResultSet result = pst.executeQuery();
             List<UserInfo> temp = new ArrayList<>();
             while (result.next()) {
@@ -427,6 +421,19 @@ public class EmailPasswordQueries {
         }
     }
 
+    public static long getUsersCount(Start start) throws SQLException, StorageQueryException {
+        String QUERY =
+                "SELECT COUNT(*) as total FROM " +
+                        Config.getConfig(start).getUsersTable();
+        try (Connection con = ConnectionPool.getConnection(start);
+             PreparedStatement pst = con.prepareStatement(QUERY)) {
+            ResultSet result = pst.executeQuery();
+            if (result.next()) {
+                return result.getLong("total");
+            }
+            return 0;
+        }
+    }
 
     private static class PasswordResetTokenInfoRowMapper implements RowMapper<PasswordResetTokenInfo, ResultSet> {
         private static final PasswordResetTokenInfoRowMapper INSTANCE = new PasswordResetTokenInfoRowMapper();
