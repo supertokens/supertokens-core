@@ -9,6 +9,7 @@ TODO before creating this issue:
  - Fill in "Feature" section.
  - Remove irrelevant checkboxes.
  - Replace X.Y version in following sections.
+ - Link relevant issues.
  - Remove the current (Notes) section.
 
 # 🚀 Feature
@@ -25,6 +26,7 @@ Description of the new feature
   **Tracking issues**
     - [ ] [Issue 1](https://github.com/supertokens/supertokens-core/issues/XXX)
     - [ ] [Issue 2](https://github.com/supertokens/supertokens-core/issues/XXX)
+    - ...
 
   **Status**
     - [ ] In progress
@@ -66,8 +68,6 @@ Description of the new feature
    **Status**
      - [ ] In progress
      - [ ] [PR]() Ready using supertokens/supertokens-auth-react#X.Y and supertokens/supertokens-node#X.Y github repositories in package.json
-     - [ ] [PR]() updated using npm registry.
-     - [ ] Release [theme demo app](https://supertokens-react-themes.surge.sh) on surge using `npm run surge`
 
 
 
@@ -80,9 +80,6 @@ Description of the new feature
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
 
 ### Others
-
- - [supertokens-react-themes:X.Y](https://github.com/supertokens/supertokens-react-themes/tree/X.Y)
-   - [ ] [PR]() ready using supertokens/supertokens-auth-react#X.Y
 
  - [supertokens-demo-react:master](https://github.com/supertokens/supertokens-nextjs-demo/tree/master)
      - [ ] In progress
@@ -118,25 +115,24 @@ Description of the new feature
  - [ ] [supertokens-core:X.Y](https://github.com/supertokens/supertokens-core/tree/X.Y)
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website#X.Y)
-   - [ ] Update tests to use `supertokens-node` from registry.
+   - [ ] Updated tests to use `supertokens-node` from registry.
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
-   - [ ] Update tests to use `supertokens-node` from npm registry
-   - [ ] Update `peerDependencies` to use `supertokens-website` from npm registry
+   - [ ] Updated tests to use `supertokens-node` from npm registry
+   - [ ] Updated `peerDependencies` to use `supertokens-website` from npm registry
 
 ### 🔀 Others
 
  - [supertokens-react-themes:X.Y](https://github.com/supertokens/supertokens-react-themes/tree/X.Y)
-   - [ ] Update [PR]() with `supertokens-auth-react` from npm registry
+   - [ ] Updated [PR]() with `supertokens-auth-react` from npm registry
+   - [ ] Release [theme demo app](https://supertokens-react-themes.surge.sh) on surge using `npm run surge`
    - [ ] Published to npm registry
 
 - [supertokens-demo-react:master](https://github.com/supertokens/supertokens-nextjs-demo/tree/master)
-   - [ ] In progress
-   - [ ] [PR]() Ready using supertokens/supertokens-auth-react#X.Y and supertokens/supertokens-node#X.Y github repositories in package.json
-   - [ ] [PR]() updated using npm registry.
+   - [ ] Updated [PR]() using `supertokens-node` and `supertokens-auth-react` npm registry.
    - [ ] Deployed to [demo site](http://emailpassword.demo.supertokens.io/)
 
  - [supertokens-nextjs-demo:master](https://github.com/supertokens/supertokens-nextjs-demo/tree/master)
-     - [ ] [PR]() updated using npm registry.
+     - [ ] [PR]() updated using `supertokens-node` and `supertokens-auth-react` npm registry.
      - [ ] Merged to master
 
 ### 📚 Documentation
