@@ -113,6 +113,12 @@ Description of the new feature
 ### 💻 NPM and core release
 
  - [ ] [supertokens-core:X.Y](https://github.com/supertokens/supertokens-core/tree/X.Y)
+    - Docker update
+       - [ ] MySQL
+       - [ ] Postgres
+       - [ ] MongoDB
+    - [ ] try.supertokens.io
+    - [ ] Update SaaS config
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website#X.Y)
    - [ ] Updated tests to use `supertokens-node` from registry.
