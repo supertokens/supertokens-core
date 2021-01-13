@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Used rowmapper for in memory db
 - Adds email verification APIs
+- Adds user pagination APIs
+- Adds timeJoined to whenever a user object is returned from an API
 
 ## [3.0.1] - 2020-10-27
 ### Changed

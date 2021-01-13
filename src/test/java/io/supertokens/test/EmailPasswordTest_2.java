@@ -19,6 +19,7 @@ package io.supertokens.test;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.User;
+import io.supertokens.emailpassword.UserPaginationContainer;
 import io.supertokens.emailpassword.exceptions.EmailAlreadyVerifiedException;
 import io.supertokens.emailpassword.exceptions.EmailVerificationInvalidTokenException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -40,12 +41,8 @@ import static org.junit.Assert.*;
  *  the right values
  *  - Verify the email successfully, then create an email verification token and check that the right error is thrown.
  *  - (later) Email verify double lock test. First we lock the token table, then the user table. Does this work?
- *  - Do all password reset token tests with email verification token. For example:
- *    - Give invalid token
- *    - Generate two tokens, verify with one token, the other token should throw an invalid token error
- *    - Use an expired token, it should throw an error
- *    - Test the format of the email verification token
- *    - (later) Create token, change email of user, use the token -> should fail with invalid token
+ *   - (later) Create email verification token, change email of user, use the token -> should fail with invalid token
+
  * */
 
 public class EmailPasswordTest_2 {
@@ -319,4 +316,79 @@ public class EmailPasswordTest_2 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void getUsers() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        EmailPassword.signUp(process.getProcess(), "test0@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "test1@example.com", "password1");
+        EmailPassword.signUp(process.getProcess(), "test2@example.com", "password2");
+        EmailPassword.signUp(process.getProcess(), "test3@example.com", "password3");
+        EmailPassword.signUp(process.getProcess(), "test4@example.com", "password4");
+
+        {
+            UserPaginationContainer users = EmailPassword.getUsers(process.getProcess(), null, 10, "ASC");
+            assert (users.users.length == 5);
+            assert (users.nextPaginationToken == null);
+        }
+
+        {
+            UserPaginationContainer users = EmailPassword.getUsers(process.getProcess(), null, 1, "ASC");
+            assert (users.users.length == 1);
+            assertNotNull(users.nextPaginationToken);
+            assert (users.users[0].email.equals("test0@example.com"));
+            users = EmailPassword.getUsers(process.getProcess(), users.nextPaginationToken, 1, "ASC");
+            assert (users.users.length == 1);
+            assertNotNull(users.nextPaginationToken);
+            assert (users.users[0].email.equals("test1@example.com"));
+        }
+
+        {
+            UserPaginationContainer users = EmailPassword.getUsers(process.getProcess(), null, 1, "DESC");
+            assert (users.users.length == 1);
+            assertNotNull(users.nextPaginationToken);
+            assert (users.users[0].email.equals("test4@example.com"));
+            users = EmailPassword.getUsers(process.getProcess(), users.nextPaginationToken, 1, "DESC");
+            assert (users.users.length == 1);
+            assertNotNull(users.nextPaginationToken);
+            assert (users.users[0].email.equals("test3@example.com"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void getUsersCount() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        long count = EmailPassword.getUsersCount(process.getProcess());
+        assert (count == 0);
+
+        EmailPassword.signUp(process.getProcess(), "test0@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "test1@example.com", "password1");
+        EmailPassword.signUp(process.getProcess(), "test2@example.com", "password2");
+        EmailPassword.signUp(process.getProcess(), "test3@example.com", "password3");
+        EmailPassword.signUp(process.getProcess(), "test4@example.com", "password4");
+
+        count = EmailPassword.getUsersCount(process.getProcess());
+        assert (count == 5);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

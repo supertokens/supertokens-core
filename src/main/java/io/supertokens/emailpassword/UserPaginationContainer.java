@@ -1,5 +1,5 @@
 /*
- *    Copyright (c) 2020, VRAI Labs and/or its affiliates. All rights reserved.
+ *    Copyright (c) 2021, VRAI Labs and/or its affiliates. All rights reserved.
  *
  *    This software is licensed under the Apache License, Version 2.0 (the
  *    "License") as published by the Apache Software Foundation.
@@ -17,18 +17,14 @@
 package io.supertokens.emailpassword;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
-public class User {
+public class UserPaginationContainer {
+    public final User[] users;
+    public final String nextPaginationToken;
 
-    public final String id;
-
-    public final String email;
-
-    public final long timeJoined;
-
-    public User(@Nonnull String id, @Nonnull String email, long timeJoined) {
-        this.id = id;
-        this.email = email;
-        this.timeJoined = timeJoined;
+    public UserPaginationContainer(@Nonnull User[] users, @Nullable String nextPaginationToken) {
+        this.users = users;
+        this.nextPaginationToken = nextPaginationToken;
     }
 }

@@ -16,6 +16,9 @@
 
 package io.supertokens.emailpassword;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.exceptions.EmailAlreadyVerifiedException;
 import io.supertokens.emailpassword.exceptions.EmailVerificationInvalidTokenException;
@@ -30,11 +33,15 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import io.supertokens.webserver.WebserverAPI;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.servlet.ServletException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Base64;
 
 public class EmailPassword {
 
@@ -66,12 +73,13 @@ public class EmailPassword {
         while (true) {
 
             String userId = Utils.getUUID();
+            long timeJoined = System.currentTimeMillis();
 
             try {
                 StorageLayer.getEmailPasswordStorage(main)
-                        .signUp(new UserInfo(userId, email, hashedPassword, System.currentTimeMillis()));
+                        .signUp(new UserInfo(userId, email, hashedPassword, timeJoined));
 
-                return new User(userId, email);
+                return new User(userId, email, timeJoined);
 
             } catch (DuplicateUserIdException ignored) {
                 // we retry with a new userId (while loop)
@@ -98,7 +106,7 @@ public class EmailPassword {
             throw new WrongCredentialsException();
         }
 
-        return new User(user.id, user.email);
+        return new User(user.id, user.email, user.timeJoined);
     }
 
     public static String generatePasswordResetToken(Main main, String userId)
@@ -198,7 +206,7 @@ public class EmailPassword {
         if (info == null) {
             return null;
         }
-        return new User(info.id, info.email);
+        return new User(info.id, info.email, info.timeJoined);
     }
 
     public static User getUserUsingEmail(Main main, String email) throws StorageQueryException {
@@ -206,7 +214,7 @@ public class EmailPassword {
         if (info == null) {
             return null;
         }
-        return new User(info.id, info.email);
+        return new User(info.id, info.email, info.timeJoined);
     }
 
     public static String generateEmailVerificationToken(Main main, String userId)
@@ -303,7 +311,7 @@ public class EmailPassword {
                 storage.updateUsersIsEmailVerified_Transaction(con, userId, true);
 
                 storage.commitTransaction(con);
-                return new User(userInfo.id, userInfo.email);
+                return new User(userInfo.id, userInfo.email, userInfo.timeJoined);
             });
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof EmailVerificationInvalidTokenException) {
@@ -322,5 +330,31 @@ public class EmailPassword {
         }
 
         return user.isEmailVerified;
+    }
+
+    public static UserPaginationContainer getUsers(Main main, @Nullable String paginationToken, Integer limit,
+                                                   String timeJoinedOrder) throws StorageQueryException, IllegalArgumentException {
+        UserInfo[] users;
+        if (paginationToken == null) {
+            users = StorageLayer.getEmailPasswordStorage(main).getUsers(limit + 1, timeJoinedOrder);
+        } else {
+            UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
+            users = StorageLayer.getEmailPasswordStorage(main).getUsers(tokenInfo.userId, tokenInfo.timeJoined, limit + 1, timeJoinedOrder);
+        }
+        String nextPaginationToken = null;
+        int maxLoop = users.length;
+        if (users.length == limit + 1) {
+            maxLoop = limit;
+            nextPaginationToken = new UserPaginationToken(users[limit].id, users[limit].timeJoined).generateToken();
+        }
+        User[] resultUsers = new User[maxLoop];
+        for (int i = 0; i < maxLoop; i++) {
+            resultUsers[i] = new User(users[i].id, users[i].email, users[i].timeJoined);
+        }
+        return new UserPaginationContainer(resultUsers, nextPaginationToken);
+    }
+
+    public static long getUsersCount(Main main) throws StorageQueryException {
+        return StorageLayer.getEmailPasswordStorage(main).getUsersCount();
     }
 }

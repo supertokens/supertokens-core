@@ -29,13 +29,6 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
-/*
- * TODO:
- *  - Check for bad input (missing fields)
- *  - Check good input works
- *  - Check for all types of output
- * */
-
 public class GenerateEmailVerificationTokenAPITest2_5 {
 
     @Rule

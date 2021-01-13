@@ -28,13 +28,6 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
-/*
- * TODO:
- *  - Check for bad input (missing fields)
- *  - Check good input works
- *  - Check for all types of output
- * */
-
 public class VerifyEmailAPITest2_5 {
 
     @Rule
@@ -212,7 +205,7 @@ public class VerifyEmailAPITest2_5 {
             assertEquals(response2.get("status").getAsString(), "EMAIL_VERIFICATION_INVALID_TOKEN_ERROR");
             assertEquals(response2.entrySet().size(), 1);
         }
-        
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

@@ -30,13 +30,6 @@ import java.util.HashMap;
 
 import static org.junit.Assert.*;
 
-/*
- * TODO:
- *  - Check for bad input (missing fields)
- *  - Check good input works
- *  - Check for all types of output
- * */
-
 public class IsEmailVerifiedAPITest2_5 {
 
     @Rule
