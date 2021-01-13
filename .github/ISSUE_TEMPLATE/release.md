@@ -19,58 +19,6 @@ Description of the new feature
 
 # 📅 Checklist
 
-## ✅ Development 
-  
-  - [ ] [supertokens-core:X.Y](https://github.com/supertokens/supertokens-core/tree/X.Y)
-
-  **Tracking issues**
-    - [ ] [Issue 1](https://github.com/supertokens/supertokens-core/issues/XXX)
-    - [ ] [Issue 2](https://github.com/supertokens/supertokens-core/issues/XXX)
-    - ...
-
-  **Status**
-    - [ ] In progress
-    - [ ] Done
-
-
- - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
-   
-   **Tracking issues**
-     - [ ] [Issue 1](https://github.com/supertokens/supertokens-node/issues/XXX)
-     - [ ] [Issue 2](https://github.com/supertokens/supertokens-node/issues/XXX)
-   
-   **Status**
-     - [ ] In progress
-     - [ ] Done
-
- - [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/tree/X.Y)
-   
-   **Tracking issues**
-     - [ ] [Issue 1](https://github.com/supertokens/supertokens-website/issues/XXX)
-     - [ ] [Issue 2](https://github.com/supertokens/supertokens-website/issues/XXX)
-
-   **Status**
-     - [ ] In progress
-     - [ ] Done
-
- - [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
-   
-   **Tracking issues**
-      - [ ] [Issue 1](https://github.com/supertokens/supertokens-auth-react/issues/XXX)
-      - [ ] [Issue 2](https://github.com/supertokens/supertokens-auth-react/issues/XXX)
-
-   **Status**
-     - [ ] In progress
-     - [ ] Done
-
- - [supertokens-react-themes:X.Y](https://github.com/supertokens/supertokens-react-themes/tree/X.Y)
-   
-   **Status**
-     - [ ] In progress
-     - [ ] [PR]() Ready using supertokens/supertokens-auth-react#X.Y and supertokens/supertokens-node#X.Y github repositories in package.json
-
-
-
 ## 🔶 Staging 
 
 ### Dev Tag
