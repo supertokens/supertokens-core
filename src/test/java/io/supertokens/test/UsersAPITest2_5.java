@@ -27,7 +27,8 @@ import org.junit.rules.TestRule;
 
 import java.util.HashMap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /*
  * TODO:
@@ -35,7 +36,8 @@ import static org.junit.Assert.*;
  *  - Check good input works (add 5 users)
  *    - no params passed should return 5 users
  *    - only limit passed (limit: 2. users are returned in ASC order based on timeJoined)
- *    - limit and timeJoinedOrder passed (limit: 2, timeJoinedOrder: DESC. users are returned in DESC order based on timeJoined)
+ *    - limit and timeJoinedOrder passed (limit: 2, timeJoinedOrder: DESC. users are returned in DESC order based on
+ * timeJoined)
  * */
 
 public class UsersAPITest2_5 {
@@ -93,7 +95,8 @@ public class UsersAPITest2_5 {
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
                         e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: limit must a positive integer with max value 1000"));
+                                .equals("Http error. Status Code: 400. Message: limit must a positive integer with " +
+                                        "max value 1000"));
             }
         }
 
@@ -110,7 +113,8 @@ public class UsersAPITest2_5 {
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
                         e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: timeJoinedOrder can be either ASC OR DESC"));
+                                .equals("Http error. Status Code: 400. Message: timeJoinedOrder can be either ASC OR " +
+                                        "DESC"));
             }
         }
 
@@ -133,7 +137,7 @@ public class UsersAPITest2_5 {
 
         {
             HashMap<String, String> QueryParams = new HashMap<String, String>();
-            QueryParams.put("paginationToken", "cmFuZG9tU3RyaW5n"); // echo -n "randomString" | base64
+            QueryParams.put("paginationToken", "cmFuZG9tU3RyaW5n");
             try {
                 io.supertokens.test.httpRequest.HttpRequest
                         .sendGETRequest(process.getProcess(), "",
@@ -151,7 +155,7 @@ public class UsersAPITest2_5 {
         {
             HashMap<String, String> QueryParams = new HashMap<String, String>();
             QueryParams.put("paginationToken",
-                    "OWIxZGViNGQtM2I3ZC00YmFkLTliZGQtMmIwZDdiM2RjYjZkOzNzZHNkczQyMzQyMzQ="); // echo -n '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d;3sdsds4234234' | base64
+                    "OWIxZGViNGQtM2I3ZC00YmFkLTliZGQtMmIwZDdiM2RjYjZkOzNzZHNkczQyMzQyMzQ=");
             try {
                 io.supertokens.test.httpRequest.HttpRequest
                         .sendGETRequest(process.getProcess(), "",

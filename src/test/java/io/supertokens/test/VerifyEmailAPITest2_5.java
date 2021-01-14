@@ -120,7 +120,7 @@ public class VerifyEmailAPITest2_5 {
             return;
         }
 
-        JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
+        JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "random@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
         assertEquals(signUpResponse.entrySet().size(), 2);
 
