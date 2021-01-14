@@ -352,7 +352,7 @@ public class EmailPasswordQueries {
     public static EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser(Start start, String userId)
             throws SQLException, StorageQueryException {
         String QUERY =
-                "SELECT user_id, email, password_hash, time_joined, is_email_verified FROM " +
+                "SELECT user_id, token, token_expiry, email FROM " +
                         Config.getConfig(start).getEmailVerificationTokensTable() +
                         " WHERE user_id = ?";
 
@@ -394,14 +394,17 @@ public class EmailPasswordQueries {
         }
     }
 
-    public static UserInfo[] getUsersInfo(Start start, @NotNull String userId, @NotNull Long timeJoined, @NotNull Integer limit,
+    public static UserInfo[] getUsersInfo(Start start, @NotNull String userId, @NotNull Long timeJoined,
+                                          @NotNull Integer limit,
                                           @NotNull String timeJoinedOrder)
             throws SQLException, StorageQueryException {
         String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
         String QUERY =
                 "SELECT user_id, email, password_hash, time_joined, is_email_verified FROM " +
                         Config.getConfig(start).getUsersTable() +
-                        " WHERE time_joined " + timeJoinedOrderSymbol + " ? OR (time_joined = ? AND user_id <= ?) ORDER BY time_joined " + timeJoinedOrder + ", user_id DESC LIMIT ?";
+                        " WHERE time_joined " + timeJoinedOrderSymbol +
+                        " ? OR (time_joined = ? AND user_id <= ?) ORDER BY time_joined " + timeJoinedOrder +
+                        ", user_id DESC LIMIT ?";
         try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setLong(1, timeJoined);

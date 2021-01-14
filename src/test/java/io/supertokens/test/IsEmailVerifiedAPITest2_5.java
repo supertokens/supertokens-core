@@ -148,7 +148,7 @@ public class IsEmailVerifiedAPITest2_5 {
         assertEquals(response2.entrySet().size(), 2);
         assertEquals(response2.get("status").getAsString(), "OK");
 
-        assertEquals(response2.get("user").getAsJsonObject().entrySet().size(), 2);
+        assertEquals(response2.get("user").getAsJsonObject().entrySet().size(), 3);
         assertEquals(response2.get("user").getAsJsonObject().get("id").getAsString(), userId);
         assertEquals(response2.get("user").getAsJsonObject().get("email").getAsString(), "random@gmail.com");
 
