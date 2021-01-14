@@ -120,7 +120,7 @@ public class VerifyEmailAPITest2_5 {
             return;
         }
 
-        JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
+        JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "random@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
         assertEquals(signUpResponse.entrySet().size(), 2);
 
@@ -152,7 +152,7 @@ public class VerifyEmailAPITest2_5 {
         assertEquals(response2.entrySet().size(), 2);
         assertEquals(response2.get("status").getAsString(), "OK");
 
-        assertEquals(response2.get("user").getAsJsonObject().entrySet().size(), 2);
+        assertEquals(response2.get("user").getAsJsonObject().entrySet().size(), 3);
         assertEquals(response2.get("user").getAsJsonObject().get("id").getAsString(), userId);
         assertEquals(response2.get("user").getAsJsonObject().get("email").getAsString(), "random@gmail.com");
 

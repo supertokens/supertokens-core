@@ -120,7 +120,7 @@ public class GenerateEmailVerificationTokenAPITest2_5 {
             return;
         }
 
-        JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
+        JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "random@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
         assertEquals(signUpResponse.entrySet().size(), 2);
 
@@ -170,7 +170,7 @@ public class GenerateEmailVerificationTokenAPITest2_5 {
 
         // user exists but email already verified
         {
-            JsonObject signUpResponse = Utils.signUpRequest(process, "random@gmail.com", "validPass123");
+            JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "random@gmail.com", "validPass123");
             assertEquals(signUpResponse.get("status").getAsString(), "OK");
             assertEquals(signUpResponse.entrySet().size(), 2);
 
