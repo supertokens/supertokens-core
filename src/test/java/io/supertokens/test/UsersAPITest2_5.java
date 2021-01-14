@@ -16,7 +16,9 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
@@ -27,11 +29,11 @@ import org.junit.rules.TestRule;
 
 import java.util.HashMap;
 
+import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
 
 /*
  * TODO:
- *  - Check for bad input (missing fields)
  *  - Check good input works (add 5 users)
  *    - no params passed should return 5 users
  *    - only limit passed (limit: 2. users are returned in ASC order based on timeJoined)

@@ -17,6 +17,7 @@
 package io.supertokens.webserver.api.emailpassword;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
@@ -90,7 +91,7 @@ public class UsersAPI extends WebserverAPI {
             UserPaginationContainer users = EmailPassword.getUsers(super.main, paginationToken, limit, timeJoinedOrder);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            JsonObject usersJson = new JsonParser().parse(new Gson().toJson(users.users)).getAsJsonObject();
+            JsonArray usersJson = new JsonParser().parse(new Gson().toJson(users.users)).getAsJsonArray();
             result.add("users", usersJson);
             if (users.nextPaginationToken != null) {
                 result.addProperty("nextPaginationToken", users.nextPaginationToken);
