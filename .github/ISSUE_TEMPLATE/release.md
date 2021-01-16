@@ -24,7 +24,7 @@ Description of the new feature
 ### Dev Tag
  - [ ] [supertokens-core:X.Y](https://github.com/supertokens/supertokens-core/tree/X.Y)
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
- - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website#X.Y)
+ - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/X.Y)
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
 
 ### Others
@@ -55,6 +55,10 @@ Description of the new feature
    - [ ] In progress [PR]()
    - [ ] Deployed on [test site](https://test.supertokens.io/docs/auth-react/introduction)
 
+- [ ] supertokens-website documentation update
+   - [ ] In progress [PR]()
+   - [ ] Deployed to [test site](https://test.supertokens.io/docs/website/introduction)
+
 
 ## 🔥 Production 
 
@@ -68,8 +72,7 @@ Description of the new feature
     - [ ] try.supertokens.io
     - [ ] Update SaaS config
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
- - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website#X.Y)
-   - [ ] Updated tests to use `supertokens-node` from registry.
+ - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/tree/X.Y)
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
    - [ ] Updated tests to use `supertokens-node` from npm registry
    - [ ] Updated `peerDependencies` to use `supertokens-website` from npm registry
@@ -102,3 +105,6 @@ Description of the new feature
 
 - auth-react documentation update
    - [ ] Deployed on [production site](https://supertokens.io/docs/auth-react/installation)
+
+- supertokens-website documentation update
+   - [ ] Deployed to [production site](https://supertokens.io/docs/website/introduction)
