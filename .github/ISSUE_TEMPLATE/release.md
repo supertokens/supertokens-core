@@ -114,7 +114,7 @@ Description of the new feature
 - supertokens-website documentation update
    - [ ] Deployed to [production site](https://supertokens.io/docs/website/introduction)
    
-- [ ] website changes (supertokens.io)
+- website changes (supertokens.io)
    - [ ] homepage
    - [ ] pricing page feature list
    - [ ] comparison chart in the pricing page
