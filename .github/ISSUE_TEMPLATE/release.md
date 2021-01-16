@@ -26,6 +26,8 @@ Description of the new feature
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/X.Y)
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
+    - [ ] Various browsers - Safari, Firefox, Chrome, Edge
+    - [ ] Mobile responsiveness
 
 ### Others
 
