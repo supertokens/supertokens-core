@@ -59,6 +59,11 @@ Description of the new feature
    - [ ] In progress [PR]()
    - [ ] Deployed to [test site](https://test.supertokens.io/docs/website/introduction)
 
+- [ ] website changes (test.supertokens.io)
+   - [ ] homepage
+   - [ ] pricing page feature list
+   - [ ] comparison chart in the pricing page
+
 
 ## 🔥 Production 
 
@@ -108,3 +113,8 @@ Description of the new feature
 
 - supertokens-website documentation update
    - [ ] Deployed to [production site](https://supertokens.io/docs/website/introduction)
+   
+- [ ] website changes (supertokens.io)
+   - [ ] homepage
+   - [ ] pricing page feature list
+   - [ ] comparison chart in the pricing page
