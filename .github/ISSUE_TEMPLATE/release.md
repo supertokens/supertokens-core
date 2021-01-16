@@ -31,6 +31,7 @@ Description of the new feature
 
  - [supertokens-demo-react:master](https://github.com/supertokens/supertokens-nextjs-demo/tree/master)
      - [ ] In progress
+     = [ ] Verify mobile responsiveness and monkey test in every browser
      - [ ] [PR]() Ready using supertokens/supertokens-auth-react#X.Y and supertokens/supertokens-node#X.Y github repositories in package.json
 
  - [supertokens-nextjs-demo:master](https://github.com/supertokens/supertokens-nextjs-demo/tree/master)
