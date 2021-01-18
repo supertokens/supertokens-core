@@ -1,7 +1,7 @@
 ---
 name: 📅 Release
 about: Release checklist
-labels: 'feature' 'documentation'
+labels:
 ---
 
 # 📝 Notes
