@@ -35,6 +35,7 @@ Description of the new feature
  - [supertokens-demo-react:master](https://github.com/supertokens/supertokens-nextjs-demo/tree/master)
      - [ ] In progress
      - [ ] [PR]() Ready using supertokens/supertokens-auth-react#X.Y and supertokens/supertokens-node#X.Y github repositories in package.json
+     - [ ] Make changes to `master` and `deploy` branch
 
  - [supertokens-nextjs-demo:master](https://github.com/supertokens/supertokens-nextjs-demo/tree/master)
      - [ ] In progress
