@@ -40,34 +40,12 @@ public class Utils {
     public static String normaliseEmail(String email) {
         // we assume that the email's syntax is correct here.
 
-        // as per https://github.com/supertokens/supertokens-core/issues/89
-        try {
-            email = email.trim();
+        // as per https://github.com/supertokens/supertokens-core/issues/89 and
+        // https://github.com/supertokens/supertokens-core/issues/171
+        email = email.trim();
+        email = email.toLowerCase();
 
-            String preAtRate = email.split("@")[0];
-            String postAtRate = email.split("@")[1];
-
-            if (postAtRate.toLowerCase().startsWith("gmail.") || postAtRate.toLowerCase().startsWith("googlemail.")) {
-                preAtRate = preAtRate.toLowerCase();
-            }
-
-            if (postAtRate.toLowerCase().startsWith("outlook.") || postAtRate.toLowerCase().startsWith("hotmail.")) {
-                preAtRate = preAtRate.toLowerCase();
-            }
-
-            if (postAtRate.toLowerCase().startsWith("yahoo.")) {
-                preAtRate = preAtRate.toLowerCase();
-            }
-
-            if (postAtRate.toLowerCase().startsWith("icloud.")) {
-                preAtRate = preAtRate.toLowerCase();
-            }
-
-            return preAtRate + "@" + postAtRate;
-        } catch (Exception e) {
-            // we do nothing.
-            return email;
-        }
+        return email;
     }
 
     public static String convertToBase64(String str) {

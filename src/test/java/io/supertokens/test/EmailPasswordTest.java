@@ -115,7 +115,7 @@ public class EmailPasswordTest {
 
 
         normaliseEmail = io.supertokens.utils.Utils.normaliseEmail("RaNdOm@random.com");
-        assertEquals(normaliseEmail, "RaNdOm@random.com");
+        assertEquals(normaliseEmail, "random@random.com");
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
