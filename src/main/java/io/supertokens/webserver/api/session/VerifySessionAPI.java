@@ -56,10 +56,12 @@ public class VerifySessionAPI extends WebserverAPI {
         String antiCsrfToken = InputParser.parseStringOrThrowError(input, "antiCsrfToken", true);
         Boolean doAntiCsrfCheck = InputParser.parseBooleanOrThrowError(input, "doAntiCsrfCheck", false);
         assert doAntiCsrfCheck != null;
+        Boolean enableAntiCsrf = InputParser.parseBooleanOrThrowError(input, "enableAntiCsrf", false);
+        assert enableAntiCsrf != null;
 
         try {
             SessionInformationHolder sessionInfo = Session
-                    .getSession(main, accessToken, antiCsrfToken, doAntiCsrfCheck);
+                    .getSession(main, accessToken, antiCsrfToken, doAntiCsrfCheck, enableAntiCsrf);
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
             result.addProperty("status", "OK");

@@ -222,7 +222,6 @@ public class ConfigTest {
         assertEquals("Config access token validity did not match default", config.getAccessTokenValidity(),
                 3600 * 1000);
         assertFalse("Config access token blacklisting did not match default", config.getAccessTokenBlacklisting());
-        assertFalse("Config enable anti CSRF did not match default", config.getEnableAntiCSRF());
         assertEquals("Config refresh token validity did not match default", config.getRefreshTokenValidity(),
                 60 * 2400 * 60 * (long) 1000);
         assertEquals("Config info log path did not match default", config.getInfoLogPath(process.getProcess()),

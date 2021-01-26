@@ -38,9 +38,6 @@ public class CoreConfig {
     private boolean access_token_blacklisting = false;
 
     @JsonProperty
-    private boolean enable_anti_csrf = false;
-
-    @JsonProperty
     private double refresh_token_validity = 60 * 2400; // in mins
 
 
@@ -90,10 +87,6 @@ public class CoreConfig {
 
     public boolean getAccessTokenBlacklisting() {
         return access_token_blacklisting;
-    }
-
-    public boolean getEnableAntiCSRF() {
-        return enable_anti_csrf;
     }
 
     public long getRefreshTokenValidity() {

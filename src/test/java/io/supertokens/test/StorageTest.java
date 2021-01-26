@@ -654,6 +654,7 @@ public class StorageTest {
         request.addProperty("userId", userId);
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
+        request.addProperty("enableAntiCsrf", false);
 
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -684,6 +685,7 @@ public class StorageTest {
         JsonObject jsonBody = new JsonObject();
         jsonBody.addProperty("refreshToken",
                 sessionCreated.get("refreshToken").getAsJsonObject().get("token").getAsString());
+        jsonBody.addProperty("enableAntiCsrf", false);
 
         storage.setStorageLayerEnabled(false);
 

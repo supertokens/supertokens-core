@@ -54,12 +54,13 @@ public class Session {
 
     public static SessionInformationHolder createNewSession(Main main, @Nonnull String userId,
                                                             @Nonnull JsonObject userDataInJWT,
-                                                            @Nonnull JsonObject userDataInDatabase)
+                                                            @Nonnull JsonObject userDataInDatabase,
+                                                            @Nonnull Boolean enableAntiCsrf)
             throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
         String sessionHandle = UUID.randomUUID().toString();
-        String antiCsrfToken = Config.getConfig(main).getEnableAntiCSRF() ? UUID.randomUUID().toString() : null;
+        String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
         final TokenInfo refreshToken = RefreshToken
                 .createNewRefreshToken(main, sessionHandle, userId, null, antiCsrfToken);
 
@@ -135,15 +136,15 @@ public class Session {
 
     // pass antiCsrfToken to disable csrf check for this request
     public static SessionInformationHolder getSession(Main main, @Nonnull String token, @Nullable String antiCsrfToken,
-                                                      boolean allowAntiCsrf)
+                                                      @Nonnull Boolean enableAntiCsrf, Boolean allowAntiCsrf)
             throws StorageQueryException
             , StorageTransactionLogicException,
             TryRefreshTokenException, UnauthorisedException {
 
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessToken(main, token, allowAntiCsrf &&
-                Config.getConfig(main).getEnableAntiCSRF());
+                enableAntiCsrf);
 
-        if (Config.getConfig(main).getEnableAntiCSRF() && allowAntiCsrf && (antiCsrfToken == null
+        if (enableAntiCsrf && allowAntiCsrf && (antiCsrfToken == null
                 || !antiCsrfToken.equals(accessToken.antiCsrfToken))) {
             throw new TryRefreshTokenException("anti-csrf check failed");
         }
@@ -297,23 +298,24 @@ public class Session {
     }
 
     public static SessionInformationHolder refreshSession(Main main, @Nonnull String refreshToken,
-                                                          @Nullable String antiCsrfToken)
+                                                          @Nullable String antiCsrfToken,
+                                                          @Nonnull Boolean enableAntiCsrf)
             throws StorageTransactionLogicException, UnauthorisedException, StorageQueryException,
             TokenTheftDetectedException {
         RefreshToken.RefreshTokenInfo refreshTokenInfo = RefreshToken.getInfoFromRefreshToken(main, refreshToken);
 
-        if (Config.getConfig(main).getEnableAntiCSRF() && refreshTokenInfo.antiCsrfToken != null) {
+        if (enableAntiCsrf && refreshTokenInfo.antiCsrfToken != null) {
             // anti csrf is enabled, and the refresh token contains an anticsrf token (it's not the older version)
             if (!refreshTokenInfo.antiCsrfToken.equals(antiCsrfToken)) {
                 throw new UnauthorisedException("Anti CSRF token missing, or not matching");
             }
         }
 
-        return refreshSessionHelper(main, refreshToken, refreshTokenInfo);
+        return refreshSessionHelper(main, refreshToken, refreshTokenInfo, enableAntiCsrf);
     }
 
     private static SessionInformationHolder refreshSessionHelper(Main main, String refreshToken,
-                                                                 RefreshToken.RefreshTokenInfo refreshTokenInfo)
+                                                                 RefreshToken.RefreshTokenInfo refreshTokenInfo, Boolean enableAntiCsrf)
             throws StorageTransactionLogicException, UnauthorisedException, StorageQueryException,
             TokenTheftDetectedException {
         //////////////////////////////////////////SQL/////////////////////////////////////////////
@@ -340,7 +342,7 @@ public class Session {
                             // at this point, the input refresh token is the parent one.
                             storage.commitTransaction(con);
                             String antiCsrfToken =
-                                    Config.getConfig(main).getEnableAntiCSRF() ? UUID.randomUUID().toString() : null;
+                                    enableAntiCsrf ? UUID.randomUUID().toString() : null;
                             final TokenInfo newRefreshToken = RefreshToken
                                     .createNewRefreshToken(main, sessionHandle, sessionInfo.userId,
                                             Utils.hashSHA256(refreshToken), antiCsrfToken);
@@ -377,7 +379,7 @@ public class Session {
 
                             storage.commitTransaction(con);
 
-                            return refreshSessionHelper(main, refreshToken, refreshTokenInfo);
+                            return refreshSessionHelper(main, refreshToken, refreshTokenInfo, enableAntiCsrf);
                         }
 
                         storage.commitTransaction(con);
@@ -421,7 +423,7 @@ public class Session {
                     if (sessionInfo.refreshTokenHash2.equals(Utils.hashSHA256(Utils.hashSHA256(refreshToken)))) {
                         // at this point, the input refresh token is the parent one.
                         String antiCsrfToken =
-                                Config.getConfig(main).getEnableAntiCSRF() ? UUID.randomUUID().toString() : null;
+                                enableAntiCsrf ? UUID.randomUUID().toString() : null;
 
                         final TokenInfo newRefreshToken = RefreshToken
                                 .createNewRefreshToken(main, sessionHandle, sessionInfo.userId,
@@ -457,7 +459,7 @@ public class Session {
                         if (!success) {
                             continue;
                         }
-                        return refreshSessionHelper(main, refreshToken, refreshTokenInfo);
+                        return refreshSessionHelper(main, refreshToken, refreshTokenInfo, enableAntiCsrf);
                     }
 
                     throw new TokenTheftDetectedException(sessionHandle, sessionInfo.userId);

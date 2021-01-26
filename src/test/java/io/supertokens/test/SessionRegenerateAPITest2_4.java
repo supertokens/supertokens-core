@@ -61,11 +61,12 @@ public class SessionRegenerateAPITest2_4 {
         request.addProperty("userId", userId);
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
+        request.addProperty("enableAntiCsrf", false);
 
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_4ForTests());
+                        null, Utils.getCdiVersion2_6ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
@@ -81,7 +82,7 @@ public class SessionRegenerateAPITest2_4 {
 
         JsonObject sessionRegenerateResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/regenerate",
-                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_4ForTests());
+                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
 
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
 
@@ -126,11 +127,12 @@ public class SessionRegenerateAPITest2_4 {
         request.addProperty("userId", userId);
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
+        request.addProperty("enableAntiCsrf", false);
 
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_4ForTests());
+                        null, Utils.getCdiVersion2_6ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
@@ -148,7 +150,7 @@ public class SessionRegenerateAPITest2_4 {
 
         JsonObject sessionRegenerateResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/regenerate",
-                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_4ForTests());
+                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
 
         //session object and all has new payload info
@@ -186,11 +188,12 @@ public class SessionRegenerateAPITest2_4 {
         request.addProperty("userId", userId);
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
+        request.addProperty("enableAntiCsrf", false);
 
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_4ForTests());
+                        null, Utils.getCdiVersion2_6ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
@@ -202,7 +205,7 @@ public class SessionRegenerateAPITest2_4 {
 
         JsonObject sessionRemovedResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/remove",
-                        removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_4ForTests());
+                        removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
         assertEquals(sessionRemovedResponse.get("status").getAsString(), "OK");
 
 
@@ -216,7 +219,7 @@ public class SessionRegenerateAPITest2_4 {
 
         JsonObject sessionRegenerateResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/regenerate",
-                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_4ForTests());
+                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
 
         //throws UNAUTHORISED response.
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "UNAUTHORISED");

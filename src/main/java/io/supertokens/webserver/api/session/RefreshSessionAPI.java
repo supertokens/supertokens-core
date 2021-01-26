@@ -51,11 +51,13 @@ public class RefreshSessionAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String refreshToken = InputParser.parseStringOrThrowError(input, "refreshToken", false);
         String antiCsrfToken = InputParser.parseStringOrThrowError(input, "antiCsrfToken", true);
+        Boolean enableAntiCsrf = InputParser.parseBooleanOrThrowError(input, "enableAntiCsrf", false);
+        assert enableAntiCsrf != null;
         assert refreshToken != null;
 
         try {
             SessionInformationHolder sessionInfo = Session
-                    .refreshSession(main, refreshToken, antiCsrfToken);
+                    .refreshSession(main, refreshToken, antiCsrfToken, enableAntiCsrf);
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);

@@ -73,7 +73,7 @@ public class UsersAPITest2_5 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_4ForTests());
+                                null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -90,7 +90,7 @@ public class UsersAPITest2_5 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_4ForTests());
+                                null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -108,7 +108,7 @@ public class UsersAPITest2_5 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_4ForTests());
+                                null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -126,7 +126,7 @@ public class UsersAPITest2_5 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_4ForTests());
+                                null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -143,7 +143,7 @@ public class UsersAPITest2_5 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_4ForTests());
+                                null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -161,7 +161,7 @@ public class UsersAPITest2_5 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_4ForTests());
+                                null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&

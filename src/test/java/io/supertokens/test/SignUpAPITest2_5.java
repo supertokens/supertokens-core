@@ -71,7 +71,7 @@ public class SignUpAPITest2_5 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signup", null, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_5ForTests());
+                                null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -87,7 +87,7 @@ public class SignUpAPITest2_5 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signup", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_5ForTests());
+                                null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -104,7 +104,7 @@ public class SignUpAPITest2_5 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signup", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_5ForTests());
+                                null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -151,7 +151,7 @@ public class SignUpAPITest2_5 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signin", responseBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_5ForTests());
+                        null, Utils.getCdiVersion2_6ForTests());
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");
         assertEquals(signInResponse.entrySet().size(), 2);

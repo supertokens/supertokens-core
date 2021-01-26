@@ -59,7 +59,7 @@ public class HandshakeAPITest2_4 {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_4ForTests());
+                            null, Utils.getCdiVersion2_6ForTests());
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 &&
                     e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
@@ -96,9 +96,9 @@ public class HandshakeAPITest2_4 {
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                         deviceDriverInfo,
                         1000, 1000,
-                        null, Utils.getCdiVersion2_4ForTests());
+                        null, Utils.getCdiVersion2_6ForTests());
         checkHandshakeAPIResponse(handshakeResponse, process);
-        assertEquals(handshakeResponse.entrySet().size(), 7);
+        assertEquals(handshakeResponse.entrySet().size(), 6);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -134,9 +134,9 @@ public class HandshakeAPITest2_4 {
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                         deviceDriverInfo,
                         1000, 1000,
-                        null, Utils.getCdiVersion2_4ForTests());
+                        null, Utils.getCdiVersion2_6ForTests());
         checkHandshakeAPIResponse(handshakeResponse, process);
-        assertEquals(handshakeResponse.entrySet().size(), 7);
+        assertEquals(handshakeResponse.entrySet().size(), 6);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -165,10 +165,10 @@ public class HandshakeAPITest2_4 {
                 "}";
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
-                        new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_4ForTests());
+                        new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
 
 
-        assertEquals(response.entrySet().size(), 7);
+        assertEquals(response.entrySet().size(), 6);
 
         assertEquals(response.get("jwtSigningPublicKey").getAsString(),
                 AccessTokenSigningKey.getInstance(process.getProcess()).getKey().publicKey);
@@ -177,9 +177,9 @@ public class HandshakeAPITest2_4 {
 
         JsonObject changedResponse = io.supertokens.test.httpRequest
                 .HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
-                        new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_4ForTests());
+                        new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
 
-        assertEquals(changedResponse.entrySet().size(), 7);
+        assertEquals(changedResponse.entrySet().size(), 6);
 
         //check that changed response has the same signing key as the current signing key and it is different from
         // the previous signing key
@@ -206,11 +206,6 @@ public class HandshakeAPITest2_4 {
         //check jwtSigningPublicKeyExpiryTime
         assertEquals(response.get("jwtSigningPublicKeyExpiryTime").getAsLong(),
                 AccessTokenSigningKey.getInstance(process.getProcess()).getKeyExpiryTime());
-
-
-        //check enableAntiCsrf
-        assertEquals(response.get("enableAntiCsrf").getAsBoolean(),
-                Config.getConfig(process.getProcess()).getEnableAntiCSRF());
 
         //check accessTokenBlacklistingEnabled
         assertEquals(response.get("accessTokenBlacklistingEnabled").getAsBoolean(),

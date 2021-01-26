@@ -62,7 +62,7 @@ public class JWTDataTest {
 
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         // verify to see payload is proper
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
@@ -100,7 +100,7 @@ public class JWTDataTest {
 
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         // verify to see payload is proper
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
@@ -136,7 +136,7 @@ public class JWTDataTest {
 
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         // verify to see payload is proper
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
@@ -172,7 +172,7 @@ public class JWTDataTest {
 
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         //let it expire, remove from db
 
@@ -217,7 +217,7 @@ public class JWTDataTest {
 
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         //let it expire, remove from db
 
@@ -255,7 +255,7 @@ public class JWTDataTest {
 
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         assert sessionInfo.accessToken != null;
 
@@ -265,7 +265,7 @@ public class JWTDataTest {
         Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJWT, null);
 
         SessionInformationHolder newInfo = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
-                sessionInfo.antiCsrfToken, true);
+                sessionInfo.antiCsrfToken, false, true);
 
         assertNull(ProcessState.getInstance(process.getProcess())
                 .getLastEventByName(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
@@ -295,7 +295,7 @@ public class JWTDataTest {
 
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         assert sessionInfo.accessToken != null;
 
@@ -305,7 +305,7 @@ public class JWTDataTest {
         Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJWT, null);
 
         SessionInformationHolder newInfo = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
-                sessionInfo.antiCsrfToken, true);
+                sessionInfo.antiCsrfToken, false, true);
 
         assertNotNull(ProcessState.getInstance(process.getProcess())
                 .getLastEventByName(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
@@ -335,18 +335,18 @@ public class JWTDataTest {
 
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         assert sessionInfo.accessToken != null;
         assert sessionInfo.refreshToken != null;
 
         SessionInformationHolder refreshedSession = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
 
         assert refreshedSession.accessToken != null;
 
         SessionInformationHolder newInfo = Session.getSession(process.getProcess(), refreshedSession.accessToken.token,
-                refreshedSession.antiCsrfToken, true);
+                refreshedSession.antiCsrfToken, false, true);
 
         assertNotNull(ProcessState.getInstance(process.getProcess())
                 .getLastEventByName(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
@@ -357,7 +357,7 @@ public class JWTDataTest {
         ProcessState.getInstance(process.getProcess()).clear();
 
         SessionInformationHolder newInfo2 = Session.getSession(process.getProcess(), newInfo.accessToken.token,
-                newInfo.antiCsrfToken, true);
+                newInfo.antiCsrfToken, false, true);
 
         assertNull(ProcessState.getInstance(process.getProcess())
                 .getLastEventByName(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
@@ -387,18 +387,18 @@ public class JWTDataTest {
 
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         assert sessionInfo.accessToken != null;
         assert sessionInfo.refreshToken != null;
 
         SessionInformationHolder refreshedSession = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
 
         assert refreshedSession.accessToken != null;
 
         SessionInformationHolder newInfo = Session.getSession(process.getProcess(), refreshedSession.accessToken.token,
-                refreshedSession.antiCsrfToken, true);
+                refreshedSession.antiCsrfToken, false, true);
 
         assertNotNull(ProcessState.getInstance(process.getProcess())
                 .getLastEventByName(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
@@ -409,7 +409,7 @@ public class JWTDataTest {
         ProcessState.getInstance(process.getProcess()).clear();
 
         SessionInformationHolder newInfo2 = Session.getSession(process.getProcess(), newInfo.accessToken.token,
-                newInfo.antiCsrfToken, true);
+                newInfo.antiCsrfToken, false, true);
 
         assertNull(ProcessState.getInstance(process.getProcess())
                 .getLastEventByName(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
@@ -439,7 +439,7 @@ public class JWTDataTest {
 
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         assert sessionInfo.accessToken != null;
 
@@ -452,7 +452,7 @@ public class JWTDataTest {
         assert sessionInfo.accessToken != null;
 
         SessionInformationHolder newInfo = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
-                sessionInfo.antiCsrfToken, true);
+                sessionInfo.antiCsrfToken, false,true);
 
         assertNull(ProcessState.getInstance(process.getProcess())
                 .getLastEventByName(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));

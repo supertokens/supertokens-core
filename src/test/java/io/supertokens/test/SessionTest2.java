@@ -83,22 +83,22 @@ public class SessionTest2 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
-                userDataInDatabase);
+                userDataInDatabase, false);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
 
         SessionInformationHolder newRefreshedSession = Session
-                .refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
+                .refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
         assert newRefreshedSession.refreshToken != null;
         assert newRefreshedSession.accessToken != null;
 
         SessionInformationHolder sessionObj = Session
-                .getSession(main, newRefreshedSession.accessToken.token, newRefreshedSession.antiCsrfToken, true);
+                .getSession(main, newRefreshedSession.accessToken.token, newRefreshedSession.antiCsrfToken, false, true);
         assert sessionObj.accessToken != null;
         assertNotEquals(sessionObj.accessToken.token, newRefreshedSession.accessToken.token);
 
         try {
-            Session.refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
+            Session.refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
         } catch (TokenTheftDetectedException e) {
             assertEquals(e.sessionHandle, sessionInfo.session.handle);
             assertEquals(e.userId, sessionInfo.session.userId);
@@ -130,22 +130,22 @@ public class SessionTest2 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
-                userDataInDatabase);
+                userDataInDatabase, false);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
 
         SessionInformationHolder newRefreshedSession1 = Session
-                .refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
+                .refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
         assert newRefreshedSession1.refreshToken != null;
         assert newRefreshedSession1.accessToken != null;
 
         SessionInformationHolder newRefreshedSession2 = Session
-                .refreshSession(main, newRefreshedSession1.refreshToken.token, newRefreshedSession1.antiCsrfToken);
+                .refreshSession(main, newRefreshedSession1.refreshToken.token, newRefreshedSession1.antiCsrfToken, false);
         assert newRefreshedSession2.refreshToken != null;
         assert newRefreshedSession2.accessToken != null;
 
         try {
-            Session.refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
+            Session.refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
         } catch (TokenTheftDetectedException e) {
             assertEquals(e.sessionHandle, sessionInfo.session.handle);
             assertEquals(e.userId, sessionInfo.session.userId);
@@ -174,7 +174,7 @@ public class SessionTest2 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase);
+                userDataInDatabase, false);
 
         JsonObject sessionDataBeforeUpdate = Session.getSessionData(process.getProcess(), sessionInfo.session.handle);
         assertEquals(userDataInDatabase.toString(), sessionDataBeforeUpdate.toString());
@@ -215,12 +215,12 @@ public class SessionTest2 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase);
+                userDataInDatabase, false);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
 
         Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase);
+                userDataInDatabase, false);
 
         assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 2);
 
@@ -228,14 +228,14 @@ public class SessionTest2 {
         assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
 
         try {
-            Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
+            Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
             fail();
         } catch (UnauthorisedException e) {
 
         }
 
         SessionInformationHolder verifiedSession = Session
-                .getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, true);
+                .getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false,true);
         assertEquals(verifiedSession.session.userId, sessionInfo.session.userId);
         assertEquals(verifiedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
 

@@ -61,7 +61,7 @@ public class GeneratePasswordResetTokenAPITest2_4 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset/token", null, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_4ForTests());
+                                null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -76,7 +76,7 @@ public class GeneratePasswordResetTokenAPITest2_4 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_4ForTests());
+                                null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -95,7 +95,7 @@ public class GeneratePasswordResetTokenAPITest2_4 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_4ForTests());
+                                null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -133,7 +133,7 @@ public class GeneratePasswordResetTokenAPITest2_4 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_4ForTests());
+                        null, Utils.getCdiVersion2_6ForTests());
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertNotNull(response.get("token"));
@@ -163,7 +163,7 @@ public class GeneratePasswordResetTokenAPITest2_4 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_4ForTests());
+                        null, Utils.getCdiVersion2_6ForTests());
 
         assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
         assertEquals(response.entrySet().size(), 1);

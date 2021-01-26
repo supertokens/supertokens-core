@@ -67,7 +67,7 @@ public class UsersCountAPITest2_5 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users/count", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_4ForTests());
+                            null, Utils.getCdiVersion2_6ForTests());
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 0);
         }
