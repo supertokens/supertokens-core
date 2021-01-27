@@ -51,7 +51,6 @@ public class HandshakeAPI extends WebserverAPI {
             result.addProperty("jwtSigningPublicKey", AccessTokenSigningKey.getInstance(main).getKey().publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
                     AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
-            result.addProperty("enableAntiCsrf", Config.getConfig(main).getEnableAntiCSRF());
             result.addProperty("accessTokenBlacklistingEnabled", Config.getConfig(main).getAccessTokenBlacklisting());
             result.addProperty("accessTokenValidity", Config.getConfig(main).getAccessTokenValidity());
             result.addProperty("refreshTokenValidity", Config.getConfig(main).getRefreshTokenValidity());

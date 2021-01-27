@@ -77,7 +77,7 @@ public class AccessTokenTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         //expire
         Thread.sleep(2000);
@@ -114,7 +114,7 @@ public class AccessTokenTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         assert sessionInfo.accessToken != null;
         AccessTokenInfo accessTokenInfo = AccessToken
@@ -131,7 +131,6 @@ public class AccessTokenTest {
         AccessTokenInfo customAccessToken = AccessToken
                 .getInfoFromAccessTokenWithoutVerifying(newAccessTokenInfo.token);
         assertEquals(customAccessToken.expiryTime, value);
-
 
     }
 
@@ -151,7 +150,7 @@ public class AccessTokenTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfo = AccessToken
@@ -161,7 +160,6 @@ public class AccessTokenTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-
 
     }
 

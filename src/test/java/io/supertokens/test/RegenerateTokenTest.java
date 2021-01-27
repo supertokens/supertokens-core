@@ -62,7 +62,7 @@ public class RegenerateTokenTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken
@@ -80,7 +80,7 @@ public class RegenerateTokenTest {
         //Verify
         assert newSessionInfo.accessToken != null;
         SessionInformationHolder getSessionResponse = Session
-                .getSession(process.getProcess(), newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, true);
+                .getSession(process.getProcess(), newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
 
         // check payload and lmrt is different.
         assertEquals(getSessionResponse.session.userDataInJWT, newUserDataInJWT);
@@ -113,7 +113,7 @@ public class RegenerateTokenTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken
@@ -131,7 +131,7 @@ public class RegenerateTokenTest {
         //Verify
         assert newSessionInfo.accessToken != null;
         SessionInformationHolder getSessionResponse = Session
-                .getSession(process.getProcess(), newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, true);
+                .getSession(process.getProcess(), newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
         assertEquals(getSessionResponse.session.userDataInJWT, emptyUserDataInJWT);
 
         AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken
@@ -163,7 +163,7 @@ public class RegenerateTokenTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken
@@ -179,7 +179,7 @@ public class RegenerateTokenTest {
 
         assert newSessionInfo.accessToken != null;
         SessionInformationHolder getSessionResponse = Session
-                .getSession(process.getProcess(), newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, true);
+                .getSession(process.getProcess(), newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false,true);
 
         assertEquals(getSessionResponse.session.userDataInJWT, userDataInJWT);
 
@@ -215,7 +215,7 @@ public class RegenerateTokenTest {
 
         //- create session with some payload
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken
@@ -239,14 +239,14 @@ public class RegenerateTokenTest {
 
         assert sessionInfo.refreshToken != null;
         SessionInformationHolder refreshSessionInfo = Session
-                .refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
+                .refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
 
         //Verify
         assert refreshSessionInfo.accessToken != null;
         SessionInformationHolder getSessionResponse = Session
                 .getSession(process.getProcess(), refreshSessionInfo.accessToken.token,
                         refreshSessionInfo.antiCsrfToken,
-                        true);
+                        false, true);
 
         assertEquals(getSessionResponse.session.userDataInJWT, newUserDataInJWT);
 
@@ -288,7 +288,7 @@ public class RegenerateTokenTest {
 
         //- create session with some payload
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken
@@ -312,14 +312,14 @@ public class RegenerateTokenTest {
         // refresh
         assert sessionInfo.refreshToken != null;
         SessionInformationHolder refreshSessionInfo = Session
-                .refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
+                .refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
 
         //Verify
         assert refreshSessionInfo.accessToken != null;
         SessionInformationHolder getSessionResponse = Session
                 .getSession(process.getProcess(), refreshSessionInfo.accessToken.token,
                         refreshSessionInfo.antiCsrfToken,
-                        true);
+                        false, true);
 
         assertEquals(getSessionResponse.session.userDataInJWT, newUserDataInJWT);
 
@@ -356,7 +356,7 @@ public class RegenerateTokenTest {
 
         //- create session with some payload
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         //verify payload exists
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
@@ -400,7 +400,7 @@ public class RegenerateTokenTest {
 
         //- create session with some payload
         SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken
@@ -411,7 +411,7 @@ public class RegenerateTokenTest {
 
         //verify
         SessionInformationHolder getSession = Session
-                .getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, true);
+                .getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false,true);
         assertEquals(getSession.session.userDataInJWT, userDataInJWT);
 
         AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken
@@ -425,7 +425,7 @@ public class RegenerateTokenTest {
         //refresh
         assert sessionInfo.refreshToken != null;
         SessionInformationHolder refreshSessionInfo = Session
-                .refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken);
+                .refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
 
 
         assert refreshSessionInfo.accessToken != null;
@@ -445,7 +445,7 @@ public class RegenerateTokenTest {
         getSession = Session
                 .getSession(process.getProcess(), refreshSessionInfo.accessToken.token,
                         refreshSessionInfo.antiCsrfToken,
-                        true);
+                        false, true);
 
         assert getSession.accessToken != null;
 

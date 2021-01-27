@@ -37,7 +37,7 @@ import static org.junit.Assert.assertTrue;
  *  - add users and check if the number of users returned by the API is correct
  * */
 
-public class UsersCountAPITest2_5 {
+public class UsersCountAPITest2_6 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -67,7 +67,7 @@ public class UsersCountAPITest2_5 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users/count", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_4ForTests());
+                            null, Utils.getCdiVersion2_6ForTests());
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 0);
         }

@@ -160,6 +160,7 @@ public class APIKeysTest {
         request.addProperty("userId", userId);
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
+        request.addProperty("enableAntiCsrf", false);
 
         try {
             HttpRequest
@@ -255,6 +256,7 @@ public class APIKeysTest {
         request.addProperty("userId", userId);
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
+        request.addProperty("enableAntiCsrf", false);
 
         // check that any one of the keys can be used
         JsonObject sessionInfo = HttpRequest
@@ -337,6 +339,7 @@ public class APIKeysTest {
         request.addProperty("userId", userId);
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
+        request.addProperty("enableAntiCsrf", false);
 
         // check that any one of the keys can be used
         JsonObject sessionInfo = HttpRequest

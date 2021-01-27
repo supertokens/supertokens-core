@@ -38,7 +38,7 @@ import static org.junit.Assert.*;
  *  - Test that an empty password yields a WRONG_CREDENTIALS_ERROR output.
  * */
 
-public class SignInAPITest2_5 {
+public class SignInAPITest2_6 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -71,7 +71,7 @@ public class SignInAPITest2_5 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signin", null, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_5ForTests());
+                                null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -87,7 +87,7 @@ public class SignInAPITest2_5 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signin", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_5ForTests());
+                                null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -104,7 +104,7 @@ public class SignInAPITest2_5 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signin", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_5ForTests());
+                                null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -144,7 +144,7 @@ public class SignInAPITest2_5 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signin", responseBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_5ForTests());
+                        null, Utils.getCdiVersion2_6ForTests());
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");
         assertEquals(signInResponse.entrySet().size(), 2);
@@ -186,7 +186,7 @@ public class SignInAPITest2_5 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signin", responseBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_5ForTests());
+                        null, Utils.getCdiVersion2_6ForTests());
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");
         assertEquals(signInResponse.entrySet().size(), 2);
@@ -223,7 +223,7 @@ public class SignInAPITest2_5 {
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/signin", responseBody, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_5ForTests());
+                            null, Utils.getCdiVersion2_6ForTests());
 
             assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
             assertEquals(signInResponse.entrySet().size(), 1);
@@ -238,7 +238,7 @@ public class SignInAPITest2_5 {
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/signin", responseBody, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_5ForTests());
+                            null, Utils.getCdiVersion2_6ForTests());
 
             assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
             assertEquals(signInResponse.entrySet().size(), 1);
@@ -253,7 +253,7 @@ public class SignInAPITest2_5 {
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/signin", responseBody, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_5ForTests());
+                            null, Utils.getCdiVersion2_6ForTests());
 
             assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
             assertEquals(signInResponse.entrySet().size(), 1);
@@ -272,7 +272,7 @@ public class SignInAPITest2_5 {
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/signin", responseBody, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_5ForTests());
+                            null, Utils.getCdiVersion2_6ForTests());
 
             assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
             assertEquals(signInResponse.entrySet().size(), 1);

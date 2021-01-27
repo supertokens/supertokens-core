@@ -58,6 +58,8 @@ public class SessionAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         assert userId != null;
+        Boolean enableAntiCsrf = InputParser.parseBooleanOrThrowError(input, "enableAntiCsrf", false);
+        assert enableAntiCsrf != null;
         JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", false);
         assert userDataInJWT != null;
         JsonObject userDataInDatabase = InputParser.parseJsonObjectOrThrowError(input, "userDataInDatabase", false);
@@ -65,7 +67,7 @@ public class SessionAPI extends WebserverAPI {
 
         try {
             SessionInformationHolder sessionInfo = Session
-                    .createNewSession(main, userId, userDataInJWT, userDataInDatabase);
+                    .createNewSession(main, userId, userDataInJWT, userDataInDatabase, enableAntiCsrf);
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
 
