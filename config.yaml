@@ -36,11 +36,6 @@ core_config_version: 0
 # access_token_signing_key_update_interval:
 
 
-# (OPTIONAL | Default: false) boolean value. By default, sameSite is "lax", so we do not need to explicitly use
-# an anti-CSRF token.
-# enable_anti_csrf:
-
-
 # (OPTIONAL | Default: 144000) double value. Time in mins for how long a refresh token is valid for.
 # refresh_token_validity:
 
