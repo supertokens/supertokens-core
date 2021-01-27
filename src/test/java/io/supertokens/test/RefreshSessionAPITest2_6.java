@@ -30,7 +30,7 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-public class RefreshSessionAPITest2_4 {
+public class RefreshSessionAPITest2_6 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

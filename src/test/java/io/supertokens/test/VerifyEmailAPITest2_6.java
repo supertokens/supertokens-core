@@ -18,7 +18,6 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
@@ -29,7 +28,7 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
-public class GenerateEmailVerificationTokenAPITest2_5 {
+public class VerifyEmailAPITest2_6 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -55,12 +54,11 @@ public class GenerateEmailVerificationTokenAPITest2_5 {
             return;
         }
 
-        // not passing userID
         {
             try {
                 io.supertokens.test.httpRequest.HttpRequest
                         .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user/email/verify/token", null, 1000,
+                                "http://localhost:3567/recipe/user/email/verify", null, 1000,
                                 1000,
                                 null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
@@ -75,35 +73,37 @@ public class GenerateEmailVerificationTokenAPITest2_5 {
             try {
                 io.supertokens.test.httpRequest.HttpRequest
                         .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
+                                "http://localhost:3567/recipe/user/email/verify", requestBody, 1000,
                                 1000,
                                 null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
                         e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'userId' is invalid in " +
+                                .equals("Http error. Status Code: 400. Message: Field name 'method' is invalid in " +
                                         "JSON input"));
             }
         }
 
         {
             JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("userId", 12345);
+            requestBody.addProperty("method", "token");
+            requestBody.addProperty("token", 12345);
             try {
                 io.supertokens.test.httpRequest.HttpRequest
                         .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
+                                "http://localhost:3567/recipe/user/email/verify", requestBody, 1000,
                                 1000,
                                 null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
                         e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'userId' is invalid in " +
+                                .equals("Http error. Status Code: 400. Message: Field name 'token' is invalid in " +
                                         "JSON input"));
             }
         }
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -139,6 +139,23 @@ public class GenerateEmailVerificationTokenAPITest2_5 {
         assertEquals(response.get("status").getAsString(), "OK");
         assertNotNull(response.get("token"));
 
+        JsonObject verifyResponseBody = new JsonObject();
+        verifyResponseBody.addProperty("method", "token");
+        verifyResponseBody.addProperty("token", response.get("token").getAsString());
+
+        JsonObject response2 = io.supertokens.test.httpRequest.HttpRequest
+                .sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/email/verify", verifyResponseBody, 1000,
+                        1000,
+                        null, Utils.getCdiVersion2_6ForTests());
+
+        assertEquals(response2.entrySet().size(), 2);
+        assertEquals(response2.get("status").getAsString(), "OK");
+
+        assertEquals(response2.get("user").getAsJsonObject().entrySet().size(), 3);
+        assertEquals(response2.get("user").getAsJsonObject().get("id").getAsString(), userId);
+        assertEquals(response2.get("user").getAsJsonObject().get("email").getAsString(), "random@gmail.com");
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -155,51 +172,42 @@ public class GenerateEmailVerificationTokenAPITest2_5 {
             return;
         }
 
-        // user does not exist
+        // using incorrect method
         {
             JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("userId", "randomUserId");
+            requestBody.addProperty("method", "invalidMethod");
+            requestBody.addProperty("token", "randomToken");
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_6ForTests());
-            assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendJsonPOSTRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/user/email/verify", requestBody, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_6ForTests());
+                throw new Exception("Should not have come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage()
+                        .equals("Http error. Status Code: 400. Message: Unsupported method for email verification"));
+            }
         }
 
-        // user exists but email already verified
+        // passing invalid token
         {
-            JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "random@gmail.com", "validPass123");
-            assertEquals(signUpResponse.get("status").getAsString(), "OK");
-            assertEquals(signUpResponse.entrySet().size(), 2);
-
-            String userId = signUpResponse.get("user").getAsJsonObject().get("id").getAsString();
             JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("userId", userId);
-
-
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_6ForTests());
-
-            assertEquals(response.entrySet().size(), 2);
-            assertEquals(response.get("status").getAsString(), "OK");
-            assertNotNull(response.get("token"));
-
-            EmailPassword.verifyEmail(process.getProcess(), response.get("token").getAsString());
+            requestBody.addProperty("method", "token");
+            requestBody.addProperty("token", "invalidToken");
 
             JsonObject response2 = io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
+                            "http://localhost:3567/recipe/user/email/verify", requestBody, 1000,
                             1000,
                             null, Utils.getCdiVersion2_6ForTests());
-            assertEquals(response2.get("status").getAsString(), "EMAIL_ALREADY_VERIFIED_ERROR");
+            assertEquals(response2.get("status").getAsString(), "EMAIL_VERIFICATION_INVALID_TOKEN_ERROR");
+            assertEquals(response2.entrySet().size(), 1);
         }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
 }

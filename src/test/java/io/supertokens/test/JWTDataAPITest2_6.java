@@ -31,7 +31,7 @@ import java.util.HashMap;
 import static org.junit.Assert.*;
 
 
-public class JWTDataAPITest2_4 {
+public class JWTDataAPITest2_6 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();

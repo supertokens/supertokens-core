@@ -28,7 +28,7 @@ import org.junit.rules.TestRule;
 import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotNull;
 
-public class VerifySessionAPITest2_4 {
+public class VerifySessionAPITest2_6 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

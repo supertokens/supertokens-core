@@ -36,6 +36,7 @@ import io.supertokens.session.info.TokenInfo;
 import io.supertokens.session.refreshToken.RefreshToken;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -52,10 +53,20 @@ import java.util.UUID;
 
 public class Session {
 
+    @TestOnly
+    public static SessionInformationHolder createNewSession(Main main, @Nonnull String userId,
+                                                            @Nonnull JsonObject userDataInJWT,
+                                                            @Nonnull JsonObject userDataInDatabase)
+            throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
+            InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
+            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
+        return createNewSession(main, userId, userDataInJWT, userDataInDatabase, false);
+    }
+
     public static SessionInformationHolder createNewSession(Main main, @Nonnull String userId,
                                                             @Nonnull JsonObject userDataInJWT,
                                                             @Nonnull JsonObject userDataInDatabase,
-                                                            @Nonnull Boolean enableAntiCsrf)
+                                                            boolean enableAntiCsrf)
             throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
@@ -136,15 +147,15 @@ public class Session {
 
     // pass antiCsrfToken to disable csrf check for this request
     public static SessionInformationHolder getSession(Main main, @Nonnull String token, @Nullable String antiCsrfToken,
-                                                      @Nonnull Boolean enableAntiCsrf, Boolean allowAntiCsrf)
+                                                      boolean enableAntiCsrf, Boolean doAntiCsrfCheck)
             throws StorageQueryException
             , StorageTransactionLogicException,
             TryRefreshTokenException, UnauthorisedException {
 
-        AccessTokenInfo accessToken = AccessToken.getInfoFromAccessToken(main, token, allowAntiCsrf &&
+        AccessTokenInfo accessToken = AccessToken.getInfoFromAccessToken(main, token, doAntiCsrfCheck &&
                 enableAntiCsrf);
 
-        if (enableAntiCsrf && allowAntiCsrf && (antiCsrfToken == null
+        if (enableAntiCsrf && doAntiCsrfCheck && (antiCsrfToken == null
                 || !antiCsrfToken.equals(accessToken.antiCsrfToken))) {
             throw new TryRefreshTokenException("anti-csrf check failed");
         }
@@ -299,7 +310,7 @@ public class Session {
 
     public static SessionInformationHolder refreshSession(Main main, @Nonnull String refreshToken,
                                                           @Nullable String antiCsrfToken,
-                                                          @Nonnull Boolean enableAntiCsrf)
+                                                          boolean enableAntiCsrf)
             throws StorageTransactionLogicException, UnauthorisedException, StorageQueryException,
             TokenTheftDetectedException {
         RefreshToken.RefreshTokenInfo refreshTokenInfo = RefreshToken.getInfoFromRefreshToken(main, refreshToken);
@@ -315,7 +326,7 @@ public class Session {
     }
 
     private static SessionInformationHolder refreshSessionHelper(Main main, String refreshToken,
-                                                                 RefreshToken.RefreshTokenInfo refreshTokenInfo, Boolean enableAntiCsrf)
+                                                                 RefreshToken.RefreshTokenInfo refreshTokenInfo, boolean enableAntiCsrf)
             throws StorageTransactionLogicException, UnauthorisedException, StorageQueryException,
             TokenTheftDetectedException {
         //////////////////////////////////////////SQL/////////////////////////////////////////////

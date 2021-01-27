@@ -33,7 +33,7 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 
-public class SessionRemoveAPITest2_4 {
+public class SessionRemoveAPITest2_6 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();

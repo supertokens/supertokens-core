@@ -37,7 +37,7 @@ import static org.junit.Assert.assertTrue;
  *  - add users and check if the number of users returned by the API is correct
  * */
 
-public class UsersCountAPITest2_5 {
+public class UsersCountAPITest2_6 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();

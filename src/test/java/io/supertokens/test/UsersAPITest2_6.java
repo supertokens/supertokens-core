@@ -40,7 +40,7 @@ import static org.junit.Assert.assertTrue;
  * timeJoined)
  * */
 
-public class UsersAPITest2_5 {
+public class UsersAPITest2_6 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();

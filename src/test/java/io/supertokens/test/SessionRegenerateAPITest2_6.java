@@ -29,7 +29,7 @@ import org.junit.rules.TestRule;
 import static org.junit.Assert.*;
 
 
-public class SessionRegenerateAPITest2_4 {
+public class SessionRegenerateAPITest2_6 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

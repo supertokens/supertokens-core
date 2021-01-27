@@ -34,7 +34,7 @@ import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.*;
 
-public class ConfigTest {
+public class ConfigTest2_6 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();

@@ -61,7 +61,7 @@ public class VerifySessionAPI extends WebserverAPI {
 
         try {
             SessionInformationHolder sessionInfo = Session
-                    .getSession(main, accessToken, antiCsrfToken, doAntiCsrfCheck, enableAntiCsrf);
+                    .getSession(main, accessToken, antiCsrfToken, enableAntiCsrf, doAntiCsrfCheck);
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
             result.addProperty("status", "OK");

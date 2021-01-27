@@ -35,7 +35,7 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 
-public class ConfigAPITest2_4 {
+public class ConfigAPITest2_6 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

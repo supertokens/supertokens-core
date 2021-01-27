@@ -37,7 +37,7 @@ import static org.junit.Assert.*;
  *  - Check for all types of output
  * */
 
-public class GetUserAPITest2_5 {
+public class GetUserAPITest2_6 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();

@@ -26,9 +26,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.util.HashMap;
+
 import static org.junit.Assert.*;
 
-public class VerifyEmailAPITest2_5 {
+public class IsEmailVerifiedAPITest2_6 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -57,50 +59,32 @@ public class VerifyEmailAPITest2_5 {
         {
             try {
                 io.supertokens.test.httpRequest.HttpRequest
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user/email/verify", null, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_6ForTests());
-                throw new Exception("Should not come here");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
-            }
-        }
-
-        {
-            JsonObject requestBody = new JsonObject();
-            try {
-                io.supertokens.test.httpRequest.HttpRequest
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user/email/verify", requestBody, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_6ForTests());
+                        .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
+                                null, 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
                         e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'method' is invalid in " +
-                                        "JSON input"));
+                                .equals("Http error. Status Code: 400. Message: Field name 'userId' is missing in GET" +
+                                        " request"));
             }
         }
 
         {
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("method", "token");
-            requestBody.addProperty("token", 12345);
             try {
+
+                HashMap<String, String> map = new HashMap<>();
+                map.put("randomKey", "");
+
                 io.supertokens.test.httpRequest.HttpRequest
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user/email/verify", requestBody, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_6ForTests());
+                        .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
+                                map, 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
                         e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'token' is invalid in " +
-                                        "JSON input"));
+                                .equals("Http error. Status Code: 400. Message: Field name 'userId' is missing in GET" +
+                                        " request"));
             }
         }
 
@@ -125,6 +109,18 @@ public class VerifyEmailAPITest2_5 {
         assertEquals(signUpResponse.entrySet().size(), 2);
 
         String userId = signUpResponse.get("user").getAsJsonObject().get("id").getAsString();
+
+        HashMap<String, String> map = new HashMap<>();
+        map.put("userId", userId);
+
+        JsonObject verifyResponse = io.supertokens.test.httpRequest.HttpRequest
+                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
+                        map, 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
+        assertEquals(verifyResponse.entrySet().size(), 2);
+        assertEquals(verifyResponse.get("status").getAsString(), "OK");
+        assertEquals(verifyResponse.get("isVerified").getAsBoolean(), false);
+
+
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", userId);
 
@@ -156,6 +152,13 @@ public class VerifyEmailAPITest2_5 {
         assertEquals(response2.get("user").getAsJsonObject().get("id").getAsString(), userId);
         assertEquals(response2.get("user").getAsJsonObject().get("email").getAsString(), "random@gmail.com");
 
+        verifyResponse = io.supertokens.test.httpRequest.HttpRequest
+                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
+                        map, 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
+        assertEquals(verifyResponse.entrySet().size(), 2);
+        assertEquals(verifyResponse.get("status").getAsString(), "OK");
+        assertEquals(verifyResponse.get("isVerified").getAsBoolean(), true);
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -172,42 +175,20 @@ public class VerifyEmailAPITest2_5 {
             return;
         }
 
-        // using incorrect method
+        // passing invalid userId
         {
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("method", "invalidMethod");
-            requestBody.addProperty("token", "randomToken");
-
-            try {
-                io.supertokens.test.httpRequest.HttpRequest
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user/email/verify", requestBody, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_6ForTests());
-                throw new Exception("Should not have come here");
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 && e.getMessage()
-                        .equals("Http error. Status Code: 400. Message: Unsupported method for email verification"));
-            }
-        }
-
-        // passing invalid token
-        {
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("method", "token");
-            requestBody.addProperty("token", "invalidToken");
-
+            HashMap<String, String> map = new HashMap<>();
+            map.put("userId", "randomUserId");
             JsonObject response2 = io.supertokens.test.httpRequest.HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user/email/verify", requestBody, 1000,
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/user/email/verify", map, 1000,
                             1000,
                             null, Utils.getCdiVersion2_6ForTests());
-            assertEquals(response2.get("status").getAsString(), "EMAIL_VERIFICATION_INVALID_TOKEN_ERROR");
+            assertEquals(response2.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
             assertEquals(response2.entrySet().size(), 1);
         }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
-
 }

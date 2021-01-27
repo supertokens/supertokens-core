@@ -32,7 +32,7 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
-public class HandshakeAPITest2_4 {
+public class HandshakeAPITest2_6 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

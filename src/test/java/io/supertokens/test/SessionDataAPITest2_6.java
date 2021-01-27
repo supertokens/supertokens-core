@@ -30,7 +30,7 @@ import java.util.HashMap;
 
 import static org.junit.Assert.*;
 
-public class SessionDataAPITest2_4 {
+public class SessionDataAPITest2_6 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
