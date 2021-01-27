@@ -4,11 +4,9 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
-- Normalises email by making it all lower case
-
 ## [3.2.0] - 2021-01-26
 ### Changed
+- Normalises email by making it all lower case
 - Changes in handshake API
 - Changes in config
 - Changes in session create, verify and refresh APis
