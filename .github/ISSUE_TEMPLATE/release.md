@@ -89,7 +89,7 @@ Description of the new feature
    - [ ] Deployed to [demo site](http://emailpassword.demo.supertokens.io/)
 
 - [supertokens-auth-react:master](https://github.com/supertokens/supertokens-auth-react/tree/master)
-   - Update examples to use latest `supertokens-node` and `supertokens-auth-react`
+   - [ ] Update examples to use latest `supertokens-node` and `supertokens-auth-react`
 
 ### 📚 Documentation
 
