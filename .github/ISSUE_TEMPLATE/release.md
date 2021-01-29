@@ -34,12 +34,8 @@ Description of the new feature
 
  - [supertokens-demo-react:master](https://github.com/supertokens/supertokens-nextjs-demo/tree/master)
      - [ ] In progress
-     - [ ] [PR]() Ready using supertokens/supertokens-auth-react#X.Y and supertokens/supertokens-node#X.Y github repositories in package.json
+     - [ ] [PR]() Ready using `supertokens/supertokens-auth-react#X.Y` and `supertokens/supertokens-node#X.Y` github repositories in `package.json`
      - [ ] Make changes to `master` and `deploy` branch
-
- - [supertokens-nextjs-demo:master](https://github.com/supertokens/supertokens-nextjs-demo/tree/master)
-     - [ ] In progress
-     - [ ] [PR]() Ready using supertokens/supertokens-auth-react#X.Y and supertokens/supertokens-node#X.Y github repositories in package.json
 
 ### 📚 Documentation
 
@@ -88,18 +84,12 @@ Description of the new feature
 
 ### 🔀 Others
 
- - [supertokens-react-themes:X.Y](https://github.com/supertokens/supertokens-react-themes/tree/X.Y)
-   - [ ] Updated [PR]() with `supertokens-auth-react` from npm registry
-   - [ ] Release [theme demo app](https://supertokens-react-themes.surge.sh) on surge using `npm run surge`
-   - [ ] Published to npm registry
-
 - [supertokens-demo-react:master](https://github.com/supertokens/supertokens-nextjs-demo/tree/master)
    - [ ] Updated [PR]() using `supertokens-node` and `supertokens-auth-react` npm registry.
    - [ ] Deployed to [demo site](http://emailpassword.demo.supertokens.io/)
 
- - [supertokens-nextjs-demo:master](https://github.com/supertokens/supertokens-nextjs-demo/tree/master)
-     - [ ] [PR]() updated using `supertokens-node` and `supertokens-auth-react` npm registry.
-     - [ ] Merged to master
+- [supertokens-auth-react:master](https://github.com/supertokens/supertokens-auth-react/tree/master)
+   - Update examples to use latest `supertokens-node` and `supertokens-auth-react`
 
 ### 📚 Documentation
 
