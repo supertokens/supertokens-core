@@ -18,8 +18,8 @@ package io.supertokens.emailverification;
 
 import io.supertokens.Main;
 import io.supertokens.emailpassword.User;
-import io.supertokens.emailpassword.exceptions.EmailAlreadyVerifiedException;
-import io.supertokens.emailpassword.exceptions.EmailVerificationInvalidTokenException;
+import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
+import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
 import io.supertokens.pluginInterface.emailpassword.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailVerificationTokenException;

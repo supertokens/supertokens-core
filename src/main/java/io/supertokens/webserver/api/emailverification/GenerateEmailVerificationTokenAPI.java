@@ -18,8 +18,8 @@ package io.supertokens.webserver.api.emailverification;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.emailpassword.exceptions.EmailAlreadyVerifiedException;
 import io.supertokens.emailverification.EmailVerification;
+import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
