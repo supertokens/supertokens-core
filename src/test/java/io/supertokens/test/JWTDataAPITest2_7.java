@@ -31,7 +31,7 @@ import java.util.HashMap;
 import static org.junit.Assert.*;
 
 
-public class JWTDataAPITest2_6 {
+public class JWTDataAPITest2_7 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -71,7 +71,7 @@ public class JWTDataAPITest2_6 {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_6ForTests());
+                        null, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String sessionHandle = sessionInfo.get("session").getAsJsonObject().get("handle").getAsString();
 
@@ -84,7 +84,7 @@ public class JWTDataAPITest2_6 {
         JsonObject putJwtData = HttpRequest
                 .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/data", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_6ForTests());
+                        null, Utils.getCdiVersion2_7ForTests());
         assertEquals(putJwtData.get("status").getAsString(), "OK");
 
         HashMap<String, String> params = new HashMap<>();
@@ -94,7 +94,7 @@ public class JWTDataAPITest2_6 {
         JsonObject getJwtData = HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/data", params, 1000, 1000,
                         null,
-                        Utils.getCdiVersion2_6ForTests());
+                        Utils.getCdiVersion2_7ForTests());
         assertEquals(getJwtData.get("status").getAsString(), "OK");
         assertEquals(getJwtData.get("userDataInJWT"), newUserDataInJwt);
         assertNotEquals(getJwtData.get("userDataInJWT"), userDataInJWT);
@@ -129,7 +129,7 @@ public class JWTDataAPITest2_6 {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_6ForTests());
+                        null, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String sessionHandle = sessionInfo.get("session").getAsJsonObject().get("handle").getAsString();
         JsonObject emptyJwtUserData = new JsonObject();
@@ -140,7 +140,7 @@ public class JWTDataAPITest2_6 {
         JsonObject putRequest = HttpRequest
                 .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/data", jwtPutRequest,
                         1000,
-                        1000, null, Utils.getCdiVersion2_6ForTests());
+                        1000, null, Utils.getCdiVersion2_7ForTests());
         assertEquals(putRequest.get("status").getAsString(), "OK");
 
         HashMap<String, String> params = new HashMap<>();
@@ -150,7 +150,7 @@ public class JWTDataAPITest2_6 {
         JsonObject getJwtData = HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/data", params, 1000, 1000,
                         null,
-                        Utils.getCdiVersion2_6ForTests());
+                        Utils.getCdiVersion2_7ForTests());
         assertEquals(getJwtData.get("status").getAsString(), "OK");
         assertEquals(getJwtData.get("userDataInJWT").getAsJsonObject(), emptyJwtUserData);
 
@@ -187,7 +187,7 @@ public class JWTDataAPITest2_6 {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_6ForTests());
+                        null, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String sessionHandle = sessionInfo.get("session").getAsJsonObject().get("handle").getAsString();
 
@@ -199,7 +199,7 @@ public class JWTDataAPITest2_6 {
 
         JsonObject sessionRemovedResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/remove",
-                        removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
+                        removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionRemovedResponse.get("status").getAsString(), "OK");
 
 
@@ -213,7 +213,7 @@ public class JWTDataAPITest2_6 {
         JsonObject response = HttpRequest
                 .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/data", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_6ForTests());
+                        null, Utils.getCdiVersion2_7ForTests());
         assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
         assertEquals(response.get("message").getAsString(), "Session does not exist.");
 
@@ -251,7 +251,7 @@ public class JWTDataAPITest2_6 {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_6ForTests());
+                        null, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String sessionHandle = sessionInfo.get("session").getAsJsonObject().get("handle").getAsString();
 
@@ -263,7 +263,7 @@ public class JWTDataAPITest2_6 {
 
         JsonObject sessionRemovedResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/remove",
-                        removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
+                        removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionRemovedResponse.get("status").getAsString(), "OK");
 
         //call get api
@@ -274,7 +274,7 @@ public class JWTDataAPITest2_6 {
         JsonObject response = HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/data", params, 1000, 1000,
                         null,
-                        Utils.getCdiVersion2_6ForTests());
+                        Utils.getCdiVersion2_7ForTests());
 
         // make sure you get unauthorised error
         assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
@@ -309,7 +309,7 @@ public class JWTDataAPITest2_6 {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_6ForTests());
+                        null, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String sessionHandle = sessionInfo.get("session").getAsJsonObject().get("handle").getAsString();
 
@@ -322,7 +322,7 @@ public class JWTDataAPITest2_6 {
         JsonObject putJwtData = HttpRequest
                 .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/data", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_6ForTests());
+                        null, Utils.getCdiVersion2_7ForTests());
 
         assertEquals(putJwtData.get("status").getAsString(), "OK");
         assertEquals(putJwtData.entrySet().size(), 1);
@@ -335,7 +335,7 @@ public class JWTDataAPITest2_6 {
         JsonObject getJwtData = HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/data", params, 1000, 1000,
                         null,
-                        Utils.getCdiVersion2_6ForTests());
+                        Utils.getCdiVersion2_7ForTests());
         assertEquals(getJwtData.get("status").getAsString(), "OK");
         assertEquals(getJwtData.get("userDataInJWT"), newUserDataInJwt);
         assertEquals(getJwtData.entrySet().size(), 2);
@@ -359,7 +359,7 @@ public class JWTDataAPITest2_6 {
             HttpRequest
                     .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/data",
                             invalidJsonObject,
-                            1000, 1000, null, Utils.getCdiVersion2_6ForTests());
+                            1000, 1000, null, Utils.getCdiVersion2_7ForTests());
             fail();
         } catch (HttpResponseException e) {
             assertEquals(e.statusCode, 400);
@@ -371,7 +371,7 @@ public class JWTDataAPITest2_6 {
         try {
             HttpRequest
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/data", null,
-                            1000, 1000, null, Utils.getCdiVersion2_6ForTests());
+                            1000, 1000, null, Utils.getCdiVersion2_7ForTests());
             fail();
         } catch (HttpResponseException e) {
             assertEquals(e.statusCode, 400);
@@ -395,7 +395,7 @@ public class JWTDataAPITest2_6 {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_6ForTests());
+                        null, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String sessionHandle = sessionInfo.get("session").getAsJsonObject().get("handle").getAsString();
 
@@ -405,7 +405,7 @@ public class JWTDataAPITest2_6 {
             HttpRequest
                     .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/data",
                             invalidUserData,
-                            1000, 1000, null, Utils.getCdiVersion2_6ForTests());
+                            1000, 1000, null, Utils.getCdiVersion2_7ForTests());
 
             fail();
 

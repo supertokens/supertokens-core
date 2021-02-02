@@ -37,11 +37,11 @@ public abstract class WebserverAPI extends HttpServlet {
     public static final Set<String> supportedVersions = new HashSet<>();
 
     static {
-        supportedVersions.add("2.6");
+        supportedVersions.add("2.7");
     }
 
     public static String getLatestCDIVersion() {
-        return "2.6";
+        return "2.7";
     }
 
     public WebserverAPI(Main main) {

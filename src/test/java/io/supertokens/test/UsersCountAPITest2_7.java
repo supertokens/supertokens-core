@@ -26,18 +26,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.util.HashMap;
-
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 /*
  * TODO:
  *  - add users and check if the number of users returned by the API is correct
  * */
 
-public class UsersCountAPITest2_6 {
+public class UsersCountAPITest2_7 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -67,7 +64,7 @@ public class UsersCountAPITest2_6 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users/count", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_6ForTests());
+                            null, Utils.getCdiVersion2_7ForTests());
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 0);
         }

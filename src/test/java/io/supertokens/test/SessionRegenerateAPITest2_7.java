@@ -29,7 +29,7 @@ import org.junit.rules.TestRule;
 import static org.junit.Assert.*;
 
 
-public class SessionRegenerateAPITest2_6 {
+public class SessionRegenerateAPITest2_7 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -66,7 +66,7 @@ public class SessionRegenerateAPITest2_6 {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_6ForTests());
+                        null, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
@@ -82,7 +82,7 @@ public class SessionRegenerateAPITest2_6 {
 
         JsonObject sessionRegenerateResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/regenerate",
-                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
+                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_7ForTests());
 
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
 
@@ -132,7 +132,7 @@ public class SessionRegenerateAPITest2_6 {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_6ForTests());
+                        null, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
@@ -150,7 +150,7 @@ public class SessionRegenerateAPITest2_6 {
 
         JsonObject sessionRegenerateResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/regenerate",
-                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
+                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
 
         //session object and all has new payload info
@@ -193,7 +193,7 @@ public class SessionRegenerateAPITest2_6 {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_6ForTests());
+                        null, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
@@ -205,7 +205,7 @@ public class SessionRegenerateAPITest2_6 {
 
         JsonObject sessionRemovedResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/remove",
-                        removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
+                        removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionRemovedResponse.get("status").getAsString(), "OK");
 
 
@@ -219,7 +219,7 @@ public class SessionRegenerateAPITest2_6 {
 
         JsonObject sessionRegenerateResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/regenerate",
-                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
+                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_7ForTests());
 
         //throws UNAUTHORISED response.
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "UNAUTHORISED");

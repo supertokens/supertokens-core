@@ -64,8 +64,8 @@ abstract class Utils extends Mockito {
         }
     }
 
-    static String getCdiVersion2_6ForTests() {
-        return "2.6";
+    static String getCdiVersion2_7ForTests() {
+        return "2.7";
     }
 
     static String getCdiVersionLatestForTests() {
@@ -157,7 +157,7 @@ abstract class Utils extends Mockito {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signup", signUpRequestBody, 1000,
                         1000,
-                        null, getCdiVersion2_6ForTests());
+                        null, getCdiVersion2_7ForTests());
     }
 
     public static JsonObject signUpRequest_2_5(TestingProcessManager.TestingProcess process, String email,
@@ -172,7 +172,7 @@ abstract class Utils extends Mockito {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signup", signUpRequestBody, 1000,
                         1000,
-                        null, getCdiVersion2_6ForTests());
+                        null, getCdiVersion2_7ForTests());
     }
 
 }

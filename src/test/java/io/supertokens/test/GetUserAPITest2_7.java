@@ -37,7 +37,7 @@ import static org.junit.Assert.*;
  *  - Check for all types of output
  * */
 
-public class GetUserAPITest2_6 {
+public class GetUserAPITest2_7 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -70,7 +70,7 @@ public class GetUserAPITest2_6 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user", null, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_6ForTests());
+                                null, Utils.getCdiVersion2_7ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -89,7 +89,7 @@ public class GetUserAPITest2_6 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user", map, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_6ForTests());
+                                null, Utils.getCdiVersion2_7ForTests());
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -131,7 +131,7 @@ public class GetUserAPITest2_6 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", map, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_6ForTests());
+                            null, Utils.getCdiVersion2_7ForTests());
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.entrySet().size(), 2);
 
@@ -158,7 +158,7 @@ public class GetUserAPITest2_6 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", map, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_6ForTests());
+                            null, Utils.getCdiVersion2_7ForTests());
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.entrySet().size(), 2);
 
@@ -194,7 +194,7 @@ public class GetUserAPITest2_6 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", map, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_6ForTests());
+                            null, Utils.getCdiVersion2_7ForTests());
             assertEquals(response.get("status").getAsString(), "UNKNOWN_EMAIL_ERROR");
             assertEquals(response.entrySet().size(), 1);
         }
@@ -207,7 +207,7 @@ public class GetUserAPITest2_6 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", map, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_6ForTests());
+                            null, Utils.getCdiVersion2_7ForTests());
             assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
             assertEquals(response.entrySet().size(), 1);
         }

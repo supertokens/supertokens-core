@@ -1,6 +1,6 @@
 {
   "_comment": "contains a list of core-driver interfaces branch names that this core supports",
   "versions": [
-    "2.6"
+    "2.7"
   ]
 }
