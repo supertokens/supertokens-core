@@ -29,6 +29,7 @@ Description of the new feature
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
     - [ ] Various browsers - Safari, Firefox, Chrome, Edge
     - [ ] Mobile responsiveness
+    - [ ] Make sure using with-typescript example that types are correct for every new configs exposed to users
 
 ### Others
 
