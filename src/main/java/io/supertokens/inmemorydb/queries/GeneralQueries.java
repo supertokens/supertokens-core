@@ -99,18 +99,29 @@ public class GeneralQueries {
             }
         }
 
+        if (!doesTableExists(start, Config.getConfig(start).getEmailVerificationTable())) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
+            try (Connection con = ConnectionPool.getConnection(start);
+                 PreparedStatement pst = con
+                         .prepareStatement(
+                                 EmailVerificationQueries.getQueryToCreateEmailVerificationTable(start))) {
+                pst.executeUpdate();
+            }
+        }
+
         if (!doesTableExists(start, Config.getConfig(start).getEmailVerificationTokensTable())) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
             try (Connection con = ConnectionPool.getConnection(start);
                  PreparedStatement pst = con
-                         .prepareStatement(EmailPasswordQueries.getQueryToCreateEmailVerificationTokensTable(start))) {
+                         .prepareStatement(
+                                 EmailVerificationQueries.getQueryToCreateEmailVerificationTokensTable(start))) {
                 pst.executeUpdate();
             }
             // index
             try (Connection con = ConnectionPool.getConnection(start);
                  PreparedStatement pstIndex = con
                          .prepareStatement(
-                                 EmailPasswordQueries.getQueryToCreateEmailVerificationTokenExpiryIndex(start))) {
+                                 EmailVerificationQueries.getQueryToCreateEmailVerificationTokenExpiryIndex(start))) {
                 pstIndex.executeUpdate();
             }
         }

@@ -33,7 +33,7 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 
-public class SessionRemoveAPITest2_6 {
+public class SessionRemoveAPITest2_7 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -75,28 +75,28 @@ public class SessionRemoveAPITest2_6 {
         JsonObject s1Info = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", sessionRequest,
                         1000,
-                        1000, 2, Utils.getCdiVersion2_6ForTests());
+                        1000, 2, Utils.getCdiVersion2_7ForTests());
         assertEquals(s1Info.get("status").getAsString(), "OK");
 
         //create session s2
         JsonObject s2Info = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", sessionRequest,
                         1000,
-                        1000, 2, Utils.getCdiVersion2_6ForTests());
+                        1000, 2, Utils.getCdiVersion2_7ForTests());
         assertEquals(s2Info.get("status").getAsString(), "OK");
 
         //create session s3
         JsonObject s3Info = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", sessionRequest,
                         1000,
-                        1000, 2, Utils.getCdiVersion2_6ForTests());
+                        1000, 2, Utils.getCdiVersion2_7ForTests());
         assertEquals(s3Info.get("status").getAsString(), "OK");
 
         //create session s4
         JsonObject s4Info = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", sessionRequest,
                         1000,
-                        1000, 2, Utils.getCdiVersion2_6ForTests());
+                        1000, 2, Utils.getCdiVersion2_7ForTests());
         assertEquals(s4Info.get("status").getAsString(), "OK");
 
         // remove s2 and s4 and make sure they are returned
@@ -110,7 +110,7 @@ public class SessionRemoveAPITest2_6 {
         JsonObject sessionRemovedResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/remove",
                         sessionRemoveBody,
-                        1000, 1000, null, Utils.getCdiVersion2_6ForTests());
+                        1000, 1000, null, Utils.getCdiVersion2_7ForTests());
         JsonArray revokedSessions = sessionRemovedResponse.getAsJsonArray("sessionHandlesRevoked");
 
         for (int i = 0; i < revokedSessions.size(); i++) {
@@ -132,7 +132,7 @@ public class SessionRemoveAPITest2_6 {
         sessionRemovedResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/remove",
                         sessionRemoveBody,
-                        1000, 1000, null, Utils.getCdiVersion2_6ForTests());
+                        1000, 1000, null, Utils.getCdiVersion2_7ForTests());
         revokedSessions = sessionRemovedResponse.getAsJsonArray("sessionHandlesRevoked");
 
         //check that response should only contain s1 and s3 session handles
@@ -170,7 +170,7 @@ public class SessionRemoveAPITest2_6 {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", sessionRequest,
                         1000,
-                        1000, 2, Utils.getCdiVersion2_6ForTests());
+                        1000, 2, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
 
@@ -184,7 +184,7 @@ public class SessionRemoveAPITest2_6 {
         JsonObject sessionRemovedResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/remove",
                         sessionRemoveBody,
-                        1000, 1000, null, Utils.getCdiVersion2_6ForTests());
+                        1000, 1000, null, Utils.getCdiVersion2_7ForTests());
 
         assertEquals(sessionRemovedResponse.get("status").getAsString(), "OK");
         assertEquals(sessionRemovedResponse.get("sessionHandlesRevoked").getAsJsonArray().size(),
@@ -199,7 +199,7 @@ public class SessionRemoveAPITest2_6 {
         JsonObject userResponse = HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/user", userParams, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_6ForTests());
+                        null, Utils.getCdiVersion2_7ForTests());
         assertEquals(userResponse.get("status").getAsString(), "OK");
         assertEquals(userResponse.get("sessionHandles").getAsJsonArray().size(), 0);
 
@@ -232,13 +232,13 @@ public class SessionRemoveAPITest2_6 {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", sessionRequest,
                         1000,
-                        1000, 2, Utils.getCdiVersion2_6ForTests());
+                        1000, 2, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
         JsonObject session2Info = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", sessionRequest,
                         1000,
-                        1000, 2, Utils.getCdiVersion2_6ForTests());
+                        1000, 2, Utils.getCdiVersion2_7ForTests());
         assertEquals(session2Info.get("status").getAsString(), "OK");
 
         //remove session using user id
@@ -247,7 +247,7 @@ public class SessionRemoveAPITest2_6 {
 
         JsonObject sessionRemovedResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/remove",
-                        removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_6ForTests());
+                        removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests());
         assertEquals(sessionRemovedResponse.get("status").getAsString(), "OK");
 
         assertEquals(sessionRemovedResponse.get("sessionHandlesRevoked").getAsJsonArray().size(),
@@ -265,7 +265,7 @@ public class SessionRemoveAPITest2_6 {
         JsonObject userResponse = HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/user", userParams, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_6ForTests());
+                        null, Utils.getCdiVersion2_7ForTests());
         assertEquals(userResponse.get("status").getAsString(), "OK");
         assertEquals(userResponse.get("sessionHandles").getAsJsonArray().size(), 0);
 

@@ -1,5 +1,5 @@
 /*
- *    Copyright (c) 2020, VRAI Labs and/or its affiliates. All rights reserved.
+ *    Copyright (c) 2021, VRAI Labs and/or its affiliates. All rights reserved.
  *
  *    This software is licensed under the Apache License, Version 2.0 (the
  *    "License") as published by the Apache Software Foundation.
@@ -14,16 +14,13 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api.emailpassword;
+package io.supertokens.webserver.api.emailverification;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.User;
-import io.supertokens.emailpassword.exceptions.EmailVerificationInvalidTokenException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.emailverification.EmailVerification;
+import io.supertokens.emailverification.User;
+import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.webserver.InputParser;
@@ -56,18 +53,20 @@ public class VerifyEmailAPI extends WebserverAPI {
         assert method != null;
         assert token != null;
 
-        // logic according to https://github.com/supertokens/supertokens-core/issues/141
+        // used to be according to logic in https://github.com/supertokens/supertokens-core/issues/141
+        // but then changed slightly when extracting this into its own recipe
 
         if (!method.equals("token")) {
             throw new ServletException(new BadRequestException("Unsupported method for email verification"));
         }
 
         try {
-            User user = EmailPassword.verifyEmail(super.main, token);
+            User user = EmailVerification.verifyEmail(super.main, token);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            result.add("user", new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject());
+            result.addProperty("userId", user.id);
+            result.addProperty("email", user.email);
             super.sendJsonResponse(200, result, resp);
 
         } catch (EmailVerificationInvalidTokenException e) {
@@ -83,19 +82,18 @@ public class VerifyEmailAPI extends WebserverAPI {
     @Override
     public void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
+        String email = InputParser.getQueryParamOrThrowError(req, "email", false);
+        assert userId != null;
+        assert email != null;
 
         try {
-            boolean isVerified = EmailPassword.isEmailVerified(super.main, userId);
+            boolean isVerified = EmailVerification.isEmailVerified(super.main, userId, email);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("isVerified", isVerified);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (UnknownUserIdException e) {
-            JsonObject result = new JsonObject();
-            result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
-            super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }

@@ -14,32 +14,31 @@
  *    under the License.
  */
 
-package io.supertokens.emailpassword;
+package io.supertokens.emailverification;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 
-public class EmailPasswordTest extends ResourceDistributor.SingletonResource {
-    private static final String RESOURCE_ID = "io.supertokens.emailpassword.EmailPasswordTest";
-    private long passwordResetTokenLifetimeMS = EmailPassword.PASSWORD_RESET_TOKEN_LIFETIME_MS;
+public class EmailVerificationTest extends ResourceDistributor.SingletonResource {
+    private static final String RESOURCE_ID = "io.supertokens.emailverification.EmailVerificationTest";
+    private long emailVerificationTokenLifetimeMS = EmailVerification.EMAIL_VERIFICATION_TOKEN_LIFETIME_MS;
 
-    private EmailPasswordTest() {
+    private EmailVerificationTest() {
     }
 
-    public static EmailPasswordTest getInstance(Main main) {
+    public static EmailVerificationTest getInstance(Main main) {
         ResourceDistributor.SingletonResource resource = main.getResourceDistributor().getResource(RESOURCE_ID);
         if (resource == null) {
-            resource = main.getResourceDistributor().setResource(RESOURCE_ID, new EmailPasswordTest());
+            resource = main.getResourceDistributor().setResource(RESOURCE_ID, new EmailVerificationTest());
         }
-        return (EmailPasswordTest) resource;
+        return (EmailVerificationTest) resource;
     }
 
-    public void setPasswordResetTokenLifetime(long intervalMS) {
-        this.passwordResetTokenLifetimeMS = intervalMS;
+    public void setEmailVerificationTokenLifetime(long intervalMS) {
+        this.emailVerificationTokenLifetimeMS = intervalMS;
     }
 
-    public long getPasswordResetTokenLifetime() {
-        return this.passwordResetTokenLifetimeMS;
+    public long getEmailVerificationTokenLifetime() {
+        return this.emailVerificationTokenLifetimeMS;
     }
-    
 }

@@ -35,7 +35,7 @@ import java.util.Map;
 import static org.junit.Assert.*;
 
 
-public class ConfigAPITest2_6 {
+public class ConfigAPITest2_7 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -97,7 +97,7 @@ public class ConfigAPITest2_6 {
             io.supertokens.test.httpRequest
                     .HttpRequest
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", null, 1000, 1000, null,
-                            Utils.getCdiVersion2_6ForTests());
+                            Utils.getCdiVersion2_7ForTests());
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.getMessage()
@@ -112,7 +112,7 @@ public class ConfigAPITest2_6 {
             io.supertokens.test.httpRequest
                     .HttpRequest
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
-                            Utils.getCdiVersion2_6ForTests());
+                            Utils.getCdiVersion2_7ForTests());
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.getMessage()
@@ -168,7 +168,7 @@ public class ConfigAPITest2_6 {
         JsonObject response = io.supertokens.test.httpRequest
                 .HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_6ForTests());
+                        Utils.getCdiVersion2_7ForTests());
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.get("path").getAsString(), path);
@@ -240,7 +240,7 @@ public class ConfigAPITest2_6 {
         JsonObject response = io.supertokens.test.httpRequest
                 .HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_6ForTests());
+                        Utils.getCdiVersion2_7ForTests());
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.get("path").getAsString(), path);
@@ -253,7 +253,7 @@ public class ConfigAPITest2_6 {
         response = io.supertokens.test.httpRequest
                 .HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_6ForTests());
+                        Utils.getCdiVersion2_7ForTests());
 
         assertEquals(response.get("status").getAsString(), "NOT_ALLOWED");
         assertEquals(response.entrySet().size(), 1);

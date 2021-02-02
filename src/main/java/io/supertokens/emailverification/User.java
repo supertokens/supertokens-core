@@ -1,5 +1,5 @@
 /*
- *    Copyright (c) 2020, VRAI Labs and/or its affiliates. All rights reserved.
+ *    Copyright (c) 2021, VRAI Labs and/or its affiliates. All rights reserved.
  *
  *    This software is licensed under the Apache License, Version 2.0 (the
  *    "License") as published by the Apache Software Foundation.
@@ -14,8 +14,18 @@
  *    under the License.
  */
 
-package io.supertokens.emailpassword.exceptions;
+package io.supertokens.emailverification;
 
-public class EmailVerificationInvalidTokenException extends Exception {
-    private static final long serialVersionUID = -7205953190075543040L;
+import javax.annotation.Nonnull;
+
+public class User {
+
+    public final String id;
+
+    public final String email;
+
+    public User(@Nonnull String id, @Nonnull String email) {
+        this.id = id;
+        this.email = email;
+    }
 }

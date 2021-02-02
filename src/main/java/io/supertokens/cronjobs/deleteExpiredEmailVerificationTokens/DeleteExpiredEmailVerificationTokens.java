@@ -46,7 +46,7 @@ public class DeleteExpiredEmailVerificationTokens extends CronTask {
         if (StorageLayer.getStorage(this.main).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        StorageLayer.getEmailPasswordStorage(this.main)
+        StorageLayer.getEmailVerificationStorage(this.main)
                 .deleteExpiredEmailVerificationTokens();
     }
 
