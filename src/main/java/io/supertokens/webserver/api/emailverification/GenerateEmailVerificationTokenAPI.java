@@ -1,5 +1,5 @@
 /*
- *    Copyright (c) 2020, VRAI Labs and/or its affiliates. All rights reserved.
+ *    Copyright (c) 2021, VRAI Labs and/or its affiliates. All rights reserved.
  *
  *    This software is licensed under the Apache License, Version 2.0 (the
  *    "License") as published by the Apache Software Foundation.
@@ -14,12 +14,12 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api.emailpassword;
+package io.supertokens.webserver.api.emailverification;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.EmailAlreadyVerifiedException;
+import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
@@ -54,7 +54,7 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
         // logic according to https://github.com/supertokens/supertokens-core/issues/139
 
         try {
-            String token = EmailPassword.generateEmailVerificationToken(super.main, userId);
+            String token = EmailVerification.generateEmailVerificationToken(super.main, userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

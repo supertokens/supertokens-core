@@ -27,6 +27,8 @@ import io.supertokens.webserver.api.core.ConfigAPI;
 import io.supertokens.webserver.api.core.HelloAPI;
 import io.supertokens.webserver.api.core.NotFoundAPI;
 import io.supertokens.webserver.api.emailpassword.*;
+import io.supertokens.webserver.api.emailverification.GenerateEmailVerificationTokenAPI;
+import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
 import io.supertokens.webserver.api.session.*;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;

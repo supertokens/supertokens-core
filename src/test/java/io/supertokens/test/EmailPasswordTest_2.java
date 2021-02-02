@@ -22,6 +22,7 @@ import io.supertokens.emailpassword.User;
 import io.supertokens.emailpassword.UserPaginationContainer;
 import io.supertokens.emailpassword.exceptions.EmailAlreadyVerifiedException;
 import io.supertokens.emailpassword.exceptions.EmailVerificationInvalidTokenException;
+import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailVerificationTokenException;
@@ -73,8 +74,8 @@ public class EmailPasswordTest_2 {
         }
 
         User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
-        String token1 = EmailPassword.generateEmailVerificationToken(process.getProcess(), user.id);
-        String token2 = EmailPassword.generateEmailVerificationToken(process.getProcess(), user.id);
+        String token1 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id);
+        String token2 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id);
 
         assertFalse(token1.equals(token2));
 
@@ -104,14 +105,14 @@ public class EmailPasswordTest_2 {
         }
 
         User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
-        String token = EmailPassword.generateEmailVerificationToken(process.getProcess(), user.id);
+        String token = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id);
 
-        EmailPassword.verifyEmail(process.getProcess(), token);
-        assertTrue(EmailPassword.isEmailVerified(process.getProcess(), user.id));
+        EmailVerification.verifyEmail(process.getProcess(), token);
+        assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.id));
 
         try {
 
-            EmailPassword.generateEmailVerificationToken(process.getProcess(), user.id);
+            EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id);
             throw new Exception("should not come here");
         } catch (EmailAlreadyVerifiedException e) {
         }
@@ -133,7 +134,7 @@ public class EmailPasswordTest_2 {
         }
 
         try {
-            EmailPassword.verifyEmail(process.getProcess(), "invalidToken");
+            EmailVerification.verifyEmail(process.getProcess(), "invalidToken");
             throw new Exception("should not come here");
         } catch (EmailVerificationInvalidTokenException e) {
         }
@@ -155,14 +156,14 @@ public class EmailPasswordTest_2 {
         }
         User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
 
-        String token1 = EmailPassword.generateEmailVerificationToken(process.getProcess(), user.id);
-        String token2 = EmailPassword.generateEmailVerificationToken(process.getProcess(), user.id);
+        String token1 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id);
+        String token2 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id);
 
-        EmailPassword.verifyEmail(process.getProcess(), token1);
-        assertTrue(EmailPassword.isEmailVerified(process.getProcess(), user.id));
+        EmailVerification.verifyEmail(process.getProcess(), token1);
+        assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.id));
 
         try {
-            EmailPassword.verifyEmail(process.getProcess(), token2);
+            EmailVerification.verifyEmail(process.getProcess(), token2);
             throw new Exception("should not come here");
         } catch (EmailVerificationInvalidTokenException e) {
 
@@ -179,7 +180,7 @@ public class EmailPasswordTest_2 {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
-        io.supertokens.emailpassword.EmailPasswordTest.getInstance(process.getProcess())
+        io.supertokens.emailverification.EmailVerificationTest.getInstance(process.getProcess())
                 .setEmailVerificationTokenLifetime(10);
 
         process.startProcess();
@@ -190,12 +191,12 @@ public class EmailPasswordTest_2 {
         }
         User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
 
-        String token = EmailPassword.generateEmailVerificationToken(process.getProcess(), user.id);
+        String token = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id);
 
         Thread.sleep(20);
 
         try {
-            EmailPassword.verifyEmail(process.getProcess(), token);
+            EmailVerification.verifyEmail(process.getProcess(), token);
             throw new Exception("should not come here");
         } catch (EmailVerificationInvalidTokenException e) {
 
@@ -302,15 +303,15 @@ public class EmailPasswordTest_2 {
 
         User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
 
-        assert (!EmailPassword.isEmailVerified(process.getProcess(), user.id));
+        assert (!EmailVerification.isEmailVerified(process.getProcess(), user.id));
 
-        String token = EmailPassword.generateEmailVerificationToken(process.getProcess(), user.id);
+        String token = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id);
 
         assert (token != null);
 
-        EmailPassword.verifyEmail(process.getProcess(), token);
+        EmailVerification.verifyEmail(process.getProcess(), token);
 
-        assert (EmailPassword.isEmailVerified(process.getProcess(), user.id));
+        assert (EmailVerification.isEmailVerified(process.getProcess(), user.id));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

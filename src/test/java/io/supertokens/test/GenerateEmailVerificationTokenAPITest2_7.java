@@ -18,7 +18,7 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
@@ -189,7 +189,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
             assertEquals(response.get("status").getAsString(), "OK");
             assertNotNull(response.get("token"));
 
-            EmailPassword.verifyEmail(process.getProcess(), response.get("token").getAsString());
+            EmailVerification.verifyEmail(process.getProcess(), response.get("token").getAsString());
 
             JsonObject response2 = io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "",
