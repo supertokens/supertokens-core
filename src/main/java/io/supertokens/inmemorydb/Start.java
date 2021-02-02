@@ -22,6 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.inmemorydb.queries.EmailPasswordQueries;
+import io.supertokens.inmemorydb.queries.EmailVerificationQueries;
 import io.supertokens.inmemorydb.queries.GeneralQueries;
 import io.supertokens.inmemorydb.queries.SessionQueries;
 import io.supertokens.pluginInterface.KeyValueInfo;
@@ -520,10 +521,10 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     @Override
     public EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser_Transaction(
             TransactionConnection con, String userId, String email) throws StorageQueryException {
-        // TODO:
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return EmailPasswordQueries.getAllEmailVerificationTokenInfoForUser_Transaction(this, sqlCon, userId);
+            return EmailVerificationQueries.getAllEmailVerificationTokenInfoForUser_Transaction(this, sqlCon,
+                    userId, email);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -532,15 +533,15 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     @Override
     public void addEmailVerificationToken(EmailVerificationTokenInfo emailVerificationInfo)
             throws StorageQueryException, DuplicateEmailVerificationTokenException {
-        // TODO:
         try {
-            EmailPasswordQueries.addEmailVerificationToken(this, emailVerificationInfo.userId,
+            EmailVerificationQueries.addEmailVerificationToken(this, emailVerificationInfo.userId,
                     emailVerificationInfo.token, emailVerificationInfo.tokenExpiry, emailVerificationInfo.email);
         } catch (SQLException e) {
             if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
                             Config.getConfig(this).getEmailVerificationTokensTable() +
-                            ".user_id, " + Config.getConfig(this).getEmailVerificationTokensTable() + ".token)")) {
+                            ".user_id, " + Config.getConfig(this).getEmailVerificationTokensTable() + ".email, " +
+                            Config.getConfig(this).getEmailVerificationTokensTable() + ".token)")) {
                 throw new DuplicateEmailVerificationTokenException();
             }
             throw new StorageQueryException(e);
@@ -550,10 +551,9 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     @Override
     public void deleteAllEmailVerificationTokensForUser_Transaction(TransactionConnection con, String userId,
                                                                     String email) throws StorageQueryException {
-        // TODO:
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            EmailPasswordQueries.deleteAllEmailVerificationTokensForUser_Transaction(this, sqlCon, userId);
+            EmailVerificationQueries.deleteAllEmailVerificationTokensForUser_Transaction(this, sqlCon, userId, email);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -562,20 +562,25 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     @Override
     public void updateIsEmailVerified_Transaction(TransactionConnection con, String userId, String email,
                                                   boolean isEmailVerified) throws StorageQueryException {
-        // TODO:
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            EmailPasswordQueries.updateUsersIsEmailVerified_Transaction(this, sqlCon, userId, isEmailVerified);
+            EmailVerificationQueries
+                    .updateUsersIsEmailVerified_Transaction(this, sqlCon, userId, email, isEmailVerified);
         } catch (SQLException e) {
-            throw new StorageQueryException(e);
+            if (!isEmailVerified || !e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
+                            Config.getConfig(this).getEmailVerificationTable() +
+                            ".user_id, " + Config.getConfig(this).getEmailVerificationTable() + ".email)")) {
+                throw new StorageQueryException(e);
+            }
+            // we do not throw an error since the email is already verified
         }
     }
 
     @Override
     public EmailVerificationTokenInfo getEmailVerificationTokenInfo(String token) throws StorageQueryException {
-        // TODO:
         try {
-            return EmailPasswordQueries.getEmailVerificationTokenInfo(this, token);
+            return EmailVerificationQueries.getEmailVerificationTokenInfo(this, token);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -583,9 +588,8 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
 
     @Override
     public void deleteExpiredEmailVerificationTokens() throws StorageQueryException {
-        // TODO:
         try {
-            EmailPasswordQueries.deleteExpiredEmailVerificationTokens(this);
+            EmailVerificationQueries.deleteExpiredEmailVerificationTokens(this);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -594,9 +598,8 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     @Override
     public EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser(String userId, String email)
             throws StorageQueryException {
-        // TODO:
         try {
-            return EmailPasswordQueries.getAllEmailVerificationTokenInfoForUser(this, userId);
+            return EmailVerificationQueries.getAllEmailVerificationTokenInfoForUser(this, userId, email);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -604,7 +607,10 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
 
     @Override
     public boolean isEmailVerified(String userId, String email) throws StorageQueryException {
-        // TODO:
-        return false;
+        try {
+            return EmailVerificationQueries.isEmailVerified(this, userId, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }

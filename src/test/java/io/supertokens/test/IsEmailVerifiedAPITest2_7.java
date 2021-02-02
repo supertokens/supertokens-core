@@ -112,6 +112,7 @@ public class IsEmailVerifiedAPITest2_7 {
 
         HashMap<String, String> map = new HashMap<>();
         map.put("userId", userId);
+        map.put("email", "random@gmail.com");
 
         JsonObject verifyResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
@@ -123,6 +124,7 @@ public class IsEmailVerifiedAPITest2_7 {
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", userId);
+        requestBody.addProperty("email", "random@gmail.com");
 
 
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
@@ -145,12 +147,11 @@ public class IsEmailVerifiedAPITest2_7 {
                         1000,
                         null, Utils.getCdiVersion2_7ForTests());
 
-        assertEquals(response2.entrySet().size(), 2);
+        assertEquals(response2.entrySet().size(), 3);
         assertEquals(response2.get("status").getAsString(), "OK");
 
-        assertEquals(response2.get("user").getAsJsonObject().entrySet().size(), 3);
-        assertEquals(response2.get("user").getAsJsonObject().get("id").getAsString(), userId);
-        assertEquals(response2.get("user").getAsJsonObject().get("email").getAsString(), "random@gmail.com");
+        assertEquals(response2.get("userId").getAsString(), userId);
+        assertEquals(response2.get("email").getAsString(), "random@gmail.com");
 
         verifyResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
@@ -173,19 +174,6 @@ public class IsEmailVerifiedAPITest2_7 {
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
-        }
-
-        // passing invalid userId
-        {
-            HashMap<String, String> map = new HashMap<>();
-            map.put("userId", "randomUserId");
-            JsonObject response2 = io.supertokens.test.httpRequest.HttpRequest
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user/email/verify", map, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests());
-            assertEquals(response2.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
-            assertEquals(response2.entrySet().size(), 1);
         }
 
         process.kill();

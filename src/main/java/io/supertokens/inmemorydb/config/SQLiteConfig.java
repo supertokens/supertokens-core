@@ -35,7 +35,11 @@ public class SQLiteConfig {
     }
 
     public String getEmailVerificationTokensTable() {
-        return "emailpassword_email_verification_tokens";
+        return "emailverification_tokens";
+    }
+
+    public String getEmailVerificationTable() {
+        return "emailverification_verified_emails";
     }
 
 }
