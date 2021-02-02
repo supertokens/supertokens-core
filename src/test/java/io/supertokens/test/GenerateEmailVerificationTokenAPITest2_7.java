@@ -127,6 +127,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
         String userId = signUpResponse.get("user").getAsJsonObject().get("id").getAsString();
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", userId);
+        requestBody.addProperty("email", "random@gmail.com");
 
 
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
@@ -155,20 +156,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
             return;
         }
 
-        // user does not exist
-        {
-            JsonObject requestBody = new JsonObject();
-            requestBody.addProperty("userId", "randomUserId");
-
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests());
-            assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
-        }
-
-        // user exists but email already verified
+        // email already verified
         {
             JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "random@gmail.com", "validPass123");
             assertEquals(signUpResponse.get("status").getAsString(), "OK");
@@ -177,6 +165,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
             String userId = signUpResponse.get("user").getAsJsonObject().get("id").getAsString();
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("userId", userId);
+            requestBody.addProperty("email", "random@gmail.com");
 
 
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest

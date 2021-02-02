@@ -20,6 +20,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.UpdatableBCrypt;
 import io.supertokens.emailpassword.User;
+import io.supertokens.emailpassword.UserPaginationContainer;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -541,6 +542,82 @@ public class EmailPasswordTest {
         } catch (WrongCredentialsException ignored) {
 
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void getUsers() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        EmailPassword.signUp(process.getProcess(), "test0@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "test1@example.com", "password1");
+        EmailPassword.signUp(process.getProcess(), "test2@example.com", "password2");
+        EmailPassword.signUp(process.getProcess(), "test3@example.com", "password3");
+        EmailPassword.signUp(process.getProcess(), "test4@example.com", "password4");
+
+        {
+            UserPaginationContainer users = EmailPassword.getUsers(process.getProcess(), null, 10, "ASC");
+            assert (users.users.length == 5);
+            assert (users.nextPaginationToken == null);
+        }
+
+        {
+            UserPaginationContainer users = EmailPassword.getUsers(process.getProcess(), null, 1, "ASC");
+            assert (users.users.length == 1);
+            assertNotNull(users.nextPaginationToken);
+            assert (users.users[0].email.equals("test0@example.com"));
+            users = EmailPassword.getUsers(process.getProcess(), users.nextPaginationToken, 1, "ASC");
+            assert (users.users.length == 1);
+            assertNotNull(users.nextPaginationToken);
+            assert (users.users[0].email.equals("test1@example.com"));
+        }
+
+        {
+            UserPaginationContainer users = EmailPassword.getUsers(process.getProcess(), null, 1, "DESC");
+            assert (users.users.length == 1);
+            assertNotNull(users.nextPaginationToken);
+            assert (users.users[0].email.equals("test4@example.com"));
+            users = EmailPassword.getUsers(process.getProcess(), users.nextPaginationToken, 1, "DESC");
+            assert (users.users.length == 1);
+            assertNotNull(users.nextPaginationToken);
+            assert (users.users[0].email.equals("test3@example.com"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void getUsersCount() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        long count = EmailPassword.getUsersCount(process.getProcess());
+        assert (count == 0);
+
+        EmailPassword.signUp(process.getProcess(), "test0@example.com", "password0");
+        EmailPassword.signUp(process.getProcess(), "test1@example.com", "password1");
+        EmailPassword.signUp(process.getProcess(), "test2@example.com", "password2");
+        EmailPassword.signUp(process.getProcess(), "test3@example.com", "password3");
+        EmailPassword.signUp(process.getProcess(), "test4@example.com", "password4");
+
+        count = EmailPassword.getUsersCount(process.getProcess());
+        assert (count == 5);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

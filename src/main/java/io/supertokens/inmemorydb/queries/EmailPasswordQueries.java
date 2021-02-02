@@ -21,9 +21,9 @@ import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
-import io.supertokens.pluginInterface.emailpassword.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import org.jetbrains.annotations.NotNull;
 
@@ -40,7 +40,7 @@ public class EmailPasswordQueries {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getUsersTable() + " ("
                 + "user_id CHAR(36) NOT NULL," + "email VARCHAR(256) NOT NULL UNIQUE,"
                 + "password_hash VARCHAR(128) NOT NULL," + "time_joined BIGINT UNSIGNED NOT NULL,"
-                + "is_email_verified INTEGER NOT NULL," + "PRIMARY KEY (user_id));";
+                + "PRIMARY KEY (user_id));";
     }
 
     static String getQueryToCreateUserPaginationIndex(Start start) {
@@ -259,12 +259,11 @@ public class EmailPasswordQueries {
         }
     }
 
-    public static void signUp(Start start, String userId, String email, String passwordHash, long timeJoined,
-                              boolean isEmailVerified)
+    public static void signUp(Start start, String userId, String email, String passwordHash, long timeJoined)
             throws SQLException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getUsersTable()
-                + "(user_id, email, password_hash, time_joined, is_email_verified)"
-                + " VALUES(?, ?, ?, ?, ?)";
+                + "(user_id, email, password_hash, time_joined)"
+                + " VALUES(?, ?, ?, ?)";
 
         try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
@@ -272,13 +271,12 @@ public class EmailPasswordQueries {
             pst.setString(2, email);
             pst.setString(3, passwordHash);
             pst.setLong(4, timeJoined);
-            pst.setInt(5, isEmailVerified ? 1 : 0);
             pst.executeUpdate();
         }
     }
 
     public static UserInfo getUserInfoUsingId(Start start, String id) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT user_id, email, password_hash, time_joined, is_email_verified FROM "
+        String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
                 + Config.getConfig(start).getUsersTable() + " WHERE user_id = ?";
         try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
@@ -296,7 +294,7 @@ public class EmailPasswordQueries {
 
         ((ConnectionWithLocks) con).lock(id + Config.getConfig(start).getUsersTable());
 
-        String QUERY = "SELECT user_id, email, password_hash, time_joined, is_email_verified FROM "
+        String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
                 + Config.getConfig(start).getUsersTable() + " WHERE user_id = ?";
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, id);
@@ -309,7 +307,7 @@ public class EmailPasswordQueries {
     }
 
     public static UserInfo getUserInfoUsingEmail(Start start, String email) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT user_id, email, password_hash, time_joined, is_email_verified FROM "
+        String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
                 + Config.getConfig(start).getUsersTable() + " WHERE email = ?";
         try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
@@ -375,7 +373,7 @@ public class EmailPasswordQueries {
     public static UserInfo[] getUsersInfo(Start start, @NotNull Integer limit, @NotNull String timeJoinedOrder)
             throws SQLException, StorageQueryException {
         String QUERY =
-                "SELECT user_id, email, password_hash, time_joined, is_email_verified FROM " +
+                "SELECT user_id, email, password_hash, time_joined FROM " +
                         Config.getConfig(start).getUsersTable() +
                         " ORDER BY time_joined " + timeJoinedOrder + ", user_id DESC LIMIT ?";
         try (Connection con = ConnectionPool.getConnection(start);
@@ -400,7 +398,7 @@ public class EmailPasswordQueries {
             throws SQLException, StorageQueryException {
         String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
         String QUERY =
-                "SELECT user_id, email, password_hash, time_joined, is_email_verified FROM " +
+                "SELECT user_id, email, password_hash, time_joined FROM " +
                         Config.getConfig(start).getUsersTable() +
                         " WHERE time_joined " + timeJoinedOrderSymbol +
                         " ? OR (time_joined = ? AND user_id <= ?) ORDER BY time_joined " + timeJoinedOrder +
@@ -424,7 +422,7 @@ public class EmailPasswordQueries {
         }
     }
 
-    public static long getUsersCount(Start start) throws SQLException, StorageQueryException {
+    public static long getUsersCount(Start start) throws SQLException {
         String QUERY =
                 "SELECT COUNT(*) as total FROM " +
                         Config.getConfig(start).getUsersTable();
@@ -490,7 +488,7 @@ public class EmailPasswordQueries {
         public UserInfo map(ResultSet result) throws Exception {
             return new UserInfo(result.getString("user_id"), result.getString("email"),
                     result.getString("password_hash"),
-                    result.getLong("time_joined"), result.getInt("is_email_verified") != 0);
+                    result.getLong("time_joined"));
         }
     }
 }

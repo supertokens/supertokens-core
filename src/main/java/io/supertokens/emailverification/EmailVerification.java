@@ -17,14 +17,11 @@
 package io.supertokens.emailverification;
 
 import io.supertokens.Main;
-import io.supertokens.emailpassword.User;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
-import io.supertokens.pluginInterface.emailpassword.EmailVerificationTokenInfo;
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
-import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailVerificationTokenException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
-import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
+import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
+import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
+import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -46,17 +43,11 @@ public class EmailVerification {
         return EMAIL_VERIFICATION_TOKEN_LIFETIME_MS;
     }
 
-    public static String generateEmailVerificationToken(Main main, String userId)
+    public static String generateEmailVerificationToken(Main main, String userId, String email)
             throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException,
-            UnknownUserIdException, EmailAlreadyVerifiedException {
+            EmailAlreadyVerifiedException {
 
-        UserInfo user = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingId(userId);
-
-        if (user == null) {
-            throw new UnknownUserIdException();
-        }
-
-        if (user.isEmailVerified) {
+        if (StorageLayer.getEmailVerificationStorage(main).isEmailVerified(userId, email)) {
             throw new EmailAlreadyVerifiedException();
         }
 
@@ -82,9 +73,9 @@ public class EmailVerification {
             String hashedToken = Utils.hashSHA256(token);
 
             try {
-                StorageLayer.getEmailPasswordStorage(main).addEmailVerificationToken(
+                StorageLayer.getEmailVerificationStorage(main).addEmailVerificationToken(
                         new EmailVerificationTokenInfo(userId, hashedToken,
-                                System.currentTimeMillis() + getEmailVerificationTokenLifetime(main), user.email));
+                                System.currentTimeMillis() + getEmailVerificationTokenLifetime(main), email));
                 return token;
             } catch (DuplicateEmailVerificationTokenException ignored) {
             }
@@ -97,7 +88,7 @@ public class EmailVerification {
 
         String hashedToken = Utils.hashSHA256(token);
 
-        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
+        EmailVerificationSQLStorage storage = StorageLayer.getEmailVerificationStorage(main);
 
         final EmailVerificationTokenInfo tokenInfo = storage.getEmailVerificationTokenInfo(hashedToken);
         if (tokenInfo == null) {
@@ -110,7 +101,7 @@ public class EmailVerification {
             return storage.startTransaction(con -> {
 
                 EmailVerificationTokenInfo[] allTokens = storage
-                        .getAllEmailVerificationTokenInfoForUser_Transaction(con, userId);
+                        .getAllEmailVerificationTokenInfoForUser_Transaction(con, userId, tokenInfo.email);
 
                 EmailVerificationTokenInfo matchedToken = null;
                 for (EmailVerificationTokenInfo tok : allTokens) {
@@ -124,23 +115,18 @@ public class EmailVerification {
                     throw new StorageTransactionLogicException(new EmailVerificationInvalidTokenException());
                 }
 
-                storage.deleteAllEmailVerificationTokensForUser_Transaction(con, userId);
+                storage.deleteAllEmailVerificationTokensForUser_Transaction(con, userId, tokenInfo.email);
 
                 if (matchedToken.tokenExpiry < System.currentTimeMillis()) {
                     storage.commitTransaction(con);
                     throw new StorageTransactionLogicException(new EmailVerificationInvalidTokenException());
                 }
 
-                UserInfo userInfo = storage.getUserInfoUsingId_Transaction(con, userId);
-
-                if (!userInfo.email.equals(tokenInfo.email)) {
-                    throw new StorageTransactionLogicException(new EmailVerificationInvalidTokenException());
-                }
-
-                storage.updateUsersIsEmailVerified_Transaction(con, userId, true);
+                storage.updateIsEmailVerified_Transaction(con, userId, tokenInfo.email, true);
 
                 storage.commitTransaction(con);
-                return new User(userInfo.id, userInfo.email, userInfo.timeJoined);
+
+                return new User(userId, tokenInfo.email);
             });
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof EmailVerificationInvalidTokenException) {
@@ -150,14 +136,7 @@ public class EmailVerification {
         }
     }
 
-    public static boolean isEmailVerified(Main main, String userId) throws UnknownUserIdException,
-            StorageQueryException {
-        UserInfo user = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingId(userId);
-
-        if (user == null) {
-            throw new UnknownUserIdException();
-        }
-
-        return user.isEmailVerified;
+    public static boolean isEmailVerified(Main main, String userId, String email) throws StorageQueryException {
+        return StorageLayer.getEmailVerificationStorage(main).isEmailVerified(userId, email);
     }
 }

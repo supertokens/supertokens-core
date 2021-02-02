@@ -20,7 +20,6 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -49,20 +48,19 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String email = InputParser.parseStringOrThrowError(input, "email", false);
         assert userId != null;
+        assert email != null;
 
-        // logic according to https://github.com/supertokens/supertokens-core/issues/139
+        // used to be according to logic according to https://github.com/supertokens/supertokens-core/issues/139
+        // but then changed slightly when extracting this into its own recipe
 
         try {
-            String token = EmailVerification.generateEmailVerificationToken(super.main, userId);
+            String token = EmailVerification.generateEmailVerificationToken(super.main, userId, email);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("token", token);
-            super.sendJsonResponse(200, result, resp);
-        } catch (UnknownUserIdException e) {
-            JsonObject result = new JsonObject();
-            result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (EmailAlreadyVerifiedException e) {
             JsonObject result = new JsonObject();

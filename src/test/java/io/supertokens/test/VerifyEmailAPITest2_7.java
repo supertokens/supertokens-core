@@ -127,6 +127,7 @@ public class VerifyEmailAPITest2_7 {
         String userId = signUpResponse.get("user").getAsJsonObject().get("id").getAsString();
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", userId);
+        requestBody.addProperty("email", "random@gmail.com");
 
 
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
@@ -149,12 +150,11 @@ public class VerifyEmailAPITest2_7 {
                         1000,
                         null, Utils.getCdiVersion2_7ForTests());
 
-        assertEquals(response2.entrySet().size(), 2);
+        assertEquals(response2.entrySet().size(), 3);
         assertEquals(response2.get("status").getAsString(), "OK");
 
-        assertEquals(response2.get("user").getAsJsonObject().entrySet().size(), 3);
-        assertEquals(response2.get("user").getAsJsonObject().get("id").getAsString(), userId);
-        assertEquals(response2.get("user").getAsJsonObject().get("email").getAsString(), "random@gmail.com");
+        assertEquals(response2.get("userId").getAsString(), userId);
+        assertEquals(response2.get("email").getAsString(), "random@gmail.com");
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

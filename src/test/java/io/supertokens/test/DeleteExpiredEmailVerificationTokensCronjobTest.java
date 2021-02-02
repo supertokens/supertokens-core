@@ -23,7 +23,7 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.User;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.emailpassword.EmailVerificationTokenInfo;
+import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -64,23 +64,23 @@ public class DeleteExpiredEmailVerificationTokensCronjobTest {
 
         User user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
-        String tok = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id);
-        String tok2 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id);
+        String tok = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
+        String tok2 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
 
         io.supertokens.emailverification.EmailVerificationTest.getInstance(process.getProcess())
                 .setEmailVerificationTokenLifetime(10);
 
-        EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id);
-        EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id);
+        EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
+        EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
 
-        assert (StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getAllEmailVerificationTokenInfoForUser(user.id).length == 4);
+        assert (StorageLayer.getEmailVerificationStorage(process.getProcess())
+                .getAllEmailVerificationTokenInfoForUser(user.id, user.email).length == 4);
 
 
         Thread.sleep(3000);
 
-        EmailVerificationTokenInfo[] tokens = StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getAllEmailVerificationTokenInfoForUser(user.id);
+        EmailVerificationTokenInfo[] tokens = StorageLayer.getEmailVerificationStorage(process.getProcess())
+                .getAllEmailVerificationTokenInfoForUser(user.id, user.email);
 
         assert (tokens.length == 2);
 
