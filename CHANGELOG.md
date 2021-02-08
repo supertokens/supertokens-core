@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [4.0.0] - 
 ### Changed
 - Extracted email verification into its own recipe
+- ThirdParty recipe API
 
 ## [3.2.0] - 2021-01-26
 ### Changed

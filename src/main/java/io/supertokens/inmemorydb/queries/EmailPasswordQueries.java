@@ -36,7 +36,7 @@ import java.util.List;
 public class EmailPasswordQueries {
 
     static String getQueryToCreateUsersTable(Start start) {
-        return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getUsersTable() + " ("
+        return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getEmailPasswordUsersTable() + " ("
                 + "user_id CHAR(36) NOT NULL," + "email VARCHAR(256) NOT NULL UNIQUE,"
                 + "password_hash VARCHAR(128) NOT NULL," + "time_joined BIGINT UNSIGNED NOT NULL,"
                 + "PRIMARY KEY (user_id));";
@@ -44,7 +44,7 @@ public class EmailPasswordQueries {
 
     static String getQueryToCreateUserPaginationIndex(Start start) {
         return "CREATE INDEX emailpassword_user_pagination_index ON " +
-                Config.getConfig(start).getUsersTable() + "(time_joined DESC, user_id " +
+                Config.getConfig(start).getEmailPasswordUsersTable() + "(time_joined DESC, user_id " +
                 "DESC);";
     }
 
@@ -52,7 +52,7 @@ public class EmailPasswordQueries {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getPasswordResetTokensTable() + " ("
                 + "user_id CHAR(36) NOT NULL," + "token VARCHAR(128) NOT NULL UNIQUE,"
                 + "token_expiry BIGINT UNSIGNED NOT NULL," + "PRIMARY KEY (user_id, token),"
-                + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getUsersTable() +
+                + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getEmailPasswordUsersTable() +
                 "(user_id) ON DELETE CASCADE ON UPDATE CASCADE);";
     }
 
@@ -87,7 +87,7 @@ public class EmailPasswordQueries {
     public static void updateUsersPassword_Transaction(Start start, Connection con,
                                                        String userId, String newPassword)
             throws SQLException {
-        String QUERY = "UPDATE " + Config.getConfig(start).getUsersTable()
+        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable()
                 + " SET password_hash = ? WHERE user_id = ?";
 
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
@@ -189,7 +189,7 @@ public class EmailPasswordQueries {
 
     public static void signUp(Start start, String userId, String email, String passwordHash, long timeJoined)
             throws SQLException {
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getUsersTable()
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getEmailPasswordUsersTable()
                 + "(user_id, email, password_hash, time_joined)"
                 + " VALUES(?, ?, ?, ?)";
 
@@ -205,7 +205,7 @@ public class EmailPasswordQueries {
 
     public static UserInfo getUserInfoUsingId(Start start, String id) throws SQLException, StorageQueryException {
         String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
-                + Config.getConfig(start).getUsersTable() + " WHERE user_id = ?";
+                + Config.getConfig(start).getEmailPasswordUsersTable() + " WHERE user_id = ?";
         try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, id);
@@ -220,10 +220,10 @@ public class EmailPasswordQueries {
     public static UserInfo getUserInfoUsingId_Transaction(Start start, Connection con, String id)
             throws SQLException, StorageQueryException {
 
-        ((ConnectionWithLocks) con).lock(id + Config.getConfig(start).getUsersTable());
+        ((ConnectionWithLocks) con).lock(id + Config.getConfig(start).getEmailPasswordUsersTable());
 
         String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
-                + Config.getConfig(start).getUsersTable() + " WHERE user_id = ?";
+                + Config.getConfig(start).getEmailPasswordUsersTable() + " WHERE user_id = ?";
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, id);
             ResultSet result = pst.executeQuery();
@@ -236,7 +236,7 @@ public class EmailPasswordQueries {
 
     public static UserInfo getUserInfoUsingEmail(Start start, String email) throws SQLException, StorageQueryException {
         String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
-                + Config.getConfig(start).getUsersTable() + " WHERE email = ?";
+                + Config.getConfig(start).getEmailPasswordUsersTable() + " WHERE email = ?";
         try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, email);
@@ -252,7 +252,7 @@ public class EmailPasswordQueries {
             throws SQLException, StorageQueryException {
         String QUERY =
                 "SELECT user_id, email, password_hash, time_joined FROM " +
-                        Config.getConfig(start).getUsersTable() +
+                        Config.getConfig(start).getEmailPasswordUsersTable() +
                         " ORDER BY time_joined " + timeJoinedOrder + ", user_id DESC LIMIT ?";
         try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
@@ -277,7 +277,7 @@ public class EmailPasswordQueries {
         String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
         String QUERY =
                 "SELECT user_id, email, password_hash, time_joined FROM " +
-                        Config.getConfig(start).getUsersTable() +
+                        Config.getConfig(start).getEmailPasswordUsersTable() +
                         " WHERE time_joined " + timeJoinedOrderSymbol +
                         " ? OR (time_joined = ? AND user_id <= ?) ORDER BY time_joined " + timeJoinedOrder +
                         ", user_id DESC LIMIT ?";
@@ -303,7 +303,7 @@ public class EmailPasswordQueries {
     public static long getUsersCount(Start start) throws SQLException {
         String QUERY =
                 "SELECT COUNT(*) as total FROM " +
-                        Config.getConfig(start).getUsersTable();
+                        Config.getConfig(start).getEmailPasswordUsersTable();
         try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
             ResultSet result = pst.executeQuery();
