@@ -41,6 +41,7 @@ Description of the new feature
 ### 📚 Documentation
 
 - [ ] EmailPassword main documentation update
+   - [ ] If UI changes, make sure to update the themes netlify link.
    - [ ] In progress [PR]()
    - [ ] Deployed on [test site](https://test.supertokens.io/docs/emailpassword/introduction)
 
