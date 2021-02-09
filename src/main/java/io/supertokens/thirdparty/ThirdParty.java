@@ -140,12 +140,14 @@ public class ThirdParty {
                     .getUsers(tokenInfo.userId, tokenInfo.timeJoined, limit + 1, timeJoinedOrder);
         }
         String nextPaginationToken = null;
-        int maxLoop = users.length;
         if (users.length == limit + 1) {
-            maxLoop = limit;
             nextPaginationToken = new UserPaginationToken(users[limit].id, users[limit].timeJoined).generateToken();
         }
         return new UserPaginationContainer(users, nextPaginationToken);
+    }
+
+    public static long getUsersCount(Main main) throws StorageQueryException {
+        return StorageLayer.getThirdPartyStorage(main).getUsersCount();
     }
 
 }

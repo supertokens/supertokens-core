@@ -164,7 +164,8 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new VerifyEmailAPI(main));
         addAPI(new RecipeRouter(main, new UsersAPI(main),
                 new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));
-        addAPI(new UsersCountAPI(main));
+        addAPI(new RecipeRouter(main, new UsersCountAPI(main),
+                new io.supertokens.webserver.api.thirdparty.UsersCountAPI(main)));
         addAPI(new SignInUpAPI(main));
     }
 

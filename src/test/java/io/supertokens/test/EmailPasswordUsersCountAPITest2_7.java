@@ -30,12 +30,8 @@ import org.junit.rules.TestRule;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-/*
- * TODO:
- *  - add users and check if the number of users returned by the API is correct
- * */
 
-public class UsersCountAPITest2_7 {
+public class EmailPasswordUsersCountAPITest2_7 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
