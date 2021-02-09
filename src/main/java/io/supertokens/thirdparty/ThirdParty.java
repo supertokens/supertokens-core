@@ -118,12 +118,12 @@ public class ThirdParty {
     }
 
     public static UserInfo getUser(Main main, String userId) throws StorageQueryException {
-        return StorageLayer.getThirdPartyStorage(main).getUserInfoUsingId(userId);
+        return StorageLayer.getThirdPartyStorage(main).getThirdPartyUserInfoUsingId(userId);
     }
 
     public static UserInfo getUser(Main main, String thirdPartyId, String thirdPartyUserId)
             throws StorageQueryException {
-        return StorageLayer.getThirdPartyStorage(main).getUserInfoUsingId(thirdPartyId, thirdPartyUserId);
+        return StorageLayer.getThirdPartyStorage(main).getThirdPartyUserInfoUsingId(thirdPartyId, thirdPartyUserId);
     }
 
     public static UserPaginationContainer getUsers(Main main,
@@ -133,11 +133,11 @@ public class ThirdParty {
             throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         UserInfo[] users;
         if (paginationToken == null) {
-            users = StorageLayer.getThirdPartyStorage(main).getUsers(limit + 1, timeJoinedOrder);
+            users = StorageLayer.getThirdPartyStorage(main).getThirdPartyUsers(limit + 1, timeJoinedOrder);
         } else {
             UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
             users = StorageLayer.getThirdPartyStorage(main)
-                    .getUsers(tokenInfo.userId, tokenInfo.timeJoined, limit + 1, timeJoinedOrder);
+                    .getThirdPartyUsers(tokenInfo.userId, tokenInfo.timeJoined, limit + 1, timeJoinedOrder);
         }
         String nextPaginationToken = null;
         if (users.length == limit + 1) {

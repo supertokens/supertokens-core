@@ -43,6 +43,8 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
+import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
+import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -50,7 +52,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransactionRollbackException;
 
-public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage {
+public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage,
+        ThirdPartySQLStorage {
 
     private static final Object appenderLock = new Object();
     private static boolean silent = false;
@@ -400,7 +403,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             throws StorageQueryException, UnknownUserIdException, DuplicatePasswordResetTokenException {
         try {
             // SQLite is not compiled with foreign key constraint and so we must check for the userId manually
-            if (this.getUserInfoUsingId(passwordResetTokenInfo.userId) == null) {
+            if (this.getThirdPartyUserInfoUsingId(passwordResetTokenInfo.userId) == null) {
                 throw new UnknownUserIdException();
             }
 
@@ -612,5 +615,56 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.thirdparty.UserInfo getUserInfoUsingId_Transaction(TransactionConnection con,
+                                                                                             String thirdPartyId,
+                                                                                             String thirdPartyUserId)
+            throws StorageQueryException {
+        return null;
+    }
+    
+
+    @Override
+    public void updateUserEmail_Transaction(TransactionConnection con, String thirdPartyId, String thirdPartyUserId,
+                                            String newEmail) throws StorageQueryException {
+
+    }
+
+    @Override
+    public void signUp(io.supertokens.pluginInterface.thirdparty.UserInfo userInfo)
+            throws StorageQueryException, io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException,
+            DuplicateThirdPartyUserException {
+
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.thirdparty.UserInfo getThirdPartyUserInfoUsingId(String thirdPartyId,
+                                                                                           String thirdPartyUserId)
+            throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.thirdparty.UserInfo getThirdPartyUserInfoUsingId(String id)
+            throws StorageQueryException {
+        return null;
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsers(@NotNull String userId,
+                                                                                   @NotNull Long timeJoined,
+                                                                                   @NotNull Integer limit,
+                                                                                   @NotNull String timeJoinedOrder)
+            throws StorageQueryException {
+        return new io.supertokens.pluginInterface.thirdparty.UserInfo[0];
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsers(@NotNull Integer limit,
+                                                                                   @NotNull String timeJoinedOrder)
+            throws StorageQueryException {
+        return new io.supertokens.pluginInterface.thirdparty.UserInfo[0];
     }
 }
