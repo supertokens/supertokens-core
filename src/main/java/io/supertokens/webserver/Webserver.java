@@ -23,10 +23,7 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
-import io.supertokens.webserver.api.core.ApiVersionAPI;
-import io.supertokens.webserver.api.core.ConfigAPI;
-import io.supertokens.webserver.api.core.HelloAPI;
-import io.supertokens.webserver.api.core.NotFoundAPI;
+import io.supertokens.webserver.api.core.*;
 import io.supertokens.webserver.api.emailpassword.*;
 import io.supertokens.webserver.api.emailverification.GenerateEmailVerificationTokenAPI;
 import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
@@ -167,6 +164,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new RecipeRouter(main, new UsersCountAPI(main),
                 new io.supertokens.webserver.api.thirdparty.UsersCountAPI(main)));
         addAPI(new SignInUpAPI(main));
+        addAPI(new TelemetryAPI(main));
     }
 
     public void addAPI(WebserverAPI api) {
