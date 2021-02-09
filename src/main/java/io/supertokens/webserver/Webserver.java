@@ -30,6 +30,7 @@ import io.supertokens.webserver.api.emailpassword.*;
 import io.supertokens.webserver.api.emailverification.GenerateEmailVerificationTokenAPI;
 import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
 import io.supertokens.webserver.api.session.*;
+import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;
@@ -155,6 +156,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new VerifyEmailAPI(main));
         addAPI(new UsersAPI(main));
         addAPI(new UsersCountAPI(main));
+        addAPI(new SignInUpAPI(main));
     }
 
     public void addAPI(WebserverAPI api) {

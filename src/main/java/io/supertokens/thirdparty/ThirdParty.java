@@ -16,6 +16,100 @@
 
 package io.supertokens.thirdparty;
 
+import io.supertokens.Main;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.thirdparty.UserInfo;
+import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
+import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
+import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.utils.Utils;
+
 public class ThirdParty {
-    // TODO:
+
+    public static class SignInUpResponse {
+        public boolean createdNewUser;
+        public UserInfo user;
+
+        public SignInUpResponse(boolean createdNewUser, UserInfo user) {
+            this.createdNewUser = createdNewUser;
+            this.user = user;
+        }
+    }
+
+    public static SignInUpResponse signInUp(Main main, String thirdPartyId, String thirdPartyUserId, String email,
+                                            boolean isEmailVerified)
+            throws StorageQueryException {
+        SignInUpResponse response = signInUpHelper(main, thirdPartyId, thirdPartyUserId, email);
+
+        if (isEmailVerified) {
+            try {
+                StorageLayer.getEmailVerificationStorage(main).startTransaction(con -> {
+                    StorageLayer.getEmailVerificationStorage(main)
+                            .updateIsEmailVerified_Transaction(con, response.user.id, response.user.thirdParty.email,
+                                    true);
+                    return null;
+                });
+            } catch (StorageTransactionLogicException e) {
+                throw new StorageQueryException(e);
+            }
+        }
+
+        return response;
+    }
+
+    private static SignInUpResponse signInUpHelper(Main main, String thirdPartyId, String thirdPartyUserId,
+                                                   String email)
+            throws StorageQueryException {
+        ThirdPartySQLStorage storage = StorageLayer.getThirdPartyStorage(main);
+        while (true) {
+            // loop for sign in + sign up
+
+            while (true) {
+                // loop for sign up
+                String userId = Utils.getUUID();
+                long timeJoined = System.currentTimeMillis();
+
+                try {
+                    UserInfo user = new UserInfo(userId,
+                            new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId, email), timeJoined);
+
+                    storage.signUp(user);
+
+                    return new SignInUpResponse(true, user);
+                } catch (DuplicateUserIdException e) {
+                    // we try again..
+                } catch (DuplicateThirdPartyUserException e) {
+                    // we try to sign in
+                    break;
+                }
+            }
+
+            // we try to get user and update their email
+            SignInUpResponse response = null;
+            try {
+                response = storage.startTransaction(con -> {
+                    UserInfo user = storage.getUserInfoUsingId_Transaction(con, thirdPartyId, thirdPartyUserId);
+
+                    if (user == null) {
+                        // we retry everything..
+                        return null;
+                    }
+
+                    storage.updateUserEmail_Transaction(con, thirdPartyId, thirdPartyUserId, email);
+
+                    return new SignInUpResponse(false, user);
+                });
+            } catch (StorageTransactionLogicException ignored) {
+            }
+
+            if (response != null) {
+                return response;
+            }
+
+            // retry..
+        }
+    }
+
 }

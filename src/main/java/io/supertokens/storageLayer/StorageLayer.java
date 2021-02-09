@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
+import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -130,6 +131,17 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             throw new UnsupportedOperationException("");
         }
         return (EmailVerificationSQLStorage) getInstance(main).storage;
+    }
+
+    public static ThirdPartySQLStorage getThirdPartyStorage(Main main) {
+        if (getInstance(main) == null) {
+            throw new QuitProgramException("please call init() before calling getStorageLayer");
+        }
+        if (getInstance(main).storage.getType() != STORAGE_TYPE.SQL) {
+            // we only support SQL for now
+            throw new UnsupportedOperationException("");
+        }
+        return (ThirdPartySQLStorage) getInstance(main).storage;
     }
 
     public boolean isInMemDb() {
