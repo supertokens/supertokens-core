@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.emailpassword;
+package io.supertokens;
 
 import java.util.Base64;
 
@@ -27,18 +27,27 @@ public class UserPaginationToken {
         this.timeJoined = timeJoined;
     }
 
-    public static UserPaginationToken extractTokenInfo(String token) throws IllegalArgumentException {
-        String decodedPaginationToken = new String(Base64.getDecoder().decode(token));
-        String[] splitDecodedToken = decodedPaginationToken.split(";");
-        if (splitDecodedToken.length != 2) {
-            throw new IllegalArgumentException();
+    public static UserPaginationToken extractTokenInfo(String token) throws InvalidTokenException {
+        try {
+            String decodedPaginationToken = new String(Base64.getDecoder().decode(token));
+            String[] splitDecodedToken = decodedPaginationToken.split(";");
+            if (splitDecodedToken.length != 2) {
+                throw new Exception();
+            }
+            String userId = splitDecodedToken[0];
+            long timeJoined = Long.parseLong(splitDecodedToken[1]);
+            return new UserPaginationToken(userId, timeJoined);
+        } catch (Exception e) {
+            throw new InvalidTokenException();
         }
-        String userId = splitDecodedToken[0];
-        long timeJoined = Long.parseLong(splitDecodedToken[1]);
-        return new UserPaginationToken(userId, timeJoined);
     }
 
     public String generateToken() {
         return new String(Base64.getEncoder().encode((this.userId + ";" + this.timeJoined).getBytes()));
+    }
+
+    public static class InvalidTokenException extends Exception {
+
+        private static final long serialVersionUID = 6289026174830695477L;
     }
 }

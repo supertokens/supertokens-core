@@ -17,6 +17,7 @@
 package io.supertokens.emailpassword;
 
 import io.supertokens.Main;
+import io.supertokens.UserPaginationToken;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
@@ -205,7 +206,7 @@ public class EmailPassword {
 
     public static UserPaginationContainer getUsers(Main main, @Nullable String paginationToken, Integer limit,
                                                    String timeJoinedOrder)
-            throws StorageQueryException, IllegalArgumentException {
+            throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         UserInfo[] users;
         if (paginationToken == null) {
             users = StorageLayer.getEmailPasswordStorage(main).getUsers(limit + 1, timeJoinedOrder);

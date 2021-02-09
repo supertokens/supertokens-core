@@ -20,12 +20,18 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.UserPaginationToken;
+import io.supertokens.emailpassword.User;
+import io.supertokens.emailpassword.UserPaginationContainer;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
+import javax.annotation.Nullable;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -77,5 +83,33 @@ public class SignInUpAPI extends WebserverAPI {
             throw new ServletException(e);
         }
 
+    }
+
+    public static UserPaginationContainer getUsers(Main main, @Nullable String paginationToken, Integer limit,
+                                                   String timeJoinedOrder)
+            throws StorageQueryException, UserPaginationToken.InvalidTokenException {
+        UserInfo[] users;
+        if (paginationToken == null) {
+            users = StorageLayer.getEmailPasswordStorage(main).getUsers(limit + 1, timeJoinedOrder);
+        } else {
+            UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
+            users = StorageLayer.getEmailPasswordStorage(main)
+                    .getUsers(tokenInfo.userId, tokenInfo.timeJoined, limit + 1, timeJoinedOrder);
+        }
+        String nextPaginationToken = null;
+        int maxLoop = users.length;
+        if (users.length == limit + 1) {
+            maxLoop = limit;
+            nextPaginationToken = new UserPaginationToken(users[limit].id, users[limit].timeJoined).generateToken();
+        }
+        User[] resultUsers = new User[maxLoop];
+        for (int i = 0; i < maxLoop; i++) {
+            resultUsers[i] = new User(users[i].id, users[i].email, users[i].timeJoined);
+        }
+        return new UserPaginationContainer(resultUsers, nextPaginationToken);
+    }
+
+    public static long getUsersCount(Main main) throws StorageQueryException {
+        return StorageLayer.getEmailPasswordStorage(main).getUsersCount();
     }
 }

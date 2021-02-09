@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api.emailpassword;
+package io.supertokens.webserver.api.thirdparty;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -22,9 +22,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.UserPaginationToken;
-import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.UserPaginationContainer;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.thirdparty.UserPaginationContainer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -38,7 +38,7 @@ public class UsersAPI extends WebserverAPI {
     private static final long serialVersionUID = -2225750492558064634L;
 
     public UsersAPI(Main main) {
-        super(main, EmailPassword.RECIPE_ID);
+        super(main, ThirdParty.RECIPE_ID);
     }
 
     @Override
@@ -69,7 +69,7 @@ public class UsersAPI extends WebserverAPI {
         if (timeJoinedOrder != null) {
             if (!timeJoinedOrder.equals("ASC") && !timeJoinedOrder.equals("DESC")) {
                 throw new ServletException(
-                        new WebserverAPI.BadRequestException("timeJoinedOrder can be either ASC OR DESC"));
+                        new BadRequestException("timeJoinedOrder can be either ASC OR DESC"));
             }
         } else {
             timeJoinedOrder = "ASC";
@@ -78,17 +78,17 @@ public class UsersAPI extends WebserverAPI {
         if (limit != null) {
             if (limit > 1000) {
                 throw new ServletException(
-                        new WebserverAPI.BadRequestException("max limit allowed is 1000"));
+                        new BadRequestException("max limit allowed is 1000"));
             } else if (limit < 1) {
                 throw new ServletException(
-                        new WebserverAPI.BadRequestException("limit must a positive integer with max value 1000"));
+                        new BadRequestException("limit must a positive integer with max value 1000"));
             }
         } else {
             limit = 100;
         }
 
         try {
-            UserPaginationContainer users = EmailPassword.getUsers(super.main, paginationToken, limit, timeJoinedOrder);
+            UserPaginationContainer users = ThirdParty.getUsers(super.main, paginationToken, limit, timeJoinedOrder);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             JsonArray usersJson = new JsonParser().parse(new Gson().toJson(users.users)).getAsJsonArray();
@@ -99,7 +99,7 @@ public class UsersAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (UserPaginationToken.InvalidTokenException e) {
             throw new ServletException(
-                    new WebserverAPI.BadRequestException("invalid pagination token"));
+                    new BadRequestException("invalid pagination token"));
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }

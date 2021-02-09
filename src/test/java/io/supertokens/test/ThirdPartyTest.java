@@ -37,6 +37,8 @@ import org.junit.rules.TestRule;
  *     in our system
  *  - Sign up with unnormalised email, and sign in with normailised email to get the same user.
  *  - Test both getUser functions (perhaps already tested with the above...)
+ *  - getUsers from emailpassword tests
+ *  - getUsersCount from emailpassword tests
  * */
 
 public class ThirdPartyTest {

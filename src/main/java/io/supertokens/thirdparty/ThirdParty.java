@@ -17,6 +17,7 @@
 package io.supertokens.thirdparty;
 
 import io.supertokens.Main;
+import io.supertokens.UserPaginationToken;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
@@ -25,6 +26,8 @@ import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdExcept
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+
+import javax.annotation.Nullable;
 
 public class ThirdParty {
 
@@ -121,6 +124,28 @@ public class ThirdParty {
     public static UserInfo getUser(Main main, String thirdPartyId, String thirdPartyUserId)
             throws StorageQueryException {
         return StorageLayer.getThirdPartyStorage(main).getUserInfoUsingId(thirdPartyId, thirdPartyUserId);
+    }
+
+    public static UserPaginationContainer getUsers(Main main,
+                                                   @Nullable String paginationToken,
+                                                   Integer limit,
+                                                   String timeJoinedOrder)
+            throws StorageQueryException, UserPaginationToken.InvalidTokenException {
+        UserInfo[] users;
+        if (paginationToken == null) {
+            users = StorageLayer.getThirdPartyStorage(main).getUsers(limit + 1, timeJoinedOrder);
+        } else {
+            UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
+            users = StorageLayer.getThirdPartyStorage(main)
+                    .getUsers(tokenInfo.userId, tokenInfo.timeJoined, limit + 1, timeJoinedOrder);
+        }
+        String nextPaginationToken = null;
+        int maxLoop = users.length;
+        if (users.length == limit + 1) {
+            maxLoop = limit;
+            nextPaginationToken = new UserPaginationToken(users[limit].id, users[limit].timeJoined).generateToken();
+        }
+        return new UserPaginationContainer(users, nextPaginationToken);
     }
 
 }
