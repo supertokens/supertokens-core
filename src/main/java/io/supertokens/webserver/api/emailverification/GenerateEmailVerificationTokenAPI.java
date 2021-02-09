@@ -36,7 +36,7 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
     public GenerateEmailVerificationTokenAPI(Main main) {
-        super(main);
+        super(main, EmailVerification.RECIPE_ID);
     }
 
     @Override

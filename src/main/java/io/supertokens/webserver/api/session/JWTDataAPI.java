@@ -34,7 +34,7 @@ public class JWTDataAPI extends WebserverAPI {
     private static final long serialVersionUID = -4989144736402314280L;
 
     public JWTDataAPI(Main main) {
-        super(main);
+        super(main, Session.RECIPE_ID);
     }
 
     @Override

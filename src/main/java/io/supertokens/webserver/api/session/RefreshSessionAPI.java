@@ -38,7 +38,7 @@ public class RefreshSessionAPI extends WebserverAPI {
     private static final long serialVersionUID = 7142317017402226537L;
 
     public RefreshSessionAPI(Main main) {
-        super(main);
+        super(main, Session.RECIPE_ID);
     }
 
     @Override

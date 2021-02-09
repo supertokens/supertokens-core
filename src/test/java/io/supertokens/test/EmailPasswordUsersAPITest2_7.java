@@ -17,6 +17,7 @@
 package io.supertokens.test;
 
 import io.supertokens.ProcessState;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
@@ -30,17 +31,8 @@ import java.util.HashMap;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-/*
- * TODO:
- *  - Check for bad input (missing fields)
- *  - Check good input works (add 5 users)
- *    - no params passed should return 5 users
- *    - only limit passed (limit: 2. users are returned in ASC order based on timeJoined)
- *    - limit and timeJoinedOrder passed (limit: 2, timeJoinedOrder: DESC. users are returned in DESC order based on
- * timeJoined)
- * */
 
-public class UsersAPITest2_7 {
+public class EmailPasswordUsersAPITest2_7 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -73,7 +65,7 @@ public class UsersAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests());
+                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -90,7 +82,7 @@ public class UsersAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests());
+                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -108,7 +100,7 @@ public class UsersAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests());
+                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -126,7 +118,7 @@ public class UsersAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests());
+                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -143,7 +135,7 @@ public class UsersAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests());
+                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -161,7 +153,7 @@ public class UsersAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests());
+                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&

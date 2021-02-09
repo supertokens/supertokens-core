@@ -31,14 +31,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Base64;
 
 public class UsersAPI extends WebserverAPI {
 
     private static final long serialVersionUID = -2225750492558064634L;
 
     public UsersAPI(Main main) {
-        super(main);
+        super(main, EmailPassword.RECIPE_ID);
     }
 
     @Override

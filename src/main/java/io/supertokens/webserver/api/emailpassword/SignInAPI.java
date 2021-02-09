@@ -38,7 +38,7 @@ public class SignInAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
     public SignInAPI(Main main) {
-        super(main);
+        super(main, EmailPassword.RECIPE_ID);
     }
 
     @Override

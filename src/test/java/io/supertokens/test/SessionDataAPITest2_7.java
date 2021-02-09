@@ -19,6 +19,7 @@ package io.supertokens.test;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
+import io.supertokens.session.Session;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -57,7 +58,7 @@ public class SessionDataAPITest2_7 {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests());
+                            null, Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -73,7 +74,7 @@ public class SessionDataAPITest2_7 {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", map, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests());
+                            null, Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -88,7 +89,7 @@ public class SessionDataAPITest2_7 {
                     .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", null,
                             1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests());
+                            null, Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 &&
@@ -104,7 +105,7 @@ public class SessionDataAPITest2_7 {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", jsonBody,
                             1000,
-                            1000, null, Utils.getCdiVersion2_7ForTests());
+                            1000, null, Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.getMessage()
@@ -122,7 +123,7 @@ public class SessionDataAPITest2_7 {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", jsonBody,
                             1000,
-                            1000, null, Utils.getCdiVersion2_7ForTests());
+                            1000, null, Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -164,7 +165,7 @@ public class SessionDataAPITest2_7 {
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", map, 1000, 1000,
                         null,
-                        Utils.getCdiVersion2_7ForTests());
+                        Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
 
@@ -173,7 +174,7 @@ public class SessionDataAPITest2_7 {
         //Get request when session exists
         JsonObject session = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                        sessionBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests());
+                        sessionBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
 
         assertEquals(session.get("status").getAsString(), "OK");
 
@@ -183,7 +184,7 @@ public class SessionDataAPITest2_7 {
         response = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", map, 1000, 1000,
                         null,
-                        Utils.getCdiVersion2_7ForTests());
+                        Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.entrySet().size(), 2);
@@ -229,7 +230,7 @@ public class SessionDataAPITest2_7 {
         JsonObject sessionDataResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data",
                         putRequestBody,
-                        1000, 1000, null, Utils.getCdiVersion2_7ForTests());
+                        1000, 1000, null, Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
 
         assertEquals(sessionDataResponse.entrySet().size(), 2);
         assertEquals(sessionDataResponse.get("status").getAsString(), "UNAUTHORISED");
@@ -240,7 +241,8 @@ public class SessionDataAPITest2_7 {
 
         JsonObject session = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                        new JsonParser().parse(sessionJsonInput), 1000, 1000, null, Utils.getCdiVersion2_7ForTests());
+                        new JsonParser().parse(sessionJsonInput), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                        Session.RECIPE_ID);
 
         assertEquals(session.get("status").getAsString(), "OK");
 
@@ -253,7 +255,7 @@ public class SessionDataAPITest2_7 {
                 .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data",
                         putRequestBody,
                         1000,
-                        1000, null, Utils.getCdiVersion2_7ForTests());
+                        1000, null, Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
 
         assertEquals(response.entrySet().size(), 1);
         assertEquals(response.get("status").getAsString(), "OK");

@@ -34,7 +34,7 @@ public class SessionRemoveAPI extends WebserverAPI {
     private static final long serialVersionUID = -2082970815993229316L;
 
     public SessionRemoveAPI(Main main) {
-        super(main);
+        super(main, Session.RECIPE_ID);
     }
 
     @Override

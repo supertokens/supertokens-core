@@ -36,6 +36,7 @@ import org.junit.rules.TestRule;
  *  - Sign up with verified email, then sign in, but make that email unverified. Check that email is still verified
  *     in our system
  *  - Sign up with unnormalised email, and sign in with normailised email to get the same user.
+ *  - Test both getUser functions (perhaps already tested with the above...)
  * */
 
 public class ThirdPartyTest {

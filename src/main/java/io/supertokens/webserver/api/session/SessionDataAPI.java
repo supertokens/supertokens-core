@@ -33,7 +33,7 @@ public class SessionDataAPI extends WebserverAPI {
     private static final long serialVersionUID = -6901312482713647177L;
 
     public SessionDataAPI(Main main) {
-        super(main);
+        super(main, Session.RECIPE_ID);
     }
 
     @Override

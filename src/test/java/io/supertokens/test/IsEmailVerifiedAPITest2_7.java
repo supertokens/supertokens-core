@@ -18,6 +18,7 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
@@ -60,7 +61,7 @@ public class IsEmailVerifiedAPITest2_7 {
             try {
                 io.supertokens.test.httpRequest.HttpRequest
                         .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
-                                null, 1000, 1000, null, Utils.getCdiVersion2_7ForTests());
+                                null, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), EmailVerification.RECIPE_ID);
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -78,7 +79,7 @@ public class IsEmailVerifiedAPITest2_7 {
 
                 io.supertokens.test.httpRequest.HttpRequest
                         .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
-                                map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests());
+                                map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), EmailVerification.RECIPE_ID);
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -116,7 +117,7 @@ public class IsEmailVerifiedAPITest2_7 {
 
         JsonObject verifyResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
-                        map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests());
+                        map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), EmailVerification.RECIPE_ID);
         assertEquals(verifyResponse.entrySet().size(), 2);
         assertEquals(verifyResponse.get("status").getAsString(), "OK");
         assertEquals(verifyResponse.get("isVerified").getAsBoolean(), false);
@@ -131,7 +132,7 @@ public class IsEmailVerifiedAPITest2_7 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests());
+                        null, Utils.getCdiVersion2_7ForTests(), EmailVerification.RECIPE_ID);
 
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "OK");
@@ -145,7 +146,7 @@ public class IsEmailVerifiedAPITest2_7 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/email/verify", verifyResponseBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests());
+                        null, Utils.getCdiVersion2_7ForTests(), EmailVerification.RECIPE_ID);
 
         assertEquals(response2.entrySet().size(), 3);
         assertEquals(response2.get("status").getAsString(), "OK");
@@ -155,10 +156,10 @@ public class IsEmailVerifiedAPITest2_7 {
 
         verifyResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
-                        map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests());
+                        map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), EmailVerification.RECIPE_ID);
         assertEquals(verifyResponse.entrySet().size(), 2);
         assertEquals(verifyResponse.get("status").getAsString(), "OK");
-        assertEquals(verifyResponse.get("isVerified").getAsBoolean(), true);
+        assertTrue(verifyResponse.get("isVerified").getAsBoolean());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

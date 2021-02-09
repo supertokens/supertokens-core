@@ -1,5 +1,5 @@
 /*
- *    Copyright (c) 2020, VRAI Labs and/or its affiliates. All rights reserved.
+ *    Copyright (c) 2021, VRAI Labs and/or its affiliates. All rights reserved.
  *
  *    This software is licensed under the Apache License, Version 2.0 (the
  *    "License") as published by the Apache Software Foundation.
@@ -14,12 +14,13 @@
  *    under the License.
  */
 
-package io.supertokens.webserver;
+package io.supertokens.webserver.api.core;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.webserver.WebserverAPI;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -29,7 +30,7 @@ public class ApiVersionAPI extends WebserverAPI {
     private static final long serialVersionUID = -5175334869851577653L;
 
     public ApiVersionAPI(Main main) {
-        super(main);
+        super(main, "");
     }
 
     @Override
@@ -38,7 +39,7 @@ public class ApiVersionAPI extends WebserverAPI {
     }
 
     @Override
-    protected boolean versionNeeded() {
+    protected boolean versionNeeded(HttpServletRequest req) {
         return false;
     }
 

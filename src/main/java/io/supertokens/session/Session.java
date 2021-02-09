@@ -53,6 +53,8 @@ import java.util.UUID;
 
 public class Session {
 
+    public static final String RECIPE_ID = "session";
+
     @TestOnly
     public static SessionInformationHolder createNewSession(Main main, @Nonnull String userId,
                                                             @Nonnull JsonObject userDataInJWT,
@@ -326,7 +328,8 @@ public class Session {
     }
 
     private static SessionInformationHolder refreshSessionHelper(Main main, String refreshToken,
-                                                                 RefreshToken.RefreshTokenInfo refreshTokenInfo, boolean enableAntiCsrf)
+                                                                 RefreshToken.RefreshTokenInfo refreshTokenInfo,
+                                                                 boolean enableAntiCsrf)
             throws StorageTransactionLogicException, UnauthorisedException, StorageQueryException,
             TokenTheftDetectedException {
         //////////////////////////////////////////SQL/////////////////////////////////////////////

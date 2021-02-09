@@ -73,7 +73,7 @@ public class ApiVersionAPITest {
 
         JsonObject apiVersionResponse = HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000, null,
-                        null);
+                        null, "");
         JsonArray apiVersions = apiVersionResponse.get("versions").getAsJsonArray();
 
         for (int i = 0; i < apiVersions.size(); i++) {
@@ -96,7 +96,7 @@ public class ApiVersionAPITest {
         //without setting cdi-version header
         JsonObject apiVersionResponse = HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000,
-                        null, null);
+                        null, null, "");
         assertNotNull(apiVersionResponse.getAsJsonArray("versions"));
         assertTrue(apiVersionResponse.getAsJsonArray("versions").size() >= 1);
 
@@ -104,7 +104,7 @@ public class ApiVersionAPITest {
         apiVersionResponse = HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000,
                         null,
-                        Utils.getCdiVersionLatestForTests());
+                        Utils.getCdiVersionLatestForTests(), "");
         assertNotNull(apiVersionResponse.getAsJsonArray("versions"));
         assertTrue(apiVersionResponse.getAsJsonArray("versions").size() >= 1);
 
@@ -123,7 +123,7 @@ public class ApiVersionAPITest {
 
         JsonObject apiVersionResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000,
-                        null, null);
+                        null, null, "");
 
         Set<String> supportedVersions = WebserverAPI.supportedVersions;
         JsonArray apiSupportedVersions = apiVersionResponse.getAsJsonArray("versions");
@@ -147,7 +147,7 @@ public class ApiVersionAPITest {
 
         JsonObject apiVersionResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000,
-                        null, null);
+                        null, null, "");
 
         for (JsonElement i : apiVersionResponse.get("versions").getAsJsonArray()) {
             assertTrue(i.getAsString()

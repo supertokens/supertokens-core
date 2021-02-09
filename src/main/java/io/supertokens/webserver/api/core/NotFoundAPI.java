@@ -29,7 +29,7 @@ public class NotFoundAPI extends WebserverAPI {
     private static final long serialVersionUID = 1L;
 
     public NotFoundAPI(Main main) {
-        super(main);
+        super(main, "");
     }
 
     @Override

@@ -36,7 +36,7 @@ public class SignInUpAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
     public SignInUpAPI(Main main) {
-        super(main);
+        super(main, ThirdParty.RECIPE_ID);
     }
 
     @Override
@@ -61,7 +61,7 @@ public class SignInUpAPI extends WebserverAPI {
         // logic according to https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
 
         String normalisedEmail = Utils.normaliseEmail(email);
-        
+
         try {
             ThirdParty.SignInUpResponse response = ThirdParty
                     .signInUp(super.main, thirdPartyId, thirdPartyUserId, normalisedEmail, isEmailVerified);

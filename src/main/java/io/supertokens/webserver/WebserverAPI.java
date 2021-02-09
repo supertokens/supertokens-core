@@ -35,6 +35,7 @@ public abstract class WebserverAPI extends HttpServlet {
     private static final long serialVersionUID = 1L;
     protected final Main main;
     public static final Set<String> supportedVersions = new HashSet<>();
+    private String rid;
 
     static {
         supportedVersions.add("2.7");
@@ -44,9 +45,14 @@ public abstract class WebserverAPI extends HttpServlet {
         return "2.7";
     }
 
-    public WebserverAPI(Main main) {
+    public WebserverAPI(Main main, String rid) {
         super();
         this.main = main;
+        this.rid = rid;
+    }
+
+    public String getRID() {
+        return this.rid;
     }
 
     public abstract String getPath();
@@ -109,7 +115,7 @@ public abstract class WebserverAPI extends HttpServlet {
         }
     }
 
-    protected boolean versionNeeded() {
+    protected boolean versionNeeded(HttpServletRequest req) {
         return true;
     }
 
@@ -130,17 +136,17 @@ public abstract class WebserverAPI extends HttpServlet {
         }
     }
 
-    protected boolean checkAPIKey() {
+    protected boolean checkAPIKey(HttpServletRequest req) {
         return true;
     }
 
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
-            if (this.checkAPIKey()) {
+            if (this.checkAPIKey(req)) {
                 assertThatAPIKeyCheckPasses(req.getHeader("api-key"));
             }
-            if (this.versionNeeded()) {
+            if (this.versionNeeded(req)) {
                 String version = getVersionFromRequest(req);
                 assertThatVersionIsCompatible(version);
                 Logging.debug(main,
@@ -172,6 +178,10 @@ public abstract class WebserverAPI extends HttpServlet {
             }
         }
         Logging.debug(main, "API ended: " + this.getPath() + ". Method: " + req.getMethod());
+    }
+
+    protected String getRIDFromRequest(HttpServletRequest req) {
+        return req.getHeader("rId");
     }
 
     protected String getVersionFromRequest(HttpServletRequest req) {

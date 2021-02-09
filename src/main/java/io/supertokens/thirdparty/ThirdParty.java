@@ -28,6 +28,8 @@ import io.supertokens.utils.Utils;
 
 public class ThirdParty {
 
+    public static final String RECIPE_ID = "thirdparty";
+
     public static class SignInUpResponse {
         public boolean createdNewUser;
         public UserInfo user;
@@ -110,6 +112,15 @@ public class ThirdParty {
 
             // retry..
         }
+    }
+
+    public static UserInfo getUser(Main main, String userId) throws StorageQueryException {
+        return StorageLayer.getThirdPartyStorage(main).getUserInfoUsingId(userId);
+    }
+
+    public static UserInfo getUser(Main main, String thirdPartyId, String thirdPartyUserId)
+            throws StorageQueryException {
+        return StorageLayer.getThirdPartyStorage(main).getUserInfoUsingId(thirdPartyId, thirdPartyUserId);
     }
 
 }

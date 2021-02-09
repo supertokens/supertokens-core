@@ -50,6 +50,9 @@ import static org.junit.Assert.*;
  * - Give unsupported version and make sure it fails
  * - Give all supported versions and make sure it passes
  * - Give no version and makes sure it treats it as 1.0
+ * - Recipe Router tests
+ * - Initialise two routes with the same path, different RID and query each and check that routing is happening
+ * properly (for all HTTP methods).
  */
 
 public class WebserverTest extends Mockito {
@@ -76,7 +79,7 @@ public class WebserverTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = -1495165001457526749L;
 
             @Override
@@ -100,7 +103,7 @@ public class WebserverTest extends Mockito {
             String response = io.supertokens.test.httpRequest.HttpRequest.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/testSupportedVersions", null, 1000,
                     1000, null, supportedVersions[i]
-                            .toString());
+                            .toString(), "");
             assertEquals(response, "version supported");
         }
 
@@ -108,7 +111,7 @@ public class WebserverTest extends Mockito {
         try {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/testSupportedVersions", null, 1000,
-                            1000, null, unsupportedCdiVersion);
+                            1000, null, unsupportedCdiVersion, "");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(e.getMessage(),
@@ -125,7 +128,7 @@ public class WebserverTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = 2132771458741821984L;
 
             @Override
@@ -142,7 +145,7 @@ public class WebserverTest extends Mockito {
 
         String response = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/defaultVersion", null, 1000, 1000,
-                        null, null);
+                        null, null, "");
         assertEquals(response, Utils.getCdiVersionLatestForTests());
     }
 
@@ -153,7 +156,7 @@ public class WebserverTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = -2958203940142199528L;
 
             @Override
@@ -191,7 +194,7 @@ public class WebserverTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = -8747880939332229452L;
 
             @Override
@@ -225,7 +228,7 @@ public class WebserverTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = -2308640253232482194L;
 
             @Override
@@ -284,7 +287,7 @@ public class WebserverTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = 2225187160606405264L;
 
             @Override
@@ -400,7 +403,7 @@ public class WebserverTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
             private static final long serialVersionUID = 1L;
 
@@ -541,7 +544,7 @@ public class WebserverTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
             private static final long serialVersionUID = 1L;
 
@@ -589,7 +592,7 @@ public class WebserverTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
             private static final long serialVersionUID = 1L;
 
@@ -634,7 +637,7 @@ public class WebserverTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
             private static final long serialVersionUID = 1L;
 

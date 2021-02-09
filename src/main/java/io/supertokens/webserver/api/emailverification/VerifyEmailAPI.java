@@ -36,7 +36,7 @@ public class VerifyEmailAPI extends WebserverAPI {
     private static final long serialVersionUID = -7529428297450682549L;
 
     public VerifyEmailAPI(Main main) {
-        super(main);
+        super(main, EmailVerification.RECIPE_ID);
     }
 
     @Override

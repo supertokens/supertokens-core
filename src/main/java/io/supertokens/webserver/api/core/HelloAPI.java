@@ -34,11 +34,11 @@ public class HelloAPI extends WebserverAPI {
     private static final long serialVersionUID = 1L;
 
     public HelloAPI(Main main) {
-        super(main);
+        super(main, "");
     }
 
     @Override
-    protected boolean versionNeeded() {
+    protected boolean versionNeeded(HttpServletRequest req) {
         return false;
     }
 
@@ -48,7 +48,7 @@ public class HelloAPI extends WebserverAPI {
     }
 
     @Override
-    protected boolean checkAPIKey() {
+    protected boolean checkAPIKey(HttpServletRequest req) {
         return false;
     }
 

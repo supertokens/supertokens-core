@@ -32,7 +32,7 @@ public class ConfigAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
     public ConfigAPI(Main main) {
-        super(main);
+        super(main, "");
     }
 
     @Override
@@ -41,7 +41,7 @@ public class ConfigAPI extends WebserverAPI {
     }
 
     @Override
-    protected boolean checkAPIKey() {
+    protected boolean checkAPIKey(HttpServletRequest req) {
         return false;
     }
 

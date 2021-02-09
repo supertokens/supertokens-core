@@ -61,11 +61,11 @@ public class HttpRequestTest {
 
 
         //Json Response API
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = -7347714438908490973L;
 
             @Override
-            protected boolean checkAPIKey() {
+            protected boolean checkAPIKey(HttpServletRequest req) {
                 return false;
             }
 
@@ -148,11 +148,11 @@ public class HttpRequestTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = -5953383281218376801L;
 
             @Override
-            protected boolean checkAPIKey() {
+            protected boolean checkAPIKey(HttpServletRequest req) {
                 return false;
             }
 
@@ -225,11 +225,11 @@ public class HttpRequestTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         //error request api
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = -9210034480396407612L;
 
             @Override
-            protected boolean checkAPIKey() {
+            protected boolean checkAPIKey(HttpServletRequest req) {
                 return false;
             }
 
@@ -318,11 +318,11 @@ public class HttpRequestTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         //api to check with Body
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = 6527072853102511509L;
 
             @Override
-            protected boolean checkAPIKey() {
+            protected boolean checkAPIKey(HttpServletRequest req) {
                 return false;
             }
 
@@ -417,7 +417,7 @@ public class HttpRequestTest {
         }
 
         //api to check without Body
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = 5264933962074907258L;
 
             @Override
@@ -531,12 +531,12 @@ public class HttpRequestTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         //api to check withVersion
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
             private static final long serialVersionUID = 1L;
 
             @Override
-            protected boolean checkAPIKey() {
+            protected boolean checkAPIKey(HttpServletRequest req) {
                 return false;
             }
 
@@ -620,7 +620,7 @@ public class HttpRequestTest {
         }
 
         //api to check without Version
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
             private static final long serialVersionUID = 1L;
 
@@ -717,12 +717,12 @@ public class HttpRequestTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         //api to check getRequestWithParams
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
             private static final long serialVersionUID = 1L;
 
             @Override
-            protected boolean checkAPIKey() {
+            protected boolean checkAPIKey(HttpServletRequest req) {
                 return false;
             }
 
@@ -760,7 +760,7 @@ public class HttpRequestTest {
 
         //api to check getRequestWithoutParams
 
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess()) {
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
             private static final long serialVersionUID = 1L;
 

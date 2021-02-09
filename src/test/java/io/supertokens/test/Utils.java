@@ -18,6 +18,7 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.webserver.WebserverAPI;
@@ -157,7 +158,7 @@ abstract class Utils extends Mockito {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signup", signUpRequestBody, 1000,
                         1000,
-                        null, getCdiVersion2_7ForTests());
+                        null, getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
     }
 
     public static JsonObject signUpRequest_2_5(TestingProcessManager.TestingProcess process, String email,
@@ -172,7 +173,7 @@ abstract class Utils extends Mockito {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signup", signUpRequestBody, 1000,
                         1000,
-                        null, getCdiVersion2_7ForTests());
+                        null, getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
     }
 
 }

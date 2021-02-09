@@ -16,14 +16,10 @@
 
 package io.supertokens.webserver.api.emailpassword;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.UserPaginationContainer;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
 import javax.servlet.ServletException;
@@ -36,7 +32,7 @@ public class UsersCountAPI extends WebserverAPI {
     private static final long serialVersionUID = -2225750492558064634L;
 
     public UsersCountAPI(Main main) {
-        super(main);
+        super(main, EmailPassword.RECIPE_ID);
     }
 
     @Override
