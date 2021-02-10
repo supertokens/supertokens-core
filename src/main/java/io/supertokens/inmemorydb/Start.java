@@ -21,10 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.inmemorydb.config.Config;
-import io.supertokens.inmemorydb.queries.EmailPasswordQueries;
-import io.supertokens.inmemorydb.queries.EmailVerificationQueries;
-import io.supertokens.inmemorydb.queries.GeneralQueries;
-import io.supertokens.inmemorydb.queries.SessionQueries;
+import io.supertokens.inmemorydb.queries.*;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
@@ -622,37 +619,70 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
                                                                                              String thirdPartyId,
                                                                                              String thirdPartyUserId)
             throws StorageQueryException {
-        // TODO:
-        return null;
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return ThirdPartyQueries.getUserInfoUsingId_Transaction(this, sqlCon,
+                    thirdPartyId, thirdPartyUserId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
 
     @Override
     public void updateUserEmail_Transaction(TransactionConnection con, String thirdPartyId, String thirdPartyUserId,
                                             String newEmail) throws StorageQueryException {
-        // TODO:
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon,
+                    thirdPartyId, thirdPartyUserId, newEmail);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public void signUp(io.supertokens.pluginInterface.thirdparty.UserInfo userInfo)
             throws StorageQueryException, io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException,
             DuplicateThirdPartyUserException {
-        // TODO:
+        try {
+            ThirdPartyQueries.signUp(this, userInfo);
+        } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
+                            Config.getConfig(this).getThirdPartyUsersTable() + ".email)"
+                    )) {
+                // TODO: Proper message
+                throw new DuplicateThirdPartyUserException();
+            } else if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
+                            Config.getConfig(this).getThirdPartyUsersTable() + ".user_id)"
+                    )) {
+                throw new io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException();
+            }
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public io.supertokens.pluginInterface.thirdparty.UserInfo getThirdPartyUserInfoUsingId(String thirdPartyId,
                                                                                            String thirdPartyUserId)
             throws StorageQueryException {
-        // TODO:
-        return null;
+        try {
+            return ThirdPartyQueries.getThirdPartyUserInfoUsingId(this, thirdPartyId, thirdPartyUserId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public io.supertokens.pluginInterface.thirdparty.UserInfo getThirdPartyUserInfoUsingId(String id)
             throws StorageQueryException {
-        // TODO:
-        return null;
+        try {
+            return ThirdPartyQueries.getThirdPartyUserInfoUsingId(this, id);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -661,15 +691,30 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
                                                                                    @NotNull Integer limit,
                                                                                    @NotNull String timeJoinedOrder)
             throws StorageQueryException {
-        // TODO:
-        return new io.supertokens.pluginInterface.thirdparty.UserInfo[0];
+        try {
+            return ThirdPartyQueries.getThirdPartyUsers(this, userId, timeJoined, limit, timeJoinedOrder);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsers(@NotNull Integer limit,
                                                                                    @NotNull String timeJoinedOrder)
             throws StorageQueryException {
-        // TODO:
-        return new io.supertokens.pluginInterface.thirdparty.UserInfo[0];
+        try {
+            return ThirdPartyQueries.getThirdPartyUsers(this, limit, timeJoinedOrder);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public long getThirdPartyUsersCount() throws StorageQueryException {
+        try {
+            return ThirdPartyQueries.getUsersCount(this);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }

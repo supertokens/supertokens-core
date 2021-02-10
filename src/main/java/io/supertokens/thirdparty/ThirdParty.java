@@ -147,7 +147,7 @@ public class ThirdParty {
     }
 
     public static long getUsersCount(Main main) throws StorageQueryException {
-        return StorageLayer.getThirdPartyStorage(main).getUsersCount();
+        return StorageLayer.getThirdPartyStorage(main).getThirdPartyUsersCount();
     }
 
 }
