@@ -53,6 +53,7 @@ import static org.junit.Assert.*;
  * - Recipe Router tests
  * - Initialise two routes with the same path, different RID and query each and check that routing is happening
  * properly (for all HTTP methods).
+ * - Use RecipeRouter in a way that the sub routes have different paths. This should throw an error
  */
 
 public class WebserverTest extends Mockito {

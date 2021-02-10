@@ -24,6 +24,7 @@ import org.junit.rules.TestRule;
 /*
  * TODO:
  *  - good input
+ *  - Sign up with unnormalised email, and sign in with normailised email to get the same user.
  *  - bad input
  *     - simple bad input
  *     - email sub object's fiels are missing
