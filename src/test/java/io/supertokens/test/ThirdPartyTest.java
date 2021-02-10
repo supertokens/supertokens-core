@@ -16,10 +16,18 @@
 
 package io.supertokens.test;
 
+import io.supertokens.ProcessState;
+import io.supertokens.emailverification.EmailVerification;
+import io.supertokens.pluginInterface.thirdparty.UserInfo;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.thirdparty.ThirdParty;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import static org.junit.Assert.*;
 
 /*
  * TODO:
@@ -53,6 +61,89 @@ public class ThirdPartyTest {
     @Before
     public void beforeEach() {
         Utils.reset();
+    }
+
+
+    // - Test simple sign up and then sign in to get the same user. Check number of rows in db is one
+    @Test
+    public void testSignInAndSignUp() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String thirdPartyId = "testThirdParty";
+        String thirdPartyUserId = "thirdPartyUserId";
+        String email = "test@example.com";
+
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, false);
+        checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
+                email, true);
+
+        ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, false);
+        checkSignInUpResponse(signInResponse, thirdPartyUserId, thirdPartyId, email, false);
+
+        assertEquals(1, StorageLayer.getThirdPartyStorage(process.getProcess()).getThirdPartyUsersCount());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    //After sign up, with verified email being false, check that email is not verified
+    @Test
+    public void testSignUpWithEmailNotVerifiedAndCheckEmailIsNotVerified() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String thirdPartyId = "testThirdParty";
+        String thirdPartyUserId = "thirdPartyUserId";
+        String email = "test@example.com";
+
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, false);
+        checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
+                email, true);
+
+        UserInfo user = ThirdParty.getUser(process.getProcess(), thirdPartyUserId);
+        assertFalse(EmailVerification.isEmailVerified(process.getProcess(), user.id, email));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // - Sign up with verified email being true and check that it signs up
+    @Test
+    public void testSignUpWithVerifiedEmailTrueAndCheckSignUp() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String thirdPartyId = "testThirdParty";
+        String thirdPartyUserId = "thirdPartyUserId";
+        String email = "test@example.com";
+
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, true);
+        checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
+                email, true);
+        
+
+    }
+
+    public static void checkSignInUpResponse(ThirdParty.SignInUpResponse response, String thirdPartyUserId,
+                                             String thirdPartyId, String email, boolean createNewUser) {
+        assertEquals(response.createdNewUser, createNewUser);
+        assertNotNull(response.user.id);
+        assertNotNull(response.user.timeJoined);
+        assertEquals(response.user.thirdParty.userId, thirdPartyUserId);
+        assertEquals(response.user.thirdParty.id, thirdPartyId);
+        assertEquals(response.user.thirdParty.email, email);
+
     }
 
 
