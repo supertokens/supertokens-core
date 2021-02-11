@@ -186,7 +186,7 @@ public class SignInUpAPITest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // email sub object's fiels are missing
+    // email sub object's fields are missing
     @Test
     public void testBadInputInEmailSubObject() throws Exception {
         String[] args = {"../"};
@@ -263,7 +263,6 @@ public class SignInUpAPITest2_7 {
         assertEquals(thirdPartyId, userThirdParty.get("id").getAsString());
         assertEquals(thirdPartyUserId, userThirdParty.get("userId").getAsString());
         assertEquals(email, userThirdParty.get("email").getAsString());
-
     }
 
 }
