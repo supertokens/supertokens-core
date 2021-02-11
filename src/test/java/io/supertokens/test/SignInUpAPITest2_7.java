@@ -28,7 +28,6 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
-
 /*
  * TODO:
  *  - good input
@@ -264,5 +263,4 @@ public class SignInUpAPITest2_7 {
         assertEquals(thirdPartyUserId, userThirdParty.get("userId").getAsString());
         assertEquals(email, userThirdParty.get("email").getAsString());
     }
-
 }
