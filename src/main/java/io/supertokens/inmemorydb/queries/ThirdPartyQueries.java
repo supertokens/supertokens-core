@@ -59,7 +59,7 @@ public class ThirdPartyQueries {
             pst.setString(2, userInfo.thirdParty.userId);
             pst.setString(3, userInfo.id);
             pst.setString(4, userInfo.thirdParty.email);
-            pst.setLong(6, userInfo.timeJoined);
+            pst.setLong(5, userInfo.timeJoined);
             pst.executeUpdate();
         }
     }
