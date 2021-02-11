@@ -100,7 +100,7 @@ public class ThirdPartyQueries {
 
     public static void updateUserEmail_Transaction(Start start, Connection con, String thirdPartyId,
                                                    String thirdPartyUserId,
-                                                   String newEmail) throws SQLException, StorageQueryException {
+                                                   String newEmail) throws SQLException {
         String QUERY = "UPDATE " + Config.getConfig(start).getThirdPartyUsersTable()
                 + " SET email = ? WHERE third_party_id = ? AND third_party_user_id = ?";
 
