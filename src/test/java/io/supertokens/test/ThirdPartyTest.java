@@ -19,6 +19,7 @@ package io.supertokens.test;
 import io.supertokens.ProcessState;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
+import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.ThirdParty;
 import org.junit.AfterClass;
@@ -131,8 +132,11 @@ public class ThirdPartyTest {
                 thirdPartyUserId, email, true);
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email, true);
-        assertFalse(EmailVerification
+        assertTrue(EmailVerification
                 .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.thirdParty.email));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     // - Sign up with false verified email, and then sign in with verified email and check that its verified
@@ -162,6 +166,9 @@ public class ThirdPartyTest {
 
         assertTrue(EmailVerification
                 .isEmailVerified(process.getProcess(), signInResponse.user.id, signInResponse.user.thirdParty.email));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     // Sign up with email A, then sign in with email B, and check that email is updated, A is verified, and B is not
@@ -196,11 +203,46 @@ public class ThirdPartyTest {
 
         UserInfo updatedUserInfo = ThirdParty.getUser(process.getProcess(), thirdPartyId, thirdPartyUserId);
         assertEquals(updatedUserInfo.thirdParty.email, email_2);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     // Sign up with same third party ID, but diff third party userID and check two diff rows
     @Test
     public void testSignUpWithSameThirdPartyIdButDiffThirdPartyUserId() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String thirdPartyId = "testThirdParty";
+        String thirdPartyUserId_1 = "thirdPartyUserIdA";
+        String thirdPartyUserId_2 = "thirdPartyUserIdB";
+        String email_1 = "testA@example.com";
+        String email_2 = "testB@example.com";
+
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
+                thirdPartyUserId_1, email_1, false);
+
+        checkSignInUpResponse(signUpResponse, thirdPartyUserId_1, thirdPartyId,
+                email_1, true);
+
+        ThirdParty.SignInUpResponse signInUpResponse_2 = ThirdParty
+                .signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId_2, email_2, false);
+
+        checkSignInUpResponse(signInUpResponse_2, thirdPartyUserId_2, thirdPartyId,
+                email_2, true);
+
+        assertEquals(2, StorageLayer.getThirdPartyStorage(process.getProcess()).getThirdPartyUsersCount());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // - Sign up with same third party ID, diff third party userID, but same email and check two diff rows
+    @Test
+    public void testSignUpWithSameThirdPartyIdButDiffThirdPartyUserIdWithSameMail() throws Exception {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -224,6 +266,38 @@ public class ThirdPartyTest {
                 email, true);
 
         assertEquals(2, StorageLayer.getThirdPartyStorage(process.getProcess()).getThirdPartyUsersCount());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    //Try to sign up with same third part ID and third party userId and check you get DuplicateThirdPartyUserException
+    @Test
+    public void testSignUpWithSameThirdPartyThirdPartyUserIdException() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String thirdPartyId = "testThirdParty";
+        String thirdPartyUserId = "thirdPartyUserId";
+        String email = "test@example.com";
+
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, false);
+
+        checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
+                email, true);
+        try {
+            UserInfo userInfo = new UserInfo(io.supertokens.utils.Utils.getUUID(),
+                    new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId, email), System.currentTimeMillis());
+            StorageLayer.getThirdPartyStorage(process.getProcess()).signUp(userInfo);
+            throw new Exception("Should not come here");
+        } catch (DuplicateThirdPartyUserException ignored) {
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     public static void checkSignInUpResponse(ThirdParty.SignInUpResponse response, String thirdPartyUserId,
