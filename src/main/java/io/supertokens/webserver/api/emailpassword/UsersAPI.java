@@ -21,6 +21,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.UserPaginationToken;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.UserPaginationContainer;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -31,14 +32,13 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Base64;
 
 public class UsersAPI extends WebserverAPI {
 
     private static final long serialVersionUID = -2225750492558064634L;
 
     public UsersAPI(Main main) {
-        super(main);
+        super(main, EmailPassword.RECIPE_ID);
     }
 
     @Override
@@ -97,7 +97,7 @@ public class UsersAPI extends WebserverAPI {
                 result.addProperty("nextPaginationToken", users.nextPaginationToken);
             }
             super.sendJsonResponse(200, result, resp);
-        } catch (IllegalArgumentException | IllegalStateException e) {
+        } catch (UserPaginationToken.InvalidTokenException e) {
             throw new ServletException(
                     new WebserverAPI.BadRequestException("invalid pagination token"));
         } catch (StorageQueryException e) {

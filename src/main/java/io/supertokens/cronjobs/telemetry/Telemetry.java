@@ -33,7 +33,7 @@ import io.supertokens.version.Version;
 
 public class Telemetry extends CronTask {
 
-    private static final String TELEMETRY_ID_DB_KEY = "TELEMETRY_ID";
+    public static final String TELEMETRY_ID_DB_KEY = "TELEMETRY_ID";
 
     public static final String REQUEST_ID = "telemetry";
 

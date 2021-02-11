@@ -18,6 +18,7 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
@@ -61,7 +62,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset/token", null, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests());
+                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -76,7 +77,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests());
+                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -95,7 +96,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests());
+                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -133,7 +134,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests());
+                        null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertNotNull(response.get("token"));
@@ -163,7 +164,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests());
+                        null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
 
         assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
         assertEquals(response.entrySet().size(), 1);

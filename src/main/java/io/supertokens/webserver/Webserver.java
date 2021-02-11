@@ -23,13 +23,12 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
-import io.supertokens.webserver.api.core.ConfigAPI;
-import io.supertokens.webserver.api.core.HelloAPI;
-import io.supertokens.webserver.api.core.NotFoundAPI;
+import io.supertokens.webserver.api.core.*;
 import io.supertokens.webserver.api.emailpassword.*;
 import io.supertokens.webserver.api.emailverification.GenerateEmailVerificationTokenAPI;
 import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
 import io.supertokens.webserver.api.session.*;
+import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;
@@ -129,10 +128,16 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         tomcatReference = new TomcatReference(tomcat, context);
 
-        setupRoutes();
+        try {
+            setupRoutes();
+        } catch (Exception e) {
+            Logging.error(main, null, false, e);
+            throw new QuitProgramException(
+                    "API routes not initialised properly: " + e.getMessage());
+        }
     }
 
-    private void setupRoutes() {
+    private void setupRoutes() throws Exception {
         addAPI(new NotFoundAPI(main));
         addAPI(new HelloAPI(main));
         addAPI(new SessionAPI(main));
@@ -150,11 +155,16 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new SignInAPI(main));
         addAPI(new GeneratePasswordResetTokenAPI(main));
         addAPI(new ResetPasswordAPI(main));
-        addAPI(new UserAPI(main));
+        addAPI(new RecipeRouter(main, new UserAPI(main),
+                new io.supertokens.webserver.api.thirdparty.UserAPI(main)));
         addAPI(new GenerateEmailVerificationTokenAPI(main));
         addAPI(new VerifyEmailAPI(main));
-        addAPI(new UsersAPI(main));
-        addAPI(new UsersCountAPI(main));
+        addAPI(new RecipeRouter(main, new UsersAPI(main),
+                new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));
+        addAPI(new RecipeRouter(main, new UsersCountAPI(main),
+                new io.supertokens.webserver.api.thirdparty.UsersCountAPI(main)));
+        addAPI(new SignInUpAPI(main));
+        addAPI(new TelemetryAPI(main));
     }
 
     public void addAPI(WebserverAPI api) {

@@ -69,7 +69,7 @@ public class GeneralQueries {
             }
         }
 
-        if (!doesTableExists(start, Config.getConfig(start).getUsersTable())) {
+        if (!doesTableExists(start, Config.getConfig(start).getEmailPasswordUsersTable())) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
             try (Connection con = ConnectionPool.getConnection(start);
                  PreparedStatement pst = con.prepareStatement(EmailPasswordQueries.getQueryToCreateUsersTable(start))) {
@@ -122,6 +122,23 @@ public class GeneralQueries {
                  PreparedStatement pstIndex = con
                          .prepareStatement(
                                  EmailVerificationQueries.getQueryToCreateEmailVerificationTokenExpiryIndex(start))) {
+                pstIndex.executeUpdate();
+            }
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getThirdPartyUsersTable())) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
+            try (Connection con = ConnectionPool.getConnection(start);
+                 PreparedStatement pst = con
+                         .prepareStatement(
+                                 ThirdPartyQueries.getQueryToCreateUsersTable(start))) {
+                pst.executeUpdate();
+            }
+            // index
+            try (Connection con = ConnectionPool.getConnection(start);
+                 PreparedStatement pstIndex = con
+                         .prepareStatement(
+                                 ThirdPartyQueries.getQueryToCreateUserPaginationIndex(start))) {
                 pstIndex.executeUpdate();
             }
         }

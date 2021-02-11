@@ -35,7 +35,7 @@ public class ResetPasswordAPI extends WebserverAPI {
     private static final long serialVersionUID = -7529428297450682549L;
 
     public ResetPasswordAPI(Main main) {
-        super(main);
+        super(main, EmailPassword.RECIPE_ID);
     }
 
     @Override

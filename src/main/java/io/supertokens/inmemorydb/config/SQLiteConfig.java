@@ -26,7 +26,7 @@ public class SQLiteConfig {
         return "session_info";
     }
 
-    public String getUsersTable() {
+    public String getEmailPasswordUsersTable() {
         return "emailpassword_users";
     }
 
@@ -42,4 +42,7 @@ public class SQLiteConfig {
         return "emailverification_verified_emails";
     }
 
+    public String getThirdPartyUsersTable() {
+        return "thirdparty_users";
+    }
 }

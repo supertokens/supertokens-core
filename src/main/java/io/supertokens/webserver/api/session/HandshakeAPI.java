@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -34,7 +35,7 @@ public class HandshakeAPI extends WebserverAPI {
     private static final long serialVersionUID = -3647598432179106404L;
 
     public HandshakeAPI(Main main) {
-        super(main);
+        super(main, Session.RECIPE_ID);
     }
 
     @Override

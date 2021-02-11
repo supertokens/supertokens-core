@@ -40,7 +40,7 @@ public class VerifySessionAPI extends WebserverAPI {
     private static final long serialVersionUID = -9169174805902835488L;
 
     public VerifySessionAPI(Main main) {
-        super(main);
+        super(main, Session.RECIPE_ID);
     }
 
     @Override

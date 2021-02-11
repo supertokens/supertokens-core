@@ -42,7 +42,7 @@ public class SessionRegenerateAPI extends WebserverAPI {
     private static final long serialVersionUID = -6614427303762598143L;
 
     public SessionRegenerateAPI(Main main) {
-        super(main);
+        super(main, Session.RECIPE_ID);
     }
 
     @Override

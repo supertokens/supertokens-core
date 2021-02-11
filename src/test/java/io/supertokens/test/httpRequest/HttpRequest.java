@@ -61,7 +61,8 @@ public class HttpRequest {
 
     @SuppressWarnings("unchecked")
     public static <T> T sendGETRequest(Main main, String requestID, String url, Map<String, String> params,
-                                       int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion)
+                                       int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion,
+                                       String rid)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
         StringBuilder paramBuilder = new StringBuilder();
 
@@ -90,6 +91,9 @@ public class HttpRequest {
             }
             if (cdiVersion != null) {
                 con.setRequestProperty("cdi-version", cdiVersion);
+            }
+            if (rid != null) {
+                con.setRequestProperty("rId", rid);
             }
 
             int responseCode = con.getResponseCode();
@@ -128,7 +132,7 @@ public class HttpRequest {
     @SuppressWarnings("unchecked")
     private static <T> T sendJsonRequest(Main main, String requestID, String url, JsonElement requestBody,
                                          int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion,
-                                         String method, String apiKey)
+                                         String method, String apiKey, String rid)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
         URL obj = getURL(main, requestID, url);
         InputStream inputStream = null;
@@ -147,6 +151,9 @@ public class HttpRequest {
             }
             if (apiKey != null) {
                 con.setRequestProperty("api-key", apiKey);
+            }
+            if (rid != null) {
+                con.setRequestProperty("rId", rid);
             }
 
             if (requestBody != null) {
@@ -193,36 +200,36 @@ public class HttpRequest {
 
     public static <T> T sendJsonPOSTRequest(Main main, String requestID, String url, JsonElement requestBody,
                                             int connectionTimeoutMS, int readTimeoutMS, Integer version,
-                                            String cdiVersion)
+                                            String cdiVersion, String rid)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
         return sendJsonRequest(main, requestID, url, requestBody, connectionTimeoutMS, readTimeoutMS, version,
                 cdiVersion,
-                "POST", null);
+                "POST", null, rid);
     }
 
     public static <T> T sendJsonPOSTRequest(Main main, String requestID, String url, JsonElement requestBody,
                                             int connectionTimeoutMS, int readTimeoutMS, Integer version,
-                                            String cdiVersion, String apiKey)
+                                            String cdiVersion, String apiKey, String rid)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
         return sendJsonRequest(main, requestID, url, requestBody, connectionTimeoutMS, readTimeoutMS, version,
                 cdiVersion,
-                "POST", apiKey);
+                "POST", apiKey, rid);
     }
 
     public static <T> T sendJsonPUTRequest(Main main, String requestID, String url, JsonElement requestBody,
                                            int connectionTimeoutMS, int readTimeoutMS, Integer version,
-                                           String cdiVersion)
+                                           String cdiVersion, String rid)
             throws IOException, io.supertokens.test.httpRequest.HttpResponseException {
         return sendJsonRequest(main, requestID, url, requestBody, connectionTimeoutMS, readTimeoutMS, version,
                 cdiVersion,
-                "PUT", null);
+                "PUT", null, rid);
     }
 
     public static <T> T sendJsonDELETERequest(Main main, String requestID, String url, JsonElement requestBody,
                                               int connectionTimeoutMS, int readTimeoutMS, Integer version,
-                                              String cdiVersion)
+                                              String cdiVersion, String rid)
             throws IOException, HttpResponseException {
         return sendJsonRequest(main, requestID, url, requestBody, connectionTimeoutMS, readTimeoutMS, version,
-                cdiVersion, "DELETE", null);
+                cdiVersion, "DELETE", null, rid);
     }
 }

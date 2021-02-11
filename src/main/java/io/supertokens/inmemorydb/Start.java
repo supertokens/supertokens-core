@@ -21,10 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.inmemorydb.config.Config;
-import io.supertokens.inmemorydb.queries.EmailPasswordQueries;
-import io.supertokens.inmemorydb.queries.EmailVerificationQueries;
-import io.supertokens.inmemorydb.queries.GeneralQueries;
-import io.supertokens.inmemorydb.queries.SessionQueries;
+import io.supertokens.inmemorydb.queries.*;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
@@ -43,6 +40,8 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
+import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
+import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -50,7 +49,8 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransactionRollbackException;
 
-public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage {
+public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage,
+        ThirdPartySQLStorage {
 
     private static final Object appenderLock = new Object();
     private static boolean silent = false;
@@ -364,12 +364,12 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
         } catch (SQLException e) {
             if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
-                            Config.getConfig(this).getUsersTable() + ".email)"
+                            Config.getConfig(this).getEmailPasswordUsersTable() + ".email)"
                     )) {
                 throw new DuplicateEmailException();
             } else if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
-                            Config.getConfig(this).getUsersTable() + ".user_id)"
+                            Config.getConfig(this).getEmailPasswordUsersTable() + ".user_id)"
                     )) {
                 throw new DuplicateUserIdException();
             }
@@ -400,7 +400,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             throws StorageQueryException, UnknownUserIdException, DuplicatePasswordResetTokenException {
         try {
             // SQLite is not compiled with foreign key constraint and so we must check for the userId manually
-            if (this.getUserInfoUsingId(passwordResetTokenInfo.userId) == null) {
+            if (this.getThirdPartyUserInfoUsingId(passwordResetTokenInfo.userId) == null) {
                 throw new UnknownUserIdException();
             }
 
@@ -609,6 +609,110 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     public boolean isEmailVerified(String userId, String email) throws StorageQueryException {
         try {
             return EmailVerificationQueries.isEmailVerified(this, userId, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.thirdparty.UserInfo getUserInfoUsingId_Transaction(TransactionConnection con,
+                                                                                             String thirdPartyId,
+                                                                                             String thirdPartyUserId)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return ThirdPartyQueries.getUserInfoUsingId_Transaction(this, sqlCon,
+                    thirdPartyId, thirdPartyUserId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+
+    @Override
+    public void updateUserEmail_Transaction(TransactionConnection con, String thirdPartyId, String thirdPartyUserId,
+                                            String newEmail) throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon,
+                    thirdPartyId, thirdPartyUserId, newEmail);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void signUp(io.supertokens.pluginInterface.thirdparty.UserInfo userInfo)
+            throws StorageQueryException, io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException,
+            DuplicateThirdPartyUserException {
+        try {
+            ThirdPartyQueries.signUp(this, userInfo);
+        } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
+                            Config.getConfig(this).getThirdPartyUsersTable() + ".third_party_id, " +
+                            Config.getConfig(this).getThirdPartyUsersTable() + ".third_party_user_id)"
+                    )) {
+                throw new DuplicateThirdPartyUserException();
+            } else if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
+                            Config.getConfig(this).getThirdPartyUsersTable() + ".user_id)"
+                    )) {
+                throw new io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException();
+            }
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.thirdparty.UserInfo getThirdPartyUserInfoUsingId(String thirdPartyId,
+                                                                                           String thirdPartyUserId)
+            throws StorageQueryException {
+        try {
+            return ThirdPartyQueries.getThirdPartyUserInfoUsingId(this, thirdPartyId, thirdPartyUserId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.thirdparty.UserInfo getThirdPartyUserInfoUsingId(String id)
+            throws StorageQueryException {
+        try {
+            return ThirdPartyQueries.getThirdPartyUserInfoUsingId(this, id);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsers(@NotNull String userId,
+                                                                                   @NotNull Long timeJoined,
+                                                                                   @NotNull Integer limit,
+                                                                                   @NotNull String timeJoinedOrder)
+            throws StorageQueryException {
+        try {
+            return ThirdPartyQueries.getThirdPartyUsers(this, userId, timeJoined, limit, timeJoinedOrder);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsers(@NotNull Integer limit,
+                                                                                   @NotNull String timeJoinedOrder)
+            throws StorageQueryException {
+        try {
+            return ThirdPartyQueries.getThirdPartyUsers(this, limit, timeJoinedOrder);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public long getThirdPartyUsersCount() throws StorageQueryException {
+        try {
+            return ThirdPartyQueries.getUsersCount(this);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

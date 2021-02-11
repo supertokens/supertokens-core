@@ -176,7 +176,7 @@ public class APIKeysTest {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
-                        1000, null, Utils.getCdiVersionLatestForTests(), apiKey);
+                        1000, null, Utils.getCdiVersionLatestForTests(), apiKey, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
@@ -209,7 +209,7 @@ public class APIKeysTest {
         String response = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
                         1000,
-                        1000, null, Utils.getCdiVersionLatestForTests());
+                        1000, null, Utils.getCdiVersionLatestForTests(), "");
         assertEquals(response, "Hello");
 
         // map to store pid as parameter
@@ -217,7 +217,7 @@ public class APIKeysTest {
         map.put("pid", ProcessHandle.current().pid() + "");
         JsonObject response2 = HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
-                        Utils.getCdiVersionLatestForTests());
+                        Utils.getCdiVersionLatestForTests(), "");
 
 
         File f = new File(CLIOptions.get(process.getProcess()).getInstallationPath() + "config.yaml");
@@ -262,14 +262,14 @@ public class APIKeysTest {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
-                        1000, null, Utils.getCdiVersionLatestForTests(), apiKey1);
+                        1000, null, Utils.getCdiVersionLatestForTests(), apiKey1, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
-                        1000, null, Utils.getCdiVersionLatestForTests(), apiKey2);
+                        1000, null, Utils.getCdiVersionLatestForTests(), apiKey2, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
@@ -277,7 +277,7 @@ public class APIKeysTest {
         sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
-                        1000, null, Utils.getCdiVersionLatestForTests(), apiKey3);
+                        1000, null, Utils.getCdiVersionLatestForTests(), apiKey3, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
@@ -345,7 +345,7 @@ public class APIKeysTest {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
-                        1000, null, Utils.getCdiVersionLatestForTests(), " " + apiKey1 + " ");
+                        1000, null, Utils.getCdiVersionLatestForTests(), " " + apiKey1 + " ", "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
@@ -353,7 +353,7 @@ public class APIKeysTest {
         sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
-                        1000, null, Utils.getCdiVersionLatestForTests(), " " + apiKey2);
+                        1000, null, Utils.getCdiVersionLatestForTests(), " " + apiKey2, "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
@@ -362,7 +362,7 @@ public class APIKeysTest {
         sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
-                        1000, null, Utils.getCdiVersionLatestForTests(), apiKey3);
+                        1000, null, Utils.getCdiVersionLatestForTests(), apiKey3, "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
@@ -370,7 +370,7 @@ public class APIKeysTest {
         sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
-                        1000, null, Utils.getCdiVersionLatestForTests(), apiKey4);
+                        1000, null, Utils.getCdiVersionLatestForTests(), apiKey4, "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);

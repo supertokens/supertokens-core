@@ -18,6 +18,7 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
@@ -29,12 +30,8 @@ import org.junit.rules.TestRule;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-/*
- * TODO:
- *  - add users and check if the number of users returned by the API is correct
- * */
 
-public class UsersCountAPITest2_7 {
+public class EmailPasswordUsersCountAPITest2_7 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -64,7 +61,7 @@ public class UsersCountAPITest2_7 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users/count", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests());
+                            null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 0);
         }

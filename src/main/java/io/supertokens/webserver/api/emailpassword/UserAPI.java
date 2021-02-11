@@ -37,7 +37,7 @@ public class UserAPI extends WebserverAPI {
     private static final long serialVersionUID = -2225750492558064634L;
 
     public UserAPI(Main main) {
-        super(main);
+        super(main, EmailPassword.RECIPE_ID);
     }
 
     @Override
