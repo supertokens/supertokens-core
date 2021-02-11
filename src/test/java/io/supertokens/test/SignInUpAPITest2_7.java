@@ -53,6 +53,8 @@ public class SignInUpAPITest2_7 {
         Utils.reset();
     }
 
+    //good input
+    // failure condition: test fails if signinup response does not match api spec
     @Test
     public void testGoodInput() throws Exception {
         String[] args = {"../"};
