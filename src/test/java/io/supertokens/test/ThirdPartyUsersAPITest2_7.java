@@ -93,7 +93,6 @@ public class ThirdPartyUsersAPITest2_7 {
                                 null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                System.out.println(e.getMessage());
                 assertTrue(e.statusCode == 400 &&
                         e.getMessage()
                                 .equals("Http error. Status Code: 400. Message: Field name 'limit' must be an int in " +
@@ -111,14 +110,13 @@ public class ThirdPartyUsersAPITest2_7 {
                                 null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                System.out.println(e.getMessage());
                 assertTrue(e.statusCode == 400 &&
                         e.getMessage()
                                 .equals("Http error. Status Code: 400. Message: timeJoinedOrder can be either ASC OR " +
                                         "DESC"));
             }
         }
-        
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
