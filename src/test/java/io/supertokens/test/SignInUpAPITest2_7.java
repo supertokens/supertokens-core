@@ -26,7 +26,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /*
  * TODO:
@@ -69,10 +70,50 @@ public class SignInUpAPITest2_7 {
         JsonObject response = Utils
                 .signInUpRequest_2_7(process, "test@example.com", false, "testThirdPartyId",
                         "testThirdPartyUserId");
+        checkSignInUpResponse(response, "testThirdPartyId", "testThirdPartyUserId", "test@example.com", true);
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    //Sign up with unnormalised email, and sign in with normailised email to get the same user.
+    // failure condition: test fails if signin causes a new user to be created
+    @Test
+    public void testEmailNormalisation() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject response_1 = Utils
+                .signInUpRequest_2_7(process, "TeSt@example.com", false, "testThirdPartyId",
+                        "testThirdPartyUserId");
+        checkSignInUpResponse(response_1, "testThirdPartyId", "testThirdPartyUserId", "test@example.com", true);
+
+        JsonObject response_2 = Utils
+                .signInUpRequest_2_7(process, "test@example.com", false, "testThirdPartyId",
+                        "testThirdPartyUserId");
+        checkSignInUpResponse(response_2, "testThirdPartyId", "testThirdPartyUserId", "test@example.com", false);
+
+        JsonObject response_1_user = response_1.getAsJsonObject("user");
+        JsonObject response_2_user = response_2.getAsJsonObject("user");
+
+        assertEquals(response_1_user.get("id").getAsString(), response_2_user.get("id").getAsString());
+        assertEquals(response_1_user.get("timeJoined").getAsString(), response_2_user.get("timeJoined").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    public static void checkSignInUpResponse(JsonObject response, String thirdPartyId, String thirdPartyUserId,
+                                             String email, boolean createdNewUser) {
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(3, response.entrySet().size());
-        assertTrue(response.get("createdNewUser").getAsBoolean());
+        assertEquals(createdNewUser, response.get("createdNewUser").getAsBoolean());
 
         JsonObject user = response.getAsJsonObject("user");
         assertNotNull(user.get("id"));
@@ -80,12 +121,10 @@ public class SignInUpAPITest2_7 {
 
         JsonObject userThirdParty = user.getAsJsonObject("thirdParty");
         assertEquals(3, userThirdParty.entrySet().size());
-        assertEquals("testThirdPartyId", userThirdParty.get("id").getAsString());
-        assertEquals("testThirdPartyUserId", userThirdParty.get("userId").getAsString());
-        assertEquals("test@example.com", userThirdParty.get("email").getAsString());
+        assertEquals(thirdPartyId, userThirdParty.get("id").getAsString());
+        assertEquals(thirdPartyUserId, userThirdParty.get("userId").getAsString());
+        assertEquals(email, userThirdParty.get("email").getAsString());
 
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
 }
