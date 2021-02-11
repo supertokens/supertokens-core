@@ -198,6 +198,34 @@ public class ThirdPartyTest {
         assertEquals(updatedUserInfo.thirdParty.email, email_2);
     }
 
+    // Sign up with same third party ID, but diff third party userID and check two diff rows
+    @Test
+    public void testSignUpWithSameThirdPartyIdButDiffThirdPartyUserId() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String thirdPartyId = "testThirdParty";
+        String thirdPartyUserId_1 = "thirdPartyUserIdA";
+        String thirdPartyUserId_2 = "thirdPartyUserIdB";
+        String email = "test@example.com";
+
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
+                thirdPartyUserId_1, email, false);
+
+        checkSignInUpResponse(signUpResponse, thirdPartyUserId_1, thirdPartyId,
+                email, true);
+
+        ThirdParty.SignInUpResponse signInUpResponse_2 = ThirdParty
+                .signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId_2, email, false);
+
+        checkSignInUpResponse(signInUpResponse_2, thirdPartyUserId_2, thirdPartyId,
+                email, true);
+
+        assertEquals(2, StorageLayer.getThirdPartyStorage(process.getProcess()).getThirdPartyUsersCount());
+    }
+
     public static void checkSignInUpResponse(ThirdParty.SignInUpResponse response, String thirdPartyUserId,
                                              String thirdPartyId, String email, boolean createNewUser) {
         assertEquals(response.createdNewUser, createNewUser);
