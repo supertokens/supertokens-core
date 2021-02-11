@@ -33,24 +33,6 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
-/*
- * TODO:
- *  - Test simple sign up and then sign in to get the same user. Check number of rows in db is one
- *  - After sign up, with verified email being false, check that email is not verified
- *  - Sign up with verified email being true and check that it signs up
- *  - Sign up with false verified email, and then sign in with verified email and check that its verified
- *  - Sign up with email A, then sign in with email B, and check that email is updated, A is verified, and B is not
- *     verified
- *  - Sign up with same third party ID, but diff third party userID and check two diff rows
- *  - Sign up with same third party ID, diff third party userID, but same email and check two diff rows
- *  - Try to sign up with same third part ID and third party userId and check you get DuplicateThirdPartyUserException
- *  - Try to sign up with same userId and check that you get DuplicateUserIdException
- *  - Sign up with verified email, then sign in, but make that email unverified. Check that email is still verified
- *     in our system
- *  - Test both getUser functions (perhaps already tested with the above...)
- *  - getUsers from emailpassword tests
- *  - getUsersCount from emailpassword tests
- * */
 
 public class ThirdPartyTest {
 
