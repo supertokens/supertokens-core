@@ -153,7 +153,6 @@ public class SignInUpAPITest2_7 {
                                 null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                System.out.println(e.getMessage());
                 assertTrue(e.statusCode == 400 &&
                         e.getMessage()
                                 .equals("Http error. Status Code: 400. Message: Field name 'thirdPartyId' is " +
@@ -175,10 +174,71 @@ public class SignInUpAPITest2_7 {
                                 null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                System.out.println(e.getMessage());
                 assertTrue(e.statusCode == 400 &&
                         e.getMessage()
                                 .equals("Http error. Status Code: 400. Message: Field name 'thirdPartyUserId' is " +
+                                        "invalid " +
+                                        "in " +
+                                        "JSON input"));
+            }
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // email sub object's fiels are missing
+    @Test
+    public void testBadInputInEmailSubObject() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("thirdPartyId", "testThirdPartyId");
+        requestBody.addProperty("thirdPartyUserId", "testThirdPartyUserID");
+
+
+        {
+            JsonObject emailObject = new JsonObject();
+            emailObject.addProperty("isVerified", false);
+            requestBody.add("email", emailObject);
+
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendJsonPOSTRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/signinup", requestBody, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: Field name 'id' is " +
+                                        "invalid " +
+                                        "in " +
+                                        "JSON input"));
+            }
+        }
+        {
+            JsonObject emailObject = new JsonObject();
+            emailObject.addProperty("id", "test@example.com");
+            requestBody.add("email", emailObject);
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendJsonPOSTRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/signinup", requestBody, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: Field name 'isVerified' is " +
                                         "invalid " +
                                         "in " +
                                         "JSON input"));
