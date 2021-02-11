@@ -16,10 +16,17 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonObject;
+import io.supertokens.ProcessState;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import static org.junit.Assert.*;
 
 /*
  * TODO:
@@ -44,6 +51,39 @@ public class SignInUpAPITest2_7 {
     @Before
     public void beforeEach() {
         Utils.reset();
+    }
+
+    @Test
+    public void testGoodInput() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject response = Utils
+                .signInUpRequest_2_7(process, "test@example.com", false, "testThirdPartyId",
+                        "testThirdPartyUserId");
+
+        assertEquals("OK", response.get("status").getAsString());
+        assertEquals(3, response.entrySet().size());
+        assertTrue(response.get("createdNewUser").getAsBoolean());
+
+        JsonObject user = response.getAsJsonObject("user");
+        assertNotNull(user.get("id"));
+        assertNotNull(user.get("timeJoined"));
+
+        JsonObject userThirdParty = user.getAsJsonObject("thirdParty");
+        assertEquals(3, userThirdParty.entrySet().size());
+        assertEquals("testThirdPartyId", userThirdParty.get("id").getAsString());
+        assertEquals("testThirdPartyUserId", userThirdParty.get("userId").getAsString());
+        assertEquals("test@example.com", userThirdParty.get("email").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
 }
