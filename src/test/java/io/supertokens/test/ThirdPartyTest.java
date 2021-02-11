@@ -300,6 +300,39 @@ public class ThirdPartyTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    // Sign up with verified email, then sign in, but make that email unverified. Check that email is still verified
+    // *     in our system
+    @Test
+    public void testSignUpWithVerifiedEmailSignInWithUnVerifiedEmail() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String thirdPartyId = "testThirdParty";
+        String thirdPartyUserId = "thirdPartyUserId";
+        String email = "test@example.com";
+
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, true);
+
+        checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
+                email, true);
+        assertTrue(EmailVerification
+                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.thirdParty.email));
+
+        ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, true);
+
+        checkSignInUpResponse(signInResponse, thirdPartyUserId, thirdPartyId, email, false);
+        assertTrue(EmailVerification
+                .isEmailVerified(process.getProcess(), signInResponse.user.id, signInResponse.user.thirdParty.email));
+
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     public static void checkSignInUpResponse(ThirdParty.SignInUpResponse response, String thirdPartyUserId,
                                              String thirdPartyId, String email, boolean createNewUser) {
         assertEquals(response.createdNewUser, createNewUser);
