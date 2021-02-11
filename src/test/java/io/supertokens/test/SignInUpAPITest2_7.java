@@ -20,14 +20,14 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.thirdparty.ThirdParty;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /*
  * TODO:
@@ -105,6 +105,85 @@ public class SignInUpAPITest2_7 {
         assertEquals(response_1_user.get("id").getAsString(), response_2_user.get("id").getAsString());
         assertEquals(response_1_user.get("timeJoined").getAsString(), response_2_user.get("timeJoined").getAsString());
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // bad input
+    // simple bad input
+    @Test
+    public void testBadInput() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        {
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendJsonPOSTRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/signinup", null, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
+            }
+        }
+
+        JsonObject emailObject = new JsonObject();
+        emailObject.addProperty("id", "test@example.com");
+        emailObject.addProperty("isVerified", false);
+
+        {
+
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("thirdPartyId", 12345);
+            requestBody.addProperty("thirdPartyUserId", "testThirdPartyUserID");
+            requestBody.add("email", emailObject);
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendJsonPOSTRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/signinup", requestBody, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                System.out.println(e.getMessage());
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: Field name 'thirdPartyId' is " +
+                                        "invalid " +
+                                        "in " +
+                                        "JSON input"));
+            }
+        }
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("thirdPartyId", "testThirdPartyId");
+            requestBody.addProperty("thirdPartyUserId", 12345);
+            requestBody.add("email", emailObject);
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendJsonPOSTRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/signinup", requestBody, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                System.out.println(e.getMessage());
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: Field name 'thirdPartyUserId' is " +
+                                        "invalid " +
+                                        "in " +
+                                        "JSON input"));
+            }
+        }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
