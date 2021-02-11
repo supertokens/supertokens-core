@@ -333,6 +333,44 @@ public class ThirdPartyTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    //Test both getUser functions
+    @Test
+    public void testGetUserFunctions() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String thirdPartyId = "testThirdParty";
+        String thirdPartyUserId = "thirdPartyUserId";
+        String email = "test@example.com";
+
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, false);
+
+        checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
+                email, true);
+
+        UserInfo getUserInfoFromId = ThirdParty.getUser(process.getProcess(), signUpResponse.user.id);
+        assertEquals(getUserInfoFromId.id, signUpResponse.user.id);
+        assertEquals(getUserInfoFromId.timeJoined, signUpResponse.user.timeJoined);
+        assertEquals(getUserInfoFromId.thirdParty.email, signUpResponse.user.thirdParty.email);
+        assertEquals(getUserInfoFromId.thirdParty.userId, signUpResponse.user.thirdParty.userId);
+        assertEquals(getUserInfoFromId.thirdParty.id, signUpResponse.user.thirdParty.id);
+
+        UserInfo getUserInfoFromThirdParty = ThirdParty
+                .getUser(process.getProcess(), signUpResponse.user.thirdParty.id,
+                        signUpResponse.user.thirdParty.userId);
+        assertEquals(getUserInfoFromThirdParty.id, signUpResponse.user.id);
+        assertEquals(getUserInfoFromThirdParty.timeJoined, signUpResponse.user.timeJoined);
+        assertEquals(getUserInfoFromThirdParty.thirdParty.email, signUpResponse.user.thirdParty.email);
+        assertEquals(getUserInfoFromThirdParty.thirdParty.userId, signUpResponse.user.thirdParty.userId);
+        assertEquals(getUserInfoFromThirdParty.thirdParty.id, signUpResponse.user.thirdParty.id);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     public static void checkSignInUpResponse(ThirdParty.SignInUpResponse response, String thirdPartyUserId,
                                              String thirdPartyId, String email, boolean createNewUser) {
         assertEquals(response.createdNewUser, createNewUser);
