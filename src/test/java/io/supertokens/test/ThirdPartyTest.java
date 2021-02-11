@@ -108,8 +108,8 @@ public class ThirdPartyTest {
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email, true);
 
-        UserInfo user = ThirdParty.getUser(process.getProcess(), thirdPartyUserId);
-        assertFalse(EmailVerification.isEmailVerified(process.getProcess(), user.id, email));
+        assertFalse(EmailVerification
+                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.thirdParty.email));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -131,8 +131,71 @@ public class ThirdPartyTest {
                 thirdPartyUserId, email, true);
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email, true);
-        
+        assertFalse(EmailVerification
+                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.thirdParty.email));
+    }
 
+    // - Sign up with false verified email, and then sign in with verified email and check that its verified
+    @Test
+    public void testSignUpWithFalseVerifiedEmailAndSignInWithVerifiedEmail() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String thirdPartyId = "testThirdParty";
+        String thirdPartyUserId = "thirdPartyUserId";
+        String email = "test@example.com";
+
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, false);
+        checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
+                email, true);
+
+        assertFalse(EmailVerification
+                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.thirdParty.email));
+
+        ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, true);
+        checkSignInUpResponse(signInResponse, thirdPartyUserId, thirdPartyId,
+                email, false);
+
+        assertTrue(EmailVerification
+                .isEmailVerified(process.getProcess(), signInResponse.user.id, signInResponse.user.thirdParty.email));
+    }
+
+    // Sign up with email A, then sign in with email B, and check that email is updated, A is verified, and B is not
+    // *     verified
+    @Test
+    public void testUpdatingEmailAndCheckVerification() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String thirdPartyId = "testThirdParty";
+        String thirdPartyUserId = "thirdPartyUserId";
+        String email_1 = "testA@example.com";
+        String email_2 = "testB@example.com";
+
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email_1, true);
+        checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
+                email_1, true);
+
+        assertTrue(EmailVerification
+                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.thirdParty.email));
+
+        ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email_2, false);
+        checkSignInUpResponse(signInResponse, thirdPartyUserId, thirdPartyId,
+                email_2, false);
+
+        assertFalse(EmailVerification
+                .isEmailVerified(process.getProcess(), signInResponse.user.id, signInResponse.user.thirdParty.email));
+
+        UserInfo updatedUserInfo = ThirdParty.getUser(process.getProcess(), thirdPartyId, thirdPartyUserId);
+        assertEquals(updatedUserInfo.thirdParty.email, email_2);
     }
 
     public static void checkSignInUpResponse(ThirdParty.SignInUpResponse response, String thirdPartyUserId,

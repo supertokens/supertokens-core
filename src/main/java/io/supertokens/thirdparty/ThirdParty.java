@@ -54,6 +54,7 @@ public class ThirdParty {
                     StorageLayer.getEmailVerificationStorage(main)
                             .updateIsEmailVerified_Transaction(con, response.user.id, response.user.thirdParty.email,
                                     true);
+                    StorageLayer.getEmailVerificationStorage(main).commitTransaction(con);
                     return null;
                 });
             } catch (StorageTransactionLogicException e) {
@@ -99,6 +100,7 @@ public class ThirdParty {
 
                     if (user == null) {
                         // we retry everything..
+                        storage.commitTransaction(con);
                         return null;
                     }
 
@@ -109,7 +111,8 @@ public class ThirdParty {
                                 new UserInfo.ThirdParty(user.thirdParty.id, user.thirdParty.userId, email),
                                 user.timeJoined);
                     }
-
+                    
+                    storage.commitTransaction(con);
                     return new SignInUpResponse(false, user);
                 });
             } catch (StorageTransactionLogicException ignored) {
