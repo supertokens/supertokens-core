@@ -102,7 +102,13 @@ public class ThirdParty {
                         return null;
                     }
 
-                    storage.updateUserEmail_Transaction(con, thirdPartyId, thirdPartyUserId, email);
+                    if (!email.equals(user.thirdParty.email)) {
+                        storage.updateUserEmail_Transaction(con, thirdPartyId, thirdPartyUserId, email);
+
+                        user = new UserInfo(user.id,
+                                new UserInfo.ThirdParty(user.thirdParty.id, user.thirdParty.userId, email),
+                                user.timeJoined);
+                    }
 
                     return new SignInUpResponse(false, user);
                 });
