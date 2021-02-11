@@ -111,7 +111,7 @@ public class ThirdParty {
                                 new UserInfo.ThirdParty(user.thirdParty.id, user.thirdParty.userId, email),
                                 user.timeJoined);
                     }
-                    
+
                     storage.commitTransaction(con);
                     return new SignInUpResponse(false, user);
                 });
@@ -149,10 +149,16 @@ public class ThirdParty {
                     .getThirdPartyUsers(tokenInfo.userId, tokenInfo.timeJoined, limit + 1, timeJoinedOrder);
         }
         String nextPaginationToken = null;
+        int maxLoop = users.length;
         if (users.length == limit + 1) {
+            maxLoop = limit;
             nextPaginationToken = new UserPaginationToken(users[limit].id, users[limit].timeJoined).generateToken();
         }
-        return new UserPaginationContainer(users, nextPaginationToken);
+        UserInfo[] resultUsers = new UserInfo[maxLoop];
+        for (int i = 0; i < maxLoop; i++) {
+            resultUsers[i] = users[i];
+        }
+        return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
 
     public static long getUsersCount(Main main) throws StorageQueryException {
