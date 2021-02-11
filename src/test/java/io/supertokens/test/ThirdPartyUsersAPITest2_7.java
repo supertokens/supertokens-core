@@ -16,10 +16,20 @@
 
 package io.supertokens.test;
 
+import io.supertokens.ProcessState;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.thirdparty.ThirdParty;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.util.HashMap;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /*
  * TODO:
@@ -44,5 +54,72 @@ public class ThirdPartyUsersAPITest2_7 {
     @Before
     public void beforeEach() {
         Utils.reset();
+    }
+
+    // Check for bad input (missing fields)
+    @Test
+    public void testBadInput() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        {
+            HashMap<String, String> QueryParams = new HashMap<>();
+            QueryParams.put("paginationToken", "randomValue");
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendGETRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/users", QueryParams, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage().equals("Http error. Status Code: 400. Message: invalid pagination token"));
+            }
+        }
+        {
+            HashMap<String, String> QueryParams = new HashMap<>();
+            QueryParams.put("limit", "randomValue");
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendGETRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/users", QueryParams, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                System.out.println(e.getMessage());
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: Field name 'limit' must be an int in " +
+                                        "the GET request"));
+            }
+        }
+        {
+            HashMap<String, String> QueryParams = new HashMap<>();
+            QueryParams.put("timeJoinedOrder", "randomValue");
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendGETRequest(process.getProcess(), "",
+                                "http://localhost:3567/recipe/users", QueryParams, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                System.out.println(e.getMessage());
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: timeJoinedOrder can be either ASC OR " +
+                                        "DESC"));
+            }
+        }
+        
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
