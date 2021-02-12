@@ -157,6 +157,42 @@ public class WebserverTest extends Mockito {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    //Use RecipeRouter in a way that the sub routes have different paths. This should throw an error
+    @Test
+    public void testRecipeRouterWhereSubRoutesHaveDifferentPaths() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+        String recipe_1 = "Recipe1";
+        String recipe_2 = "Recipe2";
+
+        try {
+            Webserver.getInstance(process.getProcess())
+                    .addAPI(new RecipeRouter(process.getProcess(), new WebserverAPI(process.getProcess(), recipe_1) {
+                        private static final long serialVersionUID = -4495971833448004599L;
+
+                        @Override
+                        public String getPath() {
+                            return "/testRecipe/recipe1";
+                        }
+                    }, new WebserverAPI(process.getProcess(), recipe_2) {
+                        private static final long serialVersionUID = -4495971833448004599L;
+
+                        @Override
+                        public String getPath() {
+                            return "/testRecipe/recipe2";
+                        }
+                    }));
+            throw new Exception("Should not come here");
+        } catch (Exception e) {
+            assertEquals("All APIs given to router do not have the same path", e.getMessage());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     // * - Give all supported versions and make sure it passes
 // * - Give no version and makes sure it treats it as 1.0
     @Test
