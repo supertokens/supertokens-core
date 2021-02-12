@@ -17,6 +17,7 @@
 package io.supertokens.test;
 
 import com.google.gson.JsonObject;
+import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.exceptions.QuitProgramException;
@@ -25,6 +26,7 @@ import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.RecipeRouter;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
@@ -69,6 +71,162 @@ public class WebserverTest extends Mockito {
     @Before
     public void beforeEach() {
         Utils.reset();
+    }
+
+    // Initialise two routes with the same path, different RID and query each and check that routing is happening
+    // * properly (for all HTTP methods).
+    @Test
+    public void testInitializeTwoRoutesAndCheckRouting() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+        String recipe_1 = "Recipe1";
+        String recipe_2 = "Recipe2";
+
+        Webserver.getInstance(process.getProcess()).addAPI(getRecipeRouter(process, recipe_1, recipe_2));
+
+        // Responses when no recipe is given
+        {
+            // get request
+            String response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new HashMap<>(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), "");
+            assertEquals("get request from Recipe1", response);
+
+            // post request
+            response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonPOSTRequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), "");
+            assertEquals("post request from Recipe1", response);
+
+            // put request
+            response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonPUTRequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), "");
+            assertEquals("put request from Recipe1", response);
+
+            // delete request
+            response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonDELETERequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), "");
+            assertEquals("delete request from Recipe1", response);
+
+        }
+
+        // Responses from recipe 1
+        {
+            // get request
+            String response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new HashMap<>(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), recipe_1);
+            assertEquals("get request from Recipe1", response);
+
+            // post request
+            response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonPOSTRequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), recipe_1);
+            assertEquals("post request from Recipe1", response);
+
+            // put request
+            response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonPUTRequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), recipe_1);
+            assertEquals("put request from Recipe1", response);
+
+            // delete request
+            response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonDELETERequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), recipe_1);
+            assertEquals("delete request from Recipe1", response);
+
+        }
+
+        // recipe2 requests
+        {
+            String response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new HashMap<>(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), recipe_2);
+            assertEquals("get request from Recipe2", response);
+
+            response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonPOSTRequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), recipe_2);
+            assertEquals("post request from Recipe2", response);
+
+            response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonPUTRequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), recipe_2);
+            assertEquals("put request from Recipe2", response);
+
+            response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonDELETERequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), recipe_2);
+            assertEquals("delete request from Recipe2", response);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    //Use RecipeRouter in a way that the sub routes have different paths. This should throw an error
+    @Test
+    public void testRecipeRouterWhereSubRoutesHaveDifferentPaths() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+        String recipe_1 = "Recipe1";
+        String recipe_2 = "Recipe2";
+
+        try {
+            Webserver.getInstance(process.getProcess())
+                    .addAPI(new RecipeRouter(process.getProcess(), new WebserverAPI(process.getProcess(), recipe_1) {
+                        private static final long serialVersionUID = -4495971833448004599L;
+
+                        @Override
+                        public String getPath() {
+                            return "/testRecipe/recipe1";
+                        }
+                    }, new WebserverAPI(process.getProcess(), recipe_2) {
+                        private static final long serialVersionUID = -4495971833448004599L;
+
+                        @Override
+                        public String getPath() {
+                            return "/testRecipe/recipe2";
+                        }
+                    }));
+            throw new Exception("Should not come here");
+        } catch (Exception e) {
+            assertEquals("All APIs given to router do not have the same path", e.getMessage());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     // * - Give all supported versions and make sure it passes
@@ -670,6 +828,80 @@ public class WebserverTest extends Mockito {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    private static RecipeRouter getRecipeRouter(TestingProcess process, String recipe_1, String recipe_2)
+            throws Exception {
+        WebserverAPI recipe_1_api = new WebserverAPI(process.getProcess(), recipe_1) {
+
+            private static final long serialVersionUID = -1495165001457526749L;
+
+            @Override
+            public String getPath() {
+                return "/testRecipe";
+            }
+
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                    throws IOException, ServletException {
+                sendTextResponse(200, "get request from Recipe1", resp);
+            }
+
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                    throws IOException, ServletException {
+                sendTextResponse(200, "post request from Recipe1", resp);
+            }
+
+            @Override
+            protected void doPut(HttpServletRequest req, HttpServletResponse resp)
+                    throws IOException {
+                sendTextResponse(200, "put request from Recipe1", resp);
+            }
+
+            @Override
+            protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
+                    throws IOException {
+                sendTextResponse(200, "delete request from Recipe1", resp);
+            }
+
+        };
+
+        WebserverAPI recipe_2_api = new WebserverAPI(process.getProcess(), recipe_2) {
+
+            private static final long serialVersionUID = -1495165001457526749L;
+
+            @Override
+            public String getPath() {
+                return "/testRecipe";
+            }
+
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp)
+                    throws IOException, ServletException {
+                sendTextResponse(200, "get request from Recipe2", resp);
+            }
+
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp)
+                    throws IOException, ServletException {
+                sendTextResponse(200, "post request from Recipe2", resp);
+            }
+
+            @Override
+            protected void doPut(HttpServletRequest req, HttpServletResponse resp)
+                    throws IOException {
+                sendTextResponse(200, "put request from Recipe2", resp);
+            }
+
+            @Override
+            protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
+                    throws IOException {
+                sendTextResponse(200, "delete request from Recipe2", resp);
+            }
+        };
+
+        return new RecipeRouter(process.getProcess(), recipe_1_api, recipe_2_api);
     }
 
     private static class ThreadPoolTester implements Runnable {

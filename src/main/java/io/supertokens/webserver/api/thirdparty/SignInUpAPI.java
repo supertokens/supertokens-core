@@ -50,7 +50,7 @@ public class SignInUpAPI extends WebserverAPI {
         String thirdPartyId = InputParser.parseStringOrThrowError(input, "thirdPartyId", false);
         String thirdPartyUserId = InputParser.parseStringOrThrowError(input, "thirdPartyUserId", false);
         JsonObject emailObject = InputParser.parseJsonObjectOrThrowError(input, "email", false);
-        String email = InputParser.parseStringOrThrowError(emailObject, "email", false);
+        String email = InputParser.parseStringOrThrowError(emailObject, "id", false);
         Boolean isEmailVerified = InputParser.parseBooleanOrThrowError(emailObject, "isVerified", false);
 
         assert thirdPartyId != null;

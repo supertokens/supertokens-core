@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.webserver.WebserverAPI;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.junit.rules.TestRule;
@@ -174,6 +175,27 @@ abstract class Utils extends Mockito {
                         "http://localhost:3567/recipe/signup", signUpRequestBody, 1000,
                         1000,
                         null, getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+    }
+
+    public static JsonObject signInUpRequest_2_7(TestingProcessManager.TestingProcess process, String email,
+                                                 boolean isVerified,
+                                                 String thirdPartyId, String thirdPartyUserId)
+            throws IOException, HttpResponseException {
+        
+        JsonObject emailObject = new JsonObject();
+        emailObject.addProperty("id", email);
+        emailObject.addProperty("isVerified", isVerified);
+
+        JsonObject signUpRequestBody = new JsonObject();
+        signUpRequestBody.addProperty("thirdPartyId", thirdPartyId);
+        signUpRequestBody.addProperty("thirdPartyUserId", thirdPartyUserId);
+        signUpRequestBody.add("email", emailObject);
+
+        return io.supertokens.test.httpRequest.HttpRequest
+                .sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000,
+                        1000,
+                        null, getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
     }
 
 }

@@ -16,10 +16,18 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonObject;
+import io.supertokens.ProcessState;
+import io.supertokens.version.Version;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.util.HashMap;
+
+import static org.junit.Assert.*;
 
 /*
  * TODO:
@@ -38,5 +46,98 @@ public class TelemetryAPITest2_7 {
     public void beforeEach() {
         Utils.reset();
     }
+
+    @Test
+    public void testTelemetryDisabledInMemDb() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (!Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+            return;
+        }
+
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                .sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/telemetry", new HashMap<>(), 1000,
+                        1000,
+                        null, Utils.getCdiVersion2_7ForTests(), "");
+        assertFalse(response.get("exists").getAsBoolean());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDefaultTelemetry() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+            return;
+        }
+
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                .sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/telemetry", new HashMap<>(), 1000,
+                        1000,
+                        null, Utils.getCdiVersion2_7ForTests(), "");
+        assertTrue(response.get("exists").getAsBoolean());
+        assertNotNull(response.get("telemetryId"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDisableTelemetry() throws Exception {
+        Utils.setValueInConfig("disable_telemetry", "true");
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+            return;
+        }
+
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                .sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/telemetry", new HashMap<>(), 1000,
+                        1000,
+                        null, Utils.getCdiVersion2_7ForTests(), "");
+        assertFalse(response.get("exists").getAsBoolean());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testEnableTelemetry() throws Exception {
+        Utils.setValueInConfig("disable_telemetry", "false");
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+            return;
+        }
+
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                .sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/telemetry", new HashMap<>(), 1000,
+                        1000,
+                        null, Utils.getCdiVersion2_7ForTests(), "");
+        assertTrue(response.get("exists").getAsBoolean());
+        assertNotNull(response.get("telemetryId"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 
 }
