@@ -179,6 +179,48 @@ public class ThirdPartyGetUserAPITest2_7 {
         }
     }
 
+    // - Check for all types of output
+    // failure condition: valid userid/thirdParty details are sent, status message does not match
+    @Test
+    public void testAllTypesOfOutput() throws Exception {
+
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // query with  unknown userId
+        {
+            HashMap<String, String> QueryParams = new HashMap<>();
+            QueryParams.put("userId", "randomUserId");
+
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/user", QueryParams, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+            assertEquals("UNKNOWN_USER_ID_ERROR", response.get("status").getAsString());
+        }
+
+        // query with unknown thirdParty
+        {
+            HashMap<String, String> QueryParams = new HashMap<>();
+            QueryParams.put("thirdPartyId", "randomThirdPartyId");
+            QueryParams.put("thirdPartyUserId", "randomThirdPartyUserId");
+
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/user", QueryParams, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+            assertEquals("UNKNOWN_THIRD_PARTY_USER_ERROR", response.get("status").getAsString());
+        }
+    }
+
     public static void checkUser(JsonObject user, String thirdPartyId, String thirdPartyUserId, String email) {
         assertNotNull(user.get("id"));
         assertNotNull(user.get("timeJoined"));
