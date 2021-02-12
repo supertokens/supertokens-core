@@ -16,6 +16,7 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
@@ -28,8 +29,7 @@ import org.junit.rules.TestRule;
 
 import java.util.HashMap;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 /*
  * TODO:
@@ -120,4 +120,113 @@ public class ThirdPartyUsersAPITest2_7 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    //-- Check good input works (add 5 users)
+    // *    - no params passed should return 5 users
+    // *    - only limit passed (limit: 2. users are returned in ASC order based on timeJoined)
+    // *    - limit and timeJoinedOrder passed (limit: 2, timeJoinedOrder: DESC. users are returned in DESC order
+    // based on timeJoined)
+    @Test
+    public void testGoodInput() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId", "test@example.com", false);
+        Thread.sleep(100);
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId1", "test1@example.com", false);
+        Thread.sleep(100);
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId2", "test2@example.com", false);
+        Thread.sleep(100);
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId3", "test3@example.com", false);
+        Thread.sleep(100);
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId4", "test4@example.com", false);
+        Thread.sleep(100);
+
+
+        {
+            HashMap<String, String> queryParams = new HashMap<>();
+            queryParams.put("limit", "1");
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/users", queryParams, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+
+            assertEquals("OK", response.get("status").getAsString());
+            assertNotNull(response.get("nextPaginationToken"));
+            assertEquals(1, response.getAsJsonArray("users").size());
+
+            JsonObject user = response.getAsJsonArray("users").get(0).getAsJsonObject();
+            assertNotNull(user.get("id"));
+            assertNotNull(user.get("timeJoined"));
+
+            JsonObject userThirdParty = user.get("thirdParty").getAsJsonObject();
+            assertEquals("thirdPartyId", userThirdParty.get("id").getAsString());
+            assertEquals("thirdPartyUserId", userThirdParty.get("userId").getAsString());
+            assertEquals("test@example.com", userThirdParty.get("email").getAsString());
+        }
+
+        // no params passed should return 5 users
+        {
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/users", new HashMap<>(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+            assertEquals(5, response.getAsJsonArray("users").size());
+        }
+
+        // only limit passed (limit: 2. users are returned in ASC order based on timeJoined)
+        {
+            HashMap<String, String> queryParams = new HashMap<>();
+            queryParams.put("limit", "2");
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/users", queryParams, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+            assertEquals(2, response.getAsJsonArray("users").size());
+
+            JsonObject user_1 = response.getAsJsonArray("users").get(0).getAsJsonObject();
+            JsonObject user_2 = response.getAsJsonArray("users").get(1).getAsJsonObject();
+
+            assertEquals("test@example.com", user_1.getAsJsonObject("thirdParty").get("email").getAsString());
+            assertEquals("test1@example.com", user_2.getAsJsonObject("thirdParty").get("email").getAsString());
+
+            assert (user_1.get("timeJoined").getAsLong() < user_2.get("timeJoined").getAsLong());
+        }
+
+        // limit and timeJoinedOrder passed (limit: 2, timeJoinedOrder: DESC. users are returned in DESC order based on
+        // * timeJoined)
+        {
+            HashMap<String, String> queryParams = new HashMap<>();
+            queryParams.put("limit", "2");
+            queryParams.put("timeJoinedOrder", "DESC");
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/users", queryParams, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+            assertEquals(2, response.getAsJsonArray("users").size());
+
+            JsonObject user_1 = response.getAsJsonArray("users").get(0).getAsJsonObject();
+            JsonObject user_2 = response.getAsJsonArray("users").get(1).getAsJsonObject();
+
+            assertEquals("test4@example.com", user_1.getAsJsonObject("thirdParty").get("email").getAsString());
+            assertEquals("test3@example.com", user_2.getAsJsonObject("thirdParty").get("email").getAsString());
+
+            assert (user_2.get("timeJoined").getAsLong() < user_1.get("timeJoined").getAsLong());
+        }
+        
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
