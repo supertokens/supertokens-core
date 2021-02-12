@@ -86,6 +86,42 @@ public class WebserverTest extends Mockito {
 
         Webserver.getInstance(process.getProcess()).addAPI(getRecipeRouter(process, recipe_1, recipe_2));
 
+        // Responses when no recipe is given
+        {
+            // get request
+            String response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new HashMap<>(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), "");
+            assertEquals("get request from Recipe1", response);
+
+            // post request
+            response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonPOSTRequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), "");
+            assertEquals("post request from Recipe1", response);
+
+            // put request
+            response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonPUTRequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), "");
+            assertEquals("put request from Recipe1", response);
+
+            // delete request
+            response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendJsonDELETERequest(process.getProcess(), "",
+                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), "");
+            assertEquals("delete request from Recipe1", response);
+
+        }
+
         // Responses from recipe 1
         {
             // get request
@@ -794,7 +830,7 @@ public class WebserverTest extends Mockito {
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
-    public static RecipeRouter getRecipeRouter(TestingProcess process, String recipe_1, String recipe_2)
+    private static RecipeRouter getRecipeRouter(TestingProcess process, String recipe_1, String recipe_2)
             throws Exception {
         WebserverAPI recipe_1_api = new WebserverAPI(process.getProcess(), recipe_1) {
 
