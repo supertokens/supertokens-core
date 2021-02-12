@@ -18,7 +18,6 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.version.Version;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -63,7 +62,7 @@ public class TelemetryAPITest2_7 {
                 .sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/telemetry", new HashMap<>(), 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                        null, Utils.getCdiVersion2_7ForTests(), "");
         assertFalse(response.get("exists").getAsBoolean());
 
         process.kill();
@@ -85,10 +84,10 @@ public class TelemetryAPITest2_7 {
                 .sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/telemetry", new HashMap<>(), 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                        null, Utils.getCdiVersion2_7ForTests(), "");
         assertTrue(response.get("exists").getAsBoolean());
         assertNotNull(response.get("telemetryId"));
-        
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -109,7 +108,7 @@ public class TelemetryAPITest2_7 {
                 .sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/telemetry", new HashMap<>(), 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                        null, Utils.getCdiVersion2_7ForTests(), "");
         assertFalse(response.get("exists").getAsBoolean());
 
         process.kill();
@@ -132,7 +131,7 @@ public class TelemetryAPITest2_7 {
                 .sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/telemetry", new HashMap<>(), 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                        null, Utils.getCdiVersion2_7ForTests(), "");
         assertTrue(response.get("exists").getAsBoolean());
         assertNotNull(response.get("telemetryId"));
 
