@@ -133,6 +133,7 @@ public class ThirdPartyUsersAPITest2_7 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        // added Thread.sleep(100) as sometimes tests would fail due to inconsistent signup order
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
                 "thirdPartyUserId", "test@example.com", false);
         Thread.sleep(100);
@@ -224,7 +225,7 @@ public class ThirdPartyUsersAPITest2_7 {
 
             assert (user_2.get("timeJoined").getAsLong() < user_1.get("timeJoined").getAsLong());
         }
-        
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
