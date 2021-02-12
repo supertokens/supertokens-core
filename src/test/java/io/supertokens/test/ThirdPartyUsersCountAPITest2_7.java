@@ -16,10 +16,19 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonObject;
+import io.supertokens.ProcessState;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.thirdparty.ThirdParty;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import static junit.framework.TestCase.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 /*
  * TODO:
@@ -39,6 +48,54 @@ public class ThirdPartyUsersCountAPITest2_7 {
     @Before
     public void beforeEach() {
         Utils.reset();
+    }
+
+    // - from EmailPasswordUsersCountAPITest2_7
+    // failure condition: number of signed up users not matching the count
+    @Test
+    public void testAPI() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        {
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/users/count", null, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+            assertEquals(response.get("status").getAsString(), "OK");
+            assertEquals(response.get("count").getAsLong(), 0);
+        }
+
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId", "test@example.com", false);
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId1", "test1@example.com", false);
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId2", "test2@example.com", false);
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId3", "test3@example.com", false);
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId4", "test4@example.com", false);
+
+        {
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/users/count", null, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+            assertEquals(response.get("status").getAsString(), "OK");
+            assertEquals(response.get("count").getAsLong(), 5);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
 }
