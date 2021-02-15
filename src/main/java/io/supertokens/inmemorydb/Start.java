@@ -400,7 +400,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             throws StorageQueryException, UnknownUserIdException, DuplicatePasswordResetTokenException {
         try {
             // SQLite is not compiled with foreign key constraint and so we must check for the userId manually
-            if (this.getThirdPartyUserInfoUsingId(passwordResetTokenInfo.userId) == null) {
+            if (this.getUserInfoUsingId(passwordResetTokenInfo.userId) == null) {
                 throw new UnknownUserIdException();
             }
 

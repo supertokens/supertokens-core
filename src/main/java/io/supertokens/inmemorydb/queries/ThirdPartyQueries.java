@@ -58,7 +58,7 @@ public class ThirdPartyQueries {
             pst.setString(1, userInfo.thirdParty.id);
             pst.setString(2, userInfo.thirdParty.userId);
             pst.setString(3, userInfo.id);
-            pst.setString(4, userInfo.thirdParty.email);
+            pst.setString(4, userInfo.email);
             pst.setLong(5, userInfo.timeJoined);
             pst.executeUpdate();
         }
@@ -211,10 +211,11 @@ public class ThirdPartyQueries {
 
         @Override
         public UserInfo map(ResultSet result) throws Exception {
-            return new UserInfo(result.getString("user_id"), new UserInfo.ThirdParty(
-                    result.getString("third_party_id"),
-                    result.getString("third_party_user_id"),
-                    result.getString("email")),
+            return new UserInfo(result.getString("user_id"),
+                    result.getString("email"),
+                    new UserInfo.ThirdParty(
+                            result.getString("third_party_id"),
+                            result.getString("third_party_user_id")),
                     result.getLong("time_joined"));
         }
     }

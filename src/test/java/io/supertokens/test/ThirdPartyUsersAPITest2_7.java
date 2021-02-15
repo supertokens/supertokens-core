@@ -167,11 +167,11 @@ public class ThirdPartyUsersAPITest2_7 {
             JsonObject user = response.getAsJsonArray("users").get(0).getAsJsonObject();
             assertNotNull(user.get("id"));
             assertNotNull(user.get("timeJoined"));
+            assertEquals("test@example.com", user.get("email").getAsString());
 
             JsonObject userThirdParty = user.get("thirdParty").getAsJsonObject();
             assertEquals("thirdPartyId", userThirdParty.get("id").getAsString());
             assertEquals("thirdPartyUserId", userThirdParty.get("userId").getAsString());
-            assertEquals("test@example.com", userThirdParty.get("email").getAsString());
         }
 
         // no params passed should return 5 users
@@ -198,8 +198,8 @@ public class ThirdPartyUsersAPITest2_7 {
             JsonObject user_1 = response.getAsJsonArray("users").get(0).getAsJsonObject();
             JsonObject user_2 = response.getAsJsonArray("users").get(1).getAsJsonObject();
 
-            assertEquals("test@example.com", user_1.getAsJsonObject("thirdParty").get("email").getAsString());
-            assertEquals("test1@example.com", user_2.getAsJsonObject("thirdParty").get("email").getAsString());
+            assertEquals("test@example.com", user_1.get("email").getAsString());
+            assertEquals("test1@example.com", user_2.get("email").getAsString());
 
             assert (user_1.get("timeJoined").getAsLong() < user_2.get("timeJoined").getAsLong());
         }
@@ -220,8 +220,8 @@ public class ThirdPartyUsersAPITest2_7 {
             JsonObject user_1 = response.getAsJsonArray("users").get(0).getAsJsonObject();
             JsonObject user_2 = response.getAsJsonArray("users").get(1).getAsJsonObject();
 
-            assertEquals("test4@example.com", user_1.getAsJsonObject("thirdParty").get("email").getAsString());
-            assertEquals("test3@example.com", user_2.getAsJsonObject("thirdParty").get("email").getAsString());
+            assertEquals("test4@example.com", user_1.get("email").getAsString());
+            assertEquals("test3@example.com", user_2.get("email").getAsString());
 
             assert (user_2.get("timeJoined").getAsLong() < user_1.get("timeJoined").getAsLong());
         }

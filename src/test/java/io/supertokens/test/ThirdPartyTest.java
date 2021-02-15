@@ -106,7 +106,7 @@ public class ThirdPartyTest {
                 email, true);
 
         assertFalse(EmailVerification
-                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.thirdParty.email));
+                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.email));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -133,7 +133,7 @@ public class ThirdPartyTest {
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email, true);
         assertTrue(EmailVerification
-                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.thirdParty.email));
+                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.email));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -162,7 +162,7 @@ public class ThirdPartyTest {
                 email, true);
 
         assertFalse(EmailVerification
-                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.thirdParty.email));
+                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.email));
 
         ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
                 thirdPartyUserId, email, true);
@@ -170,7 +170,7 @@ public class ThirdPartyTest {
                 email, false);
 
         assertTrue(EmailVerification
-                .isEmailVerified(process.getProcess(), signInResponse.user.id, signInResponse.user.thirdParty.email));
+                .isEmailVerified(process.getProcess(), signInResponse.user.id, signInResponse.user.email));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -201,7 +201,7 @@ public class ThirdPartyTest {
                 email_1, true);
 
         assertTrue(EmailVerification
-                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.thirdParty.email));
+                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.email));
 
         ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
                 thirdPartyUserId, email_2, false);
@@ -209,10 +209,10 @@ public class ThirdPartyTest {
                 email_2, false);
 
         assertFalse(EmailVerification
-                .isEmailVerified(process.getProcess(), signInResponse.user.id, signInResponse.user.thirdParty.email));
+                .isEmailVerified(process.getProcess(), signInResponse.user.id, signInResponse.user.email));
 
         UserInfo updatedUserInfo = ThirdParty.getUser(process.getProcess(), thirdPartyId, thirdPartyUserId);
-        assertEquals(updatedUserInfo.thirdParty.email, email_2);
+        assertEquals(updatedUserInfo.email, email_2);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -314,8 +314,8 @@ public class ThirdPartyTest {
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email, true);
         try {
-            UserInfo userInfo = new UserInfo(io.supertokens.utils.Utils.getUUID(),
-                    new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId, email), System.currentTimeMillis());
+            UserInfo userInfo = new UserInfo(io.supertokens.utils.Utils.getUUID(), email,
+                    new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId), System.currentTimeMillis());
             StorageLayer.getThirdPartyStorage(process.getProcess()).signUp(userInfo);
             throw new Exception("Should not come here");
         } catch (DuplicateThirdPartyUserException ignored) {
@@ -348,8 +348,8 @@ public class ThirdPartyTest {
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email, true);
         try {
-            UserInfo userInfo = new UserInfo(signUpResponse.user.id,
-                    new UserInfo.ThirdParty("newThirdParty", "newThirdPartyUserId", email), System.currentTimeMillis());
+            UserInfo userInfo = new UserInfo(signUpResponse.user.id, email,
+                    new UserInfo.ThirdParty("newThirdParty", "newThirdPartyUserId"), System.currentTimeMillis());
             StorageLayer.getThirdPartyStorage(process.getProcess()).signUp(userInfo);
             throw new Exception("Should not come here");
         } catch (DuplicateUserIdException ignored) {
@@ -382,14 +382,14 @@ public class ThirdPartyTest {
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email, true);
         assertTrue(EmailVerification
-                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.thirdParty.email));
+                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.email));
 
         ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
                 thirdPartyUserId, email, false);
 
         checkSignInUpResponse(signInResponse, thirdPartyUserId, thirdPartyId, email, false);
         assertTrue(EmailVerification
-                .isEmailVerified(process.getProcess(), signInResponse.user.id, signInResponse.user.thirdParty.email));
+                .isEmailVerified(process.getProcess(), signInResponse.user.id, signInResponse.user.email));
 
 
         process.kill();
@@ -422,7 +422,7 @@ public class ThirdPartyTest {
         UserInfo getUserInfoFromId = ThirdParty.getUser(process.getProcess(), signUpResponse.user.id);
         assertEquals(getUserInfoFromId.id, signUpResponse.user.id);
         assertEquals(getUserInfoFromId.timeJoined, signUpResponse.user.timeJoined);
-        assertEquals(getUserInfoFromId.thirdParty.email, signUpResponse.user.thirdParty.email);
+        assertEquals(getUserInfoFromId.email, signUpResponse.user.email);
         assertEquals(getUserInfoFromId.thirdParty.userId, signUpResponse.user.thirdParty.userId);
         assertEquals(getUserInfoFromId.thirdParty.id, signUpResponse.user.thirdParty.id);
 
@@ -431,7 +431,7 @@ public class ThirdPartyTest {
                         signUpResponse.user.thirdParty.userId);
         assertEquals(getUserInfoFromThirdParty.id, signUpResponse.user.id);
         assertEquals(getUserInfoFromThirdParty.timeJoined, signUpResponse.user.timeJoined);
-        assertEquals(getUserInfoFromThirdParty.thirdParty.email, signUpResponse.user.thirdParty.email);
+        assertEquals(getUserInfoFromThirdParty.email, signUpResponse.user.email);
         assertEquals(getUserInfoFromThirdParty.thirdParty.userId, signUpResponse.user.thirdParty.userId);
         assertEquals(getUserInfoFromThirdParty.thirdParty.id, signUpResponse.user.thirdParty.id);
 
@@ -479,24 +479,24 @@ public class ThirdPartyTest {
             UserPaginationContainer users = ThirdParty.getUsers(process.getProcess(), null, 1, "ASC");
             assertEquals(1, users.users.length);
             assertNotNull(users.nextPaginationToken);
-            assertEquals(users.users[0].thirdParty.email, "test@example.com");
+            assertEquals(users.users[0].email, "test@example.com");
 
             users = ThirdParty.getUsers(process.getProcess(), users.nextPaginationToken, 1, "ASC");
             assertEquals(1, users.users.length);
             assertNotNull(users.nextPaginationToken);
-            assert (users.users[0].thirdParty.email.equals("test1@example.com"));
+            assert (users.users[0].email.equals("test1@example.com"));
         }
 
         {
             UserPaginationContainer users = ThirdParty.getUsers(process.getProcess(), null, 1, "DESC");
             assertEquals(1, users.users.length);
             assertNotNull(users.nextPaginationToken);
-            assertEquals(users.users[0].thirdParty.email, "test4@example.com");
+            assertEquals(users.users[0].email, "test4@example.com");
 
             users = ThirdParty.getUsers(process.getProcess(), users.nextPaginationToken, 1, "DESC");
             assertEquals(1, users.users.length);
             assertNotNull(users.nextPaginationToken);
-            assertEquals(users.users[0].thirdParty.email, "test3@example.com");
+            assertEquals(users.users[0].email, "test3@example.com");
         }
 
         process.kill();
@@ -538,10 +538,9 @@ public class ThirdPartyTest {
                                              String thirdPartyId, String email, boolean createNewUser) {
         assertEquals(response.createdNewUser, createNewUser);
         assertNotNull(response.user.id);
-        assertNotNull(response.user.timeJoined);
         assertEquals(response.user.thirdParty.userId, thirdPartyUserId);
         assertEquals(response.user.thirdParty.id, thirdPartyId);
-        assertEquals(response.user.thirdParty.email, email);
+        assertEquals(response.user.email, email);
 
     }
 }

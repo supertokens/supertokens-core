@@ -52,7 +52,7 @@ public class ThirdParty {
             try {
                 StorageLayer.getEmailVerificationStorage(main).startTransaction(con -> {
                     StorageLayer.getEmailVerificationStorage(main)
-                            .updateIsEmailVerified_Transaction(con, response.user.id, response.user.thirdParty.email,
+                            .updateIsEmailVerified_Transaction(con, response.user.id, response.user.email,
                                     true);
                     StorageLayer.getEmailVerificationStorage(main).commitTransaction(con);
                     return null;
@@ -78,8 +78,8 @@ public class ThirdParty {
                 long timeJoined = System.currentTimeMillis();
 
                 try {
-                    UserInfo user = new UserInfo(userId,
-                            new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId, email), timeJoined);
+                    UserInfo user = new UserInfo(userId, email,
+                            new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId), timeJoined);
 
                     storage.signUp(user);
 
@@ -104,11 +104,11 @@ public class ThirdParty {
                         return null;
                     }
 
-                    if (!email.equals(user.thirdParty.email)) {
+                    if (!email.equals(user.email)) {
                         storage.updateUserEmail_Transaction(con, thirdPartyId, thirdPartyUserId, email);
 
-                        user = new UserInfo(user.id,
-                                new UserInfo.ThirdParty(user.thirdParty.id, user.thirdParty.userId, email),
+                        user = new UserInfo(user.id, email,
+                                new UserInfo.ThirdParty(user.thirdParty.id, user.thirdParty.userId),
                                 user.timeJoined);
                     }
 
@@ -155,9 +155,7 @@ public class ThirdParty {
             nextPaginationToken = new UserPaginationToken(users[limit].id, users[limit].timeJoined).generateToken();
         }
         UserInfo[] resultUsers = new UserInfo[maxLoop];
-        for (int i = 0; i < maxLoop; i++) {
-            resultUsers[i] = users[i];
-        }
+        System.arraycopy(users, 0, resultUsers, 0, maxLoop);
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
 

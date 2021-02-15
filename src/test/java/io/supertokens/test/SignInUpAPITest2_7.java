@@ -256,11 +256,11 @@ public class SignInUpAPITest2_7 {
         JsonObject user = response.getAsJsonObject("user");
         assertNotNull(user.get("id"));
         assertNotNull(user.get("timeJoined"));
+        assertEquals(email, user.get("email").getAsString());
 
         JsonObject userThirdParty = user.getAsJsonObject("thirdParty");
-        assertEquals(3, userThirdParty.entrySet().size());
+        assertEquals(2, userThirdParty.entrySet().size());
         assertEquals(thirdPartyId, userThirdParty.get("id").getAsString());
         assertEquals(thirdPartyUserId, userThirdParty.get("userId").getAsString());
-        assertEquals(email, userThirdParty.get("email").getAsString());
     }
 }

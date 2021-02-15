@@ -224,8 +224,8 @@ public class ThirdPartyGetUserAPITest2_7 {
     public static void checkUser(JsonObject user, String thirdPartyId, String thirdPartyUserId, String email) {
         assertNotNull(user.get("id"));
         assertNotNull(user.get("timeJoined"));
+        assertEquals(user.get("email").getAsString(), email);
         assertEquals(user.getAsJsonObject("thirdParty").get("userId").getAsString(), thirdPartyUserId);
         assertEquals(user.getAsJsonObject("thirdParty").get("id").getAsString(), thirdPartyId);
-        assertEquals(user.getAsJsonObject("thirdParty").get("email").getAsString(), email);
     }
 }

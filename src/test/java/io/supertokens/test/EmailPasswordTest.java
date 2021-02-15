@@ -373,6 +373,8 @@ public class EmailPasswordTest {
         // we add a user first.
         User user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
+        System.out.println(user.id);
+
         StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .addPasswordResetToken(new PasswordResetTokenInfo(
                         user.id, "token",
