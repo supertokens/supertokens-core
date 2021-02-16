@@ -33,14 +33,16 @@ Description of the new feature
 
 ### Others
 
- - [supertokens-demo-react:master](https://github.com/supertokens/supertokens-nextjs-demo/tree/master)
+ - [supertokens-demo-react](https://github.com/supertokens/supertokens-demo-react/tree/master)
      - [ ] In progress
      - [ ] [PR]() Ready using `supertokens/supertokens-auth-react#X.Y` and `supertokens/supertokens-node#X.Y` github repositories in `package.json`
-     - [ ] Make changes to `master` and `deploy` branch
+     - [ ] Make changes to `thirdparty`
+     - [ ] Make changes to `emailpassword`
 
 ### 📚 Documentation
 
 - [ ] EmailPassword main documentation update
+   - [ ] If UI changes, make sure to update the themes netlify link.
    - [ ] In progress [PR]()
    - [ ] Deployed on [test site](https://test.supertokens.io/docs/emailpassword/introduction)
 
@@ -85,12 +87,16 @@ Description of the new feature
 
 ### 🔀 Others
 
-- [supertokens-demo-react:master](https://github.com/supertokens/supertokens-nextjs-demo/tree/master)
+- [supertokens-demo-react:master](https://github.com/supertokens/supertokens-demo-react/tree/master)
    - [ ] Updated [PR]() using `supertokens-node` and `supertokens-auth-react` npm registry.
-   - [ ] Deployed to [demo site](http://emailpassword.demo.supertokens.io/)
+   - [ ] Deployed to [emailpassword demo site](https://emailpassword.demo.supertokens.io/)
+   - [ ] Deployed to [thirdparty demo site](https://thirdparty.demo.supertokens.io/)
 
 - [supertokens-auth-react:master](https://github.com/supertokens/supertokens-auth-react/tree/master)
    - [ ] Update examples to use latest `supertokens-node` and `supertokens-auth-react`
+
+- [next.js:canary](https://github.com/vercel/next.js/tree/canary)
+   - [ ] Update `with-supertokens` examples to use latest `supertokens-node` and `supertokens-auth-react`
 
 ### 📚 Documentation
 
