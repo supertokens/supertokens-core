@@ -93,6 +93,9 @@ Description of the new feature
 - [supertokens-auth-react:master](https://github.com/supertokens/supertokens-auth-react/tree/master)
    - [ ] Update examples to use latest `supertokens-node` and `supertokens-auth-react`
 
+- [next.js:canary](https://github.com/vercel/next.js/tree/canary)
+   - [ ] Update `with-supertokens` examples to use latest `supertokens-node` and `supertokens-auth-react`
+
 ### 📚 Documentation
 
 - EmailPassword main documentation update
