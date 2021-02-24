@@ -50,7 +50,7 @@ We also believe in the principle of least vendor lockin. Your having full contro
 
 
 ### Documentation
-The docs can be seen [on our website](https://supertokens.io/docs/emailpassword/introduction).
+The docs can be seen [on our website](https://supertokens.io/docs/community/introduction).
 
 There is more information about SuperTokens on the [GitHub wiki section](https://github.com/supertokens/supertokens-core/wiki).
 
