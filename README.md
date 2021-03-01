@@ -119,6 +119,9 @@ If you think this is a project you could use in the future, please :star2: this 
 <td align="center"><a href="https://github.com/chotuchaudhary"><img src="https://avatars0.githubusercontent.com/u/14938108?s=460&v=4" width="100px;" alt=""/><br /><sub><b>Chotu Chaudhary</b></sub></a></td>
 <td align="center"><a href="https://github.com/heracek"><img src="https://avatars.githubusercontent.com/u/7502?s=460&v=4" width="100px;" alt=""/><br /><sub><b>Tomáš Horáček</b></sub></a></td>
   </tr>
+  <tr>
+<td align="center"><a href="https://github.com/sbauch"><img src="https://avatars.githubusercontent.com/u/923033?s=460&u=db9bb41f9b279750c74afc1be0ab51db05539593&v=4" width="100px;" alt=""/><br /><sub><b>Sam Bauch</b></sub></a></td>
+  </tr>
 </table>
 
 ## 👩‍💻 Contributing
