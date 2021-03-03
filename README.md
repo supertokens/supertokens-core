@@ -44,7 +44,7 @@ We want to change that - we believe the only way is to provide a solution that h
   
 We also believe in the principle of least vendor lockin. Your having full control of your user's data means that you can switch away from SuperTokens without forcing your existing users to logout, reset their passwords or in the worst case, sign up again. 
 
-### Features - [Click here](https://emailpassword.demo.supertokens.io/) to see the demo app.
+### Features - [Click here](https://thirdpartyemailpassword.demo.supertokens.io/) to see the demo app.
 - Please visit [our website](https://supertokens.io/pricing) to see the list of features.
 - We want to make features as decoupled as possible. This means, you can use SuperTokens for just login, or just session management, or both. In fact, we also offer session management integrations with other login providers like Auth0.
 
