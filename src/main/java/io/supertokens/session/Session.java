@@ -93,15 +93,15 @@ public class Session {
     }
 
     /*
-     * Quesiton: If the incoming access token is expired, do we throw try refresh token error and not update the db?
+     * Question: If the incoming access token is expired, do we throw try refresh token error and not update the db?
      * We should update in database, in SDK session object and not throw an error, nor set any cookie. This is
      * because, the user has already verified the session for this API. If it has expired, the refresh API will be
      * called, and the new JWT info will be set in the token then.
      *
-     * Quesiton: If the incoming session has been revoked, do we throw an unauthorised error?
+     * Question: If the incoming session has been revoked, do we throw an unauthorised error?
      * Yes. It's important that the user knows that this has happened.
      *
-     * Quesiton: If this regenerates session tokens, while another API revokes it, then how will that work?
+     * Question: If this regenerates session tokens, while another API revokes it, then how will that work?
      * This is OK since the other API will cause a clearing of idRefreshToken and this will not set that. This means
      * that next API call, only the access token will go and that will not pass. In fact, it will be removed.
      *
