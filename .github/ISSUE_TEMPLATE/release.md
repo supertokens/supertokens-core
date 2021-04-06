@@ -80,7 +80,7 @@ labels:
 - [supertokens-auth-react:master](https://github.com/supertokens/supertokens-auth-react/tree/master)
    - [ ] Update examples to use latest `supertokens-node` and `supertokens-auth-react`
 
-- [next.js:canary](https://github.com/supertokens/next.js/tree/with-supertokens-example-in-docs/examples/with-supertokens)
+- [next.js:canary](https://github.com/supertokens/next.js/tree/canary/examples/with-supertokens)
    - [ ] Update `with-supertokens` examples to use latest `supertokens-node` and `supertokens-auth-react`
 
 - RedwoodJS
