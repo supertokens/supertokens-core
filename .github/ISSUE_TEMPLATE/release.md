@@ -80,12 +80,12 @@ labels:
 - [supertokens-auth-react:master](https://github.com/supertokens/supertokens-auth-react/tree/master)
    - [ ] Update examples to use latest `supertokens-node` and `supertokens-auth-react`
 
-- [next.js:canary](https://github.com/vercel/next.js/tree/canary)
+- [next.js:canary](https://github.com/supertokens/next.js/tree/with-supertokens-example-in-docs/examples/with-supertokens)
    - [ ] Update `with-supertokens` examples to use latest `supertokens-node` and `supertokens-auth-react`
 
 - RedwoodJS
-   - [ ] Update `redwood core` to use latest `supertokens-node` and `supertokens-auth-react`
-   - [ ] Update `playground-auth` to use latest `supertokens-node` and `supertokens-auth-react`
+   - [ ] Update [redwood core](https://github.com/supertokens/redwood/tree/added-supertokens-auth/packages/auth) to use latest `supertokens-auth-react`
+   - [ ] Update [playground-auth](https://github.com/supertokens/playground-auth/tree/added-supertokens) to use latest `supertokens-node` and `supertokens-auth-react`
 
 ### 📚 Documentation
 
