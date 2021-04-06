@@ -25,28 +25,17 @@ labels:
      - [ ] [PR]() Ready using `supertokens/supertokens-auth-react#X.Y` and `supertokens/supertokens-node#X.Y` github repositories in `package.json`
      - [ ] Make changes to add demo site branches
 
-### 📚 Documentation
+### 📚 Documentation (test site)
 
 - [ ] All recipe main documentation update
-   - [ ] If UI changes, make sure to update the themes netlify link.
-   - [ ] In progress [PR]()
-   - [ ] Deployed on test site
 
 - [ ] nodejs documentation update
-   - [ ] In progress [PR]()
-   - [ ] Deployed on [test site](https://test.supertokens.io/docs/nodejs/installation)
 
 - [ ] auth-react documentation update
-   - [ ] In progress [PR]()
-   - [ ] Deployed on [test site](https://test.supertokens.io/docs/auth-react/introduction)
 
 - [ ] supertokens-website documentation update
-   - [ ] In progress [PR]()
-   - [ ] Deployed to [test site](https://test.supertokens.io/docs/website/introduction)
 
 - [ ] community documentation update
-   - [ ] In progress [PR]()
-   - [ ] Deployed to test site
 
 - [ ] website changes (test.supertokens.io)
    - [ ] homepage
