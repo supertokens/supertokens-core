@@ -84,8 +84,8 @@ labels:
    - [ ] Update `with-supertokens` examples to use latest `supertokens-node` and `supertokens-auth-react`
 
 - RedwoodJS
-   - [ ] Update [redwood core](https://github.com/supertokens/redwood/tree/added-supertokens-auth/packages/auth) to use latest `supertokens-auth-react`
-   - [ ] Update [playground-auth](https://github.com/supertokens/playground-auth/tree/added-supertokens) to use latest `supertokens-node` and `supertokens-auth-react`
+   - [ ] Update [redwood core](https://github.com/supertokens/redwood/tree/main/packages/auth) to use latest `supertokens-auth-react`
+   - [ ] Update [playground-auth](https://github.com/supertokens/playground-auth/tree/main) to use latest `supertokens-node` and `supertokens-auth-react`
 
 ### 📚 Documentation
 
