@@ -13,6 +13,7 @@ labels:
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/X.Y)
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
+    - [ ] Updated dependencies to use supertokens-website from npm registry
     - [ ] Various browsers - Safari, Firefox, Chrome, Edge
     - [ ] Mobile responsiveness
     - [ ] Make sure using with-typescript example that types are correct for every new configs exposed to users
@@ -69,7 +70,6 @@ labels:
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/tree/X.Y)
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
-   - [ ] Updated `dependencies` to use `supertokens-website` from npm registry
 
 ### 🔀 Others
 
