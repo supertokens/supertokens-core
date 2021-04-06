@@ -25,28 +25,17 @@ labels:
      - [ ] [PR]() Ready using `supertokens/supertokens-auth-react#X.Y` and `supertokens/supertokens-node#X.Y` github repositories in `package.json`
      - [ ] Make changes to add demo site branches
 
-### 📚 Documentation
+### 📚 Documentation (test site)
 
 - [ ] All recipe main documentation update
-   - [ ] If UI changes, make sure to update the themes netlify link.
-   - [ ] In progress [PR]()
-   - [ ] Deployed on test site
 
 - [ ] nodejs documentation update
-   - [ ] In progress [PR]()
-   - [ ] Deployed on [test site](https://test.supertokens.io/docs/nodejs/installation)
 
 - [ ] auth-react documentation update
-   - [ ] In progress [PR]()
-   - [ ] Deployed on [test site](https://test.supertokens.io/docs/auth-react/introduction)
 
 - [ ] supertokens-website documentation update
-   - [ ] In progress [PR]()
-   - [ ] Deployed to [test site](https://test.supertokens.io/docs/website/introduction)
 
 - [ ] community documentation update
-   - [ ] In progress [PR]()
-   - [ ] Deployed to test site
 
 - [ ] website changes (test.supertokens.io)
    - [ ] homepage
@@ -80,12 +69,12 @@ labels:
 - [supertokens-auth-react:master](https://github.com/supertokens/supertokens-auth-react/tree/master)
    - [ ] Update examples to use latest `supertokens-node` and `supertokens-auth-react`
 
-- [next.js:canary](https://github.com/supertokens/next.js/tree/with-supertokens-example-in-docs/examples/with-supertokens)
+- [next.js:canary](https://github.com/supertokens/next.js/tree/canary/examples/with-supertokens)
    - [ ] Update `with-supertokens` examples to use latest `supertokens-node` and `supertokens-auth-react`
 
 - RedwoodJS
-   - [ ] Update [redwood core](https://github.com/supertokens/redwood/tree/added-supertokens-auth/packages/auth) to use latest `supertokens-auth-react`
-   - [ ] Update [playground-auth](https://github.com/supertokens/playground-auth/tree/added-supertokens) to use latest `supertokens-node` and `supertokens-auth-react`
+   - [ ] Update [redwood core](https://github.com/supertokens/redwood/tree/main/packages/auth) to use latest `supertokens-auth-react`
+   - [ ] Update [playground-auth](https://github.com/supertokens/playground-auth/tree/main) to use latest `supertokens-node` and `supertokens-auth-react`
 
 ### 📚 Documentation
 
