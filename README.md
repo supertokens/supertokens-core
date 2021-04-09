@@ -121,7 +121,7 @@ If you think this is a project you could use in the future, please :star2: this 
   </tr>
   <tr>
 <td align="center"><a href="https://github.com/sbauch"><img src="https://avatars.githubusercontent.com/u/923033?s=460&u=db9bb41f9b279750c74afc1be0ab51db05539593&v=4" width="100px;" alt=""/><br /><sub><b>Sam Bauch</b></sub></a></td>
-<td align="center"><a href="https://github.com/mirrorrim"><img src="https://avatars.githubusercontent.com/u/9555251?v=4" width="100px;" alt=""/><br /><sub><b>Sam Bauch</b></sub></a></td>
+<td align="center"><a href="https://github.com/mirrorrim"><img src="https://avatars.githubusercontent.com/u/9555251?v=4" width="100px;" alt=""/><br /><sub><b>Alexey Tylindus</b></sub></a></td>
   </tr>
 </table>
 
