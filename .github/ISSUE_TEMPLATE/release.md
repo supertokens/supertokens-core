@@ -21,9 +21,7 @@ labels:
 ### Others
 
  - [supertokens-demo-react](https://github.com/supertokens/supertokens-demo-react/tree/master)
-     - [ ] In progress
-     - [ ] [PR]() Ready using `supertokens/supertokens-auth-react#X.Y` and `supertokens/supertokens-node#X.Y` github repositories in `package.json`
-     - [ ] Make changes to add demo site branches
+     - [ ] Run and test all the demo apps
 
 ### 📚 Documentation (test site)
 
@@ -63,7 +61,6 @@ labels:
 ### 🔀 Others
 
 - [supertokens-demo-react:master](https://github.com/supertokens/supertokens-demo-react/tree/master)
-   - [ ] Updated [PR]()
    - [ ] Deployed to actual demo sites
 
 - [supertokens-auth-react:master](https://github.com/supertokens/supertokens-auth-react/tree/master)
