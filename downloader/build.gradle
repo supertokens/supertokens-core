@@ -3,25 +3,24 @@ plugins {
 }
 
 repositories {
-    jcenter()
     mavenCentral()
 }
 
 application {
-    mainClassName = 'io.supertokens.downloader.Main'
+    mainClass.set('io.supertokens.downloader.Main')
 }
 
 jar {
-    jar.archiveName = 'downloader.jar'
+    jar.archiveFileName = 'downloader.jar'
 }
 
 dependencies {
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
 }
 
 task copyJars(type: Copy) {
     into "$buildDir/dependencies"
-    from configurations.compile
+    from configurations.runtimeClasspath
 }
 
 test {

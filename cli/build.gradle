@@ -3,34 +3,33 @@ plugins {
 }
 
 repositories {
-    jcenter()
     mavenCentral()
 }
 
 application {
-    mainClassName = 'io.supertokens.cli.Main'
+    mainClass.set('io.supertokens.cli.Main')
 }
 
 jar {
-    jar.archiveName = 'cli.jar'
+    jar.archiveFileName = 'cli.jar'
 }
 
 dependencies {
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
-    compile group: 'com.google.code.gson', name: 'gson', version: '2.3.1'
+    implementation group: 'com.google.code.gson', name: 'gson', version: '2.3.1'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml
-    compile group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.10.0'
+    implementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.10.0'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
-    compile group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.0'
+    implementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.10.0'
 
-    testCompile group: 'junit', name: 'junit', version: '4.12'
+    testImplementation group: 'junit', name: 'junit', version: '4.12'
 }
 
 task copyJars(type: Copy) {
     into "$buildDir/dependencies"
-    from configurations.compile
+    from configurations.runtimeClasspath
 }
 
 test {
