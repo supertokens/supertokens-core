@@ -117,6 +117,8 @@ do
         cd ../../
         git clone git@github.com:supertokens/supertokens-root.git
         cd supertokens-root
+        update-alternatives --install "/usr/bin/java" "java" `pwd`"/jre-linux/bin/java" 2
+        update-alternatives --auto java
         coreX=$(cut -d'.' -f1 <<<"$coreVersion")
         coreY=$(cut -d'.' -f2 <<<"$coreVersion")
         if [[ $currPinnedDb == "sqlite" ]]
