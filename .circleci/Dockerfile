@@ -33,15 +33,25 @@ RUN cd /usr/java && tar -xzvf openjdk-12.0.2_linux-x64_bin.tar.gz
 
 RUN echo 'JAVA_HOME=/usr/java/jdk-12.0.2' >> /etc/profile
 RUN echo 'PATH=$PATH:$HOME/bin:$JAVA_HOME/bin' >> /etc/profile
-RUN echo 'export JAVA_HOME' >> /etc/profile
-RUN echo 'export JRE_HOME' >> /etc/profile
-RUN echo 'export PATH' >> /etc/profile
-
-RUN update-alternatives --install "/usr/bin/java" "java" "/usr/java/jdk-12.0.2/bin/java" 1
-RUN update-alternatives --install "/usr/bin/javac" "javac" "/usr/java/jdk-12.0.2/bin/javac" 1
 
 RUN apt-get install jq -y
 
 RUN apt-get install curl -y
 
 RUN apt-get install unzip -y
+
+# Install OpenJDK 15.0.1
+RUN wget https://download.java.net/java/GA/jdk15.0.1/51f4f36ad4ef43e39d0dfdbaf6549e32/9/GPL/openjdk-15.0.1_linux-x64_bin.tar.gz
+
+RUN mv openjdk-15.0.1_linux-x64_bin.tar.gz /usr/java
+
+RUN cd /usr/java && tar -xzvf openjdk-15.0.1_linux-x64_bin.tar.gz
+
+RUN echo 'JAVA_HOME=/usr/java/jdk-15.0.1' >> /etc/profile
+RUN echo 'PATH=$PATH:$HOME/bin:$JAVA_HOME/bin' >> /etc/profile
+RUN echo 'export JAVA_HOME' >> /etc/profile
+RUN echo 'export JRE_HOME' >> /etc/profile
+RUN echo 'export PATH' >> /etc/profile
+
+RUN update-alternatives --install "/usr/bin/java" "java" "/usr/java/jdk-12.0.2/bin/java" 1
+RUN update-alternatives --install "/usr/bin/javac" "javac" "/usr/java/jdk-12.0.2/bin/javac" 1
