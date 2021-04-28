@@ -9,7 +9,12 @@ labels:
 ## 🔶 Staging 
 
 ### Dev Tag
- - [ ] [supertokens-core:X.Y](https://github.com/supertokens/supertokens-core/tree/X.Y)
+ - [supertokens-core:X.Y](https://github.com/supertokens/supertokens-core/tree/X.Y)
+     - [ ] core
+     - [ ] plugin-interface
+     - [ ] mysql-plugin
+     - [ ] postgresql-plugin
+     - [ ] mongodb-plugin
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/X.Y)
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
@@ -22,6 +27,8 @@ labels:
 
  - [supertokens-demo-react](https://github.com/supertokens/supertokens-demo-react/tree/master)
      - [ ] Run and test all the demo apps
+ - [ ] Run on NextJS to test that it works fine there
+ - [ ] Run on netlify (and hence AWS lambda) to check if it works fine there
 
 ### 📚 Documentation (test site)
 
@@ -47,7 +54,12 @@ labels:
 
 ### 💻 NPM and core release
 
- - [ ] [supertokens-core:X.Y](https://github.com/supertokens/supertokens-core/tree/X.Y)
+ - core
+    - [ ] [supertokens-core:X.Y](https://github.com/supertokens/supertokens-core/tree/X.Y)
+    - [ ] plugin-interface
+    - [ ] mysql-plugin
+    - [ ] postgresql-plugin
+    - [ ] mongodb-plugin
     - Docker update
        - [ ] MySQL
        - [ ] Postgres
