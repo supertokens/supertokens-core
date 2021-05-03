@@ -88,3 +88,4 @@ labels:
 ### 📚 Documentation
 
 - [ ] Pushed to production
+- [ ] Post message on discord about new update
