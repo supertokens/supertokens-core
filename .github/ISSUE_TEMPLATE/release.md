@@ -66,6 +66,7 @@ labels:
        - [ ] MongoDB
     - [ ] try.supertokens.io
     - [ ] Update SaaS config
+    - [ ] Update to tables checked for user count / or to know if a deployment is being used or not
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/tree/X.Y)
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
