@@ -91,6 +91,7 @@ SuperTokens is made possible by a passionate team and a strong community of deve
 Additional resources you might find useful:
   - [SuperTokens Docs](https://supertokens.io/docs/community/getting-started/installation)
   - [Blog Posts](https://supertokens.io/blog/)
+  - [Development guideline for the backend and frontend recipes](https://github.com/supertokens/supertokens-core/wiki/Development-guideline-for-the-backend-and-frontend-recipes)
 
 
 
