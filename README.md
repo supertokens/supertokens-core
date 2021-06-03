@@ -125,6 +125,9 @@ If you think this is a project you could use in the future, please :star2: this 
 <td align="center"><a href="https://github.com/gusfune"><img src="https://avatars.githubusercontent.com/u/1147240?v=4" width="100px;" alt=""/><br /><sub><b>Gus Fune</b></sub></a></td>
 <td align="center"><a href="https://github.com/chenkaiC4"><img src="https://avatars.githubusercontent.com/u/7543145?v=4" width="100px;" alt=""/><br /><sub><b>chenkaiC4</b></sub></a></td>
   </tr>
+  <tr>
+<td align="center"><a href="https://github.com/dulowski-marek"><img src="https://avatars.githubusercontent.com/u/17051704?v=4" width="100px;" alt=""/><br /><sub><b>Marek Dulowski</b></sub></a></td>
+  </tr>
 </table>
 
 ## 👩‍💻 Contributing
