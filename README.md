@@ -55,11 +55,7 @@ The docs can be seen [on our website](https://supertokens.io/docs/community/intr
 There is more information about SuperTokens on the [GitHub wiki section](https://github.com/supertokens/supertokens-core/wiki).
 
 ## 🏗️ Architecture
-<img width="700px" src="https://supertokens.io/docs/static/assets/emailpassword/architecture.png" />
-
-- **Frontend SDK**: Responsible for rendering the login UI widgets and managing session tokens automatically.
-- **Backend SDK**: Provides APIs for sign-up, sign-in, signout, session refreshing etc... You can also disable these default APIs and build your own using the provided functions from this SDK.
-- **SuperTokens Core**: This is an HTTP service that contains the core logic for auth and sessions. It's also responsible for interfacing with the database.
+Please find an [architecture diagram here](https://supertokens.io/docs/community/architecture)
 
 **For more information, please visit our [GitHub wiki section](https://github.com/supertokens/supertokens-core/wiki/SuperTokens-Architecture).**
 
