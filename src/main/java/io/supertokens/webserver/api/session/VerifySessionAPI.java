@@ -78,10 +78,17 @@ public class VerifySessionAPI extends WebserverAPI {
             reply.addProperty("message", e.getMessage());
             super.sendJsonResponse(200, reply, resp);
         } catch (TryRefreshTokenException e) {
-            JsonObject reply = new JsonObject();
-            reply.addProperty("status", "TRY_REFRESH_TOKEN");
-            reply.addProperty("message", e.getMessage());
-            super.sendJsonResponse(200, reply, resp);
+            try {
+                JsonObject reply = new JsonObject();
+                reply.addProperty("status", "TRY_REFRESH_TOKEN");
+                reply.addProperty("jwtSigningPublicKey", AccessTokenSigningKey.getInstance(main).getKey().publicKey);
+                reply.addProperty("jwtSigningPublicKeyExpiryTime",
+                        AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
+                reply.addProperty("message", e.getMessage());
+                super.sendJsonResponse(200, reply, resp);
+            } catch (StorageQueryException | StorageTransactionLogicException e2) {
+                throw new ServletException(e2);
+            }
         }
     }
 }

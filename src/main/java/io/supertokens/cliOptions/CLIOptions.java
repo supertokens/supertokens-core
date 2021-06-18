@@ -28,6 +28,7 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
     private static final String CONFIG_FILE_KEY = "configFile=";
     private static final String PORT_FILE_KEY = "port=";
     private static final String HOST_FILE_KEY = "host=";
+    private static final String TEST_MODE = "test_mode";
     private static final String FORCE_NO_IN_MEM_DB = "forceNoInMemDB=true";
     private final String installationPath;
     private final String configFilePath;
@@ -57,6 +58,8 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
                 hostTemp = curr.split(HOST_FILE_KEY)[1];
             } else if (curr.startsWith(FORCE_NO_IN_MEM_DB)) {
                 forceNoInMemoryDBTemp = true;
+            } else if (curr.equals(TEST_MODE)) {
+                Main.isTesting = true;
             }
         }
         this.configFilePath = configFilePathTemp;
