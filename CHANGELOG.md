@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added
 - `test_mode` to the options for running the core so that it can be run in test mode whilst being tested by the
  backend SDK.
+- Adds `jwtSigningPublicKey` and `jwtSigningPublicKeyExpiryTime` to API response when returning `TRY_REFRESH_TOKEN
+` from session verify.
 
 ## [3.4.0] - 2021-04-22
 ### Changed

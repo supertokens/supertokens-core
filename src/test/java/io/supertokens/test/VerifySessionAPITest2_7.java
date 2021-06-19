@@ -298,7 +298,7 @@ public class VerifySessionAPITest2_7 {
         assertEquals(response.get("status").getAsString(), "TRY_REFRESH_TOKEN");
         assertEquals(response.get("message").getAsString(), "io.supertokens.session.jwt.JWT$JWTException: Invalid JWT");
 
-        assertEquals(response.entrySet().size(), 2);
+        assertEquals(response.entrySet().size(), 4);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
