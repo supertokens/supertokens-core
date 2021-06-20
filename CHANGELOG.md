@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.5.0] - 2021-06-20
+### Changed
+- Make emailverificaiton tables take a generic userId: https://github.com/supertokens/supertokens-core/issues/258
+
 ## [3.4.1] - 2021-06-18
 ### Added
 - `test_mode` to the options for running the core so that it can be run in test mode whilst being tested by the
