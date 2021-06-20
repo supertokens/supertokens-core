@@ -46,11 +46,21 @@ public class GeneralQueries {
         }
     }
 
+    static String getQueryToCreateUsersTable(Start start) {
+        return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getUsersTable() + " ("
+                + "user_id CHAR(36) NOT NULL," + "recipe_id VARCHAR(128) NOT NULL,"
+                + "time_joined BIGINT UNSIGNED NOT NULL," + "PRIMARY KEY (user_id));";
+    }
+
+    static String getQueryToCreateUserPaginationIndex(Start start) {
+        return "CREATE INDEX all_recipe_users_pagination_index ON " + Config.getConfig(start).getUsersTable()
+                + "(time_joined DESC, user_id " + "DESC);";
+    }
+
     static String getQueryToCreateKeyValueTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getKeyValueTable() + " (" + "name VARCHAR(128),"
                 + "value TEXT," + "created_at_time BIGINT UNSIGNED," + "PRIMARY KEY(name)" + " );";
     }
-
 
     public static void createTablesIfNotExists(Start start, Main main) throws SQLException {
         if (!doesTableExists(start, Config.getConfig(start).getKeyValueTable())) {
@@ -58,6 +68,20 @@ public class GeneralQueries {
             try (Connection con = ConnectionPool.getConnection(start);
                  PreparedStatement pst = con.prepareStatement(getQueryToCreateKeyValueTable(start))) {
                 pst.executeUpdate();
+            }
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getUsersTable())) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
+            try (Connection con = ConnectionPool.getConnection(start);
+                 PreparedStatement pst = con.prepareStatement(getQueryToCreateUsersTable(start))) {
+                pst.executeUpdate();
+            }
+
+            // index
+            try (Connection con = ConnectionPool.getConnection(start);
+                 PreparedStatement pstIndex = con.prepareStatement(getQueryToCreateUserPaginationIndex(start))) {
+                pstIndex.executeUpdate();
             }
         }
 
@@ -74,12 +98,6 @@ public class GeneralQueries {
             try (Connection con = ConnectionPool.getConnection(start);
                  PreparedStatement pst = con.prepareStatement(EmailPasswordQueries.getQueryToCreateUsersTable(start))) {
                 pst.executeUpdate();
-            }
-            // index
-            try (Connection con = ConnectionPool.getConnection(start);
-                 PreparedStatement pstIndex = con
-                         .prepareStatement(EmailPasswordQueries.getQueryToCreateUserPaginationIndex(start))) {
-                pstIndex.executeUpdate();
             }
         }
 
@@ -134,13 +152,6 @@ public class GeneralQueries {
                                  ThirdPartyQueries.getQueryToCreateUsersTable(start))) {
                 pst.executeUpdate();
             }
-            // index
-            try (Connection con = ConnectionPool.getConnection(start);
-                 PreparedStatement pstIndex = con
-                         .prepareStatement(
-                                 ThirdPartyQueries.getQueryToCreateUserPaginationIndex(start))) {
-                pstIndex.executeUpdate();
-            }
         }
 
     }
@@ -168,7 +179,6 @@ public class GeneralQueries {
             setKeyValue_Transaction(start, con, key, info);
         }
     }
-
 
     public static KeyValueInfo getKeyValue(Start start, String key) throws SQLException, StorageQueryException {
         String QUERY = "SELECT value, created_at_time FROM "

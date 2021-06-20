@@ -53,14 +53,14 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
         ThirdPartySQLStorage {
 
     private static final Object appenderLock = new Object();
-    private static boolean silent = false;
-    private ResourceDistributor resourceDistributor = new ResourceDistributor();
-    private String processId;
     private static final String APP_ID_KEY_NAME = "app_id";
     private static final String ACCESS_TOKEN_SIGNING_KEY_NAME = "access_token_signing_key";
     private static final String REFRESH_TOKEN_KEY_NAME = "refresh_token_key";
     public static boolean isTesting = false;
+    private static boolean silent = false;
     boolean enabled = true;
+    private ResourceDistributor resourceDistributor = new ResourceDistributor();
+    private String processId;
     private Main main;
 
     public Start(Main main) {
@@ -361,16 +361,19 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             throws StorageQueryException, DuplicateUserIdException, DuplicateEmailException {
         try {
             EmailPasswordQueries.signUp(this, userInfo.id, userInfo.email, userInfo.passwordHash, userInfo.timeJoined);
-        } catch (SQLException e) {
+        } catch (StorageTransactionLogicException eTemp) {
+            Exception e = eTemp.actualException;
             if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
-                            Config.getConfig(this).getEmailPasswordUsersTable() + ".email)"
-                    )) {
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getEmailPasswordUsersTable() + ".email)")) {
                 throw new DuplicateEmailException();
-            } else if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
-                            Config.getConfig(this).getEmailPasswordUsersTable() + ".user_id)"
-                    )) {
+            } else if (e
+                    .getMessage().equals(
+                            "[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                                    + Config.getConfig(this).getEmailPasswordUsersTable() + ".user_id)")
+                    || e.getMessage() // TODO: test this out...
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getUsersTable() + ".user_id)")) {
                 throw new DuplicateUserIdException();
             }
             throw new StorageQueryException(e);
@@ -435,7 +438,6 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
         }
     }
 
-
     @Override
     public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser_Transaction(TransactionConnection con,
                                                                                     String userId)
@@ -482,6 +484,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
+    @Deprecated
     public UserInfo[] getUsers(@NotNull String userId, @NotNull Long timeJoined, @NotNull Integer limit,
                                @NotNull String timeJoinedOrder) throws StorageQueryException {
         try {
@@ -492,6 +495,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
+    @Deprecated
     public UserInfo[] getUsers(@NotNull Integer limit, @NotNull String timeJoinedOrder) throws StorageQueryException {
         try {
             return EmailPasswordQueries.getUsersInfo(this, limit, timeJoinedOrder);
@@ -501,6 +505,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
+    @Deprecated
     public long getUsersCount() throws StorageQueryException {
         try {
             return EmailPasswordQueries.getUsersCount(this);
@@ -628,7 +633,6 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
         }
     }
 
-
     @Override
     public void updateUserEmail_Transaction(TransactionConnection con, String thirdPartyId, String thirdPartyUserId,
                                             String newEmail) throws StorageQueryException {
@@ -647,17 +651,19 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             DuplicateThirdPartyUserException {
         try {
             ThirdPartyQueries.signUp(this, userInfo);
-        } catch (SQLException e) {
+        } catch (StorageTransactionLogicException eTemp) {
+            Exception e = eTemp.actualException;
             if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
-                            Config.getConfig(this).getThirdPartyUsersTable() + ".third_party_id, " +
-                            Config.getConfig(this).getThirdPartyUsersTable() + ".third_party_user_id)"
-                    )) {
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getThirdPartyUsersTable() + ".third_party_id, "
+                            + Config.getConfig(this).getThirdPartyUsersTable() + ".third_party_user_id)")) {
                 throw new DuplicateThirdPartyUserException();
             } else if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
-                            Config.getConfig(this).getThirdPartyUsersTable() + ".user_id)"
-                    )) {
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getThirdPartyUsersTable() + ".user_id)")
+                    || e.getMessage() // TODO: test this out...
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getUsersTable() + ".user_id)")) {
                 throw new io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException();
             }
             throw new StorageQueryException(e);
@@ -686,6 +692,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
+    @Deprecated
     public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsers(@NotNull String userId,
                                                                                    @NotNull Long timeJoined,
                                                                                    @NotNull Integer limit,
@@ -699,6 +706,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
+    @Deprecated
     public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsers(@NotNull Integer limit,
                                                                                    @NotNull String timeJoinedOrder)
             throws StorageQueryException {
@@ -710,6 +718,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
+    @Deprecated
     public long getThirdPartyUsersCount() throws StorageQueryException {
         try {
             return ThirdPartyQueries.getUsersCount(this);
