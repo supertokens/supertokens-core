@@ -20,8 +20,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.info.SessionInformationHolder;
@@ -83,4 +85,32 @@ public class SessionAPI extends WebserverAPI {
         }
     }
 
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
+        assert sessionHandle != null;
+
+        try {
+            SessionInfo sessionInfo = Session.getSession(main, sessionHandle);
+
+            JsonObject result = new JsonObject();
+
+            result.addProperty("status", "OK");
+            result.add("userDataInDatabase", sessionInfo.userDataInDatabase);
+            result.add("userDataInJWT", sessionInfo.userDataInJWT);
+            result.addProperty("userid", sessionInfo.userId);
+            result.addProperty("expiry", sessionInfo.expiry);
+            result.addProperty("timeCreated", sessionInfo.timeCreated);
+
+            super.sendJsonResponse(200, result, resp);
+
+        } catch (StorageQueryException e) {
+            throw new ServletException(e);
+        } catch (UnauthorisedException e) {
+            JsonObject reply = new JsonObject();
+            reply.addProperty("status", "UNAUTHORISED");
+            reply.addProperty("message", e.getMessage());
+            super.sendJsonResponse(200, reply, resp);
+        }
+    }
 }

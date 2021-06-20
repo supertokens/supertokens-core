@@ -544,6 +544,23 @@ public class Session {
         return session.userDataInJWT;
     }
 
+    /**
+     * Used to retrieve all session information for a given session handle.
+     * Used by:
+     * - /recipe/session GET
+     */
+    public static io.supertokens.pluginInterface.session.SessionInfo getSession(Main main, String sessionHandle)
+            throws StorageQueryException, UnauthorisedException {
+        io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
+                .getSession(sessionHandle);
+
+        if (session == null) {
+            throw new UnauthorisedException("Session does not exist.");
+        }
+
+        return session;
+    }
+
     public static void updateSession(Main main, String sessionHandle, @Nullable JsonObject sessionData,
                                      @Nullable JsonObject jwtData, @Nullable Long lmrt)
             throws StorageQueryException, UnauthorisedException {
