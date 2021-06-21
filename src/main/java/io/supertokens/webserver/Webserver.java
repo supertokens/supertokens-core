@@ -24,6 +24,7 @@ import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
 import io.supertokens.webserver.api.core.*;
+import io.supertokens.webserver.api.emailpassword.UsersCountAPI;
 import io.supertokens.webserver.api.emailpassword.*;
 import io.supertokens.webserver.api.emailverification.GenerateEmailVerificationTokenAPI;
 import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
@@ -165,6 +166,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
                 new io.supertokens.webserver.api.thirdparty.UsersCountAPI(main)));
         addAPI(new SignInUpAPI(main));
         addAPI(new TelemetryAPI(main));
+        addAPI(new io.supertokens.webserver.api.core.UsersCountAPI(main));
     }
 
     public void addAPI(WebserverAPI api) {

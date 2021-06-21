@@ -314,6 +314,15 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
+    public long getUsersCount(String[] includeRecipeIds) throws StorageQueryException {
+        try {
+            return GeneralQueries.getUsersCount(this, includeRecipeIds);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public SessionInfo getSessionInfo_Transaction(TransactionConnection con, String sessionHandle)
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
@@ -371,7 +380,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
                     .getMessage().equals(
                             "[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                                     + Config.getConfig(this).getEmailPasswordUsersTable() + ".user_id)")
-                    || e.getMessage() // TODO: test this out...
+                    || e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getUsersTable() + ".user_id)")) {
                 throw new DuplicateUserIdException();
@@ -661,7 +670,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             } else if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getThirdPartyUsersTable() + ".user_id)")
-                    || e.getMessage() // TODO: test this out...
+                    || e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getUsersTable() + ".user_id)")) {
                 throw new io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException();

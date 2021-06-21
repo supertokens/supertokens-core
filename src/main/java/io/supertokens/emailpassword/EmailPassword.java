@@ -228,6 +228,7 @@ public class EmailPassword {
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
 
+    @Deprecated
     public static long getUsersCount(Main main) throws StorageQueryException {
         return StorageLayer.getEmailPasswordStorage(main).getUsersCount();
     }

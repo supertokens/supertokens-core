@@ -159,6 +159,7 @@ public class ThirdParty {
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
 
+    @Deprecated
     public static long getUsersCount(Main main) throws StorageQueryException {
         return StorageLayer.getThirdPartyStorage(main).getThirdPartyUsersCount();
     }

@@ -70,6 +70,10 @@ abstract class Utils extends Mockito {
         return "2.7";
     }
 
+    static String getCdiVersion2_8ForTests() {
+        return "2.8";
+    }
+
     static String getCdiVersionLatestForTests() {
         return WebserverAPI.getLatestCDIVersion();
     }
@@ -181,7 +185,7 @@ abstract class Utils extends Mockito {
                                                  boolean isVerified,
                                                  String thirdPartyId, String thirdPartyUserId)
             throws IOException, HttpResponseException {
-        
+
         JsonObject emailObject = new JsonObject();
         emailObject.addProperty("id", email);
         emailObject.addProperty("isVerified", isVerified);

@@ -228,4 +228,31 @@ public class GeneralQueries {
             return new KeyValueInfo(result.getString("value"), result.getLong("created_at_time"));
         }
     }
+
+    public static long getUsersCount(Start start, String[] includeRecipeIds) throws SQLException {
+        StringBuilder QUERY =
+                new StringBuilder("SELECT COUNT(*) as total FROM " +
+                        Config.getConfig(start).getUsersTable());
+        if (includeRecipeIds != null && includeRecipeIds.length > 0) {
+            QUERY.append(" WHERE recipe_id IN (");
+            for (int i = 0; i < includeRecipeIds.length; i++) {
+                String recipeId = includeRecipeIds[i];
+                QUERY.append("'").append(recipeId).append("'");
+                if (i != includeRecipeIds.length - 1) {
+                    // not the last element
+                    QUERY.append(",");
+                }
+            }
+            QUERY.append(")");
+        }
+
+        try (Connection con = ConnectionPool.getConnection(start);
+             PreparedStatement pst = con.prepareStatement(QUERY.toString())) {
+            ResultSet result = pst.executeQuery();
+            if (result.next()) {
+                return result.getLong("total");
+            }
+            return 0;
+        }
+    }
 }
