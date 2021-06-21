@@ -23,6 +23,7 @@ import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.User;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -38,7 +39,7 @@ public class SignInAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
     public SignInAPI(Main main) {
-        super(main, EmailPassword.RECIPE_ID);
+        super(main, RECIPE_ID.EMAIL_PASSWORD.toString());
     }
 
     @Override

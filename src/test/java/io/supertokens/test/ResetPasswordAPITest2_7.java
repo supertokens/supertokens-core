@@ -18,7 +18,6 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
@@ -71,7 +70,7 @@ public class ResetPasswordAPITest2_7 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset", null, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -86,7 +85,7 @@ public class ResetPasswordAPITest2_7 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -105,7 +104,7 @@ public class ResetPasswordAPITest2_7 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -125,7 +124,7 @@ public class ResetPasswordAPITest2_7 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -145,7 +144,7 @@ public class ResetPasswordAPITest2_7 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -185,7 +184,7 @@ public class ResetPasswordAPITest2_7 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                        null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.entrySet().size(), 2);
@@ -201,7 +200,7 @@ public class ResetPasswordAPITest2_7 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                        null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
         assertEquals(passwordResetResponse.get("status").getAsString(), "OK");
         assertEquals(passwordResetResponse.entrySet().size(), 1);
 
@@ -213,7 +212,7 @@ public class ResetPasswordAPITest2_7 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signin", signInRequestBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                        null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
 
         assertEquals(response.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
         assertEquals(response.entrySet().size(), 1);
@@ -226,7 +225,7 @@ public class ResetPasswordAPITest2_7 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signin", signInRequestBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                        null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.entrySet().size(), 2);
@@ -258,7 +257,7 @@ public class ResetPasswordAPITest2_7 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                        null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
 
         assertEquals(passwordResetResponse.get("status").getAsString(), "RESET_PASSWORD_INVALID_TOKEN_ERROR");
         assertEquals(passwordResetResponse.entrySet().size(), 1);
@@ -290,7 +289,7 @@ public class ResetPasswordAPITest2_7 {
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
 
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 &&
@@ -324,7 +323,7 @@ public class ResetPasswordAPITest2_7 {
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
 
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 &&

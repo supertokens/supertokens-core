@@ -29,7 +29,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static junit.framework.TestCase.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 
 public class AuthRecipeAPITest2_8 {
@@ -62,7 +62,7 @@ public class AuthRecipeAPITest2_8 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_8ForTests(), EmailPassword.RECIPE_ID);
+                            null, Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 0);
         }
@@ -75,7 +75,7 @@ public class AuthRecipeAPITest2_8 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_8ForTests(), EmailPassword.RECIPE_ID);
+                            null, Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 2);
         }
@@ -85,7 +85,7 @@ public class AuthRecipeAPITest2_8 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count?includeRecipeIds=emailpassword", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_8ForTests(), EmailPassword.RECIPE_ID);
+                            null, Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 2);
         }
@@ -95,7 +95,7 @@ public class AuthRecipeAPITest2_8 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count?includeRecipeIds=thirdparty", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_8ForTests(), EmailPassword.RECIPE_ID);
+                            null, Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 0);
         }
@@ -111,7 +111,7 @@ public class AuthRecipeAPITest2_8 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_8ForTests(), EmailPassword.RECIPE_ID);
+                            null, Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 3);
         }
@@ -123,7 +123,7 @@ public class AuthRecipeAPITest2_8 {
                                     "=thirdparty",
                             null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_8ForTests(), EmailPassword.RECIPE_ID);
+                            null, Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 3);
         }
@@ -134,7 +134,7 @@ public class AuthRecipeAPITest2_8 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count?includeRecipeIds=emailpassword", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_8ForTests(), EmailPassword.RECIPE_ID);
+                            null, Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 2);
         }
@@ -144,9 +144,38 @@ public class AuthRecipeAPITest2_8 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count?includeRecipeIds=thirdparty", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_8ForTests(), EmailPassword.RECIPE_ID);
+                            null, Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 1);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void getUsersCountBadInput() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+
+        try {
+            io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/users/count?includeRecipeIds=thirdparty&includeRecipeIds=random",
+                            null, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_8ForTests(), "");
+            fail();
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertTrue(e.statusCode == 400 &&
+                    e.getMessage().equals("Http error. Status Code: 400. Message: Unknown recipe ID: random"));
         }
 
         process.kill();

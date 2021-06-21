@@ -75,7 +75,7 @@ public class ThirdPartyUsersAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -90,7 +90,7 @@ public class ThirdPartyUsersAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -107,7 +107,7 @@ public class ThirdPartyUsersAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -162,7 +162,7 @@ public class ThirdPartyUsersAPITest2_7 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users", queryParams, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
 
             assertEquals("OK", response.get("status").getAsString());
             assertNotNull(response.get("nextPaginationToken"));
@@ -184,7 +184,7 @@ public class ThirdPartyUsersAPITest2_7 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users", new HashMap<>(), 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals(5, response.getAsJsonArray("users").size());
         }
 
@@ -196,7 +196,7 @@ public class ThirdPartyUsersAPITest2_7 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users", queryParams, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals(2, response.getAsJsonArray("users").size());
 
             JsonObject user_1 = response.getAsJsonArray("users").get(0).getAsJsonObject();
@@ -218,7 +218,7 @@ public class ThirdPartyUsersAPITest2_7 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users", queryParams, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals(2, response.getAsJsonArray("users").size());
 
             JsonObject user_1 = response.getAsJsonArray("users").get(0).getAsJsonObject();

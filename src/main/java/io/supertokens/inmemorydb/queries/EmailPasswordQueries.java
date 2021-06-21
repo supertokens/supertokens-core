@@ -20,6 +20,7 @@ import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -192,7 +193,7 @@ public class EmailPasswordQueries {
                             + "(user_id, recipe_id, time_joined)" + " VALUES(?, ?, ?)";
                     try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
                         pst.setString(1, userId);
-                        pst.setString(2, "emailpassword");
+                        pst.setString(2, RECIPE_ID.EMAIL_PASSWORD.toString());
                         pst.setLong(3, timeJoined);
                         pst.executeUpdate();
                     }

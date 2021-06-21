@@ -23,6 +23,7 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.inmemorydb.queries.*;
 import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -314,7 +315,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public long getUsersCount(String[] includeRecipeIds) throws StorageQueryException {
+    public long getUsersCount(RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
         try {
             return GeneralQueries.getUsersCount(this, includeRecipeIds);
         } catch (SQLException e) {

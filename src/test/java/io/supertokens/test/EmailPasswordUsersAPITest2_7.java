@@ -17,7 +17,6 @@
 package io.supertokens.test;
 
 import io.supertokens.ProcessState;
-import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
@@ -65,7 +64,7 @@ public class EmailPasswordUsersAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -82,7 +81,7 @@ public class EmailPasswordUsersAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -100,7 +99,7 @@ public class EmailPasswordUsersAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -118,7 +117,7 @@ public class EmailPasswordUsersAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -135,7 +134,7 @@ public class EmailPasswordUsersAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -153,7 +152,7 @@ public class EmailPasswordUsersAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&

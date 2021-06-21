@@ -19,6 +19,7 @@ package io.supertokens.test;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.ThirdParty;
@@ -70,12 +71,12 @@ public class AuthRecipeTest {
         }
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new String[]{"emailpassword"});
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD});
             assert (count == 2);
         }
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new String[]{"thirdparty"});
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY});
             assert (count == 0);
         }
 
@@ -86,22 +87,23 @@ public class AuthRecipeTest {
         ThirdParty.signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId_1, email_1, false);
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new String[]{});
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{});
             assert (count == 3);
         }
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new String[]{"emailpassword", "thirdparty"});
+            long count = AuthRecipe.getUsersCount(process.getProcess(),
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.THIRD_PARTY});
             assert (count == 3);
         }
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new String[]{"emailpassword"});
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD});
             assert (count == 2);
         }
 
         {
-            long count = AuthRecipe.getUsersCount(process.getProcess(), new String[]{"thirdparty"});
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY});
             assert (count == 1);
         }
 

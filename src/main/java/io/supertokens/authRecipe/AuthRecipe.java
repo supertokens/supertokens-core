@@ -17,6 +17,7 @@
 package io.supertokens.authRecipe;
 
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 
@@ -24,7 +25,7 @@ import io.supertokens.storageLayer.StorageLayer;
 
 public class AuthRecipe {
 
-    public static long getUsersCount(Main main, String[] includeRecipeIds) throws StorageQueryException {
+    public static long getUsersCount(Main main, RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
         return StorageLayer.getStorage(main).getUsersCount(includeRecipeIds);
     }
 

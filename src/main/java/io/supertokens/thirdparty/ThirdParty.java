@@ -31,8 +31,6 @@ import javax.annotation.Nullable;
 
 public class ThirdParty {
 
-    public static final String RECIPE_ID = "thirdparty";
-
     public static class SignInUpResponse {
         public boolean createdNewUser;
         public UserInfo user;

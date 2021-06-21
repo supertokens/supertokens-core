@@ -23,6 +23,7 @@ import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 
@@ -229,14 +230,14 @@ public class GeneralQueries {
         }
     }
 
-    public static long getUsersCount(Start start, String[] includeRecipeIds) throws SQLException {
+    public static long getUsersCount(Start start, RECIPE_ID[] includeRecipeIds) throws SQLException {
         StringBuilder QUERY =
                 new StringBuilder("SELECT COUNT(*) as total FROM " +
                         Config.getConfig(start).getUsersTable());
         if (includeRecipeIds != null && includeRecipeIds.length > 0) {
             QUERY.append(" WHERE recipe_id IN (");
             for (int i = 0; i < includeRecipeIds.length; i++) {
-                String recipeId = includeRecipeIds[i];
+                String recipeId = includeRecipeIds[i].toString();
                 QUERY.append("'").append(recipeId).append("'");
                 if (i != includeRecipeIds.length - 1) {
                     // not the last element

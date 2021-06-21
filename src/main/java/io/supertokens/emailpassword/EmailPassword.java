@@ -40,8 +40,6 @@ import java.security.spec.InvalidKeySpecException;
 
 public class EmailPassword {
 
-    public static final String RECIPE_ID = "emailpassword";
-
     public static final long PASSWORD_RESET_TOKEN_LIFETIME_MS =
             3600 * 1000; // this is related to the interval for the cronjob: DeleteExpiredPasswordResetTokens
 

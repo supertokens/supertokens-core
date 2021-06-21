@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.emailpassword;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
@@ -36,7 +37,7 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
     public GeneratePasswordResetTokenAPI(Main main) {
-        super(main, EmailPassword.RECIPE_ID);
+        super(main, RECIPE_ID.EMAIL_PASSWORD.toString());
     }
 
     @Override

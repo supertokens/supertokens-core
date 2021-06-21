@@ -22,6 +22,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.UserPaginationToken;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.thirdparty.UserPaginationContainer;
@@ -38,7 +39,7 @@ public class UsersAPI extends WebserverAPI {
     private static final long serialVersionUID = -2225750492558064634L;
 
     public UsersAPI(Main main) {
-        super(main, ThirdParty.RECIPE_ID);
+        super(main, RECIPE_ID.THIRD_PARTY.toString());
     }
 
     @Override

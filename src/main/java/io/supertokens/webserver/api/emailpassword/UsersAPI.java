@@ -24,6 +24,7 @@ import io.supertokens.Main;
 import io.supertokens.UserPaginationToken;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.UserPaginationContainer;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -38,7 +39,7 @@ public class UsersAPI extends WebserverAPI {
     private static final long serialVersionUID = -2225750492558064634L;
 
     public UsersAPI(Main main) {
-        super(main, EmailPassword.RECIPE_ID);
+        super(main, RECIPE_ID.EMAIL_PASSWORD.toString());
     }
 
     @Override
