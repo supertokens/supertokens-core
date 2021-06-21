@@ -23,7 +23,6 @@ import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -60,7 +59,7 @@ public class HandshakeAPITest2_7 {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "session");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 &&
                     e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
@@ -97,7 +96,7 @@ public class HandshakeAPITest2_7 {
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                         deviceDriverInfo,
                         1000, 1000,
-                        null, Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
+                        null, Utils.getCdiVersion2_7ForTests(), "session");
         checkHandshakeAPIResponse(handshakeResponse, process);
         assertEquals(handshakeResponse.entrySet().size(), 6);
 
@@ -135,7 +134,7 @@ public class HandshakeAPITest2_7 {
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                         deviceDriverInfo,
                         1000, 1000,
-                        null, Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
+                        null, Utils.getCdiVersion2_7ForTests(), "session");
         checkHandshakeAPIResponse(handshakeResponse, process);
         assertEquals(handshakeResponse.entrySet().size(), 6);
 
@@ -167,7 +166,7 @@ public class HandshakeAPITest2_7 {
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                         new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
-                        Session.RECIPE_ID);
+                        "session");
 
 
         assertEquals(response.entrySet().size(), 6);
@@ -180,7 +179,7 @@ public class HandshakeAPITest2_7 {
         JsonObject changedResponse = io.supertokens.test.httpRequest
                 .HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                         new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
-                        Session.RECIPE_ID);
+                        "session");
 
         assertEquals(changedResponse.entrySet().size(), 6);
 

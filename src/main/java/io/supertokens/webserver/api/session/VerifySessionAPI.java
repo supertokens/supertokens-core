@@ -22,6 +22,7 @@ import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
@@ -40,7 +41,7 @@ public class VerifySessionAPI extends WebserverAPI {
     private static final long serialVersionUID = -9169174805902835488L;
 
     public VerifySessionAPI(Main main) {
-        super(main, Session.RECIPE_ID);
+        super(main, RECIPE_ID.SESSION.toString());
     }
 
     @Override

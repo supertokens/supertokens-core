@@ -62,7 +62,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/email/verify/token", null, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailVerification.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailverification");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -77,7 +77,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailVerification.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailverification");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -95,7 +95,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailVerification.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailverification");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -134,7 +134,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests(), EmailVerification.RECIPE_ID);
+                        null, Utils.getCdiVersion2_7ForTests(), "emailverification");
 
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "OK");
@@ -172,7 +172,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), EmailVerification.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "emailverification");
 
             assertEquals(response.entrySet().size(), 2);
             assertEquals(response.get("status").getAsString(), "OK");
@@ -184,7 +184,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), EmailVerification.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "emailverification");
             assertEquals(response2.get("status").getAsString(), "EMAIL_ALREADY_VERIFIED_ERROR");
         }
 
