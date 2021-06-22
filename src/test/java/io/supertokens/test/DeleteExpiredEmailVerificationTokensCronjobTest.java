@@ -20,9 +20,9 @@ import io.supertokens.ProcessState;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpiredEmailVerificationTokens;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.User;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
@@ -62,7 +62,7 @@ public class DeleteExpiredEmailVerificationTokensCronjobTest {
             return;
         }
 
-        User user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         String tok = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
         String tok2 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);

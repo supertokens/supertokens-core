@@ -23,8 +23,9 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
+import io.supertokens.webserver.api.core.UsersAPI;
+import io.supertokens.webserver.api.core.UsersCountAPI;
 import io.supertokens.webserver.api.core.*;
-import io.supertokens.webserver.api.emailpassword.UsersCountAPI;
 import io.supertokens.webserver.api.emailpassword.*;
 import io.supertokens.webserver.api.emailverification.GenerateEmailVerificationTokenAPI;
 import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
@@ -160,13 +161,16 @@ public class Webserver extends ResourceDistributor.SingletonResource {
                 new io.supertokens.webserver.api.thirdparty.UserAPI(main)));
         addAPI(new GenerateEmailVerificationTokenAPI(main));
         addAPI(new VerifyEmailAPI(main));
-        addAPI(new RecipeRouter(main, new UsersAPI(main),
-                new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));
-        addAPI(new RecipeRouter(main, new UsersCountAPI(main),
-                new io.supertokens.webserver.api.thirdparty.UsersCountAPI(main)));
         addAPI(new SignInUpAPI(main));
         addAPI(new TelemetryAPI(main));
-        addAPI(new io.supertokens.webserver.api.core.UsersCountAPI(main));
+        addAPI(new UsersCountAPI(main));
+        addAPI(new UsersAPI(main));
+
+        // deprecated APIs:
+        addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),
+                new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));
+        addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersCountAPI(main),
+                new io.supertokens.webserver.api.thirdparty.UsersCountAPI(main)));
     }
 
     public void addAPI(WebserverAPI api) {

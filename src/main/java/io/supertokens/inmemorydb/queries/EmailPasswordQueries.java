@@ -221,17 +221,46 @@ public class EmailPasswordQueries {
     }
 
     public static UserInfo getUserInfoUsingId(Start start, String id) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
-                + Config.getConfig(start).getEmailPasswordUsersTable() + " WHERE user_id = ?";
-        try (Connection con = ConnectionPool.getConnection(start);
-             PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, id);
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return UserInfoRowMapper.getInstance().mapOrThrow(result);
-            }
+        List<String> input = new ArrayList<>();
+        input.add(id);
+        List<UserInfo> result = getUsersInfoUsingIdList(start, input);
+        if (result.size() == 1) {
+            return result.get(0);
         }
         return null;
+    }
+
+    public static List<UserInfo> getUsersInfoUsingIdList(Start start, List<String> ids)
+            throws SQLException, StorageQueryException {
+        List<UserInfo> finalResult = new ArrayList<>();
+        if (ids.size() > 0) {
+            StringBuilder QUERY =
+                    new StringBuilder("SELECT user_id, email, password_hash, time_joined FROM "
+                            + Config.getConfig(start).getEmailPasswordUsersTable());
+            QUERY.append(" WHERE user_id IN (");
+            for (int i = 0; i < ids.size(); i++) {
+
+                QUERY.append("?");
+                if (i != ids.size() - 1) {
+                    // not the last element
+                    QUERY.append(",");
+                }
+            }
+            QUERY.append(")");
+
+            try (Connection con = ConnectionPool.getConnection(start);
+                 PreparedStatement pst = con.prepareStatement(QUERY.toString())) {
+                for (int i = 0; i < ids.size(); i++) {
+                    // i+1 cause this starts with 1 and not 0
+                    pst.setString(i + 1, ids.get(i));
+                }
+                ResultSet result = pst.executeQuery();
+                if (result.next()) {
+                    finalResult.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+                }
+            }
+        }
+        return finalResult;
     }
 
     public static UserInfo getUserInfoUsingId_Transaction(Start start, Connection con, String id)

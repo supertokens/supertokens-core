@@ -17,7 +17,7 @@
 package io.supertokens.thirdparty;
 
 import io.supertokens.Main;
-import io.supertokens.UserPaginationToken;
+import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
@@ -133,6 +133,7 @@ public class ThirdParty {
         return StorageLayer.getThirdPartyStorage(main).getThirdPartyUserInfoUsingId(thirdPartyId, thirdPartyUserId);
     }
 
+    @Deprecated
     public static UserPaginationContainer getUsers(Main main,
                                                    @Nullable String paginationToken,
                                                    Integer limit,

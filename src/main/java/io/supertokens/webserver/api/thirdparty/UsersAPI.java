@@ -21,7 +21,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.UserPaginationToken;
+import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.thirdparty.ThirdParty;
@@ -34,6 +34,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+@Deprecated
 public class UsersAPI extends WebserverAPI {
 
     private static final long serialVersionUID = -2225750492558064634L;
@@ -48,6 +49,7 @@ public class UsersAPI extends WebserverAPI {
     }
 
     @Override
+    @Deprecated
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         /*
          * pagination token can be null or string.

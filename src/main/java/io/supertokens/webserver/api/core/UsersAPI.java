@@ -14,16 +14,16 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api.emailpassword;
+package io.supertokens.webserver.api.core;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.authRecipe.UserPaginationToken;
-import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.UserPaginationContainer;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
@@ -33,8 +33,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.stream.Stream;
 
-@Deprecated
 public class UsersAPI extends WebserverAPI {
 
     private static final long serialVersionUID = -2225750492558064634L;
@@ -45,12 +45,25 @@ public class UsersAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/recipe/users";
+        return "/users";
     }
 
     @Override
-    @Deprecated
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        String[] recipeIds = InputParser.getStringArrayQueryParamOrThrowError(req, "includeRecipeIds", true);
+
+        Stream.Builder<RECIPE_ID> recipeIdsEnumBuilder = Stream.<RECIPE_ID>builder();
+
+        if (recipeIds != null) {
+            for (String recipeId : recipeIds) {
+                RECIPE_ID recipeID = RECIPE_ID.getEnumFromString(recipeId);
+                if (recipeID == null) {
+                    throw new ServletException(new BadRequestException("Unknown recipe ID: " + recipeId));
+                }
+                recipeIdsEnumBuilder.add(recipeID);
+            }
+        }
+
         /*
          * pagination token can be null or string.
          * if string, it should be a base64 encoded JSON object.
@@ -72,37 +85,41 @@ public class UsersAPI extends WebserverAPI {
         if (timeJoinedOrder != null) {
             if (!timeJoinedOrder.equals("ASC") && !timeJoinedOrder.equals("DESC")) {
                 throw new ServletException(
-                        new WebserverAPI.BadRequestException("timeJoinedOrder can be either ASC OR DESC"));
+                        new BadRequestException("timeJoinedOrder can be either ASC OR DESC"));
             }
         } else {
             timeJoinedOrder = "ASC";
         }
 
         if (limit != null) {
-            if (limit > 1000) {
+            if (limit > 500) {
                 throw new ServletException(
-                        new WebserverAPI.BadRequestException("max limit allowed is 1000"));
+                        new BadRequestException("max limit allowed is 500"));
             } else if (limit < 1) {
                 throw new ServletException(
-                        new WebserverAPI.BadRequestException("limit must a positive integer with max value 1000"));
+                        new BadRequestException("limit must a positive integer with min value 1"));
             }
         } else {
             limit = 100;
         }
 
         try {
-            UserPaginationContainer users = EmailPassword.getUsers(super.main, paginationToken, limit, timeJoinedOrder);
+            UserPaginationContainer users = AuthRecipe
+                    .getUsers(super.main, limit, timeJoinedOrder, paginationToken,
+                            recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
+
             JsonArray usersJson = new JsonParser().parse(new Gson().toJson(users.users)).getAsJsonArray();
             result.add("users", usersJson);
+
             if (users.nextPaginationToken != null) {
                 result.addProperty("nextPaginationToken", users.nextPaginationToken);
             }
             super.sendJsonResponse(200, result, resp);
         } catch (UserPaginationToken.InvalidTokenException e) {
             throw new ServletException(
-                    new WebserverAPI.BadRequestException("invalid pagination token"));
+                    new BadRequestException("invalid pagination token"));
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }

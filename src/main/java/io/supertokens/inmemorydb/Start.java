@@ -22,6 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.inmemorydb.queries.*;
+import io.supertokens.pluginInterface.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -318,6 +319,19 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     public long getUsersCount(RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
         try {
             return GeneralQueries.getUsersCount(this, includeRecipeIds);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public AuthRecipeUserInfo[] getUsers(@NotNull Integer limit, @NotNull String timeJoinedOrder,
+                                         @Nullable RECIPE_ID[] includeRecipeIds,
+                                         @Nullable String userId,
+                                         @Nullable Long timeJoined)
+            throws StorageQueryException {
+        try {
+            return GeneralQueries.getUsers(this, limit, timeJoinedOrder, includeRecipeIds, userId, timeJoined);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

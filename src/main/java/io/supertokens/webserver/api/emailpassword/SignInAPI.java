@@ -21,9 +21,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.User;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -60,14 +60,11 @@ public class SignInAPI extends WebserverAPI {
         String normalisedEmail = Utils.normaliseEmail(email);
 
         try {
-            User user = EmailPassword.signIn(super.main, normalisedEmail, password);
+            UserInfo user = EmailPassword.signIn(super.main, normalisedEmail, password);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
-            if (super.getVersionFromRequest(req).equals("2.4")) {
-                userJson.remove("timeJoined");
-            }
             result.add("user", userJson);
             super.sendJsonResponse(200, result, resp);
 
