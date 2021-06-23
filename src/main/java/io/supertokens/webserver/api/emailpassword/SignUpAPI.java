@@ -21,7 +21,8 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.User;
+import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.utils.Utils;
@@ -38,7 +39,7 @@ public class SignUpAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
     public SignUpAPI(Main main) {
-        super(main, EmailPassword.RECIPE_ID);
+        super(main, RECIPE_ID.EMAIL_PASSWORD.toString());
     }
 
     @Override
@@ -64,7 +65,7 @@ public class SignUpAPI extends WebserverAPI {
         }
 
         try {
-            User user = EmailPassword.signUp(super.main, normalisedEmail, password);
+            UserInfo user = EmailPassword.signUp(super.main, normalisedEmail, password);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

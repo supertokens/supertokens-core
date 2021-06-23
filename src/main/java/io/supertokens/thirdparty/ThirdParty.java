@@ -17,7 +17,7 @@
 package io.supertokens.thirdparty;
 
 import io.supertokens.Main;
-import io.supertokens.UserPaginationToken;
+import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
@@ -30,8 +30,6 @@ import io.supertokens.utils.Utils;
 import javax.annotation.Nullable;
 
 public class ThirdParty {
-
-    public static final String RECIPE_ID = "thirdparty";
 
     public static class SignInUpResponse {
         public boolean createdNewUser;
@@ -135,6 +133,7 @@ public class ThirdParty {
         return StorageLayer.getThirdPartyStorage(main).getThirdPartyUserInfoUsingId(thirdPartyId, thirdPartyUserId);
     }
 
+    @Deprecated
     public static UserPaginationContainer getUsers(Main main,
                                                    @Nullable String paginationToken,
                                                    Integer limit,
@@ -159,6 +158,7 @@ public class ThirdParty {
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
 
+    @Deprecated
     public static long getUsersCount(Main main) throws StorageQueryException {
         return StorageLayer.getThirdPartyStorage(main).getThirdPartyUsersCount();
     }

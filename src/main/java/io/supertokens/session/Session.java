@@ -53,8 +53,6 @@ import java.util.UUID;
 
 public class Session {
 
-    public static final String RECIPE_ID = "session";
-
     @TestOnly
     public static SessionInformationHolder createNewSession(Main main, @Nonnull String userId,
                                                             @Nonnull JsonObject userDataInJWT,

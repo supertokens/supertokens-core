@@ -19,11 +19,10 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
-import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
 import javax.servlet.ServletException;
@@ -35,7 +34,7 @@ public class HandshakeAPI extends WebserverAPI {
     private static final long serialVersionUID = -3647598432179106404L;
 
     public HandshakeAPI(Main main) {
-        super(main, Session.RECIPE_ID);
+        super(main, RECIPE_ID.SESSION.toString());
     }
 
     @Override
@@ -45,7 +44,6 @@ public class HandshakeAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         try {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

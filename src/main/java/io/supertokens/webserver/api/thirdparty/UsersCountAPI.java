@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.thirdparty;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.webserver.WebserverAPI;
@@ -27,12 +28,13 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+@Deprecated
 public class UsersCountAPI extends WebserverAPI {
 
     private static final long serialVersionUID = -2225750492558064634L;
 
     public UsersCountAPI(Main main) {
-        super(main, ThirdParty.RECIPE_ID);
+        super(main, RECIPE_ID.THIRD_PARTY.toString());
     }
 
     @Override
@@ -41,8 +43,9 @@ public class UsersCountAPI extends WebserverAPI {
     }
 
     @Override
+    @Deprecated
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        
+
         try {
             long count = ThirdParty.getUsersCount(super.main);
             JsonObject result = new JsonObject();

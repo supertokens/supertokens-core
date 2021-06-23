@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.Session;
 import io.supertokens.webserver.InputParser;
@@ -35,7 +36,7 @@ public class SessionUserAPI extends WebserverAPI {
     private static final long serialVersionUID = 3488492313129193443L;
 
     public SessionUserAPI(Main main) {
-        super(main, Session.RECIPE_ID);
+        super(main, RECIPE_ID.SESSION.toString());
     }
 
     @Override

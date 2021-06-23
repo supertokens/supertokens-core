@@ -18,11 +18,11 @@ package io.supertokens.test;
 
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.User;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -71,7 +71,7 @@ public class EmailVerificationTest {
             return;
         }
 
-        User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
         String token1 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
         String token2 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
 
@@ -102,7 +102,7 @@ public class EmailVerificationTest {
             return;
         }
 
-        User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
         String token = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
 
         EmailVerification.verifyEmail(process.getProcess(), token);
@@ -152,7 +152,7 @@ public class EmailVerificationTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
 
         String token1 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
         String token2 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
@@ -187,7 +187,7 @@ public class EmailVerificationTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
 
         String token = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
 
@@ -215,7 +215,7 @@ public class EmailVerificationTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
 
         for (int i = 0; i < 100; i++) {
             String verifyToken = EmailVerification
@@ -242,7 +242,7 @@ public class EmailVerificationTest {
         }
 
         // we add a user first.
-        User user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         StorageLayer.getEmailVerificationStorage(process.getProcess())
                 .addEmailVerificationToken(new EmailVerificationTokenInfo(
@@ -276,7 +276,7 @@ public class EmailVerificationTest {
             return;
         }
 
-        User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
 
         assert (!EmailVerification.isEmailVerified(process.getProcess(), user.id, user.email));
 
@@ -304,7 +304,7 @@ public class EmailVerificationTest {
             return;
         }
 
-        User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
         String token = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
 
         EmailVerification.verifyEmail(process.getProcess(), token);
@@ -334,7 +334,7 @@ public class EmailVerificationTest {
             return;
         }
 
-        User user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123");
         String token = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
 
         EmailVerification.verifyEmail(process.getProcess(), token);

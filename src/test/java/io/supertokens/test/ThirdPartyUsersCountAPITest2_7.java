@@ -68,7 +68,7 @@ public class ThirdPartyUsersCountAPITest2_7 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users/count", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 0);
         }
@@ -89,7 +89,7 @@ public class ThirdPartyUsersCountAPITest2_7 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users/count", null, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 5);
         }

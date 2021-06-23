@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.User;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.webserver.InputParser;
@@ -36,7 +37,7 @@ public class VerifyEmailAPI extends WebserverAPI {
     private static final long serialVersionUID = -7529428297450682549L;
 
     public VerifyEmailAPI(Main main) {
-        super(main, EmailVerification.RECIPE_ID);
+        super(main, RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 
     @Override

@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -36,7 +37,7 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
 
     public GenerateEmailVerificationTokenAPI(Main main) {
-        super(main, EmailVerification.RECIPE_ID);
+        super(main, RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 
     @Override

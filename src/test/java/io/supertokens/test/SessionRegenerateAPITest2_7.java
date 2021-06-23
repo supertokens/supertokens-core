@@ -18,7 +18,6 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.test.httpRequest.HttpRequest;
 import org.junit.AfterClass;
@@ -67,7 +66,7 @@ public class SessionRegenerateAPITest2_7 {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
+                        null, Utils.getCdiVersion2_7ForTests(), "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
@@ -84,7 +83,7 @@ public class SessionRegenerateAPITest2_7 {
         JsonObject sessionRegenerateResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/regenerate",
                         sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
-                        Session.RECIPE_ID);
+                        "session");
 
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
 
@@ -134,7 +133,7 @@ public class SessionRegenerateAPITest2_7 {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
+                        null, Utils.getCdiVersion2_7ForTests(), "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
@@ -153,7 +152,7 @@ public class SessionRegenerateAPITest2_7 {
         JsonObject sessionRegenerateResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/regenerate",
                         sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
-                        Session.RECIPE_ID);
+                        "session");
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
 
         //session object and all has new payload info
@@ -196,7 +195,7 @@ public class SessionRegenerateAPITest2_7 {
         JsonObject sessionInfo = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
-                        null, Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
+                        null, Utils.getCdiVersion2_7ForTests(), "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
@@ -208,7 +207,7 @@ public class SessionRegenerateAPITest2_7 {
 
         JsonObject sessionRemovedResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/remove",
-                        removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), Session.RECIPE_ID);
+                        removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
         assertEquals(sessionRemovedResponse.get("status").getAsString(), "OK");
 
 
@@ -223,7 +222,7 @@ public class SessionRegenerateAPITest2_7 {
         JsonObject sessionRegenerateResponse = HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/regenerate",
                         sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
-                        Session.RECIPE_ID);
+                        "session");
 
         //throws UNAUTHORISED response.
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "UNAUTHORISED");

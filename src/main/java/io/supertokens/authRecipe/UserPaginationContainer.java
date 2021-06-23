@@ -14,19 +14,32 @@
  *    under the License.
  */
 
-package io.supertokens.emailpassword;
+package io.supertokens.authRecipe;
 
-import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class UserPaginationContainer {
-    public final UserInfo[] users;
+    public final UsersContainer[] users;
     public final String nextPaginationToken;
 
-    public UserPaginationContainer(@Nonnull UserInfo[] users, @Nullable String nextPaginationToken) {
-        this.users = users;
+    public UserPaginationContainer(@Nonnull AuthRecipeUserInfo[] users, @Nullable String nextPaginationToken) {
+        this.users = new UsersContainer[users.length];
+        for (int i = 0; i < users.length; i++) {
+            this.users[i] = new UsersContainer(users[i]);
+        }
         this.nextPaginationToken = nextPaginationToken;
+    }
+
+    public static class UsersContainer {
+        public final AuthRecipeUserInfo user;
+        public final String recipeId;
+
+        public UsersContainer(AuthRecipeUserInfo user) {
+            this.user = user;
+            this.recipeId = user.getRecipeId().toString();
+        }
     }
 }

@@ -20,10 +20,12 @@ import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
@@ -40,12 +42,6 @@ public class EmailPasswordQueries {
                 + "user_id CHAR(36) NOT NULL," + "email VARCHAR(256) NOT NULL UNIQUE,"
                 + "password_hash VARCHAR(128) NOT NULL," + "time_joined BIGINT UNSIGNED NOT NULL,"
                 + "PRIMARY KEY (user_id));";
-    }
-
-    static String getQueryToCreateUserPaginationIndex(Start start) {
-        return "CREATE INDEX emailpassword_user_pagination_index ON " +
-                Config.getConfig(start).getEmailPasswordUsersTable() + "(time_joined DESC, user_id " +
-                "DESC);";
     }
 
     static String getQueryToCreatePasswordResetTokensTable(Start start) {
@@ -188,33 +184,83 @@ public class EmailPasswordQueries {
     }
 
     public static void signUp(Start start, String userId, String email, String passwordHash, long timeJoined)
-            throws SQLException {
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getEmailPasswordUsersTable()
-                + "(user_id, email, password_hash, time_joined)"
-                + " VALUES(?, ?, ?, ?)";
+            throws StorageQueryException, StorageTransactionLogicException {
+        start.startTransaction(con -> {
+            Connection sqlCon = (Connection) con.getConnection();
+            try {
+                {
+                    String QUERY = "INSERT INTO " + Config.getConfig(start).getUsersTable()
+                            + "(user_id, recipe_id, time_joined)" + " VALUES(?, ?, ?)";
+                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                        pst.setString(1, userId);
+                        pst.setString(2, RECIPE_ID.EMAIL_PASSWORD.toString());
+                        pst.setLong(3, timeJoined);
+                        pst.executeUpdate();
+                    }
+                }
 
-        try (Connection con = ConnectionPool.getConnection(start);
-             PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, userId);
-            pst.setString(2, email);
-            pst.setString(3, passwordHash);
-            pst.setLong(4, timeJoined);
-            pst.executeUpdate();
-        }
+                {
+                    String QUERY = "INSERT INTO " + Config.getConfig(start).getEmailPasswordUsersTable()
+                            + "(user_id, email, password_hash, time_joined)" + " VALUES(?, ?, ?, ?)";
+
+                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                        pst.setString(1, userId);
+                        pst.setString(2, email);
+                        pst.setString(3, passwordHash);
+                        pst.setLong(4, timeJoined);
+                        pst.executeUpdate();
+                    }
+                }
+
+                sqlCon.commit();
+            } catch (SQLException throwables) {
+                throw new StorageTransactionLogicException(throwables);
+            }
+            return null;
+        });
     }
 
     public static UserInfo getUserInfoUsingId(Start start, String id) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
-                + Config.getConfig(start).getEmailPasswordUsersTable() + " WHERE user_id = ?";
-        try (Connection con = ConnectionPool.getConnection(start);
-             PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, id);
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return UserInfoRowMapper.getInstance().mapOrThrow(result);
-            }
+        List<String> input = new ArrayList<>();
+        input.add(id);
+        List<UserInfo> result = getUsersInfoUsingIdList(start, input);
+        if (result.size() == 1) {
+            return result.get(0);
         }
         return null;
+    }
+
+    public static List<UserInfo> getUsersInfoUsingIdList(Start start, List<String> ids)
+            throws SQLException, StorageQueryException {
+        List<UserInfo> finalResult = new ArrayList<>();
+        if (ids.size() > 0) {
+            StringBuilder QUERY =
+                    new StringBuilder("SELECT user_id, email, password_hash, time_joined FROM "
+                            + Config.getConfig(start).getEmailPasswordUsersTable());
+            QUERY.append(" WHERE user_id IN (");
+            for (int i = 0; i < ids.size(); i++) {
+
+                QUERY.append("?");
+                if (i != ids.size() - 1) {
+                    // not the last element
+                    QUERY.append(",");
+                }
+            }
+            QUERY.append(")");
+
+            try (Connection con = ConnectionPool.getConnection(start);
+                 PreparedStatement pst = con.prepareStatement(QUERY.toString())) {
+                for (int i = 0; i < ids.size(); i++) {
+                    // i+1 cause this starts with 1 and not 0
+                    pst.setString(i + 1, ids.get(i));
+                }
+                ResultSet result = pst.executeQuery();
+                while (result.next()) {
+                    finalResult.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+                }
+            }
+        }
+        return finalResult;
     }
 
     public static UserInfo getUserInfoUsingId_Transaction(Start start, Connection con, String id)
@@ -248,6 +294,7 @@ public class EmailPasswordQueries {
         return null;
     }
 
+    @Deprecated
     public static UserInfo[] getUsersInfo(Start start, @NotNull Integer limit, @NotNull String timeJoinedOrder)
             throws SQLException, StorageQueryException {
         String QUERY =
@@ -270,6 +317,7 @@ public class EmailPasswordQueries {
         }
     }
 
+    @Deprecated
     public static UserInfo[] getUsersInfo(Start start, @NotNull String userId, @NotNull Long timeJoined,
                                           @NotNull Integer limit,
                                           @NotNull String timeJoinedOrder)
@@ -300,6 +348,7 @@ public class EmailPasswordQueries {
         }
     }
 
+    @Deprecated
     public static long getUsersCount(Start start) throws SQLException {
         String QUERY =
                 "SELECT COUNT(*) as total FROM " +

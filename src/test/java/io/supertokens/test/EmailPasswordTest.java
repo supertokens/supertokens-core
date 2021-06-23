@@ -19,7 +19,6 @@ package io.supertokens.test;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.UpdatableBCrypt;
-import io.supertokens.emailpassword.User;
 import io.supertokens.emailpassword.UserPaginationContainer;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
@@ -137,7 +136,7 @@ public class EmailPasswordTest {
             return;
         }
 
-        User userInfo = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+        UserInfo userInfo = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
         assertEquals(userInfo.email, "random@gmail.com");
         assertNotNull(userInfo.id);
 
@@ -167,7 +166,7 @@ public class EmailPasswordTest {
             return;
         }
 
-        User user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
         UserInfo userInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .getUserInfoUsingEmail(user.email);
@@ -192,7 +191,7 @@ public class EmailPasswordTest {
             return;
         }
 
-        User user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
         String resetToken = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
         PasswordResetTokenInfo resetTokenInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
@@ -221,7 +220,7 @@ public class EmailPasswordTest {
             return;
         }
 
-        User user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
         String resetToken = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
 
@@ -251,7 +250,7 @@ public class EmailPasswordTest {
             return;
         }
 
-        User user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         String tok = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
 
@@ -285,7 +284,7 @@ public class EmailPasswordTest {
             return;
         }
 
-        User user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
 
         EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
@@ -310,7 +309,7 @@ public class EmailPasswordTest {
 
         }
 
-        User user1 = EmailPassword.signIn(process.getProcess(), "test1@example.com", "newPassword");
+        UserInfo user1 = EmailPassword.signIn(process.getProcess(), "test1@example.com", "newPassword");
 
         assertEquals(user1.email, user.email);
 
@@ -371,7 +370,7 @@ public class EmailPasswordTest {
         }
 
         // we add a user first.
-        User user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
+        UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         System.out.println(user.id);
 
@@ -506,9 +505,9 @@ public class EmailPasswordTest {
             return;
         }
 
-        User userSignUp = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
+        UserInfo userSignUp = EmailPassword.signUp(process.getProcess(), "test@example.com", "password");
 
-        User user = EmailPassword.signIn(process.getProcess(), "test@example.com", "password");
+        UserInfo user = EmailPassword.signIn(process.getProcess(), "test@example.com", "password");
 
         assert (user.email.equals("test@example.com"));
 

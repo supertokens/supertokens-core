@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.webserver.InputParser;
@@ -35,7 +36,7 @@ public class ResetPasswordAPI extends WebserverAPI {
     private static final long serialVersionUID = -7529428297450682549L;
 
     public ResetPasswordAPI(Main main) {
-        super(main, EmailPassword.RECIPE_ID);
+        super(main, RECIPE_ID.EMAIL_PASSWORD.toString());
     }
 
     @Override

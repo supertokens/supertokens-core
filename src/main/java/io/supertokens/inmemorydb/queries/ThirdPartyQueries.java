@@ -20,8 +20,10 @@ import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import org.jetbrains.annotations.NotNull;
 
@@ -41,43 +43,87 @@ public class ThirdPartyQueries {
                 + "time_joined BIGINT UNSIGNED NOT NULL," + "PRIMARY KEY (third_party_id, third_party_user_id));";
     }
 
-    static String getQueryToCreateUserPaginationIndex(Start start) {
-        return "CREATE INDEX thirdparty_users_pagination_index ON " +
-                Config.getConfig(start).getThirdPartyUsersTable() + "(time_joined DESC, user_id " +
-                "DESC);";
-    }
-
     public static void signUp(Start start, io.supertokens.pluginInterface.thirdparty.UserInfo userInfo)
-            throws SQLException {
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getThirdPartyUsersTable()
-                + "(third_party_id, third_party_user_id, user_id, email, time_joined)"
-                + " VALUES(?, ?, ?, ?, ?)";
+            throws StorageQueryException, StorageTransactionLogicException {
+        start.startTransaction(con -> {
+            Connection sqlCon = (Connection) con.getConnection();
+            try {
+                {
+                    String QUERY = "INSERT INTO " + Config.getConfig(start).getUsersTable()
+                            + "(user_id, recipe_id, time_joined)" + " VALUES(?, ?, ?)";
+                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                        pst.setString(1, userInfo.id);
+                        pst.setString(2, RECIPE_ID.THIRD_PARTY.toString());
+                        pst.setLong(3, userInfo.timeJoined);
+                        pst.executeUpdate();
+                    }
+                }
 
-        try (Connection con = ConnectionPool.getConnection(start);
-             PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, userInfo.thirdParty.id);
-            pst.setString(2, userInfo.thirdParty.userId);
-            pst.setString(3, userInfo.id);
-            pst.setString(4, userInfo.email);
-            pst.setLong(5, userInfo.timeJoined);
-            pst.executeUpdate();
-        }
+                {
+                    String QUERY = "INSERT INTO " + Config.getConfig(start).getThirdPartyUsersTable()
+                            + "(third_party_id, third_party_user_id, user_id, email, time_joined)"
+                            + " VALUES(?, ?, ?, ?, ?)";
+                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                        pst.setString(1, userInfo.thirdParty.id);
+                        pst.setString(2, userInfo.thirdParty.userId);
+                        pst.setString(3, userInfo.id);
+                        pst.setString(4, userInfo.email);
+                        pst.setLong(5, userInfo.timeJoined);
+                        pst.executeUpdate();
+                    }
+                }
+
+                sqlCon.commit();
+            } catch (SQLException throwables) {
+                throw new StorageTransactionLogicException(throwables);
+            }
+            return null;
+        });
     }
-
 
     public static UserInfo getThirdPartyUserInfoUsingId(Start start, String userId)
             throws SQLException, StorageQueryException {
-        String QUERY = "SELECT user_id, third_party_id, third_party_user_id, email, time_joined FROM "
-                + Config.getConfig(start).getThirdPartyUsersTable() + " WHERE user_id = ?";
-        try (Connection con = ConnectionPool.getConnection(start);
-             PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, userId);
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return UserInfoRowMapper.getInstance().mapOrThrow(result);
-            }
+        List<String> input = new ArrayList<>();
+        input.add(userId);
+        List<UserInfo> result = getUsersInfoUsingIdList(start, input);
+        if (result.size() == 1) {
+            return result.get(0);
         }
         return null;
+    }
+
+
+    public static List<UserInfo> getUsersInfoUsingIdList(Start start, List<String> ids)
+            throws SQLException, StorageQueryException {
+        List<UserInfo> finalResult = new ArrayList<>();
+        if (ids.size() > 0) {
+            StringBuilder QUERY =
+                    new StringBuilder("SELECT user_id, third_party_id, third_party_user_id, email, time_joined FROM "
+                            + Config.getConfig(start).getThirdPartyUsersTable());
+            QUERY.append(" WHERE user_id IN (");
+            for (int i = 0; i < ids.size(); i++) {
+
+                QUERY.append("?");
+                if (i != ids.size() - 1) {
+                    // not the last element
+                    QUERY.append(",");
+                }
+            }
+            QUERY.append(")");
+
+            try (Connection con = ConnectionPool.getConnection(start);
+                 PreparedStatement pst = con.prepareStatement(QUERY.toString())) {
+                for (int i = 0; i < ids.size(); i++) {
+                    // i+1 cause this starts with 1 and not 0
+                    pst.setString(i + 1, ids.get(i));
+                }
+                ResultSet result = pst.executeQuery();
+                while (result.next()) {
+                    finalResult.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+                }
+            }
+        }
+        return finalResult;
     }
 
     public static UserInfo getThirdPartyUserInfoUsingId(Start start, String thirdPartyId, String thirdPartyUserId)
@@ -133,6 +179,7 @@ public class ThirdPartyQueries {
         return null;
     }
 
+    @Deprecated
     public static UserInfo[] getThirdPartyUsers(Start start, @NotNull Integer limit, @NotNull String timeJoinedOrder)
             throws SQLException, StorageQueryException {
         String QUERY =
@@ -155,6 +202,7 @@ public class ThirdPartyQueries {
         }
     }
 
+    @Deprecated
     public static UserInfo[] getThirdPartyUsers(Start start, @NotNull String userId, @NotNull Long timeJoined,
                                                 @NotNull Integer limit,
                                                 @NotNull String timeJoinedOrder)
@@ -185,6 +233,7 @@ public class ThirdPartyQueries {
         }
     }
 
+    @Deprecated
     public static long getUsersCount(Start start) throws SQLException {
         String QUERY =
                 "SELECT COUNT(*) as total FROM " +

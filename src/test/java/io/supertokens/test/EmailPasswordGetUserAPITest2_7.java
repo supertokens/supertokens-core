@@ -18,7 +18,6 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
@@ -64,7 +63,7 @@ public class EmailPasswordGetUserAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user", null, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -83,7 +82,7 @@ public class EmailPasswordGetUserAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user", map, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -125,7 +124,7 @@ public class EmailPasswordGetUserAPITest2_7 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", map, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.entrySet().size(), 2);
 
@@ -152,7 +151,7 @@ public class EmailPasswordGetUserAPITest2_7 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", map, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.entrySet().size(), 2);
 
@@ -188,7 +187,7 @@ public class EmailPasswordGetUserAPITest2_7 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", map, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
             assertEquals(response.get("status").getAsString(), "UNKNOWN_EMAIL_ERROR");
             assertEquals(response.entrySet().size(), 1);
         }
@@ -201,7 +200,7 @@ public class EmailPasswordGetUserAPITest2_7 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", map, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
             assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
             assertEquals(response.entrySet().size(), 1);
         }

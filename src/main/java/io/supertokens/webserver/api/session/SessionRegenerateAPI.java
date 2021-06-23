@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
@@ -42,7 +43,7 @@ public class SessionRegenerateAPI extends WebserverAPI {
     private static final long serialVersionUID = -6614427303762598143L;
 
     public SessionRegenerateAPI(Main main) {
-        super(main, Session.RECIPE_ID);
+        super(main, RECIPE_ID.SESSION.toString());
     }
 
     @Override

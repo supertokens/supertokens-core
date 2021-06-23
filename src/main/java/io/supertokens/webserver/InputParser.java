@@ -53,6 +53,17 @@ public class InputParser {
         return value;
     }
 
+    public static String[] getStringArrayQueryParamOrThrowError(HttpServletRequest request, String fieldName,
+                                                                boolean nullable)
+            throws ServletException {
+        String[] value = request.getParameterValues(fieldName);
+        if (!nullable && value == null) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("Field name '" + fieldName + "' is missing in GET request"));
+        }
+        return value;
+    }
+
     public static Integer getIntQueryParamOrThrowError(HttpServletRequest request, String fieldName, boolean nullable)
             throws ServletException {
         String key = getQueryParamOrThrowError(request, fieldName, nullable);

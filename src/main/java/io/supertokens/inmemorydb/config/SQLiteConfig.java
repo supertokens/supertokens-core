@@ -22,6 +22,10 @@ public class SQLiteConfig {
         return "key_value";
     }
 
+    public String getUsersTable() {
+        return "all_recipe_users";
+    }
+
     public String getSessionInfoTable() {
         return "session_info";
     }

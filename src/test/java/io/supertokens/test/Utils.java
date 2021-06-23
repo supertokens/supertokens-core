@@ -18,10 +18,8 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
-import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.webserver.WebserverAPI;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.junit.rules.TestRule;
@@ -68,6 +66,10 @@ abstract class Utils extends Mockito {
 
     static String getCdiVersion2_7ForTests() {
         return "2.7";
+    }
+
+    static String getCdiVersion2_8ForTests() {
+        return "2.8";
     }
 
     static String getCdiVersionLatestForTests() {
@@ -159,7 +161,7 @@ abstract class Utils extends Mockito {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signup", signUpRequestBody, 1000,
                         1000,
-                        null, getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                        null, getCdiVersion2_7ForTests(), "emailpassword");
     }
 
     public static JsonObject signUpRequest_2_5(TestingProcessManager.TestingProcess process, String email,
@@ -174,14 +176,14 @@ abstract class Utils extends Mockito {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signup", signUpRequestBody, 1000,
                         1000,
-                        null, getCdiVersion2_7ForTests(), EmailPassword.RECIPE_ID);
+                        null, getCdiVersion2_7ForTests(), "emailpassword");
     }
 
     public static JsonObject signInUpRequest_2_7(TestingProcessManager.TestingProcess process, String email,
                                                  boolean isVerified,
                                                  String thirdPartyId, String thirdPartyUserId)
             throws IOException, HttpResponseException {
-        
+
         JsonObject emailObject = new JsonObject();
         emailObject.addProperty("id", email);
         emailObject.addProperty("isVerified", isVerified);
@@ -195,7 +197,7 @@ abstract class Utils extends Mockito {
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000,
                         1000,
-                        null, getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                        null, getCdiVersion2_7ForTests(), "thirdparty");
     }
 
 }

@@ -33,8 +33,6 @@ import java.security.spec.InvalidKeySpecException;
 
 public class EmailVerification {
 
-    public static final String RECIPE_ID = "emailverification";
-
     public static final long EMAIL_VERIFICATION_TOKEN_LIFETIME_MS =
             24 * 3600 * 1000; // this is related to the interval for the cronjob: DeleteExpiredEmailVerificationTokens
 

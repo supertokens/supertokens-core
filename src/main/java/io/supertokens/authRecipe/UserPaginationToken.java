@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens;
+package io.supertokens.authRecipe;
 
 import java.util.Base64;
 

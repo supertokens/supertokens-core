@@ -73,7 +73,7 @@ public class ThirdPartyGetUserAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user", new HashMap<>(), 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -92,7 +92,7 @@ public class ThirdPartyGetUserAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -111,7 +111,7 @@ public class ThirdPartyGetUserAPITest2_7 {
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user", QueryParams, 1000,
                                 1000,
-                                null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 &&
@@ -153,7 +153,7 @@ public class ThirdPartyGetUserAPITest2_7 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", QueryParams, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals("OK", response.get("status").getAsString());
 
             JsonObject userInfo = response.get("user").getAsJsonObject();
@@ -170,7 +170,7 @@ public class ThirdPartyGetUserAPITest2_7 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", QueryParams, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals("OK", response.get("status").getAsString());
 
             JsonObject userInfo = response.get("user").getAsJsonObject();
@@ -202,7 +202,7 @@ public class ThirdPartyGetUserAPITest2_7 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", QueryParams, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals("UNKNOWN_USER_ID_ERROR", response.get("status").getAsString());
         }
 
@@ -216,7 +216,7 @@ public class ThirdPartyGetUserAPITest2_7 {
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", QueryParams, 1000,
                             1000,
-                            null, Utils.getCdiVersion2_7ForTests(), ThirdParty.RECIPE_ID);
+                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals("UNKNOWN_THIRD_PARTY_USER_ERROR", response.get("status").getAsString());
         }
     }
