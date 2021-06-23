@@ -20,6 +20,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.pluginInterface.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -30,8 +31,18 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+import org.reflections.Reflections;
+
+import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 
 public class AuthRecipeTest {
@@ -316,7 +327,7 @@ public class AuthRecipeTest {
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "DESC", null,
-                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD});
+                    new RECIPE_ID[]{});
             assert (users.nextPaginationToken == null);
             assert (users.users.length == 5);
             assert (users.users[4].recipeId.equals("emailpassword"));
@@ -364,5 +375,179 @@ public class AuthRecipeTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void randomPaginationTest() throws Exception {
+        int numberOfUsers = 500;
+        int[] limits = new int[]{10, 14, 20, 23, 50, 100, 110, 150, 200, 510};
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Map<String, Function<Object, ? extends AuthRecipeUserInfo>> signUpMap = getSignUpMap(process);
+
+        List<String> classes = getUserInfoClassNameList();
+
+        for (String className : classes) {
+            if (!signUpMap.containsKey(className)) {
+                fail();
+            }
+        }
+
+        // we create multiple users in parallel...
+        List<AuthRecipeUserInfo> usersCreated = new ArrayList<>();
+
+        ExecutorService es = Executors.newCachedThreadPool();
+        for (int i = 0; i < numberOfUsers; i++) {
+            es.execute(() -> {
+                while (true) {
+                    String currUserType = classes.get((int) (Math.random() * classes.size()));
+                    AuthRecipeUserInfo user = signUpMap.get(currUserType).apply(null);
+                    if (user != null) {
+                        synchronized (usersCreated) {
+                            usersCreated.add(user);
+                            return;
+                        }
+                    }
+                }
+            });
+        }
+        es.shutdown();
+        boolean finished = es.awaitTermination(2, TimeUnit.MINUTES);
+
+        if (!finished) {
+            fail();
+        }
+
+        for (int limit : limits) {
+
+            // now we paginate in asc order
+            {
+                // we sort users in usersCreated based on timeJoined since we added them in parallel...
+                usersCreated.sort((o1, o2) -> {
+                    if (o1.timeJoined != o2.timeJoined) {
+                        return (int) (o1.timeJoined - o2.timeJoined);
+                    }
+                    return o2.id.compareTo(o1.id);
+                });
+
+                // we make sure it's sorted properly..
+                {
+                    long timeJoined = 0;
+                    for (AuthRecipeUserInfo u : usersCreated) {
+                        if (timeJoined > u.timeJoined) {
+                            fail();
+                        }
+                    }
+                }
+
+                int indexIntoUsers = 0;
+                String paginationToken = null;
+                do {
+                    UserPaginationContainer users = AuthRecipe
+                            .getUsers(process.getProcess(), limit, "ASC", paginationToken,
+                                    null);
+
+                    for (UserPaginationContainer.UsersContainer uc : users.users) {
+                        AuthRecipeUserInfo expected = usersCreated.get(indexIntoUsers);
+                        AuthRecipeUserInfo actualUser = uc.user;
+
+                        assert (actualUser.equals(expected) && uc.recipeId.equals(expected.getRecipeId().toString()));
+                        indexIntoUsers++;
+                    }
+
+                    paginationToken = users.nextPaginationToken;
+                } while (paginationToken != null);
+
+                assert (indexIntoUsers == usersCreated.size());
+            }
+
+            // now we paginate in desc order
+            {
+                // we sort users in usersCreated based on timeJoined since we added them in parallel...
+                usersCreated.sort((o1, o2) -> {
+                    if (o1.timeJoined != o2.timeJoined) {
+                        return (int) (o1.timeJoined - o2.timeJoined);
+                    }
+                    return o1.id.compareTo(o2.id);
+                });
+
+                // we make sure it's sorted properly..
+                {
+                    long timeJoined = 0;
+                    for (AuthRecipeUserInfo u : usersCreated) {
+                        if (timeJoined > u.timeJoined) {
+                            fail();
+                        }
+                    }
+                }
+                int indexIntoUsers = usersCreated.size() - 1;
+                String paginationToken = null;
+                do {
+                    UserPaginationContainer users = AuthRecipe
+                            .getUsers(process.getProcess(), limit, "DESC", paginationToken,
+                                    null);
+
+                    for (UserPaginationContainer.UsersContainer uc : users.users) {
+                        AuthRecipeUserInfo expected = usersCreated.get(indexIntoUsers);
+                        AuthRecipeUserInfo actualUser = uc.user;
+
+                        assert (actualUser.equals(expected) && uc.recipeId.equals(expected.getRecipeId().toString()));
+                        indexIntoUsers--;
+                    }
+
+                    paginationToken = users.nextPaginationToken;
+                } while (paginationToken != null);
+
+                assert (indexIntoUsers == -1);
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private static List<String> getUserInfoClassNameList() {
+        Reflections reflections = new Reflections("io.supertokens");
+        Set<Class<? extends AuthRecipeUserInfo>> classes = reflections.getSubTypesOf(AuthRecipeUserInfo.class);
+
+        return classes.stream().map(Class::getCanonicalName).collect(Collectors.toList());
+    }
+
+    private static Map<String, Function<Object, ? extends AuthRecipeUserInfo>> getSignUpMap(
+            TestingProcessManager.TestingProcess process) {
+        AtomicInteger count = new AtomicInteger();
+
+        Map<String, Function<Object, ? extends AuthRecipeUserInfo>> signUpMap = new HashMap<>();
+        signUpMap.put("io.supertokens.pluginInterface.emailpassword.UserInfo", o -> {
+            try {
+                return EmailPassword
+                        .signUp(process.getProcess(), "test" + count.getAndIncrement() + "@example.com", "password0");
+            } catch (Exception ignored) {
+            }
+            return null;
+        });
+        signUpMap.put("io.supertokens.pluginInterface.thirdparty.UserInfo", o -> {
+            try {
+                String thirdPartyId = "testThirdParty";
+                String thirdPartyUserId = "thirdPartyUserId" + count.getAndIncrement();
+                String email = "test" + count.getAndIncrement() + "@example.com";
+
+                return ThirdParty
+                        .signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId, email, false).user;
+            } catch (Exception ignored) {
+            }
+            return null;
+        });
+
+        // add more recipes...
+
+        return signUpMap;
     }
 }
