@@ -421,7 +421,7 @@ public class AuthRecipeTest {
         es.shutdown();
         boolean finished = es.awaitTermination(2, TimeUnit.MINUTES);
 
-        if (!finished) {
+        if (!finished || usersCreated.size() != numberOfUsers) {
             fail();
         }
 
