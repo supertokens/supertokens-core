@@ -22,11 +22,10 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.ThirdParty;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TestRule;
+
+import java.util.HashMap;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
@@ -178,6 +177,170 @@ public class AuthRecipeAPITest2_8 {
                     e.getMessage().equals("Http error. Status Code: 400. Message: Unknown recipe ID: random"));
         }
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void paginationtBadInput() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+
+        try {
+            io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/users?includeRecipeIds=thirdparty&includeRecipeIds=random",
+                            null, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_8ForTests(), "");
+            fail();
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertTrue(e.statusCode == 400 &&
+                    e.getMessage().equals("Http error. Status Code: 400. Message: Unknown recipe ID: random"));
+        }
+
+        try {
+            io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/users?limit=-1",
+                            null, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_8ForTests(), "");
+            fail();
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertTrue(e.statusCode == 400 &&
+                    e.getMessage()
+                            .equals("Http error. Status Code: 400. Message: limit must a positive integer with min " +
+                                    "value 1"));
+        }
+
+        try {
+            io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/users?limit=501",
+                            null, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_8ForTests(), "");
+            fail();
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertTrue(e.statusCode == 400 &&
+                    e.getMessage()
+                            .equals("Http error. Status Code: 400. Message: max limit allowed is 500"));
+        }
+
+        {
+            HashMap<String, String> QueryParams = new HashMap<String, String>();
+            QueryParams.put("paginationToken", "randomString");
+            try {
+                io.supertokens.test.httpRequest.HttpRequest
+                        .sendGETRequest(process.getProcess(), "",
+                                "http://localhost:3567/users", QueryParams, 1000,
+                                1000,
+                                null, Utils.getCdiVersion2_7ForTests(), "");
+                throw new Exception("Should not come here");
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 400 &&
+                        e.getMessage()
+                                .equals("Http error. Status Code: 400. Message: invalid pagination token"));
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testGoodInput() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // added Thread.sleep(100) as sometimes tests would fail due to inconsistent signup order
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId", "test@example.com", false);
+        Thread.sleep(100);
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId1", "test1@example.com", false);
+        Thread.sleep(100);
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId2", "test2@example.com", false);
+        Thread.sleep(100);
+        EmailPassword.signUp(process.getProcess(), "test3@example.com", "password123$");
+        Thread.sleep(100);
+        EmailPassword.signUp(process.getProcess(), "test4@example.com", "password123$");
+        Thread.sleep(100);
+
+
+        {
+            HashMap<String, String> queryParams = new HashMap<>();
+            queryParams.put("limit", "1");
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/users", queryParams, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), "");
+
+            Assert.assertEquals("OK", response.get("status").getAsString());
+            assertNotNull(response.get("nextPaginationToken"));
+            Assert.assertEquals(1, response.getAsJsonArray("users").size());
+
+            JsonObject user = response.getAsJsonArray("users").get(0).getAsJsonObject();
+            Assert.assertEquals("thirdparty", user.get("recipeId").getAsString());
+            user = user.getAsJsonObject("user");
+            assertNotNull(user.get("id"));
+            assertNotNull(user.get("timeJoined"));
+            Assert.assertEquals("test@example.com", user.get("email").getAsString());
+
+            JsonObject userThirdParty = user.get("thirdParty").getAsJsonObject();
+            Assert.assertEquals("thirdPartyId", userThirdParty.get("id").getAsString());
+            Assert.assertEquals("thirdPartyUserId", userThirdParty.get("userId").getAsString());
+        }
+
+        // no params passed should return 5 users
+        {
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/users", new HashMap<>(), 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_7ForTests(), "");
+            Assert.assertEquals(5, response.getAsJsonArray("users").size());
+
+            {
+                JsonObject user = response.getAsJsonArray("users").get(0).getAsJsonObject();
+                Assert.assertEquals("thirdparty", user.get("recipeId").getAsString());
+                user = user.getAsJsonObject("user");
+                assertNotNull(user.get("id"));
+                assertNotNull(user.get("timeJoined"));
+                Assert.assertEquals("test@example.com", user.get("email").getAsString());
+
+                JsonObject userThirdParty = user.get("thirdParty").getAsJsonObject();
+                Assert.assertEquals("thirdPartyId", userThirdParty.get("id").getAsString());
+                Assert.assertEquals("thirdPartyUserId", userThirdParty.get("userId").getAsString());
+            }
+
+            {
+                JsonObject user = response.getAsJsonArray("users").get(4).getAsJsonObject();
+                Assert.assertEquals("emailpassword", user.get("recipeId").getAsString());
+                user = user.getAsJsonObject("user");
+                assertNotNull(user.get("id"));
+                assertNotNull(user.get("timeJoined"));
+                Assert.assertEquals("test4@example.com", user.get("email").getAsString());
+            }
+
+        }
+        
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
