@@ -17,8 +17,8 @@
 package io.supertokens.authRecipe;
 
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 
@@ -29,7 +29,7 @@ import javax.annotation.Nullable;
 public class AuthRecipe {
 
     public static long getUsersCount(Main main, RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
-        return StorageLayer.getStorage(main).getUsersCount(includeRecipeIds);
+        return StorageLayer.getAuthRecipeStorage(main).getUsersCount(includeRecipeIds);
     }
 
     public static UserPaginationContainer getUsers(Main main, Integer limit,
@@ -38,10 +38,11 @@ public class AuthRecipe {
             throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         AuthRecipeUserInfo[] users;
         if (paginationToken == null) {
-            users = StorageLayer.getStorage(main).getUsers(limit + 1, timeJoinedOrder, includeRecipeIds, null, null);
+            users = StorageLayer.getAuthRecipeStorage(main)
+                    .getUsers(limit + 1, timeJoinedOrder, includeRecipeIds, null, null);
         } else {
             UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
-            users = StorageLayer.getStorage(main)
+            users = StorageLayer.getAuthRecipeStorage(main)
                     .getUsers(limit + 1, timeJoinedOrder, includeRecipeIds, tokenInfo.userId, tokenInfo.timeJoined);
         }
         String nextPaginationToken = null;

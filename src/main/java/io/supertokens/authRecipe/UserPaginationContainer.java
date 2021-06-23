@@ -16,7 +16,7 @@
 
 package io.supertokens.authRecipe;
 
-import io.supertokens.pluginInterface.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

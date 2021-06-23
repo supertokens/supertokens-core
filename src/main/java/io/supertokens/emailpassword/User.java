@@ -16,7 +16,7 @@
 //
 //package io.supertokens.emailpassword;
 //
-//import io.supertokens.pluginInterface.AuthRecipeUserInfo;
+//import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 //import io.supertokens.pluginInterface.RECIPE_ID;
 //
 //import javax.annotation.Nonnull;
