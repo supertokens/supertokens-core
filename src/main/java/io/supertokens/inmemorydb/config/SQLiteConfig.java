@@ -23,7 +23,7 @@ public class SQLiteConfig {
     }
 
     public String getUsersTable() {
-        return "all_recipe_users";
+        return "all_auth_recipe_users";
     }
 
     public String getSessionInfoTable() {

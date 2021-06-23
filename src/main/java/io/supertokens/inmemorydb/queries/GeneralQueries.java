@@ -61,7 +61,7 @@ public class GeneralQueries {
     }
 
     static String getQueryToCreateUserPaginationIndex(Start start) {
-        return "CREATE INDEX all_recipe_users_pagination_index ON " + Config.getConfig(start).getUsersTable()
+        return "CREATE INDEX all_auth_recipe_users_pagination_index ON " + Config.getConfig(start).getUsersTable()
                 + "(time_joined DESC, user_id " + "DESC);";
     }
 
