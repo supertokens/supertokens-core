@@ -33,7 +33,7 @@ public class UserPaginationContainer {
         this.nextPaginationToken = nextPaginationToken;
     }
 
-    private static class UsersContainer {
+    public static class UsersContainer {
         public final AuthRecipeUserInfo user;
         public final String recipeId;
 

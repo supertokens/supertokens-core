@@ -118,7 +118,7 @@ public class ThirdPartyQueries {
                     pst.setString(i + 1, ids.get(i));
                 }
                 ResultSet result = pst.executeQuery();
-                if (result.next()) {
+                while (result.next()) {
                     finalResult.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
                 }
             }

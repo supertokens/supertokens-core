@@ -18,9 +18,11 @@ package io.supertokens.test;
 
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.ThirdParty;
 import org.junit.AfterClass;
@@ -105,6 +107,259 @@ public class AuthRecipeTest {
         {
             long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY});
             assert (count == 1);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void paginationTest() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null, null);
+            assert (users.nextPaginationToken == null);
+            assert (users.users.length == 0);
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null,
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.THIRD_PARTY});
+            assert (users.nextPaginationToken == null);
+            assert (users.users.length == 0);
+        }
+
+
+        UserInfo user1 = EmailPassword.signUp(process.getProcess(), "test0@example.com", "password0");
+        UserInfo user2 = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password1");
+        UserInfo user3 = EmailPassword.signUp(process.getProcess(), "test20@example.com", "password2");
+        UserInfo user4 = EmailPassword.signUp(process.getProcess(), "test3@example.com", "password3");
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null,
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD});
+            assert (users.nextPaginationToken == null);
+            assert (users.users.length == 4);
+            assert (users.users[0].recipeId.equals("emailpassword"));
+            assert (users.users[0].user.equals(user1));
+            assert (users.users[1].recipeId.equals("emailpassword"));
+            assert (users.users[1].user.equals(user2));
+            assert (users.users[2].recipeId.equals("emailpassword"));
+            assert (users.users[2].user.equals(user3));
+            assert (users.users[3].recipeId.equals("emailpassword"));
+            assert (users.users[3].user.equals(user4));
+
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null,
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.THIRD_PARTY});
+            assert (users.nextPaginationToken == null);
+            assert (users.users.length == 4);
+            assert (users.users[0].recipeId.equals("emailpassword"));
+            assert (users.users[0].user.equals(user1));
+            assert (users.users[1].recipeId.equals("emailpassword"));
+            assert (users.users[1].user.equals(user2));
+            assert (users.users[2].recipeId.equals("emailpassword"));
+            assert (users.users[2].user.equals(user3));
+            assert (users.users[3].recipeId.equals("emailpassword"));
+            assert (users.users[3].user.equals(user4));
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "DESC", null,
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD});
+            assert (users.nextPaginationToken == null);
+            assert (users.users.length == 4);
+            assert (users.users[3].recipeId.equals("emailpassword"));
+            assert (users.users[3].user.equals(user1));
+            assert (users.users[2].recipeId.equals("emailpassword"));
+            assert (users.users[2].user.equals(user2));
+            assert (users.users[1].recipeId.equals("emailpassword"));
+            assert (users.users[1].user.equals(user3));
+            assert (users.users[0].recipeId.equals("emailpassword"));
+            assert (users.users[0].user.equals(user4));
+
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "DESC", null,
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD});
+            assert (users.nextPaginationToken == null);
+            assert (users.users.length == 4);
+            assert (users.users[3].recipeId.equals("emailpassword"));
+            assert (users.users[3].user.equals(user1));
+            assert (users.users[2].recipeId.equals("emailpassword"));
+            assert (users.users[2].user.equals(user2));
+            assert (users.users[1].recipeId.equals("emailpassword"));
+            assert (users.users[1].user.equals(user3));
+            assert (users.users[0].recipeId.equals("emailpassword"));
+            assert (users.users[0].user.equals(user4));
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "DESC", null,
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.SESSION});
+            assert (users.nextPaginationToken == null);
+            assert (users.users.length == 0);
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 2, "DESC", null,
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD});
+            assert (users.nextPaginationToken != null);
+            assert (users.users.length == 2);
+            assert (users.users[1].recipeId.equals("emailpassword"));
+            assert (users.users[1].user.equals(user3));
+            assert (users.users[0].recipeId.equals("emailpassword"));
+            assert (users.users[0].user.equals(user4));
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 3, "ASC", null,
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD});
+            assert (users.nextPaginationToken != null);
+            assert (users.users.length == 3);
+            assert (users.users[0].recipeId.equals("emailpassword"));
+            assert (users.users[0].user.equals(user1));
+            assert (users.users[1].recipeId.equals("emailpassword"));
+            assert (users.users[1].user.equals(user2));
+            assert (users.users[2].recipeId.equals("emailpassword"));
+            assert (users.users[2].user.equals(user3));
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////////
+
+        String thirdPartyId = "testThirdParty";
+        String thirdPartyUserId_1 = "thirdPartyUserIdA";
+        String email_1 = "testA@example.com";
+
+        io.supertokens.pluginInterface.thirdparty.UserInfo user5 = ThirdParty
+                .signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId_1, email_1, false).user;
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null,
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD});
+            assert (users.nextPaginationToken == null);
+            assert (users.users.length == 4);
+            assert (users.users[0].recipeId.equals("emailpassword"));
+            assert (users.users[0].user.equals(user1));
+            assert (users.users[1].recipeId.equals("emailpassword"));
+            assert (users.users[1].user.equals(user2));
+            assert (users.users[2].recipeId.equals("emailpassword"));
+            assert (users.users[2].user.equals(user3));
+            assert (users.users[3].recipeId.equals("emailpassword"));
+            assert (users.users[3].user.equals(user4));
+
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null,
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY});
+            assert (users.nextPaginationToken == null);
+            assert (users.users.length == 1);
+            assert (users.users[0].recipeId.equals("thirdparty"));
+            assert (users.users[0].user.equals(user5));
+
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null,
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.THIRD_PARTY});
+            assert (users.nextPaginationToken == null);
+            assert (users.users.length == 5);
+            assert (users.users[0].recipeId.equals("emailpassword"));
+            assert (users.users[0].user.equals(user1));
+            assert (users.users[1].recipeId.equals("emailpassword"));
+            assert (users.users[1].user.equals(user2));
+            assert (users.users[2].recipeId.equals("emailpassword"));
+            assert (users.users[2].user.equals(user3));
+            assert (users.users[3].recipeId.equals("emailpassword"));
+            assert (users.users[3].user.equals(user4));
+            assert (users.users[4].recipeId.equals("thirdparty"));
+            assert (users.users[4].user.equals(user5));
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "DESC", null,
+                    new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD});
+            assert (users.nextPaginationToken == null);
+            assert (users.users.length == 4);
+            assert (users.users[3].recipeId.equals("emailpassword"));
+            assert (users.users[3].user.equals(user1));
+            assert (users.users[2].recipeId.equals("emailpassword"));
+            assert (users.users[2].user.equals(user2));
+            assert (users.users[1].recipeId.equals("emailpassword"));
+            assert (users.users[1].user.equals(user3));
+            assert (users.users[0].recipeId.equals("emailpassword"));
+            assert (users.users[0].user.equals(user4));
+
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "DESC", null,
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY});
+            assert (users.nextPaginationToken == null);
+            assert (users.users.length == 1);
+            assert (users.users[0].recipeId.equals("thirdparty"));
+            assert (users.users[0].user.equals(user5));
+
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "DESC", null,
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD});
+            assert (users.nextPaginationToken == null);
+            assert (users.users.length == 5);
+            assert (users.users[4].recipeId.equals("emailpassword"));
+            assert (users.users[4].user.equals(user1));
+            assert (users.users[3].recipeId.equals("emailpassword"));
+            assert (users.users[3].user.equals(user2));
+            assert (users.users[2].recipeId.equals("emailpassword"));
+            assert (users.users[2].user.equals(user3));
+            assert (users.users[1].recipeId.equals("emailpassword"));
+            assert (users.users[1].user.equals(user4));
+            assert (users.users[0].recipeId.equals("thirdparty"));
+            assert (users.users[0].user.equals(user5));
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "DESC", null,
+                    new RECIPE_ID[]{RECIPE_ID.SESSION});
+            assert (users.nextPaginationToken == null);
+            assert (users.users.length == 0);
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 2, "DESC", null,
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD});
+            assert (users.nextPaginationToken != null);
+            assert (users.users.length == 2);
+            assert (users.users[1].recipeId.equals("emailpassword"));
+            assert (users.users[1].user.equals(user4));
+            assert (users.users[0].recipeId.equals("thirdparty"));
+            assert (users.users[0].user.equals(user5));
+        }
+
+        {
+            UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 3, "ASC", null,
+                    new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY, RECIPE_ID.EMAIL_PASSWORD});
+            assert (users.nextPaginationToken != null);
+            assert (users.users.length == 3);
+            assert (users.users[0].recipeId.equals("emailpassword"));
+            assert (users.users[0].user.equals(user1));
+            assert (users.users[1].recipeId.equals("emailpassword"));
+            assert (users.users[1].user.equals(user2));
+            assert (users.users[2].recipeId.equals("emailpassword"));
+            assert (users.users[2].user.equals(user3));
         }
 
         process.kill();

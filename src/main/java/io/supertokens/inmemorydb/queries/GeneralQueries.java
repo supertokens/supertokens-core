@@ -284,16 +284,20 @@ public class GeneralQueries {
                         RECIPE_ID_CONDITION.append(",");
                     }
                 }
-                RECIPE_ID_CONDITION.append(") AND ");
+                RECIPE_ID_CONDITION.append(")");
             }
 
             ResultSet result;
             if (timeJoined != null && userId != null) {
+                String recipeIdCondition = RECIPE_ID_CONDITION.toString();
+                if (!recipeIdCondition.equals("")) {
+                    recipeIdCondition = recipeIdCondition + " AND";
+                }
                 String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
                 String QUERY =
                         "SELECT user_id, recipe_id FROM " +
                                 Config.getConfig(start).getUsersTable() +
-                                " WHERE " + RECIPE_ID_CONDITION.toString() + " (time_joined " + timeJoinedOrderSymbol +
+                                " WHERE " + recipeIdCondition + " (time_joined " + timeJoinedOrderSymbol +
                                 " ? OR (time_joined = ? AND user_id <= ?)) ORDER BY time_joined " + timeJoinedOrder +
                                 ", user_id DESC LIMIT ?";
                 try (Connection con = ConnectionPool.getConnection(start);
@@ -303,6 +307,10 @@ public class GeneralQueries {
                     pst.setString(3, userId);
                     pst.setInt(4, limit);
                     result = pst.executeQuery();
+                    while (result.next()) {
+                        usersFromQuery.add(new UserInfoPaginationResultHolder(
+                                result.getString("user_id"), result.getString("recipe_id")));
+                    }
                 }
             } else {
                 String recipeIdCondition = RECIPE_ID_CONDITION.toString();
@@ -318,12 +326,11 @@ public class GeneralQueries {
                      PreparedStatement pst = con.prepareStatement(QUERY)) {
                     pst.setInt(1, limit);
                     result = pst.executeQuery();
+                    while (result.next()) {
+                        usersFromQuery.add(new UserInfoPaginationResultHolder(
+                                result.getString("user_id"), result.getString("recipe_id")));
+                    }
                 }
-            }
-
-            while (result.next()) {
-                usersFromQuery.add(new UserInfoPaginationResultHolder(
-                        result.getString("user_id"), result.getString("recipe_id")));
             }
         }
 
@@ -355,7 +362,9 @@ public class GeneralQueries {
                 userIdToInfoMap.put(user.id, user);
             }
             for (int i = 0; i < usersFromQuery.size(); i++) {
-                finalResult[i] = userIdToInfoMap.get(usersFromQuery.get(i).userId);
+                if (finalResult[i] == null) {
+                    finalResult[i] = userIdToInfoMap.get(usersFromQuery.get(i).userId);
+                }
             }
         }
 
