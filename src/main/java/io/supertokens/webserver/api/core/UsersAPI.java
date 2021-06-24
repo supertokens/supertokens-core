@@ -50,7 +50,8 @@ public class UsersAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        String[] recipeIds = InputParser.getStringArrayQueryParamOrThrowError(req, "includeRecipeIds", true);
+        String[] recipeIds = InputParser
+                .getCommaSeparatedStringArrayQueryParamOrThrowError(req, "includeRecipeIds", true);
 
         Stream.Builder<RECIPE_ID> recipeIdsEnumBuilder = Stream.<RECIPE_ID>builder();
 

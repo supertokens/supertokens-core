@@ -46,7 +46,7 @@ public class AuthRecipeAPITest2_8 {
     }
 
     @Test
-    public void getUsersCount() throws Exception {
+    public void getUsersCountArrayFormat() throws Exception {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -118,8 +118,7 @@ public class AuthRecipeAPITest2_8 {
         {
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                     .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users/count?includeRecipeIds=emailpassword&includeRecipeIds" +
-                                    "=thirdparty",
+                            "http://localhost:3567/users/count?includeRecipeIds=emailpassword,thirdparty",
                             null, 1000,
                             1000,
                             null, Utils.getCdiVersion2_8ForTests(), "");
@@ -167,7 +166,7 @@ public class AuthRecipeAPITest2_8 {
         try {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users/count?includeRecipeIds=thirdparty&includeRecipeIds=random",
+                            "http://localhost:3567/users/count?includeRecipeIds=thirdparty,random",
                             null, 1000,
                             1000,
                             null, Utils.getCdiVersion2_8ForTests(), "");
@@ -196,7 +195,7 @@ public class AuthRecipeAPITest2_8 {
         try {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users?includeRecipeIds=thirdparty&includeRecipeIds=random",
+                            "http://localhost:3567/users?includeRecipeIds=thirdparty,random",
                             null, 1000,
                             1000,
                             null, Utils.getCdiVersion2_8ForTests(), "");
@@ -340,7 +339,7 @@ public class AuthRecipeAPITest2_8 {
             }
 
         }
-        
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

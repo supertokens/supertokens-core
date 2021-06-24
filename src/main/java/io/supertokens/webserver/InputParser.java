@@ -25,6 +25,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.util.Arrays;
 
 public class InputParser {
     public static JsonObject parseJsonObjectOrThrowError(HttpServletRequest request)
@@ -53,10 +54,17 @@ public class InputParser {
         return value;
     }
 
-    public static String[] getStringArrayQueryParamOrThrowError(HttpServletRequest request, String fieldName,
-                                                                boolean nullable)
+    public static String[] getCommaSeparatedStringArrayQueryParamOrThrowError(HttpServletRequest request,
+                                                                              String fieldName,
+                                                                              boolean nullable)
             throws ServletException {
-        String[] value = request.getParameterValues(fieldName);
+        String[] value = null;
+        // expect val1,val2,val3 and so on...
+        String queryParamValue = getQueryParamOrThrowError(request, fieldName, nullable);
+        if (queryParamValue != null) {
+            value = Arrays.stream(queryParamValue.trim().split(",")).map(String::trim).filter(s -> !s.equals(""))
+                    .toArray(String[]::new);
+        }
         if (!nullable && value == null) {
             throw new ServletException(
                     new WebserverAPI.BadRequestException("Field name '" + fieldName + "' is missing in GET request"));
