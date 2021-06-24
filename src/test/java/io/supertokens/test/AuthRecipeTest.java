@@ -405,18 +405,31 @@ public class AuthRecipeTest {
 
         ExecutorService es = Executors.newCachedThreadPool();
         for (int i = 0; i < numberOfUsers; i++) {
-            es.execute(() -> {
+            if (Math.random() > 0.5) {
                 while (true) {
                     String currUserType = classes.get((int) (Math.random() * classes.size()));
                     AuthRecipeUserInfo user = signUpMap.get(currUserType).apply(null);
                     if (user != null) {
                         synchronized (usersCreated) {
                             usersCreated.add(user);
-                            return;
+                            break;
                         }
                     }
                 }
-            });
+            } else {
+                es.execute(() -> {
+                    while (true) {
+                        String currUserType = classes.get((int) (Math.random() * classes.size()));
+                        AuthRecipeUserInfo user = signUpMap.get(currUserType).apply(null);
+                        if (user != null) {
+                            synchronized (usersCreated) {
+                                usersCreated.add(user);
+                                return;
+                            }
+                        }
+                    }
+                });
+            }
         }
         es.shutdown();
         boolean finished = es.awaitTermination(2, TimeUnit.MINUTES);
