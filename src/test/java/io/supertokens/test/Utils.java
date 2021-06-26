@@ -32,7 +32,7 @@ import org.mockito.Mockito;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 
-abstract class Utils extends Mockito {
+public abstract class Utils extends Mockito {
 
 
     private static ByteArrayOutputStream byteArrayOutputStream;
@@ -121,7 +121,7 @@ abstract class Utils extends Mockito {
 
     }
 
-    static void setValueInConfig(String key, String value) throws IOException {
+    public static void setValueInConfig(String key, String value) throws IOException {
         String oldStr = "((#\\s)?)" + key + "(:|((:\\s).+))\n";
         String newStr = key + ": " + value + "\n";
         StringBuilder originalFileContent = new StringBuilder();
