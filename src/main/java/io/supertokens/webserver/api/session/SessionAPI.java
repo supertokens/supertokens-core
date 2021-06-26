@@ -98,7 +98,7 @@ public class SessionAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             result.add("userDataInDatabase", sessionInfo.userDataInDatabase);
             result.add("userDataInJWT", sessionInfo.userDataInJWT);
-            result.addProperty("userid", sessionInfo.userId);
+            result.addProperty("userId", sessionInfo.userId);
             result.addProperty("expiry", sessionInfo.expiry);
             result.addProperty("timeCreated", sessionInfo.timeCreated);
 
