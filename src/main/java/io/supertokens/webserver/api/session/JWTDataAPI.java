@@ -30,6 +30,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
+@Deprecated
 public class JWTDataAPI extends WebserverAPI {
     private static final long serialVersionUID = -4989144736402314280L;
 
@@ -42,7 +43,7 @@ public class JWTDataAPI extends WebserverAPI {
         return "/recipe/jwt/data";
     }
 
-    @Override
+    @Override @Deprecated
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
@@ -70,7 +71,7 @@ public class JWTDataAPI extends WebserverAPI {
         }
     }
 
-    @Override
+    @Override @Deprecated
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
         assert sessionHandle != null;

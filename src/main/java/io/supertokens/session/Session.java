@@ -118,7 +118,7 @@ public class Session {
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessTokenWithoutVerifying(token);
 
         JsonObject newJWTUserPayload =
-                userDataInJWT == null ? getJWTData(main, accessToken.sessionHandle) : userDataInJWT;
+                userDataInJWT == null ? getSession(main, accessToken.sessionHandle).userDataInJWT : userDataInJWT;
         long lmrt = System.currentTimeMillis();
 
         updateSession(main, accessToken.sessionHandle, null, newJWTUserPayload, lmrt);
@@ -524,6 +524,7 @@ public class Session {
         return StorageLayer.getSessionStorage(main).getAllSessionHandlesForUser(userId);
     }
 
+    @Deprecated
     public static JsonObject getSessionData(Main main, String sessionHandle)
             throws StorageQueryException, UnauthorisedException {
         io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
@@ -534,6 +535,7 @@ public class Session {
         return session.userDataInDatabase;
     }
 
+    @Deprecated
     public static JsonObject getJWTData(Main main, String sessionHandle)
             throws StorageQueryException, UnauthorisedException {
         io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
