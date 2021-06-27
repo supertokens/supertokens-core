@@ -49,6 +49,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Date;
 import java.util.UUID;
 
 public class Session {
@@ -556,7 +557,8 @@ public class Session {
         io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
                 .getSession(sessionHandle);
 
-        if (session == null) {
+        // If there is no session, or session is expired
+        if (session == null || session.expiry <= new Date().getTime()) {
             throw new UnauthorisedException("Session does not exist.");
         }
 

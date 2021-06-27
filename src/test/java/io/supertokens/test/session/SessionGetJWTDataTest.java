@@ -151,7 +151,7 @@ public class SessionGetJWTDataTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // * - create session -> let it expire, remove from db -> call get function -> make sure you get unauthorised error
+    // * - create session -> let it expire -> call get function -> make sure you get unauthorised error
     @Test
     public void testExpireSessionCallGetAndCheckUnauthorised() throws Exception {
 
@@ -174,12 +174,44 @@ public class SessionGetJWTDataTest {
         SessionInformationHolder sessionInfo = Session
                 .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
-        //let it expire, remove from db
-
+        // Let it expire
         Thread.sleep(2000);
+
+        // Get session information
+        try {
+            Session.getSession(process.getProcess(), sessionInfo.session.handle);
+            fail();
+        } catch (UnauthorisedException e) {
+            assertEquals(e.getMessage(), "Session does not exist.");
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // * - create session -> revoke the session -> call get function -> make sure you get unauthorised error
+    @Test
+    public void testRevokedSessionCallGetAndCheckUnauthorised() throws Exception {
+
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        //createSession with JWT payload
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+
+        SessionInformationHolder sessionInfo = Session
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
+
+        // Revoke the session
         String[] sessionHandles = {sessionInfo.session.handle};
         Session.revokeSessionUsingSessionHandles(process.getProcess(), sessionHandles);
-
 
         //call update function
         try {
