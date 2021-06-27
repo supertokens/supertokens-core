@@ -29,7 +29,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-@Deprecated
 public class SessionDataAPI extends WebserverAPI {
     private static final long serialVersionUID = -6901312482713647177L;
 
@@ -41,7 +40,7 @@ public class SessionDataAPI extends WebserverAPI {
     public String getPath() {
         return "/recipe/session/data";
     }
-
+    
     @Override @Deprecated
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
@@ -65,7 +64,7 @@ public class SessionDataAPI extends WebserverAPI {
         }
     }
 
-    @Override @Deprecated
+    @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String sessionHandle = InputParser.parseStringOrThrowError(input, "sessionHandle", false);
