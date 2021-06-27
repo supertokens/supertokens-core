@@ -32,9 +32,8 @@ import org.junit.rules.TestRule;
 import java.util.HashMap;
 
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertNotNull;
 
-public class SessionGetAPIJWTTest {
+public class SessionGetAPIJWTTest2_8 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -61,7 +60,7 @@ public class SessionGetAPIJWTTest {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", null, 1000,
                             1000,
-                            null, Utils.getCdiVersionLatestForTests(), "session");
+                            null, Utils.getCdiVersion2_8ForTests(), "session");
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -77,7 +76,7 @@ public class SessionGetAPIJWTTest {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", map, 1000,
                             1000,
-                            null, Utils.getCdiVersionLatestForTests(), "session");
+                            null, Utils.getCdiVersion2_8ForTests(), "session");
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -102,7 +101,7 @@ public class SessionGetAPIJWTTest {
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", map, 1000, 1000,
                         null,
-                        Utils.getCdiVersionLatestForTests(), "session");
+                        Utils.getCdiVersion2_8ForTests(), "session");
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
 
@@ -137,7 +136,7 @@ public class SessionGetAPIJWTTest {
         // Create session
         JsonObject session = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                        sessionBody, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), "session");
+                        sessionBody, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(), "session");
 
         assertEquals(session.get("status").getAsString(), "OK");
 
@@ -148,7 +147,7 @@ public class SessionGetAPIJWTTest {
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", map, 1000, 1000,
                         null,
-                        Utils.getCdiVersionLatestForTests(), "session");
+                        Utils.getCdiVersion2_8ForTests(), "session");
 
         // Validate response
         assertEquals(response.get("status").getAsString(), "OK");

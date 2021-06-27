@@ -64,11 +64,11 @@ public abstract class Utils extends Mockito {
         }
     }
 
-    static String getCdiVersion2_7ForTests() {
+    public static String getCdiVersion2_7ForTests() {
         return "2.7";
     }
 
-    static String getCdiVersion2_8ForTests() {
+    public static String getCdiVersion2_8ForTests() {
         return "2.8";
     }
 
