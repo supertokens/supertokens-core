@@ -40,7 +40,7 @@ public class SessionDataAPI extends WebserverAPI {
     public String getPath() {
         return "/recipe/session/data";
     }
-    
+
     @Override @Deprecated
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);

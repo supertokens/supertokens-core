@@ -558,7 +558,7 @@ public class Session {
                 .getSession(sessionHandle);
 
         // If there is no session, or session is expired
-        if (session == null || session.expiry <= new Date().getTime()) {
+        if (session == null || session.expiry <= System.currentTimeMillis()) {
             throw new UnauthorisedException("Session does not exist.");
         }
 
