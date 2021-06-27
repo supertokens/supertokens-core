@@ -49,6 +49,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Date;
 import java.util.UUID;
 
 public class Session {
@@ -116,7 +117,7 @@ public class Session {
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessTokenWithoutVerifying(token);
 
         JsonObject newJWTUserPayload =
-                userDataInJWT == null ? getJWTData(main, accessToken.sessionHandle) : userDataInJWT;
+                userDataInJWT == null ? getSession(main, accessToken.sessionHandle).userDataInJWT : userDataInJWT;
         long lmrt = System.currentTimeMillis();
 
         updateSession(main, accessToken.sessionHandle, null, newJWTUserPayload, lmrt);
@@ -522,6 +523,7 @@ public class Session {
         return StorageLayer.getSessionStorage(main).getAllSessionHandlesForUser(userId);
     }
 
+    @Deprecated
     public static JsonObject getSessionData(Main main, String sessionHandle)
             throws StorageQueryException, UnauthorisedException {
         io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
@@ -532,6 +534,7 @@ public class Session {
         return session.userDataInDatabase;
     }
 
+    @Deprecated
     public static JsonObject getJWTData(Main main, String sessionHandle)
             throws StorageQueryException, UnauthorisedException {
         io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
@@ -540,6 +543,24 @@ public class Session {
             throw new UnauthorisedException("Session does not exist.");
         }
         return session.userDataInJWT;
+    }
+
+    /**
+     * Used to retrieve all session information for a given session handle.
+     * Used by:
+     * - /recipe/session GET
+     */
+    public static io.supertokens.pluginInterface.session.SessionInfo getSession(Main main, String sessionHandle)
+            throws StorageQueryException, UnauthorisedException {
+        io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
+                .getSession(sessionHandle);
+
+        // If there is no session, or session is expired
+        if (session == null || session.expiry <= System.currentTimeMillis()) {
+            throw new UnauthorisedException("Session does not exist.");
+        }
+
+        return session;
     }
 
     public static void updateSession(Main main, String sessionHandle, @Nullable JsonObject sessionData,

@@ -71,7 +71,7 @@ public class JWTDataAPI extends WebserverAPI {
         }
     }
 
-    @Override
+    @Override @Deprecated
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
         assert sessionHandle != null;
