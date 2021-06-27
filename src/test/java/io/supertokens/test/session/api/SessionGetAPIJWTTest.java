@@ -84,6 +84,9 @@ public class SessionGetAPIJWTTest {
                     .equals("Http error. Status Code: 400. Message: Field name 'sessionHandle' is missing in GET " +
                             "request"));
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
@@ -104,6 +107,9 @@ public class SessionGetAPIJWTTest {
         assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
 
         assertEquals(response.get("message").getAsString(), "Session does not exist.");
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
@@ -164,5 +170,8 @@ public class SessionGetAPIJWTTest {
         JsonPrimitive timeCreated = response.get("timeCreated").getAsJsonPrimitive();
         assertNotNull(timeCreated);
         assertTrue(timeCreated.isNumber());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }

@@ -83,5 +83,8 @@ public class SessionGetUserIDTest {
         // Fetch session info from database
         SessionInfo sessionInfoAfterCreating = Session.getSession(process.getProcess(), sessionInfo.session.handle);
         assertEquals(sessionInfoAfterCreating.userId, userId);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }

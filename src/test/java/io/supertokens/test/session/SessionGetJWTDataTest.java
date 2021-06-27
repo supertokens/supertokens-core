@@ -157,7 +157,6 @@ public class SessionGetJWTDataTest {
 
         String[] args = {"../"};
 
-        Utils.setValueInConfig("access_token_validity", "1");// 1 second validity
         Utils.setValueInConfig("refresh_token_validity", "" + 1.0 / 60);// 1 second validity (value in mins)
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -220,6 +219,35 @@ public class SessionGetJWTDataTest {
         } catch (UnauthorisedException e) {
             assertEquals(e.getMessage(), "Session does not exist.");
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testGetSessionWithExpiredAccessTokenDoesNotThrowError() throws Exception {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("access_token_validity", "1");// 1 second validity
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        //createSession with JWT payload
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        SessionInformationHolder sessionInfo = Session
+                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
+
+        // Wait for access token to expire
+        Thread.sleep(1000);
+
+        // Get session details
+        Session.getSession(process.getProcess(), sessionInfo.session.handle);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
