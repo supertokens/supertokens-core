@@ -62,7 +62,7 @@ public class SessionGetAPIJWTTest {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", null, 1000,
                             1000,
-                            null, Utils.getCdiVersionLatestForTests(), Session.RECIPE_ID);
+                            null, Utils.getCdiVersionLatestForTests(), "session");
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -78,7 +78,7 @@ public class SessionGetAPIJWTTest {
             io.supertokens.test.httpRequest.HttpRequest
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", map, 1000,
                             1000,
-                            null, Utils.getCdiVersionLatestForTests(), Session.RECIPE_ID);
+                            null, Utils.getCdiVersionLatestForTests(), "session");
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -100,7 +100,7 @@ public class SessionGetAPIJWTTest {
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", map, 1000, 1000,
                         null,
-                        Utils.getCdiVersionLatestForTests(), Session.RECIPE_ID);
+                        Utils.getCdiVersionLatestForTests(), "session");
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
 
@@ -132,7 +132,7 @@ public class SessionGetAPIJWTTest {
         // Create session
         JsonObject session = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                        sessionBody, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), Session.RECIPE_ID);
+                        sessionBody, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), "session");
 
         assertEquals(session.get("status").getAsString(), "OK");
 
@@ -143,7 +143,7 @@ public class SessionGetAPIJWTTest {
         JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", map, 1000, 1000,
                         null,
-                        Utils.getCdiVersionLatestForTests(), Session.RECIPE_ID);
+                        Utils.getCdiVersionLatestForTests(), "session");
 
         // Validate response
         assertEquals(response.get("status").getAsString(), "OK");
