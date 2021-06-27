@@ -93,14 +93,8 @@ public class SessionAPI extends WebserverAPI {
         try {
             SessionInfo sessionInfo = Session.getSession(main, sessionHandle);
 
-            JsonObject result = new JsonObject();
-
+            JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
             result.addProperty("status", "OK");
-            result.add("userDataInDatabase", sessionInfo.userDataInDatabase);
-            result.add("userDataInJWT", sessionInfo.userDataInJWT);
-            result.addProperty("userId", sessionInfo.userId);
-            result.addProperty("expiry", sessionInfo.expiry);
-            result.addProperty("timeCreated", sessionInfo.timeCreated);
 
             super.sendJsonResponse(200, result, resp);
 
