@@ -151,7 +151,7 @@ public class SessionGetAPIJWTTest2_8 {
 
         // Validate response
         assertEquals(response.get("status").getAsString(), "OK");
-        assertEquals(response.entrySet().size(), 6);
+        assertEquals(response.entrySet().size(), 7);
 
         assertEquals(response.get("userDataInDatabase").getAsJsonObject(),
                 sessionBody.get("userDataInDatabase").getAsJsonObject());
