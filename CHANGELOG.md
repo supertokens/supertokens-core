@@ -8,6 +8,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Make emailverificaiton tables take a generic userId: https://github.com/supertokens/supertokens-core/issues/258
 - Adds new count and pagination APIs: https://github.com/supertokens/supertokens-core/issues/259
+- Adds new API to get session data, and deprecates older one to get session and JWT payload separately: 
+https://github.com/supertokens/supertokens-core/issues/255
 
 ## [3.4.1] - 2021-06-18
 ### Added
