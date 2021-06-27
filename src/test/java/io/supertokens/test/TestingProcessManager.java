@@ -23,7 +23,7 @@ import io.supertokens.ProcessState.PROCESS_STATE;
 
 import java.util.ArrayList;
 
-class TestingProcessManager {
+public class TestingProcessManager {
 
     private static final ArrayList<TestingProcess> alive = new ArrayList<>();
 
@@ -119,7 +119,7 @@ class TestingProcessManager {
             return args;
         }
 
-        void kill() throws InterruptedException {
+        public void kill() throws InterruptedException {
             if (killed) {
                 return;
             }
@@ -127,7 +127,7 @@ class TestingProcessManager {
             killed = true;
         }
 
-        EventAndException checkOrWaitForEvent(PROCESS_STATE state) throws InterruptedException {
+        public EventAndException checkOrWaitForEvent(PROCESS_STATE state) throws InterruptedException {
             return checkOrWaitForEvent(state, 15000);
         }
 
