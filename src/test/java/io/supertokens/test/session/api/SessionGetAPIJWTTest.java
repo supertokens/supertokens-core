@@ -18,11 +18,10 @@ package io.supertokens.test.session.api;
 
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
-import io.supertokens.session.Session;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
-import io.supertokens.test.httpRequest.HttpRequest;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -158,7 +157,12 @@ public class SessionGetAPIJWTTest {
         assertEquals(response.get("userId").getAsString(),
                 sessionBody.get("userId").getAsString());
 
-        assertNotNull(response.get("expiry"));
-        assertNotNull(response.get("timeCreated"));
+        JsonPrimitive expiry = response.get("expiry").getAsJsonPrimitive();
+        assertNotNull(expiry);
+        assertTrue(expiry.isNumber());
+
+        JsonPrimitive timeCreated = response.get("timeCreated").getAsJsonPrimitive();
+        assertNotNull(timeCreated);
+        assertTrue(timeCreated.isNumber());
     }
 }
