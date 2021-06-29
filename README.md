@@ -125,6 +125,7 @@ If you think this is a project you could use in the future, please :star2: this 
 <td align="center"><a href="https://github.com/dulowski-marek"><img src="https://avatars.githubusercontent.com/u/17051704?v=4" width="100px;" alt=""/><br /><sub><b>Marek Dulowski</b></sub></a></td>
 <td align="center"><a href="https://github.com/Piyushhbhutoria"><img src="https://avatars.githubusercontent.com/u/20777594?v=4" width="100px;" alt=""/><br /><sub><b>Piyushh Bhutoria</b></sub></a></td>
 <td align="center"><a href="https://github.com/aldeed"><img src="https://avatars.githubusercontent.com/u/3012067?v=4" width="100px;" alt=""/><br /><sub><b>Eric Dobbertin</b></sub></a></td>
+<td align="center"><a href="https://github.com/seniorquico"><img src="https://avatars.githubusercontent.com/u/415806?v=4" width="100px;" alt=""/><br /><sub><b>Kyle Dodson</b></sub></a></td>
   </tr>
 </table>
 
