@@ -26,7 +26,9 @@ import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdExcept
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import io.supertokens.webserver.api.thirdparty.getUsersByEmail.GetUsersByEmailQuery;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class ThirdParty {
@@ -156,6 +158,10 @@ public class ThirdParty {
         UserInfo[] resultUsers = new UserInfo[maxLoop];
         System.arraycopy(users, 0, resultUsers, 0, maxLoop);
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
+    }
+
+    public static UserInfo[] getUsersByEmail(Main main, @Nonnull GetUsersByEmailQuery query) throws StorageQueryException {
+        return StorageLayer.getThirdPartyStorage(main).getThirdPartyUsersByEmail(query.getEmail());
     }
 
     @Deprecated
