@@ -16,19 +16,21 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.thirdparty.ThirdParty;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import java.util.HashMap;
+
+import static org.junit.Assert.*;
 
 
 public class GetUsersByEmailAPITest2_8 {
@@ -58,12 +60,41 @@ public class GetUsersByEmailAPITest2_8 {
         }
 
         // given
-        JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "mockThirdPartyUserId");
-        assertEquals(signUpResponse.get("status").getAsString(), "OK");
-        assertEquals(signUpResponse.entrySet().size(), 2);
+        {
+            JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "mockThirdPartyUserId");
+            assertEquals(signUpResponse.get("status").getAsString(), "OK");
 
-        JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
-        assertEquals(signUpUser.get("email").getAsString(), "random@gmail.com");
-        assertNotNull(signUpUser.get("id"));
+            JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
+            assertEquals(signUpUser.get("email").getAsString(), "john.doe@example.com");
+            assertNotNull(signUpUser.get("id"));
+        }
+        {
+            JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty2", "mockThirdParty2UserId");
+            assertEquals(signUpResponse.get("status").getAsString(), "OK");
+
+            JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
+            assertEquals(signUpUser.get("email").getAsString(), "john.doe@example.com");
+            assertNotNull(signUpUser.get("id"));
+        }
+
+        // when
+        HashMap<String, String> query = new HashMap<>();
+        query.put("email", "john.doe@example.com");
+
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                .sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/users/by-email", query, 1000,
+                        1000,
+                        null, "2.8", EmailPassword.RECIPE_ID);
+
+        // then
+        JsonArray jsonUsers = response.get("users").getAsJsonArray();
+
+        jsonUsers.forEach(jsonUser -> {
+            assertEquals(jsonUser.getAsJsonObject().get("email").getAsString(), "john.doe@example.com");
+        });
+
+        assertEquals(response.get("status").getAsString(), "OK");
+        assertEquals(response.entrySet().size(), 2);
     }
 }

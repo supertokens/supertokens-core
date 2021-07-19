@@ -31,6 +31,7 @@ import io.supertokens.webserver.api.emailverification.GenerateEmailVerificationT
 import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
 import io.supertokens.webserver.api.session.*;
 import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
+import io.supertokens.webserver.api.thirdparty.getUsersByEmail.GetUsersByEmailAPI;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;
@@ -161,6 +162,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
                 new io.supertokens.webserver.api.thirdparty.UserAPI(main)));
         addAPI(new GenerateEmailVerificationTokenAPI(main));
         addAPI(new VerifyEmailAPI(main));
+        addAPI(new GetUsersByEmailAPI(main));
         addAPI(new SignInUpAPI(main));
         addAPI(new TelemetryAPI(main));
         addAPI(new UsersCountAPI(main));

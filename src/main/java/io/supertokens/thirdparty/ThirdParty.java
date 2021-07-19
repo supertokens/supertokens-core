@@ -25,8 +25,8 @@ import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUs
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.thirdparty.getUsersByEmail.GetUsersByEmailQuery;
 import io.supertokens.utils.Utils;
-import io.supertokens.webserver.api.thirdparty.getUsersByEmail.GetUsersByEmailQuery;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;

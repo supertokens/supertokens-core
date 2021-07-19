@@ -14,26 +14,27 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api.thirdparty.getUsersByEmail;
-
-import javax.servlet.http.HttpServletRequest;
+package io.supertokens.thirdparty.getUsersByEmail;
 
 public class GetUsersByEmailQuery {
-
-    public static class InvalidQueryException extends Exception {
-        public InvalidQueryException (String message) {
+    public static final class InvalidQueryException extends Exception {
+        public InvalidQueryException(String message) {
             super(message);
         }
     }
 
-    private String email;
+    private final String email;
 
-    public GetUsersByEmailQuery(HttpServletRequest request) throws InvalidQueryException {
-        email = request.getParameter("email");
-
+    public GetUsersByEmailQuery(String email) throws InvalidQueryException {
         if (email == null) {
-            throw new InvalidQueryException("email parameter is required");
+            throw new InvalidQueryException("email cannot be null");
         }
+
+        if (email.equals("*")) {
+            throw new InvalidQueryException("email cannot be *");
+        }
+
+        this.email = email;
     }
 
     public String getEmail() {

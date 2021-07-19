@@ -16,40 +16,24 @@
 
 package io.supertokens.test;
 
-import io.supertokens.webserver.api.thirdparty.getUsersByEmail.GetUsersByEmailQuery;
+import io.supertokens.thirdparty.getUsersByEmail.GetUsersByEmailQuery;
 import org.junit.Test;
-import org.mockito.Mockito;
 
-import javax.servlet.http.HttpServletRequest;
-
-import static org.junit.Assert.assertEquals;
-
-public class GetUsersByEmailQueryTest extends Mockito {
+public class GetUsersByEmailQueryTest {
 
     @Test(expected = GetUsersByEmailQuery.InvalidQueryException.class)
     public void testThrowErrorWhenEmailIsNull() throws Exception {
-        // given
-        HttpServletRequest request = mock(HttpServletRequest.class);
-
-        when(request.getParameter("email")).thenReturn(null);
-
         // when
-        new GetUsersByEmailQuery(request);
+        new GetUsersByEmailQuery(null);
 
         // then it should throw
     }
 
-    @Test
-    public void testReturnWhateverInEmailParameter() throws Exception {
-        // given
-        HttpServletRequest request = mock(HttpServletRequest.class);
-
-        when(request.getParameter("email")).thenReturn("john.doe@example.com");
-
+    @Test(expected = GetUsersByEmailQuery.InvalidQueryException.class)
+    public void testThrowErrorWhenInvalidString() throws Exception {
         // when
-        GetUsersByEmailQuery query = new GetUsersByEmailQuery(request);
+        new GetUsersByEmailQuery("*");
 
-        // then
-        assertEquals("john.doe@example.com", query.getEmail());
+        // then it should throw
     }
 }

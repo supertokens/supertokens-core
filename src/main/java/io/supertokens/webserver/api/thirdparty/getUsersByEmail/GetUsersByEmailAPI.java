@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.thirdparty.getUsersByEmail.GetUsersByEmailQuery;
 import io.supertokens.webserver.WebserverAPI;
 
 import javax.servlet.ServletException;
@@ -45,7 +46,9 @@ public class GetUsersByEmailAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            GetUsersByEmailQuery query = new GetUsersByEmailQuery(req);
+            GetUsersByEmailQuery query = new GetUsersByEmailQuery(
+                    req.getParameter("email")
+            );
 
             UserInfo[] users = ThirdParty.getUsersByEmail(super.main, query);
 
