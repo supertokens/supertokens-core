@@ -220,12 +220,7 @@ public class ThirdPartyQueries {
 
         String sqlQuery = "SELECT user_id, third_party_id, third_party_user_id, email, time_joined FROM " +
                 Config.getConfig(start).getThirdPartyUsersTable() +
-                " WHERE email = ?" +
-                " ORDER BY user_id DESC";
-
-        if (email.equals("*")) {
-            throw new StorageQueryException(new Exception("Cannot query for * email"));
-        }
+                " WHERE email = ?";
 
         try (Connection conn = ConnectionPool.getConnection(start); PreparedStatement statement = conn.prepareStatement(sqlQuery)) {
             statement.setString(1, email);
