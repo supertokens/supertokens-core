@@ -19,7 +19,7 @@ package io.supertokens.test;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
@@ -28,10 +28,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.util.HashMap;
+import java.util.*;
 
 import static org.junit.Assert.*;
-
 
 public class GetUsersByEmailAPITest2_8 {
     @Rule
@@ -85,19 +84,67 @@ public class GetUsersByEmailAPITest2_8 {
                 .sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/users/by-email", query, 1000,
                         1000,
-                        null, "2.8", EmailPassword.RECIPE_ID);
+                        null, "2.8", RECIPE_ID.THIRD_PARTY.toString());
 
         // then
         JsonArray jsonUsers = response.get("users").getAsJsonArray();
 
-        jsonUsers.forEach(jsonUser -> {
-            assertEquals(jsonUser.getAsJsonObject().get("email").getAsString(), "john.doe@example.com");
-        });
+        jsonUsers.forEach(jsonUser -> assertEquals("john.doe@example.com", jsonUser.getAsJsonObject().get("email").getAsString()));
 
-        assertEquals(response.get("status").getAsString(), "OK");
-        assertEquals(response.entrySet().size(), 2);
+        assertEquals("OK", response.get("status").getAsString());
+        assertEquals(2, response.entrySet().size());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testShouldThrowOnBadInput() throws Exception {
+        // setup
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // when
+        try {
+            Map<String, String> emptyQuery = new HashMap<>();
+
+            testBadInput(process, emptyQuery);
+        // then
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: email cannot be empty", e.getMessage());
+        }
+
+        // when
+        try {
+            Map<String, String> invalidQuery = new HashMap<>();
+
+            invalidQuery.put("email", "");
+
+            testBadInput(process, invalidQuery);
+        // then
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertEquals(400, e.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: email cannot be empty", e.getMessage());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private void testBadInput(TestingProcessManager.TestingProcess process, Map<String, String> query) throws Exception {
+        io.supertokens.test.httpRequest.HttpRequest
+                .sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/users/by-email", query, 1000,
+                        1000,
+                        null, "2.8", RECIPE_ID.THIRD_PARTY.toString());
+
+        throw new Exception("Request didn't throw as expected");
     }
 }

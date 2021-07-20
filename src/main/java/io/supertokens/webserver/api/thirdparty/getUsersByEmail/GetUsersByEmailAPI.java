@@ -21,11 +21,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.exceptions.InvalidInputException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.thirdparty.ThirdParty;
-import io.supertokens.thirdparty.getUsersByEmail.GetUsersByEmailQuery;
 import io.supertokens.webserver.WebserverAPI;
 
 import javax.servlet.ServletException;
@@ -46,11 +46,9 @@ public class GetUsersByEmailAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            GetUsersByEmailQuery query = new GetUsersByEmailQuery(
-                    req.getParameter("email")
-            );
+            String email = req.getParameter("email");
 
-            UserInfo[] users = ThirdParty.getUsersByEmail(super.main, query);
+            UserInfo[] users = ThirdParty.getUsersByEmail(super.main, email);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -58,7 +56,7 @@ public class GetUsersByEmailAPI extends WebserverAPI {
             result.add("users", usersJson);
 
             super.sendJsonResponse(200, result, resp);
-        } catch (GetUsersByEmailQuery.InvalidQueryException e) {
+        } catch (InvalidInputException e) {
             throw new ServletException(
                     new BadRequestException(e.getMessage()));
         } catch (StorageQueryException e) {

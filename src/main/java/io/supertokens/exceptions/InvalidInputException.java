@@ -14,26 +14,10 @@
  *    under the License.
  */
 
-package io.supertokens.test;
+package io.supertokens.exceptions;
 
-import io.supertokens.thirdparty.getUsersByEmail.GetUsersByEmailQuery;
-import org.junit.Test;
-
-public class GetUsersByEmailQueryTest {
-
-    @Test(expected = GetUsersByEmailQuery.InvalidQueryException.class)
-    public void testThrowErrorWhenEmailIsNull() throws Exception {
-        // when
-        new GetUsersByEmailQuery(null);
-
-        // then it should throw
-    }
-
-    @Test(expected = GetUsersByEmailQuery.InvalidQueryException.class)
-    public void testThrowErrorWhenInvalidString() throws Exception {
-        // when
-        new GetUsersByEmailQuery("*");
-
-        // then it should throw
+public class InvalidInputException extends Exception {
+    public InvalidInputException(String message) {
+        super(message);
     }
 }

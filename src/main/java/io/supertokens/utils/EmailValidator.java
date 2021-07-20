@@ -14,30 +14,21 @@
  *    under the License.
  */
 
-package io.supertokens.thirdparty.getUsersByEmail;
+package io.supertokens.utils;
 
-public class GetUsersByEmailQuery {
-    public static final class InvalidQueryException extends Exception {
-        public InvalidQueryException(String message) {
-            super(message);
-        }
-    }
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
-    private final String email;
+public abstract class EmailValidator {
+    /**
+     * As per stackoverflow answer: https://stackoverflow.com/a/46181/3867175
+     * Note the same pattern is being used in supertokens-node. Ideally they should be kept in sync.
+     */
+    private final static Pattern pattern = Pattern.compile("^(([^<>()\\[\\]\\\\.,;:\\s@\"]+(\\.[^<>()\\[\\]\\\\.,;:\\s@\"]+)*)|(\".+\"))@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))$");
 
-    public GetUsersByEmailQuery(String email) throws InvalidQueryException {
-        if (email == null) {
-            throw new InvalidQueryException("email cannot be null");
-        }
+    public static boolean isValid(CharSequence email) {
+        Matcher matcher = pattern.matcher(email);
 
-        if (email.equals("*")) {
-            throw new InvalidQueryException("email cannot be *");
-        }
-
-        this.email = email;
-    }
-
-    public String getEmail() {
-        return email;
+        return matcher.matches();
     }
 }
