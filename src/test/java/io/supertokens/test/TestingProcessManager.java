@@ -20,8 +20,13 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
 
 import java.util.ArrayList;
+import java.util.function.Consumer;
+
+import static org.junit.Assert.assertNotNull;
 
 public class TestingProcessManager {
 
@@ -144,5 +149,24 @@ public class TestingProcessManager {
             }
             return e;
         }
+    }
+
+    /**
+     * Utility function to wrap tests with, as they require TestingProcess
+     */
+    public static void withProcess(ProcessConsumer consumer) throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        consumer.accept(process);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
