@@ -17,11 +17,9 @@
 package io.supertokens.test;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,94 +46,147 @@ public class GetUsersByEmailAPITest2_8 {
 
     @Test
     public void testReturnTwoUsersWithSameEmail() throws Exception {
-        // setup
-        String[] args = {"../"};
+        TestingProcessManager.withProcess(process -> {
+            // given
+            {
+                JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "mockThirdPartyUserId");
+                assertEquals(signUpResponse.get("status").getAsString(), "OK");
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+                JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
+                assertEquals(signUpUser.get("email").getAsString(), "john.doe@example.com");
+                assertNotNull(signUpUser.get("id"));
+            }
+            {
+                JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty2", "mockThirdParty2UserId");
+                assertEquals(signUpResponse.get("status").getAsString(), "OK");
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
+                JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
+                assertEquals(signUpUser.get("email").getAsString(), "john.doe@example.com");
+                assertNotNull(signUpUser.get("id"));
+            }
 
-        // given
-        {
-            JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "mockThirdPartyUserId");
-            assertEquals(signUpResponse.get("status").getAsString(), "OK");
+            // when
+            HashMap<String, String> query = new HashMap<>();
+            query.put("email", "john.doe@example.com");
 
-            JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
-            assertEquals(signUpUser.get("email").getAsString(), "john.doe@example.com");
-            assertNotNull(signUpUser.get("id"));
-        }
-        {
-            JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty2", "mockThirdParty2UserId");
-            assertEquals(signUpResponse.get("status").getAsString(), "OK");
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/users/by-email", query, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
 
-            JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
-            assertEquals(signUpUser.get("email").getAsString(), "john.doe@example.com");
-            assertNotNull(signUpUser.get("id"));
-        }
+            // then
+            JsonArray jsonUsers = response.get("users").getAsJsonArray();
 
-        // when
-        HashMap<String, String> query = new HashMap<>();
-        query.put("email", "john.doe@example.com");
+            jsonUsers.forEach(jsonUser -> assertEquals("john.doe@example.com", jsonUser.getAsJsonObject().get("email").getAsString()));
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
-                .sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/users/by-email", query, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(2, jsonUsers.size());
+        });
+    }
 
-        // then
-        JsonArray jsonUsers = response.get("users").getAsJsonArray();
+    @Test
+    public void testReturnOnlyUsersWithGivenEmail() throws Exception {
+        TestingProcessManager.withProcess(process -> {
+            // given
+            {
+                JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "johnDoeId");
+                assertEquals(signUpResponse.get("status").getAsString(), "OK");
 
-        jsonUsers.forEach(jsonUser -> assertEquals("john.doe@example.com", jsonUser.getAsJsonObject().get("email").getAsString()));
+                JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
+                assertEquals(signUpUser.get("email").getAsString(), "john.doe@example.com");
+                assertNotNull(signUpUser.get("id"));
+            }
+            {
+                JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "karl.doe@example.com", true, "mockThirdParty", "karlDoeId");
+                assertEquals(signUpResponse.get("status").getAsString(), "OK");
 
-        assertEquals("OK", response.get("status").getAsString());
-        assertEquals(2, response.entrySet().size());
+                JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
+                assertEquals(signUpUser.get("email").getAsString(), "karl.doe@example.com");
+                assertNotNull(signUpUser.get("id"));
+            }
 
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+            // when
+            HashMap<String, String> query = new HashMap<>();
+
+            query.put("email", "john.doe@example.com");
+
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/users/by-email", query, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
+
+            JsonArray users = response.getAsJsonArray("users");
+            JsonElement status = response.get("status");
+
+            // then
+            assertEquals("OK", status.getAsString());
+            assertEquals(1, users.size());
+            assertEquals("john.doe@example.com", users.get(0).getAsJsonObject().get("email").getAsString());
+        });
+    }
+
+    @Test
+    public void testNotReturnUsersIfEmailNotExists() throws Exception {
+        TestingProcessManager.withProcess(process -> {
+            // given
+            {
+                JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "johnDoeId");
+                assertEquals(signUpResponse.get("status").getAsString(), "OK");
+
+                JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
+                assertEquals(signUpUser.get("email").getAsString(), "john.doe@example.com");
+                assertNotNull(signUpUser.get("id"));
+            }
+
+            // when
+            HashMap<String, String> query = new HashMap<>();
+
+            query.put("email", "inexistent@example.com");
+
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+                    .sendGETRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/users/by-email", query, 1000,
+                            1000,
+                            null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
+
+            JsonArray users = response.getAsJsonArray("users");
+            JsonElement status = response.get("status");
+
+            // then
+            assertEquals("OK", status.getAsString());
+            assertEquals(0, users.size());
+        });
     }
 
     @Test
     public void testShouldThrowOnBadInput() throws Exception {
-        // setup
-        String[] args = {"../"};
+        TestingProcessManager.withProcess(process -> {
+            // when
+            try {
+                Map<String, String> emptyQuery = new HashMap<>();
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+                testBadInput(process, emptyQuery);
+                // then
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: email cannot be empty", e.getMessage());
+            }
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
+            // when
+            try {
+                Map<String, String> invalidQuery = new HashMap<>();
 
-        // when
-        try {
-            Map<String, String> emptyQuery = new HashMap<>();
+                invalidQuery.put("email", "");
 
-            testBadInput(process, emptyQuery);
-        // then
-        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-            assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: email cannot be empty", e.getMessage());
-        }
-
-        // when
-        try {
-            Map<String, String> invalidQuery = new HashMap<>();
-
-            invalidQuery.put("email", "");
-
-            testBadInput(process, invalidQuery);
-        // then
-        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-            assertEquals(400, e.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: email cannot be empty", e.getMessage());
-        }
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+                testBadInput(process, invalidQuery);
+                // then
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertEquals(400, e.statusCode);
+                assertEquals("Http error. Status Code: 400. Message: email is invalid", e.getMessage());
+            }
+        });
     }
 
     private void testBadInput(TestingProcessManager.TestingProcess process, Map<String, String> query) throws Exception {

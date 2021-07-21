@@ -163,7 +163,7 @@ public class ThirdParty {
     }
 
     public static UserInfo[] getUsersByEmail(Main main, String email) throws StorageQueryException, InvalidInputException {
-        if (email == null || email.equals("")) {
+        if (email == null) {
             throw new InvalidInputException("email cannot be empty");
         }
 
