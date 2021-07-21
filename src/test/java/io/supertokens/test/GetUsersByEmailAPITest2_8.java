@@ -84,7 +84,7 @@ public class GetUsersByEmailAPITest2_8 {
                 .sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/users/by-email", query, 1000,
                         1000,
-                        null, "2.8", RECIPE_ID.THIRD_PARTY.toString());
+                        null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
 
         // then
         JsonArray jsonUsers = response.get("users").getAsJsonArray();
@@ -143,7 +143,7 @@ public class GetUsersByEmailAPITest2_8 {
                 .sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/users/by-email", query, 1000,
                         1000,
-                        null, "2.8", RECIPE_ID.THIRD_PARTY.toString());
+                        null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
 
         throw new Exception("Request didn't throw as expected");
     }
