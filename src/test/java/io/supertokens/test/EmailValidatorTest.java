@@ -29,14 +29,30 @@ public class EmailValidatorTest {
 
     @Test
     public void testShouldReturnTrueForValidEmails() {
-        List<String> validEmails = Arrays.asList("john.doe@example.com", "jd@e.co");
+        List<String> validEmails = Arrays.asList(
+                "john.doe@example.com",
+                "jd@e.co",
+                "j+d@example.com",
+                "j_d@example.com",
+                "jd@example.dot.com"
+        );
 
         validEmails.forEach(email -> assertTrue(EmailValidator.isValid(email)));
     }
 
     @Test
     public void testShouldReturnFalseForInvalidEmails() {
-        List<String> invalidEmails = Arrays.asList("", "@example.com", "jd@ex", "@.com", "jd@", "jd@example.c", "jd.example.com", "jd@ex.co1");
+        List<String> invalidEmails = Arrays.asList(
+                "",
+               "@example.com",
+               "jd@ex",
+               "@.com",
+               "jd@",
+               "jd@example.c",
+               "jd.example.com",
+               "jd@ex.co1",
+               "jd@ex_ample.com"
+        );
 
         invalidEmails.forEach(email -> assertFalse(EmailValidator.isValid(email)));
     }
