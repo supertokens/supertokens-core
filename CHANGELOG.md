@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds new API to get session data, and deprecates older one to get session and JWT payload separately: 
 https://github.com/supertokens/supertokens-core/issues/255
 
+### Added
+- Add `GET /recipe/users/by-email?email=john@example.com` endpoint for ThirdParty recipe to fetch all users with given
+ email
+
 ## [3.4.1] - 2021-06-18
 ### Added
 - `test_mode` to the options for running the core so that it can be run in test mode whilst being tested by the
