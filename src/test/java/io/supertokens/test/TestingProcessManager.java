@@ -25,6 +25,7 @@ import io.supertokens.storageLayer.StorageLayer;
 
 import java.util.ArrayList;
 import java.util.function.Consumer;
+import java.util.function.Predicate;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -159,10 +160,6 @@ public class TestingProcessManager {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
 
         consumer.accept(process);
 

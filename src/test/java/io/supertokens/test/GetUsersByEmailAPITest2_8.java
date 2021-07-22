@@ -20,6 +20,8 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -47,6 +49,10 @@ public class GetUsersByEmailAPITest2_8 {
     @Test
     public void testReturnTwoUsersWithSameEmail() throws Exception {
         TestingProcessManager.withProcess(process -> {
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
             // given
             {
                 JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "mockThirdPartyUserId");
@@ -88,6 +94,10 @@ public class GetUsersByEmailAPITest2_8 {
     @Test
     public void testReturnOnlyUsersWithGivenEmail() throws Exception {
         TestingProcessManager.withProcess(process -> {
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
             // given
             {
                 JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "johnDoeId");
@@ -130,6 +140,10 @@ public class GetUsersByEmailAPITest2_8 {
     @Test
     public void testNotReturnUsersIfEmailNotExists() throws Exception {
         TestingProcessManager.withProcess(process -> {
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
             // given
             {
                 JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "johnDoeId");
@@ -163,6 +177,10 @@ public class GetUsersByEmailAPITest2_8 {
     @Test
     public void testShouldThrowOnBadInput() throws Exception {
         TestingProcessManager.withProcess(process -> {
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
             // when
             try {
                 Map<String, String> emptyQuery = new HashMap<>();
