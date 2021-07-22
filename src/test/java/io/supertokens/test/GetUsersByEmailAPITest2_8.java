@@ -86,6 +86,9 @@ public class GetUsersByEmailAPITest2_8 {
 
             jsonUsers.forEach(jsonUser -> assertEquals("john.doe@example.com", jsonUser.getAsJsonObject().get("email").getAsString()));
 
+            // Expect returned users to have different ids
+            assertNotEquals(jsonUsers.get(0).getAsJsonObject().get("id").getAsString(), jsonUsers.get(1).getAsJsonObject().get("id").getAsString());
+
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, jsonUsers.size());
         });
