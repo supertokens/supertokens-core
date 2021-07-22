@@ -44,14 +44,18 @@ public class EmailValidatorTest {
     public void testShouldReturnFalseForInvalidEmails() {
         List<String> invalidEmails = Arrays.asList(
                 "",
-               "@example.com",
-               "jd@ex",
-               "@.com",
-               "jd@",
-               "jd@example.c",
-               "jd.example.com",
-               "jd@ex.co1",
-               "jd@ex_ample.com"
+                " ",
+                " @example.com",
+                " jd@example.com", // leading whitespace
+                "jd@example.com ", // trailing whitespace
+                "@example.com",
+                "jd@ex",
+                "@.com",
+                "jd@",
+                "jd@example.c",
+                "jd.example.com",
+                "jd@ex.co1",
+                "jd@ex_ample.com"
         );
 
         invalidEmails.forEach(email -> assertFalse("Email " + email + " should be invalid", EmailValidator.isValid(email)));
