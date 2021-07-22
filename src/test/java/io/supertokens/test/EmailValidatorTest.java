@@ -37,7 +37,7 @@ public class EmailValidatorTest {
                 "jd@example.dot.com"
         );
 
-        validEmails.forEach(email -> assertTrue(EmailValidator.isValid(email)));
+        validEmails.forEach(email -> assertTrue("Email " + email + " should be valid", EmailValidator.isValid(email)));
     }
 
     @Test
@@ -54,6 +54,6 @@ public class EmailValidatorTest {
                "jd@ex_ample.com"
         );
 
-        invalidEmails.forEach(email -> assertFalse(EmailValidator.isValid(email)));
+        invalidEmails.forEach(email -> assertFalse("Email " + email + " should be invalid", EmailValidator.isValid(email)));
     }
 }
