@@ -31,7 +31,7 @@ import io.supertokens.webserver.api.emailverification.GenerateEmailVerificationT
 import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
 import io.supertokens.webserver.api.session.*;
 import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
-import io.supertokens.webserver.api.thirdparty.getUsersByEmail.GetUsersByEmailAPI;
+import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;

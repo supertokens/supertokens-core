@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api.thirdparty.getUsersByEmail;
+package io.supertokens.webserver.api.thirdparty;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
