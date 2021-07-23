@@ -9,17 +9,12 @@ Happy contributing!
 
 -->
 
-## Link to a github issue if relevant
+## Related issues
+- Link to issue1 here
+- Link to issue1 here
 
-(Link the github issue here)
-
-## Motivation
-
-(Write your motivation here.)
-
-### Have you read the [Contributing Guidelines on pull requests](https://github.com/supertokens/supertokens-core/blob/master/CONTRIBUTING.md#pull-request)?
-
-(Write your answer here.)
+## Summary of change
+(A few sentences about this PR)
 
 ## Test Plan
 
@@ -27,4 +22,15 @@ Happy contributing!
 
 ## Documentation changes
 
-(If this PR adds or changes functionality, please take some time to point to the relevant documentation that we should update -  https://supertokens.io/docs/community/getting-started/installation)
+(If relevant, please create a PR in our [docs repo](https://github.com/supertokens/docs), or create a checklist here highlighting the necessary changes)
+
+## Checklist for important updates
+- [ ] Changelog has been updated
+- [ ] `coreDriverInterfaceSupported.json` file has been updated (if needed)
+- [ ] Changes to the version if needed
+   - In `build.gradle`
+- [ ] Had installed and ran the pre-commit hook
+
+## Remaining TODOs for this PR
+- [ ] Item1
+- [ ] Item2
