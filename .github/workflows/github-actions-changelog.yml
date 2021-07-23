@@ -1,4 +1,4 @@
-name: "Pull Request Workflow"
+name: "Enforcing changelog in PRs Workflow"
 on:
   pull_request:
       types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
