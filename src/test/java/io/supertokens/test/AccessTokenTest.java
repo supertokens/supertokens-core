@@ -41,6 +41,10 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.*;
 
@@ -259,6 +263,7 @@ public class AccessTokenTest {
 
         try {
             AccessToken.getInfoFromAccessToken(process.getProcess(), tokenInfo.token, true);
+            fail();
         } catch (TryRefreshTokenException ex) {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.RETRYING_ACCESS_TOKEN_JWT_VERIFICATION));
             process.kill();
@@ -314,4 +319,47 @@ public class AccessTokenTest {
         fail();
     }
 
+    // See https://github.com/supertokens/supertokens-core/issues/282
+    @Test
+    public void keyChangeThreadSafetyTest()
+            throws IOException, InterruptedException,
+            InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException,
+            InvalidKeySpecException, SignatureException {
+        Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 second
+
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.start(args);
+        EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
+        assertNotNull(e);
+        JsonObject jsonObj = new JsonObject();
+        jsonObj.addProperty("key", "value");
+
+        TokenInfo tokenInfo = AccessToken.createNewAccessToken(process.getProcess(), "sessionHandle", "userId",
+                "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken", System.currentTimeMillis(),
+                null);
+
+        Thread.sleep(1500);
+
+        ExecutorService es = Executors.newCachedThreadPool();
+
+        AtomicBoolean hasNullPointerException = new AtomicBoolean(false);
+
+        for (int i = 0; i < 2000; i++) {
+            es.execute(() -> {
+                try {
+                    AccessToken.getInfoFromAccessToken(process.getProcess(), tokenInfo.token, true);
+                } catch (NullPointerException ex) {
+                    hasNullPointerException.set(true);
+                } catch (Exception ignored) {
+                }
+            });
+        }
+
+        es.shutdown();
+        es.awaitTermination(2, TimeUnit.MINUTES);
+
+        assert (!hasNullPointerException.get());
+
+        process.kill();
+    }
 }
