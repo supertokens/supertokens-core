@@ -173,7 +173,8 @@ public class HandshakeAPITest2_7 {
         assertEquals(response.entrySet().size(), 6);
 
         assertEquals(response.get("jwtSigningPublicKey").getAsString(),
-                AccessTokenSigningKey.getInstance(process.getProcess()).getKey().publicKey);
+                new io.supertokens.utils.Utils.PubPriKey(
+                        AccessTokenSigningKey.getInstance(process.main).getKey().value).publicKey);
 
         Thread.sleep(4000);
 
@@ -187,7 +188,8 @@ public class HandshakeAPITest2_7 {
         //check that changed response has the same signing key as the current signing key and it is different from
         // the previous signing key
         assertTrue(changedResponse.get("jwtSigningPublicKey").getAsString()
-                .equals(AccessTokenSigningKey.getInstance(process.getProcess()).getKey().publicKey) &&
+                .equals(new io.supertokens.utils.Utils.PubPriKey(
+                        AccessTokenSigningKey.getInstance(process.main).getKey().value).publicKey) &&
                 !(changedResponse.get("jwtSigningPublicKey").getAsString()
                         .equals(response.get("jwtSigningPublicKey").getAsString())));
 
@@ -204,7 +206,8 @@ public class HandshakeAPITest2_7 {
 
         //check jwtSigningPublicKey
         assertEquals(response.get("jwtSigningPublicKey").getAsString(),
-                AccessTokenSigningKey.getInstance(process.getProcess()).getKey().publicKey);
+                new io.supertokens.utils.Utils.PubPriKey(
+                        AccessTokenSigningKey.getInstance(process.main).getKey().value).publicKey);
 
         //check jwtSigningPublicKeyExpiryTime
         assertEquals(response.get("jwtSigningPublicKeyExpiryTime").getAsLong(),

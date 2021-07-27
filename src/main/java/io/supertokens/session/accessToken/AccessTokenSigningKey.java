@@ -68,11 +68,20 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         return (AccessTokenSigningKey) main.getResourceDistributor().getResource(RESOURCE_KEY);
     }
 
-    void removeKeyFromMemory() {
-        this.keyInfo = null;
+    synchronized void removeKeyFromMemoryIfItHasNotChanged(KeyInfo oldKeyInfo) {
+        // we cannot use read write locks for keyInfo because in getKey, we would
+        // have to upgrade from the readLock to a
+        // writeLock - which is not possible:
+        // https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/locks/ReentrantReadWriteLock.html
+        if (this.keyInfo == oldKeyInfo) {
+            // key has not changed since we previously tried to use it.. So we can make it null.
+            // otherwise we might end up making this null unnecessarily.
+            this.keyInfo = null;
+        }
     }
 
-    public Utils.PubPriKey getKey() throws StorageQueryException, StorageTransactionLogicException {
+    public synchronized AccessTokenSigningKey.KeyInfo getKey()
+            throws StorageQueryException, StorageTransactionLogicException {
         if (this.keyInfo == null) {
             this.keyInfo = maybeGenerateNewKeyAndUpdateInDb();
         }
@@ -83,10 +92,10 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
             // key has expired, we need to change it.
             this.keyInfo = maybeGenerateNewKeyAndUpdateInDb();
         }
-        return new Utils.PubPriKey(this.keyInfo.value);
+        return this.keyInfo;
     }
 
-    public long getKeyExpiryTime() throws StorageQueryException, StorageTransactionLogicException {
+    public synchronized long getKeyExpiryTime() throws StorageQueryException, StorageTransactionLogicException {
         this.getKey();
         long createdAtTime = this.keyInfo.createdAtTime;
         return createdAtTime + Config.getConfig(main).getAccessTokenSigningKeyUpdateInterval();
@@ -180,9 +189,9 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         throw new QuitProgramException("Unsupported storage type detected");
     }
 
-    private static class KeyInfo {
-        String value;
-        long createdAtTime;
+    public static class KeyInfo {
+        public String value;
+        public long createdAtTime;
 
         KeyInfo(String value, long createdAtTime) {
             this.value = value;
