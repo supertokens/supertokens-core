@@ -344,7 +344,7 @@ public class AccessTokenTest {
 
         AtomicBoolean hasNullPointerException = new AtomicBoolean(false);
 
-        for (int i = 0; i < 2000; i++) {
+        for (int i = 0; i < 4000; i++) {
             es.execute(() -> {
                 try {
                     AccessToken.getInfoFromAccessToken(process.getProcess(), tokenInfo.token, true);
@@ -354,6 +354,8 @@ public class AccessTokenTest {
                 }
             });
         }
+
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.SETTING_ACCESS_TOKEN_SIGNING_KEY_TO_NULL));
 
         es.shutdown();
         es.awaitTermination(2, TimeUnit.MINUTES);

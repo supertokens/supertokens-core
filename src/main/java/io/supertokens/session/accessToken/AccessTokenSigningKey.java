@@ -17,6 +17,7 @@
 package io.supertokens.session.accessToken;
 
 import io.supertokens.Main;
+import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
@@ -76,6 +77,9 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         if (this.keyInfo == oldKeyInfo) {
             // key has not changed since we previously tried to use it.. So we can make it null.
             // otherwise we might end up making this null unnecessarily.
+
+            ProcessState.getInstance(this.main)
+                    .addState(ProcessState.PROCESS_STATE.SETTING_ACCESS_TOKEN_SIGNING_KEY_TO_NULL, null);
             this.keyInfo = null;
         }
     }
