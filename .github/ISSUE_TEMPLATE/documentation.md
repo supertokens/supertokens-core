@@ -6,5 +6,5 @@ labels: 'documentation'
 
 ## 📚 Documentation
 
-(A clear and concise description of what the issue is.)
+Please open an issue https://github.com/supertokens/docs/issues instead.
 

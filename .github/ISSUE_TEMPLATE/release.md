@@ -22,6 +22,7 @@ labels:
     - [ ] Various browsers - Safari, Firefox, Chrome, Edge
     - [ ] Mobile responsiveness
     - [ ] Make sure using with-typescript example that types are correct for every new configs exposed to users
+    - [ ] Make sure frontend login UI shows even if backend is not working.
 
 ### Others
 
