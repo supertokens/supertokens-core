@@ -18,7 +18,6 @@ package io.supertokens.thirdparty;
 
 import io.supertokens.Main;
 import io.supertokens.authRecipe.UserPaginationToken;
-import io.supertokens.exceptions.InvalidInputException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
@@ -160,11 +159,7 @@ public class ThirdParty {
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
 
-    public static UserInfo[] getUsersByEmail(Main main, @Nonnull String email) throws StorageQueryException, InvalidInputException {
-        if (email.equals("")) {
-            throw new InvalidInputException("email cannot be empty");
-        }
-
+    public static UserInfo[] getUsersByEmail(Main main, @Nonnull String email) throws StorageQueryException {
         return StorageLayer.getThirdPartyStorage(main).getThirdPartyUsersByEmail(email);
     }
 
