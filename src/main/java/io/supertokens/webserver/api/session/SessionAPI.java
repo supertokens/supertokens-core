@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.info.SessionInformationHolder;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -75,7 +76,8 @@ public class SessionAPI extends WebserverAPI {
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
 
             result.addProperty("status", "OK");
-            result.addProperty("jwtSigningPublicKey", AccessTokenSigningKey.getInstance(main).getKey().publicKey);
+            result.addProperty("jwtSigningPublicKey",
+                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
                     AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
             super.sendJsonResponse(200, result, resp);

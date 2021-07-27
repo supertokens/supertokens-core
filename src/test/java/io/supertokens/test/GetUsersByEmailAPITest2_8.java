@@ -28,7 +28,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -55,7 +56,9 @@ public class GetUsersByEmailAPITest2_8 {
 
             // given
             {
-                JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "mockThirdPartyUserId");
+                JsonObject signUpResponse = Utils
+                        .signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty",
+                                "mockThirdPartyUserId");
                 assertEquals(signUpResponse.get("status").getAsString(), "OK");
 
                 JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
@@ -63,7 +66,9 @@ public class GetUsersByEmailAPITest2_8 {
                 assertNotNull(signUpUser.get("id"));
             }
             {
-                JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty2", "mockThirdParty2UserId");
+                JsonObject signUpResponse = Utils
+                        .signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty2",
+                                "mockThirdParty2UserId");
                 assertEquals(signUpResponse.get("status").getAsString(), "OK");
 
                 JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
@@ -84,10 +89,12 @@ public class GetUsersByEmailAPITest2_8 {
             // then
             JsonArray jsonUsers = response.get("users").getAsJsonArray();
 
-            jsonUsers.forEach(jsonUser -> assertEquals("john.doe@example.com", jsonUser.getAsJsonObject().get("email").getAsString()));
+            jsonUsers.forEach(jsonUser -> assertEquals("john.doe@example.com",
+                    jsonUser.getAsJsonObject().get("email").getAsString()));
 
             // Expect returned users to have different ids
-            assertNotEquals(jsonUsers.get(0).getAsJsonObject().get("id").getAsString(), jsonUsers.get(1).getAsJsonObject().get("id").getAsString());
+            assertNotEquals(jsonUsers.get(0).getAsJsonObject().get("id").getAsString(),
+                    jsonUsers.get(1).getAsJsonObject().get("id").getAsString());
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, jsonUsers.size());
@@ -103,7 +110,8 @@ public class GetUsersByEmailAPITest2_8 {
 
             // given
             {
-                JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "johnDoeId");
+                JsonObject signUpResponse = Utils
+                        .signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "johnDoeId");
                 assertEquals(signUpResponse.get("status").getAsString(), "OK");
 
                 JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
@@ -111,7 +119,8 @@ public class GetUsersByEmailAPITest2_8 {
                 assertNotNull(signUpUser.get("id"));
             }
             {
-                JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "karl.doe@example.com", true, "mockThirdParty", "karlDoeId");
+                JsonObject signUpResponse = Utils
+                        .signInUpRequest_2_7(process, "karl.doe@example.com", true, "mockThirdParty", "karlDoeId");
                 assertEquals(signUpResponse.get("status").getAsString(), "OK");
 
                 JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
@@ -149,7 +158,8 @@ public class GetUsersByEmailAPITest2_8 {
 
             // given
             {
-                JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "johnDoeId");
+                JsonObject signUpResponse = Utils
+                        .signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "johnDoeId");
                 assertEquals(signUpResponse.get("status").getAsString(), "OK");
 
                 JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
@@ -192,25 +202,14 @@ public class GetUsersByEmailAPITest2_8 {
                 // then
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Field name 'email' is missing in GET request", e.getMessage());
-            }
-
-            // when
-            try {
-                Map<String, String> invalidQuery = new HashMap<>();
-
-                invalidQuery.put("email", "");
-
-                testBadInput(process, invalidQuery);
-                // then
-            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: email is invalid", e.getMessage());
+                assertEquals("Http error. Status Code: 400. Message: Field name 'email' is missing in GET request",
+                        e.getMessage());
             }
         });
     }
 
-    private void testBadInput(TestingProcessManager.TestingProcess process, Map<String, String> query) throws Exception {
+    private void testBadInput(TestingProcessManager.TestingProcess process, Map<String, String> query)
+            throws Exception {
         io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/users/by-email", query, 1000,

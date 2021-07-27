@@ -18,7 +18,6 @@ package io.supertokens.thirdparty;
 
 import io.supertokens.Main;
 import io.supertokens.authRecipe.UserPaginationToken;
-import io.supertokens.exceptions.InvalidInputException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
@@ -26,13 +25,10 @@ import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUs
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.utils.EmailValidator;
 import io.supertokens.utils.Utils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.annotation.RegEx;
-import java.util.regex.Pattern;
 
 public class ThirdParty {
 
@@ -163,11 +159,7 @@ public class ThirdParty {
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
 
-    public static UserInfo[] getUsersByEmail(Main main, @Nonnull String email) throws StorageQueryException, InvalidInputException {
-        if (!EmailValidator.isValid(email)) {
-            throw new InvalidInputException("email is invalid");
-        }
-
+    public static UserInfo[] getUsersByEmail(Main main, @Nonnull String email) throws StorageQueryException {
         return StorageLayer.getThirdPartyStorage(main).getThirdPartyUsersByEmail(email);
     }
 
