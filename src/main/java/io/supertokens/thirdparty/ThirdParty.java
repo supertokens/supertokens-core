@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 
+import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 public class ThirdParty {
@@ -156,6 +157,10 @@ public class ThirdParty {
         UserInfo[] resultUsers = new UserInfo[maxLoop];
         System.arraycopy(users, 0, resultUsers, 0, maxLoop);
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
+    }
+
+    public static UserInfo[] getUsersByEmail(Main main, @Nonnull String email) throws StorageQueryException {
+        return StorageLayer.getThirdPartyStorage(main).getThirdPartyUsersByEmail(email);
     }
 
     @Deprecated

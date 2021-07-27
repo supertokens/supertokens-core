@@ -27,10 +27,8 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import org.jetbrains.annotations.NotNull;
 
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import javax.annotation.Nonnull;
+import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -189,16 +187,8 @@ public class ThirdPartyQueries {
         try (Connection con = ConnectionPool.getConnection(start);
              PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setInt(1, limit);
-            ResultSet result = pst.executeQuery();
-            List<UserInfo> temp = new ArrayList<>();
-            while (result.next()) {
-                temp.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
-            }
-            UserInfo[] finalResult = new UserInfo[temp.size()];
-            for (int i = 0; i < temp.size(); i++) {
-                finalResult[i] = temp.get(i);
-            }
-            return finalResult;
+
+            return resultToArray(pst.executeQuery());
         }
     }
 
@@ -220,17 +210,33 @@ public class ThirdPartyQueries {
             pst.setLong(2, timeJoined);
             pst.setString(3, userId);
             pst.setInt(4, limit);
-            ResultSet result = pst.executeQuery();
-            List<UserInfo> temp = new ArrayList<>();
-            while (result.next()) {
-                temp.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
-            }
-            UserInfo[] finalResult = new UserInfo[temp.size()];
-            for (int i = 0; i < temp.size(); i++) {
-                finalResult[i] = temp.get(i);
-            }
-            return finalResult;
+
+            return resultToArray(pst.executeQuery());
         }
+    }
+
+    public static UserInfo[] getThirdPartyUsersByEmail(Start start, @Nonnull String email)
+        throws SQLException, StorageQueryException {
+
+        String sqlQuery = "SELECT user_id, third_party_id, third_party_user_id, email, time_joined FROM " +
+                Config.getConfig(start).getThirdPartyUsersTable() +
+                " WHERE email = ?";
+
+        try (Connection conn = ConnectionPool.getConnection(start); PreparedStatement statement = conn.prepareStatement(sqlQuery)) {
+            statement.setString(1, email);
+
+            return resultToArray(statement.executeQuery());
+        }
+    }
+
+    public static UserInfo[] resultToArray(ResultSet result) throws SQLException, StorageQueryException {
+        List<UserInfo> users = new ArrayList<>();
+
+        while (result.next()) {
+            users.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+        }
+
+        return users.toArray(UserInfo[]::new);
     }
 
     @Deprecated

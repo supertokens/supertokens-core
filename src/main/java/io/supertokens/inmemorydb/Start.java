@@ -742,6 +742,16 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
+    public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsersByEmail(@NotNull String email)
+            throws StorageQueryException {
+        try {
+            return ThirdPartyQueries.getThirdPartyUsersByEmail(this, email);
+        } catch(SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     @Deprecated
     public long getThirdPartyUsersCount() throws StorageQueryException {
         try {
