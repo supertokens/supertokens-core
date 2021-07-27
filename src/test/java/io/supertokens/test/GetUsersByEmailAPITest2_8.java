@@ -205,7 +205,7 @@ public class GetUsersByEmailAPITest2_8 {
                 // then
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: email is invalid", e.getMessage());
+                assertEquals("Http error. Status Code: 400. Message: email cannot be empty", e.getMessage());
             }
         });
     }

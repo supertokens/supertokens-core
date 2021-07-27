@@ -26,13 +26,10 @@ import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUs
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.utils.EmailValidator;
 import io.supertokens.utils.Utils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.annotation.RegEx;
-import java.util.regex.Pattern;
 
 public class ThirdParty {
 
@@ -164,8 +161,8 @@ public class ThirdParty {
     }
 
     public static UserInfo[] getUsersByEmail(Main main, @Nonnull String email) throws StorageQueryException, InvalidInputException {
-        if (!EmailValidator.isValid(email)) {
-            throw new InvalidInputException("email is invalid");
+        if (email.equals("")) {
+            throw new InvalidInputException("email cannot be empty");
         }
 
         return StorageLayer.getThirdPartyStorage(main).getThirdPartyUsersByEmail(email);
