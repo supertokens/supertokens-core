@@ -23,6 +23,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
 
 import javax.servlet.ServletException;
@@ -47,7 +48,8 @@ public class HandshakeAPI extends WebserverAPI {
         try {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            result.addProperty("jwtSigningPublicKey", AccessTokenSigningKey.getInstance(main).getKey().publicKey);
+            result.addProperty("jwtSigningPublicKey",
+                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
                     AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
             result.addProperty("accessTokenBlacklistingEnabled", Config.getConfig(main).getAccessTokenBlacklisting());

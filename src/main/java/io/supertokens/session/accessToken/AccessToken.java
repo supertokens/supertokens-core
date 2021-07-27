@@ -46,7 +46,8 @@ public class AccessToken {
                                                           boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException {
 
-        Utils.PubPriKey signingKey = AccessTokenSigningKey.getInstance(main).getKey();
+        AccessTokenSigningKey.KeyInfo keyInfo = AccessTokenSigningKey.getInstance(main).getKey();
+        Utils.PubPriKey signingKey = new Utils.PubPriKey(keyInfo.value);
         try {
             final JWT.JWTInfo jwtInfo;
             try {
@@ -56,7 +57,7 @@ public class AccessToken {
                     ProcessState.getInstance(main).addState(PROCESS_STATE.RETRYING_ACCESS_TOKEN_JWT_VERIFICATION, e);
 
                     // remove key from memory and retry
-                    AccessTokenSigningKey.getInstance(main).removeKeyFromMemory();
+                    AccessTokenSigningKey.getInstance(main).removeKeyFromMemoryIfItHasNotChanged(keyInfo);
                     return AccessToken.getInfoFromAccessToken(main, token, false, doAntiCsrfCheck);
                 } else {
                     throw e;
@@ -108,7 +109,7 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
 
-        Utils.PubPriKey signingKey = AccessTokenSigningKey.getInstance(main).getKey();
+        Utils.PubPriKey signingKey = new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getKey().value);
         long now = System.currentTimeMillis();
         if (expiryTime == null) {
             expiryTime = now + Config.getConfig(main).getAccessTokenValidity();
@@ -127,7 +128,7 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
 
-        Utils.PubPriKey signingKey = AccessTokenSigningKey.getInstance(main).getKey();
+        Utils.PubPriKey signingKey = new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getKey().value);
         long now = System.currentTimeMillis();
         AccessTokenInfo accessToken;
 
