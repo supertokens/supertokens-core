@@ -11,6 +11,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds new API to get session data, and deprecates older one to get session and JWT payload separately: 
 https://github.com/supertokens/supertokens-core/issues/255
 
+## [3.4.2] - 2021-06-27
+### Fixes
+- `NullPointerException` that is thrown in `AccessTokenSigningKey.java` class when the `keyInfo` object is accessed
+ in parallel after the signing key has expired: https://github.com/supertokens/supertokens-core/issues/282
+
 ## [3.4.1] - 2021-06-18
 ### Added
 - `test_mode` to the options for running the core so that it can be run in test mode whilst being tested by the
