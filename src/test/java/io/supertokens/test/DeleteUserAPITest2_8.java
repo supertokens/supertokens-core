@@ -48,7 +48,7 @@ public class DeleteUserAPITest2_8 {
     }
 
     @Test
-    public void returnErrorWhenUserIdDoesntExist() throws Exception {
+    public void testReturnErrorWhenUserIdDoesntExist() throws Exception {
         TestingProcessManager.withProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
@@ -68,7 +68,7 @@ public class DeleteUserAPITest2_8 {
     }
 
     @Test
-    public void removeUsersSession() throws Exception {
+    public void testRemoveUsersSession() throws Exception {
         TestingProcessManager.withProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
@@ -114,6 +114,41 @@ public class DeleteUserAPITest2_8 {
             // then
             assertNotEquals("OK", verificationStatus);
         });
+    }
+
+    @Test
+    public void testRemoveEmailValidationTokens() {
+        // todo
+        // given
+        //  there's a user registered
+        //  and they have email validation token
+        // when
+        //  the user is deleted
+        // then
+        //  there should be no email validation tokens for that user
+    }
+
+    @Test
+    public void testRemovePasswordResetTokens() {
+        // todo
+        // given
+        //  there's a user registered
+        //  and they have password reset token
+        // when
+        //  the user is deleted
+        // then
+        //  there should be no password reset tokens for that user
+    }
+
+    @Test
+    public void testNotReturnRecipeUser() {
+        // todo
+        // given
+        //  there's a user registered with emailpassword/thirdparty recipes
+        // when
+        //  the user is deleted
+        // then
+        //  GET on recipe users shouldn't return that user
     }
 
     private JsonObject deleteUser(TestingProcessManager.TestingProcess process, String userId) throws IOException,
