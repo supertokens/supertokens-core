@@ -20,9 +20,9 @@ import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.users.DeleteUserResult;
 import io.supertokens.storageLayer.StorageLayer;
 
-import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
 /*This files contains functions that are common for all auth recipes*/
@@ -57,7 +57,7 @@ public class AuthRecipe {
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
 
-    public static boolean deleteUser(Main main, String userId) throws StorageQueryException {
+    public static DeleteUserResult deleteUser(Main main, String userId) throws StorageQueryException {
         return StorageLayer.getAuthRecipeStorage(main).deleteUser(userId);
     }
 }

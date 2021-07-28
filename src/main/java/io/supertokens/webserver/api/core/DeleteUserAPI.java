@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.users.DeleteUserResult;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -27,6 +28,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Optional;
 
 public class DeleteUserAPI extends WebserverAPI {
     public DeleteUserAPI(Main main) {
@@ -35,25 +37,38 @@ public class DeleteUserAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/users/delete";
+        return "/users/remove";
     }
 
     @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject body = InputParser.parseJsonObjectOrThrowError(req);
-        String userId = InputParser.parseStringOrThrowError(body, "userId", false);
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject reqBody = InputParser.parseJsonObjectOrThrowError(req);
+        String userId = InputParser.parseStringOrThrowError(reqBody, "userId", false);
 
         try {
-            AuthRecipe.deleteUser(main, userId);
+            DeleteUserResult result = AuthRecipe.deleteUser(main, userId);
 
-            JsonObject result = new JsonObject();
+            JsonObject respBody = getResponseBody(result);
 
-            result.addProperty("status", 200);
-            result.addProperty("userId", userId);
-
-            super.sendJsonResponse(200, result, resp);
+            super.sendJsonResponse(200, respBody, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
+    }
+
+    private JsonObject getResponseBody(DeleteUserResult result) {
+        JsonObject body = new JsonObject();
+
+        if (result.isSuccess) {
+            body.addProperty("status", "OK");
+        }
+
+        body.addProperty("status", "NOT_OK");
+
+        if (result.reason == DeleteUserResult.FailureReason.UNKNOWN_USER_ID) {
+            body.addProperty("status", "UNKNOWN_USER_ID_ERROR");
+        }
+
+        return body;
     }
 }

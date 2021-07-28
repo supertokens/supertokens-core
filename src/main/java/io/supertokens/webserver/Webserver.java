@@ -166,6 +166,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new SignInUpAPI(main));
         addAPI(new TelemetryAPI(main));
         addAPI(new UsersCountAPI(main));
+        addAPI(new DeleteUserAPI(main));
         addAPI(new UsersAPI(main));
 
         // deprecated APIs:

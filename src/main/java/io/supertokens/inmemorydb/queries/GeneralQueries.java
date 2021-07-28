@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.users.DeleteUserResult;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
@@ -372,8 +373,8 @@ public class GeneralQueries {
         return finalResult;
     }
 
-    public static boolean deleteUser(Start start, @Nonnull String userId) {
-        return false;
+    public static DeleteUserResult deleteUser(Start start, @Nonnull String userId) {
+        return DeleteUserResult.success();
     }
 
     private static List<? extends AuthRecipeUserInfo> getUserInfoForRecipeIdFromUserIds(Start start, RECIPE_ID recipeId,
