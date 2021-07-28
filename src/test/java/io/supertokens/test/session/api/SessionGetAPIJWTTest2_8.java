@@ -133,10 +133,10 @@ public class SessionGetAPIJWTTest2_8 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        SessionClient client = new SessionClient(process, Utils.getCdiVersion2_8ForTests());
+
         // Create session
-        JsonObject session = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                        sessionBody, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(), "session");
+        JsonObject session = client.createSession(sessionBody);
 
         assertEquals(session.get("status").getAsString(), "OK");
 
