@@ -159,7 +159,7 @@ public class DeleteUserAPITest2_8 {
         return io.supertokens.test.httpRequest.HttpRequest.sendJsonPOSTRequest(
                 process.getProcess(),
                 "",
-                "http://localhost:3567/users/remove",
+                "http://localhost:3567/user/remove",
                 requestBody,
                 1000,
                 1000,

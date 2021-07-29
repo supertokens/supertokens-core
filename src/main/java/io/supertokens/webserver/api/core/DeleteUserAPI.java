@@ -28,7 +28,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Optional;
 
 public class DeleteUserAPI extends WebserverAPI {
     public DeleteUserAPI(Main main) {
@@ -37,7 +36,7 @@ public class DeleteUserAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/users/remove";
+        return "/user/remove";
     }
 
     @Override
