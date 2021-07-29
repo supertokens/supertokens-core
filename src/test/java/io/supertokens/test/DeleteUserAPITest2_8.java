@@ -68,13 +68,20 @@ public class DeleteUserAPITest2_8 {
     }
 
     @Test
-    public void testRemoveUsersSession() throws Exception {
+    public void testFailSessionRefreshForDeletedUser() throws Exception {
         TestingProcessManager.withProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
+        });
+    }
 
+    @Test
+    public void testFailSessionVerification() throws Exception {
+        TestingProcessManager.withProcess(process -> {
             // given
+            Utils.setValueInConfig("access_token_blacklisting", "true");
+
             JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "john.doe@example.com", "password");
             JsonObject user = signUpResponse.getAsJsonObject("user");
             String userId = user.get("id").getAsString();
