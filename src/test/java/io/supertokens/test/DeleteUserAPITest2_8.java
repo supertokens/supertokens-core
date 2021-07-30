@@ -16,12 +16,21 @@
 
 package io.supertokens.test;
 
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
+import io.supertokens.emailverification.EmailVerification;
+import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
+import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.session.Session;
+import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpResponseException;
-import io.supertokens.test.session.api.SessionClient;
+import io.supertokens.thirdparty.ThirdParty;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -31,7 +40,6 @@ import org.junit.rules.TestRule;
 import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 
 public class DeleteUserAPITest2_8 {
     @Rule
@@ -67,95 +75,131 @@ public class DeleteUserAPITest2_8 {
         });
     }
 
-    @Test
+    @Test(expected = UnauthorisedException.class)
     public void testFailSessionRefreshForDeletedUser() throws Exception {
         TestingProcessManager.withProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
-        });
-    }
 
-    @Test
-    public void testFailSessionVerification() throws Exception {
-        TestingProcessManager.withProcess(process -> {
             // given
-            Utils.setValueInConfig("access_token_blacklisting", "true");
+            UserInfo user = EmailPassword.signUp(process.getProcess(), "john.doe@example.com", "password");
 
-            JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "john.doe@example.com", "password");
-            JsonObject user = signUpResponse.getAsJsonObject("user");
-            String userId = user.get("id").getAsString();
+            SessionInformationHolder sessionWrapper = Session.createNewSession(process.getProcess(), user.id, new JsonObject(), new JsonObject());
+            assert sessionWrapper.refreshToken != null;
 
-            SessionClient sessionClient = new SessionClient(process, Utils.getCdiVersion2_8ForTests());
-
-            // session is created
-            JsonObject createSessionBody = new JsonObject();
-            createSessionBody.addProperty("userId", userId);
-            createSessionBody.addProperty("enableAntiCsrf", false);
-            createSessionBody.add("userDataInJWT", new JsonObject());
-            createSessionBody.add("userDataInDatabase", new JsonObject());
-
-            JsonObject session = sessionClient.createSession(createSessionBody);
-            String accessToken = session
-                    .getAsJsonObject("accessToken")
-                    .get("token")
-                    .getAsString();
-
-            // session is valid
-            JsonObject verifySessionBody = new JsonObject();
-            verifySessionBody.addProperty("accessToken", accessToken);
-            verifySessionBody.addProperty("enableAntiCsrf", false);
-            verifySessionBody.addProperty("doAntiCsrfCheck", false);
-
-            JsonObject verification = sessionClient.verifySession(verifySessionBody);
-            String verificationStatus = verification.get("status").getAsString();
-
-            assertEquals("OK", verificationStatus);
+            AuthRecipe.deleteUser(process.getProcess(), user.id);
 
             // when
-            deleteUser(process, "testUserId");
+            Session.refreshSession(process.getProcess(), sessionWrapper.refreshToken.token, null, false);
 
-            verification = sessionClient.verifySession(verifySessionBody);
-            verificationStatus = verification.get("status").getAsString();
+            // then should throw
+        });
+    }
 
-            // then
-            assertNotEquals("OK", verificationStatus);
+    @Test(expected = UnauthorisedException.class)
+    public void testFailSessionVerification() throws Exception {
+        Utils.setValueInConfig("access_token_blacklisting", "true");
+
+        TestingProcessManager.withProcess(process -> {
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            // given
+            UserInfo user = EmailPassword.signUp(process.getProcess(), "john.doe@example.com", "password");
+
+            SessionInformationHolder sessionWrapper = Session.createNewSession(process.getProcess(), user.id, new JsonObject(), new JsonObject());
+
+            // when
+            AuthRecipe.deleteUser(process.getProcess(), user.id);
+
+            Session.getSession(process.getProcess(), sessionWrapper.session.handle);
+
+            // then should throw
+        });
+    }
+
+    @Test(expected = EmailVerificationInvalidTokenException.class)
+    public void testRemoveEmailValidationTokens() throws Exception {
+        TestingProcessManager.withProcess(process -> {
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            // given
+            UserInfo user = EmailPassword.signUp(process.getProcess(), "john.doe@example.com", "password");
+
+            String token = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
+            AuthRecipe.deleteUser(process.getProcess(), user.id);
+
+            // when
+            EmailVerification.verifyEmail(process.getProcess(), token);
+
+            // then should throw
+        });
+    }
+
+    @Test(expected = ResetPasswordInvalidTokenException.class)
+    public void testRemovePasswordResetTokens() throws Exception {
+        TestingProcessManager.withProcess(process -> {
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            // given
+            UserInfo user = EmailPassword.signUp(process.getProcess(), "john.doe@example.com", "password");
+
+            String token = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
+            AuthRecipe.deleteUser(process.getProcess(), user.id);
+
+            // when
+            EmailPassword.resetPassword(process.getProcess(), token, "newpassword");
+
+            // then should throw
         });
     }
 
     @Test
-    public void testRemoveEmailValidationTokens() {
-        // todo
-        // given
-        //  there's a user registered
-        //  and they have email validation token
-        // when
-        //  the user is deleted
-        // then
-        //  there should be no email validation tokens for that user
-    }
+    public void testNotReturnRecipeUser() throws Exception {
+        TestingProcessManager.withProcess(process -> {
+            {
+                // given
+                UserInfo user = EmailPassword.signUp(process.getProcess(), "john.doe@example.com", "password");
 
-    @Test
-    public void testRemovePasswordResetTokens() {
-        // todo
-        // given
-        //  there's a user registered
-        //  and they have password reset token
-        // when
-        //  the user is deleted
-        // then
-        //  there should be no password reset tokens for that user
-    }
+                long usersCount = AuthRecipe.getUsersCount(process.getProcess(),
+                        new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD});
 
-    @Test
-    public void testNotReturnRecipeUser() {
-        // todo
-        // given
-        //  there's a user registered with emailpassword/thirdparty recipes
-        // when
-        //  the user is deleted
-        // then
-        //  GET on recipe users shouldn't return that user
+                assertEquals(1, usersCount);
+
+                // when
+                AuthRecipe.deleteUser(process.getProcess(), user.id);
+
+                // then
+                usersCount = AuthRecipe.getUsersCount(process.getProcess(),
+                        new RECIPE_ID[]{RECIPE_ID.EMAIL_PASSWORD});
+
+                assertEquals(0, usersCount);
+            }
+            {
+                // given
+                ThirdParty.SignInUpResponse response = ThirdParty.signInUp(process.getProcess(), "mockThirdPartyId", "johnDoeId", "john.doe@example.com", true);
+
+                long usersCount = AuthRecipe.getUsersCount(process.getProcess(),
+                        new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY});
+
+                assertEquals(1, usersCount);
+
+                // when
+                AuthRecipe.deleteUser(process.getProcess(), response.user.id);
+
+                // then
+                usersCount = AuthRecipe.getUsersCount(process.getProcess(),
+                        new RECIPE_ID[]{RECIPE_ID.THIRD_PARTY});
+
+                assertEquals(0, usersCount);
+            }
+        });
     }
 
     private JsonObject deleteUser(TestingProcessManager.TestingProcess process, String userId) throws IOException,
