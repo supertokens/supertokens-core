@@ -68,7 +68,7 @@ public class DeleteUserAPITest2_8 {
 
             } catch (HttpResponseException e) {
                 assertEquals(400, e.statusCode);
-                assertEquals("Http error. Status Code: 400. Message: Field name 'userId' is missing in POST request", e.getMessage());
+                assertEquals("Http error. Status Code: 400. Message: Field name 'userId' is invalid in JSON input", e.getMessage());
             }
         });
     }
