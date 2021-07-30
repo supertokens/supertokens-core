@@ -69,7 +69,7 @@ public class DeleteUserQuery {
 
         try (PreparedStatement pst = conn.prepareStatement(query)) {
             pst.setString(1, userId);
-            pst.executeQuery();
+            pst.executeUpdate();
         }
     }
 
@@ -79,7 +79,7 @@ public class DeleteUserQuery {
         try (PreparedStatement pst = conn.prepareStatement(query)) {
 
             pst.setString(1, userId);
-            pst.executeQuery();
+            pst.executeUpdate();
         }
     }
 
@@ -88,7 +88,7 @@ public class DeleteUserQuery {
 
         try (PreparedStatement pst = conn.prepareStatement(query)) {
             pst.setString(1, userId);
-            pst.executeQuery();
+            pst.executeUpdate();
         }
     }
 
@@ -104,7 +104,7 @@ public class DeleteUserQuery {
     }
 
     private String[] getUserSessionHandles(Connection conn, @Nonnull String userId) throws SQLException {
-        String query = "SELECT user_id FROM " + Config.getConfig(start).getSessionInfoTable() + " WHERE user_id = ?";
+        String query = "SELECT session_handle FROM " + Config.getConfig(start).getSessionInfoTable() + " WHERE user_id = ?";
 
         try (PreparedStatement pst = conn.prepareStatement(query)) {
             pst.setString(1, userId);
@@ -122,8 +122,6 @@ public class DeleteUserQuery {
 
     private void deleteUserSessionHandles(Connection conn, @Nonnull String userId) throws SQLException {
         String[] sessionHandles = getUserSessionHandles(conn, userId);
-
-        System.out.println(String.join(", ", sessionHandles));
 
         StringBuilder queryBuilder = new StringBuilder("DELETE FROM " + Config.getConfig(start).getSessionInfoTable() + " WHERE session_handle IN ");
 
@@ -145,7 +143,7 @@ public class DeleteUserQuery {
                 pst.setString(pstIndex, sessionHandles[i]);
             }
 
-            pst.executeQuery();
+            pst.executeUpdate();
         }
     }
 
@@ -155,7 +153,7 @@ public class DeleteUserQuery {
 
         try (PreparedStatement pst = conn.prepareStatement(query)) {
             pst.setString(1, userId);
-            pst.executeQuery();
+            pst.executeUpdate();
         }
     }
 
@@ -164,7 +162,7 @@ public class DeleteUserQuery {
 
         try (PreparedStatement pst = conn.prepareStatement(query)) {
             pst.setString(1, userId);
-            pst.executeQuery();
+            pst.executeUpdate();
         }
     }
 }
