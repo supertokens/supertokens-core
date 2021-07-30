@@ -340,7 +340,11 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
 
     @Override
     public DeleteUserResult deleteUser(@NotNull String userId) throws StorageQueryException {
-        return GeneralQueries.deleteUser(this, userId);
+        try {
+            return GeneralQueries.deleteUser(this, userId);
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
