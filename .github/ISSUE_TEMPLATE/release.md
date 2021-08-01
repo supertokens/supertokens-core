@@ -48,9 +48,6 @@ labels:
    - [ ] pricing page feature list
    - [ ] comparison chart in the pricing page
 
-- [ ] Checked for broken links
-
-
 ## 🔥 Production 
 
 ### 💻 NPM and core release
