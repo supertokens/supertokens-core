@@ -188,6 +188,17 @@ public class EmailPassword {
         }
     }
 
+    public static String generatePasswordChangeToken(Main main, @Nonnull String userId)
+            throws StorageQueryException, UnknownUserIdException, InvalidKeySpecException, NoSuchAlgorithmException {
+        return generatePasswordResetToken(main, userId);
+    }
+
+    public static void redeemPasswordChangeToken(Main main, @Nonnull String token, @Nonnull String password)
+            throws StorageQueryException, ResetPasswordInvalidTokenException, NoSuchAlgorithmException,
+            StorageTransactionLogicException {
+        resetPassword(main, token, password);
+    }
+
     public static UserInfo getUserUsingId(Main main, String userId) throws StorageQueryException {
         return StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingId(userId);
     }

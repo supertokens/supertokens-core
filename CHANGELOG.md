@@ -14,7 +14,8 @@ https://github.com/supertokens/supertokens-core/issues/255
 ### Added
 - Add `GET /recipe/users/by-email?email=john@example.com` endpoint for ThirdParty recipe to fetch all users with given
  email
-
+- Add dedicated `POST /recipe/user/password/change/token` and `POST /recipe/user/password/change` endpoints allowing to
+ change password
 
 ## [3.4.2] - 2021-06-27
 ### Fixes
