@@ -14,6 +14,7 @@ https://github.com/supertokens/supertokens-core/issues/255
 ### Added
 - Add `GET /recipe/users/by-email?email=john@example.com` endpoint for ThirdParty recipe to fetch all users with given
  email
+- Add delete user API at `POST /user/remove` endpoint
 
 ## [3.4.2] - 2021-06-27
 ### Fixes
