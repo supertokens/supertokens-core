@@ -48,9 +48,6 @@ labels:
    - [ ] pricing page feature list
    - [ ] comparison chart in the pricing page
 
-- [ ] Checked for broken links
-
-
 ## 🔥 Production 
 
 ### 💻 NPM and core release
@@ -69,6 +66,7 @@ labels:
     - [ ] Update SaaS config
     - [ ] Update to tables checked for user count / or to know if a deployment is being used or not
     - [ ] Update logic for exporting csv file for registered users
+    - [ ] Update SaaS instances to use the latest docker images.
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/tree/X.Y)
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
