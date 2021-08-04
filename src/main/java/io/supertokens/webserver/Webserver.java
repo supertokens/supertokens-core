@@ -27,8 +27,7 @@ import io.supertokens.webserver.api.core.UsersAPI;
 import io.supertokens.webserver.api.core.UsersCountAPI;
 import io.supertokens.webserver.api.core.*;
 import io.supertokens.webserver.api.emailpassword.*;
-import io.supertokens.webserver.api.emailverification.GenerateEmailVerificationTokenAPI;
-import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
+import io.supertokens.webserver.api.emailverification.*;
 import io.supertokens.webserver.api.session.*;
 import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
 import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
@@ -167,6 +166,9 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new TelemetryAPI(main));
         addAPI(new UsersCountAPI(main));
         addAPI(new UsersAPI(main));
+        addAPI(new GetUserFromTokenAPI(main));
+        addAPI(new RevokeTokenAPI(main));
+        addAPI(new UnverifyEmailAPI(main));
 
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),

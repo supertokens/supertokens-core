@@ -22,6 +22,7 @@ import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
+import io.supertokens.pluginInterface.emailverification.User;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 
 import java.sql.Connection;
@@ -202,6 +203,46 @@ public class EmailVerificationQueries {
             ResultSet result = pst.executeQuery();
 
             return result.next();
+        }
+    }
+
+    public static User getUserFromToken(Start start, String token) throws SQLException {
+        String QUERY = "SELECT user_id, email FROM " + Config.getConfig(start).getEmailVerificationTokensTable() +
+                " WHERE token = ?";
+
+        try (Connection conn = ConnectionPool.getConnection(start); PreparedStatement pst = conn.prepareStatement(QUERY)) {
+            pst.setString(1, token);
+
+            ResultSet result = pst.executeQuery();
+
+            result.next();
+
+            String userId = result.getString("user_id");
+            String email = result.getString("email");
+
+            return new User(userId, email);
+        }
+    }
+
+    public static void revokeToken(Start start, String token) throws SQLException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getEmailVerificationTokensTable() +
+                " WHERE token = ?";
+
+        try (Connection conn = ConnectionPool.getConnection(start); PreparedStatement pst = conn.prepareStatement(QUERY)) {
+            pst.setString(1, token);
+
+            pst.executeUpdate();
+        }
+    }
+
+    public static void unverifyEmail(Start start, String email) throws SQLException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getEmailVerificationTable() +
+                " WHERE email = ?";
+
+        try (Connection conn = ConnectionPool.getConnection(start); PreparedStatement pst = conn.prepareStatement(QUERY)) {
+            pst.setString(1, email);
+
+            pst.executeUpdate();
         }
     }
 

@@ -19,6 +19,7 @@ package io.supertokens.emailverification;
 import io.supertokens.Main;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
@@ -138,5 +139,19 @@ public class EmailVerification {
 
     public static boolean isEmailVerified(Main main, String userId, String email) throws StorageQueryException {
         return StorageLayer.getEmailVerificationStorage(main).isEmailVerified(userId, email);
+    }
+
+    public static User getUserFromToken(Main main, String token) throws StorageQueryException {
+        io.supertokens.pluginInterface.emailverification.User user = StorageLayer.getEmailVerificationStorage(main).getUserFromToken(token);
+
+        return new User(user.userId, user.email);
+    }
+
+    public static void revokeToken(Main main, String token) throws StorageQueryException {
+        StorageLayer.getEmailVerificationStorage(main).revokeToken(token);
+    }
+
+    public static void unverifyEmail(Main main, String email) throws StorageQueryException {
+        StorageLayer.getEmailVerificationStorage(main).unverifyEmail(email);
     }
 }
