@@ -169,6 +169,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new GetUserFromTokenAPI(main));
         addAPI(new RevokeTokenAPI(main));
         addAPI(new UnverifyEmailAPI(main));
+        addAPI(new GetTokensForUserAPI(main));
 
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),

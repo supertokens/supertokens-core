@@ -154,4 +154,8 @@ public class EmailVerification {
     public static void unverifyEmail(Main main, String email) throws StorageQueryException {
         StorageLayer.getEmailVerificationStorage(main).unverifyEmail(email);
     }
+
+    public static EmailVerificationTokenInfo[] getTokensForUser(Main main, String userId, String email) throws StorageQueryException {
+        return StorageLayer.getEmailVerificationStorage(main).getAllEmailVerificationTokenInfoForUser(userId, email);
+    }
 }
