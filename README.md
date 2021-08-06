@@ -128,7 +128,8 @@ If you think this is a project you could use in the future, please :star2: this 
 <td align="center"><a href="https://github.com/seniorquico"><img src="https://avatars.githubusercontent.com/u/415806?v=4" width="100px;" alt=""/><br /><sub><b>Kyle Dodson</b></sub></a></td>
   </tr>
   <tr>
-<td align="center"><a href="https://github.com/taijuten"><img src="https://avatars.githubusercontent.com/u/4288526?v=4" width="100px;" alt=""/><br /><sub><b>Ralph Lawrence</b></sub></a></td> 
+<td align="center"><a href="https://github.com/taijuten"><img src="https://avatars.githubusercontent.com/u/4288526?v=4" width="100px;" alt=""/><br /><sub><b>Ralph Lawrence</b></sub></a></td>
+<td align="center"><a href="https://github.com/christopher-kapic"><img src="https://avatars.githubusercontent.com/u/59740769?v=4" width="100px;" alt=""/><br /><sub><b>Christopher Kapic</b></sub></a></td>
   </tr> 
 </table>
 
