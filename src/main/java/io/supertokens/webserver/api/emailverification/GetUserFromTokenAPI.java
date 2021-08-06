@@ -50,11 +50,20 @@ public class GetUserFromTokenAPI extends WebserverAPI {
 
         try {
             Optional<User> maybeUser = EmailVerification.getUserFromToken(main, token);
-
             JsonObject result = new JsonObject();
+
+            if (maybeUser.isEmpty()) {
+                result.addProperty("status", "EMAIL_VERIFICATION_INVALID_TOKEN_ERROR");
+
+                super.sendJsonResponse(200, result, resp);
+
+                return;
+            }
+
+            JsonObject user = new JsonParser().parse(new Gson().toJson(maybeUser.get())).getAsJsonObject();
+
             result.addProperty("status", "OK");
-            JsonObject userJson = maybeUser.map(user -> new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject()).orElse(null);
-            result.add("user", userJson);
+            result.add("user", user);
 
             super.sendJsonResponse(200, result, resp);
         } catch(StorageQueryException | NoSuchAlgorithmException e) {

@@ -18,6 +18,7 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpResponseException;
@@ -89,6 +90,6 @@ public class RevokeTokenAPITest2_8 {
     private JsonObject makeRequest(Main main, JsonObject body) throws IOException, HttpResponseException {
         return io.supertokens.test.httpRequest.HttpRequest.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/recipe/user/email/revoke/token", body, 1000, 1000, null,
-                Utils.getCdiVersion2_8ForTests(), "thirdparty");
+                Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 }
