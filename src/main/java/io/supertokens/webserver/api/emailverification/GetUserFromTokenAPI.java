@@ -31,6 +31,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Optional;
 
 public class GetUserFromTokenAPI extends WebserverAPI {
     public GetUserFromTokenAPI(Main main) {
@@ -47,15 +49,15 @@ public class GetUserFromTokenAPI extends WebserverAPI {
         String token = InputParser.getQueryParamOrThrowError(req, "token", false);
 
         try {
-            User user = EmailVerification.getUserFromToken(main, token);
+            Optional<User> maybeUser = EmailVerification.getUserFromToken(main, token);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
+            JsonObject userJson = maybeUser.map(user -> new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject()).orElse(null);
             result.add("user", userJson);
 
             super.sendJsonResponse(200, result, resp);
-        } catch(StorageQueryException e) {
+        } catch(StorageQueryException | NoSuchAlgorithmException e) {
             throw new ServletException(e);
         }
     }

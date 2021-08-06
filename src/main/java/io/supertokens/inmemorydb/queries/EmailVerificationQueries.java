@@ -31,6 +31,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 public class EmailVerificationQueries {
 
@@ -206,7 +207,7 @@ public class EmailVerificationQueries {
         }
     }
 
-    public static User getUserFromToken(Start start, String token) throws SQLException {
+    public static Optional<User> getUserFromToken(Start start, String token) throws SQLException {
         String QUERY = "SELECT user_id, email FROM " + Config.getConfig(start).getEmailVerificationTokensTable() +
                 " WHERE token = ?";
 
@@ -215,12 +216,14 @@ public class EmailVerificationQueries {
 
             ResultSet result = pst.executeQuery();
 
-            result.next();
+            if (!result.next()) {
+                return Optional.empty();
+            }
 
             String userId = result.getString("user_id");
             String email = result.getString("email");
 
-            return new User(userId, email);
+            return Optional.of(new User(userId, email));
         }
     }
 

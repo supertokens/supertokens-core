@@ -51,6 +51,7 @@ import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransactionRollbackException;
+import java.util.Optional;
 
 public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage,
         ThirdPartySQLStorage {
@@ -617,7 +618,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public User getUserFromToken(String token) throws StorageQueryException {
+    public Optional<User> getUserFromToken(String token) throws StorageQueryException {
         try {
             return EmailVerificationQueries.getUserFromToken(this, token);
         } catch (SQLException e) {

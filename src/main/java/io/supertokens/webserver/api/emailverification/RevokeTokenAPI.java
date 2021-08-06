@@ -28,6 +28,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
 
 public class RevokeTokenAPI extends WebserverAPI {
     public RevokeTokenAPI(Main main) {
@@ -51,7 +52,7 @@ public class RevokeTokenAPI extends WebserverAPI {
             response.addProperty("status", "OK");
 
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | NoSuchAlgorithmException e) {
             throw new ServletException(e);
         }
     }
