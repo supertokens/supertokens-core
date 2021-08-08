@@ -22,6 +22,8 @@ https://github.com/supertokens/supertokens-core/issues/255
  verification token
 - Add for EmailVerification `POST /recipe/user/email/unverify` to unverify an email
 - Add for EmailVerification `POST /recipe/user/email/revoke/token` to revoke an issued email verification token
+- Add for EmailVerification `GET /recipe/user/email/tokens?userId=abcd&email=abcd` to get all the existing email
+ verification tokens for given uer
 
 ## [3.4.2] - 2021-06-27
 ### Fixes
