@@ -47,35 +47,67 @@ public class SignInUpAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String thirdPartyId = InputParser.parseStringOrThrowError(input, "thirdPartyId", false);
-        String thirdPartyUserId = InputParser.parseStringOrThrowError(input, "thirdPartyUserId", false);
-        JsonObject emailObject = InputParser.parseJsonObjectOrThrowError(input, "email", false);
-        String email = InputParser.parseStringOrThrowError(emailObject, "id", false);
-        Boolean isEmailVerified = InputParser.parseBooleanOrThrowError(emailObject, "isVerified", false);
+        if (super.getVersionFromRequest(req).equals("2.7")) {
+            JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+            String thirdPartyId = InputParser.parseStringOrThrowError(input, "thirdPartyId", false);
+            String thirdPartyUserId = InputParser.parseStringOrThrowError(input, "thirdPartyUserId", false);
+            JsonObject emailObject = InputParser.parseJsonObjectOrThrowError(input, "email", false);
+            String email = InputParser.parseStringOrThrowError(emailObject, "id", false);
+            Boolean isEmailVerified = InputParser.parseBooleanOrThrowError(emailObject, "isVerified", false);
 
-        assert thirdPartyId != null;
-        assert thirdPartyUserId != null;
-        assert email != null;
-        assert isEmailVerified != null;
+            assert thirdPartyId != null;
+            assert thirdPartyUserId != null;
+            assert email != null;
+            assert isEmailVerified != null;
 
-        // logic according to https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
+            // logic according to https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
 
-        String normalisedEmail = Utils.normaliseEmail(email);
+            String normalisedEmail = Utils.normaliseEmail(email);
 
-        try {
-            ThirdParty.SignInUpResponse response = ThirdParty
-                    .signInUp(super.main, thirdPartyId, thirdPartyUserId, normalisedEmail, isEmailVerified);
+            try {
+                ThirdParty.SignInUpResponse response = ThirdParty
+                        .signInUp2_7(super.main, thirdPartyId, thirdPartyUserId, normalisedEmail, isEmailVerified);
 
-            JsonObject result = new JsonObject();
-            result.addProperty("status", "OK");
-            result.addProperty("createdNewUser", response.createdNewUser);
-            JsonObject userJson = new JsonParser().parse(new Gson().toJson(response.user)).getAsJsonObject();
-            result.add("user", userJson);
-            super.sendJsonResponse(200, result, resp);
+                JsonObject result = new JsonObject();
+                result.addProperty("status", "OK");
+                result.addProperty("createdNewUser", response.createdNewUser);
+                JsonObject userJson = new JsonParser().parse(new Gson().toJson(response.user)).getAsJsonObject();
+                result.add("user", userJson);
+                super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException e) {
-            throw new ServletException(e);
+            } catch (StorageQueryException e) {
+                throw new ServletException(e);
+            }
+        } else {
+            JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+            String thirdPartyId = InputParser.parseStringOrThrowError(input, "thirdPartyId", false);
+            String thirdPartyUserId = InputParser.parseStringOrThrowError(input, "thirdPartyUserId", false);
+            JsonObject emailObject = InputParser.parseJsonObjectOrThrowError(input, "email", false);
+            String email = InputParser.parseStringOrThrowError(emailObject, "id", false);
+
+            assert thirdPartyId != null;
+            assert thirdPartyUserId != null;
+            assert email != null;
+
+            // logic according to https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
+            // and modifed according to https://github.com/supertokens/supertokens-core/issues/295
+
+            String normalisedEmail = Utils.normaliseEmail(email);
+
+            try {
+                ThirdParty.SignInUpResponse response = ThirdParty
+                        .signInUp(super.main, thirdPartyId, thirdPartyUserId, normalisedEmail);
+
+                JsonObject result = new JsonObject();
+                result.addProperty("status", "OK");
+                result.addProperty("createdNewUser", response.createdNewUser);
+                JsonObject userJson = new JsonParser().parse(new Gson().toJson(response.user)).getAsJsonObject();
+                result.add("user", userJson);
+                super.sendJsonResponse(200, result, resp);
+
+            } catch (StorageQueryException e) {
+                throw new ServletException(e);
+            }
         }
 
     }

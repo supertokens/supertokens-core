@@ -97,7 +97,7 @@ public class AuthRecipeTest {
         String thirdPartyUserId_1 = "thirdPartyUserIdA";
         String email_1 = "testA@example.com";
 
-        ThirdParty.signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId_1, email_1, false);
+        ThirdParty.signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId_1, email_1);
 
         {
             long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[]{});
@@ -254,7 +254,7 @@ public class AuthRecipeTest {
         String email_1 = "testA@example.com";
 
         io.supertokens.pluginInterface.thirdparty.UserInfo user5 = ThirdParty
-                .signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId_1, email_1, false).user;
+                .signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId_1, email_1).user;
 
         {
             UserPaginationContainer users = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null,
@@ -553,7 +553,7 @@ public class AuthRecipeTest {
                 String email = "test" + count.getAndIncrement() + "@example.com";
 
                 return ThirdParty
-                        .signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId, email, false).user;
+                        .signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId, email).user;
             } catch (Exception ignored) {
             }
             return null;

@@ -42,8 +42,12 @@ public class ThirdParty {
         }
     }
 
-    public static SignInUpResponse signInUp(Main main, String thirdPartyId, String thirdPartyUserId, String email,
-                                            boolean isEmailVerified)
+    // we have two signInUp APIs since in version 2.7, we used to also verify the email
+    // as seen below. But then, in newer versions, we stopped doing that cause of
+    // https://github.com/supertokens/supertokens-core/issues/295, so we changed the API spec.
+    @Deprecated
+    public static SignInUpResponse signInUp2_7(Main main, String thirdPartyId, String thirdPartyUserId, String email,
+                                               boolean isEmailVerified)
             throws StorageQueryException {
         SignInUpResponse response = signInUpHelper(main, thirdPartyId, thirdPartyUserId, email);
 
@@ -62,6 +66,11 @@ public class ThirdParty {
         }
 
         return response;
+    }
+
+    public static SignInUpResponse signInUp(Main main, String thirdPartyId, String thirdPartyUserId, String email)
+            throws StorageQueryException {
+        return signInUpHelper(main, thirdPartyId, thirdPartyUserId, email);
     }
 
     private static SignInUpResponse signInUpHelper(Main main, String thirdPartyId, String thirdPartyUserId,
