@@ -34,7 +34,7 @@ import org.junit.rules.TestRule;
 import static org.junit.Assert.*;
 
 
-public class ThirdPartyTest {
+public class ThirdPartyTest2_7 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -68,13 +68,13 @@ public class ThirdPartyTest {
         String thirdPartyUserId = "thirdPartyUserId";
         String email = "test@example.com";
 
-        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
-                thirdPartyUserId, email);
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp2_7(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, false);
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email, true);
 
-        ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
-                thirdPartyUserId, email);
+        ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp2_7(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, false);
         checkSignInUpResponse(signInResponse, thirdPartyUserId, thirdPartyId, email, false);
 
         assertEquals(1, StorageLayer.getThirdPartyStorage(process.getProcess()).getThirdPartyUsersCount());
@@ -100,8 +100,8 @@ public class ThirdPartyTest {
         String thirdPartyUserId = "thirdPartyUserId";
         String email = "test@example.com";
 
-        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
-                thirdPartyUserId, email);
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp2_7(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, false);
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email, true);
 
@@ -128,10 +128,12 @@ public class ThirdPartyTest {
         String thirdPartyUserId = "thirdPartyUserId";
         String email = "test@example.com";
 
-        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
-                thirdPartyUserId, email);
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp2_7(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, true);
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email, true);
+        assertTrue(EmailVerification
+                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.email));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -154,18 +156,21 @@ public class ThirdPartyTest {
         String thirdPartyUserId = "thirdPartyUserId";
         String email = "test@example.com";
 
-        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
-                thirdPartyUserId, email);
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp2_7(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, false);
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email, true);
 
         assertFalse(EmailVerification
                 .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.email));
 
-        ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
-                thirdPartyUserId, email);
+        ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp2_7(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, true);
         checkSignInUpResponse(signInResponse, thirdPartyUserId, thirdPartyId,
                 email, false);
+
+        assertTrue(EmailVerification
+                .isEmailVerified(process.getProcess(), signInResponse.user.id, signInResponse.user.email));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -190,13 +195,16 @@ public class ThirdPartyTest {
         String email_1 = "testA@example.com";
         String email_2 = "testB@example.com";
 
-        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
-                thirdPartyUserId, email_1);
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp2_7(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email_1, true);
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email_1, true);
 
-        ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
-                thirdPartyUserId, email_2);
+        assertTrue(EmailVerification
+                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.email));
+
+        ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp2_7(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email_2, false);
         checkSignInUpResponse(signInResponse, thirdPartyUserId, thirdPartyId,
                 email_2, false);
 
@@ -229,14 +237,14 @@ public class ThirdPartyTest {
         String email_1 = "testA@example.com";
         String email_2 = "testB@example.com";
 
-        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
-                thirdPartyUserId_1, email_1);
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp2_7(process.getProcess(), thirdPartyId,
+                thirdPartyUserId_1, email_1, false);
 
         checkSignInUpResponse(signUpResponse, thirdPartyUserId_1, thirdPartyId,
                 email_1, true);
 
         ThirdParty.SignInUpResponse signInUpResponse_2 = ThirdParty
-                .signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId_2, email_2);
+                .signInUp2_7(process.getProcess(), thirdPartyId, thirdPartyUserId_2, email_2, false);
 
         checkSignInUpResponse(signInUpResponse_2, thirdPartyUserId_2, thirdPartyId,
                 email_2, true);
@@ -265,14 +273,14 @@ public class ThirdPartyTest {
         String thirdPartyUserId_2 = "thirdPartyUserIdB";
         String email = "test@example.com";
 
-        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
-                thirdPartyUserId_1, email);
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp2_7(process.getProcess(), thirdPartyId,
+                thirdPartyUserId_1, email, false);
 
         checkSignInUpResponse(signUpResponse, thirdPartyUserId_1, thirdPartyId,
                 email, true);
 
         ThirdParty.SignInUpResponse signInUpResponse_2 = ThirdParty
-                .signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId_2, email);
+                .signInUp2_7(process.getProcess(), thirdPartyId, thirdPartyUserId_2, email, false);
 
         checkSignInUpResponse(signInUpResponse_2, thirdPartyUserId_2, thirdPartyId,
                 email, true);
@@ -300,8 +308,8 @@ public class ThirdPartyTest {
         String thirdPartyUserId = "thirdPartyUserId";
         String email = "test@example.com";
 
-        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
-                thirdPartyUserId, email);
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp2_7(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, false);
 
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email, true);
@@ -334,8 +342,8 @@ public class ThirdPartyTest {
         String thirdPartyUserId = "thirdPartyUserId";
         String email = "test@example.com";
 
-        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
-                thirdPartyUserId, email);
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp2_7(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, false);
 
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email, true);
@@ -368,16 +376,21 @@ public class ThirdPartyTest {
         String thirdPartyUserId = "thirdPartyUserId";
         String email = "test@example.com";
 
-        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
-                thirdPartyUserId, email);
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp2_7(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, true);
 
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email, true);
+        assertTrue(EmailVerification
+                .isEmailVerified(process.getProcess(), signUpResponse.user.id, signUpResponse.user.email));
 
-        ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
-                thirdPartyUserId, email);
+        ThirdParty.SignInUpResponse signInResponse = ThirdParty.signInUp2_7(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, false);
 
         checkSignInUpResponse(signInResponse, thirdPartyUserId, thirdPartyId, email, false);
+        assertTrue(EmailVerification
+                .isEmailVerified(process.getProcess(), signInResponse.user.id, signInResponse.user.email));
+
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -400,8 +413,8 @@ public class ThirdPartyTest {
         String thirdPartyUserId = "thirdPartyUserId";
         String email = "test@example.com";
 
-        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
-                thirdPartyUserId, email);
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp2_7(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email, false);
 
         checkSignInUpResponse(signUpResponse, thirdPartyUserId, thirdPartyId,
                 email, true);
@@ -440,20 +453,20 @@ public class ThirdPartyTest {
         }
 
         // added Thread.sleep(100) as sometimes tests would fail due to inconsistent signup order
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId", "test@example.com");
+        ThirdParty.signInUp2_7(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId", "test@example.com", false);
         Thread.sleep(100);
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId1", "test1@example.com");
+        ThirdParty.signInUp2_7(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId1", "test1@example.com", false);
         Thread.sleep(100);
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId2", "test2@example.com");
+        ThirdParty.signInUp2_7(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId2", "test2@example.com", false);
         Thread.sleep(100);
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId3", "test3@example.com");
+        ThirdParty.signInUp2_7(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId3", "test3@example.com", false);
         Thread.sleep(100);
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId4", "test4@example.com");
+        ThirdParty.signInUp2_7(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId4", "test4@example.com", false);
         Thread.sleep(100);
 
         {
@@ -505,16 +518,16 @@ public class ThirdPartyTest {
 
         assert (ThirdParty.getUsersCount(process.getProcess()) == 0);
 
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId", "test@example.com");
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId1", "test1@example.com");
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId2", "test2@example.com");
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId3", "test3@example.com");
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId4", "test4@example.com");
+        ThirdParty.signInUp2_7(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId", "test@example.com", false);
+        ThirdParty.signInUp2_7(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId1", "test1@example.com", false);
+        ThirdParty.signInUp2_7(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId2", "test2@example.com", false);
+        ThirdParty.signInUp2_7(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId3", "test3@example.com", false);
+        ThirdParty.signInUp2_7(process.getProcess(), "thirdPartyId",
+                "thirdPartyUserId4", "test4@example.com", false);
 
         assert (ThirdParty.getUsersCount(process.getProcess()) == 5);
         process.kill();

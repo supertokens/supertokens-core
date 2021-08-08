@@ -103,7 +103,7 @@ public class AuthRecipeAPITest2_8 {
         String thirdPartyUserId_1 = "thirdPartyUserIdA";
         String email_1 = "testA@example.com";
 
-        ThirdParty.signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId_1, email_1, false);
+        ThirdParty.signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId_1, email_1);
 
         {
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest
@@ -268,13 +268,13 @@ public class AuthRecipeAPITest2_8 {
 
         // added Thread.sleep(100) as sometimes tests would fail due to inconsistent signup order
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId", "test@example.com", false);
+                "thirdPartyUserId", "test@example.com");
         Thread.sleep(100);
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId1", "test1@example.com", false);
+                "thirdPartyUserId1", "test1@example.com");
         Thread.sleep(100);
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId2", "test2@example.com", false);
+                "thirdPartyUserId2", "test2@example.com");
         Thread.sleep(100);
         EmailPassword.signUp(process.getProcess(), "test3@example.com", "password123$");
         Thread.sleep(100);

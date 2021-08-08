@@ -139,19 +139,19 @@ public class ThirdPartyUsersAPITest2_7 {
 
         // added Thread.sleep(100) as sometimes tests would fail due to inconsistent signup order
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId", "test@example.com", false);
+                "thirdPartyUserId", "test@example.com");
         Thread.sleep(100);
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId1", "test1@example.com", false);
+                "thirdPartyUserId1", "test1@example.com");
         Thread.sleep(100);
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId2", "test2@example.com", false);
+                "thirdPartyUserId2", "test2@example.com");
         Thread.sleep(100);
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId3", "test3@example.com", false);
+                "thirdPartyUserId3", "test3@example.com");
         Thread.sleep(100);
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId4", "test4@example.com", false);
+                "thirdPartyUserId4", "test4@example.com");
         Thread.sleep(100);
 
 

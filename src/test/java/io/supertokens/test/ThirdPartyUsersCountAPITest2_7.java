@@ -74,15 +74,15 @@ public class ThirdPartyUsersCountAPITest2_7 {
         }
 
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId", "test@example.com", false);
+                "thirdPartyUserId", "test@example.com");
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId1", "test1@example.com", false);
+                "thirdPartyUserId1", "test1@example.com");
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId2", "test2@example.com", false);
+                "thirdPartyUserId2", "test2@example.com");
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId3", "test3@example.com", false);
+                "thirdPartyUserId3", "test3@example.com");
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId4", "test4@example.com", false);
+                "thirdPartyUserId4", "test4@example.com");
 
         {
             JsonObject response = io.supertokens.test.httpRequest.HttpRequest

@@ -142,7 +142,7 @@ public class ThirdPartyGetUserAPITest2_7 {
         String thirdPartyUserId = "testThirdPartyUserID";
 
         ThirdParty.SignInUpResponse signUpResponse = ThirdParty
-                .signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId, email, false);
+                .signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId, email);
 
         // query with userId
         {

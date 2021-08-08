@@ -10,6 +10,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Adds new count and pagination APIs: https://github.com/supertokens/supertokens-core/issues/259
 - Adds new API to get session data, and deprecates older one to get session and JWT payload separately: 
 https://github.com/supertokens/supertokens-core/issues/255
+- Removed `isVerified` boolean from thirdparty sign in up API as per CDI spec 2.8, and hence does not do email
+ verification in this API either. Also related to https://github.com/supertokens/supertokens-core/issues/295
 
 ### Added
 - Add `GET /recipe/users/by-email?email=john@example.com` endpoint for ThirdParty recipe to fetch all users with given

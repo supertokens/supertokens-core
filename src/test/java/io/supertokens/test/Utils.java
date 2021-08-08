@@ -200,4 +200,23 @@ public abstract class Utils extends Mockito {
                         null, getCdiVersion2_7ForTests(), "thirdparty");
     }
 
+    public static JsonObject signInUpRequest_2_8(TestingProcessManager.TestingProcess process, String email,
+                                                 String thirdPartyId, String thirdPartyUserId)
+            throws IOException, HttpResponseException {
+
+        JsonObject emailObject = new JsonObject();
+        emailObject.addProperty("id", email);
+
+        JsonObject signUpRequestBody = new JsonObject();
+        signUpRequestBody.addProperty("thirdPartyId", thirdPartyId);
+        signUpRequestBody.addProperty("thirdPartyUserId", thirdPartyUserId);
+        signUpRequestBody.add("email", emailObject);
+
+        return io.supertokens.test.httpRequest.HttpRequest
+                .sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000,
+                        1000,
+                        null, getCdiVersion2_8ForTests(), "thirdparty");
+    }
+
 }
