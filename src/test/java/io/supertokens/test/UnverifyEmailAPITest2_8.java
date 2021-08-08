@@ -48,7 +48,7 @@ public class UnverifyEmailAPITest2_8 {
         TestingProcessManager.withProcess(process -> {
             Main main = process.getProcess();
 
-            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
 
@@ -71,7 +71,7 @@ public class UnverifyEmailAPITest2_8 {
         TestingProcessManager.withProcess(process -> {
             Main main = process.getProcess();
 
-            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
                 return;
             }
 
@@ -95,6 +95,6 @@ public class UnverifyEmailAPITest2_8 {
     private JsonObject unverifyEmail(Main main, JsonObject body) throws IOException, HttpResponseException {
         return HttpRequest.sendJsonPOSTRequest(main, "", "http://localhost:3567/recipe/user/email/unverify", body,
                         1000,
-                        1000, null, Utils.getCdiVersionLatestForTests(), RECIPE_ID.EMAIL_VERIFICATION.toString());
+                        1000, null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 }
