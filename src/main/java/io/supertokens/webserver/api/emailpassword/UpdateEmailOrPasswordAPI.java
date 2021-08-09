@@ -20,8 +20,8 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -29,38 +29,38 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 
-public class GeneratePasswordChangeTokenAPI extends WebserverAPI {
-    public GeneratePasswordChangeTokenAPI(Main main) {
+public class UpdateEmailOrPasswordAPI extends WebserverAPI {
+    public UpdateEmailOrPasswordAPI(Main main) {
         super(main, RECIPE_ID.EMAIL_PASSWORD.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/user/password/change/token";
+        return "/recipe/user/credentials";
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject body = InputParser.parseJsonObjectOrThrowError(req);
-        String userId = InputParser.parseStringOrThrowError(body, "userId", false);
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        String userId = InputParser.parseStringOrThrowError(input, "method", false);
+        String email = InputParser.parseStringOrThrowError(input, "email", true);
+        String password = InputParser.parseStringOrThrowError(input, "password", true);
 
         assert userId != null;
 
+        if (email == null && password == null) {
+            throw new ServletException(new BadRequestException("You have to provide either email or password."));
+        }
+
         try {
-            String token = EmailPassword.generatePasswordChangeToken(super.main, userId);
+            EmailPassword.updateUsersEmailOrPassword(main, userId, email, password);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
-            result.addProperty("token", token);
             super.sendJsonResponse(200, result, resp);
-        } catch (UnknownUserIdException e) {
-            JsonObject result = new JsonObject();
-            result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
-            super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeySpecException e) {
+
+        } catch (StorageQueryException | StorageTransactionLogicException e) {
             throw new ServletException(e);
         }
     }

@@ -497,6 +497,18 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
+    public void updateUsersEmail_Transaction(TransactionConnection conn, String userId, String email)
+            throws StorageQueryException {
+        Connection sqlConn = (Connection) conn.getConnection();
+
+        try {
+            EmailPasswordQueries.updateUsersEmail_Transaction(this, sqlConn, userId, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public UserInfo getUserInfoUsingId_Transaction(TransactionConnection con, String userId)
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();

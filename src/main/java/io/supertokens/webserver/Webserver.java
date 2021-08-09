@@ -167,8 +167,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new TelemetryAPI(main));
         addAPI(new UsersCountAPI(main));
         addAPI(new UsersAPI(main));
-        addAPI(new GeneratePasswordChangeTokenAPI(main));
-        addAPI(new ChangePasswordAPI(main));
+        addAPI(new UpdateEmailOrPasswordAPI(main));
 
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),

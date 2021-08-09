@@ -188,15 +188,25 @@ public class EmailPassword {
         }
     }
 
-    public static String generatePasswordChangeToken(Main main, @Nonnull String userId)
-            throws StorageQueryException, UnknownUserIdException, InvalidKeySpecException, NoSuchAlgorithmException {
-        return generatePasswordResetToken(main, userId);
-    }
+    public static void updateUsersEmailOrPassword(Main main, @Nonnull String userId, @Nullable String email, @Nullable String password)
+            throws StorageQueryException, StorageTransactionLogicException {
+        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
 
-    public static void redeemPasswordChangeToken(Main main, @Nonnull String token, @Nonnull String password)
-            throws StorageQueryException, ResetPasswordInvalidTokenException, NoSuchAlgorithmException,
-            StorageTransactionLogicException {
-        resetPassword(main, token, password);
+        storage.startTransaction(transaction -> {
+            if (email != null) {
+                storage.updateUsersEmail_Transaction(transaction, userId, email);
+            }
+
+            if (password != null) {
+                String hashedPassword = UpdatableBCrypt.hash(password);
+
+                storage.updateUsersPassword_Transaction(transaction, userId, hashedPassword);
+            }
+
+            storage.commitTransaction(transaction);
+
+            return null;
+        });
     }
 
     public static UserInfo getUserUsingId(Main main, String userId) throws StorageQueryException {
