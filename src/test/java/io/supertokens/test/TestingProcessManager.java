@@ -20,12 +20,8 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.storageLayer.StorageLayer;
 
 import java.util.ArrayList;
-import java.util.function.Consumer;
-import java.util.function.Predicate;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -102,7 +98,7 @@ public class TestingProcessManager {
 
         final Object waitToStart = new Object();
         private final String[] args;
-        Main main;
+        public Main main;
         boolean waitToStartNotified = false;
         private boolean killed = false;
 
@@ -110,7 +106,7 @@ public class TestingProcessManager {
             this.args = args;
         }
 
-        void startProcess() {
+        public void startProcess() {
             synchronized (waitToStart) {
                 waitToStartNotified = true;
                 waitToStart.notify();
