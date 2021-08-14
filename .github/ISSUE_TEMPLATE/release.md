@@ -90,3 +90,5 @@ labels:
 
 - [ ] Pushed to production
 - [ ] Post message on discord about new update
+- [ ] Updated swaggerhub FDI spec
+- [ ] Updated swaggerhub CDI spec
