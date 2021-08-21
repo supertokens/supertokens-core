@@ -20,11 +20,15 @@ import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import org.junit.*;
 import org.junit.rules.TestRule;
+
+import static org.junit.Assert.fail;
 
 public class UpdateUsersEmailAndPasswordTest {
     @Rule
@@ -38,6 +42,23 @@ public class UpdateUsersEmailAndPasswordTest {
     @Before
     public void beforeEach() {
         Utils.reset();
+    }
+
+    @Test
+    public void testUpdateInfoWithoutUser() throws Exception {
+        TestingProcessManager.withProcess(process -> {
+            Main main = process.getProcess();
+
+            if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            try {
+                EmailPassword.updateUsersEmailOrPassword(main, "someUserId", "dave.doe@example.com", null);
+                fail();
+            } catch (UnknownUserIdException ignored) {
+            }
+        });
     }
 
     @Test
@@ -61,6 +82,29 @@ public class UpdateUsersEmailAndPasswordTest {
 
             Assert.assertEquals(userInfo.id, changedEmailUserInfo.id);
             Assert.assertEquals("dave.doe@example.com", changedEmailUserInfo.email);
+        });
+    }
+
+    @Test
+    public void testUpdateEmailToAnotherThatAlreadyExists() throws Exception {
+        TestingProcessManager.withProcess(process -> {
+            Main main = process.getProcess();
+
+            if (StorageLayer.getStorage(main).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            // given
+            UserInfo userInfo = EmailPassword.signUp(main, "john.doe@example.com", "password");
+            UserInfo userInfo2 = EmailPassword.signUp(main, "john.doe1@example.com", "password");
+
+            // when
+            try {
+                EmailPassword.updateUsersEmailOrPassword(main, userInfo.id, userInfo2.email, null);
+                Assert.fail();
+            } catch (DuplicateEmailException ignored) {
+            }
+
         });
     }
 

@@ -498,12 +498,17 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
 
     @Override
     public void updateUsersEmail_Transaction(TransactionConnection conn, String userId, String email)
-            throws StorageQueryException {
+            throws StorageQueryException, DuplicateEmailException {
         Connection sqlConn = (Connection) conn.getConnection();
 
         try {
             EmailPasswordQueries.updateUsersEmail_Transaction(this, sqlConn, userId, email);
         } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getEmailPasswordUsersTable() + ".email)")) {
+                throw new DuplicateEmailException();
+            }
             throw new StorageQueryException(e);
         }
     }
@@ -758,7 +763,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             throws StorageQueryException {
         try {
             return ThirdPartyQueries.getThirdPartyUsersByEmail(this, email);
-        } catch(SQLException e) {
+        } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
