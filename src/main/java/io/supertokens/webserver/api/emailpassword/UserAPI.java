@@ -23,7 +23,10 @@ import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -89,5 +92,38 @@ public class UserAPI extends WebserverAPI {
             throw new ServletException(e);
         }
 
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String email = InputParser.parseStringOrThrowError(input, "email", true);
+        String password = InputParser.parseStringOrThrowError(input, "password", true);
+
+        assert userId != null;
+
+        if (email == null && password == null) {
+            throw new ServletException(new BadRequestException("You have to provide either email or password."));
+        }
+
+        try {
+            EmailPassword.updateUsersEmailOrPassword(main, userId, email, password);
+
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "OK");
+            super.sendJsonResponse(200, result, resp);
+
+        } catch (StorageQueryException | StorageTransactionLogicException e) {
+            throw new ServletException(e);
+        } catch (UnknownUserIdException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
+            super.sendJsonResponse(200, result, resp);
+        } catch (DuplicateEmailException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
+            super.sendJsonResponse(200, result, resp);
+        }
     }
 }

@@ -17,6 +17,7 @@ https://github.com/supertokens/supertokens-core/issues/255
 - Add `GET /recipe/users/by-email?email=john@example.com` endpoint for ThirdParty recipe to fetch all users with given
  email
 - Add new emailverification APIs for remove tokens and unverify email.
+- Add `PUT /recipe/user` for emailpassword recipe to change user's password or email.
 
 ## [3.4.2] - 2021-06-27
 ### Fixes
