@@ -19,6 +19,8 @@ package io.supertokens.test.emailverification;
 import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.User;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import org.junit.AfterClass;
@@ -46,6 +48,11 @@ public class UnverifyEmailTest {
     @Test
     public void testEmailIsUnverified() throws Exception {
         TestingProcessManager.withProcess(process -> {
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
             Main main = process.getProcess();
 
             // given
