@@ -633,6 +633,25 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
+    public void revokeAllTokens(String userId, String email) throws StorageQueryException {
+        try {
+            EmailVerificationQueries.revokeAllTokens(this, userId, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+
+    @Override
+    public void unverifyEmail(String userId, String email) throws StorageQueryException {
+        try {
+            EmailVerificationQueries.unverifyEmail(this, userId, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public void deleteExpiredEmailVerificationTokens() throws StorageQueryException {
         try {
             EmailVerificationQueries.deleteExpiredEmailVerificationTokens(this);

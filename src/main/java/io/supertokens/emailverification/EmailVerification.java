@@ -70,7 +70,7 @@ public class EmailVerification {
             token = token.replace("/", "");
             token = token.replace("+", "");
 
-            String hashedToken = Utils.hashSHA256(token);
+            String hashedToken = getHashedToken(token);
 
             try {
                 StorageLayer.getEmailVerificationStorage(main).addEmailVerificationToken(
@@ -86,7 +86,7 @@ public class EmailVerification {
             throws StorageQueryException, EmailVerificationInvalidTokenException, NoSuchAlgorithmException,
             StorageTransactionLogicException {
 
-        String hashedToken = Utils.hashSHA256(token);
+        String hashedToken = getHashedToken(token);
 
         EmailVerificationSQLStorage storage = StorageLayer.getEmailVerificationStorage(main);
 
@@ -138,5 +138,17 @@ public class EmailVerification {
 
     public static boolean isEmailVerified(Main main, String userId, String email) throws StorageQueryException {
         return StorageLayer.getEmailVerificationStorage(main).isEmailVerified(userId, email);
+    }
+
+    public static void revokeAllTokens(Main main, String userId, String email) throws StorageQueryException {
+        StorageLayer.getEmailVerificationStorage(main).revokeAllTokens(userId, email);
+    }
+
+    public static void unverifyEmail(Main main, String userId, String email) throws StorageQueryException {
+        StorageLayer.getEmailVerificationStorage(main).unverifyEmail(userId, email);
+    }
+
+    private static String getHashedToken(String token) throws NoSuchAlgorithmException {
+        return Utils.hashSHA256(token);
     }
 }

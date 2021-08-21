@@ -205,6 +205,30 @@ public class EmailVerificationQueries {
         }
     }
 
+    public static void unverifyEmail(Start start, String userId, String email) throws SQLException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getEmailVerificationTable() +
+                " WHERE user_id = ? AND email = ?";
+
+        try (Connection conn = ConnectionPool.getConnection(start);
+             PreparedStatement pst = conn.prepareStatement(QUERY)) {
+            pst.setString(1, userId);
+            pst.setString(2, email);
+            pst.executeUpdate();
+        }
+    }
+
+    public static void revokeAllTokens(Start start, String userId, String email) throws SQLException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getEmailVerificationTokensTable() +
+                " WHERE user_id = ? AND email = ?";
+
+        try (Connection conn = ConnectionPool.getConnection(start);
+             PreparedStatement pst = conn.prepareStatement(QUERY)) {
+            pst.setString(1, userId);
+            pst.setString(2, email);
+            pst.executeUpdate();
+        }
+    }
+
     private static class EmailVerificationTokenInfoRowMapper
             implements RowMapper<EmailVerificationTokenInfo, ResultSet> {
         private static final EmailVerificationQueries.EmailVerificationTokenInfoRowMapper INSTANCE =
