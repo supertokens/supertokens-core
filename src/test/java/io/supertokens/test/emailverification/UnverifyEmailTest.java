@@ -21,7 +21,10 @@ import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.User;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static org.junit.Assert.assertFalse;
@@ -48,7 +51,7 @@ public class UnverifyEmailTest {
             // given
             String token = EmailVerification.generateEmailVerificationToken(main, "mockUserId", "john.doe@example.com");
             User user = EmailVerification.verifyEmail(main, token);
-            EmailVerification.unverifyEmail(main, user.email);
+            EmailVerification.unverifyEmail(main, user.id, user.email);
 
             // when
             boolean isEmailVerified = EmailVerification.isEmailVerified(main, user.id, user.email);

@@ -16,20 +16,14 @@
 
 package io.supertokens.test.emailverification;
 
-import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
-import io.supertokens.emailverification.User;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
-import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import org.junit.*;
 import org.junit.rules.TestRule;
-
-import java.util.Optional;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class RevokeTokenTest {
     @Rule
@@ -45,76 +39,43 @@ public class RevokeTokenTest {
         Utils.reset();
     }
 
-    @Test(expected = EmailVerificationInvalidTokenException.class)
+    @Test
     public void testTokenCannotBeUsedToVerifyIfRevoked() throws Exception {
         TestingProcessManager.withProcess(process -> {
 
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
 
-            Main main = process.getProcess();
+            String token = EmailVerification
+                    .generateEmailVerificationToken(process.getProcess(), "mockUserId", "john.doe@example.com");
 
-            // given
-            String token = generateAndRevokeToken(main);
+            String token2 = EmailVerification
+                    .generateEmailVerificationToken(process.getProcess(), "mockUserId", "john.doe@example.com");
 
-            // when
-            EmailVerification.verifyEmail(main, token);
+            EmailVerification.revokeAllTokens(process.getProcess(), "mockUserId", "john.doe@example.com");
 
-            // then should throw
-        });
-    }
+            try {
+                EmailVerification.verifyEmail(process.getProcess(), token);
+                Assert.fail();
+            } catch (EmailVerificationInvalidTokenException ignored) {
+            }
 
-    @Test
-    public void testTokenIsNotReturnedForUserIfRevoked() throws Exception {
-        TestingProcessManager.withProcess(process -> {
-            Main main = process.getProcess();
-
-            // given
-            generateAndRevokeToken(main);
-
-            // when
-            EmailVerificationTokenInfo[] tokenInfos = EmailVerification.getTokensForUser(main, "mockUserId", "john.doe@example.com");
-
-            // then
-            assertEquals(0, tokenInfos.length);
-        });
-    }
-
-    @Test
-    public void testUserIsNotReturnedFromTokenIfRevoked() throws Exception {
-        TestingProcessManager.withProcess(process -> {
-            Main main = process.getProcess();
-
-            // given
-            String token = generateAndRevokeToken(main);
-
-            // when
-            Optional<User> user = EmailVerification.getUserFromToken(main, token);
-
-            // then
-            assertTrue(user.isEmpty());
+            try {
+                EmailVerification.verifyEmail(process.getProcess(), token2);
+                Assert.fail();
+            } catch (EmailVerificationInvalidTokenException ignored) {
+            }
         });
     }
 
     @Test
     public void testRevokingNonExistingTokenShouldPass() throws Exception {
         TestingProcessManager.withProcess(process -> {
-            Main main = process.getProcess();
-
-            // given
-            String token = generateAndRevokeToken(main);
-
-            // when
-            // revoked for a second time
-            EmailVerification.revokeToken(main, token);
-
-            // then shouldn't throw
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+            EmailVerification.revokeAllTokens(process.getProcess(), "mockUserId", "john.doe@example.com");
         });
-    }
-
-    private String generateAndRevokeToken(Main main) throws Exception {
-        String token = EmailVerification.generateEmailVerificationToken(main, "mockUserId", "john.doe@example.com");
-
-        EmailVerification.revokeToken(main, token);
-
-        return token;
     }
 }

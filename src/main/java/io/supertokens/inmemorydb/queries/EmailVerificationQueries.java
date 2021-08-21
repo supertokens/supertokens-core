@@ -22,7 +22,6 @@ import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
-import io.supertokens.pluginInterface.emailverification.User;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 
 import java.sql.Connection;
@@ -31,7 +30,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 public class EmailVerificationQueries {
 
@@ -207,44 +205,26 @@ public class EmailVerificationQueries {
         }
     }
 
-    public static Optional<User> getUserFromToken(Start start, String token) throws SQLException {
-        String QUERY = "SELECT user_id, email FROM " + Config.getConfig(start).getEmailVerificationTokensTable() +
-                " WHERE token = ?";
+    public static void unverifyEmail(Start start, String userId, String email) throws SQLException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getEmailVerificationTable() +
+                " WHERE user_id = ? AND email = ?";
 
-        try (Connection conn = ConnectionPool.getConnection(start); PreparedStatement pst = conn.prepareStatement(QUERY)) {
-            pst.setString(1, token);
-
-            ResultSet result = pst.executeQuery();
-
-            if (!result.next()) {
-                return Optional.empty();
-            }
-
-            String userId = result.getString("user_id");
-            String email = result.getString("email");
-
-            return Optional.of(new User(userId, email));
-        }
-    }
-
-    public static void revokeToken(Start start, String token) throws SQLException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getEmailVerificationTokensTable() +
-                " WHERE token = ?";
-
-        try (Connection conn = ConnectionPool.getConnection(start); PreparedStatement pst = conn.prepareStatement(QUERY)) {
-            pst.setString(1, token);
-
+        try (Connection conn = ConnectionPool.getConnection(start);
+             PreparedStatement pst = conn.prepareStatement(QUERY)) {
+            pst.setString(1, userId);
+            pst.setString(2, email);
             pst.executeUpdate();
         }
     }
 
-    public static void unverifyEmail(Start start, String email) throws SQLException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getEmailVerificationTable() +
-                " WHERE email = ?";
+    public static void revokeAllTokens(Start start, String userId, String email) throws SQLException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getEmailVerificationTokensTable() +
+                " WHERE user_id = ? AND email = ?";
 
-        try (Connection conn = ConnectionPool.getConnection(start); PreparedStatement pst = conn.prepareStatement(QUERY)) {
-            pst.setString(1, email);
-
+        try (Connection conn = ConnectionPool.getConnection(start);
+             PreparedStatement pst = conn.prepareStatement(QUERY)) {
+            pst.setString(1, userId);
+            pst.setString(2, email);
             pst.executeUpdate();
         }
     }

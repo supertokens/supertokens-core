@@ -30,22 +30,25 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
 public class UnverifyEmailAPI extends WebserverAPI {
+    private static final long serialVersionUID = -4077222295241424244L;
+
     public UnverifyEmailAPI(Main main) {
         super(main, RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/user/email/unverify";
+        return "/recipe/user/email/verify/remove";
     }
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
 
         try {
-            EmailVerification.unverifyEmail(main, email);
+            EmailVerification.unverifyEmail(main, userId, email);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

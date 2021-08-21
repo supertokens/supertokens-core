@@ -46,7 +46,7 @@ public class UnverifyEmailAPITest2_8 {
     }
 
     @Test
-    public void testThrowWhenNoEmailInRequest() throws Exception {
+    public void testThrowBadRequestRequest() throws Exception {
         TestingProcessManager.withProcess(process -> {
             Main main = process.getProcess();
 
@@ -55,15 +55,14 @@ public class UnverifyEmailAPITest2_8 {
             }
 
             // given
-            JsonObject bodyWithoutEmail = new JsonObject();
+            JsonObject emptyBody = new JsonObject();
 
             try {
                 // when
-                unverifyEmail(main, bodyWithoutEmail);
+                unverifyEmail(main, emptyBody);
                 // then
-            } catch(HttpResponseException e) {
+            } catch (HttpResponseException e) {
                 Assert.assertEquals(400, e.statusCode);
-                Assert.assertTrue(e.getMessage().contains("email"));
             }
         });
     }
@@ -79,6 +78,7 @@ public class UnverifyEmailAPITest2_8 {
 
             // given
             JsonObject body = new JsonObject();
+            body.addProperty("userId", "mockUserId");
             body.addProperty("email", "john.doe@example.com");
 
             String token = EmailVerification.generateEmailVerificationToken(main, "mockUserId", "john.doe@example.com");
@@ -95,8 +95,8 @@ public class UnverifyEmailAPITest2_8 {
     }
 
     private JsonObject unverifyEmail(Main main, JsonObject body) throws IOException, HttpResponseException {
-        return HttpRequest.sendJsonPOSTRequest(main, "", "http://localhost:3567/recipe/user/email/unverify", body,
-                        1000,
-                        1000, null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_VERIFICATION.toString());
+        return HttpRequest.sendJsonPOSTRequest(main, "", "http://localhost:3567/recipe/user/email/verify/remove", body,
+                1000,
+                1000, null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 }

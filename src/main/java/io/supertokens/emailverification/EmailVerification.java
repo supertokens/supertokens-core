@@ -19,7 +19,6 @@ package io.supertokens.emailverification;
 import io.supertokens.Main;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
-import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
@@ -31,7 +30,6 @@ import io.supertokens.utils.Utils;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Optional;
 
 public class EmailVerification {
 
@@ -142,26 +140,12 @@ public class EmailVerification {
         return StorageLayer.getEmailVerificationStorage(main).isEmailVerified(userId, email);
     }
 
-    public static Optional<User> getUserFromToken(Main main, String token) throws StorageQueryException, NoSuchAlgorithmException {
-        String hashedToken = getHashedToken(token);
-
-        Optional<io.supertokens.pluginInterface.emailverification.User> maybeUser = StorageLayer.getEmailVerificationStorage(main).getUserFromToken(hashedToken);
-
-        return maybeUser.map(user -> new User(user.userId, user.email));
+    public static void revokeAllTokens(Main main, String userId, String email) throws StorageQueryException {
+        StorageLayer.getEmailVerificationStorage(main).revokeAllTokens(userId, email);
     }
 
-    public static void revokeToken(Main main, String token) throws StorageQueryException, NoSuchAlgorithmException {
-        String hashedToken = getHashedToken(token);
-
-        StorageLayer.getEmailVerificationStorage(main).revokeToken(hashedToken);
-    }
-
-    public static void unverifyEmail(Main main, String email) throws StorageQueryException {
-        StorageLayer.getEmailVerificationStorage(main).unverifyEmail(email);
-    }
-
-    public static EmailVerificationTokenInfo[] getTokensForUser(Main main, String userId, String email) throws StorageQueryException {
-        return StorageLayer.getEmailVerificationStorage(main).getAllEmailVerificationTokenInfoForUser(userId, email);
+    public static void unverifyEmail(Main main, String userId, String email) throws StorageQueryException {
+        StorageLayer.getEmailVerificationStorage(main).unverifyEmail(userId, email);
     }
 
     private static String getHashedToken(String token) throws NoSuchAlgorithmException {

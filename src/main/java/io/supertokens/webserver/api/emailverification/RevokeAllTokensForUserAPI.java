@@ -16,14 +16,10 @@
 
 package io.supertokens.webserver.api.emailverification;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -33,28 +29,29 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-public class GetTokensForUserAPI extends WebserverAPI {
-    public GetTokensForUserAPI(Main main) {
+public class RevokeAllTokensForUserAPI extends WebserverAPI {
+    private static final long serialVersionUID = 1501147718432578419L;
+
+    public RevokeAllTokensForUserAPI(Main main) {
         super(main, RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/user/email/tokens";
+        return "/recipe/user/email/verify/token/remove";
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
-        String email = InputParser.getQueryParamOrThrowError(req, "email", false);
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String email = InputParser.parseStringOrThrowError(input, "email", false);
 
         try {
-            EmailVerificationTokenInfo[] tokenInfos = EmailVerification.getTokensForUser(main, userId, email);
+            EmailVerification.revokeAllTokens(main, userId, email);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
-            JsonArray tokenInfosJson = new JsonParser().parse(new Gson().toJson(tokenInfos)).getAsJsonArray();
-            response.add("tokens", tokenInfosJson);
 
             super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException e) {

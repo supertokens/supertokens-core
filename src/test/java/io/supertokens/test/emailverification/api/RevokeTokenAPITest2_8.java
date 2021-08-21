@@ -32,7 +32,6 @@ import org.junit.rules.TestRule;
 
 import java.io.IOException;
 
-import static junit.framework.Assert.assertTrue;
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.fail;
 
@@ -51,7 +50,7 @@ public class RevokeTokenAPITest2_8 {
     }
 
     @Test
-    public void testThrowBadRequestIfTokenMissing() throws Exception {
+    public void testThrowBadRequest() throws Exception {
         TestingProcessManager.withProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
                 return;
@@ -60,12 +59,11 @@ public class RevokeTokenAPITest2_8 {
             Main main = process.getProcess();
 
             try {
-                JsonObject bodyWithoutToken = new JsonObject();
-                makeRequest(main, bodyWithoutToken);
+                JsonObject emptyBody = new JsonObject();
+                makeRequest(main, emptyBody);
                 fail();
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertEquals(e.statusCode, 400);
-                assertTrue(e.getMessage().contains("token"));
             }
         });
     }
@@ -80,7 +78,8 @@ public class RevokeTokenAPITest2_8 {
             }
 
             JsonObject body = new JsonObject();
-            body.addProperty("token", "mock token");
+            body.addProperty("userId", "someUserId");
+            body.addProperty("email", "someEmail@gmail.com");
 
             JsonObject response = makeRequest(main, body);
             String responseStatus = response.get("status").getAsString();
@@ -91,7 +90,7 @@ public class RevokeTokenAPITest2_8 {
 
     private JsonObject makeRequest(Main main, JsonObject body) throws IOException, HttpResponseException {
         return io.supertokens.test.httpRequest.HttpRequest.sendJsonPOSTRequest(main, "",
-                "http://localhost:3567/recipe/user/email/revoke/token", body, 1000, 1000, null,
+                "http://localhost:3567/recipe/user/email/verify/token/remove", body, 1000, 1000, null,
                 Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 }
