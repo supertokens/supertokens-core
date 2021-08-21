@@ -16,16 +16,7 @@ https://github.com/supertokens/supertokens-core/issues/255
 ### Added
 - Add `GET /recipe/users/by-email?email=john@example.com` endpoint for ThirdParty recipe to fetch all users with given
  email
-- Add for EmailVerification `GET /recipe/user/email/tokens?userId=abcd&email=john@example.com` to get all the tokens for
- given
- user id and
- email
-- Add for EmailVerification `GET /recipe/user/email?token=abcd` to get the user id and email associated with
- verification token
-- Add for EmailVerification `POST /recipe/user/email/unverify` to unverify an email
-- Add for EmailVerification `POST /recipe/user/email/revoke/token` to revoke an issued email verification token
-- Add for EmailVerification `GET /recipe/user/email/tokens?userId=abcd&email=abcd` to get all the existing email
- verification tokens for given uer
+- Add new emailverification APIs for remove tokens and unverify email.
 
 ## [3.4.2] - 2021-06-27
 ### Fixes
