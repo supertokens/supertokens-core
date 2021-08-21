@@ -188,6 +188,45 @@ public class EmailPassword {
         }
     }
 
+    public static void updateUsersEmailOrPassword(Main main, @Nonnull String userId, @Nullable String email,
+                                                  @Nullable String password)
+            throws StorageQueryException, StorageTransactionLogicException, UnknownUserIdException,
+            DuplicateEmailException {
+        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
+        try {
+            storage.startTransaction(transaction -> {
+                UserInfo userInfo = storage.getUserInfoUsingId_Transaction(transaction, userId);
+
+                if (userInfo == null) {
+                    throw new StorageTransactionLogicException(new UnknownUserIdException());
+                }
+
+                if (email != null) {
+                    try {
+                        storage.updateUsersEmail_Transaction(transaction, userId, email);
+                    } catch (DuplicateEmailException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                }
+
+                if (password != null) {
+                    String hashedPassword = UpdatableBCrypt.hash(password);
+                    storage.updateUsersPassword_Transaction(transaction, userId, hashedPassword);
+                }
+
+                storage.commitTransaction(transaction);
+                return null;
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof UnknownUserIdException) {
+                throw (UnknownUserIdException) e.actualException;
+            } else if (e.actualException instanceof DuplicateEmailException) {
+                throw (DuplicateEmailException) e.actualException;
+            }
+            throw e;
+        }
+    }
+
     public static UserInfo getUserUsingId(Main main, String userId) throws StorageQueryException {
         return StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingId(userId);
     }
