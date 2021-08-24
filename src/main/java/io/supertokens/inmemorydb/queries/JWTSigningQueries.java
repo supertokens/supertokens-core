@@ -22,7 +22,8 @@ import io.supertokens.inmemorydb.config.Config;
 public class JWTSigningQueries {
     static String getQueryToCreateJWTSigningTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getJWTSigningKeysTable() + " ("
-                + "key_id VARCHAR(255) NOT NULL, public_key TEXT, private_key TEXT, created_at BIGINT UNSIGNED"
-                + " PRIMARY_KEY(key_id));";
+                + "key_id VARCHAR(255) NOT NULL," + "public_key TEXT NOT NULL,"
+                + "private_key TEXT NOT NULL," + "created_at BIGINT UNSIGNED,"
+                + "PRIMARY KEY(key_id));";
     }
 }
