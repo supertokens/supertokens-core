@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -158,6 +159,14 @@ public class GeneralQueries {
                  PreparedStatement pst = con
                          .prepareStatement(
                                  ThirdPartyQueries.getQueryToCreateUsersTable(start))) {
+                pst.executeUpdate();
+            }
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getJWTSigningKeysTable())) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
+            try (Connection con = ConnectionPool.getConnection(start);
+                PreparedStatement pst = con.prepareStatement(JWTSigningQueries.getQueryToCreateJWTSigningTable(start))) {
                 pst.executeUpdate();
             }
         }
@@ -390,6 +399,57 @@ public class GeneralQueries {
         UserInfoPaginationResultHolder(String userId, String recipeId) {
             this.userId = userId;
             this.recipeId = recipeId;
+        }
+    }
+
+    public static List<JWTSigningKeyInfo> getJWTSigningKeyInfo_Transaction(Start start, Connection con)
+            throws SQLException, StorageQueryException {
+
+        // TODO: does this need locking?
+
+        String QUERY = "SELECT * FROM "
+                + Config.getConfig(start).getJWTSigningKeysTable();
+
+        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            ResultSet result = pst.executeQuery();
+            List<JWTSigningKeyInfo> keys = new ArrayList<>();
+
+            while(result.next()) {
+                keys.add(JWTSigningKeyInfoRowMapper.getInstance().mapOrThrow(result));
+            }
+
+            return keys;
+        }
+    }
+
+    private static class JWTSigningKeyInfoRowMapper implements RowMapper<JWTSigningKeyInfo, ResultSet> {
+        private static final JWTSigningKeyInfoRowMapper INSTANCE = new JWTSigningKeyInfoRowMapper();
+
+        private JWTSigningKeyInfoRowMapper() {
+        }
+
+        private static JWTSigningKeyInfoRowMapper getInstance() {
+            return INSTANCE;
+        }
+
+        @Override
+        public JWTSigningKeyInfo map(ResultSet result) throws Exception {
+            return new JWTSigningKeyInfo(result.getString("key_id"), result.getString("public_key"), result.getString("private_key"), result.getLong("created_at"));
+        }
+    }
+
+    public static void setJWTSigningKeyInfo_Transaction(Start start, Connection con, JWTSigningKeyInfo info)
+            throws SQLException {
+
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getJWTSigningKeysTable()
+                + "(key_id, public_key, private_key, created_at) VALUES(?, ?, ?, ?)";
+
+        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, info.keyId);
+            pst.setString(2, info.publicKey);
+            pst.setString(3, info.privateKey);
+            pst.setLong(4, info.createdAtTime);
+            pst.executeUpdate();
         }
     }
 }
