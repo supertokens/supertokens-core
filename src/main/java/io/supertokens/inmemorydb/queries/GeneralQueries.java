@@ -452,4 +452,19 @@ public class GeneralQueries {
             pst.executeUpdate();
         }
     }
+
+    public static JWTSigningKeyInfo getLatestJWTSigningKey_Transaction(Start start, Connection con)
+            throws SQLException, StorageQueryException {
+        String QUERY = JWTSigningQueries.getQueryToCreateJWTSigningTable(start);
+
+        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            ResultSet result = pst.executeQuery();
+
+            if (result.next()) {
+                return JWTSigningKeyInfoRowMapper.getInstance().mapOrThrow(result);
+            }
+        }
+
+        return null;
+    }
 }

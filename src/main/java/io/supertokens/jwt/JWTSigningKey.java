@@ -75,6 +75,25 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         return this.keys;
     }
 
+    public synchronized JWTSigningKeyInfo getLatestSigningKey()
+            throws StorageQueryException, StorageTransactionLogicException {
+        SessionStorage storage = StorageLayer.getSessionStorage(main);
+
+        if (storage.getType() == STORAGE_TYPE.SQL) {
+            SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
+
+            return sqlStorage.startTransaction(con -> {
+               return sqlStorage.getLatestJWTSigningKey(con);
+            });
+        } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
+            SessionNoSQLStorage_1 noSQLStorage = (SessionNoSQLStorage_1) storage;
+
+            return noSQLStorage.getLatestJWTSigningKey();
+        }
+
+        throw new QuitProgramException("Unsupported storage type detected");
+    }
+
     public synchronized JWTSigningKeyInfo getKeyForKeyId(String keyId)
             throws StorageQueryException, StorageTransactionLogicException {
         if (this.keys == null) {

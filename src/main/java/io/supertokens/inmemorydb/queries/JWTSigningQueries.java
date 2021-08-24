@@ -26,4 +26,9 @@ public class JWTSigningQueries {
                 + "private_key TEXT NOT NULL," + "created_at BIGINT UNSIGNED,"
                 + "PRIMARY KEY(key_id));";
     }
+
+    static String getQueryToFetchLatestKey(Start start) {
+        return "SELECT * FROM " + Config.getConfig(start).getJWTSigningKeysTable()
+                + "ORDER BY created_at DESC";
+    }
 }
