@@ -24,8 +24,10 @@ import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.authRecipe.UserPaginationToken;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -119,6 +121,7 @@ public class UsersAPI extends WebserverAPI {
             }
             super.sendJsonResponse(200, result, resp);
         } catch (UserPaginationToken.InvalidTokenException e) {
+            Logging.debug(main, Utils.exceptionStacktraceToString(e));
             throw new ServletException(
                     new BadRequestException("invalid pagination token"));
         } catch (StorageQueryException e) {

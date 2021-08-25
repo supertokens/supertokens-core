@@ -19,9 +19,11 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.Session;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -42,7 +44,8 @@ public class SessionDataAPI extends WebserverAPI {
         return "/recipe/session/data";
     }
 
-    @Override @Deprecated
+    @Override
+    @Deprecated
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
         assert sessionHandle != null;
@@ -58,6 +61,7 @@ public class SessionDataAPI extends WebserverAPI {
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
+            Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
@@ -83,6 +87,7 @@ public class SessionDataAPI extends WebserverAPI {
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
+            Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
