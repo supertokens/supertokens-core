@@ -61,9 +61,7 @@ public class RefreshToken {
                     tokenPayload.parentRefreshTokenHash1, null,
                     tokenPayload.antiCsrfToken, tokenType);
 
-        } catch (InvalidRefreshTokenFormatException | InvalidKeyException | InvalidKeySpecException
-                | NoSuchPaddingException | InvalidAlgorithmParameterException | IllegalBlockSizeException
-                | BadPaddingException | NoSuchAlgorithmException | NullPointerException e) {
+        } catch (Exception e) {
             throw new UnauthorisedException(e);
         }
     }

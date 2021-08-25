@@ -338,6 +338,46 @@ public class RefreshSessionAPITest2_7 {
 
     }
 
+    @Test
+    public void successOutputWithInvalidRefresh2TokenTest() throws Exception {
+        String[] args = {"../"};
+
+        JsonObject jsonBody = new JsonObject();
+        jsonBody.addProperty("refreshToken",
+                "MAKE_INVALID4dx2zJTl67cLnPHj2nrYNPJkYWRhRb1BZtiy4DtZ" +
+                        "/bfGZHM0DEy9xX8nXkzdRYjQfYLGlcteX7noVxuCRk0zeewXGTG+fvnkAgPE8SK62X/U4VX5LsHKAxDsiFw" +
+                        "+eh5mxuJE9DrPCjPk2ObkTMgRaA7TSzMInPt1OWZHhx8FvbQjgskwalYuptk4RdVMX7I6hwjflyCQ8kxhdZOAWzNati1ROyGmchQ5x6sIMIhpc0YzMi/BRfBpEIGSuXMHtxQuR/swvUbXlzpxDD375S1EDzQeW9ghXOt1AJDMCbVuIdXb4MEwqIWa473yYi6XujwUCbHo/3tNWtmn6tOh7w==.ef2c9aab475728ec8817813c5e02077af30425562341289b5a3e1c67122ea853.V2");
+        jsonBody.addProperty("enableAntiCsrf", false);
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        JsonObject request = new JsonObject();
+        request.addProperty("userId", userId);
+        request.add("userDataInJWT", userDataInJWT);
+        request.add("userDataInDatabase", userDataInDatabase);
+        request.addProperty("enableAntiCsrf", false);
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject response = io.supertokens.test.httpRequest
+                .HttpRequest
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh", jsonBody,
+                        1000,
+                        1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+
+        assertEquals(response.entrySet().size(), 2);
+        assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+    }
+
 
     @Test
     public void successOutputWithValidRefreshTokenTest() throws Exception {
