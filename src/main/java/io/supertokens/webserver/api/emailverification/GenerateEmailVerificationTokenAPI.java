@@ -20,8 +20,10 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -64,6 +66,7 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
             result.addProperty("token", token);
             super.sendJsonResponse(200, result, resp);
         } catch (EmailAlreadyVerifiedException e) {
+            Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_ALREADY_VERIFIED_ERROR");
             super.sendJsonResponse(200, result, resp);
