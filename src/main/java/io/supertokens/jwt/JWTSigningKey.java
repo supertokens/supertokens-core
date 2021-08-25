@@ -77,6 +77,10 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
     public synchronized JWTSigningKeyInfo getLatestSigningKey()
             throws StorageQueryException, StorageTransactionLogicException {
+        if (this.keys == null) {
+            this.keys = this.maybeGenerateNewKeyAndUpdateInDb();
+        }
+
         SessionStorage storage = StorageLayer.getSessionStorage(main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
