@@ -37,7 +37,7 @@ import java.util.Set;
 public class JWTSigningFunctions {
     private static final Set<String> supportedAlgorithms = Set.of("rs256");
 
-    String createJWTToken(Main main, String algorithm, JsonObject payload, String jwksDomain, long jwtValidity)
+    public static String createJWTToken(Main main, String algorithm, JsonObject payload, String jwksDomain, long jwtValidity)
             throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException, InvalidKeySpecException {
         // TODO: In the future we will have a way for the user to send a custom key id to use
         JWTSigningKeyInfo keyToUse = getKeyToUse(main, null);
@@ -65,7 +65,7 @@ public class JWTSigningFunctions {
                 .sign(signingAlgorithm);
     }
 
-    private JWTSigningKeyInfo getKeyToUse(Main main, String keyId)
+    private static JWTSigningKeyInfo getKeyToUse(Main main, String keyId)
             throws StorageQueryException, StorageTransactionLogicException {
         if (keyId == null) {
             return JWTSigningKey.getInstance(main).getLatestSigningKey();
@@ -74,7 +74,7 @@ public class JWTSigningFunctions {
         return JWTSigningKey.getInstance(main).getKeyForKeyId(keyId);
     }
 
-    private Algorithm getAlgorithmFromString(Main main, String algorithm, JWTSigningKeyInfo keyToUse) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    private static Algorithm getAlgorithmFromString(Main main, String algorithm, JWTSigningKeyInfo keyToUse) throws NoSuchAlgorithmException, InvalidKeySpecException {
         // TODO: Abstract this away from the main package to avoid a direct dependency on auth0s package
         if (algorithm.equalsIgnoreCase("rs256")) {
             RSAPublicKey publicKey = getPublicKeyFromString(keyToUse.publicKey);
@@ -86,7 +86,7 @@ public class JWTSigningFunctions {
         throw new NoSuchAlgorithmException(algorithm + " is not a supported JWT signing algorithm");
     }
 
-    private <T extends PublicKey> T getPublicKeyFromString(String keyCert)
+    private static <T extends PublicKey> T getPublicKeyFromString(String keyCert)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] decodedKeyBytes = Base64.getDecoder().decode(keyCert);
         X509EncodedKeySpec keySpec =
@@ -95,7 +95,7 @@ public class JWTSigningFunctions {
         return (T) kf.generatePublic(keySpec);
     }
 
-    private <T extends PrivateKey> T getPrivateKeyFromString(String keyCert)
+    private static <T extends PrivateKey> T getPrivateKeyFromString(String keyCert)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] decodedKeyBytes = Base64.getDecoder().decode(keyCert);
         X509EncodedKeySpec keySpec =
