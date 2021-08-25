@@ -28,10 +28,7 @@ import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TestRule;
 
 import javax.crypto.BadPaddingException;
@@ -282,6 +279,37 @@ public class SessionTest4 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS));
 
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void passInvalidRefreshTokenShouldGiveUnauthorisedError() throws InterruptedException, StorageQueryException,
+            NoSuchAlgorithmException, InvalidKeyException,
+            IOException, InvalidKeySpecException,
+            StorageTransactionLogicException,
+            TokenTheftDetectedException, SignatureException, IllegalBlockSizeException, BadPaddingException,
+            InvalidAlgorithmParameterException, NoSuchPaddingException {
+
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase, false);
+
+        try {
+            Session.refreshSession(process.getProcess(), "INVALID_TOKEN" + sessionInfo.refreshToken,
+                    sessionInfo.antiCsrfToken, true);
+            Assert.fail();
+        } catch (UnauthorisedException ignored) {
+        }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
