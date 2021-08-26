@@ -40,7 +40,7 @@ public class JWTSigningFunctions {
 
         // Create the claims for the JWT header
         Map<String, Object> headerClaims = new HashMap<>();
-        headerClaims.put("alg", algorithm.toUpperCase()); // ALl examples and the RFC have the algorithm in upper case
+        headerClaims.put("alg", algorithm.toUpperCase()); // All examples in the RFC have the algorithm in upper case
         headerClaims.put("typ", "JWT");
         headerClaims.put("kid", keyToUse.keyId);
 
