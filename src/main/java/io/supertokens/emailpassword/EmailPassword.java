@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -40,6 +41,11 @@ import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 
 public class EmailPassword {
+
+    @TestOnly
+    public static long getPasswordResetTokenLifetimeForTests(Main main) {
+        return getPasswordResetTokenLifetime(main);
+    }
 
     private static long getPasswordResetTokenLifetime(Main main) {
         if (Main.isTesting) {

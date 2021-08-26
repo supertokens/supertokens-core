@@ -27,12 +27,18 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import org.jetbrains.annotations.TestOnly;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 
 public class EmailVerification {
+
+    @TestOnly
+    public static long getEmailVerificationTokenLifetimeForTests(Main main) {
+        return getEmailVerificationTokenLifetime(main);
+    }
 
     private static long getEmailVerificationTokenLifetime(Main main) {
         if (Main.isTesting) {

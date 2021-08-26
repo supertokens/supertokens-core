@@ -207,6 +207,14 @@ public class CoreConfig {
             }
         }
 
+        if (password_reset_token_lifetime <= 0) {
+            throw new QuitProgramException("'password_reset_token_lifetime' must be >= 0");
+        }
+
+        if (email_verification_token_lifetime <= 0) {
+            throw new QuitProgramException("'email_verification_token_lifetime' must be >= 0");
+        }
+
         if (max_server_pool_size <= 0) {
             throw new QuitProgramException("'max_server_pool_size' must be >= 1. The config file can be found here: " +
                     getConfigFileLocation(main));
