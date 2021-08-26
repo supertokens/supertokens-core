@@ -363,6 +363,18 @@ public class EmailPasswordQueries {
         }
     }
 
+    public static void updateUsersEmail_Transaction(Start start, Connection conn, String userId, String email)
+            throws SQLException {
+        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable()
+                + " SET email = ? WHERE user_id = ?";
+
+        try (PreparedStatement pst = conn.prepareStatement(QUERY)) {
+            pst.setString(1, email);
+            pst.setString(2, userId);
+            pst.executeUpdate();
+        }
+    }
+
     private static class PasswordResetTokenInfoRowMapper implements RowMapper<PasswordResetTokenInfo, ResultSet> {
         private static final PasswordResetTokenInfoRowMapper INSTANCE = new PasswordResetTokenInfoRowMapper();
 

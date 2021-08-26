@@ -18,6 +18,7 @@ package io.supertokens.emailpassword;
 
 import io.supertokens.Main;
 import io.supertokens.authRecipe.UserPaginationToken;
+import io.supertokens.config.Config;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
@@ -31,6 +32,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -40,14 +42,16 @@ import java.security.spec.InvalidKeySpecException;
 
 public class EmailPassword {
 
-    public static final long PASSWORD_RESET_TOKEN_LIFETIME_MS =
-            3600 * 1000; // this is related to the interval for the cronjob: DeleteExpiredPasswordResetTokens
+    @TestOnly
+    public static long getPasswordResetTokenLifetimeForTests(Main main) {
+        return getPasswordResetTokenLifetime(main);
+    }
 
     private static long getPasswordResetTokenLifetime(Main main) {
         if (Main.isTesting) {
             return EmailPasswordTest.getInstance(main).getPasswordResetTokenLifetime();
         }
-        return PASSWORD_RESET_TOKEN_LIFETIME_MS;
+        return Config.getConfig(main).getPasswordResetTokenLifetime();
     }
 
     public static UserInfo signUp(Main main, @Nonnull String email, @Nonnull String password) throws
@@ -183,6 +187,45 @@ public class EmailPassword {
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof ResetPasswordInvalidTokenException) {
                 throw (ResetPasswordInvalidTokenException) e.actualException;
+            }
+            throw e;
+        }
+    }
+
+    public static void updateUsersEmailOrPassword(Main main, @Nonnull String userId, @Nullable String email,
+                                                  @Nullable String password)
+            throws StorageQueryException, StorageTransactionLogicException, UnknownUserIdException,
+            DuplicateEmailException {
+        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
+        try {
+            storage.startTransaction(transaction -> {
+                UserInfo userInfo = storage.getUserInfoUsingId_Transaction(transaction, userId);
+
+                if (userInfo == null) {
+                    throw new StorageTransactionLogicException(new UnknownUserIdException());
+                }
+
+                if (email != null) {
+                    try {
+                        storage.updateUsersEmail_Transaction(transaction, userId, email);
+                    } catch (DuplicateEmailException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                }
+
+                if (password != null) {
+                    String hashedPassword = UpdatableBCrypt.hash(password);
+                    storage.updateUsersPassword_Transaction(transaction, userId, hashedPassword);
+                }
+
+                storage.commitTransaction(transaction);
+                return null;
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof UnknownUserIdException) {
+                throw (UnknownUserIdException) e.actualException;
+            } else if (e.actualException instanceof DuplicateEmailException) {
+                throw (DuplicateEmailException) e.actualException;
             }
             throw e;
         }

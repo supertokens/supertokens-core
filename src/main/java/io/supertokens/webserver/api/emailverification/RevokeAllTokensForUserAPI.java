@@ -19,11 +19,8 @@ package io.supertokens.webserver.api.emailverification;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
-import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
-import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -31,20 +28,17 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.security.spec.InvalidKeySpecException;
 
-public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
+public class RevokeAllTokensForUserAPI extends WebserverAPI {
+    private static final long serialVersionUID = 1501147718432578419L;
 
-    private static final long serialVersionUID = -4641988458637882374L;
-
-    public GenerateEmailVerificationTokenAPI(Main main) {
+    public RevokeAllTokensForUserAPI(Main main) {
         super(main, RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/user/email/verify/token";
+        return "/recipe/user/email/verify/token/remove";
     }
 
     @Override
@@ -52,27 +46,16 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
-        assert userId != null;
-        assert email != null;
-
-        // used to be according to logic according to https://github.com/supertokens/supertokens-core/issues/139
-        // but then changed slightly when extracting this into its own recipe
 
         try {
-            String token = EmailVerification.generateEmailVerificationToken(super.main, userId, email);
+            EmailVerification.revokeAllTokens(main, userId, email);
 
-            JsonObject result = new JsonObject();
-            result.addProperty("status", "OK");
-            result.addProperty("token", token);
-            super.sendJsonResponse(200, result, resp);
-        } catch (EmailAlreadyVerifiedException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
-            JsonObject result = new JsonObject();
-            result.addProperty("status", "EMAIL_ALREADY_VERIFIED_ERROR");
-            super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeySpecException e) {
+            JsonObject response = new JsonObject();
+            response.addProperty("status", "OK");
+
+            super.sendJsonResponse(200, response, resp);
+        } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
-
     }
 }

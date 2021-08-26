@@ -18,18 +18,21 @@ package io.supertokens.emailverification;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.config.Config;
 
 public class EmailVerificationTest extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_ID = "io.supertokens.emailverification.EmailVerificationTest";
-    private long emailVerificationTokenLifetimeMS = EmailVerification.EMAIL_VERIFICATION_TOKEN_LIFETIME_MS;
+    private Long emailVerificationTokenLifetimeMS = null;
+    private Main main;
 
-    private EmailVerificationTest() {
+    private EmailVerificationTest(Main main) {
+        this.main = main;
     }
 
     public static EmailVerificationTest getInstance(Main main) {
         ResourceDistributor.SingletonResource resource = main.getResourceDistributor().getResource(RESOURCE_ID);
         if (resource == null) {
-            resource = main.getResourceDistributor().setResource(RESOURCE_ID, new EmailVerificationTest());
+            resource = main.getResourceDistributor().setResource(RESOURCE_ID, new EmailVerificationTest(main));
         }
         return (EmailVerificationTest) resource;
     }
@@ -39,6 +42,9 @@ public class EmailVerificationTest extends ResourceDistributor.SingletonResource
     }
 
     public long getEmailVerificationTokenLifetime() {
+        if (this.emailVerificationTokenLifetimeMS == null) {
+            return Config.getConfig(this.main).getEmailVerificationTokenLifetime();
+        }
         return this.emailVerificationTokenLifetimeMS;
     }
 }

@@ -17,6 +17,7 @@
 package io.supertokens.test.emailverification;
 
 import io.supertokens.ProcessState;
+import io.supertokens.config.Config;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
@@ -34,6 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
 
 /*
@@ -249,14 +251,16 @@ public class EmailVerificationTest {
         StorageLayer.getEmailVerificationStorage(process.getProcess())
                 .addEmailVerificationToken(new EmailVerificationTokenInfo(
                         user.id, "token",
-                        System.currentTimeMillis() + EmailVerification.EMAIL_VERIFICATION_TOKEN_LIFETIME_MS,
+                        System.currentTimeMillis() +
+                                Config.getConfig(process.getProcess()).getEmailVerificationTokenLifetime(),
                         "test1@example.com"));
 
         try {
             StorageLayer.getEmailVerificationStorage(process.getProcess())
                     .addEmailVerificationToken(new EmailVerificationTokenInfo(
                             user.id, "token",
-                            System.currentTimeMillis() + EmailVerification.EMAIL_VERIFICATION_TOKEN_LIFETIME_MS,
+                            System.currentTimeMillis() +
+                                    Config.getConfig(process.getProcess()).getEmailVerificationTokenLifetime(),
                             "test1@example.com"));
             assert (false);
         } catch (DuplicateEmailVerificationTokenException ignored) {
@@ -352,5 +356,59 @@ public class EmailVerificationTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void changeEmailVerificationTokenLifetimeTest() throws Exception {
+        {
+
+            String[] args = {"../"};
+
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            assertEquals(EmailVerification.getEmailVerificationTokenLifetimeForTests(process.getProcess()),
+                    24 * 3600 * 1000);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        {
+            Utils.setValueInConfig("email_verification_token_lifetime", "100");
+
+            String[] args = {"../"};
+
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            assertEquals(EmailVerification.getEmailVerificationTokenLifetimeForTests(process.getProcess()), 100);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        {
+            Utils.setValueInConfig("email_verification_token_lifetime", "0");
+
+            String[] args = {"../"};
+
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+            assertNotNull(e);
+            assertEquals(e.exception.getMessage(),
+                    "'email_verification_token_lifetime' must be >= 0");
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
     }
 }

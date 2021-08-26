@@ -21,9 +21,11 @@ import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.User;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -71,6 +73,7 @@ public class VerifyEmailAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
 
         } catch (EmailVerificationInvalidTokenException e) {
+            Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_VERIFICATION_INVALID_TOKEN_ERROR");
             super.sendJsonResponse(200, result, resp);
