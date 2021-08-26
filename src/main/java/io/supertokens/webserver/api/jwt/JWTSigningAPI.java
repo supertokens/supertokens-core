@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.jwt;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.jwt.JWTSigningFunctions;
+import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -45,7 +46,7 @@ public class JWTSigningAPI extends WebserverAPI {
         String algorithm = InputParser.parseStringOrThrowError(input, "algorithm", false);
         assert algorithm != null;
 
-        if (!JWTSigningFunctions.isJWTAlgorithmSupported(algorithm)) {
+        if (!JWTSigningKey.isJWTAlgorithmSupported(algorithm)) {
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNSUPPORTED_ALGORITHM");
             super.sendJsonResponse(200, reply, resp);

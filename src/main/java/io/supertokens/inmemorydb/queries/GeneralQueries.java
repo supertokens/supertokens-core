@@ -402,7 +402,7 @@ public class GeneralQueries {
         }
     }
 
-    public static List<JWTSigningKeyInfo> getJWTSigningKeyInfo_Transaction(Start start, Connection con)
+    public static List<JWTSigningKeyInfo> getJWTSigningKeys_Transaction(Start start, Connection con)
             throws SQLException, StorageQueryException {
 
         // TODO: does this need locking?
@@ -434,7 +434,7 @@ public class GeneralQueries {
 
         @Override
         public JWTSigningKeyInfo map(ResultSet result) throws Exception {
-            return new JWTSigningKeyInfo(result.getString("key_id"), result.getString("public_key"), result.getString("private_key"), result.getLong("created_at"));
+            return new JWTSigningKeyInfo(result.getString("key_id"), result.getString("public_key"), result.getString("private_key"), result.getLong("created_at"), result.getString("algorithm"), result.getString("algorithm_type"));
         }
     }
 
@@ -442,13 +442,15 @@ public class GeneralQueries {
             throws SQLException {
 
         String QUERY = "INSERT INTO " + Config.getConfig(start).getJWTSigningKeysTable()
-                + "(key_id, public_key, private_key, created_at) VALUES(?, ?, ?, ?)";
+                + "(key_id, public_key, private_key, created_at, algorithm, algorithm_type) VALUES(?, ?, ?, ?, ?, ?)";
 
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, info.keyId);
             pst.setString(2, info.publicKey);
             pst.setString(3, info.privateKey);
             pst.setLong(4, info.createdAtTime);
+            pst.setString(5, info.algorithm);
+            pst.setString(6, info.algorithmType);
             pst.executeUpdate();
         }
     }
@@ -458,6 +460,23 @@ public class GeneralQueries {
         String QUERY = JWTSigningQueries.getQueryToCreateJWTSigningTable(start);
 
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            ResultSet result = pst.executeQuery();
+
+            if (result.next()) {
+                return JWTSigningKeyInfoRowMapper.getInstance().mapOrThrow(result);
+            }
+        }
+
+        return null;
+    }
+
+    public static JWTSigningKeyInfo getLatestJWTSigningKeyForAlgorithm_Transaction(Start start, Connection con, String algorithm)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM " + Config.getConfig(start).getJWTSigningKeysTable()
+                + "WHERE algorithm_type=? ORDER BY created_at DESC";
+
+        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, algorithm);
             ResultSet result = pst.executeQuery();
 
             if (result.next()) {

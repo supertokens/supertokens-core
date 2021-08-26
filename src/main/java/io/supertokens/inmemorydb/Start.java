@@ -765,10 +765,10 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public List<JWTSigningKeyInfo> getJWTSigningKey_Transaction(TransactionConnection con) throws StorageQueryException {
+    public List<JWTSigningKeyInfo> getJWTSigningKeys_Transaction(TransactionConnection con) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return GeneralQueries.getJWTSigningKeyInfo_Transaction(this, sqlCon);
+            return GeneralQueries.getJWTSigningKeys_Transaction(this, sqlCon);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -786,10 +786,12 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public JWTSigningKeyInfo getLatestJWTSigningKey(TransactionConnection con) throws StorageQueryException {
+    public JWTSigningKeyInfo getLatestJWTSigningKeyForAlgorithm_Transaction(TransactionConnection con, String algorithm)
+            throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
+
         try {
-            return GeneralQueries.getLatestJWTSigningKey_Transaction(this, sqlCon);
+            return GeneralQueries.getLatestJWTSigningKeyForAlgorithm_Transaction(this, sqlCon, algorithm);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
