@@ -208,7 +208,6 @@ public class JWTCreateTest {
         long validity = 3600;
 
         String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
-        System.out.println("JWT: " + jwt);
 
         DecodedJWT decodedJWT = JWT.decode(jwt);
 
