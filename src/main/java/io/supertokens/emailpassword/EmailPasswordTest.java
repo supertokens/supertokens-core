@@ -18,18 +18,21 @@ package io.supertokens.emailpassword;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.config.Config;
 
 public class EmailPasswordTest extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_ID = "io.supertokens.emailpassword.EmailPasswordTest";
-    private long passwordResetTokenLifetimeMS = EmailPassword.PASSWORD_RESET_TOKEN_LIFETIME_MS;
+    private Long passwordResetTokenLifetimeMS = null;
+    private Main main;
 
-    private EmailPasswordTest() {
+    private EmailPasswordTest(Main main) {
+        this.main = main;
     }
 
     public static EmailPasswordTest getInstance(Main main) {
         ResourceDistributor.SingletonResource resource = main.getResourceDistributor().getResource(RESOURCE_ID);
         if (resource == null) {
-            resource = main.getResourceDistributor().setResource(RESOURCE_ID, new EmailPasswordTest());
+            resource = main.getResourceDistributor().setResource(RESOURCE_ID, new EmailPasswordTest(main));
         }
         return (EmailPasswordTest) resource;
     }
@@ -39,7 +42,10 @@ public class EmailPasswordTest extends ResourceDistributor.SingletonResource {
     }
 
     public long getPasswordResetTokenLifetime() {
+        if (this.passwordResetTokenLifetimeMS == null) {
+            return Config.getConfig(this.main).getPasswordResetTokenLifetime();
+        }
         return this.passwordResetTokenLifetimeMS;
     }
-    
+
 }

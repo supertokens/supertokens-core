@@ -17,6 +17,7 @@
 package io.supertokens.test.emailpassword;
 
 import io.supertokens.ProcessState;
+import io.supertokens.config.Config;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.UpdatableBCrypt;
 import io.supertokens.emailpassword.UserPaginationContainer;
@@ -38,6 +39,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
 
 /*
@@ -377,13 +379,15 @@ public class EmailPasswordTest {
         StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .addPasswordResetToken(new PasswordResetTokenInfo(
                         user.id, "token",
-                        System.currentTimeMillis() + EmailPassword.PASSWORD_RESET_TOKEN_LIFETIME_MS));
+                        System.currentTimeMillis() +
+                                Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime()));
 
         try {
             StorageLayer.getEmailPasswordStorage(process.getProcess())
                     .addPasswordResetToken(new PasswordResetTokenInfo(
                             user.id, "token",
-                            System.currentTimeMillis() + EmailPassword.PASSWORD_RESET_TOKEN_LIFETIME_MS));
+                            System.currentTimeMillis() +
+                                    Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime()));
             assert (false);
         } catch (DuplicatePasswordResetTokenException ignored) {
 
@@ -622,5 +626,57 @@ public class EmailPasswordTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void changePasswordResetLifetimeTest() throws Exception {
+        {
+            String[] args = {"../"};
+
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            assertEquals(EmailPassword.getPasswordResetTokenLifetimeForTests(process.getProcess()), 3600 * 1000);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        {
+            Utils.setValueInConfig("password_reset_token_lifetime", "100");
+
+            String[] args = {"../"};
+
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            assertEquals(EmailPassword.getPasswordResetTokenLifetimeForTests(process.getProcess()), 100);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        {
+            Utils.setValueInConfig("password_reset_token_lifetime", "0");
+
+            String[] args = {"../"};
+
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+            assertNotNull(e);
+            assertEquals(e.exception.getMessage(),
+                    "'password_reset_token_lifetime' must be >= 0");
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
     }
 }

@@ -17,6 +17,7 @@
 package io.supertokens.emailverification;
 
 import io.supertokens.Main;
+import io.supertokens.config.Config;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
@@ -26,6 +27,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import org.jetbrains.annotations.TestOnly;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -33,14 +35,16 @@ import java.security.spec.InvalidKeySpecException;
 
 public class EmailVerification {
 
-    public static final long EMAIL_VERIFICATION_TOKEN_LIFETIME_MS =
-            24 * 3600 * 1000; // this is related to the interval for the cronjob: DeleteExpiredEmailVerificationTokens
+    @TestOnly
+    public static long getEmailVerificationTokenLifetimeForTests(Main main) {
+        return getEmailVerificationTokenLifetime(main);
+    }
 
     private static long getEmailVerificationTokenLifetime(Main main) {
         if (Main.isTesting) {
             return EmailVerificationTest.getInstance(main).getEmailVerificationTokenLifetime();
         }
-        return EMAIL_VERIFICATION_TOKEN_LIFETIME_MS;
+        return Config.getConfig(main).getEmailVerificationTokenLifetime();
     }
 
     public static String generateEmailVerificationToken(Main main, String userId, String email)

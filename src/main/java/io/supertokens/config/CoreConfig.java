@@ -40,6 +40,11 @@ public class CoreConfig {
     @JsonProperty
     private double refresh_token_validity = 60 * 2400; // in mins
 
+    @JsonProperty
+    private long password_reset_token_lifetime = 3600000; // in MS
+
+    @JsonProperty
+    private long email_verification_token_lifetime = 24 * 3600 * 1000; // in MS
 
     private final String logDefault = "asdkfahbdfk3kjHS";
     @JsonProperty
@@ -91,6 +96,14 @@ public class CoreConfig {
 
     public long getRefreshTokenValidity() {
         return (long) (refresh_token_validity * 60 * 1000);
+    }
+
+    public long getPasswordResetTokenLifetime() {
+        return password_reset_token_lifetime;
+    }
+
+    public long getEmailVerificationTokenLifetime() {
+        return email_verification_token_lifetime;
     }
 
     public boolean isTelemetryDisabled() {
@@ -192,6 +205,14 @@ public class CoreConfig {
                         "'access_token_signing_key_update_interval' must be between 1 and 720 hours inclusive. The " +
                                 "config file can be found here: " + getConfigFileLocation(main));
             }
+        }
+
+        if (password_reset_token_lifetime <= 0) {
+            throw new QuitProgramException("'password_reset_token_lifetime' must be >= 0");
+        }
+
+        if (email_verification_token_lifetime <= 0) {
+            throw new QuitProgramException("'email_verification_token_lifetime' must be >= 0");
         }
 
         if (max_server_pool_size <= 0) {
