@@ -29,6 +29,7 @@ import io.supertokens.webserver.api.core.*;
 import io.supertokens.webserver.api.emailpassword.*;
 import io.supertokens.webserver.api.emailverification.GenerateEmailVerificationTokenAPI;
 import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
+import io.supertokens.webserver.api.jwt.JWKAPI;
 import io.supertokens.webserver.api.jwt.JWTSigningAPI;
 import io.supertokens.webserver.api.session.*;
 import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
@@ -169,6 +170,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new UsersCountAPI(main));
         addAPI(new UsersAPI(main));
         addAPI(new JWTSigningAPI(main));
+        addAPI(new JWKAPI(main));
 
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),
