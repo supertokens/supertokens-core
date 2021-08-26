@@ -17,6 +17,7 @@
 package io.supertokens.test.emailverification;
 
 import io.supertokens.ProcessState;
+import io.supertokens.config.Config;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
@@ -249,14 +250,16 @@ public class EmailVerificationTest {
         StorageLayer.getEmailVerificationStorage(process.getProcess())
                 .addEmailVerificationToken(new EmailVerificationTokenInfo(
                         user.id, "token",
-                        System.currentTimeMillis() + EmailVerification.EMAIL_VERIFICATION_TOKEN_LIFETIME_MS,
+                        System.currentTimeMillis() +
+                                Config.getConfig(process.getProcess()).getEmailVerificationTokenLifetime(),
                         "test1@example.com"));
 
         try {
             StorageLayer.getEmailVerificationStorage(process.getProcess())
                     .addEmailVerificationToken(new EmailVerificationTokenInfo(
                             user.id, "token",
-                            System.currentTimeMillis() + EmailVerification.EMAIL_VERIFICATION_TOKEN_LIFETIME_MS,
+                            System.currentTimeMillis() +
+                                    Config.getConfig(process.getProcess()).getEmailVerificationTokenLifetime(),
                             "test1@example.com"));
             assert (false);
         } catch (DuplicateEmailVerificationTokenException ignored) {

@@ -40,6 +40,14 @@ core_config_version: 0
 # refresh_token_validity:
 
 
+# (OPTIONAL | Default: 3600000) long value. Time in milliseconds for how long a password reset token / link is valid for.
+# password_reset_token_lifetime:
+
+
+# (OPTIONAL | Default: 1 day) long value. Time in milliseconds for how long an email verification token / link is valid for.
+# email_verification_token_lifetime:
+
+
 # (OPTIONAL | Default: installation directory/logs/info.log) string value. Give the path to a file (on your local
 #  system) in which the SuperTokens service can write INFO logs to. Set it to "null" if you want it to log to
 # standard output instead.

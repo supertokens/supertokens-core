@@ -17,6 +17,7 @@
 package io.supertokens.test.emailpassword;
 
 import io.supertokens.ProcessState;
+import io.supertokens.config.Config;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.UpdatableBCrypt;
 import io.supertokens.emailpassword.UserPaginationContainer;
@@ -377,13 +378,15 @@ public class EmailPasswordTest {
         StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .addPasswordResetToken(new PasswordResetTokenInfo(
                         user.id, "token",
-                        System.currentTimeMillis() + EmailPassword.PASSWORD_RESET_TOKEN_LIFETIME_MS));
+                        System.currentTimeMillis() +
+                                Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime()));
 
         try {
             StorageLayer.getEmailPasswordStorage(process.getProcess())
                     .addPasswordResetToken(new PasswordResetTokenInfo(
                             user.id, "token",
-                            System.currentTimeMillis() + EmailPassword.PASSWORD_RESET_TOKEN_LIFETIME_MS));
+                            System.currentTimeMillis() +
+                                    Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime()));
             assert (false);
         } catch (DuplicatePasswordResetTokenException ignored) {
 
