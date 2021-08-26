@@ -17,6 +17,7 @@
 package io.supertokens.jwt;
 
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
@@ -28,12 +29,14 @@ import java.security.*;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
+import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 
 public class JWTSigningFunctions {
     public static String createJWTToken(Main main, String algorithm, JsonObject payload, String jwksDomain, long jwtValidity)
-            throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException, InvalidKeySpecException {
+            throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException, InvalidKeySpecException,
+            JWTCreationException {
         // TODO: In the future we will have a way for the user to send a custom key id to use
         JWTSigningKeyInfo keyToUse = getKeyToUse(main, algorithm);
         Algorithm signingAlgorithm = getAlgorithmFromString(main, algorithm, keyToUse);
@@ -45,19 +48,43 @@ public class JWTSigningFunctions {
         headerClaims.put("kid", keyToUse.keyId);
 
         long currentTimeInMillis = System.currentTimeMillis();
-        long jwtExpiry = currentTimeInMillis + (jwtValidity * 1000); // Validity is in seconds
+        long jwtExpiry = (currentTimeInMillis / 1000) + (jwtValidity); // JWT Expiry is seconds from epoch not millis
 
         // Add relevant claims to the payload, note we only add/override ones that we absolutely need to.
         Map<String, Object> jwtPayload = new Gson().fromJson(payload, HashMap.class);
         jwtPayload.put("iss", jwksDomain);
         jwtPayload.put("exp", jwtExpiry);
-        jwtPayload.put("iat", currentTimeInMillis);
+        jwtPayload.put("iat", currentTimeInMillis / 1000); // JWT uses seconds from epoch not millis
 
         // TODO: Add custom payload
         return com.auth0.jwt.JWT.create()
                 .withPayload(jwtPayload)
                 .withHeader(headerClaims)
                 .sign(signingAlgorithm);
+    }
+
+    public static List<JsonObject> getJWKS(Main main)
+            throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
+            InvalidKeySpecException {
+        List<JWTSigningKeyInfo> keys = JWTSigningKey.getInstance(main).getAllSigningKeys();
+        List<JsonObject> jwks = new ArrayList<>();
+
+        for (int i = 0; i < keys.size(); i++) {
+            JWTSigningKeyInfo currentKeyInfo = keys.get(i);
+            RSAPublicKey publicKey = getPublicKeyFromString(currentKeyInfo.publicKey, currentKeyInfo.algorithmType.toUpperCase());
+            JsonObject jwk = new JsonObject();
+
+            jwk.addProperty("kty", currentKeyInfo.algorithmType);
+            jwk.addProperty("kid", currentKeyInfo.keyId);
+            jwk.addProperty("n", Base64.getUrlEncoder().encodeToString(publicKey.getModulus().toByteArray()));
+            jwk.addProperty("e", Base64.getUrlEncoder().encodeToString(publicKey.getPublicExponent().toByteArray()));
+            jwk.addProperty("alg", currentKeyInfo.algorithm.toUpperCase());
+            jwk.addProperty("use", "sig");
+
+            jwks.add(jwk);
+        }
+
+        return jwks;
     }
 
     private static JWTSigningKeyInfo getKeyToUse(Main main, String algorithm)
@@ -89,33 +116,9 @@ public class JWTSigningFunctions {
     private static <T extends PrivateKey> T getPrivateKeyFromString(String keyCert, String algorithm)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] decodedKeyBytes = Base64.getDecoder().decode(keyCert);
-        X509EncodedKeySpec keySpec =
-                new X509EncodedKeySpec(decodedKeyBytes);
+        PKCS8EncodedKeySpec keySpec =
+                new PKCS8EncodedKeySpec(decodedKeyBytes);
         KeyFactory kf = KeyFactory.getInstance(algorithm);
         return (T) kf.generatePrivate(keySpec);
-    }
-
-    public static List<JsonObject> getJWKS(Main main)
-            throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
-            InvalidKeySpecException {
-        List<JWTSigningKeyInfo> keys = JWTSigningKey.getInstance(main).getAllSigningKeys();
-        List<JsonObject> jwks = new ArrayList<>();
-
-        for (int i = 0; i < keys.size(); i++) {
-            JWTSigningKeyInfo currentKeyInfo = keys.get(i);
-            RSAPublicKey publicKey = getPublicKeyFromString(currentKeyInfo.publicKey, currentKeyInfo.algorithmType.toUpperCase());
-            JsonObject jwk = new JsonObject();
-
-            jwk.addProperty("kty", currentKeyInfo.algorithmType);
-            jwk.addProperty("kid", currentKeyInfo.keyId);
-            jwk.addProperty("n", publicKey.getModulus().toString());
-            jwk.addProperty("e", publicKey.getPublicExponent().toString());
-            jwk.addProperty("alg", currentKeyInfo.algorithm.toUpperCase());
-            jwk.addProperty("use", "sig");
-
-            jwks.add(jwk);
-        }
-
-        return jwks;
     }
 }

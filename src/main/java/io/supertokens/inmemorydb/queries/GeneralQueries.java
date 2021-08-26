@@ -473,7 +473,7 @@ public class GeneralQueries {
     public static JWTSigningKeyInfo getLatestJWTSigningKeyForAlgorithm_Transaction(Start start, Connection con, String algorithm)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT * FROM " + Config.getConfig(start).getJWTSigningKeysTable()
-                + "WHERE algorithm_type=? ORDER BY created_at DESC";
+                + " WHERE algorithm_type = ? ORDER BY created_at DESC;";
 
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, algorithm);

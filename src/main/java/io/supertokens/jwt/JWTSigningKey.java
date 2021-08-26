@@ -69,7 +69,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
 
-            sqlStorage.startTransaction(con -> {
+            return sqlStorage.startTransaction(con -> {
                List<JWTSigningKeyInfo> keys;
                List<JWTSigningKeyInfo> keysFromStorage = sqlStorage.getJWTSigningKeys_Transaction(con);
 
@@ -102,7 +102,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
     public synchronized JWTSigningKeyInfo getKeyForAlgorithm(String algorithm)
             throws NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException {
-        if (JWTSigningKey.isJWTAlgorithmSupported(algorithm)) {
+        if (!JWTSigningKey.isJWTAlgorithmSupported(algorithm)) {
             throw new NoSuchAlgorithmException(algorithm + "is not a supported signing algorithm");
         }
 
