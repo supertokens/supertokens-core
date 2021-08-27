@@ -18,6 +18,16 @@ package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.pluginInterface.RowMapper;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class JWTSigningQueries {
     static String getQueryToCreateJWTSigningTable(Start start) {
@@ -25,5 +35,62 @@ public class JWTSigningQueries {
                 + "key_id VARCHAR(255) NOT NULL," + "key_string TEXT NOT NULL,"
                 + "algorithm VARCHAR(10) NOT NULL," + "created_at BIGINT UNSIGNED,"
                 + "PRIMARY KEY(key_id));";
+    }
+
+    public static List<JWTSigningKeyInfo> getJWTSigningKeys_Transaction(Start start, Connection con)
+            throws SQLException, StorageQueryException {
+
+        // TODO: does this need locking?
+
+        String QUERY = "SELECT * FROM "
+                + Config.getConfig(start).getJWTSigningKeysTable()
+                + " ORDER BY created_at DESC;";
+
+        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            ResultSet result = pst.executeQuery();
+            List<JWTSigningKeyInfo> keys = new ArrayList<>();
+
+            while(result.next()) {
+                keys.add(JWTSigningKeyInfoRowMapper.getInstance().mapOrThrow(result));
+            }
+
+            return keys;
+        }
+    }
+
+    private static class JWTSigningKeyInfoRowMapper implements RowMapper<JWTSigningKeyInfo, ResultSet> {
+        private static final JWTSigningKeyInfoRowMapper INSTANCE = new JWTSigningKeyInfoRowMapper();
+
+        private JWTSigningKeyInfoRowMapper() {
+        }
+
+        private static JWTSigningKeyInfoRowMapper getInstance() {
+            return INSTANCE;
+        }
+
+        @Override
+        public JWTSigningKeyInfo map(ResultSet result) throws Exception {
+            String keyId = result.getString("key_id");
+            String keyString = result.getString("key_string");
+            long createdAt = result.getLong("created_at");
+            String algorithm = result.getString("algorithm");
+
+            return new JWTSigningKeyInfo(keyId, createdAt, algorithm, keyString);
+        }
+    }
+
+    public static void setJWTSigningKeyInfo_Transaction(Start start, Connection con, JWTSigningKeyInfo info)
+            throws SQLException {
+
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getJWTSigningKeysTable()
+                + "(key_id, key_string, created_at, algorithm) VALUES(?, ?, ?, ?)";
+
+        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, info.keyId);
+            pst.setString(2, info.getKeyString());
+            pst.setLong(3, info.createdAtTime);
+            pst.setString(4, info.algorithm);
+            pst.executeUpdate();
+        }
     }
 }

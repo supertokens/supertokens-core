@@ -804,7 +804,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     public List<JWTSigningKeyInfo> getJWTSigningKeys_Transaction(TransactionConnection con) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return GeneralQueries.getJWTSigningKeys_Transaction(this, sqlCon);
+            return JWTSigningQueries.getJWTSigningKeys_Transaction(this, sqlCon);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -815,7 +815,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            GeneralQueries.setJWTSigningKeyInfo_Transaction(this, sqlCon, info);
+            JWTSigningQueries.setJWTSigningKeyInfo_Transaction(this, sqlCon, info);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
