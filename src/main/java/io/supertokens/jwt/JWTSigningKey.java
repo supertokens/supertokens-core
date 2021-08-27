@@ -112,28 +112,40 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
             SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
 
             return sqlStorage.startTransaction(con -> {
-               JWTSigningKeyInfo keyInfo;
-               String algorithmType;
+               JWTSigningKeyInfo keyInfo = null;
 
-               try {
-                   algorithmType = getAlgorithmType(algorithm);
-               } catch (NoSuchAlgorithmException e) {
-                   throw new StorageTransactionLogicException(e);
-               }
+               List<JWTSigningKeyInfo> keysFromStorage = sqlStorage.getJWTSigningKeys_Transaction(con);
 
-               JWTSigningKeyInfo keyFromStorage = sqlStorage.getLatestJWTSigningKeyForAlgorithm_Transaction(con, algorithmType);
-
-               if (keyFromStorage == null) {
+               if (keysFromStorage.isEmpty()) {
                    try {
                        long currentTimeInMillis = System.currentTimeMillis();
                        Utils.PubPriKey newKey = Utils.generateNewPubPriKey();
-                       keyInfo = new JWTSigningKeyInfo(Utils.getUUID(), newKey.publicKey, newKey.privateKey, currentTimeInMillis, algorithm, algorithmType);
+                       keyInfo = new JWTSigningKeyInfo(Utils.getUUID(), currentTimeInMillis, algorithm, newKey.publicKey + "|" +newKey.privateKey);
                        sqlStorage.setJWTSigningKey_Transaction(con, keyInfo);
                    } catch (NoSuchAlgorithmException e) {
                        throw new StorageTransactionLogicException(e);
                    }
                } else {
-                   keyInfo = keyFromStorage;
+                   // Loop through the keys and find the first one for the algorithm
+                   for (int i = 0; i < keysFromStorage.size(); i++) {
+                       JWTSigningKeyInfo currentKey = keysFromStorage.get(i);
+                       if (currentKey.algorithm.equalsIgnoreCase(algorithm)) {
+                           keyInfo = currentKey;
+                           break;
+                       }
+                   }
+
+                   // If no key was found create a new one
+                   if (keyInfo == null) {
+                       try {
+                           long currentTimeInMillis = System.currentTimeMillis();
+                           Utils.PubPriKey newKey = Utils.generateNewPubPriKey();
+                           keyInfo = new JWTSigningKeyInfo(Utils.getUUID(), currentTimeInMillis, algorithm, newKey.publicKey + "|" +newKey.privateKey);
+                           sqlStorage.setJWTSigningKey_Transaction(con, keyInfo);
+                       } catch (NoSuchAlgorithmException e) {
+                           throw new StorageTransactionLogicException(e);
+                       }
+                   }
                }
 
                sqlStorage.commitTransaction(con);
@@ -142,24 +154,35 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             SessionNoSQLStorage_1 noSQLStorage = (SessionNoSQLStorage_1) storage;
 
-            JWTSigningKeyInfo keyInfo;
+            JWTSigningKeyInfo keyInfo = null;
 
-            String algorithmType;
+            List<JWTSigningKeyInfo> keysFromStorage = noSQLStorage.getJWTSigningKeys_Transaction();
 
-            try {
-                algorithmType = getAlgorithmType(algorithm);
-            } catch (NoSuchAlgorithmException e) {
-                throw new StorageTransactionLogicException(e);
-            }
-
-            JWTSigningKeyInfo keyFromStorage = noSQLStorage.getLatestJWTSigningKeyForAlgorithm_Transaction(algorithmType);
-
-            if (keyFromStorage == null) {
+            if (keysFromStorage.isEmpty()) {
                 long currentTimeInMillis = System.currentTimeMillis();
                 Utils.PubPriKey newKey = Utils.generateNewPubPriKey();
-                keyInfo = new JWTSigningKeyInfo(Utils.getUUID(), newKey.publicKey, newKey.privateKey, currentTimeInMillis, algorithm, algorithmType);
+                keyInfo = new JWTSigningKeyInfo(Utils.getUUID(), currentTimeInMillis, algorithm, newKey.publicKey + "|" + newKey.privateKey);
+                noSQLStorage.setJWTSigningKeyInfo_Transaction(keyInfo);
             } else {
-                keyInfo = keyFromStorage;
+                for (int i = 0; i < keysFromStorage.size(); i++) {
+                    JWTSigningKeyInfo currentKey = keysFromStorage.get(i);
+                    if (currentKey.algorithm.equalsIgnoreCase(algorithm)) {
+                        keyInfo = currentKey;
+                        break;
+                    }
+                }
+
+                // If no key was found create a new one
+                if (keyInfo == null) {
+                    try {
+                        long currentTimeInMillis = System.currentTimeMillis();
+                        Utils.PubPriKey newKey = Utils.generateNewPubPriKey();
+                        keyInfo = new JWTSigningKeyInfo(Utils.getUUID(), currentTimeInMillis, algorithm, newKey.publicKey + "|" +newKey.privateKey);
+                        noSQLStorage.setJWTSigningKeyInfo_Transaction(keyInfo);
+                    } catch (NoSuchAlgorithmException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                }
             }
 
             return keyInfo;
@@ -168,7 +191,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         throw new QuitProgramException("Unsupported storage type detected");
     }
 
-    private String getAlgorithmType(String algorithm) throws NoSuchAlgorithmException {
+    public static String getAlgorithmType(String algorithm) throws NoSuchAlgorithmException {
         if (algorithm.equalsIgnoreCase("rs256")) {
             return "RSA";
         }

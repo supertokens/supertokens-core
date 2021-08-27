@@ -22,14 +22,8 @@ import io.supertokens.inmemorydb.config.Config;
 public class JWTSigningQueries {
     static String getQueryToCreateJWTSigningTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getJWTSigningKeysTable() + " ("
-                + "key_id VARCHAR(255) NOT NULL," + "public_key TEXT NOT NULL,"
-                + "private_key TEXT NOT NULL," + "algorithm VARCHAR(10) NOT NULL,"
-                + "algorithm_type VARCHAR(10) NOT NULL," + "created_at BIGINT UNSIGNED,"
+                + "key_id VARCHAR(255) NOT NULL," + "key_string TEXT NOT NULL,"
+                + "algorithm VARCHAR(10) NOT NULL," + "created_at BIGINT UNSIGNED,"
                 + "PRIMARY KEY(key_id));";
-    }
-
-    static String getQueryToFetchLatestKey(Start start) {
-        return "SELECT * FROM " + Config.getConfig(start).getJWTSigningKeysTable()
-                + "ORDER BY created_at DESC";
     }
 }

@@ -71,17 +71,21 @@ public class JWTSigningFunctions {
 
         for (int i = 0; i < keys.size(); i++) {
             JWTSigningKeyInfo currentKeyInfo = keys.get(i);
-            RSAPublicKey publicKey = getPublicKeyFromString(currentKeyInfo.publicKey, currentKeyInfo.algorithmType.toUpperCase());
-            JsonObject jwk = new JsonObject();
 
-            jwk.addProperty("kty", currentKeyInfo.algorithmType);
-            jwk.addProperty("kid", currentKeyInfo.keyId);
-            jwk.addProperty("n", Base64.getUrlEncoder().encodeToString(publicKey.getModulus().toByteArray()));
-            jwk.addProperty("e", Base64.getUrlEncoder().encodeToString(publicKey.getPublicExponent().toByteArray()));
-            jwk.addProperty("alg", currentKeyInfo.algorithm.toUpperCase());
-            jwk.addProperty("use", "sig");
+            // If the key string contains | it is an asymmetric key
+            if (currentKeyInfo.getKeyString().contains("|")) {
+                RSAPublicKey publicKey = getPublicKeyFromString(currentKeyInfo.getAsAsymmetric().publicKey, JWTSigningKey.getAlgorithmType(currentKeyInfo.algorithm));
+                JsonObject jwk = new JsonObject();
 
-            jwks.add(jwk);
+                jwk.addProperty("kty", JWTSigningKey.getAlgorithmType(currentKeyInfo.algorithm));
+                jwk.addProperty("kid", currentKeyInfo.keyId);
+                jwk.addProperty("n", Base64.getUrlEncoder().encodeToString(publicKey.getModulus().toByteArray()));
+                jwk.addProperty("e", Base64.getUrlEncoder().encodeToString(publicKey.getPublicExponent().toByteArray()));
+                jwk.addProperty("alg", currentKeyInfo.algorithm.toUpperCase());
+                jwk.addProperty("use", "sig");
+
+                jwks.add(jwk);
+            }
         }
 
         return jwks;
@@ -95,8 +99,9 @@ public class JWTSigningFunctions {
     private static Algorithm getAlgorithmFromString(Main main, String algorithm, JWTSigningKeyInfo keyToUse) throws NoSuchAlgorithmException, InvalidKeySpecException {
         // TODO: Abstract this away from the main package to avoid a direct dependency on auth0s package
         if (algorithm.equalsIgnoreCase("rs256")) {
-            RSAPublicKey publicKey = getPublicKeyFromString(keyToUse.publicKey, "RSA");
-            RSAPrivateKey privateKey = getPrivateKeyFromString(keyToUse.privateKey, "RSA");
+            String algorithmType = JWTSigningKey.getAlgorithmType(algorithm);
+            RSAPublicKey publicKey = getPublicKeyFromString(keyToUse.getAsAsymmetric().publicKey, algorithmType);
+            RSAPrivateKey privateKey = getPrivateKeyFromString(keyToUse.getAsAsymmetric().privateKey, algorithmType);
 
             return Algorithm.RSA256(publicKey, privateKey);
         }

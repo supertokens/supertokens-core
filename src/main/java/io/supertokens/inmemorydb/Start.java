@@ -820,16 +820,4 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             throw new StorageQueryException(e);
         }
     }
-
-    @Override
-    public JWTSigningKeyInfo getLatestJWTSigningKeyForAlgorithm_Transaction(TransactionConnection con, String algorithm)
-            throws StorageQueryException {
-        Connection sqlCon = (Connection) con.getConnection();
-
-        try {
-            return GeneralQueries.getLatestJWTSigningKeyForAlgorithm_Transaction(this, sqlCon, algorithm);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
 }
