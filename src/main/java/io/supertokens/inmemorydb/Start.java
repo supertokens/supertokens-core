@@ -40,6 +40,7 @@ import io.supertokens.pluginInterface.exceptions.QuitProgramFromPluginException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
+import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
@@ -811,11 +812,16 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
 
     @Override
     public void setJWTSigningKey_Transaction(TransactionConnection con, JWTSigningKeyInfo info)
-            throws StorageQueryException {
+            throws StorageQueryException, DuplicateKeyIdException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             JWTSigningQueries.setJWTSigningKeyInfo_Transaction(this, sqlCon, info);
-        } catch (SQLException e) {
+        } catch (StorageTransactionLogicException e) {
+
+            if (e.actualException.getMessage().equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "+ Config.getConfig(this).getJWTSigningKeysTable() +".key_id)")) {
+                throw new DuplicateKeyIdException();
+            }
+
             throw new StorageQueryException(e);
         }
     }

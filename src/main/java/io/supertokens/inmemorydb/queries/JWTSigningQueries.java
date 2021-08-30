@@ -21,6 +21,7 @@ import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSymmetricSigningKeyInfo;
@@ -89,7 +90,7 @@ public class JWTSigningQueries {
     }
 
     public static void setJWTSigningKeyInfo_Transaction(Start start, Connection con, JWTSigningKeyInfo info)
-            throws SQLException {
+            throws StorageTransactionLogicException {
 
         String QUERY = "INSERT INTO " + Config.getConfig(start).getJWTSigningKeysTable()
                 + "(key_id, key_string, created_at, algorithm) VALUES(?, ?, ?, ?)";
@@ -100,6 +101,8 @@ public class JWTSigningQueries {
             pst.setLong(3, info.createdAtTime);
             pst.setString(4, info.algorithm);
             pst.executeUpdate();
+        } catch (SQLException e) {
+            throw new StorageTransactionLogicException(e);
         }
     }
 }
