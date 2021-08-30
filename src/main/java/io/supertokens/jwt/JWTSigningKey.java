@@ -19,6 +19,7 @@ package io.supertokens.jwt;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.jwt.exceptions.UnsupportedAlgorithmException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -42,13 +43,12 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     public enum SupportedAlgorithms {
         RS256;
 
-        public static boolean isAlgorithmSupported(String algorithm) {
-            try {
-                SupportedAlgorithms.valueOf(algorithm);
-                return true;
-            } catch (IllegalArgumentException e) {
-                return false;
+        public String getAlgorithmType() {
+            if (this == SupportedAlgorithms.RS256) {
+                return "rsa";
             }
+
+            return "";
         }
     }
 
@@ -105,12 +105,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         throw new QuitProgramException("Unsupported storage type detected");
     }
 
-    public JWTSigningKeyInfo getKeyForAlgorithm(String algorithm)
-            throws NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException {
-        if (!SupportedAlgorithms.isAlgorithmSupported(algorithm)) {
-            throw new NoSuchAlgorithmException(algorithm + "is not a supported signing algorithm");
-        }
-
+    public JWTSigningKeyInfo getKeyForAlgorithm(SupportedAlgorithms algorithm)
+            throws UnsupportedAlgorithmException, StorageQueryException, StorageTransactionLogicException {
         SessionStorage storage = StorageLayer.getSessionStorage(main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
@@ -125,14 +121,14 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                    try {
                        keyInfo = generateKeyForAlgorithm(algorithm);
                        sqlStorage.setJWTSigningKey_Transaction(con, keyInfo);
-                   } catch (NoSuchAlgorithmException | DuplicateKeyIdException e) {
+                   } catch (NoSuchAlgorithmException | DuplicateKeyIdException | UnsupportedAlgorithmException e) {
                        throw new StorageTransactionLogicException(e);
                    }
                } else {
                    // Loop through the keys and find the first one for the algorithm
                    for (int i = 0; i < keysFromStorage.size(); i++) {
                        JWTSigningKeyInfo currentKey = keysFromStorage.get(i);
-                       if (currentKey.algorithm.equalsIgnoreCase(algorithm)) {
+                       if (currentKey.algorithm.equalsIgnoreCase(algorithm.name())) {
                            keyInfo = currentKey;
                            break;
                        }
@@ -143,7 +139,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                        try {
                            keyInfo = generateKeyForAlgorithm(algorithm);
                            sqlStorage.setJWTSigningKey_Transaction(con, keyInfo);
-                       } catch (NoSuchAlgorithmException | DuplicateKeyIdException e) {
+                       } catch (NoSuchAlgorithmException | DuplicateKeyIdException | UnsupportedAlgorithmException e) {
                            throw new StorageTransactionLogicException(e);
                        }
                    }
@@ -176,7 +172,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                 } else {
                     for (int i = 0; i < keysFromStorage.size(); i++) {
                         JWTSigningKeyInfo currentKey = keysFromStorage.get(i);
-                        if (currentKey.algorithm.equalsIgnoreCase(algorithm)) {
+                        if (currentKey.algorithm.equalsIgnoreCase(algorithm.name())) {
                             keyInfo = currentKey;
                             break;
                         }
@@ -206,22 +202,14 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         throw new QuitProgramException("Unsupported storage type detected");
     }
 
-    public static String getAlgorithmType(String algorithm) throws NoSuchAlgorithmException {
-        if (algorithm.equalsIgnoreCase("rs256")) {
-            return "RSA";
-        }
-
-        throw new NoSuchAlgorithmException();
-    }
-
-    private JWTSigningKeyInfo generateKeyForAlgorithm(String algorithm) throws NoSuchAlgorithmException {
-        if (getAlgorithmType(algorithm).equalsIgnoreCase("rsa")) {
+    private JWTSigningKeyInfo generateKeyForAlgorithm(SupportedAlgorithms algorithm) throws NoSuchAlgorithmException, UnsupportedAlgorithmException {
+        if (algorithm.getAlgorithmType().equalsIgnoreCase("rsa")) {
             long currentTimeInMillis = System.currentTimeMillis();
             Utils.PubPriKey newKey = Utils.generateNewPubPriKey();
-            return new JWTAsymmetricSigningKeyInfo(Utils.getUUID(), currentTimeInMillis, algorithm, newKey.publicKey,
+            return new JWTAsymmetricSigningKeyInfo(Utils.getUUID(), currentTimeInMillis, algorithm.name(), newKey.publicKey,
                     newKey.privateKey);
         }
 
-        throw new NoSuchAlgorithmException();
+        throw new UnsupportedAlgorithmException();
     }
 }

@@ -21,6 +21,7 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.jwt.exceptions.UnsupportedAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
@@ -37,14 +38,23 @@ import java.util.*;
 public class JWTSigningFunctions {
     public static String createJWTToken(Main main, String algorithm, JsonObject payload, String jwksDomain, long jwtValidity)
             throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException, InvalidKeySpecException,
-            JWTCreationException {
+            JWTCreationException, UnsupportedAlgorithmException {
         // TODO: In the future we will have a way for the user to send a custom key id to use
-        JWTSigningKeyInfo keyToUse = getKeyToUse(main, algorithm);
-        Algorithm signingAlgorithm = getAlgorithmFromString(main, algorithm, keyToUse);
+        JWTSigningKey.SupportedAlgorithms supportedAlgorithm;
+
+        try {
+            supportedAlgorithm = JWTSigningKey.SupportedAlgorithms.valueOf(algorithm);
+        } catch (IllegalArgumentException e) {
+            // If it enters this block then the string value provided does not match the algorithms we support
+            throw new UnsupportedAlgorithmException();
+        }
+
+        JWTSigningKeyInfo keyToUse = getKeyToUse(main, supportedAlgorithm);
+        Algorithm signingAlgorithm = getAuth0AlgorithmFromString(supportedAlgorithm, keyToUse);
 
         // Create the claims for the JWT header
         Map<String, Object> headerClaims = new HashMap<>();
-        headerClaims.put("alg", algorithm.toUpperCase()); // All examples in the RFC have the algorithm in upper case
+        headerClaims.put("alg", supportedAlgorithm.name().toUpperCase()); // All examples in the RFC have the algorithm in upper case
         headerClaims.put("typ", "JWT");
         headerClaims.put("kid", keyToUse.keyId);
 
@@ -75,10 +85,11 @@ public class JWTSigningFunctions {
 
             // If the key string contains | it is an asymmetric key
             if (currentKeyInfo instanceof JWTAsymmetricSigningKeyInfo) {
-                RSAPublicKey publicKey = getPublicKeyFromString(( (JWTAsymmetricSigningKeyInfo) currentKeyInfo).publicKey, JWTSigningKey.getAlgorithmType(currentKeyInfo.algorithm));
+                JWTSigningKey.SupportedAlgorithms algorithm = JWTSigningKey.SupportedAlgorithms.valueOf(currentKeyInfo.algorithm);
+                RSAPublicKey publicKey = getPublicKeyFromString(( (JWTAsymmetricSigningKeyInfo) currentKeyInfo).publicKey, algorithm);
                 JsonObject jwk = new JsonObject();
 
-                jwk.addProperty("kty", JWTSigningKey.getAlgorithmType(currentKeyInfo.algorithm));
+                jwk.addProperty("kty", algorithm.getAlgorithmType());
                 jwk.addProperty("kid", currentKeyInfo.keyId);
                 jwk.addProperty("n", Base64.getUrlEncoder().encodeToString(publicKey.getModulus().toByteArray()));
                 jwk.addProperty("e", Base64.getUrlEncoder().encodeToString(publicKey.getPublicExponent().toByteArray()));
@@ -92,39 +103,38 @@ public class JWTSigningFunctions {
         return jwks;
     }
 
-    private static JWTSigningKeyInfo getKeyToUse(Main main, String algorithm)
-            throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException {
+    private static JWTSigningKeyInfo getKeyToUse(Main main, JWTSigningKey.SupportedAlgorithms algorithm)
+            throws StorageQueryException, StorageTransactionLogicException, UnsupportedAlgorithmException {
         return JWTSigningKey.getInstance(main).getKeyForAlgorithm(algorithm);
     }
 
-    private static Algorithm getAlgorithmFromString(Main main, String algorithm, JWTSigningKeyInfo keyToUse) throws NoSuchAlgorithmException, InvalidKeySpecException {
+    private static Algorithm getAuth0AlgorithmFromString(JWTSigningKey.SupportedAlgorithms algorithm, JWTSigningKeyInfo keyToUse) throws NoSuchAlgorithmException, InvalidKeySpecException, UnsupportedAlgorithmException {
         // TODO: Abstract this away from the main package to avoid a direct dependency on auth0s package
-        if (algorithm.equalsIgnoreCase("rs256")) {
-            String algorithmType = JWTSigningKey.getAlgorithmType(algorithm);
-            RSAPublicKey publicKey = getPublicKeyFromString(((JWTAsymmetricSigningKeyInfo) keyToUse).publicKey, algorithmType);
-            RSAPrivateKey privateKey = getPrivateKeyFromString(((JWTAsymmetricSigningKeyInfo) keyToUse).privateKey, algorithmType);
+        if (algorithm.name().equalsIgnoreCase("rs256")) {
+            RSAPublicKey publicKey = getPublicKeyFromString(((JWTAsymmetricSigningKeyInfo) keyToUse).publicKey, algorithm);
+            RSAPrivateKey privateKey = getPrivateKeyFromString(((JWTAsymmetricSigningKeyInfo) keyToUse).privateKey, algorithm);
 
             return Algorithm.RSA256(publicKey, privateKey);
         }
 
-        throw new NoSuchAlgorithmException(algorithm + " is not a supported JWT signing algorithm");
+        throw new UnsupportedAlgorithmException();
     }
 
-    private static <T extends PublicKey> T getPublicKeyFromString(String keyCert, String algorithm)
+    private static <T extends PublicKey> T getPublicKeyFromString(String keyCert, JWTSigningKey.SupportedAlgorithms algorithm)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] decodedKeyBytes = Base64.getDecoder().decode(keyCert);
         X509EncodedKeySpec keySpec =
                 new X509EncodedKeySpec(decodedKeyBytes);
-        KeyFactory kf = KeyFactory.getInstance(algorithm);
+        KeyFactory kf = KeyFactory.getInstance(algorithm.getAlgorithmType());
         return (T) kf.generatePublic(keySpec);
     }
 
-    private static <T extends PrivateKey> T getPrivateKeyFromString(String keyCert, String algorithm)
+    private static <T extends PrivateKey> T getPrivateKeyFromString(String keyCert, JWTSigningKey.SupportedAlgorithms algorithm)
             throws NoSuchAlgorithmException, InvalidKeySpecException {
         byte[] decodedKeyBytes = Base64.getDecoder().decode(keyCert);
         PKCS8EncodedKeySpec keySpec =
                 new PKCS8EncodedKeySpec(decodedKeyBytes);
-        KeyFactory kf = KeyFactory.getInstance(algorithm);
+        KeyFactory kf = KeyFactory.getInstance(algorithm.getAlgorithmType());
         return (T) kf.generatePrivate(keySpec);
     }
 }
