@@ -53,13 +53,7 @@ public class JWTSigningQueries {
             List<JWTSigningKeyInfo> keys = new ArrayList<>();
 
             while(result.next()) {
-                JWTSigningKeyInfo keyInfo = JWTSigningKeyInfoRowMapper.getInstance().mapOrThrow(result);
-
-                if (keyInfo.keyString.contains("|")) {
-                    keys.add(JWTAsymmetricSigningKeyInfo.withKeyString(keyInfo.keyId, keyInfo.createdAtTime, keyInfo.algorithm, keyInfo.keyString));
-                } else {
-                    keys.add(new JWTSymmetricSigningKeyInfo(keyInfo.keyId, keyInfo.createdAtTime, keyInfo.algorithm, keyInfo.keyString));
-                }
+                keys.add(JWTSigningKeyInfoRowMapper.getInstance().mapOrThrow(result));
             }
 
             return keys;
@@ -83,7 +77,11 @@ public class JWTSigningQueries {
             long createdAt = result.getLong("created_at");
             String algorithm = result.getString("algorithm");
 
-            return new JWTSigningKeyInfo(keyId, createdAt, algorithm, keyString);
+            if (keyString.contains("|")) {
+                return JWTAsymmetricSigningKeyInfo.withKeyString(keyId, createdAt, algorithm, keyString);
+            } else {
+                return new JWTSymmetricSigningKeyInfo(keyId, createdAt, algorithm, keyString);
+            }
         }
     }
 
