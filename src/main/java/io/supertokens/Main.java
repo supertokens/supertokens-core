@@ -25,7 +25,6 @@ import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPas
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
@@ -176,7 +175,6 @@ public class Main {
         // init signing keys
         AccessTokenSigningKey.init(this);
         RefreshTokenKey.init(this);
-        JWTSigningKey.init(this);
 
         // starts removing old session cronjob
         Cronjobs.addCronjob(this, DeleteExpiredSessions.getInstance(this));

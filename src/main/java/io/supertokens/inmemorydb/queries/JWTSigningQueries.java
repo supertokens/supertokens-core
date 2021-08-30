@@ -20,7 +20,9 @@ import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
+import io.supertokens.pluginInterface.jwt.JWTSymmetricSigningKeyInfo;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -51,7 +53,13 @@ public class JWTSigningQueries {
             List<JWTSigningKeyInfo> keys = new ArrayList<>();
 
             while(result.next()) {
-                keys.add(JWTSigningKeyInfoRowMapper.getInstance().mapOrThrow(result));
+                JWTSigningKeyInfo keyInfo = JWTSigningKeyInfoRowMapper.getInstance().mapOrThrow(result);
+
+                if (keyInfo.keyString.contains("|")) {
+                    keys.add(JWTAsymmetricSigningKeyInfo.withKeyString(keyInfo.keyId, keyInfo.createdAtTime, keyInfo.algorithm, keyInfo.keyString));
+                } else {
+                    keys.add(new JWTSymmetricSigningKeyInfo(keyInfo.keyId, keyInfo.createdAtTime, keyInfo.algorithm, keyInfo.keyString));
+                }
             }
 
             return keys;
@@ -87,7 +95,7 @@ public class JWTSigningQueries {
 
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, info.keyId);
-            pst.setString(2, info.getKeyString());
+            pst.setString(2, info.keyString);
             pst.setLong(3, info.createdAtTime);
             pst.setString(4, info.algorithm);
             pst.executeUpdate();

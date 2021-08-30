@@ -46,7 +46,7 @@ public class JWTSigningAPI extends WebserverAPI {
         String algorithm = InputParser.parseStringOrThrowError(input, "algorithm", false);
         assert algorithm != null;
 
-        if (!JWTSigningKey.isJWTAlgorithmSupported(algorithm)) {
+        if (!JWTSigningKey.SupportedAlgorithms.isAlgorithmSupported(algorithm)) {
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNSUPPORTED_ALGORITHM");
             super.sendJsonResponse(200, reply, resp);

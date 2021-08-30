@@ -23,6 +23,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 
 import java.security.*;
@@ -73,8 +74,8 @@ public class JWTSigningFunctions {
             JWTSigningKeyInfo currentKeyInfo = keys.get(i);
 
             // If the key string contains | it is an asymmetric key
-            if (currentKeyInfo.getKeyString().contains("|")) {
-                RSAPublicKey publicKey = getPublicKeyFromString(currentKeyInfo.getAsAsymmetric().publicKey, JWTSigningKey.getAlgorithmType(currentKeyInfo.algorithm));
+            if (currentKeyInfo instanceof JWTAsymmetricSigningKeyInfo) {
+                RSAPublicKey publicKey = getPublicKeyFromString(( (JWTAsymmetricSigningKeyInfo) currentKeyInfo).publicKey, JWTSigningKey.getAlgorithmType(currentKeyInfo.algorithm));
                 JsonObject jwk = new JsonObject();
 
                 jwk.addProperty("kty", JWTSigningKey.getAlgorithmType(currentKeyInfo.algorithm));
@@ -100,8 +101,8 @@ public class JWTSigningFunctions {
         // TODO: Abstract this away from the main package to avoid a direct dependency on auth0s package
         if (algorithm.equalsIgnoreCase("rs256")) {
             String algorithmType = JWTSigningKey.getAlgorithmType(algorithm);
-            RSAPublicKey publicKey = getPublicKeyFromString(keyToUse.getAsAsymmetric().publicKey, algorithmType);
-            RSAPrivateKey privateKey = getPrivateKeyFromString(keyToUse.getAsAsymmetric().privateKey, algorithmType);
+            RSAPublicKey publicKey = getPublicKeyFromString(((JWTAsymmetricSigningKeyInfo) keyToUse).publicKey, algorithmType);
+            RSAPrivateKey privateKey = getPrivateKeyFromString(((JWTAsymmetricSigningKeyInfo) keyToUse).privateKey, algorithmType);
 
             return Algorithm.RSA256(publicKey, privateKey);
         }
