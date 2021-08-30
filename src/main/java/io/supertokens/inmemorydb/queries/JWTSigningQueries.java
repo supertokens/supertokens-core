@@ -16,6 +16,7 @@
 
 package io.supertokens.inmemorydb.queries;
 
+import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
@@ -32,6 +33,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class JWTSigningQueries {
+    private final static String lockString = "jwt_signing_keys_table_lock";
+
     static String getQueryToCreateJWTSigningTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getJWTSigningKeysTable() + " ("
                 + "key_id VARCHAR(255) NOT NULL," + "key_string TEXT NOT NULL,"
@@ -42,7 +45,7 @@ public class JWTSigningQueries {
     public static List<JWTSigningKeyInfo> getJWTSigningKeys_Transaction(Start start, Connection con)
             throws SQLException, StorageQueryException {
 
-        // TODO: does this need locking?
+        ((ConnectionWithLocks) con).lock(lockString);
 
         String QUERY = "SELECT * FROM "
                 + Config.getConfig(start).getJWTSigningKeysTable()
