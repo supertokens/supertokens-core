@@ -19,7 +19,7 @@ package io.supertokens.jwt;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.jwt.exceptions.UnsupportedAlgorithmException;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -106,7 +106,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     }
 
     public JWTSigningKeyInfo getOrCreateAndGetKeyForAlgorithm(SupportedAlgorithms algorithm)
-            throws UnsupportedAlgorithmException, StorageQueryException, StorageTransactionLogicException, DuplicateKeyIdException {
+            throws UnsupportedJWTSigningAlgorithmException, StorageQueryException, StorageTransactionLogicException, DuplicateKeyIdException {
         SessionStorage storage = StorageLayer.getSessionStorage(main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
@@ -122,7 +122,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                         try {
                             keyInfo = generateKeyForAlgorithm(algorithm);
                             sqlStorage.setJWTSigningKey_Transaction(con, keyInfo);
-                        } catch (NoSuchAlgorithmException | DuplicateKeyIdException | UnsupportedAlgorithmException e) {
+                        } catch (NoSuchAlgorithmException | DuplicateKeyIdException | UnsupportedJWTSigningAlgorithmException e) {
                             throw new StorageTransactionLogicException(e);
                         }
                     } else {
@@ -140,7 +140,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                             try {
                                 keyInfo = generateKeyForAlgorithm(algorithm);
                                 sqlStorage.setJWTSigningKey_Transaction(con, keyInfo);
-                            } catch (NoSuchAlgorithmException | DuplicateKeyIdException | UnsupportedAlgorithmException e) {
+                            } catch (NoSuchAlgorithmException | DuplicateKeyIdException | UnsupportedJWTSigningAlgorithmException e) {
                                 throw new StorageTransactionLogicException(e);
                             }
                         }
@@ -152,8 +152,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
             } catch (StorageTransactionLogicException e) {
                 if (e.actualException instanceof DuplicateKeyIdException) {
                     throw (DuplicateKeyIdException) e.actualException;
-                } else if (e.actualException instanceof UnsupportedAlgorithmException) {
-                    throw (UnsupportedAlgorithmException) e.actualException;
+                } else if (e.actualException instanceof UnsupportedJWTSigningAlgorithmException) {
+                    throw (UnsupportedJWTSigningAlgorithmException) e.actualException;
                 }
 
                 throw e;
@@ -212,7 +212,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         throw new QuitProgramException("Unsupported storage type detected");
     }
 
-    private JWTSigningKeyInfo generateKeyForAlgorithm(SupportedAlgorithms algorithm) throws NoSuchAlgorithmException, UnsupportedAlgorithmException {
+    private JWTSigningKeyInfo generateKeyForAlgorithm(SupportedAlgorithms algorithm) throws NoSuchAlgorithmException,
+            UnsupportedJWTSigningAlgorithmException {
         if (algorithm.getAlgorithmType().equalsIgnoreCase("rsa")) {
             long currentTimeInMillis = System.currentTimeMillis();
             Utils.PubPriKey newKey = Utils.generateNewPubPriKey();
@@ -220,6 +221,6 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                     newKey.privateKey);
         }
 
-        throw new UnsupportedAlgorithmException();
+        throw new UnsupportedJWTSigningAlgorithmException();
     }
 }

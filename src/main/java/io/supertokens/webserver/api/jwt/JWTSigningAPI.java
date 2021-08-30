@@ -19,7 +19,7 @@ package io.supertokens.webserver.api.jwt;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.jwt.JWTSigningFunctions;
-import io.supertokens.jwt.exceptions.UnsupportedAlgorithmException;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -65,7 +65,7 @@ public class JWTSigningAPI extends WebserverAPI {
             reply.addProperty("status", "OK");
             reply.addProperty("jwt", jwt);
             super.sendJsonResponse(200, reply, resp);
-        } catch (UnsupportedAlgorithmException e) {
+        } catch (UnsupportedJWTSigningAlgorithmException e) {
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNSUPPORTED_ALGORITHM_ERROR");
             super.sendJsonResponse(200, reply, resp);

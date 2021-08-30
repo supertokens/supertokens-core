@@ -21,7 +21,7 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.jwt.exceptions.UnsupportedAlgorithmException;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
@@ -39,7 +39,7 @@ import java.util.*;
 public class JWTSigningFunctions {
     public static String createJWTToken(Main main, String algorithm, JsonObject payload, String jwksDomain, long jwtValidity)
             throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException, InvalidKeySpecException,
-            JWTCreationException, UnsupportedAlgorithmException, DuplicateKeyIdException {
+            JWTCreationException, UnsupportedJWTSigningAlgorithmException, DuplicateKeyIdException {
         // TODO: In the future we will have a way for the user to send a custom key id to use
         JWTSigningKey.SupportedAlgorithms supportedAlgorithm;
 
@@ -47,7 +47,7 @@ public class JWTSigningFunctions {
             supportedAlgorithm = JWTSigningKey.SupportedAlgorithms.valueOf(algorithm);
         } catch (IllegalArgumentException e) {
             // If it enters this block then the string value provided does not match the algorithms we support
-            throw new UnsupportedAlgorithmException();
+            throw new UnsupportedJWTSigningAlgorithmException();
         }
 
         JWTSigningKeyInfo keyToUse = JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(supportedAlgorithm);
@@ -104,7 +104,8 @@ public class JWTSigningFunctions {
         return jwks;
     }
 
-    private static Algorithm getAuth0AlgorithmFromString(JWTSigningKey.SupportedAlgorithms algorithm, JWTSigningKeyInfo keyToUse) throws NoSuchAlgorithmException, InvalidKeySpecException, UnsupportedAlgorithmException {
+    private static Algorithm getAuth0AlgorithmFromString(JWTSigningKey.SupportedAlgorithms algorithm, JWTSigningKeyInfo keyToUse) throws NoSuchAlgorithmException, InvalidKeySpecException,
+            UnsupportedJWTSigningAlgorithmException {
         // TODO: Abstract this away from the main package to avoid a direct dependency on auth0s package
         if (algorithm.name().equalsIgnoreCase("rs256")) {
             RSAPublicKey publicKey = getPublicKeyFromString(((JWTAsymmetricSigningKeyInfo) keyToUse).publicKey, algorithm);
@@ -113,7 +114,7 @@ public class JWTSigningFunctions {
             return Algorithm.RSA256(publicKey, privateKey);
         }
 
-        throw new UnsupportedAlgorithmException();
+        throw new UnsupportedJWTSigningAlgorithmException();
     }
 
     private static <T extends PublicKey> T getPublicKeyFromString(String keyCert, JWTSigningKey.SupportedAlgorithms algorithm)

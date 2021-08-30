@@ -22,7 +22,7 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.jwt.JWTSigningFunctions;
-import io.supertokens.jwt.exceptions.UnsupportedAlgorithmException;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import org.junit.AfterClass;
@@ -87,7 +87,7 @@ public class JWTCreateTest {
         try {
             JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
             fail("JWTSigningFunctions.createJWTToken succeeded when it should have failed");
-        } catch (UnsupportedAlgorithmException e) {
+        } catch (UnsupportedJWTSigningAlgorithmException e) {
             // Do nothing
         }
     }
