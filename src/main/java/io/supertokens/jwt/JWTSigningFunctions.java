@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
+import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 
 import java.security.*;
 import java.security.interfaces.RSAPrivateKey;
@@ -38,7 +39,7 @@ import java.util.*;
 public class JWTSigningFunctions {
     public static String createJWTToken(Main main, String algorithm, JsonObject payload, String jwksDomain, long jwtValidity)
             throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException, InvalidKeySpecException,
-            JWTCreationException, UnsupportedAlgorithmException {
+            JWTCreationException, UnsupportedAlgorithmException, DuplicateKeyIdException {
         // TODO: In the future we will have a way for the user to send a custom key id to use
         JWTSigningKey.SupportedAlgorithms supportedAlgorithm;
 
