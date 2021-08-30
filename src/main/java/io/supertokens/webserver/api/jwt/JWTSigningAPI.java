@@ -19,8 +19,11 @@ package io.supertokens.webserver.api.jwt;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.jwt.JWTSigningFunctions;
-import io.supertokens.jwt.JWTSigningKey;
+import io.supertokens.jwt.exceptions.UnsupportedAlgorithmException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -28,6 +31,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 
 public class JWTSigningAPI extends WebserverAPI {
 
@@ -60,10 +65,14 @@ public class JWTSigningAPI extends WebserverAPI {
             reply.addProperty("status", "OK");
             reply.addProperty("jwt", jwt);
             super.sendJsonResponse(200, reply, resp);
-        } catch (Exception e) {
+        } catch (UnsupportedAlgorithmException e) {
             JsonObject reply = new JsonObject();
-            reply.addProperty("status", "JWT_CREATION_ERROR");
+            reply.addProperty("status", "UNSUPPORTED_ALGORITHM_ERROR");
             super.sendJsonResponse(200, reply, resp);
+        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
+                | InvalidKeySpecException | DuplicateKeyIdException e) {
+            // TODO: in the future DuplicateKeyIdException should map to a specific API response
+            throw new ServletException(e);
         }
     }
 }
