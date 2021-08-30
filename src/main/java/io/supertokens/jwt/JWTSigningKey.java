@@ -105,7 +105,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         throw new QuitProgramException("Unsupported storage type detected");
     }
 
-    public JWTSigningKeyInfo getKeyForAlgorithm(SupportedAlgorithms algorithm)
+    public JWTSigningKeyInfo getOrCreateAndGetKeyForAlgorithm(SupportedAlgorithms algorithm)
             throws UnsupportedAlgorithmException, StorageQueryException, StorageTransactionLogicException {
         SessionStorage storage = StorageLayer.getSessionStorage(main);
 

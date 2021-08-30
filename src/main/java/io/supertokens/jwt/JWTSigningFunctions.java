@@ -105,7 +105,7 @@ public class JWTSigningFunctions {
 
     private static JWTSigningKeyInfo getKeyToUse(Main main, JWTSigningKey.SupportedAlgorithms algorithm)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedAlgorithmException {
-        return JWTSigningKey.getInstance(main).getKeyForAlgorithm(algorithm);
+        return JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(algorithm);
     }
 
     private static Algorithm getAuth0AlgorithmFromString(JWTSigningKey.SupportedAlgorithms algorithm, JWTSigningKeyInfo keyToUse) throws NoSuchAlgorithmException, InvalidKeySpecException, UnsupportedAlgorithmException {
