@@ -60,7 +60,6 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     private static final String APP_ID_KEY_NAME = "app_id";
     private static final String ACCESS_TOKEN_SIGNING_KEY_NAME = "access_token_signing_key";
     private static final String REFRESH_TOKEN_KEY_NAME = "refresh_token_key";
-    private static final String JWT_SIGNING_KEY_NAME = "jwt_signing_token_key";
     public static boolean isTesting = false;
     private static boolean silent = false;
     boolean enabled = true;

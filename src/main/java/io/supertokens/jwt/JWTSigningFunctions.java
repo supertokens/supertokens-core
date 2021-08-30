@@ -49,7 +49,7 @@ public class JWTSigningFunctions {
             throw new UnsupportedAlgorithmException();
         }
 
-        JWTSigningKeyInfo keyToUse = getKeyToUse(main, supportedAlgorithm);
+        JWTSigningKeyInfo keyToUse = JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(supportedAlgorithm);
         Algorithm signingAlgorithm = getAuth0AlgorithmFromString(supportedAlgorithm, keyToUse);
 
         // Create the claims for the JWT header
@@ -67,7 +67,6 @@ public class JWTSigningFunctions {
         jwtPayload.put("exp", jwtExpiry);
         jwtPayload.put("iat", currentTimeInMillis / 1000); // JWT uses seconds from epoch not millis
 
-        // TODO: Add custom payload
         return com.auth0.jwt.JWT.create()
                 .withPayload(jwtPayload)
                 .withHeader(headerClaims)
@@ -86,6 +85,7 @@ public class JWTSigningFunctions {
             // If the key string contains | it is an asymmetric key
             if (currentKeyInfo instanceof JWTAsymmetricSigningKeyInfo) {
                 JWTSigningKey.SupportedAlgorithms algorithm = JWTSigningKey.SupportedAlgorithms.valueOf(currentKeyInfo.algorithm);
+                // TODO: In the future with more asymmetric algorithms [ES256 for example] we will need a provider system for the public key + JWK - Nemi
                 RSAPublicKey publicKey = getPublicKeyFromString(( (JWTAsymmetricSigningKeyInfo) currentKeyInfo).publicKey, algorithm);
                 JsonObject jwk = new JsonObject();
 
@@ -101,11 +101,6 @@ public class JWTSigningFunctions {
         }
 
         return jwks;
-    }
-
-    private static JWTSigningKeyInfo getKeyToUse(Main main, JWTSigningKey.SupportedAlgorithms algorithm)
-            throws StorageQueryException, StorageTransactionLogicException, UnsupportedAlgorithmException {
-        return JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(algorithm);
     }
 
     private static Algorithm getAuth0AlgorithmFromString(JWTSigningKey.SupportedAlgorithms algorithm, JWTSigningKeyInfo keyToUse) throws NoSuchAlgorithmException, InvalidKeySpecException, UnsupportedAlgorithmException {
