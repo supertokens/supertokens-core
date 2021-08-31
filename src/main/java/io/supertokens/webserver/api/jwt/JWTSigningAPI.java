@@ -35,6 +35,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 
 public class JWTSigningAPI extends WebserverAPI {
+    private static final long serialVersionUID = 288744303462186631L;
 
     public JWTSigningAPI(Main main) {
         super(main, RECIPE_ID.JWT.toString());

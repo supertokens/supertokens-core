@@ -36,6 +36,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 
 public class JWKSAPI extends WebserverAPI {
+    private static final long serialVersionUID = -3475605151671191143L;
 
     public JWKSAPI(Main main) {
         super(main, RECIPE_ID.JWT.toString());
