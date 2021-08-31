@@ -35,9 +35,9 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 
-public class JWKAPI extends WebserverAPI {
+public class JWKSAPI extends WebserverAPI {
 
-    public JWKAPI(Main main) {
+    public JWKSAPI(Main main) {
         super(main, RECIPE_ID.JWT.toString());
     }
 

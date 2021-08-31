@@ -27,7 +27,6 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
