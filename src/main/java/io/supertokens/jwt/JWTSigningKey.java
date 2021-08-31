@@ -134,6 +134,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
                     List<JWTSigningKeyInfo> keysFromStorage = sqlStorage.getJWTSigningKeys_Transaction(con);
 
+                    // If there are no keys in storage, generate a new one
                     if (keysFromStorage.isEmpty()) {
                         try {
                             keyInfo = generateKeyForAlgorithm(algorithm);
@@ -182,6 +183,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
             while (true) {
                 List<JWTSigningKeyInfo> keysFromStorage = noSQLStorage.getJWTSigningKeys_Transaction();
 
+                // If there are no keys in storage, generate a new one
                 if (keysFromStorage.isEmpty()) {
                     try {
                         keyInfo = generateKeyForAlgorithm(algorithm);
@@ -196,6 +198,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                         throw new StorageTransactionLogicException(e);
                     }
                 } else {
+                    // Loop through the keys and find the first one for the algorithm
                     for (int i = 0; i < keysFromStorage.size(); i++) {
                         JWTSigningKeyInfo currentKey = keysFromStorage.get(i);
                         if (currentKey.algorithm.equalsIgnoreCase(algorithm.name())) {
@@ -238,7 +241,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         }
 
         // Ideally this should never execute because for unsupported algorithms an exception will be thrown before this method
-        // This is just so that we dont need to handle null or empty when we call this method
+        // This is just so that we dont need to handle null when we call this method
         throw new UnsupportedJWTSigningAlgorithmException();
     }
 }

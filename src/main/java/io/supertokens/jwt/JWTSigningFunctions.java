@@ -68,7 +68,7 @@ public class JWTSigningFunctions {
 
         JWTSigningKeyInfo keyToUse = JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(supportedAlgorithm);
         // Get an instance of auth0's Algorithm which is needed when signing using auth0's package
-        Algorithm signingAlgorithm = getAuth0AlgorithmFromString(supportedAlgorithm, keyToUse);
+        Algorithm signingAlgorithm = getAuth0Algorithm(supportedAlgorithm, keyToUse);
 
         // Create the claims for the JWT header
         Map<String, Object> headerClaims = new HashMap<>();
@@ -131,7 +131,7 @@ public class JWTSigningFunctions {
         return jwks;
     }
 
-    private static Algorithm getAuth0AlgorithmFromString(JWTSigningKey.SupportedAlgorithms algorithm, JWTSigningKeyInfo keyToUse) throws NoSuchAlgorithmException, InvalidKeySpecException,
+    private static Algorithm getAuth0Algorithm(JWTSigningKey.SupportedAlgorithms algorithm, JWTSigningKeyInfo keyToUse) throws NoSuchAlgorithmException, InvalidKeySpecException,
             UnsupportedJWTSigningAlgorithmException {
         // TODO: Abstract this away from the main package to avoid a direct dependency on auth0s package
         if (algorithm.name().equalsIgnoreCase("rs256")) {
