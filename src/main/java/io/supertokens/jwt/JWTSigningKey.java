@@ -24,6 +24,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
+import io.supertokens.pluginInterface.jwt.JWTSymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.session.SessionStorage;
@@ -67,6 +68,12 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         return instance;
     }
 
+    /**
+     * Used to get all signing keys (symmetric or asymmetric) from storage
+     * @return List of {@link JWTSigningKeyInfo}. Asymmetric keys use {@link JWTAsymmetricSigningKeyInfo} and symmetric keys use {@link JWTSymmetricSigningKeyInfo}
+     * @throws StorageQueryException If there is an error interacting with the database
+     * @throws StorageTransactionLogicException If there is an error interacting with the database
+     */
     public List<JWTSigningKeyInfo> getAllSigningKeys()
             throws StorageQueryException, StorageTransactionLogicException {
         SessionStorage storage = StorageLayer.getSessionStorage(main);
@@ -105,6 +112,15 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         throw new QuitProgramException("Unsupported storage type detected");
     }
 
+    /**
+     * Used to retrieve a key for JWT validation, for a given signing algorithm. If there are no keys in storage that match the given algorithm a new one is generated.
+     * @param algorithm The signing algorithm
+     * @return {@link JWTSigningKeyInfo} key
+     * @throws UnsupportedJWTSigningAlgorithmException If there is an error in the provided algorithm when getting/generating keys
+     * @throws StorageQueryException If there is an error interacting with the database
+     * @throws StorageTransactionLogicException If there is an error interacting with the database
+     * @throws DuplicateKeyIdException If there is an error setting generated keys in storage
+     */
     public JWTSigningKeyInfo getOrCreateAndGetKeyForAlgorithm(SupportedAlgorithms algorithm)
             throws UnsupportedJWTSigningAlgorithmException, StorageQueryException, StorageTransactionLogicException, DuplicateKeyIdException {
         SessionStorage storage = StorageLayer.getSessionStorage(main);
@@ -221,6 +237,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                     newKey.privateKey);
         }
 
+        // Ideally this should never execute because for unsupported algorithms an exception will be thrown before this method
+        // This is just so that we dont need to handle null or empty when we call this method
         throw new UnsupportedJWTSigningAlgorithmException();
     }
 }

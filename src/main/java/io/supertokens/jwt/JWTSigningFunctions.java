@@ -37,6 +37,22 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 
 public class JWTSigningFunctions {
+    /**
+     * Creates and returns a JWT string
+     * @param main
+     * @param algorithm The signing algorithm to use when creating the token. Refer to {@link JWTSigningKey.SupportedAlgorithms}
+     * @param payload JSON object containing user defined claims to be added to the JWT payload
+     * @param jwksDomain Used as the issuer in the JWT payload
+     * @param jwtValidity Used to set iat anf exp claims in the JWT payload
+     * @return String token
+     * @throws StorageQueryException If there is an error interacting with the database
+     * @throws StorageTransactionLogicException If there is an error interacting with the database
+     * @throws NoSuchAlgorithmException If there is an error when using Java's cryptography packages
+     * @throws InvalidKeySpecException If there is an error when using Java's cryptography packages
+     * @throws JWTCreationException If there is an error when creating JWTs
+     * @throws UnsupportedJWTSigningAlgorithmException If the algorithm provided does not match any of the supported algorithms
+     * @throws DuplicateKeyIdException If there is an error storing generated keys in storage
+     */
     public static String createJWTToken(Main main, String algorithm, JsonObject payload, String jwksDomain, long jwtValidity)
             throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException, InvalidKeySpecException,
             JWTCreationException, UnsupportedJWTSigningAlgorithmException, DuplicateKeyIdException {
@@ -51,6 +67,7 @@ public class JWTSigningFunctions {
         }
 
         JWTSigningKeyInfo keyToUse = JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(supportedAlgorithm);
+        // Get an instance of auth0's Algorithm which is needed when signing using auth0's package
         Algorithm signingAlgorithm = getAuth0AlgorithmFromString(supportedAlgorithm, keyToUse);
 
         // Create the claims for the JWT header
@@ -74,16 +91,26 @@ public class JWTSigningFunctions {
                 .sign(signingAlgorithm);
     }
 
+    /**
+     * Used to return public keys that a JWT verifier will use. Note returns an empty array if there are no keys in storage.
+     * @param main
+     * @return JSON array containing the JWKs
+     * @throws StorageQueryException If there is an error interacting with the database
+     * @throws StorageTransactionLogicException If there is an error interacting with the database
+     * @throws NoSuchAlgorithmException If there is an error when using Java's cryptography packages
+     * @throws InvalidKeySpecException If there is an error when using Java's cryptography packages
+     */
     public static List<JsonObject> getJWKS(Main main)
             throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
             InvalidKeySpecException {
+        // Retrieve all keys in storage
         List<JWTSigningKeyInfo> keys = JWTSigningKey.getInstance(main).getAllSigningKeys();
         List<JsonObject> jwks = new ArrayList<>();
 
         for (int i = 0; i < keys.size(); i++) {
             JWTSigningKeyInfo currentKeyInfo = keys.get(i);
 
-            // If the key string contains | it is an asymmetric key
+            // We only use asymmetric keys
             if (currentKeyInfo instanceof JWTAsymmetricSigningKeyInfo) {
                 JWTSigningKey.SupportedAlgorithms algorithm = JWTSigningKey.SupportedAlgorithms.valueOf(currentKeyInfo.algorithm);
                 // TODO: In the future with more asymmetric algorithms [ES256 for example] we will need a provider system for the public key + JWK - Nemi
