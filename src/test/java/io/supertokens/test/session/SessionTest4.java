@@ -43,6 +43,7 @@ import java.security.spec.InvalidKeySpecException;
 
 import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 public class SessionTest4 {
 
@@ -306,6 +307,13 @@ public class SessionTest4 {
 
         try {
             Session.refreshSession(process.getProcess(), "INVALID_TOKEN" + sessionInfo.refreshToken,
+                    sessionInfo.antiCsrfToken, true);
+            Assert.fail();
+        } catch (UnauthorisedException ignored) {
+        }
+
+        try {
+            Session.refreshSession(process.getProcess(), sessionInfo.refreshToken + "INVALID_TOKEN",
                     sessionInfo.antiCsrfToken, true);
             Assert.fail();
         } catch (UnauthorisedException ignored) {
