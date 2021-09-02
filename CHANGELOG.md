@@ -13,6 +13,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Sends far ahead jwt signing key expiry time in case updating them is
   disabled: https://github.com/supertokens/supertokens-core/issues/304
 
+### Changes
+
+- Changes JWT signing key update interval to not be limited to 720 hours
+
 ## [3.5.1] - 2021-08-25
 
 ### Added

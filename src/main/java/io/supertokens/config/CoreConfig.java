@@ -187,9 +187,9 @@ public class CoreConfig {
         }
 
         if (!Main.isTesting || validityTesting) { // since in testing we make this really small
-            if (access_token_signing_key_update_interval < 1 || access_token_signing_key_update_interval > 720) {
+            if (access_token_signing_key_update_interval < 1) {
                 throw new QuitProgramException(
-                        "'access_token_signing_key_update_interval' must be between 1 and 720 hours inclusive. The " +
+                        "'access_token_signing_key_update_interval' must be greater than, equal to 1 hour. The " +
                                 "config file can be found here: " + getConfigFileLocation(main));
             }
         }
