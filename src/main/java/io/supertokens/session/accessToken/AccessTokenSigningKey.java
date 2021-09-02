@@ -100,9 +100,14 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     }
 
     public synchronized long getKeyExpiryTime() throws StorageQueryException, StorageTransactionLogicException {
-        this.getKey();
-        long createdAtTime = this.keyInfo.createdAtTime;
-        return createdAtTime + Config.getConfig(main).getAccessTokenSigningKeyUpdateInterval();
+        if (Config.getConfig(this.main).getAccessTokenSigningKeyDynamic()) {
+            this.getKey();
+            long createdAtTime = this.keyInfo.createdAtTime;
+            return createdAtTime + Config.getConfig(main).getAccessTokenSigningKeyUpdateInterval();
+        } else {
+            // return 10 years from now
+            return System.currentTimeMillis() + (10L * 365 * 24 * 3600 * 1000);
+        }
     }
 
     private KeyInfo maybeGenerateNewKeyAndUpdateInDb() throws StorageQueryException, StorageTransactionLogicException {
