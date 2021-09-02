@@ -24,6 +24,7 @@ import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
+import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -318,6 +319,24 @@ public class SessionTest4 {
             Assert.fail();
         } catch (UnauthorisedException ignored) {
         }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void noSigningKeyRotationShouldYieldFarAwayExpiry() throws InterruptedException, StorageQueryException,
+            IOException,
+            StorageTransactionLogicException {
+
+        Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
+
+        String[] args = {"../"};
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        assert (AccessTokenSigningKey.getInstance(process.getProcess()).getKeyExpiryTime() >
+                System.currentTimeMillis() + (9L * 365 * 24 * 3600 * 1000));
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

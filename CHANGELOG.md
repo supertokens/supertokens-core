@@ -10,6 +10,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixes
 
 - Issue with verifying refresh token throwing an unauthorised exception due to a db connection error.
+- Sends far ahead jwt signing key expiry time in case updating them is
+  disabled: https://github.com/supertokens/supertokens-core/issues/304
 
 ## [3.5.1] - 2021-08-25
 
