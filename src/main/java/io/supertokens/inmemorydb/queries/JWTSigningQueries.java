@@ -34,7 +34,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class JWTSigningQueries {
-    private final static String lockString = "jwt_signing_keys_table_lock";
+    private final static String LOCK_STRING = "jwt_signing_keys_table_lock";
 
     static String getQueryToCreateJWTSigningTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getJWTSigningKeysTable() + " ("
@@ -46,7 +46,7 @@ public class JWTSigningQueries {
     public static List<JWTSigningKeyInfo> getJWTSigningKeys_Transaction(Start start, Connection con)
             throws SQLException, StorageQueryException {
 
-        ((ConnectionWithLocks) con).lock(lockString);
+        ((ConnectionWithLocks) con).lock(LOCK_STRING);
 
         String QUERY = "SELECT * FROM "
                 + Config.getConfig(start).getJWTSigningKeysTable()

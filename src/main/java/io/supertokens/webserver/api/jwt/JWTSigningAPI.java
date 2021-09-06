@@ -59,6 +59,7 @@ public class JWTSigningAPI extends WebserverAPI {
         assert payload != null;
 
         long validity = InputParser.parseLongOrThrowError(input, "validity", false);
+        assert validity >= 0;
 
         try {
             String jwt = JWTSigningFunctions.createJWTToken(main, algorithm, payload, jwksDomain, validity);

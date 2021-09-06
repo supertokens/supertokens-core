@@ -240,8 +240,6 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                     newKey.privateKey);
         }
 
-        // Ideally this should never execute because for unsupported algorithms an exception will be thrown before this method
-        // This is just so that we dont need to handle null when we call this method
-        throw new UnsupportedJWTSigningAlgorithmException();
+        throw new IllegalArgumentException();
     }
 }
