@@ -30,6 +30,7 @@ import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
+import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 
@@ -140,12 +141,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
                     // If there are no keys in storage, generate a new one
                     if (keysFromStorage.isEmpty()) {
-                        try {
-                            keyInfo = generateKeyForAlgorithm(algorithm);
-                            sqlStorage.setJWTSigningKey_Transaction(con, keyInfo);
-                        } catch (NoSuchAlgorithmException | DuplicateKeyIdException | UnsupportedJWTSigningAlgorithmException e) {
-                            throw new StorageTransactionLogicException(e);
-                        }
+                        keyInfo = generateAndSetKeyInStorage(sqlStorage, con, algorithm);
                     } else {
                         // Loop through the keys and find the first one for the algorithm
                         for (int i = 0; i < keysFromStorage.size(); i++) {
@@ -158,12 +154,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
                         // If no key was found create a new one
                         if (keyInfo == null) {
-                            try {
-                                keyInfo = generateKeyForAlgorithm(algorithm);
-                                sqlStorage.setJWTSigningKey_Transaction(con, keyInfo);
-                            } catch (NoSuchAlgorithmException | DuplicateKeyIdException | UnsupportedJWTSigningAlgorithmException e) {
-                                throw new StorageTransactionLogicException(e);
-                            }
+                            keyInfo = generateAndSetKeyInStorage(sqlStorage, con, algorithm);
                         }
                     }
 
@@ -189,18 +180,13 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
                 // If there are no keys in storage, generate a new one
                 if (keysFromStorage.isEmpty()) {
-                    try {
-                        keyInfo = generateKeyForAlgorithm(algorithm);
-                        boolean success = noSQLStorage.setJWTSigningKeyInfo_Transaction(keyInfo);
+                    keyInfo = generateAndSetKeyInStorage(noSQLStorage, algorithm);
 
-                        if (!success) {
-                            continue;
-                        }
-
-                        return keyInfo;
-                    } catch (NoSuchAlgorithmException e) {
-                        throw new StorageTransactionLogicException(e);
+                    if (keyInfo == null) {
+                        continue;
                     }
+
+                    return  keyInfo;
                 } else {
                     // Loop through the keys and find the first one for the algorithm
                     for (int i = 0; i < keysFromStorage.size(); i++) {
@@ -213,21 +199,16 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
                     // If no key was found create a new one
                     if (keyInfo == null) {
-                        try {
-                            keyInfo = generateKeyForAlgorithm(algorithm);
-                            boolean success = noSQLStorage.setJWTSigningKeyInfo_Transaction(keyInfo);
+                        keyInfo = generateAndSetKeyInStorage(noSQLStorage, algorithm);
 
-                            if (!success) {
-                                continue;
-                            }
-
-                            return keyInfo;
-                        } catch (NoSuchAlgorithmException e) {
-                            throw new StorageTransactionLogicException(e);
+                        if (keyInfo == null) {
+                            continue;
                         }
-                    } else {
-                        return keyInfo;
+
+                        return  keyInfo;
                     }
+
+                    return keyInfo;
                 }
             }
         }
@@ -245,5 +226,33 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         }
 
         throw new IllegalArgumentException();
+    }
+
+    // SQL storage
+    private JWTSigningKeyInfo generateAndSetKeyInStorage(SessionSQLStorage storage, TransactionConnection con, SupportedAlgorithms algorithm)
+            throws StorageTransactionLogicException, StorageQueryException {
+        try {
+            JWTSigningKeyInfo keyInfo = generateKeyForAlgorithm(algorithm);
+            storage.setJWTSigningKey_Transaction(con, keyInfo);
+            return keyInfo;
+        } catch (NoSuchAlgorithmException | DuplicateKeyIdException | UnsupportedJWTSigningAlgorithmException e) {
+            throw new StorageTransactionLogicException(e);
+        }
+    }
+
+    // No SQL storage
+    private JWTSigningKeyInfo generateAndSetKeyInStorage(SessionNoSQLStorage_1 storage, SupportedAlgorithms algorithm) throws StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, DuplicateKeyIdException, StorageQueryException {
+        try {
+            JWTSigningKeyInfo keyInfo = generateKeyForAlgorithm(algorithm);
+            boolean success = storage.setJWTSigningKeyInfo_Transaction(keyInfo);
+
+            if (!success) {
+                return null;
+            }
+
+            return keyInfo;
+        } catch (NoSuchAlgorithmException e) {
+            throw new StorageTransactionLogicException(e);
+        }
     }
 }
