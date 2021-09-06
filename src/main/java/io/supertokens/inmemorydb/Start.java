@@ -816,9 +816,9 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
         Connection sqlCon = (Connection) con.getConnection();
         try {
             JWTSigningQueries.setJWTSigningKeyInfo_Transaction(this, sqlCon, info);
-        } catch (StorageTransactionLogicException e) {
+        } catch (SQLException e) {
 
-            if (e.actualException.getMessage().equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "+ Config.getConfig(this).getJWTSigningKeysTable() +".key_id)")) {
+            if (e.getMessage().equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "+ Config.getConfig(this).getJWTSigningKeysTable() +".key_id)")) {
                 throw new DuplicateKeyIdException();
             }
 
