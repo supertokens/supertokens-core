@@ -236,7 +236,7 @@ public class JWTSigningAPITest {
             fail();
         } catch (HttpResponseException e) {
             // TODO: Check how to handle this, shuld be a 400 but assertion errors are considered 500s
-            assert e.statusCode == 500;
+            assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message: validity must be greater than or equal to 0"));
         }
 
         process.kill();
