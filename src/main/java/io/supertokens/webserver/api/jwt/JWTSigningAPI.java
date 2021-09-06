@@ -35,6 +35,7 @@ import java.security.spec.InvalidKeySpecException;
 
 public class JWTSigningAPI extends WebserverAPI {
     private static final long serialVersionUID = 288744303462186631L;
+    public static final String UNSUPPORTED_ALGORITHM_ERROR_STATUS = "UNSUPPORTED_ALGORITHM_ERROR";
 
     public JWTSigningAPI(Main main) {
         super(main, RECIPE_ID.JWT.toString());
@@ -61,14 +62,14 @@ public class JWTSigningAPI extends WebserverAPI {
         assert validity >= 0;
 
         try {
-            String jwt = JWTSigningFunctions.createJWTToken(main, algorithm, payload, jwksDomain, validity);
+            String jwt = JWTSigningFunctions.createJWTToken(main, algorithm.toUpperCase(), payload, jwksDomain, validity);
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "OK");
             reply.addProperty("jwt", jwt);
             super.sendJsonResponse(200, reply, resp);
         } catch (UnsupportedJWTSigningAlgorithmException e) {
             JsonObject reply = new JsonObject();
-            reply.addProperty("status", "UNSUPPORTED_ALGORITHM_ERROR");
+            reply.addProperty("status", UNSUPPORTED_ALGORITHM_ERROR_STATUS);
             super.sendJsonResponse(200, reply, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
                 | InvalidKeySpecException e) {

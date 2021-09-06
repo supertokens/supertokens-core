@@ -67,6 +67,9 @@ public class JWKSTest {
 
         List<JsonObject> keysFromStorage = JWTSigningFunctions.getJWKS(process.getProcess());
         assert keysFromStorage.isEmpty();
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     /**
@@ -88,6 +91,9 @@ public class JWKSTest {
 
         List<JsonObject> keysFromStorage = JWTSigningFunctions.getJWKS(process.getProcess());
         assert !keysFromStorage.isEmpty();
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     /**
@@ -121,6 +127,8 @@ public class JWKSTest {
         }
 
         assert didFindKey;
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     /**
@@ -153,6 +161,9 @@ public class JWKSTest {
 
             KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(modulus, exponent));
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     /**
@@ -213,5 +224,8 @@ public class JWKSTest {
 
         JWTVerifier verifier = JWT.require(verificationAlgorithm).build();
         verifier.verify(jwt);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }

@@ -90,6 +90,9 @@ public class JWTCreateTest {
         } catch (UnsupportedJWTSigningAlgorithmException e) {
             // Do nothing
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     /**
@@ -124,12 +127,15 @@ public class JWTCreateTest {
         }
 
         if (!headerType.asString().equals("JWT")) {
-            throw new Exception("JWT header contains wrong type: Expected: JWT, Actual: " + headerType.toString());
+            throw new Exception("JWT header contains wrong type: Expected: JWT, Actual: " + headerType.asString());
         }
 
         if (headerKeyId.asString().isEmpty()) {
             throw new Exception("Value for kid in JWT header is invalid");
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     /**
@@ -173,6 +179,9 @@ public class JWTCreateTest {
         if (Math.abs(expiry.asLong() - expectedExpiry) > 1) {
             throw new Exception("JWT exp claim does not match expected value");
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     /**
@@ -207,5 +216,8 @@ public class JWTCreateTest {
         if (!customClaim.asString().equals(customClaimValue)) {
             throw new Exception("Decoded JWT does not contain the correct value for custom claim");
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
