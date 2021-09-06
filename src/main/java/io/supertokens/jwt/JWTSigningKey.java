@@ -51,6 +51,10 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
             return "";
         }
+
+        public boolean equalsString(String algorithmString) {
+            return this.name().equalsIgnoreCase(algorithmString);
+        }
     }
 
     private JWTSigningKey(Main main) {
@@ -146,7 +150,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                         // Loop through the keys and find the first one for the algorithm
                         for (int i = 0; i < keysFromStorage.size(); i++) {
                             JWTSigningKeyInfo currentKey = keysFromStorage.get(i);
-                            if (currentKey.algorithm.equalsIgnoreCase(algorithm.name())) {
+                            if (algorithm.equalsString(currentKey.algorithm)) {
                                 keyInfo = currentKey;
                                 break;
                             }

@@ -134,7 +134,7 @@ public class JWTSigningFunctions {
     private static Algorithm getAuth0Algorithm(JWTSigningKey.SupportedAlgorithms algorithm, JWTSigningKeyInfo keyToUse) throws NoSuchAlgorithmException, InvalidKeySpecException,
             UnsupportedJWTSigningAlgorithmException {
         // TODO: Abstract this away from the main package to avoid a direct dependency on auth0s package
-        if (algorithm.name().equalsIgnoreCase("rs256")) {
+        if (algorithm.equalsString("rs256")) {
             RSAPublicKey publicKey = getPublicKeyFromString(((JWTAsymmetricSigningKeyInfo) keyToUse).publicKey, algorithm);
             RSAPrivateKey privateKey = getPrivateKeyFromString(((JWTAsymmetricSigningKeyInfo) keyToUse).privateKey, algorithm);
 
