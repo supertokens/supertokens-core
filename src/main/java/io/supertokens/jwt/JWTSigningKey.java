@@ -124,10 +124,9 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
      * @throws UnsupportedJWTSigningAlgorithmException If there is an error in the provided algorithm when getting/generating keys
      * @throws StorageQueryException If there is an error interacting with the database
      * @throws StorageTransactionLogicException If there is an error interacting with the database
-     * @throws DuplicateKeyIdException If there is an error setting generated keys in storage
      */
     public JWTSigningKeyInfo getOrCreateAndGetKeyForAlgorithm(SupportedAlgorithms algorithm)
-            throws UnsupportedJWTSigningAlgorithmException, StorageQueryException, StorageTransactionLogicException, DuplicateKeyIdException {
+            throws UnsupportedJWTSigningAlgorithmException, StorageQueryException, StorageTransactionLogicException {
         SessionStorage storage = StorageLayer.getSessionStorage(main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
@@ -162,9 +161,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                     return keyInfo;
                 });
             } catch (StorageTransactionLogicException e) {
-                if (e.actualException instanceof DuplicateKeyIdException) {
-                    throw (DuplicateKeyIdException) e.actualException;
-                } else if (e.actualException instanceof UnsupportedJWTSigningAlgorithmException) {
+                 if (e.actualException instanceof UnsupportedJWTSigningAlgorithmException) {
                     throw (UnsupportedJWTSigningAlgorithmException) e.actualException;
                 }
 
@@ -231,28 +228,36 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     // SQL storage
     private JWTSigningKeyInfo generateAndSetKeyInStorage(SessionSQLStorage storage, TransactionConnection con, SupportedAlgorithms algorithm)
             throws StorageTransactionLogicException, StorageQueryException {
-        try {
-            JWTSigningKeyInfo keyInfo = generateKeyForAlgorithm(algorithm);
-            storage.setJWTSigningKey_Transaction(con, keyInfo);
-            return keyInfo;
-        } catch (NoSuchAlgorithmException | DuplicateKeyIdException | UnsupportedJWTSigningAlgorithmException e) {
-            throw new StorageTransactionLogicException(e);
+        while (true) {
+            try {
+                JWTSigningKeyInfo keyInfo = generateKeyForAlgorithm(algorithm);
+                storage.setJWTSigningKey_Transaction(con, keyInfo);
+                return keyInfo;
+            } catch (NoSuchAlgorithmException | UnsupportedJWTSigningAlgorithmException e) {
+                throw new StorageTransactionLogicException(e);
+            } catch (DuplicateKeyIdException e) {
+                // Retry with a new key id
+            }
         }
     }
 
     // No SQL storage
-    private JWTSigningKeyInfo generateAndSetKeyInStorage(SessionNoSQLStorage_1 storage, SupportedAlgorithms algorithm) throws StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, DuplicateKeyIdException, StorageQueryException {
-        try {
-            JWTSigningKeyInfo keyInfo = generateKeyForAlgorithm(algorithm);
-            boolean success = storage.setJWTSigningKeyInfo_Transaction(keyInfo);
+    private JWTSigningKeyInfo generateAndSetKeyInStorage(SessionNoSQLStorage_1 storage, SupportedAlgorithms algorithm) throws StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, StorageQueryException {
+        while (true) {
+            try {
+                JWTSigningKeyInfo keyInfo = generateKeyForAlgorithm(algorithm);
+                boolean success = storage.setJWTSigningKeyInfo_Transaction(keyInfo);
 
-            if (!success) {
-                return null;
+                if (!success) {
+                    return null;
+                }
+
+                return keyInfo;
+            } catch (NoSuchAlgorithmException e) {
+                throw new StorageTransactionLogicException(e);
+            } catch (DuplicateKeyIdException e) {
+                // Retry with a new key id
             }
-
-            return keyInfo;
-        } catch (NoSuchAlgorithmException e) {
-            throw new StorageTransactionLogicException(e);
         }
     }
 }

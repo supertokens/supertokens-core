@@ -23,7 +23,6 @@ import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -72,8 +71,7 @@ public class JWTSigningAPI extends WebserverAPI {
             reply.addProperty("status", "UNSUPPORTED_ALGORITHM_ERROR");
             super.sendJsonResponse(200, reply, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
-                | InvalidKeySpecException | DuplicateKeyIdException e) {
-            // TODO: in the future DuplicateKeyIdException should map to a specific API response
+                | InvalidKeySpecException e) {
             throw new ServletException(e);
         }
     }
