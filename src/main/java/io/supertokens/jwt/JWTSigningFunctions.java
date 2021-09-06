@@ -120,7 +120,7 @@ public class JWTSigningFunctions {
                 jwk.addProperty("n", Base64.getUrlEncoder().encodeToString(publicKey.getModulus().toByteArray()));
                 jwk.addProperty("e", Base64.getUrlEncoder().encodeToString(publicKey.getPublicExponent().toByteArray()));
                 jwk.addProperty("alg", currentKeyInfo.algorithm.toUpperCase());
-                jwk.addProperty("use", "sig");
+                jwk.addProperty("use", "sig"); // We generate JWKs that are meant to be used for signature verification
 
                 jwks.add(jwk);
             }
