@@ -83,6 +83,15 @@ public class StorageTest {
                 AtomicReference<String> endValueOfCon2 = new AtomicReference<>("c2");
                 AtomicInteger numberOfIterations = new AtomicInteger(-2);
 
+                /**
+                 * We start two transactions in parallel that will read from storage
+                 * We put the threads to sleep for different durations to simulate a race condition
+                 * Thread 1 should write to the database successfully but when Thread 2 tried to insert it should face a deadlock
+                 * Because of the way deadlocks are handled in startTransaction Thread 2's transaction will retry and when getting it will get an entry in the table and wont try to insert
+                 * When both threads are done we want to make sure:
+                 * - That the value in storage was set to "Value1" because Thread 2 should not be able to write
+                 * - That the counter for the number of iterations is 3 (Thread 1 + Thread 2 deadlock + Thread 2 retry)
+                 */
                 Runnable r1 = () -> {
                     try {
                         sqlStorage.startTransaction(con -> {
