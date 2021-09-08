@@ -87,14 +87,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
             SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
 
             return sqlStorage.startTransaction(con -> {
-               List<JWTSigningKeyInfo> keys;
-               List<JWTSigningKeyInfo> keysFromStorage = sqlStorage.getJWTSigningKeys_Transaction(con);
-
-               if (keysFromStorage == null) {
-                   keys = new ArrayList<>();
-               } else {
-                   keys = keysFromStorage;
-               }
+               List<JWTSigningKeyInfo> keys = sqlStorage.getJWTSigningKeys_Transaction(con);
 
                sqlStorage.commitTransaction(con);
                return keys;
@@ -138,23 +131,18 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
                     List<JWTSigningKeyInfo> keysFromStorage = sqlStorage.getJWTSigningKeys_Transaction(con);
 
-                    // If there are no keys in storage, generate a new one
-                    if (keysFromStorage.isEmpty()) {
-                        keyInfo = generateAndSetKeyInStorage(sqlStorage, con, algorithm);
-                    } else {
-                        // Loop through the keys and find the first one for the algorithm
-                        for (int i = 0; i < keysFromStorage.size(); i++) {
-                            JWTSigningKeyInfo currentKey = keysFromStorage.get(i);
-                            if (algorithm.equalsString(currentKey.algorithm)) {
-                                keyInfo = currentKey;
-                                break;
-                            }
+                    // Loop through the keys and find the first one for the algorithm, if the list is empty a new key will be created after the loop
+                    for (int i = 0; i < keysFromStorage.size(); i++) {
+                        JWTSigningKeyInfo currentKey = keysFromStorage.get(i);
+                        if (algorithm.equalsString(currentKey.algorithm)) {
+                            keyInfo = currentKey;
+                            break;
                         }
+                    }
 
-                        // If no key was found create a new one
-                        if (keyInfo == null) {
-                            keyInfo = generateAndSetKeyInStorage(sqlStorage, con, algorithm);
-                        }
+                    // If no key was found create a new one
+                    if (keyInfo == null) {
+                        keyInfo = generateAndSetKeyInStorage(sqlStorage, con, algorithm);
                     }
 
                     sqlStorage.commitTransaction(con);
@@ -175,38 +163,25 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
             while (true) {
                 List<JWTSigningKeyInfo> keysFromStorage = noSQLStorage.getJWTSigningKeys_Transaction();
 
-                // If there are no keys in storage, generate a new one
-                if (keysFromStorage.isEmpty()) {
+                // Loop through the keys and find the first one for the algorithm, if the list is empty a new key will be created after the for loop
+                for (int i = 0; i < keysFromStorage.size(); i++) {
+                    JWTSigningKeyInfo currentKey = keysFromStorage.get(i);
+                    if (currentKey.algorithm.equalsIgnoreCase(algorithm.name())) {
+                        keyInfo = currentKey;
+                        break;
+                    }
+                }
+
+                // If no key was found create a new one
+                if (keyInfo == null) {
                     keyInfo = generateAndSetKeyInStorage(noSQLStorage, algorithm);
 
                     if (keyInfo == null) {
                         continue;
                     }
-
-                    return  keyInfo;
-                } else {
-                    // Loop through the keys and find the first one for the algorithm
-                    for (int i = 0; i < keysFromStorage.size(); i++) {
-                        JWTSigningKeyInfo currentKey = keysFromStorage.get(i);
-                        if (currentKey.algorithm.equalsIgnoreCase(algorithm.name())) {
-                            keyInfo = currentKey;
-                            break;
-                        }
-                    }
-
-                    // If no key was found create a new one
-                    if (keyInfo == null) {
-                        keyInfo = generateAndSetKeyInStorage(noSQLStorage, algorithm);
-
-                        if (keyInfo == null) {
-                            continue;
-                        }
-
-                        return  keyInfo;
-                    }
-
-                    return keyInfo;
                 }
+
+                return keyInfo;
             }
         }
 
