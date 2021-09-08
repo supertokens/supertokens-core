@@ -18,11 +18,11 @@ package io.supertokens.test.jwt.storage;
 
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
-import io.supertokens.pluginInterface.session.SessionStorage;
-import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
+import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -57,13 +57,13 @@ public class JWTKeyStorageTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        SessionStorage storage = StorageLayer.getSessionStorage(process.getProcess());
+        JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(process.getProcess());
 
         if (storage.getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
+        JWTRecipeSQLStorage sqlStorage = (JWTRecipeSQLStorage) storage;
         JWTSigningKeyInfo keyToSet = new JWTSymmetricSigningKeyInfo("keyId-1234", 1000, "RSA", "somekeystring");
 
         boolean success = sqlStorage.startTransaction(con -> {

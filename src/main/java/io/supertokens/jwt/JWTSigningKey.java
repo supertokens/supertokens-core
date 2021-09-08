@@ -24,18 +24,16 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
+import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.jwt.JWTSymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
-import io.supertokens.pluginInterface.session.SessionStorage;
-import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
-import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
-import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
+import io.supertokens.pluginInterface.jwt.nosqlstorage.JWTRecipeNoSQLStorage_1;
+import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.List;
 
 public class JWTSigningKey extends ResourceDistributor.SingletonResource {
@@ -81,10 +79,10 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
      */
     public List<JWTSigningKeyInfo> getAllSigningKeys()
             throws StorageQueryException, StorageTransactionLogicException {
-        SessionStorage storage = StorageLayer.getSessionStorage(main);
+        JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
-            SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
+            JWTRecipeSQLStorage sqlStorage = (JWTRecipeSQLStorage) storage;
 
             return sqlStorage.startTransaction(con -> {
                List<JWTSigningKeyInfo> keys = sqlStorage.getJWTSigningKeys_Transaction(con);
@@ -93,7 +91,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                return keys;
             });
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
-            SessionNoSQLStorage_1 noSQLStorage = (SessionNoSQLStorage_1) storage;
+            JWTRecipeNoSQLStorage_1 noSQLStorage = (JWTRecipeNoSQLStorage_1) storage;
 
             return noSQLStorage.getJWTSigningKeys_Transaction();
         }
@@ -111,10 +109,10 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
      */
     public JWTSigningKeyInfo getOrCreateAndGetKeyForAlgorithm(SupportedAlgorithms algorithm)
             throws UnsupportedJWTSigningAlgorithmException, StorageQueryException, StorageTransactionLogicException {
-        SessionStorage storage = StorageLayer.getSessionStorage(main);
+        JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
-            SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
+            JWTRecipeSQLStorage sqlStorage = (JWTRecipeSQLStorage) storage;
 
             try {
                 return sqlStorage.startTransaction(con -> {
@@ -157,7 +155,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                 throw e;
             }
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
-            SessionNoSQLStorage_1 noSQLStorage = (SessionNoSQLStorage_1) storage;
+            JWTRecipeNoSQLStorage_1 noSQLStorage = (JWTRecipeNoSQLStorage_1) storage;
 
             JWTSigningKeyInfo keyInfo = null;
 
@@ -178,7 +176,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                     while (true) {
                         try {
                             keyInfo = generateKeyForAlgorithm(algorithm);
-                            boolean success = noSQLStorage.setJWTSigningKeyInfo_Transaction(keyInfo);
+                            boolean success = noSQLStorage.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(keyInfo);
 
                             if (!success) {
                                 continue;
