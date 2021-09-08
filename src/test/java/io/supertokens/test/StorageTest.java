@@ -91,6 +91,8 @@ public class StorageTest {
                  * When both threads are done we want to make sure:
                  * - That the value in storage was set to "Value1" because Thread 2 should not be able to write
                  * - That the counter for the number of iterations is 3 (Thread 1 + Thread 2 deadlock + Thread 2 retry)
+                 *
+                 * NOTE: In this test we use FOR UPDATE with a WHERE clause but it would work the same way without a WHERE clause as well
                  */
                 Runnable r1 = () -> {
                     try {
