@@ -81,7 +81,7 @@ public class JWTSigningQueries {
             String algorithm = result.getString("algorithm");
 
             if (keyString.contains("|")) {
-                return JWTAsymmetricSigningKeyInfo.withKeyString(keyId, createdAt, algorithm, keyString);
+                return new JWTAsymmetricSigningKeyInfo(keyId, createdAt, algorithm, keyString);
             } else {
                 return new JWTSymmetricSigningKeyInfo(keyId, createdAt, algorithm, keyString);
             }
