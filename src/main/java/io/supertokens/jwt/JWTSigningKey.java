@@ -95,16 +95,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             SessionNoSQLStorage_1 noSQLStorage = (SessionNoSQLStorage_1) storage;
 
-            List<JWTSigningKeyInfo> keys;
-            List<JWTSigningKeyInfo> keysFromStorage = noSQLStorage.getJWTSigningKeys_Transaction();
-
-            if (keysFromStorage == null) {
-                keys = new ArrayList<>();
-            } else {
-                keys = keysFromStorage;
-            }
-
-            return keys;
+            return noSQLStorage.getJWTSigningKeys_Transaction();
         }
 
         throw new QuitProgramException("Unsupported storage type detected");
