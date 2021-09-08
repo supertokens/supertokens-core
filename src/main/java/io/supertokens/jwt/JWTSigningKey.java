@@ -133,7 +133,17 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
                     // If no key was found create a new one
                     if (keyInfo == null) {
-                        keyInfo = generateAndSetKeyInStorage(sqlStorage, con, algorithm);
+                        while (true) {
+                            try {
+                                keyInfo = generateKeyForAlgorithm(algorithm);
+                                sqlStorage.setJWTSigningKey_Transaction(con, keyInfo);
+                                return keyInfo;
+                            } catch (NoSuchAlgorithmException | UnsupportedJWTSigningAlgorithmException e) {
+                                throw new StorageTransactionLogicException(e);
+                            } catch (DuplicateKeyIdException e) {
+                                // Retry with a new key id
+                            }
+                        }
                     }
 
                     sqlStorage.commitTransaction(con);
@@ -165,10 +175,21 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
                 // If no key was found create a new one
                 if (keyInfo == null) {
-                    keyInfo = generateAndSetKeyInStorage(noSQLStorage, algorithm);
+                    while (true) {
+                        try {
+                            keyInfo = generateKeyForAlgorithm(algorithm);
+                            boolean success = noSQLStorage.setJWTSigningKeyInfo_Transaction(keyInfo);
 
-                    if (keyInfo == null) {
-                        continue;
+                            if (!success) {
+                                continue;
+                            }
+
+                            return keyInfo;
+                        } catch (NoSuchAlgorithmException e) {
+                            throw new StorageTransactionLogicException(e);
+                        } catch (DuplicateKeyIdException e) {
+                            // Retry with a new key id
+                        }
                     }
                 }
 
@@ -189,41 +210,5 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         }
 
         throw new IllegalArgumentException();
-    }
-
-    // SQL storage
-    private JWTSigningKeyInfo generateAndSetKeyInStorage(SessionSQLStorage storage, TransactionConnection con, SupportedAlgorithms algorithm)
-            throws StorageTransactionLogicException, StorageQueryException {
-        while (true) {
-            try {
-                JWTSigningKeyInfo keyInfo = generateKeyForAlgorithm(algorithm);
-                storage.setJWTSigningKey_Transaction(con, keyInfo);
-                return keyInfo;
-            } catch (NoSuchAlgorithmException | UnsupportedJWTSigningAlgorithmException e) {
-                throw new StorageTransactionLogicException(e);
-            } catch (DuplicateKeyIdException e) {
-                // Retry with a new key id
-            }
-        }
-    }
-
-    // No SQL storage
-    private JWTSigningKeyInfo generateAndSetKeyInStorage(SessionNoSQLStorage_1 storage, SupportedAlgorithms algorithm) throws StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException, StorageQueryException {
-        while (true) {
-            try {
-                JWTSigningKeyInfo keyInfo = generateKeyForAlgorithm(algorithm);
-                boolean success = storage.setJWTSigningKeyInfo_Transaction(keyInfo);
-
-                if (!success) {
-                    return null;
-                }
-
-                return keyInfo;
-            } catch (NoSuchAlgorithmException e) {
-                throw new StorageTransactionLogicException(e);
-            } catch (DuplicateKeyIdException e) {
-                // Retry with a new key id
-            }
-        }
     }
 }
