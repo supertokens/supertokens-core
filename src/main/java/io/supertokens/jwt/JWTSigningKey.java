@@ -135,7 +135,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                             try {
                                 keyInfo = generateKeyForAlgorithm(algorithm);
                                 sqlStorage.setJWTSigningKey_Transaction(con, keyInfo);
-                                return keyInfo;
+                                break;
                             } catch (NoSuchAlgorithmException | UnsupportedJWTSigningAlgorithmException e) {
                                 throw new StorageTransactionLogicException(e);
                             } catch (DuplicateKeyIdException e) {
@@ -182,7 +182,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                                 continue;
                             }
 
-                            return keyInfo;
+                            break;
                         } catch (NoSuchAlgorithmException e) {
                             throw new StorageTransactionLogicException(e);
                         } catch (DuplicateKeyIdException e) {
