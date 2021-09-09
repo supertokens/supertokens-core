@@ -11,7 +11,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - New config values `password_reset_token_lifetime`
   and `email_verification_token_lifetime`: https://github.com/supertokens/supertokens-core/issues/297
-- Made the transition between access token signing keys smoother https://github.com/supertokens/supertokens-core/issues/305
+- Added support for multiple access token signing keys: https://github.com/supertokens/supertokens-core/issues/305
 
 ## [3.5.2] - 2021-09-01
 
