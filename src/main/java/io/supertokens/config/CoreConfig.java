@@ -57,7 +57,7 @@ public class CoreConfig {
     private boolean access_token_signing_key_dynamic = true;
 
     @JsonProperty
-    private double access_token_signing_key_update_interval = 24; // in hours
+    private double access_token_signing_key_update_interval = 168; // in hours
 
     @JsonProperty
     private int port = 3567;
