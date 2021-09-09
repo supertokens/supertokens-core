@@ -145,13 +145,10 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 boolean generateNewKey = true;
                 boolean clearKeys = false;
 
-                Logging.debug(main, "Got new keys: " + keysFromStorage.length);
                 if (keysFromStorage.length == 0) {
                     KeyValueInfo legacyKey = sqlStorage.getLegacyAccessTokenSigningKey_Transaction(con);
 
-                    Logging.debug(main, legacyKey != null ? "Got legacy key" : "No legacy key");
                     if (legacyKey != null && config.getAccessTokenSigningKeyDynamic()) {
-                        Logging.debug(main, legacyKey.value);
                         if (keyCurrentAfter <= legacyKey.createdAtTime) {
                             generateNewKey = false;
                             validKeysFromSQL.add(new KeyInfo(legacyKey.value, legacyKey.createdAtTime, validityDuration));
@@ -175,7 +172,6 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 }
                 
                 if (generateNewKey) {
-                    Logging.debug(main, "Adding new key");
                     String signingKey;
                     try {
                         Utils.PubPriKey rsaKeys = Utils.generateNewPubPriKey();
@@ -186,7 +182,6 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                     KeyInfo newKey = new KeyInfo(signingKey, System.currentTimeMillis(), validityDuration);
                     sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo(newKey.value, newKey.createdAtTime));
                     validKeysFromSQL.add(newKey);
-                    Logging.debug(main, "Added: " + newKey.value);
                 }
 
                 if (clearKeys) {
@@ -194,7 +189,6 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 }
 
                 sqlStorage.commitTransaction(con);
-                Logging.debug(main, "Done!");
                 return validKeysFromSQL;
             });
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
