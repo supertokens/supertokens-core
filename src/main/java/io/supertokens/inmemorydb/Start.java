@@ -168,7 +168,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public KeyValueInfo getAccessTokenSigningKey_Transaction(TransactionConnection con) throws StorageQueryException {
+    public KeyValueInfo getLegacyAccessTokenSigningKey_Transaction(TransactionConnection con) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return GeneralQueries.getKeyValue_Transaction(this, sqlCon, ACCESS_TOKEN_SIGNING_KEY_NAME);
@@ -178,16 +178,47 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void setAccessTokenSigningKey_Transaction(TransactionConnection con, KeyValueInfo info)
-            throws StorageQueryException {
+    public void removeLegacyAccessTokenSigningKey_Transaction(TransactionConnection con) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            GeneralQueries.setKeyValue_Transaction(this, sqlCon, ACCESS_TOKEN_SIGNING_KEY_NAME, info);
+            GeneralQueries.deleteKeyValue_Transaction(this, sqlCon, ACCESS_TOKEN_SIGNING_KEY_NAME);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
+    @Override
+    public KeyValueInfo[] getAccessTokenSigningKeys_Transaction(TransactionConnection con) throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return SessionQueries.getAccessTokenSigningKeys_Transaction(this, sqlCon);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void addAccessTokenSigningKey_Transaction(TransactionConnection con, KeyValueInfo info)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            SessionQueries.addAccessTokenSigningKey_Transaction(this, sqlCon, info.createdAtTime, info.value);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void removeAccessTokenSigningKeysBefore_Transaction(TransactionConnection con, long createdAtTime)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            SessionQueries.removeAccessTokenSigningKeysBefore_Transaction(this, sqlCon, createdAtTime);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+    
     @Override
     public KeyValueInfo getRefreshTokenSigningKey_Transaction(TransactionConnection con) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
@@ -796,4 +827,5 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             throw new StorageQueryException(e);
         }
     }
+
 }

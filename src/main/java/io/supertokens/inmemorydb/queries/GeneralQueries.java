@@ -93,6 +93,14 @@ public class GeneralQueries {
             }
         }
 
+        if (!doesTableExists(start, Config.getConfig(start).getAccessTokenSigningKeysTable())) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
+            try (Connection con = ConnectionPool.getConnection(start);
+                 PreparedStatement pst = con.prepareStatement(SessionQueries.getQueryToCreateAccessTokenSigningKeysTable(start))) {
+                pst.executeUpdate();
+            }
+        }
+
         if (!doesTableExists(start, Config.getConfig(start).getSessionInfoTable())) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
             try (Connection con = ConnectionPool.getConnection(start);
@@ -185,6 +193,25 @@ public class GeneralQueries {
             throws SQLException {
         try (Connection con = ConnectionPool.getConnection(start)) {
             setKeyValue_Transaction(start, con, key, info);
+        }
+    }
+
+    public static void deleteKeyValue_Transaction(Start start, Connection con, String key)
+            throws SQLException {
+
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getKeyValueTable()
+                + " WHERE name = ?";
+
+        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, key);
+            pst.executeUpdate();
+        }
+    }
+
+    public static void deleteKeyValue(Start start, String key)
+            throws SQLException {
+        try (Connection con = ConnectionPool.getConnection(start)) {
+            deleteKeyValue_Transaction(start, con, key);
         }
     }
 

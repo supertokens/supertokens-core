@@ -17,6 +17,7 @@
 package io.supertokens.webserver.api.session;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
@@ -28,6 +29,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -37,6 +39,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 
 public class VerifySessionAPI extends WebserverAPI {
 
@@ -68,10 +71,21 @@ public class VerifySessionAPI extends WebserverAPI {
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
             result.addProperty("status", "OK");
+
             result.addProperty("jwtSigningPublicKey",
-                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getKey().value).publicKey);
+                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getCurrentKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
                     AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
+
+            List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getKey();
+            JsonArray jwtSigningPublicKeyListJSON = new JsonArray();
+            for (KeyInfo keyInfo : keys) {
+                JsonObject keyJSON = new JsonObject();
+                keyJSON.addProperty("publicKey", new Utils.PubPriKey(keyInfo.value).publicKey);
+                keyJSON.addProperty("expiryTime", keyInfo.expiryTime);
+                jwtSigningPublicKeyListJSON.add(keyJSON);
+            }
+            result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
             super.sendJsonResponse(200, result, resp);
 
         } catch (StorageQueryException | StorageTransactionLogicException e) {
@@ -87,10 +101,22 @@ public class VerifySessionAPI extends WebserverAPI {
             try {
                 JsonObject reply = new JsonObject();
                 reply.addProperty("status", "TRY_REFRESH_TOKEN");
+
                 reply.addProperty("jwtSigningPublicKey",
-                        new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getKey().value).publicKey);
+                        new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getCurrentKey().value).publicKey);
                 reply.addProperty("jwtSigningPublicKeyExpiryTime",
                         AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
+
+                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getKey();
+                JsonArray jwtSigningPublicKeyListJSON = new JsonArray();
+                for (KeyInfo keyInfo : keys) {
+                    JsonObject keyJSON = new JsonObject();
+                    keyJSON.addProperty("publicKey", new Utils.PubPriKey(keyInfo.value).publicKey);
+                    keyJSON.addProperty("expiryTime", keyInfo.expiryTime);
+                    jwtSigningPublicKeyListJSON.add(keyJSON);
+                }
+                reply.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
+
                 reply.addProperty("message", e.getMessage());
                 super.sendJsonResponse(200, reply, resp);
             } catch (StorageQueryException | StorageTransactionLogicException e2) {

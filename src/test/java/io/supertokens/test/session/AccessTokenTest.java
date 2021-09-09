@@ -245,7 +245,7 @@ public class AccessTokenTest {
     }
 
     @Test
-    public void signingKeyChangeThrowsRefreshTokenError()
+    public void signingKeyChangeDoesNotThrow()
             throws IOException, InterruptedException,
             InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException,
             InvalidKeySpecException, SignatureException {
@@ -265,14 +265,11 @@ public class AccessTokenTest {
 
         try {
             AccessToken.getInfoFromAccessToken(process.getProcess(), tokenInfo.token, true);
+        } catch(TryRefreshTokenException ex) {
             fail();
-        } catch (TryRefreshTokenException ex) {
-            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.RETRYING_ACCESS_TOKEN_JWT_VERIFICATION));
             process.kill();
-            return;
         }
         process.kill();
-        fail();
     }
 
     @Test
@@ -328,6 +325,7 @@ public class AccessTokenTest {
             InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException,
             InvalidKeySpecException, SignatureException {
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 second
+        Utils.setValueInConfig("access_token_validity", "1"); // 1 second
 
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
@@ -340,7 +338,7 @@ public class AccessTokenTest {
                 "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken", System.currentTimeMillis(),
                 null);
 
-        Thread.sleep(1500);
+        Thread.sleep(3500);
 
         ExecutorService es = Executors.newCachedThreadPool();
 

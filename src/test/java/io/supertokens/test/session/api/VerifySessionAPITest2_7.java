@@ -89,7 +89,7 @@ public class VerifySessionAPITest2_7 {
 
         assertNotNull(response.get("jwtSigningPublicKey").getAsString());
         assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));
-        assertEquals(response.entrySet().size(), 4);
+        assertEquals(response.entrySet().size(), 5);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -151,7 +151,7 @@ public class VerifySessionAPITest2_7 {
 
         assertNotNull(response.get("jwtSigningPublicKey").getAsString());
         assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));
-        assertEquals(response.entrySet().size(), 5);
+        assertEquals(response.entrySet().size(), 6);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -214,7 +214,7 @@ public class VerifySessionAPITest2_7 {
 
         assertNotNull(response.get("jwtSigningPublicKey").getAsString());
         assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));
-        assertEquals(response.entrySet().size(), 5);
+        assertEquals(response.entrySet().size(), 6);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -299,7 +299,7 @@ public class VerifySessionAPITest2_7 {
         assertEquals(response.get("status").getAsString(), "TRY_REFRESH_TOKEN");
         assertEquals(response.get("message").getAsString(), "io.supertokens.session.jwt.JWT$JWTException: Invalid JWT");
 
-        assertEquals(response.entrySet().size(), 4);
+        assertEquals(response.entrySet().size(), 5);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

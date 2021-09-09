@@ -25,6 +25,7 @@ import io.supertokens.config.Config;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.session.jwt.JWT;
 import io.supertokens.session.jwt.JWT.JWTException;
@@ -37,6 +38,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.List;
 
 public class AccessToken {
 
@@ -46,66 +48,79 @@ public class AccessToken {
                                                           boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException {
 
-        AccessTokenSigningKey.KeyInfo keyInfo = AccessTokenSigningKey.getInstance(main).getKey();
-        Utils.PubPriKey signingKey = new Utils.PubPriKey(keyInfo.value);
-        try {
-            final JWT.JWTInfo jwtInfo;
+        
+        List<AccessTokenSigningKey.KeyInfo> keyInfoList = AccessTokenSigningKey.getInstance(main).getKey();
+
+        Exception error = null;
+        JWT.JWTInfo jwtInfo = null;
+        for (KeyInfo keyInfo: keyInfoList) {
+            Utils.PubPriKey signingKey = new Utils.PubPriKey(keyInfo.value);
             try {
                 jwtInfo = JWT.verifyJWTAndGetPayload(token, signingKey.publicKey);
-            } catch (InvalidKeyException | NoSuchAlgorithmException | JWTException e) {
-
+                error = null;
+                break;
+            } catch(NoSuchAlgorithmException e) {
+                // This basically should never happen, but it means, that can't verify any tokens, no need to retry
+                throw new TryRefreshTokenException(e);
+            } catch (InvalidKeyException | JWTException e) {
                 /*
-                 * There are a couple of reasons the verification could fail:
-                 * 1) The access token is "corrupted" - this is a rare scenario since it probably means
-                 * that someone is trying to break the system. Here we don't mind fetching new keys from the db
-                 *
-                 * 2) The signing key was updated and an old access token is being used: In this case, the request
-                 * should ideally not even come to the core: https://github.com/supertokens/supertokens-node/issues/136.
-                 * TODO: However, we should replicate this logic here as well since we do not want to rely too much
-                 *  on the client of the core.
-                 *
-                 * 3) This access token was created with a new signing key, which was changed manually before its
-                 * expiry. In here, we want to remove the older signing key from memory and fetch again.
-                 *
-                 * So overall, since (2) should not call the core in the first place, it's OK to always refetch
-                 * the signing key from the db in case of failure and then retry.
-                 *
-                 * */
-                if (retry) {
-                    ProcessState.getInstance(main).addState(PROCESS_STATE.RETRYING_ACCESS_TOKEN_JWT_VERIFICATION, e);
+                * There are a couple of reasons the verification could fail:
+                * 1) The access token is "corrupted" - this is a rare scenario since it probably means
+                * that someone is trying to break the system. Here we don't mind fetching new keys from the db
+                *
+                * 2) The signing key was updated and an old access token is being used: In this case, the request
+                * should ideally not even come to the core: https://github.com/supertokens/supertokens-node/issues/136.
+                * TODO: However, we should replicate this logic here as well since we do not want to rely too much
+                *  on the client of the core.
+                *
+                * 3) This access token was created with a new signing key, which was changed manually before its
+                * expiry. In here, we want to remove the older signing key from memory and fetch again.
+                *
+                * So overall, since (2) should not call the core in the first place, it's OK to always refetch
+                * the signing key from the db in case of failure and then retry.
+                *
+                * */
 
-                    // remove key from memory and retry
-                    AccessTokenSigningKey.getInstance(main).removeKeyFromMemoryIfItHasNotChanged(keyInfo);
-                    return AccessToken.getInfoFromAccessToken(main, token, false, doAntiCsrfCheck);
-                } else {
-                    throw e;
-                }
+                // TODO: check if it's ok to throw only one of the exceptions received.
+                // We could log InvalidKeyExceptions separately, since it signals DB corruption. 
+                // Other errors besides the JWTException("JWT verification failed") are always rethrown
+                // even with different keys. 
+                // Realistically, only JWTException("JWT verification failed") should get here.
+                error = e;
             }
-            AccessTokenInfo tokenInfo = new Gson().fromJson(jwtInfo.payload, AccessTokenInfo.class);
-            if (jwtInfo.version == VERSION.V1) {
-                if (tokenInfo.sessionHandle == null || tokenInfo.userId == null || tokenInfo.refreshTokenHash1 == null
-                        || tokenInfo.userData == null
-                        || (doAntiCsrfCheck && tokenInfo.antiCsrfToken == null)) {
-                    throw new TryRefreshTokenException(
-                            "Access token does not contain all the information. Maybe the structure has changed?");
-                }
-            } else {
-                if (tokenInfo.sessionHandle == null || tokenInfo.userId == null || tokenInfo.refreshTokenHash1 == null
-                        || tokenInfo.userData == null || tokenInfo.lmrt == null
-                        || (doAntiCsrfCheck && tokenInfo.antiCsrfToken == null)) {
-                    throw new TryRefreshTokenException(
-                            "Access token does not contain all the information. Maybe the structure has changed?");
-                }
-            }
-            if (tokenInfo.expiryTime < System.currentTimeMillis()) {
-                throw new TryRefreshTokenException("Access token expired");
-            }
+        }
+        
+        if (jwtInfo == null) {
+            if (retry) {
+                ProcessState.getInstance(main).addState(PROCESS_STATE.RETRYING_ACCESS_TOKEN_JWT_VERIFICATION, error);
 
-            return tokenInfo;
-        } catch (InvalidKeyException | NoSuchAlgorithmException | JWTException e) {
-            throw new TryRefreshTokenException(e);
+                // remove key from memory and retry
+                AccessTokenSigningKey.getInstance(main).removeKeyFromMemoryIfItHasNotChanged(keyInfoList);
+                return AccessToken.getInfoFromAccessToken(main, token, false, doAntiCsrfCheck);
+            }
+            throw new TryRefreshTokenException(error);
+        }
+        AccessTokenInfo tokenInfo = new Gson().fromJson(jwtInfo.payload, AccessTokenInfo.class);
+        if (jwtInfo.version == VERSION.V1) {
+            if (tokenInfo.sessionHandle == null || tokenInfo.userId == null || tokenInfo.refreshTokenHash1 == null
+                    || tokenInfo.userData == null
+                    || (doAntiCsrfCheck && tokenInfo.antiCsrfToken == null)) {
+                throw new TryRefreshTokenException(
+                        "Access token does not contain all the information. Maybe the structure has changed?");
+            }
+        } else {
+            if (tokenInfo.sessionHandle == null || tokenInfo.userId == null || tokenInfo.refreshTokenHash1 == null
+                    || tokenInfo.userData == null || tokenInfo.lmrt == null
+                    || (doAntiCsrfCheck && tokenInfo.antiCsrfToken == null)) {
+                throw new TryRefreshTokenException(
+                        "Access token does not contain all the information. Maybe the structure has changed?");
+            }
+        }
+        if (tokenInfo.expiryTime < System.currentTimeMillis()) {
+            throw new TryRefreshTokenException("Access token expired");
         }
 
+        return tokenInfo;
     }
 
     public static AccessTokenInfo getInfoFromAccessToken(@Nonnull Main main, @Nonnull String token,
@@ -127,7 +142,7 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
 
-        Utils.PubPriKey signingKey = new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getKey().value);
+        Utils.PubPriKey signingKey = new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getCurrentKey().value);
         long now = System.currentTimeMillis();
         if (expiryTime == null) {
             expiryTime = now + Config.getConfig(main).getAccessTokenValidity();
@@ -146,7 +161,7 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
 
-        Utils.PubPriKey signingKey = new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getKey().value);
+        Utils.PubPriKey signingKey = new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getCurrentKey().value);
         long now = System.currentTimeMillis();
         AccessTokenInfo accessToken;
 

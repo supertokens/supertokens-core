@@ -16,6 +16,7 @@
 
 package io.supertokens.test.session.api;
 
+import com.google.common.collect.Iterables;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -24,6 +25,7 @@ import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import org.junit.AfterClass;
@@ -33,6 +35,9 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 public class HandshakeAPITest2_7 {
     @Rule
@@ -100,7 +105,7 @@ public class HandshakeAPITest2_7 {
                         1000, 1000,
                         null, Utils.getCdiVersion2_7ForTests(), "session");
         checkHandshakeAPIResponse(handshakeResponse, process);
-        assertEquals(handshakeResponse.entrySet().size(), 6);
+        assertEquals(handshakeResponse.entrySet().size(), 7);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -138,7 +143,7 @@ public class HandshakeAPITest2_7 {
                         1000, 1000,
                         null, Utils.getCdiVersion2_7ForTests(), "session");
         checkHandshakeAPIResponse(handshakeResponse, process);
-        assertEquals(handshakeResponse.entrySet().size(), 6);
+        assertEquals(handshakeResponse.entrySet().size(), 7);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -150,6 +155,7 @@ public class HandshakeAPITest2_7 {
         String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00081"); // 0.00027*3 = 3 seconds
+        Utils.setValueInConfig("access_token_validity", "1"); // 1 second
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -171,11 +177,21 @@ public class HandshakeAPITest2_7 {
                         "session");
 
 
-        assertEquals(response.entrySet().size(), 6);
+        assertEquals(response.entrySet().size(), 7);
 
-        assertEquals(response.get("jwtSigningPublicKey").getAsString(),
-                new io.supertokens.utils.Utils.PubPriKey(
-                        AccessTokenSigningKey.getInstance(process.main).getKey().value).publicKey);
+        List<String> keys = AccessTokenSigningKey.getInstance(process.main).getKey()
+                .stream().map(key -> 
+                        new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey
+                ).collect(Collectors.toList());
+        
+        assertEquals(response.get("jwtSigningPublicKey").getAsString(), keys.get(0));
+        
+        JsonArray respPubKeyList = response.get("jwtSigningPublicKeyList").getAsJsonArray();
+        assertEquals(keys.size(), respPubKeyList.size());
+        for (int i = 0; i < respPubKeyList.size(); ++i) {
+            String pubKey = respPubKeyList.get(i).getAsJsonObject().get("publicKey").getAsString();
+            assertEquals(keys.get(i), pubKey);
+        }
 
         Thread.sleep(4000);
 
@@ -184,16 +200,29 @@ public class HandshakeAPITest2_7 {
                         new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
                         "session");
 
-        assertEquals(changedResponse.entrySet().size(), 6);
+        assertEquals(changedResponse.entrySet().size(), 7);
 
         //check that changed response has the same signing key as the current signing key and it is different from
         // the previous signing key
-        assertTrue(changedResponse.get("jwtSigningPublicKey").getAsString()
-                .equals(new io.supertokens.utils.Utils.PubPriKey(
-                        AccessTokenSigningKey.getInstance(process.main).getKey().value).publicKey) &&
-                !(changedResponse.get("jwtSigningPublicKey").getAsString()
-                        .equals(response.get("jwtSigningPublicKey").getAsString())));
+        
+        List<String> changedPubKeys = AccessTokenSigningKey.getInstance(process.main).getKey()
+                .stream().map(key -> 
+                        new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey
+                ).collect(Collectors.toList());
+        
+        JsonArray changedRespPubKeyList = changedResponse.get("jwtSigningPublicKeyList").getAsJsonArray();
 
+        boolean hasChangedKey = changedRespPubKeyList.size() != respPubKeyList.size();
+        for (int i = 0; i < changedRespPubKeyList.size(); ++i) {
+            String pubKey = changedRespPubKeyList.get(i).getAsJsonObject().get("publicKey").getAsString();
+            
+            assertEquals(changedPubKeys.get(i), pubKey);
+            hasChangedKey = hasChangedKey || !keys.contains(pubKey);
+        }
+
+        assertTrue(hasChangedKey);
+        assertEquals(changedResponse.get("jwtSigningPublicKey").getAsString(), changedPubKeys.get(0));
+        assertNotEquals(changedResponse.get("jwtSigningPublicKey").getAsString(), response.get("jwtSigningPublicKey").getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -205,10 +234,21 @@ public class HandshakeAPITest2_7 {
         //check status
         assertEquals(response.get("status").getAsString(), "OK");
 
+        List<String> keys = AccessTokenSigningKey.getInstance(process.main).getKey()
+                .stream().map(key -> 
+                        new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey
+                ).collect(Collectors.toList());
+
+        //check jwtSigningPublicKeyList
+        JsonArray respPubKeyList = response.get("jwtSigningPublicKeyList").getAsJsonArray();
+        for (int i = 0; i < respPubKeyList.size(); ++i) {
+                String pubKey = respPubKeyList.get(i).getAsJsonObject().get("publicKey").getAsString();
+                assertEquals(keys.get(i), pubKey);
+        }
+        assertEquals(keys.size(), respPubKeyList.size());
+
         //check jwtSigningPublicKey
-        assertEquals(response.get("jwtSigningPublicKey").getAsString(),
-                new io.supertokens.utils.Utils.PubPriKey(
-                        AccessTokenSigningKey.getInstance(process.main).getKey().value).publicKey);
+        assertEquals(response.get("jwtSigningPublicKey").getAsString(), keys.get(0));
 
         //check jwtSigningPublicKeyExpiryTime
         assertEquals(response.get("jwtSigningPublicKeyExpiryTime").getAsLong(),
