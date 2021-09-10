@@ -22,12 +22,12 @@ public class SQLiteConfig {
         return "key_value";
     }
 
-    public String getAccessTokenSigningKeysTable() {
-        return "access_token_signing_keys";
-    }
-
     public String getUsersTable() {
         return "all_auth_recipe_users";
+    }
+
+    public String getAccessTokenSigningKeysTable() {
+        return "session_access_token_signing_keys";
     }
 
     public String getSessionInfoTable() {
