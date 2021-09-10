@@ -21,7 +21,7 @@ import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.webserver.api.jwt.JWTSigningAPI;
@@ -33,7 +33,7 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
-public class JWTSigningAPITest {
+public class JWTSigningAPITest2_9 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -63,9 +63,9 @@ public class JWTSigningAPITest {
         requestBody.addProperty("validity", 3600);
 
         try {
-            JsonObject response = io.supertokens.httpRequest.HttpRequest
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                            requestBody, 1000, 1000, null);
+                            requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message: Field name 'algorithm' is invalid in JSON input"));
@@ -91,9 +91,9 @@ public class JWTSigningAPITest {
         requestBody.add("payload", new JsonObject());
         requestBody.addProperty("validity", 3600);
 
-        JsonObject response = io.supertokens.httpRequest.HttpRequest
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                        requestBody, 1000, 1000, null);
+                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
         assertEquals(response.get("status").getAsString(), JWTSigningAPI.UNSUPPORTED_ALGORITHM_ERROR_STATUS);
 
         process.kill();
@@ -116,9 +116,9 @@ public class JWTSigningAPITest {
         requestBody.addProperty("validity", 3600);
 
         try {
-            JsonObject response = io.supertokens.httpRequest.HttpRequest
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                            requestBody, 1000, 1000, null);
+                            requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message: Field name 'jwksDomain' is invalid in JSON input"));
@@ -144,9 +144,9 @@ public class JWTSigningAPITest {
         requestBody.addProperty("validity", 3600);
 
         try {
-            io.supertokens.httpRequest.HttpRequest
+            io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                            requestBody, 1000, 1000, null);
+                            requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message: Field name 'payload' is invalid in JSON input"));
@@ -173,9 +173,9 @@ public class JWTSigningAPITest {
         requestBody.addProperty("validity", 3600);
 
         try {
-            io.supertokens.httpRequest.HttpRequest
+            io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                            requestBody, 1000, 1000, null);
+                            requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message: Field name 'payload' is invalid in JSON input"));
@@ -201,9 +201,9 @@ public class JWTSigningAPITest {
         requestBody.add("payload", new JsonObject());
 
         try {
-            JsonObject response = io.supertokens.httpRequest.HttpRequest
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                            requestBody, 1000, 1000, null);
+                            requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message: Field name 'validity' is invalid in JSON input"));
@@ -230,9 +230,9 @@ public class JWTSigningAPITest {
         requestBody.addProperty("validity", -3600);
 
         try {
-            JsonObject response = io.supertokens.httpRequest.HttpRequest
+            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                            requestBody, 1000, 1000, null);
+                            requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
             fail();
         } catch (HttpResponseException e) {
             // TODO: Check how to handle this, shuld be a 400 but assertion errors are considered 500s
@@ -259,9 +259,9 @@ public class JWTSigningAPITest {
         requestBody.add("payload", new JsonObject());
         requestBody.addProperty("validity", 3600);
 
-        JsonObject response = io.supertokens.httpRequest.HttpRequest
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                        requestBody, 1000, 1000, null);
+                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertNotNull(response.get("jwt"));
@@ -286,9 +286,9 @@ public class JWTSigningAPITest {
         requestBody.add("payload", new JsonObject());
         requestBody.addProperty("validity", 3600);
 
-        JsonObject response = io.supertokens.httpRequest.HttpRequest
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                        requestBody, 1000, 1000, null);
+                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
         String jwt = response.get("jwt").getAsString();
         DecodedJWT decodedJWT = JWT.decode(jwt);
@@ -326,9 +326,9 @@ public class JWTSigningAPITest {
 
         requestBody.addProperty("validity", 3600);
 
-        JsonObject response = io.supertokens.httpRequest.HttpRequest
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                        requestBody, 1000, 1000, null);
+                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
         String jwt = response.get("jwt").getAsString();
         DecodedJWT decodedJWT = JWT.decode(jwt);

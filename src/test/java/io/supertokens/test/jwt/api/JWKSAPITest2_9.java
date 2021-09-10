@@ -41,7 +41,7 @@ import java.util.Base64;
 
 import static org.junit.Assert.assertNotNull;
 
-public class JWKSAPITest {
+public class JWKSAPITest2_9 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -65,9 +65,9 @@ public class JWKSAPITest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        JsonObject response = io.supertokens.httpRequest.HttpRequest
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/jwks",
-                        null, 1000, 1000, null);
+                        null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
         assertNotNull(response.get("keys"));
 
@@ -94,13 +94,13 @@ public class JWKSAPITest {
         requestBody.add("payload", new JsonObject());
         requestBody.addProperty("validity", 3600);
 
-        io.supertokens.httpRequest.HttpRequest
+        io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                        requestBody, 1000, 1000, null);
+                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
-        JsonObject response = io.supertokens.httpRequest.HttpRequest
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/jwks",
-                        null, 1000, 1000, null);
+                        null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
         JsonArray keys = response.getAsJsonArray("keys");
         assert keys.size() != 0;
@@ -125,18 +125,18 @@ public class JWKSAPITest {
         requestBody.add("payload", new JsonObject());
         requestBody.addProperty("validity", 3600);
 
-        JsonObject jwtResponse = io.supertokens.httpRequest.HttpRequest
+        JsonObject jwtResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                        requestBody, 1000, 1000, null);
+                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
         String jwt = jwtResponse.get("jwt").getAsString();
         DecodedJWT decodedJWT = JWT.decode(jwt);
 
         String keyIdFromHeader = decodedJWT.getHeaderClaim("kid").asString();
 
-        JsonObject response = io.supertokens.httpRequest.HttpRequest
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/jwks",
-                        null, 1000, 1000, null);
+                        null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
         JsonArray keys = response.getAsJsonArray("keys");
         boolean didFindKey = false;
@@ -172,18 +172,18 @@ public class JWKSAPITest {
         requestBody.add("payload", new JsonObject());
         requestBody.addProperty("validity", 3600);
 
-        JsonObject jwtResponse = io.supertokens.httpRequest.HttpRequest
+        JsonObject jwtResponse = io.supertokens.test.httpRequest.HttpRequest
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                        requestBody, 1000, 1000, null);
+                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
         String jwt = jwtResponse.get("jwt").getAsString();
         DecodedJWT decodedJWT = JWT.decode(jwt);
 
         String keyIdFromHeader = decodedJWT.getHeaderClaim("kid").asString();
 
-        JsonObject response = io.supertokens.httpRequest.HttpRequest
+        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/jwks",
-                        null, 1000, 1000, null);
+                        null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
         JsonArray keys = response.getAsJsonArray("keys");
         JsonObject keyToUse = null;

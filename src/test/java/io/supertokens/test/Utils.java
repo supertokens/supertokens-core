@@ -72,6 +72,10 @@ public abstract class Utils extends Mockito {
         return "2.8";
     }
 
+    public static String getCdiVersion2_9ForTests() {
+        return "2.9";
+    }
+
     public static String getCdiVersionLatestForTests() {
         return WebserverAPI.getLatestCDIVersion();
     }
