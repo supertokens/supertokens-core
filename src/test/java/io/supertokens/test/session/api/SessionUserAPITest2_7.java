@@ -22,6 +22,7 @@ import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,7 +58,7 @@ public class SessionUserAPITest2_7 {
 
         //null is sent as the parameter
         try {
-            io.supertokens.test.httpRequest.HttpRequest
+            HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/user", null, 1000,
                             1000,
                             null, Utils.getCdiVersion2_7ForTests(), "session");
@@ -72,7 +73,7 @@ public class SessionUserAPITest2_7 {
         map.put("urId", "");
 
         try {
-            io.supertokens.test.httpRequest.HttpRequest
+            HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/user", map, 1000,
                             1000,
                             null, Utils.getCdiVersion2_7ForTests(), "session");
@@ -111,7 +112,7 @@ public class SessionUserAPITest2_7 {
         HashMap<String, String> map = new HashMap<>();
         map.put("userId", "");
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/user", map, 1000, 1000,
                         null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -120,7 +121,7 @@ public class SessionUserAPITest2_7 {
         assertEquals(0, response.get("sessionHandles").getAsJsonArray().size());
 
         //when a session exists
-        JsonObject sessionCreatedResponse = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject sessionCreatedResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                         new JsonParser().parse(createSessionJsonInput).getAsJsonObject(), 1000, 1000, null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -129,7 +130,7 @@ public class SessionUserAPITest2_7 {
 
         map = new HashMap<>();
         map.put("userId", "UserID");
-        response = io.supertokens.test.httpRequest.HttpRequest
+        response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/user", map, 1000, 1000,
                         null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -143,7 +144,7 @@ public class SessionUserAPITest2_7 {
         //when multiple sessions are created
 
         //second session created
-        JsonObject sessionCreatedResponse1 = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject sessionCreatedResponse1 = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                         new JsonParser().parse(createSessionJsonInput).getAsJsonObject(), 1000, 1000, null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -151,14 +152,14 @@ public class SessionUserAPITest2_7 {
         assertEquals(sessionCreatedResponse1.get("status").getAsString(), "OK");
 
         //third session created
-        JsonObject sessionCreatedResponse2 = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject sessionCreatedResponse2 = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                         new JsonParser().parse(createSessionJsonInput).getAsJsonObject(), 1000, 1000, null,
                         Utils.getCdiVersion2_7ForTests(), "session");
 
         assertEquals(sessionCreatedResponse2.get("status").getAsString(), "OK");
 
-        JsonObject multiResponse = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject multiResponse = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/user", map, 1000, 1000,
                         null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -227,7 +228,7 @@ public class SessionUserAPITest2_7 {
 
         //UserID1
         //session 1
-        JsonObject user1Response1 = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject user1Response1 = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                         new JsonParser().parse(userJsonInput1).getAsJsonObject(), 1000, 1000, null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -235,7 +236,7 @@ public class SessionUserAPITest2_7 {
         assertEquals("OK", user1Response1.get("status").getAsString());
 
         //session 2
-        JsonObject user1Response2 = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject user1Response2 = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                         new JsonParser().parse(userJsonInput1).getAsJsonObject(), 1000, 1000, null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -243,7 +244,7 @@ public class SessionUserAPITest2_7 {
         assertEquals("OK", user1Response2.get("status").getAsString());
 
         //session 3
-        JsonObject user1Response3 = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject user1Response3 = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                         new JsonParser().parse(userJsonInput1).getAsJsonObject(), 1000, 1000, null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -255,7 +256,7 @@ public class SessionUserAPITest2_7 {
 
         //session 1
 
-        JsonObject user2Response1 = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject user2Response1 = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                         new JsonParser().parse(userJsonInput2).getAsJsonObject(), 1000, 1000, null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -264,7 +265,7 @@ public class SessionUserAPITest2_7 {
 
         //session 2
 
-        JsonObject user2Response2 = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject user2Response2 = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                         new JsonParser().parse(userJsonInput2).getAsJsonObject(), 1000, 1000, null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -273,7 +274,7 @@ public class SessionUserAPITest2_7 {
 
         //session 3
 
-        JsonObject user2Response3 = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject user2Response3 = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                         new JsonParser().parse(userJsonInput2).getAsJsonObject(), 1000, 1000, null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -285,7 +286,7 @@ public class SessionUserAPITest2_7 {
 
         //session 1
 
-        JsonObject user3Response1 = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject user3Response1 = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                         new JsonParser().parse(userJsonInput3).getAsJsonObject(), 1000, 1000, null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -294,7 +295,7 @@ public class SessionUserAPITest2_7 {
 
         //session 2
 
-        JsonObject user3Response2 = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject user3Response2 = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                         new JsonParser().parse(userJsonInput3).getAsJsonObject(), 1000, 1000, null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -303,7 +304,7 @@ public class SessionUserAPITest2_7 {
 
         //session 3
 
-        JsonObject user3Response3 = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject user3Response3 = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                         new JsonParser().parse(userJsonInput3).getAsJsonObject(), 1000, 1000, null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -315,7 +316,7 @@ public class SessionUserAPITest2_7 {
 
         map.put("userId", "UserID1");
 
-        JsonObject multiResponse = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject multiResponse = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/user", map, 1000, 1000,
                         null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -334,7 +335,7 @@ public class SessionUserAPITest2_7 {
         map = new HashMap<>();
         map.put("userId", "UserID2");
 
-        multiResponse = io.supertokens.test.httpRequest.HttpRequest
+        multiResponse = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/user", map, 1000, 1000,
                         null,
                         Utils.getCdiVersion2_7ForTests(), "session");
@@ -350,7 +351,7 @@ public class SessionUserAPITest2_7 {
         map = new HashMap<>();
         map.put("userId", "UserID3");
 
-        multiResponse = io.supertokens.test.httpRequest.HttpRequest
+        multiResponse = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/user", map, 1000, 1000,
                         null,
                         Utils.getCdiVersion2_7ForTests(), "session");

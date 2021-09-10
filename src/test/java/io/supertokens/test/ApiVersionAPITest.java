@@ -21,7 +21,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
-import io.supertokens.test.httpRequest.HttpRequest;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -71,7 +71,7 @@ public class ApiVersionAPITest {
         JsonObject cdiSupported = new JsonParser().parse(fileContent.toString()).getAsJsonObject();
         JsonArray cdiVersions = cdiSupported.get("versions").getAsJsonArray();
 
-        JsonObject apiVersionResponse = HttpRequest
+        JsonObject apiVersionResponse = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000, null,
                         null, "");
         JsonArray apiVersions = apiVersionResponse.get("versions").getAsJsonArray();
@@ -94,14 +94,14 @@ public class ApiVersionAPITest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         //without setting cdi-version header
-        JsonObject apiVersionResponse = HttpRequest
+        JsonObject apiVersionResponse = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000,
                         null, null, "");
         assertNotNull(apiVersionResponse.getAsJsonArray("versions"));
         assertTrue(apiVersionResponse.getAsJsonArray("versions").size() >= 1);
 
         //with setting cdi-version header
-        apiVersionResponse = HttpRequest
+        apiVersionResponse = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000,
                         null,
                         Utils.getCdiVersionLatestForTests(), "");
@@ -121,7 +121,7 @@ public class ApiVersionAPITest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        JsonObject apiVersionResponse = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject apiVersionResponse = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000,
                         null, null, "");
 
@@ -145,7 +145,7 @@ public class ApiVersionAPITest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        JsonObject apiVersionResponse = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject apiVersionResponse = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000,
                         null, null, "");
 

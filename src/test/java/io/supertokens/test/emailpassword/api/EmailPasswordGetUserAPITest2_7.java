@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -61,7 +62,7 @@ public class EmailPasswordGetUserAPITest2_7 {
 
         {
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user", null, 1000,
                                 1000,
@@ -80,7 +81,7 @@ public class EmailPasswordGetUserAPITest2_7 {
             map.put("userId", "randomID");
             map.put("email", "random@gmail.com");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user", map, 1000,
                                 1000,
@@ -122,7 +123,7 @@ public class EmailPasswordGetUserAPITest2_7 {
             HashMap<String, String> map = new HashMap<>();
             map.put("email", "random@gmail.com");
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", map, 1000,
                             1000,
@@ -149,7 +150,7 @@ public class EmailPasswordGetUserAPITest2_7 {
             HashMap<String, String> map = new HashMap<>();
             map.put("userId", signUpUser.get("id").getAsString());
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", map, 1000,
                             1000,
@@ -185,7 +186,7 @@ public class EmailPasswordGetUserAPITest2_7 {
             HashMap<String, String> map = new HashMap<>();
             map.put("email", "random@gmail.com");
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", map, 1000,
                             1000,
@@ -198,7 +199,7 @@ public class EmailPasswordGetUserAPITest2_7 {
             HashMap<String, String> map = new HashMap<>();
             map.put("userId", "randomId");
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", map, 1000,
                             1000,

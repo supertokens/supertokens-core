@@ -26,6 +26,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -65,7 +66,7 @@ public class JWKSAPITest2_9 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/jwks",
                         null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
@@ -94,11 +95,11 @@ public class JWKSAPITest2_9 {
         requestBody.add("payload", new JsonObject());
         requestBody.addProperty("validity", 3600);
 
-        io.supertokens.test.httpRequest.HttpRequest
+        HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
                         requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/jwks",
                         null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
@@ -125,7 +126,7 @@ public class JWKSAPITest2_9 {
         requestBody.add("payload", new JsonObject());
         requestBody.addProperty("validity", 3600);
 
-        JsonObject jwtResponse = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject jwtResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
                         requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
@@ -134,7 +135,7 @@ public class JWKSAPITest2_9 {
 
         String keyIdFromHeader = decodedJWT.getHeaderClaim("kid").asString();
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/jwks",
                         null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
@@ -172,7 +173,7 @@ public class JWKSAPITest2_9 {
         requestBody.add("payload", new JsonObject());
         requestBody.addProperty("validity", 3600);
 
-        JsonObject jwtResponse = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject jwtResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
                         requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
@@ -181,7 +182,7 @@ public class JWKSAPITest2_9 {
 
         String keyIdFromHeader = decodedJWT.getHeaderClaim("kid").asString();
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/jwks",
                         null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 

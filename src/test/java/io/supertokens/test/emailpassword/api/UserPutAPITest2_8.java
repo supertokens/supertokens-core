@@ -24,6 +24,7 @@ import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -57,7 +58,7 @@ public class UserPutAPITest2_8 {
             body.addProperty("userId", "someUserId");
             body.addProperty("email", "someemail@gmail.com");
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendJsonPUTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", body, 1000,
                             1000,
@@ -83,7 +84,7 @@ public class UserPutAPITest2_8 {
             body.addProperty("userId", user.id);
             body.addProperty("email", user2.email);
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendJsonPUTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", body, 1000,
                             1000,
@@ -105,7 +106,7 @@ public class UserPutAPITest2_8 {
             body.addProperty("userId", "someUserId");
 
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPUTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user", body, 1000,
                                 1000,
@@ -132,7 +133,7 @@ public class UserPutAPITest2_8 {
             body.addProperty("userId", user.id);
             body.addProperty("email", "someOtherEmail@gmail.com");
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendJsonPUTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", body, 1000,
                             1000,

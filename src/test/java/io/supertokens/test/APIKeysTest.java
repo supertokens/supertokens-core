@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
-import io.supertokens.test.httpRequest.HttpRequest;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -163,7 +163,7 @@ public class APIKeysTest {
         request.addProperty("enableAntiCsrf", false);
 
         try {
-            HttpRequest
+            HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                             1000,
                             1000, null, Utils.getCdiVersionLatestForTests(), null);
@@ -173,7 +173,7 @@ public class APIKeysTest {
                     e.getMessage().equals("Http error. Status Code: 401. Message: Invalid API key"));
         }
 
-        JsonObject sessionInfo = HttpRequest
+        JsonObject sessionInfo = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), apiKey, "");
@@ -181,7 +181,7 @@ public class APIKeysTest {
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         try {
-            HttpRequest
+            HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                             1000,
                             1000, null, Utils.getCdiVersionLatestForTests(), "abd#%034t0g4in40t40v0j");
@@ -206,7 +206,7 @@ public class APIKeysTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        String response = HttpRequest
+        String response = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), "");
@@ -215,7 +215,7 @@ public class APIKeysTest {
         // map to store pid as parameter
         Map<String, String> map = new HashMap<>();
         map.put("pid", ProcessHandle.current().pid() + "");
-        JsonObject response2 = HttpRequest
+        JsonObject response2 = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
                         Utils.getCdiVersionLatestForTests(), "");
 
@@ -259,14 +259,14 @@ public class APIKeysTest {
         request.addProperty("enableAntiCsrf", false);
 
         // check that any one of the keys can be used
-        JsonObject sessionInfo = HttpRequest
+        JsonObject sessionInfo = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), apiKey1, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
-        sessionInfo = HttpRequest
+        sessionInfo = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), apiKey2, "");
@@ -274,7 +274,7 @@ public class APIKeysTest {
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
 
-        sessionInfo = HttpRequest
+        sessionInfo = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), apiKey3, "");
@@ -284,7 +284,7 @@ public class APIKeysTest {
 
         // sending request with no api key
         try {
-            HttpRequest
+            HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                             1000,
                             1000, null, Utils.getCdiVersionLatestForTests(), null);
@@ -296,7 +296,7 @@ public class APIKeysTest {
 
         // sending request with invalid api key
         try {
-            HttpRequest
+            HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                             1000,
                             1000, null, Utils.getCdiVersionLatestForTests(), "abd#%034t0g4in40t40v0j");
@@ -342,7 +342,7 @@ public class APIKeysTest {
         request.addProperty("enableAntiCsrf", false);
 
         // check that any one of the keys can be used
-        JsonObject sessionInfo = HttpRequest
+        JsonObject sessionInfo = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), " " + apiKey1 + " ", "");
@@ -350,7 +350,7 @@ public class APIKeysTest {
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
-        sessionInfo = HttpRequest
+        sessionInfo = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), " " + apiKey2, "");
@@ -359,7 +359,7 @@ public class APIKeysTest {
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
 
-        sessionInfo = HttpRequest
+        sessionInfo = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), apiKey3, "");
@@ -367,7 +367,7 @@ public class APIKeysTest {
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
-        sessionInfo = HttpRequest
+        sessionInfo = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), apiKey4, "");

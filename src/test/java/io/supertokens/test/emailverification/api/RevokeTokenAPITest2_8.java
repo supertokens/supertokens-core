@@ -23,6 +23,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -89,7 +90,7 @@ public class RevokeTokenAPITest2_8 {
     }
 
     private JsonObject makeRequest(Main main, JsonObject body) throws IOException, HttpResponseException {
-        return io.supertokens.test.httpRequest.HttpRequest.sendJsonPOSTRequest(main, "",
+        return HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/recipe/user/email/verify/token/remove", body, 1000, 1000, null,
                 Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_VERIFICATION.toString());
     }

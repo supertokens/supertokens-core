@@ -28,7 +28,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.noSqlStorage.NoSQLStorage_1;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.test.httpRequest.HttpRequest;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.version.Version;
 import org.junit.AfterClass;
@@ -675,7 +675,7 @@ public class StorageTest {
         storage.setStorageLayerEnabled(false);
 
         try {
-            HttpRequest
+            HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                             1000, 1000,
                             null, Utils.getCdiVersionLatestForTests(), "session");
@@ -687,7 +687,7 @@ public class StorageTest {
 
         storage.setStorageLayerEnabled(true);
 
-        JsonObject sessionCreated = HttpRequest
+        JsonObject sessionCreated = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
                         null, Utils.getCdiVersionLatestForTests(), "session");
@@ -701,7 +701,8 @@ public class StorageTest {
         storage.setStorageLayerEnabled(false);
 
         try {
-            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
+            HttpRequestForTesting
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
                     jsonBody,
                     1000,
                     1000, null, Utils.getCdiVersionLatestForTests(), "session");
@@ -713,7 +714,7 @@ public class StorageTest {
 
         storage.setStorageLayerEnabled(true);
 
-        HttpRequest
+        HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh", jsonBody,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), "session");
@@ -782,7 +783,7 @@ public class StorageTest {
                             "}" +
                             "}" +
                             "}";
-                    HttpRequest
+                    HttpRequestForTesting
                             .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                                     new JsonParser().parse(jsonInput), 10000,
                                     20000,
