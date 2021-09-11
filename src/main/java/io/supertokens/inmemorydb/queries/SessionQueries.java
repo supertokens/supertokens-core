@@ -235,7 +235,10 @@ public class SessionQueries {
     }
 
     public static KeyValueInfo[] getAccessTokenSigningKeys_Transaction(Start start, Connection con) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT * FROM " + Config.getConfig(start).getAccessTokenSigningKeysTable();
+        String accessTokenSigningKeysTableName = Config.getConfig(start).getAccessTokenSigningKeysTable();
+
+        ((ConnectionWithLocks) con).lock(accessTokenSigningKeysTableName);
+        String QUERY = "SELECT * FROM " + accessTokenSigningKeysTableName;
 
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             ResultSet result = pst.executeQuery();
@@ -251,12 +254,12 @@ public class SessionQueries {
         }
     }
 
-    public static void removeAccessTokenSigningKeysBefore_Transaction(Start start, Connection con, long createdAtTime) throws SQLException {
+    public static void removeAccessTokenSigningKeysBefore_Transaction(Start start, Connection con, long time) throws SQLException {
         String QUERY = "DELETE FROM " + Config.getConfig(start).getAccessTokenSigningKeysTable() +
                 " WHERE created_at_time < ?";
 
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setLong(1, createdAtTime);
+            pst.setLong(1, time);
             pst.executeUpdate();
         }
     }

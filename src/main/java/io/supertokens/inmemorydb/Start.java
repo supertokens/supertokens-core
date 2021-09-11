@@ -209,11 +209,11 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void removeAccessTokenSigningKeysBefore_Transaction(TransactionConnection con, long createdAtTime)
+    public void removeAccessTokenSigningKeysBefore_Transaction(TransactionConnection con, long time)
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            SessionQueries.removeAccessTokenSigningKeysBefore_Transaction(this, sqlCon, createdAtTime);
+            SessionQueries.removeAccessTokenSigningKeysBefore_Transaction(this, sqlCon, time);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
