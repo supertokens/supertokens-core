@@ -236,9 +236,9 @@ public class AccessTokenTest {
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
-        String keyBefore = AccessTokenSigningKey.getInstance(process.getProcess()).getKey().toString();
+        String keyBefore = AccessTokenSigningKey.getInstance(process.getProcess()).getLatestIssuedKey().toString();
         Thread.sleep(1500);
-        String keyAfter = AccessTokenSigningKey.getInstance(process.getProcess()).getKey().toString();
+        String keyAfter = AccessTokenSigningKey.getInstance(process.getProcess()).getLatestIssuedKey().toString();
         assertNotEquals(keyBefore, keyAfter);
         assertTrue(AccessTokenSigningKey.getInstance(process.getProcess()).getKeyExpiryTime() != Long.MAX_VALUE);
         process.kill();

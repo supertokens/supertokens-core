@@ -41,7 +41,9 @@ import java.util.Comparator;
 import java.util.List;
 
 public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource {
-
+    // We keep the signing keys after generating a new one for accessTokenValidity multiplied by this value
+    // JWTs are still checked for expiration after signature verification, this doesn't extend the lifetime of the sessions.
+    private static final int SIGNING_KEY_VALIDITY_OVERLAP = 2;
     private static final String RESOURCE_KEY = "io.supertokens.session.accessToken.AccessTokenSigningKey";
     private final Main main;
     private List<KeyInfo> validKeys;
@@ -49,7 +51,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     private AccessTokenSigningKey(Main main) {
         this.main = main;
         try {
-            this.getKey();
+            this.getAllKeys();
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             Logging.error(main, "Error while fetching access token signing key", false, e);
         }
@@ -90,7 +92,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         }
     }
 
-    public synchronized List<KeyInfo> getKey()
+    public synchronized List<KeyInfo> getAllKeys()
             throws StorageQueryException, StorageTransactionLogicException {
         if (this.validKeys == null || this.validKeys.size() == 0) {
             this.validKeys = maybeGenerateNewKeyAndUpdateInDb();
@@ -105,14 +107,14 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         return this.validKeys;
     }
 
-    public KeyInfo getCurrentKey()
+    public KeyInfo getLatestIssuedKey()
             throws StorageQueryException, StorageTransactionLogicException {
-        return this.getKey().get(0);
+        return this.getAllKeys().get(0);
     }
 
     public synchronized long getKeyExpiryTime() throws StorageQueryException, StorageTransactionLogicException {
         if (Config.getConfig(this.main).getAccessTokenSigningKeyDynamic()) {
-            this.getKey();
+            this.getAllKeys();
             // getKey ensures we have at least 1 valid keys
             long createdAtTime = this.validKeys.get(0).createdAtTime;
             return createdAtTime + Config.getConfig(main).getAccessTokenSigningKeyUpdateInterval();
@@ -126,9 +128,12 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         Storage storage = StorageLayer.getSessionStorage(main);
         CoreConfig config = Config.getConfig(main);
         
-        final long validityDuration = config.getAccessTokenSigningKeyUpdateInterval() + 2 * config.getAccessTokenValidity();
-        final long keyCurrentAfter = System.currentTimeMillis() - config.getAccessTokenSigningKeyUpdateInterval();
-        final long keysValidAfter = keyCurrentAfter - 2 * config.getAccessTokenValidity();
+        // Keys are kept for this amount of time
+        final long signingKeyLifetime = config.getAccessTokenSigningKeyUpdateInterval() + SIGNING_KEY_VALIDITY_OVERLAP * config.getAccessTokenValidity();
+        // Keys created after this timestamp can be used to sign access tokens
+        final long keysCreatedAfterCanSign = System.currentTimeMillis() - config.getAccessTokenSigningKeyUpdateInterval();
+        // Keys created after this timestamp can be used to verify access token signatures
+        final long keysCreatedAfterCanVerify = System.currentTimeMillis() - signingKeyLifetime;
         
         List<KeyInfo> validKeys = null;
 
@@ -149,23 +154,23 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                     KeyValueInfo legacyKey = sqlStorage.getLegacyAccessTokenSigningKey_Transaction(con);
 
                     if (legacyKey != null && config.getAccessTokenSigningKeyDynamic()) {
-                        if (keyCurrentAfter <= legacyKey.createdAtTime) {
+                        if (keysCreatedAfterCanSign <= legacyKey.createdAtTime) {
                             generateNewKey = false;
-                            validKeysFromSQL.add(new KeyInfo(legacyKey.value, legacyKey.createdAtTime, validityDuration));
-                        } else if (legacyKey.createdAtTime < keysValidAfter) {
+                            validKeysFromSQL.add(new KeyInfo(legacyKey.value, legacyKey.createdAtTime, signingKeyLifetime));
+                        } else if (legacyKey.createdAtTime < keysCreatedAfterCanVerify) {
                             sqlStorage.removeLegacyAccessTokenSigningKey_Transaction(con);
                         }
                     }
                 } else {
                     for (KeyValueInfo key: keysFromStorage) {
                         if (config.getAccessTokenSigningKeyDynamic()) {
-                            if (keyCurrentAfter <= key.createdAtTime) {
+                            if (keysCreatedAfterCanSign <= key.createdAtTime) {
                                 generateNewKey = false;
                             }
-                            if (key.createdAtTime < keysValidAfter) {
+                            if (key.createdAtTime < keysCreatedAfterCanVerify) {
                                 clearKeys = true;
                             } else {
-                                validKeysFromSQL.add(new KeyInfo(key.value, key.createdAtTime, validityDuration));
+                                validKeysFromSQL.add(new KeyInfo(key.value, key.createdAtTime, signingKeyLifetime));
                             }
                         }
                     }
@@ -179,13 +184,13 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                     } catch (NoSuchAlgorithmException e) {
                         throw new StorageTransactionLogicException(e);
                     }
-                    KeyInfo newKey = new KeyInfo(signingKey, System.currentTimeMillis(), validityDuration);
+                    KeyInfo newKey = new KeyInfo(signingKey, System.currentTimeMillis(), signingKeyLifetime);
                     sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo(newKey.value, newKey.createdAtTime));
                     validKeysFromSQL.add(newKey);
                 }
 
                 if (clearKeys) {
-                    sqlStorage.removeAccessTokenSigningKeysBefore_Transaction(con, keysValidAfter);
+                    sqlStorage.removeAccessTokenSigningKeysBefore_Transaction(con, keysCreatedAfterCanVerify);
                 }
 
                 sqlStorage.commitTransaction(con);
@@ -205,11 +210,11 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                     KeyValueInfoWithLastUpdated legacyKey = noSQLStorage.getLegacyAccessTokenSigningKey_Transaction();
 
                     if (legacyKey != null && config.getAccessTokenSigningKeyDynamic()) {
-                        if (keyCurrentAfter <= legacyKey.createdAtTime) {
+                        if (keysCreatedAfterCanSign <= legacyKey.createdAtTime) {
                             generateNewKey = false;
                         }
-                        if (keysValidAfter < legacyKey.createdAtTime) {
-                            validKeys.add(new KeyInfo(legacyKey.value, legacyKey.createdAtTime, validityDuration));
+                        if (keysCreatedAfterCanVerify < legacyKey.createdAtTime) {
+                            validKeys.add(new KeyInfo(legacyKey.value, legacyKey.createdAtTime, signingKeyLifetime));
                         } else {
                             noSQLStorage.removeLegacyAccessTokenSigningKey_Transaction();
                         }
@@ -219,13 +224,13 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                         if (config.getAccessTokenSigningKeyDynamic()) {
                             lastCreated = lastCreated < key.createdAtTime ? key.createdAtTime : lastCreated;
                             
-                            if (keyCurrentAfter <= key.createdAtTime) {
+                            if (keysCreatedAfterCanSign <= key.createdAtTime) {
                                 generateNewKey = false;
                             } 
-                            if (key.createdAtTime < keysValidAfter) {
+                            if (key.createdAtTime < keysCreatedAfterCanVerify) {
                                 clearKeys = true;
                             } else {
-                                validKeys.add(new KeyInfo(key.value, key.createdAtTime, validityDuration));
+                                validKeys.add(new KeyInfo(key.value, key.createdAtTime, signingKeyLifetime));
                             }
                         }
                     }
@@ -239,7 +244,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                     } catch (NoSuchAlgorithmException e) {
                         throw new StorageTransactionLogicException(e);
                     }
-                    KeyInfo newKey = new KeyInfo(signingKey, System.currentTimeMillis(), validityDuration);
+                    KeyInfo newKey = new KeyInfo(signingKey, System.currentTimeMillis(), signingKeyLifetime);
                     boolean success = noSQLStorage.addAccessTokenSigningKey_Transaction(
                         new KeyValueInfo(newKey.value, newKey.createdAtTime), lastCreated
                     );
@@ -252,7 +257,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 }
                 
                 if (clearKeys) {
-                    noSQLStorage.removeAccessTokenSigningKeysBefore_Transaction(keysValidAfter);
+                    noSQLStorage.removeAccessTokenSigningKeysBefore_Transaction(keysCreatedAfterCanVerify);
                 }
             }
         } else {

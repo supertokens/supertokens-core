@@ -49,7 +49,7 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException {
 
         
-        List<AccessTokenSigningKey.KeyInfo> keyInfoList = AccessTokenSigningKey.getInstance(main).getKey();
+        List<AccessTokenSigningKey.KeyInfo> keyInfoList = AccessTokenSigningKey.getInstance(main).getAllKeys();
 
         Exception error = null;
         JWT.JWTInfo jwtInfo = null;
@@ -142,7 +142,7 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
 
-        Utils.PubPriKey signingKey = new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getCurrentKey().value);
+        Utils.PubPriKey signingKey = new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value);
         long now = System.currentTimeMillis();
         if (expiryTime == null) {
             expiryTime = now + Config.getConfig(main).getAccessTokenValidity();
@@ -161,7 +161,7 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
 
-        Utils.PubPriKey signingKey = new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getCurrentKey().value);
+        Utils.PubPriKey signingKey = new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value);
         long now = System.currentTimeMillis();
         AccessTokenInfo accessToken;
 

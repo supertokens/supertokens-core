@@ -53,19 +53,15 @@ public class HandshakeAPI extends WebserverAPI {
             result.addProperty("status", "OK");
 
             result.addProperty("jwtSigningPublicKey",
-                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getCurrentKey().value).publicKey);
+                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
                     AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
 
-            List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getKey();
-            JsonArray jwtSigningPublicKeyListJSON = new JsonArray();
-            for (KeyInfo keyInfo : keys) {
-                JsonObject keyJSON = new JsonObject();
-                keyJSON.addProperty("publicKey", new Utils.PubPriKey(keyInfo.value).publicKey);
-                keyJSON.addProperty("expiryTime", keyInfo.expiryTime);
-                jwtSigningPublicKeyListJSON.add(keyJSON);
+            if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
+                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getAllKeys();
+                JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
+                result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
             }
-            result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
 
             result.addProperty("accessTokenBlacklistingEnabled", Config.getConfig(main).getAccessTokenBlacklisting());
             result.addProperty("accessTokenValidity", Config.getConfig(main).getAccessTokenValidity());
