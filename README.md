@@ -31,7 +31,7 @@ If you like our project, please :star2: this repository! For feedback, feel free
 - **Open source services:** SuperTokens can be used for **free, forever, with no limits** on the number of users.
 - **On-premises deployment** so that you control 100% of your user data using your database.
 - **An end-to-end solution** with login, sign-ups, user and session management sans the complexities of OAuth protocols.
-- **Ease of implementation** using the best security standards.
+- **Ease of implementation** using the best-in-class security standards.
 - **Extensibility:** You can scale SuperTokens and extend its functionalities in alignment with your product(s) while **anyone can contribute** to the SuperTokens growth trajectory.
 
 ### Philosophy
