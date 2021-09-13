@@ -254,11 +254,11 @@ public class SessionQueries {
         }
     }
 
-    public static void removeAccessTokenSigningKeysBefore_Transaction(Start start, Connection con, long time) throws SQLException {
+    public static void removeAccessTokenSigningKeysBefore(Start start, long time) throws SQLException {
         String QUERY = "DELETE FROM " + Config.getConfig(start).getAccessTokenSigningKeysTable() +
                 " WHERE created_at_time < ?";
-
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+        try (Connection con = ConnectionPool.getConnection(start);
+             PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setLong(1, time);
             pst.executeUpdate();
         }
