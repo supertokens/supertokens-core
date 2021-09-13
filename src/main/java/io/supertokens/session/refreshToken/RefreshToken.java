@@ -40,11 +40,11 @@ public class RefreshToken {
 
     public static RefreshTokenInfo getInfoFromRefreshToken(@Nonnull Main main, @Nonnull String token)
             throws UnauthorisedException, StorageQueryException, StorageTransactionLogicException {
+        String key = RefreshTokenKey.getInstance(main).getKey();
         try {
             TYPE tokenType = getTypeFromToken(token);
 
             // format of token is <encrypted part>.<nonce>.V1
-            String key = RefreshTokenKey.getInstance(main).getKey();
             String[] splittedToken = token.split("\\.");
             if (splittedToken.length != 3) {
                 throw new InvalidRefreshTokenFormatException(
