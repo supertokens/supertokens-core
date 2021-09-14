@@ -271,6 +271,7 @@ public class Utils {
             JsonObject keyJSON = new JsonObject();
             keyJSON.addProperty("publicKey", new PubPriKey(keyInfo.value).publicKey);
             keyJSON.addProperty("expiryTime", keyInfo.expiryTime);
+            keyJSON.addProperty("createdAt", keyInfo.createdAtTime);
             jwtSigningPublicKeyListJSON.add(keyJSON);
         }
         return jwtSigningPublicKeyListJSON;

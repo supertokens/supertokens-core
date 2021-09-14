@@ -16,6 +16,7 @@
 
 package io.supertokens.test.session.api;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
@@ -90,6 +91,13 @@ public class VerifySessionAPITest2_9 {
         assertNotNull(response.get("jwtSigningPublicKey").getAsString());
         assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));
         assertTrue(response.has("jwtSigningPublicKeyList"));
+        JsonArray respPubKeyList = response.get("jwtSigningPublicKeyList").getAsJsonArray();
+        for (int i = 0; i < respPubKeyList.size(); ++i) {
+            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("publicKey"));
+            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("expiryTime"));
+            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("createdAt"));
+            assertEquals(respPubKeyList.get(i).getAsJsonObject().entrySet().size(), 3);
+        }
         assertEquals(response.entrySet().size(), 5);
 
         process.kill();
@@ -153,6 +161,13 @@ public class VerifySessionAPITest2_9 {
         assertNotNull(response.get("jwtSigningPublicKey").getAsString());
         assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));
         assertTrue(response.has("jwtSigningPublicKeyList"));
+        JsonArray respPubKeyList = response.get("jwtSigningPublicKeyList").getAsJsonArray();
+        for (int i = 0; i < respPubKeyList.size(); ++i) {
+            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("publicKey"));
+            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("expiryTime"));
+            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("createdAt"));
+            assertEquals(respPubKeyList.get(i).getAsJsonObject().entrySet().size(), 3);
+        }
         assertEquals(response.entrySet().size(), 6);
 
         process.kill();
@@ -217,6 +232,14 @@ public class VerifySessionAPITest2_9 {
         assertNotNull(response.get("jwtSigningPublicKey").getAsString());
         assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));
         assertTrue(response.has("jwtSigningPublicKeyList"));
+        JsonArray respPubKeyList = response.get("jwtSigningPublicKeyList").getAsJsonArray();
+        for (int i = 0; i < respPubKeyList.size(); ++i) {
+            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("publicKey"));
+            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("expiryTime"));
+            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("createdAt"));
+            assertEquals(respPubKeyList.get(i).getAsJsonObject().entrySet().size(), 3);
+        }
+
         assertEquals(response.entrySet().size(), 6);
 
         process.kill();

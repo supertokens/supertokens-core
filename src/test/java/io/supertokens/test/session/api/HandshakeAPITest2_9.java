@@ -234,21 +234,25 @@ public class HandshakeAPITest2_9 {
         //check status
         assertEquals(response.get("status").getAsString(), "OK");
 
-        List<String> keys = AccessTokenSigningKey.getInstance(process.main).getAllKeys()
+        List<KeyInfo> allKeys = AccessTokenSigningKey.getInstance(process.main).getAllKeys();
+        List<String> pubKeys = allKeys
                 .stream().map(key -> 
                         new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey
                 ).collect(Collectors.toList());
 
         //check jwtSigningPublicKeyList
+        assertTrue(response.has("jwtSigningPublicKeyList"));
         JsonArray respPubKeyList = response.get("jwtSigningPublicKeyList").getAsJsonArray();
         for (int i = 0; i < respPubKeyList.size(); ++i) {
                 String pubKey = respPubKeyList.get(i).getAsJsonObject().get("publicKey").getAsString();
-                assertEquals(keys.get(i), pubKey);
+                assertEquals(pubKeys.get(i), pubKey);
+                assertEquals(respPubKeyList.get(i).getAsJsonObject().get("expiryTime").getAsLong(), allKeys.get(i).expiryTime);
+                assertEquals(respPubKeyList.get(i).getAsJsonObject().get("createdAt").getAsLong(), allKeys.get(i).createdAtTime);
         }
-        assertEquals(keys.size(), respPubKeyList.size());
+        assertEquals(allKeys.size(), respPubKeyList.size());
 
         //check jwtSigningPublicKey
-        assertEquals(response.get("jwtSigningPublicKey").getAsString(), keys.get(0));
+        assertEquals(response.get("jwtSigningPublicKey").getAsString(), pubKeys.get(0));
 
         //check jwtSigningPublicKeyExpiryTime
         assertEquals(response.get("jwtSigningPublicKeyExpiryTime").getAsLong(),

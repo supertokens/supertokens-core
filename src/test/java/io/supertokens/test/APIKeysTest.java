@@ -16,6 +16,7 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.cliOptions.CLIOptions;
@@ -405,6 +406,14 @@ public class APIKeysTest {
 
         assertTrue(response.has("jwtSigningPublicKey"));
         assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));
+        assertTrue(response.has("jwtSigningPublicKeyList"));
+        JsonArray respPubKeyList = response.get("jwtSigningPublicKeyList").getAsJsonArray();
+        for (int i = 0; i < respPubKeyList.size(); ++i) {
+                assertTrue(respPubKeyList.get(i).getAsJsonObject().has("publicKey"));
+                assertTrue(respPubKeyList.get(i).getAsJsonObject().has("expiryTime"));
+                assertTrue(respPubKeyList.get(i).getAsJsonObject().has("createdAt"));
+                assertEquals(respPubKeyList.get(i).getAsJsonObject().entrySet().size(), 3);
+        }
     }
 }
 
