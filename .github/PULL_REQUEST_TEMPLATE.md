@@ -13,7 +13,9 @@
 
 ## Checklist for important updates
 - [ ] Changelog has been updated
+    - [ ] If there are any db schema changes, mention those changes clearly
 - [ ] `coreDriverInterfaceSupported.json` file has been updated (if needed)
+- [ ] `pluginInterfaceSupported.json` file has been updated (if needed)
 - [ ] Changes to the version if needed
    - In `build.gradle`
 - [ ] Had installed and ran the pre-commit hook
