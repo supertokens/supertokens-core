@@ -279,11 +279,11 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                     KeyInfo newKey = new KeyInfo(signingKey, System.currentTimeMillis(), signingKeyLifetime);
                     boolean success = noSQLStorage.addAccessTokenSigningKey_Transaction(
                             new KeyValueInfo(newKey.value, newKey.createdAtTime), lastCreated);
-                    validKeys.add(newKey);
-
-                    if (!success) {
-                        // something else already updated this particular field. So we must try again.
-                        continue;
+                            
+                    // If success is false, someone else already updated this particular field. So we must try again.
+                    if (success) {
+                        validKeys.add(newKey);
+                        break;
                     }
                 }
             }
