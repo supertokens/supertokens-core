@@ -47,13 +47,13 @@ public class AccessToken {
     private static AccessTokenInfo getInfoFromAccessToken(@Nonnull Main main, @Nonnull String token, boolean retry,
                                                           boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException {
-
-        
         List<AccessTokenSigningKey.KeyInfo> keyInfoList = AccessTokenSigningKey.getInstance(main).getAllKeys();
 
         Exception error = null;
         JWT.JWTInfo jwtInfo = null;
         for (KeyInfo keyInfo: keyInfoList) {
+            // getAllKeys already filters out expired keys, so we do not need to check it here.
+
             Utils.PubPriKey signingKey = new Utils.PubPriKey(keyInfo.value);
             try {
                 jwtInfo = JWT.verifyJWTAndGetPayload(token, signingKey.publicKey);

@@ -151,6 +151,11 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
 
         CoreConfig config = Config.getConfig(main);
 
+        // If a key in the cache has expired we should refresh the list.
+        if (this.validKeys.stream().anyMatch(((KeyInfo k) -> k.expiryTime < System.currentTimeMillis()))) {
+            this.validKeys = maybeGenerateNewKeyAndUpdateInDb();
+        }
+
         if (config.getAccessTokenSigningKeyDynamic()
                 && System.currentTimeMillis() > (this.validKeys.get(0).createdAtTime
                         + config.getAccessTokenSigningKeyUpdateInterval())) {
