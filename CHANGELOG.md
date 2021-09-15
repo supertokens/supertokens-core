@@ -12,7 +12,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - New config values `password_reset_token_lifetime`
   and `email_verification_token_lifetime`: https://github.com/supertokens/supertokens-core/issues/297
 - Added support for multiple access token signing keys: https://github.com/supertokens/supertokens-core/issues/305
-- Updates to the database schema and new CDI version
+- Updated CDI version
+- Added a table to store access token signing keys into SQL schema, called `session_access_token_signing_keys`
 
 ## [3.5.2] - 2021-09-01
 
