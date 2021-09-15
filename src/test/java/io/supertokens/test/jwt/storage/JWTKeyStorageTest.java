@@ -34,6 +34,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -107,8 +108,8 @@ public class JWTKeyStorageTest {
              * false because an older key for the same algorithm is found in storage
              */
             JWTSigningKeyInfo keyWithDifferentKeyString = new JWTSymmetricSigningKeyInfo("keyId-1234", 1000, "RSA", "someDifferentKeyString");
-            boolean successForSameObj = noSQLStorage_1.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(keyWithDifferentKeyString);
-            assert !successForSameObj;
+            boolean successForDifferentKeyString = noSQLStorage_1.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(keyWithDifferentKeyString);
+            assert !successForDifferentKeyString;
 
             try {
                 /*
@@ -117,6 +118,7 @@ public class JWTKeyStorageTest {
                  */
                 JWTSigningKeyInfo keyToSet2 = new JWTSymmetricSigningKeyInfo("keyId-1234", 1000, "EC", "somekeystring");
                 noSQLStorage_1.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(keyToSet2);
+                fail();
             } catch (DuplicateKeyIdException e) {
                 // Do nothing
             }
@@ -125,6 +127,9 @@ public class JWTKeyStorageTest {
 
     /**
      * For NoSQL only
+     *
+     * Note we do not test for SQL, because for SQL plugins in the case of parallel writes a deadlock is encountered and the current
+     * transaction logic handles it (as tested in StorageTest.java) and causes the transaction to be retried
      *
      * Simulate a race condition for parallel threads trying to read from the database (which results in no rows being found initially)
      * and writing to storage and make sure that at the end of execution both threads used the same key and only one thread was
@@ -138,7 +143,6 @@ public class JWTKeyStorageTest {
 
         for (int i = 0; i < 10; i++) {
             String algorithm = "alg" + i;
-            String keyId = "key" + i;
 
             JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(process.getProcess());
 
@@ -150,51 +154,42 @@ public class JWTKeyStorageTest {
 
             AtomicReference<String> endValueOfCon1 = new AtomicReference<>("c1");
             AtomicReference<String> endValueOfCon2 = new AtomicReference<>("c2");
-            AtomicInteger numberOfIterations = new AtomicInteger(0);
+            AtomicInteger numberOfIterationsForThread2 = new AtomicInteger(0);
 
             Runnable runnable1 = new Runnable() {
                 @Override
                 public void run() {
                     try {
-                        while (true) {
-                            numberOfIterations.getAndIncrement();
-                            List<JWTSigningKeyInfo> keysFromStorage = noSQLStorage_1.getJWTSigningKeys_Transaction();
+                        List<JWTSigningKeyInfo> keysFromStorage = noSQLStorage_1.getJWTSigningKeys_Transaction();
 
-                            JWTSigningKeyInfo matchingKeyInfo = null;
+                        JWTSigningKeyInfo matchingKeyInfo = null;
 
-                            for (int j = 0; j < keysFromStorage.size(); j ++) {
-                                if (keysFromStorage.get(j).algorithm.equals(algorithm)) {
-                                    matchingKeyInfo = keysFromStorage.get(j);
-                                    break;
-                                }
-                            }
-
-                            try {
-                                Thread.sleep(300);
-                            } catch (InterruptedException e) {
-                                // Ignore
-                            }
-
-                            try {
-                                if (matchingKeyInfo == null) {
-                                    boolean success = noSQLStorage_1.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(new JWTSymmetricSigningKeyInfo(keyId + "-1", 1000, algorithm, "SomeKeyString"));
-
-                                    if (!success) {
-                                        fail();
-                                    }
-
-                                    endValueOfCon1.set(keyId + "-1");
-                                } else {
-                                    endValueOfCon1.set(matchingKeyInfo.keyId);
-                                }
-
+                        // We want to find if there is any key in storage that matches the algorithm. This is because in
+                        // the second iteration onwards the keys from storage will not be empty so we cannot rely on that fact
+                        for (int j = 0; j < keysFromStorage.size(); j++) {
+                            if (keysFromStorage.get(j).algorithm.equals(algorithm)) {
+                                matchingKeyInfo = keysFromStorage.get(j);
                                 break;
-                            } catch (DuplicateKeyIdException e) {
-                                continue;
                             }
                         }
-                    } catch (Exception ignored) {
 
+                        // For the first thread we want to make sure that no key for the algorithm was found
+                        assert matchingKeyInfo == null;
+
+                        try {
+                            Thread.sleep(300);
+                        } catch (InterruptedException e) {
+                            // Ignore
+                        }
+
+                        String keyId = UUID.randomUUID().toString();
+                        boolean success = noSQLStorage_1.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(new JWTSymmetricSigningKeyInfo(keyId, 1000, algorithm, keyId));
+                        // The first thread should always succeed in writing to storage
+                        assert success;
+
+                        endValueOfCon1.set(keyId);
+                    } catch (Exception e) {
+                        fail();
                     }
                 }
             };
@@ -204,7 +199,7 @@ public class JWTKeyStorageTest {
                 public void run() {
                     try {
                         while (true) {
-                            numberOfIterations.getAndIncrement();
+                            numberOfIterationsForThread2.getAndIncrement();
                             List<JWTSigningKeyInfo> keysFromStorage = noSQLStorage_1.getJWTSigningKeys_Transaction();
 
                             JWTSigningKeyInfo matchingKeyInfo = null;
@@ -216,7 +211,7 @@ public class JWTKeyStorageTest {
                                 }
                             }
 
-                            if (numberOfIterations.get() <= 2) {
+                            if (numberOfIterationsForThread2.get() == 1) {
                                 assert matchingKeyInfo == null;
                             } else {
                                 assert matchingKeyInfo != null;
@@ -228,26 +223,26 @@ public class JWTKeyStorageTest {
                                 // Ignore
                             }
 
-                            try {
-                                if (matchingKeyInfo == null) {
-                                    boolean success = noSQLStorage_1.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(new JWTSymmetricSigningKeyInfo(keyId + "-2", 1000, algorithm, "SomeKeyString"));
+                            if (matchingKeyInfo == null) {
+                                String keyId = UUID.randomUUID().toString();
+                                boolean success = noSQLStorage_1.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(new JWTSymmetricSigningKeyInfo(keyId, 1000, algorithm, keyId));
 
-                                    if (!success) {
-                                        continue;
-                                    }
-
-                                    endValueOfCon2.set(keyId + "-2");
+                                if (!success) {
+                                    continue;
                                 } else {
-                                    endValueOfCon2.set(matchingKeyInfo.keyId);
+                                    // When the second thread tries to write it should never succeed
+                                    fail();
                                 }
 
-                                break;
-                            } catch (DuplicateKeyIdException e) {
-                                continue;
+                                endValueOfCon2.set(keyId);
+                            } else {
+                                endValueOfCon2.set(matchingKeyInfo.keyId);
                             }
-                        }
-                    } catch (Exception ignored) {
 
+                            break;
+                        }
+                    } catch (Exception e) {
+                        fail();
                     }
                 }
             };
@@ -261,7 +256,7 @@ public class JWTKeyStorageTest {
             thread1.join();
             thread2.join();
 
-            assertEquals(numberOfIterations.get(), 3);
+            assertEquals(numberOfIterationsForThread2.get(), 2);
             assertEquals(endValueOfCon1.get(), endValueOfCon2.get());
         }
 
