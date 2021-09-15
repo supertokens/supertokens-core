@@ -110,27 +110,24 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 if (legacyKey != null) {
                     sqlStorage.addAccessTokenSigningKey_Transaction(con, legacyKey);
                     sqlStorage.removeLegacyAccessTokenSigningKey_Transaction(con);
+                    sqlStorage.commitTransaction(con);
                 }
                 return legacyKey;
             });
         } else {
-            while (true) {
-                SessionNoSQLStorage_1 noSQLStorage = (SessionNoSQLStorage_1) storage;
-                KeyValueInfoWithLastUpdated legacyKey = noSQLStorage.getLegacyAccessTokenSigningKey_Transaction();
+            SessionNoSQLStorage_1 noSQLStorage = (SessionNoSQLStorage_1) storage;
+            KeyValueInfoWithLastUpdated legacyKey = noSQLStorage.getLegacyAccessTokenSigningKey_Transaction();
 
-                if (legacyKey != null) {
-                    // We should only get here once, after an upgrade.
-                    // We avoid adding duplicates by enforcing that a legacy key can only ever be
-                    // the first one in the new table.
-                    if (noSQLStorage.addAccessTokenSigningKey_Transaction(
-                            new KeyValueInfo(legacyKey.value, legacyKey.createdAtTime), 0)) {
-                        // We don't need to check the lastUpdatedSign here, since we never update or set
-                        // legacy keys anymore.
-                        noSQLStorage.removeLegacyAccessTokenSigningKey_Transaction();
-                        return;
-                    }
+            if (legacyKey != null) {
+                // We should only get here once, after an upgrade.
+                // We avoid adding duplicates by enforcing that a legacy key can only ever be
+                // the first one in the new table.
+                if (noSQLStorage.addAccessTokenSigningKey_Transaction(
+                        new KeyValueInfo(legacyKey.value, legacyKey.createdAtTime), -1)) {
+                    // We don't need to check the lastUpdatedSign here, since we never update or set
+                    // legacy keys anymore.
+                    noSQLStorage.removeLegacyAccessTokenSigningKey_Transaction();
                 }
-                return;
             }
         }
     }
