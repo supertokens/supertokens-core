@@ -122,12 +122,12 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 // We should only get here once, after an upgrade.
                 // We avoid adding duplicates by enforcing that a legacy key can only ever be
                 // the first one in the new table.
-                if (noSQLStorage.addAccessTokenSigningKey_Transaction(
-                        new KeyValueInfo(legacyKey.value, legacyKey.createdAtTime), -1)) {
-                    // We don't need to check the lastUpdatedSign here, since we never update or set
-                    // legacy keys anymore.
-                    noSQLStorage.removeLegacyAccessTokenSigningKey_Transaction();
-                }
+                noSQLStorage.addAccessTokenSigningKey_Transaction(
+                    new KeyValueInfo(legacyKey.value, legacyKey.createdAtTime), null
+                );
+                // We don't need to check the lastUpdatedSign here, since we never update or set
+                // legacy keys anymore.
+                noSQLStorage.removeLegacyAccessTokenSigningKey_Transaction();
             }
         }
     }
@@ -246,7 +246,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 // We need to clear the array after every retry.
                 validKeys = new ArrayList<KeyInfo>();
                 // lastCreated is used to emulate transactions in the NoSQL calls
-                long lastCreated = -1;
+                Long lastCreated = null;
                 // We have to generate a new key if we couldn't find one we can use for signing
                 boolean generateNewKey = true;
 
@@ -254,7 +254,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
 
                 for (KeyValueInfo key : keysFromStorage) {
                     if (config.getAccessTokenSigningKeyDynamic()) {
-                        lastCreated = lastCreated < key.createdAtTime ? key.createdAtTime : lastCreated;
+                        lastCreated = lastCreated == null || lastCreated < key.createdAtTime ? key.createdAtTime : lastCreated;
 
                         if (keysCreatedAfterCanVerify <= key.createdAtTime) {
                             if (keysCreatedAfterCanSign <= key.createdAtTime) {
