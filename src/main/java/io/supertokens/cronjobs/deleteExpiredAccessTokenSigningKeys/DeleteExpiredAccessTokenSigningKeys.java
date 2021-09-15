@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.cronjobs.cleanExpiredAccessTokenSigningKeys;
+package io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
@@ -23,22 +23,21 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
-import io.supertokens.storageLayer.StorageLayer;
 
-public class CleanExpiredAccessTokenSigningKeys extends CronTask {
+public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
 
-    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.cleanExpiredAccessTokenSigningKeys.CleanExpiredAccessTokenSigningKeys";
+    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys";
 
-    private CleanExpiredAccessTokenSigningKeys(Main main) {
-        super("CleanExpiredAccessTokenSigningKeys", main);
+    private DeleteExpiredAccessTokenSigningKeys(Main main) {
+        super("DeleteExpiredAccessTokenSigningKeys", main);
     }
 
-    public static CleanExpiredAccessTokenSigningKeys getInstance(Main main) {
+    public static DeleteExpiredAccessTokenSigningKeys getInstance(Main main) {
         ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
         if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new CleanExpiredAccessTokenSigningKeys(main));
+            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new DeleteExpiredAccessTokenSigningKeys(main));
         }
-        return (CleanExpiredAccessTokenSigningKeys) instance;
+        return (DeleteExpiredAccessTokenSigningKeys) instance;
     }
 
     @Override
