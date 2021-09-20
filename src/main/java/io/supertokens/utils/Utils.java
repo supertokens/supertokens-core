@@ -49,11 +49,11 @@ public class Utils {
     }
 
     public static String convertToBase64(String str) {
-        return new String(Base64.getEncoder().encode(stringToBytes(str)));
+        return new String(Base64.getEncoder().encode(stringToBytes(str)), StandardCharsets.UTF_8);
     }
 
     public static String convertFromBase64(String str) {
-        return new String(Base64.getDecoder().decode(stringToBytes(str)));
+        return new String(Base64.getDecoder().decode(stringToBytes(str)), StandardCharsets.UTF_8);
     }
 
     public static String throwableStacktraceToString(Throwable e) {
@@ -175,7 +175,7 @@ public class Utils {
         cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
 
         // Encrypt the data
-        return new String(cipher.doFinal(cipherBytes));
+        return new String(cipher.doFinal(cipherBytes), StandardCharsets.UTF_8);
     }
 
     public static byte[] pbkdf2(char[] text, byte[] salt, int iterationCount, int keyLength)
