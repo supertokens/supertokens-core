@@ -82,7 +82,7 @@ public class AccessTokenSigningKeyTest {
         AccessTokenSigningKey.KeyInfo key = accessTokenSigningKeyInstance.getLatestIssuedKey();
         assertEquals(key.createdAtTime, newKey.createdAtTime);
         assertEquals(key.value, newKey.value);
-
+        assertEquals(sessionStorage.getKeyValue("access_token_signing_key"), null);
         process.kill();
     }
 
@@ -179,7 +179,7 @@ public class AccessTokenSigningKeyTest {
 
         io.supertokens.utils.Utils.PubPriKey rsaKeys = io.supertokens.utils.Utils.generateNewPubPriKey();
         String signingKey = rsaKeys.toString();
-        KeyValueInfo legacyKey = new KeyValueInfo(signingKey, 1); // Key created in 1970
+        KeyValueInfo legacyKey = new KeyValueInfo(signingKey, System.currentTimeMillis() - 2629743830l ); // 1 month old
 
         SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
         sessionStorage.setKeyValue("access_token_signing_key", legacyKey);
