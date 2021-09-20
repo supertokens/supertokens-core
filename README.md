@@ -133,6 +133,10 @@ If you think this is a project you could use in the future, please :star2: this 
 <td align="center"><a href="https://github.com/Hanzyusuf"><img src="https://avatars.githubusercontent.com/u/22171112?v=4" width="100px;" alt=""/><br /><sub><b>Hanzyusuf</b></sub></a></td>
 <td align="center"><a href="https://github.com/porcellus"><img src="https://avatars.githubusercontent.com/u/1129990?v=4" width="100px;" alt=""/><br /><sub><b>
 Mihály Lengyel</b></sub></a></td>
+  </tr>
+  <tr>
+<td align="center"><a href="https://github.com/cerino-ligutom"><img src="https://avatars.githubusercontent.com/u/6721822?v=4" width="100px;" alt=""/><br /><sub><b>Cerino O. Ligutom III</b></sub></a></td>
+<td align="center"><a href="https://github.com/nadilas"><img src="https://avatars.githubusercontent.com/u/5324856?v=4" width="100px;" alt=""/><br /><sub><b>nadilas</b></sub></a></td>
   </tr> 
 </table>
 
