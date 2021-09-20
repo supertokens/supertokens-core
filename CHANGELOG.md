@@ -12,6 +12,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - New config values `password_reset_token_lifetime`
   and `email_verification_token_lifetime`: https://github.com/supertokens/supertokens-core/issues/297
 
+## [3.5.3] - 2021-09-20
+
+### Changes
+
+- Explicitly adds UTF-8 compatible conversion when encoding / decoding base64 strings.
+
 ## [3.5.2] - 2021-09-01
 
 ### Fixes
