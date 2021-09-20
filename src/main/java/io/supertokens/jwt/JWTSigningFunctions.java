@@ -115,7 +115,8 @@ public class JWTSigningFunctions {
                 RSAPublicKey publicKey = getPublicKeyFromString(( (JWTAsymmetricSigningKeyInfo) currentKeyInfo).publicKey, algorithm);
                 JsonObject jwk = new JsonObject();
 
-                jwk.addProperty("kty", algorithm.getAlgorithmType());
+                // Most verifiers seem to expect kty and alg to be in upper case so forcing that here
+                jwk.addProperty("kty", algorithm.getAlgorithmType().toUpperCase());
                 jwk.addProperty("kid", currentKeyInfo.keyId);
                 jwk.addProperty("n", Base64.getUrlEncoder().encodeToString(publicKey.getModulus().toByteArray()));
                 jwk.addProperty("e", Base64.getUrlEncoder().encodeToString(publicKey.getPublicExponent().toByteArray()));
@@ -159,4 +160,6 @@ public class JWTSigningFunctions {
         KeyFactory kf = KeyFactory.getInstance(algorithm.getAlgorithmType());
         return (T) kf.generatePrivate(keySpec);
     }
+
+
 }

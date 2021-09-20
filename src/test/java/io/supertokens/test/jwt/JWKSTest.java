@@ -24,6 +24,7 @@ import com.auth0.jwt.interfaces.RSAKeyProvider;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.jwt.JWTSigningFunctions;
+import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import org.junit.AfterClass;
@@ -57,29 +58,34 @@ public class JWKSTest {
     }
 
     /**
-     * Test that when fetching JWKs, the list is empty before any JWT is created
+     * Test that after startup there is one JWK for each supported algorithm type in storage
      */
     @Test
-    public void testThatThereAreNoJWKBeforeJWTCreation() throws Exception {
+    public void testThatThereAreTheSameNumberOfJWKSAsSupportedAlgorithmsBeforeJWTCreation() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         List<JsonObject> keysFromStorage = JWTSigningFunctions.getJWKS(process.getProcess());
-        assert keysFromStorage.isEmpty();
+        assert keysFromStorage.size() == JWTSigningKey.SupportedAlgorithms.values().length;
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     /**
-     * Test that after creating a JWT the JWK list is not empty
+     * Test that after creating a JWT the number of JWK in storage does not change, this is because a key for the
+     * algorithm should already exist and a new key should not get created
      */
     @Test
-    public void testThatJWKListIsNotEmptyAfterJWTCreation() throws Exception {
+    public void testThatNoNewJWKIsCreatedDuringJWTCreation() throws Exception {
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        List<JsonObject> keysFromStorageBeforeJWTCreation = JWTSigningFunctions.getJWKS(process.getProcess());
+        assert keysFromStorageBeforeJWTCreation.size() == JWTSigningKey.SupportedAlgorithms.values().length;
+        int numberOfKeysBeforeJWTCreation = keysFromStorageBeforeJWTCreation.size();
 
         String algorithm = "RS256";
         JsonObject payload = new JsonObject();
@@ -89,8 +95,8 @@ public class JWKSTest {
 
         JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
 
-        List<JsonObject> keysFromStorage = JWTSigningFunctions.getJWKS(process.getProcess());
-        assert !keysFromStorage.isEmpty();
+        List<JsonObject> keysFromStorageAfterJWTCreation = JWTSigningFunctions.getJWKS(process.getProcess());
+        assert keysFromStorageAfterJWTCreation.size() == numberOfKeysBeforeJWTCreation;
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

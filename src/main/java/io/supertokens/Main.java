@@ -25,8 +25,11 @@ import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPas
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.jwt.JWTSigningKey;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.storageLayer.StorageLayer;
@@ -175,6 +178,18 @@ public class Main {
         // init signing keys
         AccessTokenSigningKey.init(this);
         RefreshTokenKey.init(this);
+
+        // init JWT signing keys, we create one key for each supported algorithm type
+        for (int i = 0; i < JWTSigningKey.SupportedAlgorithms.values().length; i++) {
+            JWTSigningKey.SupportedAlgorithms currentAlgorithm = JWTSigningKey.SupportedAlgorithms.values()[i];
+            try {
+                JWTSigningKey.getInstance(this).getOrCreateAndGetKeyForAlgorithm(currentAlgorithm);
+            } catch (StorageQueryException | StorageTransactionLogicException e) {
+                // We ignore this because in this case the only time
+            } catch (UnsupportedJWTSigningAlgorithmException e) {
+                throw new QuitProgramException("Trying to create signing key for unsupported JWT signing algorithm");
+            }
+        }
 
         // starts removing old session cronjob
         Cronjobs.addCronjob(this, DeleteExpiredSessions.getInstance(this));

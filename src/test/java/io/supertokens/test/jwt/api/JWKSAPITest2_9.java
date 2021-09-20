@@ -57,29 +57,6 @@ public class JWKSAPITest2_9 {
     }
 
     /**
-     * Test that list of JWKs before creating a JWT is empty
-     */
-    @Test
-    public void testGettingKeysBeforeCreatingJWTReturnsEmpty() throws Exception {
-        String[] args = {"../"};
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        JsonObject response = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/jwks",
-                        null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
-
-        assertNotNull(response.get("keys"));
-
-        JsonArray keys = response.getAsJsonArray("keys");
-        assert keys.size() == 0;
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    /**
      * Test that list of JWKs after creating a JWT is not empty
      */
     @Test
