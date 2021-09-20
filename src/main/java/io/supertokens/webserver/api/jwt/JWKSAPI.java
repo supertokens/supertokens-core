@@ -54,6 +54,7 @@ public class JWKSAPI extends WebserverAPI {
             JsonObject reply = new JsonObject();
             JsonArray jwksJsonArray = new JsonParser().parse(new Gson().toJson(jwks)).getAsJsonArray();
             reply.add("keys", jwksJsonArray);
+            reply.addProperty("status", "OK");
             super.sendJsonResponse(200, reply, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
                 | InvalidKeySpecException e) {
