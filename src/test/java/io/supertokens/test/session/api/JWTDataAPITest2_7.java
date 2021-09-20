@@ -298,7 +298,7 @@ public class JWTDataAPITest2_7 {
         //createSession with JWT payload
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
-        userDataInJWT.addProperty("key", "value");
+        userDataInJWT.addProperty("key", "łukasz 馬 / 马");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 
@@ -317,7 +317,7 @@ public class JWTDataAPITest2_7 {
 
         // check values for put api
         JsonObject newUserDataInJwt = new JsonObject();
-        newUserDataInJwt.addProperty("key", "value2");
+        newUserDataInJwt.addProperty("key", "łukasz 馬 / 马 value2");
         request = new JsonObject();
         request.addProperty("sessionHandle", sessionHandle);
         request.add("userDataInJWT", newUserDataInJwt);
@@ -339,7 +339,7 @@ public class JWTDataAPITest2_7 {
                         null,
                         Utils.getCdiVersion2_7ForTests(), "session");
         assertEquals(getJwtData.get("status").getAsString(), "OK");
-        assertEquals(getJwtData.get("userDataInJWT"), newUserDataInJwt);
+        assertEquals(getJwtData.get("userDataInJWT").getAsJsonObject().get("key").getAsString(), "łukasz 馬 / 马 value2");
         assertEquals(getJwtData.entrySet().size(), 2);
 
         process.kill();
