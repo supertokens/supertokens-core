@@ -10,6 +10,9 @@ plugins {
     id 'application'
 }
 
+compileJava { options.encoding = "UTF-8" }
+compileTestJava { options.encoding = "UTF-8" }
+
 version = "3.5.2"
 
 repositories {

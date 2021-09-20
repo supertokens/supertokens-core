@@ -175,7 +175,7 @@ public class Utils {
         cipher.init(Cipher.DECRYPT_MODE, secretKey, parameterSpec);
 
         // Encrypt the data
-        return new String(cipher.doFinal(cipherBytes), StandardCharsets.UTF_8);
+        return new String(cipher.doFinal(cipherBytes));
     }
 
     public static byte[] pbkdf2(char[] text, byte[] salt, int iterationCount, int keyLength)
