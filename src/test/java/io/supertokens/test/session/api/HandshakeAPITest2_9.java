@@ -16,7 +16,6 @@
 
 package io.supertokens.test.session.api;
 
-import com.google.common.collect.Iterables;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -28,16 +27,17 @@ import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.*;
-
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.junit.Assert.*;
 
 public class HandshakeAPITest2_9 {
     @Rule
@@ -63,10 +63,10 @@ public class HandshakeAPITest2_9 {
 
         // null in request body with cdi-version set to 2.0
         try {
-            io.supertokens.test.httpRequest.HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake", null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_9ForTests(), "session");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/handshake", null, 1000,
+                    1000,
+                    null, Utils.getCdiVersion2_9ForTests(), "session");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 &&
                     e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
@@ -99,11 +99,11 @@ public class HandshakeAPITest2_9 {
         deviceDriverInfo.add("frontendSDK", frontendSDK);
         deviceDriverInfo.add("driver", driver);
 
-        JsonObject handshakeResponse = io.supertokens.test.httpRequest.HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
-                        deviceDriverInfo,
-                        1000, 1000,
-                        null, Utils.getCdiVersion2_9ForTests(), "session");
+        JsonObject handshakeResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/handshake",
+                deviceDriverInfo,
+                1000, 1000,
+                null, Utils.getCdiVersion2_9ForTests(), "session");
         checkHandshakeAPIResponse(handshakeResponse, process);
         assertEquals(handshakeResponse.entrySet().size(), 7);
 
@@ -137,7 +137,7 @@ public class HandshakeAPITest2_9 {
         deviceDriverInfo.add("frontendSDK", frontendSDK);
         deviceDriverInfo.add("driver", driver);
 
-        JsonObject handshakeResponse = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject handshakeResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                         deviceDriverInfo,
                         1000, 1000,
@@ -171,7 +171,7 @@ public class HandshakeAPITest2_9 {
                 "}" +
                 "}" +
                 "}";
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                         new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
                         "session");
@@ -180,12 +180,12 @@ public class HandshakeAPITest2_9 {
         assertEquals(response.entrySet().size(), 7);
 
         List<String> keys = AccessTokenSigningKey.getInstance(process.main).getAllKeys()
-                .stream().map(key -> 
+                .stream().map(key ->
                         new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey
                 ).collect(Collectors.toList());
-        
+
         assertEquals(response.get("jwtSigningPublicKey").getAsString(), keys.get(0));
-        
+
         JsonArray respPubKeyList = response.get("jwtSigningPublicKeyList").getAsJsonArray();
         assertEquals(keys.size(), respPubKeyList.size());
         for (int i = 0; i < respPubKeyList.size(); ++i) {
@@ -195,8 +195,8 @@ public class HandshakeAPITest2_9 {
 
         Thread.sleep(4000);
 
-        JsonObject changedResponse = io.supertokens.test.httpRequest
-                .HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
+        JsonObject changedResponse = HttpRequestForTesting
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                         new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
                         "session");
 
@@ -204,25 +204,26 @@ public class HandshakeAPITest2_9 {
 
         //check that changed response has the same signing key as the current signing key and it is different from
         // the previous signing key
-        
+
         List<String> changedPubKeys = AccessTokenSigningKey.getInstance(process.main).getAllKeys()
-                .stream().map(key -> 
+                .stream().map(key ->
                         new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey
                 ).collect(Collectors.toList());
-        
+
         JsonArray changedRespPubKeyList = changedResponse.get("jwtSigningPublicKeyList").getAsJsonArray();
 
         boolean hasChangedKey = changedRespPubKeyList.size() != respPubKeyList.size();
         for (int i = 0; i < changedRespPubKeyList.size(); ++i) {
             String pubKey = changedRespPubKeyList.get(i).getAsJsonObject().get("publicKey").getAsString();
-            
+
             assertEquals(changedPubKeys.get(i), pubKey);
             hasChangedKey = hasChangedKey || !keys.contains(pubKey);
         }
 
         assertTrue(hasChangedKey);
         assertEquals(changedResponse.get("jwtSigningPublicKey").getAsString(), changedPubKeys.get(0));
-        assertNotEquals(changedResponse.get("jwtSigningPublicKey").getAsString(), response.get("jwtSigningPublicKey").getAsString());
+        assertNotEquals(changedResponse.get("jwtSigningPublicKey").getAsString(),
+                response.get("jwtSigningPublicKey").getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -236,7 +237,7 @@ public class HandshakeAPITest2_9 {
 
         List<KeyInfo> allKeys = AccessTokenSigningKey.getInstance(process.main).getAllKeys();
         List<String> pubKeys = allKeys
-                .stream().map(key -> 
+                .stream().map(key ->
                         new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey
                 ).collect(Collectors.toList());
 
@@ -244,10 +245,12 @@ public class HandshakeAPITest2_9 {
         assertTrue(response.has("jwtSigningPublicKeyList"));
         JsonArray respPubKeyList = response.get("jwtSigningPublicKeyList").getAsJsonArray();
         for (int i = 0; i < respPubKeyList.size(); ++i) {
-                String pubKey = respPubKeyList.get(i).getAsJsonObject().get("publicKey").getAsString();
-                assertEquals(pubKeys.get(i), pubKey);
-                assertEquals(respPubKeyList.get(i).getAsJsonObject().get("expiryTime").getAsLong(), allKeys.get(i).expiryTime);
-                assertEquals(respPubKeyList.get(i).getAsJsonObject().get("createdAt").getAsLong(), allKeys.get(i).createdAtTime);
+            String pubKey = respPubKeyList.get(i).getAsJsonObject().get("publicKey").getAsString();
+            assertEquals(pubKeys.get(i), pubKey);
+            assertEquals(respPubKeyList.get(i).getAsJsonObject().get("expiryTime").getAsLong(),
+                    allKeys.get(i).expiryTime);
+            assertEquals(respPubKeyList.get(i).getAsJsonObject().get("createdAt").getAsLong(),
+                    allKeys.get(i).createdAtTime);
         }
         assertEquals(allKeys.size(), respPubKeyList.size());
 
