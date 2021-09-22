@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -60,7 +61,7 @@ public class IsEmailVerifiedAPITest2_7 {
 
         {
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
                                 null, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailverification");
                 throw new Exception("Should not come here");
@@ -78,7 +79,7 @@ public class IsEmailVerifiedAPITest2_7 {
                 HashMap<String, String> map = new HashMap<>();
                 map.put("randomKey", "");
 
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
                                 map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailverification");
                 throw new Exception("Should not come here");
@@ -116,7 +117,7 @@ public class IsEmailVerifiedAPITest2_7 {
         map.put("userId", userId);
         map.put("email", "random@gmail.com");
 
-        JsonObject verifyResponse = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject verifyResponse = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
                         map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailverification");
         assertEquals(verifyResponse.entrySet().size(), 2);
@@ -129,7 +130,7 @@ public class IsEmailVerifiedAPITest2_7 {
         requestBody.addProperty("email", "random@gmail.com");
 
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
                         1000,
@@ -143,7 +144,7 @@ public class IsEmailVerifiedAPITest2_7 {
         verifyResponseBody.addProperty("method", "token");
         verifyResponseBody.addProperty("token", response.get("token").getAsString());
 
-        JsonObject response2 = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response2 = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/email/verify", verifyResponseBody, 1000,
                         1000,
@@ -155,7 +156,7 @@ public class IsEmailVerifiedAPITest2_7 {
         assertEquals(response2.get("userId").getAsString(), userId);
         assertEquals(response2.get("email").getAsString(), "random@gmail.com");
 
-        verifyResponse = io.supertokens.test.httpRequest.HttpRequest
+        verifyResponse = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
                         map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailverification");
         assertEquals(verifyResponse.entrySet().size(), 2);

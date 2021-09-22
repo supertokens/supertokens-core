@@ -22,6 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -94,8 +95,7 @@ public class ConfigAPITest2_7 {
 
         //null for parameters
         try {
-            io.supertokens.test.httpRequest
-                    .HttpRequest
+            HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", null, 1000, 1000, null,
                             Utils.getCdiVersion2_7ForTests(), "");
             fail();
@@ -109,8 +109,7 @@ public class ConfigAPITest2_7 {
         try {
             HashMap<String, String> map = new HashMap<>();
             map.put("pd", ProcessHandle.current().pid() + "");
-            io.supertokens.test.httpRequest
-                    .HttpRequest
+            HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
                             Utils.getCdiVersion2_7ForTests(), "");
             fail();
@@ -165,8 +164,7 @@ public class ConfigAPITest2_7 {
         map.put("pid", ProcessHandle.current().pid() + "");
 
         //check regular output
-        JsonObject response = io.supertokens.test.httpRequest
-                .HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
                         Utils.getCdiVersion2_7ForTests(), "");
 
@@ -237,8 +235,7 @@ public class ConfigAPITest2_7 {
         map.put("pid", ProcessHandle.current().pid() + "");
 
         //check regular output
-        JsonObject response = io.supertokens.test.httpRequest
-                .HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
                         Utils.getCdiVersion2_7ForTests(), "");
 
@@ -250,8 +247,7 @@ public class ConfigAPITest2_7 {
         map = new HashMap<>();
         map.put("pid", "-1");
 
-        response = io.supertokens.test.httpRequest
-                .HttpRequest
+        response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
                         Utils.getCdiVersion2_7ForTests(), "");
 

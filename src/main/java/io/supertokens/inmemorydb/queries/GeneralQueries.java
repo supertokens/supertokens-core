@@ -162,6 +162,14 @@ public class GeneralQueries {
             }
         }
 
+        if (!doesTableExists(start, Config.getConfig(start).getJWTSigningKeysTable())) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
+            try (Connection con = ConnectionPool.getConnection(start);
+                PreparedStatement pst = con.prepareStatement(JWTSigningQueries.getQueryToCreateJWTSigningTable(start))) {
+                pst.executeUpdate();
+            }
+        }
+
     }
 
     public static void setKeyValue_Transaction(Start start, Connection con, String key, KeyValueInfo info)

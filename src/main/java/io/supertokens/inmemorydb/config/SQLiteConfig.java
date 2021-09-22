@@ -49,4 +49,8 @@ public class SQLiteConfig {
     public String getThirdPartyUsersTable() {
         return "thirdparty_users";
     }
+
+    public String getJWTSigningKeysTable() {
+        return "jwt_signing_keys";
+    }
 }

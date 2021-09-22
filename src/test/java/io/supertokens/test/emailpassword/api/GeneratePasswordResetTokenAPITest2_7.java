@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -59,7 +60,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
 
         {
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset/token", null, 1000,
                                 1000,
@@ -74,7 +75,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
         {
             JsonObject requestBody = new JsonObject();
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
                                 1000,
@@ -93,7 +94,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
             JsonObject requestBody = new JsonObject();
             requestBody.add("userId", null);
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
                                 1000,
@@ -131,7 +132,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", userId);
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
                         1000,
@@ -161,7 +162,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", "randomUserId");
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
                         1000,

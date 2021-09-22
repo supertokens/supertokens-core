@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.ThirdParty;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -73,7 +74,7 @@ public class ThirdPartyUsersAPITest2_7 {
             HashMap<String, String> QueryParams = new HashMap<>();
             QueryParams.put("paginationToken", "randomValue");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
@@ -88,7 +89,7 @@ public class ThirdPartyUsersAPITest2_7 {
             HashMap<String, String> QueryParams = new HashMap<>();
             QueryParams.put("limit", "randomValue");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
@@ -105,7 +106,7 @@ public class ThirdPartyUsersAPITest2_7 {
             HashMap<String, String> QueryParams = new HashMap<>();
             QueryParams.put("timeJoinedOrder", "randomValue");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
@@ -160,7 +161,7 @@ public class ThirdPartyUsersAPITest2_7 {
         {
             HashMap<String, String> queryParams = new HashMap<>();
             queryParams.put("limit", "1");
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users", queryParams, 1000,
                             1000,
@@ -182,7 +183,7 @@ public class ThirdPartyUsersAPITest2_7 {
 
         // no params passed should return 5 users
         {
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users", new HashMap<>(), 1000,
                             1000,
@@ -194,7 +195,7 @@ public class ThirdPartyUsersAPITest2_7 {
         {
             HashMap<String, String> queryParams = new HashMap<>();
             queryParams.put("limit", "2");
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users", queryParams, 1000,
                             1000,
@@ -216,7 +217,7 @@ public class ThirdPartyUsersAPITest2_7 {
             HashMap<String, String> queryParams = new HashMap<>();
             queryParams.put("limit", "2");
             queryParams.put("timeJoinedOrder", "DESC");
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users", queryParams, 1000,
                             1000,

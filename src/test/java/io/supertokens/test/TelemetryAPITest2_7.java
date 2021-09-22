@@ -18,6 +18,7 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.version.Version;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -58,7 +59,7 @@ public class TelemetryAPITest2_7 {
             return;
         }
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/telemetry", new HashMap<>(), 1000,
                         1000,
@@ -80,7 +81,7 @@ public class TelemetryAPITest2_7 {
             return;
         }
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/telemetry", new HashMap<>(), 1000,
                         1000,
@@ -104,7 +105,7 @@ public class TelemetryAPITest2_7 {
             return;
         }
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/telemetry", new HashMap<>(), 1000,
                         1000,
@@ -127,7 +128,7 @@ public class TelemetryAPITest2_7 {
             return;
         }
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/telemetry", new HashMap<>(), 1000,
                         1000,

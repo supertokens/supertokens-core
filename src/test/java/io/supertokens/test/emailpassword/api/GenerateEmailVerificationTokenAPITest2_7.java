@@ -23,6 +23,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -60,7 +61,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
         // not passing userID
         {
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/email/verify/token", null, 1000,
                                 1000,
@@ -75,7 +76,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
         {
             JsonObject requestBody = new JsonObject();
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
                                 1000,
@@ -93,7 +94,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("userId", 12345);
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
                                 1000,
@@ -132,7 +133,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
         requestBody.addProperty("email", "random@gmail.com");
 
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
                         1000,
@@ -170,7 +171,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
             requestBody.addProperty("email", "random@gmail.com");
 
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
                             1000,
@@ -182,7 +183,7 @@ public class GenerateEmailVerificationTokenAPITest2_7 {
 
             EmailVerification.verifyEmail(process.getProcess(), response.get("token").getAsString());
 
-            JsonObject response2 = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response2 = HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
                             1000,

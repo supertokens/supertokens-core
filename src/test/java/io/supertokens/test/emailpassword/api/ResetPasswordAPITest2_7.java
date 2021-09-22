@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -68,7 +69,7 @@ public class ResetPasswordAPITest2_7 {
 
         {
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset", null, 1000,
                                 1000,
@@ -83,7 +84,7 @@ public class ResetPasswordAPITest2_7 {
         {
             JsonObject requestBody = new JsonObject();
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset", requestBody, 1000,
                                 1000,
@@ -102,7 +103,7 @@ public class ResetPasswordAPITest2_7 {
             requestBody.addProperty("token", "randomToken");
             requestBody.addProperty("newPassword", "randomPassword");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset", requestBody, 1000,
                                 1000,
@@ -122,7 +123,7 @@ public class ResetPasswordAPITest2_7 {
             requestBody.addProperty("newPassword", "randomPassword");
 
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset", requestBody, 1000,
                                 1000,
@@ -142,7 +143,7 @@ public class ResetPasswordAPITest2_7 {
             requestBody.addProperty("token", "randomToken");
 
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user/password/reset", requestBody, 1000,
                                 1000,
@@ -182,7 +183,7 @@ public class ResetPasswordAPITest2_7 {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", userId);
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
                         1000,
@@ -198,7 +199,7 @@ public class ResetPasswordAPITest2_7 {
         resetPasswordBody.addProperty("token", token);
         resetPasswordBody.addProperty("newPassword", "newValidPass123");
 
-        JsonObject passwordResetResponse = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject passwordResetResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000,
                         1000,
@@ -210,7 +211,7 @@ public class ResetPasswordAPITest2_7 {
         signInRequestBody.addProperty("email", "random@gmail.com");
         signInRequestBody.addProperty("password", "validPass123");
 
-        response = io.supertokens.test.httpRequest.HttpRequest
+        response = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signin", signInRequestBody, 1000,
                         1000,
@@ -223,7 +224,7 @@ public class ResetPasswordAPITest2_7 {
         signInRequestBody.addProperty("email", "random@gmail.com");
         signInRequestBody.addProperty("password", "newValidPass123");
 
-        response = io.supertokens.test.httpRequest.HttpRequest
+        response = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signin", signInRequestBody, 1000,
                         1000,
@@ -255,7 +256,7 @@ public class ResetPasswordAPITest2_7 {
         resetPasswordBody.addProperty("token", "randomToken");
         resetPasswordBody.addProperty("newPassword", "newValidPass123");
 
-        JsonObject passwordResetResponse = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject passwordResetResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000,
                         1000,
@@ -287,7 +288,7 @@ public class ResetPasswordAPITest2_7 {
         resetPasswordBody.addProperty("newPassword", "newValidPass123");
 
         try {
-            io.supertokens.test.httpRequest.HttpRequest
+            HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000,
                             1000,
@@ -321,7 +322,7 @@ public class ResetPasswordAPITest2_7 {
         resetPasswordBody.addProperty("newPassword", "");
 
         try {
-            io.supertokens.test.httpRequest.HttpRequest
+            HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000,
                             1000,

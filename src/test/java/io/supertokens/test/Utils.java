@@ -19,6 +19,7 @@ package io.supertokens.test;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.webserver.WebserverAPI;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
@@ -70,6 +71,10 @@ public abstract class Utils extends Mockito {
 
     public static String getCdiVersion2_8ForTests() {
         return "2.8";
+    }
+
+    public static String getCdiVersion2_9ForTests() {
+        return "2.9";
     }
 
     public static String getCdiVersionLatestForTests() {
@@ -157,7 +162,7 @@ public abstract class Utils extends Mockito {
         signUpRequestBody.addProperty("email", email);
         signUpRequestBody.addProperty("password", password);
 
-        return io.supertokens.test.httpRequest.HttpRequest
+        return HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signup", signUpRequestBody, 1000,
                         1000,
@@ -172,7 +177,7 @@ public abstract class Utils extends Mockito {
         signUpRequestBody.addProperty("email", email);
         signUpRequestBody.addProperty("password", password);
 
-        return io.supertokens.test.httpRequest.HttpRequest
+        return HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signup", signUpRequestBody, 1000,
                         1000,
@@ -193,7 +198,7 @@ public abstract class Utils extends Mockito {
         signUpRequestBody.addProperty("thirdPartyUserId", thirdPartyUserId);
         signUpRequestBody.add("email", emailObject);
 
-        return io.supertokens.test.httpRequest.HttpRequest
+        return HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000,
                         1000,
@@ -212,7 +217,7 @@ public abstract class Utils extends Mockito {
         signUpRequestBody.addProperty("thirdPartyUserId", thirdPartyUserId);
         signUpRequestBody.add("email", emailObject);
 
-        return io.supertokens.test.httpRequest.HttpRequest
+        return HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000,
                         1000,

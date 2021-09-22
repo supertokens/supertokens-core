@@ -11,6 +11,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - New config values `password_reset_token_lifetime`
   and `email_verification_token_lifetime`: https://github.com/supertokens/supertokens-core/issues/297
+- New JWT recipe to create JWT tokens using SuperTokens
+- New table `jwt_signing_keys` added to store keys used by the JWT recipe
 
 ## [3.5.3] - 2021-09-20
 

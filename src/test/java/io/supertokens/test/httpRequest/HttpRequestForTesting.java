@@ -28,7 +28,7 @@ import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
 
-public class HttpRequest {
+public class HttpRequestForTesting {
     private static final int STATUS_CODE_ERROR_THRESHOLD = 400;
 
     private static URL getURL(Main main, String requestID, String url) throws MalformedURLException {
