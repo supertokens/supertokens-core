@@ -16,6 +16,7 @@ labels:
      - [ ] postgresql-plugin
      - [ ] mongodb-plugin
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
+ - [ ] [supertokens-golang:X.Y](https://github.com/supertokens/supertokens-golang/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/X.Y)
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
     - [ ] Updated dependencies to use supertokens-website from npm registry
@@ -36,6 +37,8 @@ labels:
 - [ ] All recipe main documentation update
 
 - [ ] nodejs documentation update
+
+- [ ] golang documentation update
 
 - [ ] auth-react documentation update
 
@@ -68,6 +71,7 @@ labels:
     - [ ] Update logic for exporting csv file for registered users
     - [ ] Update SaaS instances to use the latest docker images.
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
+ - [ ] [supertokens-golang:X.Y](https://github.com/supertokens/supertokens-golang/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/tree/X.Y)
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
 
@@ -81,10 +85,6 @@ labels:
 
 - [next.js:canary](https://github.com/supertokens/next.js/tree/canary/examples/with-supertokens)
    - [ ] Update `with-supertokens` examples to use latest `supertokens-node` and `supertokens-auth-react`
-
-- RedwoodJS
-   - [ ] Update [redwood core](https://github.com/supertokens/redwood/tree/main/packages/auth) to use latest `supertokens-auth-react`
-   - [ ] Update [playground-auth](https://github.com/supertokens/playground-auth/tree/main) to use latest `supertokens-node` and `supertokens-auth-react`
 
 ### 📚 Documentation
 
