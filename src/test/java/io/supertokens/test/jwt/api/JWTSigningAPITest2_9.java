@@ -344,6 +344,9 @@ public class JWTSigningAPITest2_9 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    /**
+     * Test that a JSON payload with a complex structure works when creating a JWT
+     */
     @Test
     public void testThatComplexJsonForCustomPayloadWorksFine() throws Exception {
         String[] args = {"../"};
