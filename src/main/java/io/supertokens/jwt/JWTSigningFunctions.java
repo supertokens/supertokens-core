@@ -57,6 +57,7 @@ public class JWTSigningFunctions {
      * @throws UnsupportedJWTSigningAlgorithmException If the algorithm provided does not match any of the supported
      *                                                 algorithms
      */
+    @SuppressWarnings("unchecked")
     public static String createJWTToken(Main main, String algorithm, JsonObject payload, String jwksDomain,
                                         long jwtValidity)
             throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,

@@ -19,6 +19,7 @@ package io.supertokens.test.jwt.api;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -31,6 +32,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.junit.Assert.*;
 
@@ -334,6 +339,67 @@ public class JWTSigningAPITest2_9 {
         DecodedJWT decodedJWT = JWT.decode(jwt);
         Claim customClaim = decodedJWT.getClaim("customClaim");
         assertTrue(!customClaim.isNull() && customClaim.asString().equals("customValue"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * Test that a JSON payload with a complex structure works when creating a JWT
+     */
+    @Test
+    public void testThatComplexJsonForCustomPayloadWorksFine() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("algorithm", "rs256");
+        requestBody.addProperty("jwksDomain", "http://localhost");
+
+        String customPayloadString = "{\"somecomplexkey\":{\"anothercomplexkey\":{\"evenmorecomplexkeys" +
+                "\":\"finalValue\"}},\"arrayElement\":[{\"somekey\":\"\"}]}";
+
+        JsonObject payload = new JsonObject();
+        JsonObject customClaim = new JsonObject();
+
+        JsonObject nestedClaim = new JsonObject();
+        nestedClaim.addProperty("key", "value");
+        customClaim.add("nestedObject", nestedClaim);
+
+        payload.add("object", customClaim);
+
+        JsonArray arrayClaim = new JsonArray();
+        JsonObject arrayElement = new JsonObject();
+        arrayElement.addProperty("arrayKey", "arrayValue");
+
+        arrayClaim.add(arrayElement);
+
+        payload.add("array", arrayClaim);
+
+        requestBody.add("payload", payload);
+
+        requestBody.addProperty("validity", 3600);
+
+        JsonObject response = HttpRequestForTesting
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
+                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+
+        String jwt = response.get("jwt").getAsString();
+        DecodedJWT decodedJWT = JWT.decode(jwt);
+
+        Claim objectClaim = decodedJWT.getClaim("object");
+        Map<String, Object> objectMap = objectClaim.asMap();
+        assert objectMap.get("nestedObject") != null;
+
+        Map<String, String> nestedObject = (Map<String, String>) objectMap.get("nestedObject");
+        assert nestedObject.get("key").equals("value");
+
+        Claim arrayClaimFromJWT = decodedJWT.getClaim("array");
+        Map<String, String> arrayElementFromJWT = arrayClaimFromJWT.asList(HashMap.class).get(0);
+
+        assert arrayElementFromJWT.get("arrayKey").equals("arrayValue");
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
