@@ -59,9 +59,8 @@ public class AccessTokenSigningKeyTest {
 
     @Test
     public void legacySigningKeysAreMigratedProperly()
-            throws IOException, InterruptedException,
-            InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException,
-            InvalidKeySpecException, SignatureException {
+            throws InterruptedException,
+            NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException {
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
 
@@ -71,19 +70,17 @@ public class AccessTokenSigningKeyTest {
         io.supertokens.utils.Utils.PubPriKey rsaKeys = io.supertokens.utils.Utils.generateNewPubPriKey();
         String signingKey = rsaKeys.toString();
         KeyValueInfo newKey = new KeyValueInfo(signingKey, System.currentTimeMillis());
-
         SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
         sessionStorage.setKeyValue("access_token_signing_key", newKey);
-
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
         accessTokenSigningKeyInstance.transferLegacyKeyToNewTable();
         assertEquals(accessTokenSigningKeyInstance.getAllKeys().size(), 1);
-
         AccessTokenSigningKey.KeyInfo key = accessTokenSigningKeyInstance.getLatestIssuedKey();
         assertEquals(key.createdAtTime, newKey.createdAtTime);
         assertEquals(key.value, newKey.value);
         assertEquals(sessionStorage.getKeyValue("access_token_signing_key"), null);
         process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
     @Test
@@ -101,14 +98,15 @@ public class AccessTokenSigningKeyTest {
 
         io.supertokens.utils.Utils.PubPriKey rsaKeys = io.supertokens.utils.Utils.generateNewPubPriKey();
         String signingKey = rsaKeys.toString();
-        KeyValueInfo legacyKey = new KeyValueInfo(signingKey, System.currentTimeMillis() - 2000); // 2 seconds in the past
+        KeyValueInfo legacyKey = new KeyValueInfo(signingKey,
+                System.currentTimeMillis() - 2000); // 2 seconds in the past
 
         SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
         sessionStorage.setKeyValue("access_token_signing_key", legacyKey);
 
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
         accessTokenSigningKeyInstance.transferLegacyKeyToNewTable();
-        
+
         accessTokenSigningKeyInstance.getAllKeys();
 
         // Wait for access_token_signing_key_update_interval + margin
@@ -132,6 +130,7 @@ public class AccessTokenSigningKeyTest {
         }
 
         process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
     @Test
@@ -149,7 +148,7 @@ public class AccessTokenSigningKeyTest {
         assertNotNull(e);
 
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
-        
+
         List<KeyInfo> oldKeys = accessTokenSigningKeyInstance.getAllKeys();
         assertEquals(oldKeys.size(), 1);
 
@@ -162,8 +161,9 @@ public class AccessTokenSigningKeyTest {
         assertNotEquals(newKeys.get(0).value, oldKeys.get(0).value);
 
         process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
-    
+
     @Test
     public void migratingStaticSigningKeys()
             throws IOException, InterruptedException,
@@ -179,7 +179,7 @@ public class AccessTokenSigningKeyTest {
 
         io.supertokens.utils.Utils.PubPriKey rsaKeys = io.supertokens.utils.Utils.generateNewPubPriKey();
         String signingKey = rsaKeys.toString();
-        KeyValueInfo legacyKey = new KeyValueInfo(signingKey, System.currentTimeMillis() - 2629743830l ); // 1 month old
+        KeyValueInfo legacyKey = new KeyValueInfo(signingKey, System.currentTimeMillis() - 2629743830l); // 1 month old
 
         SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
         sessionStorage.setKeyValue("access_token_signing_key", legacyKey);
@@ -194,5 +194,6 @@ public class AccessTokenSigningKeyTest {
         assertEquals(legacyKey.value, keys.get(0).value);
 
         process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 }
