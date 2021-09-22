@@ -22,6 +22,7 @@ import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -57,7 +58,7 @@ public class SessionGetAPIJWTTest2_8 {
         //Get Request input errors
         //null is sent in parameters
         try {
-            io.supertokens.test.httpRequest.HttpRequest
+            HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", null, 1000,
                             1000,
                             null, Utils.getCdiVersion2_8ForTests(), "session");
@@ -73,7 +74,7 @@ public class SessionGetAPIJWTTest2_8 {
         map.put("sessiondle", "");
 
         try {
-            io.supertokens.test.httpRequest.HttpRequest
+            HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", map, 1000,
                             1000,
                             null, Utils.getCdiVersion2_8ForTests(), "session");
@@ -98,7 +99,7 @@ public class SessionGetAPIJWTTest2_8 {
         HashMap<String, String> map = new HashMap<>();
         map.put("sessionHandle", "");
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", map, 1000, 1000,
                         null,
                         Utils.getCdiVersion2_8ForTests(), "session");
@@ -134,7 +135,7 @@ public class SessionGetAPIJWTTest2_8 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // Create session
-        JsonObject session = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject session = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                         sessionBody, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(), "session");
 
@@ -144,7 +145,7 @@ public class SessionGetAPIJWTTest2_8 {
         HashMap<String, String> map = new HashMap<>();
         map.put("sessionHandle", session.get("session").getAsJsonObject().get("handle").getAsString());
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", map, 1000, 1000,
                         null,
                         Utils.getCdiVersion2_8ForTests(), "session");

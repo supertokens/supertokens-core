@@ -24,6 +24,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -82,7 +83,7 @@ public class GetUsersByEmailAPITest2_8 {
             HashMap<String, String> query = new HashMap<>();
             query.put("email", "john.doe@example.com");
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users/by-email", query, 1000,
                             1000,
@@ -135,7 +136,7 @@ public class GetUsersByEmailAPITest2_8 {
 
             query.put("email", "john.doe@example.com");
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users/by-email", query, 1000,
                             1000,
@@ -174,7 +175,7 @@ public class GetUsersByEmailAPITest2_8 {
 
             query.put("email", "inexistent@example.com");
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/users/by-email", query, 1000,
                             1000,
@@ -212,7 +213,7 @@ public class GetUsersByEmailAPITest2_8 {
 
     private void testBadInput(TestingProcessManager.TestingProcess process, Map<String, String> query)
             throws Exception {
-        io.supertokens.test.httpRequest.HttpRequest
+        HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/users/by-email", query, 1000,
                         1000,

@@ -21,6 +21,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -62,7 +63,7 @@ public class EmailPasswordUsersAPITest2_7 {
             HashMap<String, String> QueryParams = new HashMap<String, String>();
             QueryParams.put("limit", "1001");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
@@ -79,7 +80,7 @@ public class EmailPasswordUsersAPITest2_7 {
             HashMap<String, String> QueryParams = new HashMap<String, String>();
             QueryParams.put("limit", "-1");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
@@ -97,7 +98,7 @@ public class EmailPasswordUsersAPITest2_7 {
             HashMap<String, String> QueryParams = new HashMap<String, String>();
             QueryParams.put("timeJoinedOrder", "AESC");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
@@ -115,7 +116,7 @@ public class EmailPasswordUsersAPITest2_7 {
             HashMap<String, String> QueryParams = new HashMap<String, String>();
             QueryParams.put("paginationToken", "randomString");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
@@ -132,7 +133,7 @@ public class EmailPasswordUsersAPITest2_7 {
             HashMap<String, String> QueryParams = new HashMap<String, String>();
             QueryParams.put("paginationToken", "cmFuZG9tU3RyaW5n");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,
@@ -150,7 +151,7 @@ public class EmailPasswordUsersAPITest2_7 {
             QueryParams.put("paginationToken",
                     "OWIxZGViNGQtM2I3ZC00YmFkLTliZGQtMmIwZDdiM2RjYjZkOzNzZHNkczQyMzQyMzQ=");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/users", QueryParams, 1000,
                                 1000,

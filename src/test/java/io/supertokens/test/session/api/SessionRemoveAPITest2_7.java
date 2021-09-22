@@ -22,7 +22,7 @@ import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
-import io.supertokens.test.httpRequest.HttpRequest;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -74,28 +74,28 @@ public class SessionRemoveAPITest2_7 {
         sessionRequest.addProperty("enableAntiCsrf", false);
 
         //create session s1
-        JsonObject s1Info = HttpRequest
+        JsonObject s1Info = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", sessionRequest,
                         1000,
                         1000, 2, Utils.getCdiVersion2_7ForTests(), "session");
         assertEquals(s1Info.get("status").getAsString(), "OK");
 
         //create session s2
-        JsonObject s2Info = HttpRequest
+        JsonObject s2Info = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", sessionRequest,
                         1000,
                         1000, 2, Utils.getCdiVersion2_7ForTests(), "session");
         assertEquals(s2Info.get("status").getAsString(), "OK");
 
         //create session s3
-        JsonObject s3Info = HttpRequest
+        JsonObject s3Info = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", sessionRequest,
                         1000,
                         1000, 2, Utils.getCdiVersion2_7ForTests(), "session");
         assertEquals(s3Info.get("status").getAsString(), "OK");
 
         //create session s4
-        JsonObject s4Info = HttpRequest
+        JsonObject s4Info = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", sessionRequest,
                         1000,
                         1000, 2, Utils.getCdiVersion2_7ForTests(), "session");
@@ -109,7 +109,7 @@ public class SessionRemoveAPITest2_7 {
                 " ] " +
                 "}";
         JsonObject sessionRemoveBody = new JsonParser().parse(sessionRemoveBodyString).getAsJsonObject();
-        JsonObject sessionRemovedResponse = HttpRequest
+        JsonObject sessionRemovedResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/remove",
                         sessionRemoveBody,
                         1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
@@ -131,7 +131,7 @@ public class SessionRemoveAPITest2_7 {
                 "}";
         sessionRemoveBody = new JsonParser().parse(sessionRemoveBodyString).getAsJsonObject();
 
-        sessionRemovedResponse = HttpRequest
+        sessionRemovedResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/remove",
                         sessionRemoveBody,
                         1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
@@ -169,7 +169,7 @@ public class SessionRemoveAPITest2_7 {
         sessionRequest.addProperty("enableAntiCsrf", false);
 
         //create Session
-        JsonObject sessionInfo = HttpRequest
+        JsonObject sessionInfo = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", sessionRequest,
                         1000,
                         1000, 2, Utils.getCdiVersion2_7ForTests(), "session");
@@ -183,7 +183,7 @@ public class SessionRemoveAPITest2_7 {
         JsonObject sessionRemoveBody = new JsonParser().parse(sessionRemoveBodyString).getAsJsonObject();
 
         //remove session using sessionHandle
-        JsonObject sessionRemovedResponse = HttpRequest
+        JsonObject sessionRemovedResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/remove",
                         sessionRemoveBody,
                         1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
@@ -198,7 +198,7 @@ public class SessionRemoveAPITest2_7 {
         Map<String, String> userParams = new HashMap<>();
         userParams.put("userId", userId);
 
-        JsonObject userResponse = HttpRequest
+        JsonObject userResponse = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/user", userParams, 1000,
                         1000,
                         null, Utils.getCdiVersion2_7ForTests(), "session");
@@ -231,13 +231,13 @@ public class SessionRemoveAPITest2_7 {
         sessionRequest.addProperty("enableAntiCsrf", false);
 
         //create Session
-        JsonObject sessionInfo = HttpRequest
+        JsonObject sessionInfo = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", sessionRequest,
                         1000,
                         1000, 2, Utils.getCdiVersion2_7ForTests(), "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
-        JsonObject session2Info = HttpRequest
+        JsonObject session2Info = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", sessionRequest,
                         1000,
                         1000, 2, Utils.getCdiVersion2_7ForTests(), "session");
@@ -247,7 +247,7 @@ public class SessionRemoveAPITest2_7 {
         JsonObject removeSessionBody = new JsonObject();
         removeSessionBody.addProperty("userId", userId);
 
-        JsonObject sessionRemovedResponse = HttpRequest
+        JsonObject sessionRemovedResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/remove",
                         removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
         assertEquals(sessionRemovedResponse.get("status").getAsString(), "OK");
@@ -264,7 +264,7 @@ public class SessionRemoveAPITest2_7 {
         Map<String, String> userParams = new HashMap<>();
         userParams.put("userId", userId);
 
-        JsonObject userResponse = HttpRequest
+        JsonObject userResponse = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/user", userParams, 1000,
                         1000,
                         null, Utils.getCdiVersion2_7ForTests(), "session");

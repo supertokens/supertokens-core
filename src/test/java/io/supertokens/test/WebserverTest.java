@@ -25,6 +25,7 @@ import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.RecipeRouter;
 import io.supertokens.webserver.Webserver;
@@ -89,7 +90,7 @@ public class WebserverTest extends Mockito {
         // Responses when no recipe is given
         {
             // get request
-            String response = io.supertokens.test.httpRequest.HttpRequest
+            String response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/testRecipe", new HashMap<>(), 1000,
                             1000,
@@ -97,7 +98,7 @@ public class WebserverTest extends Mockito {
             assertEquals("get request from Recipe1", response);
 
             // post request
-            response = io.supertokens.test.httpRequest.HttpRequest
+            response = HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/testRecipe", new JsonObject(), 1000,
                             1000,
@@ -105,7 +106,7 @@ public class WebserverTest extends Mockito {
             assertEquals("post request from Recipe1", response);
 
             // put request
-            response = io.supertokens.test.httpRequest.HttpRequest
+            response = HttpRequestForTesting
                     .sendJsonPUTRequest(process.getProcess(), "",
                             "http://localhost:3567/testRecipe", new JsonObject(), 1000,
                             1000,
@@ -113,7 +114,7 @@ public class WebserverTest extends Mockito {
             assertEquals("put request from Recipe1", response);
 
             // delete request
-            response = io.supertokens.test.httpRequest.HttpRequest
+            response = HttpRequestForTesting
                     .sendJsonDELETERequest(process.getProcess(), "",
                             "http://localhost:3567/testRecipe", new JsonObject(), 1000,
                             1000,
@@ -125,7 +126,7 @@ public class WebserverTest extends Mockito {
         // Responses from recipe 1
         {
             // get request
-            String response = io.supertokens.test.httpRequest.HttpRequest
+            String response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/testRecipe", new HashMap<>(), 1000,
                             1000,
@@ -133,7 +134,7 @@ public class WebserverTest extends Mockito {
             assertEquals("get request from Recipe1", response);
 
             // post request
-            response = io.supertokens.test.httpRequest.HttpRequest
+            response = HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/testRecipe", new JsonObject(), 1000,
                             1000,
@@ -141,7 +142,7 @@ public class WebserverTest extends Mockito {
             assertEquals("post request from Recipe1", response);
 
             // put request
-            response = io.supertokens.test.httpRequest.HttpRequest
+            response = HttpRequestForTesting
                     .sendJsonPUTRequest(process.getProcess(), "",
                             "http://localhost:3567/testRecipe", new JsonObject(), 1000,
                             1000,
@@ -149,7 +150,7 @@ public class WebserverTest extends Mockito {
             assertEquals("put request from Recipe1", response);
 
             // delete request
-            response = io.supertokens.test.httpRequest.HttpRequest
+            response = HttpRequestForTesting
                     .sendJsonDELETERequest(process.getProcess(), "",
                             "http://localhost:3567/testRecipe", new JsonObject(), 1000,
                             1000,
@@ -160,28 +161,28 @@ public class WebserverTest extends Mockito {
 
         // recipe2 requests
         {
-            String response = io.supertokens.test.httpRequest.HttpRequest
+            String response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/testRecipe", new HashMap<>(), 1000,
                             1000,
                             null, Utils.getCdiVersion2_7ForTests(), recipe_2);
             assertEquals("get request from Recipe2", response);
 
-            response = io.supertokens.test.httpRequest.HttpRequest
+            response = HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/testRecipe", new JsonObject(), 1000,
                             1000,
                             null, Utils.getCdiVersion2_7ForTests(), recipe_2);
             assertEquals("post request from Recipe2", response);
 
-            response = io.supertokens.test.httpRequest.HttpRequest
+            response = HttpRequestForTesting
                     .sendJsonPUTRequest(process.getProcess(), "",
                             "http://localhost:3567/testRecipe", new JsonObject(), 1000,
                             1000,
                             null, Utils.getCdiVersion2_7ForTests(), recipe_2);
             assertEquals("put request from Recipe2", response);
 
-            response = io.supertokens.test.httpRequest.HttpRequest
+            response = HttpRequestForTesting
                     .sendJsonDELETERequest(process.getProcess(), "",
                             "http://localhost:3567/testRecipe", new JsonObject(), 1000,
                             1000,
@@ -259,7 +260,7 @@ public class WebserverTest extends Mockito {
 
         Object[] supportedVersions = WebserverAPI.supportedVersions.toArray();
         for (int i = 0; i < supportedVersions.length; i++) {
-            String response = io.supertokens.test.httpRequest.HttpRequest.sendGETRequest(process.getProcess(), "",
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/testSupportedVersions", null, 1000,
                     1000, null, supportedVersions[i]
                             .toString(), "");
@@ -268,7 +269,7 @@ public class WebserverTest extends Mockito {
 
         String unsupportedCdiVersion = "234243";
         try {
-            io.supertokens.test.httpRequest.HttpRequest
+            HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "", "http://localhost:3567/testSupportedVersions", null, 1000,
                             1000, null, unsupportedCdiVersion, "");
             fail();
@@ -302,7 +303,7 @@ public class WebserverTest extends Mockito {
             }
         });
 
-        String response = io.supertokens.test.httpRequest.HttpRequest
+        String response = HttpRequestForTesting
                 .sendGETRequest(process.getProcess(), "", "http://localhost:3567/defaultVersion", null, 1000, 1000,
                         null, null, "");
         assertEquals(response, Utils.getCdiVersionLatestForTests());

@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -69,7 +70,7 @@ public class SignInAPITest2_7 {
 
         {
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signin", null, 1000,
                                 1000,
@@ -85,7 +86,7 @@ public class SignInAPITest2_7 {
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("email", "random@gmail.com");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signin", requestBody, 1000,
                                 1000,
@@ -102,7 +103,7 @@ public class SignInAPITest2_7 {
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("password", "validPass123");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signin", requestBody, 1000,
                                 1000,
@@ -142,7 +143,7 @@ public class SignInAPITest2_7 {
         responseBody.addProperty("email", "random@gmail.com");
         responseBody.addProperty("password", "validPass123");
 
-        JsonObject signInResponse = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject signInResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signin", responseBody, 1000,
                         1000,
@@ -184,7 +185,7 @@ public class SignInAPITest2_7 {
         responseBody.addProperty("email", "Test@gmail.com");
         responseBody.addProperty("password", "validPass123");
 
-        JsonObject signInResponse = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject signInResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signin", responseBody, 1000,
                         1000,
@@ -221,7 +222,7 @@ public class SignInAPITest2_7 {
             responseBody.addProperty("email", "random@gmail.com");
             responseBody.addProperty("password", "");
 
-            JsonObject signInResponse = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject signInResponse = HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/signin", responseBody, 1000,
                             1000,
@@ -236,7 +237,7 @@ public class SignInAPITest2_7 {
             responseBody.addProperty("email", "");
             responseBody.addProperty("password", "validPass123");
 
-            JsonObject signInResponse = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject signInResponse = HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/signin", responseBody, 1000,
                             1000,
@@ -251,7 +252,7 @@ public class SignInAPITest2_7 {
             responseBody.addProperty("email", "random@gmail.com");
             responseBody.addProperty("password", "randomPassword123");
 
-            JsonObject signInResponse = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject signInResponse = HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/signin", responseBody, 1000,
                             1000,
@@ -270,7 +271,7 @@ public class SignInAPITest2_7 {
             responseBody.addProperty("email", "test@gmail.com");
             responseBody.addProperty("password", "wrongPassword");
 
-            JsonObject signInResponse = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject signInResponse = HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/signin", responseBody, 1000,
                             1000,

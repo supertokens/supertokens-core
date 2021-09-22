@@ -21,7 +21,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
-import io.supertokens.test.httpRequest.HttpRequest;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -65,7 +65,7 @@ public class SessionRegenerateAPITest2_7 {
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
 
-        JsonObject sessionInfo = HttpRequest
+        JsonObject sessionInfo = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
                         null, Utils.getCdiVersion2_7ForTests(), "session");
@@ -82,7 +82,7 @@ public class SessionRegenerateAPITest2_7 {
         sessionRegenerateRequest.addProperty("accessToken", accessToken);
         sessionRegenerateRequest.add("userDataInJWT", newUserDataInJWT);
 
-        JsonObject sessionRegenerateResponse = HttpRequest
+        JsonObject sessionRegenerateResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/regenerate",
                         sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
                         "session");
@@ -132,7 +132,7 @@ public class SessionRegenerateAPITest2_7 {
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
 
-        JsonObject sessionInfo = HttpRequest
+        JsonObject sessionInfo = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
                         null, Utils.getCdiVersion2_7ForTests(), "session");
@@ -151,7 +151,7 @@ public class SessionRegenerateAPITest2_7 {
         sessionRegenerateRequest.addProperty("accessToken", accessToken);
         sessionRegenerateRequest.add("userDataInJWT", newUserDataInJWT);
 
-        JsonObject sessionRegenerateResponse = HttpRequest
+        JsonObject sessionRegenerateResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/regenerate",
                         sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
                         "session");
@@ -194,7 +194,7 @@ public class SessionRegenerateAPITest2_7 {
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
 
-        JsonObject sessionInfo = HttpRequest
+        JsonObject sessionInfo = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
                         null, Utils.getCdiVersion2_7ForTests(), "session");
@@ -207,7 +207,7 @@ public class SessionRegenerateAPITest2_7 {
         JsonObject removeSessionBody = new JsonObject();
         removeSessionBody.addProperty("userId", userId);
 
-        JsonObject sessionRemovedResponse = HttpRequest
+        JsonObject sessionRemovedResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/remove",
                         removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
         assertEquals(sessionRemovedResponse.get("status").getAsString(), "OK");
@@ -221,7 +221,7 @@ public class SessionRegenerateAPITest2_7 {
         sessionRegenerateRequest.addProperty("accessToken", accessToken);
         sessionRegenerateRequest.add("userDataInJWT", newUserDataInJWT);
 
-        JsonObject sessionRegenerateResponse = HttpRequest
+        JsonObject sessionRegenerateResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/regenerate",
                         sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
                         "session");

@@ -21,6 +21,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.ThirdParty;
 import org.junit.*;
 import org.junit.rules.TestRule;
@@ -57,7 +58,7 @@ public class AuthRecipeAPITest2_8 {
         }
 
         {
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count", null, 1000,
                             1000,
@@ -70,7 +71,7 @@ public class AuthRecipeAPITest2_8 {
         EmailPassword.signUp(process.getProcess(), "test1@example.com", "password1");
 
         {
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count", null, 1000,
                             1000,
@@ -80,7 +81,7 @@ public class AuthRecipeAPITest2_8 {
         }
 
         {
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count?includeRecipeIds=emailpassword", null, 1000,
                             1000,
@@ -90,7 +91,7 @@ public class AuthRecipeAPITest2_8 {
         }
 
         {
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count?includeRecipeIds=thirdparty", null, 1000,
                             1000,
@@ -106,7 +107,7 @@ public class AuthRecipeAPITest2_8 {
         ThirdParty.signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId_1, email_1);
 
         {
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count", null, 1000,
                             1000,
@@ -116,7 +117,7 @@ public class AuthRecipeAPITest2_8 {
         }
 
         {
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count?includeRecipeIds=emailpassword,thirdparty",
                             null, 1000,
@@ -128,7 +129,7 @@ public class AuthRecipeAPITest2_8 {
 
 
         {
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count?includeRecipeIds=emailpassword", null, 1000,
                             1000,
@@ -138,7 +139,7 @@ public class AuthRecipeAPITest2_8 {
         }
 
         {
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count?includeRecipeIds=thirdparty", null, 1000,
                             1000,
@@ -164,7 +165,7 @@ public class AuthRecipeAPITest2_8 {
 
 
         try {
-            io.supertokens.test.httpRequest.HttpRequest
+            HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users/count?includeRecipeIds=thirdparty,random",
                             null, 1000,
@@ -193,7 +194,7 @@ public class AuthRecipeAPITest2_8 {
 
 
         try {
-            io.supertokens.test.httpRequest.HttpRequest
+            HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users?includeRecipeIds=thirdparty,random",
                             null, 1000,
@@ -206,7 +207,7 @@ public class AuthRecipeAPITest2_8 {
         }
 
         try {
-            io.supertokens.test.httpRequest.HttpRequest
+            HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users?limit=-1",
                             null, 1000,
@@ -221,7 +222,7 @@ public class AuthRecipeAPITest2_8 {
         }
 
         try {
-            io.supertokens.test.httpRequest.HttpRequest
+            HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users?limit=501",
                             null, 1000,
@@ -238,7 +239,7 @@ public class AuthRecipeAPITest2_8 {
             HashMap<String, String> QueryParams = new HashMap<String, String>();
             QueryParams.put("paginationToken", "randomString");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/users", QueryParams, 1000,
                                 1000,
@@ -285,7 +286,7 @@ public class AuthRecipeAPITest2_8 {
         {
             HashMap<String, String> queryParams = new HashMap<>();
             queryParams.put("limit", "1");
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users", queryParams, 1000,
                             1000,
@@ -309,7 +310,7 @@ public class AuthRecipeAPITest2_8 {
 
         // no params passed should return 5 users
         {
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/users", new HashMap<>(), 1000,
                             1000,

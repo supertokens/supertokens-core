@@ -23,6 +23,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -130,7 +131,7 @@ public class ThirdPartySignInUpAPITest2_7 {
         }
         {
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signinup", null, 1000,
                                 1000,
@@ -153,7 +154,7 @@ public class ThirdPartySignInUpAPITest2_7 {
             requestBody.addProperty("thirdPartyUserId", "testThirdPartyUserID");
             requestBody.add("email", emailObject);
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signinup", requestBody, 1000,
                                 1000,
@@ -174,7 +175,7 @@ public class ThirdPartySignInUpAPITest2_7 {
             requestBody.addProperty("thirdPartyUserId", 12345);
             requestBody.add("email", emailObject);
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signinup", requestBody, 1000,
                                 1000,
@@ -216,7 +217,7 @@ public class ThirdPartySignInUpAPITest2_7 {
             requestBody.add("email", emailObject);
 
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signinup", requestBody, 1000,
                                 1000,
@@ -236,7 +237,7 @@ public class ThirdPartySignInUpAPITest2_7 {
             emailObject.addProperty("id", "test@example.com");
             requestBody.add("email", emailObject);
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendJsonPOSTRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/signinup", requestBody, 1000,
                                 1000,

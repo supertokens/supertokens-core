@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.ThirdParty;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -71,7 +72,7 @@ public class ThirdPartyGetUserAPITest2_7 {
 
         {
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user", new HashMap<>(), 1000,
                                 1000,
@@ -90,7 +91,7 @@ public class ThirdPartyGetUserAPITest2_7 {
             HashMap<String, String> QueryParams = new HashMap<>();
             QueryParams.put("thirdPartyId", "testThirdPartId");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user", QueryParams, 1000,
                                 1000,
@@ -109,7 +110,7 @@ public class ThirdPartyGetUserAPITest2_7 {
             HashMap<String, String> QueryParams = new HashMap<>();
             QueryParams.put("thirdPartyUserId", "testThirdPartyUserId");
             try {
-                io.supertokens.test.httpRequest.HttpRequest
+                HttpRequestForTesting
                         .sendGETRequest(process.getProcess(), "",
                                 "http://localhost:3567/recipe/user", QueryParams, 1000,
                                 1000,
@@ -151,7 +152,7 @@ public class ThirdPartyGetUserAPITest2_7 {
             HashMap<String, String> QueryParams = new HashMap<>();
             QueryParams.put("userId", signUpResponse.user.id);
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", QueryParams, 1000,
                             1000,
@@ -168,7 +169,7 @@ public class ThirdPartyGetUserAPITest2_7 {
             QueryParams.put("thirdPartyId", thirdPartyId);
             QueryParams.put("thirdPartyUserId", thirdPartyUserId);
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", QueryParams, 1000,
                             1000,
@@ -200,7 +201,7 @@ public class ThirdPartyGetUserAPITest2_7 {
             HashMap<String, String> QueryParams = new HashMap<>();
             QueryParams.put("userId", "randomUserId");
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", QueryParams, 1000,
                             1000,
@@ -214,7 +215,7 @@ public class ThirdPartyGetUserAPITest2_7 {
             QueryParams.put("thirdPartyId", "randomThirdPartyId");
             QueryParams.put("thirdPartyUserId", "randomThirdPartyUserId");
 
-            JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+            JsonObject response = HttpRequestForTesting
                     .sendGETRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/user", QueryParams, 1000,
                             1000,

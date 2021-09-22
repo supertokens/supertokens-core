@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -65,7 +66,7 @@ public class SessionAPITest2_7 {
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", true);
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
                         null, Utils.getCdiVersion2_7ForTests(), "session");
@@ -96,7 +97,7 @@ public class SessionAPITest2_7 {
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
                         null, Utils.getCdiVersion2_7ForTests(), "session");
@@ -128,7 +129,7 @@ public class SessionAPITest2_7 {
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
 
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
                         null, Utils.getCdiVersion2_7ForTests(), "session");
@@ -159,7 +160,7 @@ public class SessionAPITest2_7 {
             JsonObject request = new JsonObject();
             request.add("userDataInJWT", userDataInJWT);
             request.add("userDataInDatabase", userDataInDatabase);
-            io.supertokens.test.httpRequest.HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session", request, 1000, 1000, null,
                     Utils.getCdiVersion2_7ForTests(), "session");
             fail();
@@ -174,7 +175,7 @@ public class SessionAPITest2_7 {
             request.addProperty("userId", userId);
             request.add("userDataInDatabase", userDataInDatabase);
             request.addProperty("enableAntiCsrf", false);
-            io.supertokens.test.httpRequest.HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session", request, 1000, 1000, null,
                     Utils.getCdiVersion2_7ForTests(), "session");
             fail();
@@ -189,7 +190,7 @@ public class SessionAPITest2_7 {
             request.addProperty("userId", userId);
             request.add("userDataInDatabase", userDataInDatabase);
             request.addProperty("enableAntiCsrf", "false");
-            io.supertokens.test.httpRequest.HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session", request, 1000, 1000, null,
                     Utils.getCdiVersion2_7ForTests(), "session");
             fail();
@@ -203,7 +204,7 @@ public class SessionAPITest2_7 {
             JsonObject request = new JsonObject();
             request.addProperty("userId", userId);
             request.add("userDataInDatabase", userDataInDatabase);
-            io.supertokens.test.httpRequest.HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session", request, 1000, 1000, null,
                     Utils.getCdiVersion2_7ForTests(), "session");
             fail();
@@ -218,7 +219,7 @@ public class SessionAPITest2_7 {
             request.addProperty("userId", userId);
             request.add("userDataInJWT", userDataInJWT);
             request.addProperty("enableAntiCsrf", false);
-            io.supertokens.test.httpRequest.HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session", request, 1000, 1000, null,
                     Utils.getCdiVersion2_7ForTests(), "session");
             fail();
@@ -234,7 +235,7 @@ public class SessionAPITest2_7 {
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
-        io.supertokens.test.httpRequest.HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+        HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
                 "session");
 
@@ -243,7 +244,7 @@ public class SessionAPITest2_7 {
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
-        io.supertokens.test.httpRequest.HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+        HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
                 "session");
 

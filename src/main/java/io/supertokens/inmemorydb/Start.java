@@ -39,6 +39,9 @@ import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerifica
 import io.supertokens.pluginInterface.exceptions.QuitProgramFromPluginException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
+import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
+import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
@@ -50,9 +53,10 @@ import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransactionRollbackException;
+import java.util.List;
 
 public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage,
-        ThirdPartySQLStorage {
+        ThirdPartySQLStorage, JWTRecipeSQLStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -122,11 +126,11 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             try {
                 return startTransactionHelper(logic);
             } catch (SQLException | StorageQueryException e) {
-                if ((e instanceof SQLTransactionRollbackException ||
-                        e.getMessage().toLowerCase().contains("deadlock")) &&
-                        tries < 3) {
+                if ((e instanceof SQLTransactionRollbackException || e.getMessage().toLowerCase().contains("deadlock"))
+                        && tries < 3) {
                     ProcessState.getInstance(this.main).addState(ProcessState.PROCESS_STATE.DEADLOCK_FOUND, e);
-                    continue;   // this because deadlocks are not necessarily a result of faulty logic. They can happen
+                    continue; // this because deadlocks are not necessarily a result of faulty logic. They can
+                    // happen
                 }
                 if (e instanceof StorageQueryException) {
                     throw (StorageQueryException) e;
@@ -168,7 +172,8 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public KeyValueInfo getLegacyAccessTokenSigningKey_Transaction(TransactionConnection con) throws StorageQueryException {
+    public KeyValueInfo getLegacyAccessTokenSigningKey_Transaction(TransactionConnection con)
+            throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return GeneralQueries.getKeyValue_Transaction(this, sqlCon, ACCESS_TOKEN_SIGNING_KEY_NAME);
@@ -188,7 +193,8 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public KeyValueInfo[] getAccessTokenSigningKeys_Transaction(TransactionConnection con) throws StorageQueryException {
+    public KeyValueInfo[] getAccessTokenSigningKeys_Transaction(TransactionConnection con)
+            throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return SessionQueries.getAccessTokenSigningKeys_Transaction(this, sqlCon);
@@ -209,15 +215,14 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void removeAccessTokenSigningKeysBefore(long time)
-            throws StorageQueryException {
+    public void removeAccessTokenSigningKeysBefore(long time) throws StorageQueryException {
         try {
             SessionQueries.removeAccessTokenSigningKeysBefore(this, time);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
-    
+
     @Override
     public KeyValueInfo getRefreshTokenSigningKey_Transaction(TransactionConnection con) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
@@ -241,7 +246,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
 
     @Override
     public void deleteAllInformation() {
-        /*no-op*/
+        /* no-op */
     }
 
     @Override
@@ -356,8 +361,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
 
     @Override
     public AuthRecipeUserInfo[] getUsers(@NotNull Integer limit, @NotNull String timeJoinedOrder,
-                                         @Nullable RECIPE_ID[] includeRecipeIds,
-                                         @Nullable String userId,
+                                         @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
                                          @Nullable Long timeJoined)
             throws StorageQueryException {
         try {
@@ -379,8 +383,8 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void updateSessionInfo_Transaction(TransactionConnection con, String sessionHandle,
-                                              String refreshTokenHash2, long expiry) throws StorageQueryException {
+    public void updateSessionInfo_Transaction(TransactionConnection con, String sessionHandle, String refreshTokenHash2,
+                                              long expiry) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             SessionQueries.updateSessionInfo_Transaction(this, sqlCon, sessionHandle, refreshTokenHash2, expiry);
@@ -421,10 +425,9 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getEmailPasswordUsersTable() + ".email)")) {
                 throw new DuplicateEmailException();
-            } else if (e
-                    .getMessage().equals(
-                            "[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                                    + Config.getConfig(this).getEmailPasswordUsersTable() + ".user_id)")
+            } else if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getEmailPasswordUsersTable() + ".user_id)")
                     || e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getUsersTable() + ".user_id)")) {
@@ -456,7 +459,8 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     public void addPasswordResetToken(PasswordResetTokenInfo passwordResetTokenInfo)
             throws StorageQueryException, UnknownUserIdException, DuplicatePasswordResetTokenException {
         try {
-            // SQLite is not compiled with foreign key constraint and so we must check for the userId manually
+            // SQLite is not compiled with foreign key constraint and so we must check for
+            // the userId manually
             if (this.getUserInfoUsingId(passwordResetTokenInfo.userId) == null) {
                 throw new UnknownUserIdException();
             }
@@ -465,9 +469,9 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
                     passwordResetTokenInfo.token, passwordResetTokenInfo.tokenExpiry);
         } catch (SQLException e) {
             if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
-                            Config.getConfig(this).getPasswordResetTokensTable() +
-                            ".user_id, " + Config.getConfig(this).getPasswordResetTokensTable() + ".token)")) {
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getPasswordResetTokensTable() + ".user_id, "
+                            + Config.getConfig(this).getPasswordResetTokensTable() + ".token)")) {
                 throw new DuplicatePasswordResetTokenException();
             }
             throw new StorageQueryException(e);
@@ -595,12 +599,13 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser_Transaction(
-            TransactionConnection con, String userId, String email) throws StorageQueryException {
+    public EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser_Transaction(TransactionConnection con,
+                                                                                            String userId, String email)
+            throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return EmailVerificationQueries.getAllEmailVerificationTokenInfoForUser_Transaction(this, sqlCon,
-                    userId, email);
+            return EmailVerificationQueries.getAllEmailVerificationTokenInfoForUser_Transaction(this, sqlCon, userId,
+                    email);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -614,10 +619,10 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
                     emailVerificationInfo.token, emailVerificationInfo.tokenExpiry, emailVerificationInfo.email);
         } catch (SQLException e) {
             if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
-                            Config.getConfig(this).getEmailVerificationTokensTable() +
-                            ".user_id, " + Config.getConfig(this).getEmailVerificationTokensTable() + ".email, " +
-                            Config.getConfig(this).getEmailVerificationTokensTable() + ".token)")) {
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getEmailVerificationTokensTable() + ".user_id, "
+                            + Config.getConfig(this).getEmailVerificationTokensTable() + ".email, "
+                            + Config.getConfig(this).getEmailVerificationTokensTable() + ".token)")) {
                 throw new DuplicateEmailVerificationTokenException();
             }
             throw new StorageQueryException(e);
@@ -640,13 +645,13 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
                                                   boolean isEmailVerified) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            EmailVerificationQueries
-                    .updateUsersIsEmailVerified_Transaction(this, sqlCon, userId, email, isEmailVerified);
+            EmailVerificationQueries.updateUsersIsEmailVerified_Transaction(this, sqlCon, userId, email,
+                    isEmailVerified);
         } catch (SQLException e) {
             if (!isEmailVerified || !e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: " +
-                            Config.getConfig(this).getEmailVerificationTable() +
-                            ".user_id, " + Config.getConfig(this).getEmailVerificationTable() + ".email)")) {
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getEmailVerificationTable() + ".user_id, "
+                            + Config.getConfig(this).getEmailVerificationTable() + ".email)")) {
                 throw new StorageQueryException(e);
             }
             // we do not throw an error since the email is already verified
@@ -670,7 +675,6 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             throw new StorageQueryException(e);
         }
     }
-
 
     @Override
     public void unverifyEmail(String userId, String email) throws StorageQueryException {
@@ -716,8 +720,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return ThirdPartyQueries.getUserInfoUsingId_Transaction(this, sqlCon,
-                    thirdPartyId, thirdPartyUserId);
+            return ThirdPartyQueries.getUserInfoUsingId_Transaction(this, sqlCon, thirdPartyId, thirdPartyUserId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -728,8 +731,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
                                             String newEmail) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon,
-                    thirdPartyId, thirdPartyUserId, newEmail);
+            ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon, thirdPartyId, thirdPartyUserId, newEmail);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -827,4 +829,32 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
         }
     }
 
+    @Override
+    public List<JWTSigningKeyInfo> getJWTSigningKeys_Transaction(TransactionConnection con)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return JWTSigningQueries.getJWTSigningKeys_Transaction(this, sqlCon);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void setJWTSigningKey_Transaction(TransactionConnection con, JWTSigningKeyInfo info)
+            throws StorageQueryException, DuplicateKeyIdException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            JWTSigningQueries.setJWTSigningKeyInfo_Transaction(this, sqlCon, info);
+        } catch (SQLException e) {
+
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getJWTSigningKeysTable() + ".key_id)")) {
+                throw new DuplicateKeyIdException();
+            }
+
+            throw new StorageQueryException(e);
+        }
+    }
 }

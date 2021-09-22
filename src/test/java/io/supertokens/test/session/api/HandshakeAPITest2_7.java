@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -58,7 +59,7 @@ public class HandshakeAPITest2_7 {
 
         // null in request body with cdi-version set to 2.0
         try {
-            io.supertokens.test.httpRequest.HttpRequest
+            HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake", null, 1000,
                             1000,
                             null, Utils.getCdiVersion2_7ForTests(), "session");
@@ -94,7 +95,7 @@ public class HandshakeAPITest2_7 {
         deviceDriverInfo.add("frontendSDK", frontendSDK);
         deviceDriverInfo.add("driver", driver);
 
-        JsonObject handshakeResponse = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject handshakeResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                         deviceDriverInfo,
                         1000, 1000,
@@ -132,7 +133,7 @@ public class HandshakeAPITest2_7 {
         deviceDriverInfo.add("frontendSDK", frontendSDK);
         deviceDriverInfo.add("driver", driver);
 
-        JsonObject handshakeResponse = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject handshakeResponse = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                         deviceDriverInfo,
                         1000, 1000,
@@ -165,7 +166,7 @@ public class HandshakeAPITest2_7 {
                 "}" +
                 "}" +
                 "}";
-        JsonObject response = io.supertokens.test.httpRequest.HttpRequest
+        JsonObject response = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                         new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
                         "session");
@@ -179,8 +180,8 @@ public class HandshakeAPITest2_7 {
 
         Thread.sleep(4000);
 
-        JsonObject changedResponse = io.supertokens.test.httpRequest
-                .HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
+        JsonObject changedResponse = HttpRequestForTesting
+                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                         new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
                         "session");
 

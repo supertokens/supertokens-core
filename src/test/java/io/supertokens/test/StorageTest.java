@@ -28,7 +28,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.noSqlStorage.NoSQLStorage_1;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.test.httpRequest.HttpRequest;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.version.Version;
 import org.junit.AfterClass;
@@ -83,6 +83,17 @@ public class StorageTest {
                 AtomicReference<String> endValueOfCon2 = new AtomicReference<>("c2");
                 AtomicInteger numberOfIterations = new AtomicInteger(-2);
 
+                /**
+                 * We start two transactions in parallel that will read from storage
+                 * We put the threads to sleep for different durations to simulate a race condition
+                 * Thread 1 should write to the database successfully but when Thread 2 tried to insert it should face a deadlock
+                 * Because of the way deadlocks are handled in startTransaction Thread 2's transaction will retry and when getting it will get an entry in the table and wont try to insert
+                 * When both threads are done we want to make sure:
+                 * - That the value in storage was set to "Value1" because Thread 2 should not be able to write
+                 * - That the counter for the number of iterations is 3 (Thread 1 + Thread 2 deadlock + Thread 2 retry)
+                 *
+                 * NOTE: In this test we use FOR UPDATE with a WHERE clause but it would work the same way without a WHERE clause as well
+                 */
                 Runnable r1 = () -> {
                     try {
                         sqlStorage.startTransaction(con -> {
@@ -664,7 +675,7 @@ public class StorageTest {
         storage.setStorageLayerEnabled(false);
 
         try {
-            HttpRequest
+            HttpRequestForTesting
                     .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
                             1000, 1000,
                             null, Utils.getCdiVersionLatestForTests(), "session");
@@ -676,7 +687,7 @@ public class StorageTest {
 
         storage.setStorageLayerEnabled(true);
 
-        JsonObject sessionCreated = HttpRequest
+        JsonObject sessionCreated = HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
                         1000,
                         null, Utils.getCdiVersionLatestForTests(), "session");
@@ -690,7 +701,8 @@ public class StorageTest {
         storage.setStorageLayerEnabled(false);
 
         try {
-            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
+            HttpRequestForTesting
+                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
                     jsonBody,
                     1000,
                     1000, null, Utils.getCdiVersionLatestForTests(), "session");
@@ -702,7 +714,7 @@ public class StorageTest {
 
         storage.setStorageLayerEnabled(true);
 
-        HttpRequest
+        HttpRequestForTesting
                 .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh", jsonBody,
                         1000,
                         1000, null, Utils.getCdiVersionLatestForTests(), "session");
@@ -771,7 +783,7 @@ public class StorageTest {
                             "}" +
                             "}" +
                             "}";
-                    HttpRequest
+                    HttpRequestForTesting
                             .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
                                     new JsonParser().parse(jsonInput), 10000,
                                     20000,
