@@ -25,8 +25,8 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
-import io.supertokens.pluginInterface.jwt.JWTSymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
+import io.supertokens.pluginInterface.jwt.JWTSymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.nosqlstorage.JWTRecipeNoSQLStorage_1;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
@@ -39,6 +39,25 @@ import java.util.List;
 public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     public static final String RESOURCE_KEY = "io.supertokens.jwt.JWTSigningKey";
     private final Main main;
+
+    public static void init(Main main) {
+        // init JWT signing keys, we create one key for each supported algorithm type
+        for (int i = 0; i < JWTSigningKey.SupportedAlgorithms.values().length; i++) {
+            JWTSigningKey.SupportedAlgorithms currentAlgorithm = JWTSigningKey.SupportedAlgorithms.values()[i];
+            try {
+                JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(currentAlgorithm);
+            } catch (StorageQueryException | StorageTransactionLogicException e) {
+                // Do nothing, when a call to /recipe/jwt POST is made the core will attempt to create a new key
+            } catch (UnsupportedJWTSigningAlgorithmException e) {
+                /*
+                    In this case UnsupportedJWTSigningAlgorithmException should never be thrown because we use
+                    the enum to iterate all the supported algorithm values. If this does get thrown this should be
+                    considered a failure.
+                 */
+                throw new QuitProgramException("Trying to create signing key for unsupported JWT signing algorithm");
+            }
+        }
+    }
 
     public enum SupportedAlgorithms {
         RS256;
@@ -73,8 +92,10 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
     /**
      * Used to get all signing keys (symmetric or asymmetric) from storage
-     * @return List of {@link JWTSigningKeyInfo}. Asymmetric keys use {@link JWTAsymmetricSigningKeyInfo} and symmetric keys use {@link JWTSymmetricSigningKeyInfo}
-     * @throws StorageQueryException If there is an error interacting with the database
+     *
+     * @return List of {@link JWTSigningKeyInfo}. Asymmetric keys use {@link JWTAsymmetricSigningKeyInfo} and
+     * symmetric keys use {@link JWTSymmetricSigningKeyInfo}
+     * @throws StorageQueryException            If there is an error interacting with the database
      * @throws StorageTransactionLogicException If there is an error interacting with the database
      */
     public List<JWTSigningKeyInfo> getAllSigningKeys()
@@ -85,10 +106,10 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
             JWTRecipeSQLStorage sqlStorage = (JWTRecipeSQLStorage) storage;
 
             return sqlStorage.startTransaction(con -> {
-               List<JWTSigningKeyInfo> keys = sqlStorage.getJWTSigningKeys_Transaction(con);
+                List<JWTSigningKeyInfo> keys = sqlStorage.getJWTSigningKeys_Transaction(con);
 
-               sqlStorage.commitTransaction(con);
-               return keys;
+                sqlStorage.commitTransaction(con);
+                return keys;
             });
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             JWTRecipeNoSQLStorage_1 noSQLStorage = (JWTRecipeNoSQLStorage_1) storage;
@@ -100,12 +121,15 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     }
 
     /**
-     * Used to retrieve a key for JWT validation, for a given signing algorithm. If there are no keys in storage that match the given algorithm a new one is generated.
+     * Used to retrieve a key for JWT validation, for a given signing algorithm. If there are no keys in storage that
+     * match the given algorithm a new one is generated.
+     *
      * @param algorithm The signing algorithm
      * @return {@link JWTSigningKeyInfo} key
-     * @throws UnsupportedJWTSigningAlgorithmException If there is an error in the provided algorithm when getting/generating keys
-     * @throws StorageQueryException If there is an error interacting with the database
-     * @throws StorageTransactionLogicException If there is an error interacting with the database
+     * @throws UnsupportedJWTSigningAlgorithmException If there is an error in the provided algorithm when
+     * getting/generating keys
+     * @throws StorageQueryException                   If there is an error interacting with the database
+     * @throws StorageTransactionLogicException        If there is an error interacting with the database
      */
     public JWTSigningKeyInfo getOrCreateAndGetKeyForAlgorithm(SupportedAlgorithms algorithm)
             throws UnsupportedJWTSigningAlgorithmException, StorageQueryException, StorageTransactionLogicException {
@@ -120,7 +144,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
                     List<JWTSigningKeyInfo> keysFromStorage = sqlStorage.getJWTSigningKeys_Transaction(con);
 
-                    // Loop through the keys and find the first one for the algorithm, if the list is empty a new key will be created after the loop
+                    // Loop through the keys and find the first one for the algorithm, if the list is empty a new key
+                    // will be created after the loop
                     for (int i = 0; i < keysFromStorage.size(); i++) {
                         JWTSigningKeyInfo currentKey = keysFromStorage.get(i);
                         if (algorithm.equalsString(currentKey.algorithm)) {
@@ -148,7 +173,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                     return keyInfo;
                 });
             } catch (StorageTransactionLogicException e) {
-                 if (e.actualException instanceof UnsupportedJWTSigningAlgorithmException) {
+                if (e.actualException instanceof UnsupportedJWTSigningAlgorithmException) {
                     throw (UnsupportedJWTSigningAlgorithmException) e.actualException;
                 }
 
@@ -162,7 +187,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
             while (true) {
                 List<JWTSigningKeyInfo> keysFromStorage = noSQLStorage.getJWTSigningKeys_Transaction();
 
-                // Loop through the keys and find the first one for the algorithm, if the list is empty a new key will be created after the for loop
+                // Loop through the keys and find the first one for the algorithm, if the list is empty a new key
+                // will be created after the for loop
                 for (int i = 0; i < keysFromStorage.size(); i++) {
                     JWTSigningKeyInfo currentKey = keysFromStorage.get(i);
                     if (currentKey.algorithm.equalsIgnoreCase(algorithm.name())) {
@@ -176,7 +202,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                     while (true) {
                         try {
                             keyInfo = generateKeyForAlgorithm(algorithm);
-                            boolean success = noSQLStorage.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(keyInfo);
+                            boolean success = noSQLStorage.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(
+                                    keyInfo);
 
                             if (!success) {
                                 continue;
@@ -203,7 +230,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         if (algorithm.getAlgorithmType().equalsIgnoreCase("rsa")) {
             long currentTimeInMillis = System.currentTimeMillis();
             Utils.PubPriKey newKey = Utils.generateNewPubPriKey();
-            return new JWTAsymmetricSigningKeyInfo(Utils.getUUID(), currentTimeInMillis, algorithm.name(), newKey.publicKey,
+            return new JWTAsymmetricSigningKeyInfo(Utils.getUUID(), currentTimeInMillis, algorithm.name(),
+                    newKey.publicKey,
                     newKey.privateKey);
         }
 

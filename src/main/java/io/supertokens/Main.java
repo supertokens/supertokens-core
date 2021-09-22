@@ -27,10 +27,8 @@ import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.jwt.JWTSigningKey;
-import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.storageLayer.StorageLayer;
@@ -179,23 +177,7 @@ public class Main {
         // init signing keys
         AccessTokenSigningKey.init(this);
         RefreshTokenKey.init(this);
-
-        // init JWT signing keys, we create one key for each supported algorithm type
-        for (int i = 0; i < JWTSigningKey.SupportedAlgorithms.values().length; i++) {
-            JWTSigningKey.SupportedAlgorithms currentAlgorithm = JWTSigningKey.SupportedAlgorithms.values()[i];
-            try {
-                JWTSigningKey.getInstance(this).getOrCreateAndGetKeyForAlgorithm(currentAlgorithm);
-            } catch (StorageQueryException | StorageTransactionLogicException e) {
-                // Do nothing, when a call to /recipe/jwt POST is made the core will attempt to create a new key
-            } catch (UnsupportedJWTSigningAlgorithmException e) {
-                /*
-                    In this case UnsupportedJWTSigningAlgorithmException should never be thrown because we use
-                    the enum to iterate all the supported algorithm values. If this does get thrown this should be
-                    considered a failure.
-                 */
-                throw new QuitProgramException("Trying to create signing key for unsupported JWT signing algorithm");
-            }
-        }
+        JWTSigningKey.init(this);
 
         // starts removing old session cronjob
         Cronjobs.addCronjob(this, DeleteExpiredSessions.getInstance(this));
