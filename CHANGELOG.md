@@ -15,6 +15,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Updated CDI version
 - Added a table to store access token signing keys into SQL schema, called `session_access_token_signing_keys`
 
+## [3.5.3] - 2021-09-20
+
+### Changes
+
+- Explicitly adds UTF-8 compatible conversion when encoding / decoding base64 strings.
+
 ## [3.5.2] - 2021-09-01
 
 ### Fixes
