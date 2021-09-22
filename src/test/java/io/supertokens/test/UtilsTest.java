@@ -37,7 +37,7 @@ public class UtilsTest {
     }
 
     @Test
-    public void encodeDecodeBase63WithUTF() {
+    public void encodeDecodeBase64WithUTF() {
         assert (io.supertokens.utils.Utils.convertFromBase64(io.supertokens.utils.Utils.convertToBase64("łukasz 馬 / 马"))
                 .equals("łukasz 馬 / 马"));
     }

@@ -69,7 +69,7 @@ public class HttpRequestForTesting {
         if (params != null) {
             for (Map.Entry<String, String> entry : params.entrySet()) {
                 paramBuilder.append(entry.getKey()).append("=").append(URLEncoder.encode(entry.getValue(),
-                        StandardCharsets.UTF_8))
+                                StandardCharsets.UTF_8))
                         .append("&");
             }
         }
@@ -105,7 +105,7 @@ public class HttpRequestForTesting {
             }
 
             StringBuilder response = new StringBuilder();
-            try (BufferedReader in = new BufferedReader(new InputStreamReader(inputStream))) {
+            try (BufferedReader in = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
                 String inputLine;
                 while ((inputLine = in.readLine()) != null) {
                     response.append(inputLine);
