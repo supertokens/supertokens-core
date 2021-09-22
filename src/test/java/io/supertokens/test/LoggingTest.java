@@ -32,6 +32,7 @@ import org.junit.rules.TestRule;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 
 import static org.junit.Assert.*;
@@ -64,7 +65,7 @@ public class LoggingTest {
         File infoLog = new File(Config.getConfig(process.getProcess()).getInfoLogPath(process.getProcess()));
         File errorLog = new File(Config.getConfig(process.getProcess()).getErrorLogPath(process.getProcess()));
 
-        try (Scanner scanner = new Scanner(infoLog)) {
+        try (Scanner scanner = new Scanner(infoLog, StandardCharsets.UTF_8)) {
             while (scanner.hasNextLine()) {
                 String line = scanner.nextLine();
                 if (line.contains(process.getProcess().getProcessId())) {
@@ -74,7 +75,7 @@ public class LoggingTest {
             }
         }
 
-        try (Scanner errorScanner = new Scanner(errorLog)) {
+        try (Scanner errorScanner = new Scanner(errorLog, StandardCharsets.UTF_8)) {
             while (errorScanner.hasNextLine()) {
                 String line = errorScanner.nextLine();
                 if (line.contains(process.getProcess().getProcessId())) {
@@ -112,7 +113,7 @@ public class LoggingTest {
             File infoLog = new File(Config.getConfig(process.getProcess()).getInfoLogPath(process.getProcess()));
             File errorLog = new File(Config.getConfig(process.getProcess()).getErrorLogPath(process.getProcess()));
 
-            try (Scanner scanner = new Scanner(infoLog)) {
+            try (Scanner scanner = new Scanner(infoLog, StandardCharsets.UTF_8)) {
                 while (scanner.hasNextLine()) {
                     String line = scanner.nextLine();
                     if (line.contains(process.getProcess().getProcessId())) {
@@ -122,7 +123,7 @@ public class LoggingTest {
                 }
             }
 
-            try (Scanner errorScanner = new Scanner(errorLog)) {
+            try (Scanner errorScanner = new Scanner(errorLog, StandardCharsets.UTF_8)) {
                 while (errorScanner.hasNextLine()) {
                     String line = errorScanner.nextLine();
                     if (line.contains(process.getProcess().getProcessId())) {
