@@ -185,8 +185,13 @@ public class Main {
             try {
                 JWTSigningKey.getInstance(this).getOrCreateAndGetKeyForAlgorithm(currentAlgorithm);
             } catch (StorageQueryException | StorageTransactionLogicException e) {
-                // We ignore this because in this case the only time
+                // Do nothing, when a call to /recipe/jwt POST is made the core will attempt to create a new key
             } catch (UnsupportedJWTSigningAlgorithmException e) {
+                /*
+                    In this case UnsupportedJWTSigningAlgorithmException should never be thrown because we use
+                    the enum to iterate all the supported algorithm values. If this does get thrown this should be
+                    considered a failure.
+                 */
                 throw new QuitProgramException("Trying to create signing key for unsupported JWT signing algorithm");
             }
         }
