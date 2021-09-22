@@ -123,6 +123,9 @@ public class JWTKeyStorageTest {
                 // Do nothing
             }
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     /**
