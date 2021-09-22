@@ -26,6 +26,10 @@ public class SQLiteConfig {
         return "all_auth_recipe_users";
     }
 
+    public String getAccessTokenSigningKeysTable() {
+        return "session_access_token_signing_keys";
+    }
+
     public String getSessionInfoTable() {
         return "session_info";
     }

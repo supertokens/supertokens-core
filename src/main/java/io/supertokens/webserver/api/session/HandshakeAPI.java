@@ -16,6 +16,7 @@
 
 package io.supertokens.webserver.api.session;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
@@ -23,6 +24,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -30,6 +32,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.List;
 
 public class HandshakeAPI extends WebserverAPI {
     private static final long serialVersionUID = -3647598432179106404L;
@@ -48,10 +51,18 @@ public class HandshakeAPI extends WebserverAPI {
         try {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
+
             result.addProperty("jwtSigningPublicKey",
-                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getKey().value).publicKey);
+                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
                     AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
+
+            if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
+                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getAllKeys();
+                JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
+                result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
+            }
+
             result.addProperty("accessTokenBlacklistingEnabled", Config.getConfig(main).getAccessTokenBlacklisting());
             result.addProperty("accessTokenValidity", Config.getConfig(main).getAccessTokenValidity());
             result.addProperty("refreshTokenValidity", Config.getConfig(main).getRefreshTokenValidity());

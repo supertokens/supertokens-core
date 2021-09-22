@@ -17,6 +17,7 @@
 package io.supertokens.webserver.api.session;
 
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
@@ -28,6 +29,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -45,6 +47,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.List;
 
 public class SessionAPI extends WebserverAPI {
     private static final long serialVersionUID = 7142317017402226537L;
@@ -77,10 +80,18 @@ public class SessionAPI extends WebserverAPI {
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
 
             result.addProperty("status", "OK");
+
             result.addProperty("jwtSigningPublicKey",
-                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getKey().value).publicKey);
+                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
                     AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
+
+            if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
+                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getAllKeys();
+                JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
+                result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
+            }
+
             super.sendJsonResponse(200, result, resp);
         } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException |
                 StorageTransactionLogicException | SignatureException | IllegalBlockSizeException |

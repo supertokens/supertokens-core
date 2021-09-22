@@ -57,7 +57,7 @@ public class CoreConfig {
     private boolean access_token_signing_key_dynamic = true;
 
     @JsonProperty
-    private double access_token_signing_key_update_interval = 24; // in hours
+    private double access_token_signing_key_update_interval = 168; // in hours
 
     @JsonProperty
     private int port = 3567;
@@ -137,7 +137,8 @@ public class CoreConfig {
     }
 
     public long getAccessTokenSigningKeyUpdateInterval() {
-        return (long) (access_token_signing_key_update_interval * 3600 * 1000);
+        return access_token_signing_key_dynamic ?
+            (long) (access_token_signing_key_update_interval * 3600 * 1000) : (10L * 365 * 24 * 3600 * 1000);
     }
 
     public String[] getAPIKeys() {

@@ -231,7 +231,7 @@ public class ConfigTest2_6 {
         assertTrue("Config access signing key dynamic did not match default", config.getAccessTokenSigningKeyDynamic());
         assertEquals("Config access signing key interval did not match default",
                 config.getAccessTokenSigningKeyUpdateInterval(),
-                24 * 60 * 60 * 1000);
+                7 * 24 * 60 * 60 * 1000);
 
         assertEquals(config.getHost(process.getProcess()), "localhost");
         assertEquals(config.getPort(process.getProcess()), 3567);

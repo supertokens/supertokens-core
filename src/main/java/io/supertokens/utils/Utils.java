@@ -20,6 +20,12 @@ import javax.crypto.*;
 import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
+import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
+
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.math.BigInteger;
@@ -31,6 +37,7 @@ import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.List;
 import java.util.Base64.Decoder;
 import java.util.Base64.Encoder;
 import java.util.UUID;
@@ -258,4 +265,15 @@ public class Utils {
         return baos.toString();
     }
 
+    public static JsonArray keyListToJson(List<KeyInfo> keys) {
+        JsonArray jwtSigningPublicKeyListJSON = new JsonArray();
+        for (KeyInfo keyInfo : keys) {
+            JsonObject keyJSON = new JsonObject();
+            keyJSON.addProperty("publicKey", new PubPriKey(keyInfo.value).publicKey);
+            keyJSON.addProperty("expiryTime", keyInfo.expiryTime);
+            keyJSON.addProperty("createdAt", keyInfo.createdAtTime);
+            jwtSigningPublicKeyListJSON.add(keyJSON);
+        }
+        return jwtSigningPublicKeyListJSON;
+    }
 }

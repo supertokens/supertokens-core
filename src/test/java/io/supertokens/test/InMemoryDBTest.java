@@ -375,6 +375,7 @@ public class InMemoryDBTest {
             TokenTheftDetectedException, SignatureException {
 
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027");  // 1 second
+        Utils.setValueInConfig("access_token_validity", "1");  // 1 second
 
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);

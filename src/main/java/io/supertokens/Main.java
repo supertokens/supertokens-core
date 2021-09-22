@@ -20,6 +20,7 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
+import io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys;
 import io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpiredEmailVerificationTokens;
 import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens;
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
@@ -208,6 +209,11 @@ public class Main {
         // starts Telemetry cronjob if the user has not disabled it
         if (!Config.getConfig(this).isTelemetryDisabled()) {
             Cronjobs.addCronjob(this, Telemetry.getInstance(this));
+        }
+
+        // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
+        if (Config.getConfig(this).getAccessTokenSigningKeyDynamic()) {
+            Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.getInstance(this));
         }
 
         // start web server to accept incoming traffic
