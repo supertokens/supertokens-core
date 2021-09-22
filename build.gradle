@@ -12,6 +12,13 @@ plugins {
 compileJava { options.encoding = "UTF-8" }
 compileTestJava { options.encoding = "UTF-8" }
 
+// Uncomment the below lines to make UTF-9 non default while testing
+//allprojects {
+//    tasks.withType(Test) {
+//        systemProperty "file.encoding", "US-ASCII"
+//    }
+//}
+
 version = "3.6.0"
 
 
