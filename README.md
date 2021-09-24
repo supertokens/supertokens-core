@@ -61,7 +61,7 @@ Please find an [architecture diagram here](https://supertokens.io/docs/community
 
 ## ☕ Why Java?
 - ✅ Whilst running Java can seem difficult, we provide the JDK along with the binary / docker image when distributing it. This makes running SuperTokens just like running any other http microservice.
-- ✅ Java has a very mature ecosystem. This implies that third party libraries have been battled tested.
+- ✅ Java has a very mature ecosystem. This implies that third party libraries have been battle tested.
 - ✅ Java's strong type system ensures fewer bugs and easier maintainability. This is especially important when many people are expected to work on the same project.
 - ✅ Our team is most comfortable with Java and hiring for great Java developers is relatively easy as well.
 
