@@ -23,3 +23,6 @@ then
 	rm -rf ./jar/*
 	cp ./build/libs/* ./jar
 fi
+
+(cd ./cli/ && ./runBuild)
+(cd ./downloader/ && ./runBuild)
