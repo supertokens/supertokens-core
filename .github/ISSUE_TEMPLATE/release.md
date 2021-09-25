@@ -27,7 +27,7 @@ labels:
 
 ### Others
 
- - [supertokens-demo-react](https://github.com/supertokens/supertokens-demo-react/tree/master)
+ - Examples apps in supertokens-auth-react
      - [ ] Run and test all the demo apps
  - [ ] Run on NextJS to test that it works fine there
  - [ ] Run on netlify (and hence AWS lambda) to check if it works fine there
@@ -77,11 +77,9 @@ labels:
 
 ### 🔀 Others
 
-- [supertokens-demo-react:master](https://github.com/supertokens/supertokens-demo-react/tree/master)
-   - [ ] Deployed to actual demo sites
-
 - [supertokens-auth-react:master](https://github.com/supertokens/supertokens-auth-react/tree/master)
    - [ ] Update examples to use latest `supertokens-node` and `supertokens-auth-react`
+   - [ ] Pushed to `master` and updated live demo sites
 
 - [next.js:canary](https://github.com/supertokens/next.js/tree/canary/examples/with-supertokens)
    - [ ] Update `with-supertokens` examples to use latest `supertokens-node` and `supertokens-auth-react`
