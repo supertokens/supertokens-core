@@ -62,7 +62,7 @@ public class JWKSTest {
      */
     @Test
     public void testThatThereAreTheSameNumberOfJWKSAsSupportedAlgorithmsBeforeJWTCreation() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -79,7 +79,7 @@ public class JWKSTest {
      */
     @Test
     public void testThatNoNewJWKIsCreatedDuringJWTCreation() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -107,7 +107,7 @@ public class JWKSTest {
      */
     @Test
     public void testThatJWKListContainsValidKeyForCreatedJWT() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -126,7 +126,8 @@ public class JWKSTest {
         List<JsonObject> keysFromStorage = JWTSigningFunctions.getJWKS(process.getProcess());
         for (int i = 0; i < keysFromStorage.size(); i++) {
             JsonObject key = keysFromStorage.get(i);
-            if (key.get("kid").getAsString().equals(headerKeyId) && key.get("kty").getAsString().equalsIgnoreCase("rsa") && key.get("alg").getAsString().equalsIgnoreCase("rs256")) {
+            if (key.get("kid").getAsString().equals(headerKeyId) && key.get("kty").getAsString().equalsIgnoreCase("rsa")
+                    && key.get("alg").getAsString().equalsIgnoreCase("rs256")) {
                 didFindKey = true;
                 break;
             }
@@ -142,7 +143,7 @@ public class JWKSTest {
      */
     @Test
     public void testThatAValidPublicKeyCanBeCreatedFromJWK() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -156,7 +157,8 @@ public class JWKSTest {
 
         List<JsonObject> keysFromStorage = JWTSigningFunctions.getJWKS(process.getProcess());
 
-        // TODO: In the future when more algorithm types (EC etc) are supported this part of the test will need to be updated
+        // TODO: In the future when more algorithm types (EC etc) are supported this part of the test will need to be
+        // updated
         for (int i = 0; i < keysFromStorage.size(); i++) {
             JsonObject key = keysFromStorage.get(i);
             String modulusString = key.get("n").getAsString();
@@ -177,7 +179,7 @@ public class JWKSTest {
      */
     @Test
     public void testThatJWKCanBeUsedForJWTVerification() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -196,14 +198,16 @@ public class JWKSTest {
         List<JsonObject> keysFromStorage = JWTSigningFunctions.getJWKS(process.getProcess());
         for (int i = 0; i < keysFromStorage.size(); i++) {
             JsonObject key = keysFromStorage.get(i);
-            if (key.get("kid").getAsString().equals(headerKeyId) && key.get("kty").getAsString().equalsIgnoreCase("rsa") && key.get("alg").getAsString().equalsIgnoreCase("rs256")) {
+            if (key.get("kid").getAsString().equals(headerKeyId) && key.get("kty").getAsString().equalsIgnoreCase("rsa")
+                    && key.get("alg").getAsString().equalsIgnoreCase("rs256")) {
                 String modulusString = key.get("n").getAsString();
                 String exponentString = key.get("e").getAsString();
 
                 BigInteger modulus = new BigInteger(1, Base64.getUrlDecoder().decode(modulusString));
                 BigInteger exponent = new BigInteger(1, Base64.getUrlDecoder().decode(exponentString));
 
-                publicKey = (RSAPublicKey) KeyFactory.getInstance("RSA").generatePublic(new RSAPublicKeySpec(modulus, exponent));
+                publicKey = (RSAPublicKey) KeyFactory.getInstance("RSA")
+                        .generatePublic(new RSAPublicKeySpec(modulus, exponent));
                 break;
             }
         }

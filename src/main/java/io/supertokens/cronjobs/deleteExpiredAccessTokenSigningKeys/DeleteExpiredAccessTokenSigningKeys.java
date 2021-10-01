@@ -35,7 +35,8 @@ public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
     public static DeleteExpiredAccessTokenSigningKeys getInstance(Main main) {
         ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
         if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new DeleteExpiredAccessTokenSigningKeys(main));
+            instance = main.getResourceDistributor().setResource(RESOURCE_KEY,
+                    new DeleteExpiredAccessTokenSigningKeys(main));
         }
         return (DeleteExpiredAccessTokenSigningKeys) instance;
     }
@@ -55,7 +56,8 @@ public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
             }
         }
 
-        // This can get out of sync with the keys expiring, but this shouldn't be an issue. We never use the expired keys anyway.
+        // This can get out of sync with the keys expiring, but this shouldn't be an issue. We never use the expired
+        // keys anyway.
         return Math.max((int) (config.getAccessTokenSigningKeyUpdateInterval() / 1000), 1);
     }
 

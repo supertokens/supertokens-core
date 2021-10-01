@@ -65,19 +65,15 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     storageLayerTemp = plugin;
                 } else {
                     throw new QuitProgramException(
-                            "Multiple database plugins found. Please make sure that just one plugin is in the /plugin" +
-                                    " " +
-                                    "folder of the installation. Alternatively, please redownload and install " +
-                                    "SuperTokens" +
-                                    ".");
+                            "Multiple database plugins found. Please make sure that just one plugin is in the /plugin"
+                                    + " " + "folder of the installation. Alternatively, please redownload and install "
+                                    + "SuperTokens" + ".");
                 }
             }
         }
 
-        if (storageLayerTemp != null && !main.isForceInMemoryDB() && (
-                storageLayerTemp.canBeUsed(configFilePath) ||
-                        CLIOptions.get(main).isForceNoInMemoryDB()
-        )) {
+        if (storageLayerTemp != null && !main.isForceInMemoryDB()
+                && (storageLayerTemp.canBeUsed(configFilePath) || CLIOptions.get(main).isForceNoInMemoryDB())) {
             this.storage = storageLayerTemp;
         } else {
             Logging.info(main, "Using in memory storage.");
@@ -95,8 +91,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         if (getInstance(main) != null) {
             return;
         }
-        main.getResourceDistributor()
-                .setResource(RESOURCE_KEY, new StorageLayer(main, pluginFolderPath, configFilePath));
+        main.getResourceDistributor().setResource(RESOURCE_KEY,
+                new StorageLayer(main, pluginFolderPath, configFilePath));
     }
 
     public static Storage getStorage(Main main) {

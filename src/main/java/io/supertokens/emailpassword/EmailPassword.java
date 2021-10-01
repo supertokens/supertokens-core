@@ -54,8 +54,8 @@ public class EmailPassword {
         return Config.getConfig(main).getPasswordResetTokenLifetime();
     }
 
-    public static UserInfo signUp(Main main, @Nonnull String email, @Nonnull String password) throws
-            DuplicateEmailException, StorageQueryException {
+    public static UserInfo signUp(Main main, @Nonnull String email, @Nonnull String password)
+            throws DuplicateEmailException, StorageQueryException {
 
         String hashedPassword = UpdatableBCrypt.hash(password);
 
@@ -66,8 +66,7 @@ public class EmailPassword {
 
             try {
                 UserInfo user = new UserInfo(userId, email, hashedPassword, timeJoined);
-                StorageLayer.getEmailPasswordStorage(main)
-                        .signUp(user);
+                StorageLayer.getEmailPasswordStorage(main).signUp(user);
 
                 return user;
 
@@ -78,8 +77,7 @@ public class EmailPassword {
     }
 
     public static UserInfo signIn(Main main, @Nonnull String email, @Nonnull String password)
-            throws StorageQueryException,
-            WrongCredentialsException {
+            throws StorageQueryException, WrongCredentialsException {
 
         UserInfo user = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingEmail(email);
 
@@ -101,8 +99,7 @@ public class EmailPassword {
     }
 
     public static String generatePasswordResetToken(Main main, String userId)
-            throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException,
-            UnknownUserIdException {
+            throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException, UnknownUserIdException {
 
         while (true) {
 
@@ -125,17 +122,14 @@ public class EmailPassword {
 
             String hashedToken = Utils.hashSHA256(token);
 
-
             try {
-                StorageLayer.getEmailPasswordStorage(main).addPasswordResetToken(
-                        new PasswordResetTokenInfo(userId, hashedToken,
-                                System.currentTimeMillis() + getPasswordResetTokenLifetime(main)));
+                StorageLayer.getEmailPasswordStorage(main).addPasswordResetToken(new PasswordResetTokenInfo(userId,
+                        hashedToken, System.currentTimeMillis() + getPasswordResetTokenLifetime(main)));
                 return token;
             } catch (DuplicatePasswordResetTokenException ignored) {
             }
         }
     }
-
 
     public static void resetPassword(Main main, String token, String password)
             throws ResetPasswordInvalidTokenException, NoSuchAlgorithmException, StorageQueryException,
@@ -157,8 +151,8 @@ public class EmailPassword {
         try {
             storage.startTransaction(con -> {
 
-                PasswordResetTokenInfo[] allTokens = storage
-                        .getAllPasswordResetTokenInfoForUser_Transaction(con, userId);
+                PasswordResetTokenInfo[] allTokens = storage.getAllPasswordResetTokenInfoForUser_Transaction(con,
+                        userId);
 
                 PasswordResetTokenInfo matchedToken = null;
                 for (PasswordResetTokenInfo tok : allTokens) {
@@ -193,9 +187,8 @@ public class EmailPassword {
     }
 
     public static void updateUsersEmailOrPassword(Main main, @Nonnull String userId, @Nullable String email,
-                                                  @Nullable String password)
-            throws StorageQueryException, StorageTransactionLogicException, UnknownUserIdException,
-            DuplicateEmailException {
+            @Nullable String password) throws StorageQueryException, StorageTransactionLogicException,
+            UnknownUserIdException, DuplicateEmailException {
         EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
         try {
             storage.startTransaction(transaction -> {
@@ -241,15 +234,14 @@ public class EmailPassword {
 
     @Deprecated
     public static UserPaginationContainer getUsers(Main main, @Nullable String paginationToken, Integer limit,
-                                                   String timeJoinedOrder)
-            throws StorageQueryException, UserPaginationToken.InvalidTokenException {
+            String timeJoinedOrder) throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         UserInfo[] users;
         if (paginationToken == null) {
             users = StorageLayer.getEmailPasswordStorage(main).getUsers(limit + 1, timeJoinedOrder);
         } else {
             UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
-            users = StorageLayer.getEmailPasswordStorage(main)
-                    .getUsers(tokenInfo.userId, tokenInfo.timeJoined, limit + 1, timeJoinedOrder);
+            users = StorageLayer.getEmailPasswordStorage(main).getUsers(tokenInfo.userId, tokenInfo.timeJoined,
+                    limit + 1, timeJoinedOrder);
         }
         String nextPaginationToken = null;
         int maxLoop = users.length;

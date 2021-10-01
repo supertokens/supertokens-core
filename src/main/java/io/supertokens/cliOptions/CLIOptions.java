@@ -88,8 +88,7 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
 
     private void checkIfArgsIsCorrect(String[] args) {
         if (args.length == 0) {
-            throw new QuitProgramException(
-                    "Please provide installation path location for SuperTokens");
+            throw new QuitProgramException("Please provide installation path location for SuperTokens");
         }
     }
 

@@ -50,7 +50,7 @@ public class TelemetryAPITest2_7 {
 
     @Test
     public void testTelemetryDisabledInMemDb() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -59,11 +59,9 @@ public class TelemetryAPITest2_7 {
             return;
         }
 
-        JsonObject response = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/telemetry", new HashMap<>(), 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "");
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/telemetry", new HashMap<>(), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "");
         assertFalse(response.get("exists").getAsBoolean());
 
         process.kill();
@@ -72,7 +70,7 @@ public class TelemetryAPITest2_7 {
 
     @Test
     public void testDefaultTelemetry() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -81,11 +79,9 @@ public class TelemetryAPITest2_7 {
             return;
         }
 
-        JsonObject response = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/telemetry", new HashMap<>(), 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "");
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/telemetry", new HashMap<>(), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "");
         assertTrue(response.get("exists").getAsBoolean());
         assertNotNull(response.get("telemetryId"));
 
@@ -96,7 +92,7 @@ public class TelemetryAPITest2_7 {
     @Test
     public void testDisableTelemetry() throws Exception {
         Utils.setValueInConfig("disable_telemetry", "true");
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -105,11 +101,9 @@ public class TelemetryAPITest2_7 {
             return;
         }
 
-        JsonObject response = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/telemetry", new HashMap<>(), 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "");
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/telemetry", new HashMap<>(), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "");
         assertFalse(response.get("exists").getAsBoolean());
 
         process.kill();
@@ -119,7 +113,7 @@ public class TelemetryAPITest2_7 {
     @Test
     public void testEnableTelemetry() throws Exception {
         Utils.setValueInConfig("disable_telemetry", "false");
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -128,17 +122,14 @@ public class TelemetryAPITest2_7 {
             return;
         }
 
-        JsonObject response = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/telemetry", new HashMap<>(), 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "");
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/telemetry", new HashMap<>(), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "");
         assertTrue(response.get("exists").getAsBoolean());
         assertNotNull(response.get("telemetryId"));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
-
 
 }

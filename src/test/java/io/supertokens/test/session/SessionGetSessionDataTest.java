@@ -50,13 +50,12 @@ public class SessionGetSessionDataTest {
         Utils.reset();
     }
 
-    //* Create session with some user data -> Verify the payload -> Update user data using session handle
-    //* -> Verify that the change is reflected
+    // * Create session with some user data -> Verify the payload -> Update user data using session handle
+    // * -> Verify that the change is reflected
     @Test
-    public void updateSessionInfo()
-            throws Exception {
+    public void updateSessionInfo() throws Exception {
 
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -69,7 +68,8 @@ public class SessionGetSessionDataTest {
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
                 userDataInDatabase, false);
 
-        JsonObject sessionDataBeforeUpdate = Session.getSession(process.getProcess(), sessionInfo.session.handle).userDataInDatabase;
+        JsonObject sessionDataBeforeUpdate = Session.getSession(process.getProcess(),
+                sessionInfo.session.handle).userDataInDatabase;
         assertEquals(userDataInDatabase.toString(), sessionDataBeforeUpdate.toString());
 
         JsonObject userDataInDatabase2 = new JsonObject();
@@ -80,7 +80,8 @@ public class SessionGetSessionDataTest {
 
         Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase2, null, null);
 
-        JsonObject sessionDataAfterUpdate = Session.getSession(process.getProcess(), sessionInfo.session.handle).userDataInDatabase;
+        JsonObject sessionDataAfterUpdate = Session.getSession(process.getProcess(),
+                sessionInfo.session.handle).userDataInDatabase;
         assertEquals(userDataInDatabase2.toString(), sessionDataAfterUpdate.toString());
         assertNotEquals(sessionDataBeforeUpdate.toString(), sessionDataAfterUpdate.toString());
 
@@ -88,13 +89,13 @@ public class SessionGetSessionDataTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //* Try getting and updating session information for a non-existent session handle -> Verify that both throw
-    //* UnauthorisedException for session not existing
+    // * Try getting and updating session information for a non-existent session handle -> Verify that both throw
+    // * UnauthorisedException for session not existing
     @Test
     public void gettingAndUpdatingSessionDataForNonExistentSession()
             throws InterruptedException, StorageQueryException {
 
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

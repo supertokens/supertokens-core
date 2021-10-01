@@ -47,7 +47,6 @@ public class VerifyEmailAPI extends WebserverAPI {
         return "/recipe/user/email/verify";
     }
 
-
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);

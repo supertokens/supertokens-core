@@ -58,18 +58,15 @@ public class RefreshToken {
                 throw new UnauthorisedException("Invalid refresh token");
             }
             return new RefreshTokenInfo(tokenPayload.sessionHandle, tokenPayload.userId,
-                    tokenPayload.parentRefreshTokenHash1, null,
-                    tokenPayload.antiCsrfToken, tokenType);
+                    tokenPayload.parentRefreshTokenHash1, null, tokenPayload.antiCsrfToken, tokenType);
 
         } catch (Exception e) {
             throw new UnauthorisedException(e);
         }
     }
 
-
     public static TokenInfo createNewRefreshToken(@Nonnull Main main, @Nonnull String sessionHandle,
-                                                  @Nonnull String userId, @Nullable String parentRefreshTokenHash1,
-                                                  @Nullable String antiCsrfToken)
+            @Nonnull String userId, @Nullable String parentRefreshTokenHash1, @Nullable String antiCsrfToken)
             throws NoSuchAlgorithmException, StorageQueryException, NoSuchPaddingException, InvalidKeyException,
             IllegalBlockSizeException, BadPaddingException, StorageTransactionLogicException,
             InvalidAlgorithmParameterException, InvalidKeySpecException {
@@ -83,7 +80,6 @@ public class RefreshToken {
         long now = System.currentTimeMillis();
         return new TokenInfo(token, now + Config.getConfig(main).getRefreshTokenValidity(), now);
     }
-
 
     private static TYPE getTypeFromToken(String token) throws InvalidRefreshTokenFormatException {
         try {
@@ -137,8 +133,7 @@ public class RefreshToken {
         public final String antiCsrfToken;
 
         RefreshTokenPayload(@Nonnull String sessionHandle, @Nonnull String userId,
-                            @Nullable String parentRefreshTokenHash1, @Nonnull String nonce,
-                            @Nullable String antiCsrfToken) {
+                @Nullable String parentRefreshTokenHash1, @Nonnull String nonce, @Nullable String antiCsrfToken) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.parentRefreshTokenHash1 = parentRefreshTokenHash1;
@@ -162,8 +157,8 @@ public class RefreshToken {
         public final String antiCsrfToken;
 
         RefreshTokenInfo(@Nonnull String sessionHandle, @Nullable String userId,
-                         @Nullable String parentRefreshTokenHash1, @Nullable String parentRefreshTokenHash2,
-                         @Nullable String antiCsrfToken, @Nonnull TYPE type) {
+                @Nullable String parentRefreshTokenHash1, @Nullable String parentRefreshTokenHash2,
+                @Nullable String antiCsrfToken, @Nonnull TYPE type) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.parentRefreshTokenHash1 = parentRefreshTokenHash1;

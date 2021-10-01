@@ -47,16 +47,14 @@ public class ThirdParty {
     // https://github.com/supertokens/supertokens-core/issues/295, so we changed the API spec.
     @Deprecated
     public static SignInUpResponse signInUp2_7(Main main, String thirdPartyId, String thirdPartyUserId, String email,
-                                               boolean isEmailVerified)
-            throws StorageQueryException {
+            boolean isEmailVerified) throws StorageQueryException {
         SignInUpResponse response = signInUpHelper(main, thirdPartyId, thirdPartyUserId, email);
 
         if (isEmailVerified) {
             try {
                 StorageLayer.getEmailVerificationStorage(main).startTransaction(con -> {
-                    StorageLayer.getEmailVerificationStorage(main)
-                            .updateIsEmailVerified_Transaction(con, response.user.id, response.user.email,
-                                    true);
+                    StorageLayer.getEmailVerificationStorage(main).updateIsEmailVerified_Transaction(con,
+                            response.user.id, response.user.email, true);
                     StorageLayer.getEmailVerificationStorage(main).commitTransaction(con);
                     return null;
                 });
@@ -74,8 +72,7 @@ public class ThirdParty {
     }
 
     private static SignInUpResponse signInUpHelper(Main main, String thirdPartyId, String thirdPartyUserId,
-                                                   String email)
-            throws StorageQueryException {
+            String email) throws StorageQueryException {
         ThirdPartySQLStorage storage = StorageLayer.getThirdPartyStorage(main);
         while (true) {
             // loop for sign in + sign up
@@ -86,8 +83,8 @@ public class ThirdParty {
                 long timeJoined = System.currentTimeMillis();
 
                 try {
-                    UserInfo user = new UserInfo(userId, email,
-                            new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId), timeJoined);
+                    UserInfo user = new UserInfo(userId, email, new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId),
+                            timeJoined);
 
                     storage.signUp(user);
 
@@ -116,8 +113,7 @@ public class ThirdParty {
                         storage.updateUserEmail_Transaction(con, thirdPartyId, thirdPartyUserId, email);
 
                         user = new UserInfo(user.id, email,
-                                new UserInfo.ThirdParty(user.thirdParty.id, user.thirdParty.userId),
-                                user.timeJoined);
+                                new UserInfo.ThirdParty(user.thirdParty.id, user.thirdParty.userId), user.timeJoined);
                     }
 
                     storage.commitTransaction(con);
@@ -144,18 +140,15 @@ public class ThirdParty {
     }
 
     @Deprecated
-    public static UserPaginationContainer getUsers(Main main,
-                                                   @Nullable String paginationToken,
-                                                   Integer limit,
-                                                   String timeJoinedOrder)
-            throws StorageQueryException, UserPaginationToken.InvalidTokenException {
+    public static UserPaginationContainer getUsers(Main main, @Nullable String paginationToken, Integer limit,
+            String timeJoinedOrder) throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         UserInfo[] users;
         if (paginationToken == null) {
             users = StorageLayer.getThirdPartyStorage(main).getThirdPartyUsers(limit + 1, timeJoinedOrder);
         } else {
             UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
-            users = StorageLayer.getThirdPartyStorage(main)
-                    .getThirdPartyUsers(tokenInfo.userId, tokenInfo.timeJoined, limit + 1, timeJoinedOrder);
+            users = StorageLayer.getThirdPartyStorage(main).getThirdPartyUsers(tokenInfo.userId, tokenInfo.timeJoined,
+                    limit + 1, timeJoinedOrder);
         }
         String nextPaginationToken = null;
         int maxLoop = users.length;

@@ -65,8 +65,8 @@ public class SignInUpAPI extends WebserverAPI {
             String normalisedEmail = Utils.normaliseEmail(email);
 
             try {
-                ThirdParty.SignInUpResponse response = ThirdParty
-                        .signInUp2_7(super.main, thirdPartyId, thirdPartyUserId, normalisedEmail, isEmailVerified);
+                ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(super.main, thirdPartyId,
+                        thirdPartyUserId, normalisedEmail, isEmailVerified);
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
@@ -95,8 +95,8 @@ public class SignInUpAPI extends WebserverAPI {
             String normalisedEmail = Utils.normaliseEmail(email);
 
             try {
-                ThirdParty.SignInUpResponse response = ThirdParty
-                        .signInUp(super.main, thirdPartyId, thirdPartyUserId, normalisedEmail);
+                ThirdParty.SignInUpResponse response = ThirdParty.signInUp(super.main, thirdPartyId, thirdPartyUserId,
+                        normalisedEmail);
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");

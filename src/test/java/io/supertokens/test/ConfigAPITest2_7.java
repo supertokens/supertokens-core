@@ -35,7 +35,6 @@ import java.util.Map;
 
 import static org.junit.Assert.*;
 
-
 public class ConfigAPITest2_7 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -52,33 +51,32 @@ public class ConfigAPITest2_7 {
 
     @Test
     public void inputErrorConfigAPITest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //null for parameters
+        // null for parameters
         try {
-            HttpRequest
-                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", null, 1000, 1000, null);
+            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", null, 1000, 1000,
+                    null);
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.getMessage()
-                    .equals("Http error. Status Code: 400. Message: Field name 'pid' is missing in GET request") &&
-                    e.statusCode == 400);
+                    .equals("Http error. Status Code: 400. Message: Field name 'pid' is missing in GET request")
+                    && e.statusCode == 400);
         }
 
-        //typo in parameter
+        // typo in parameter
         try {
             HashMap<String, String> map = new HashMap<>();
             map.put("pd", ProcessHandle.current().pid() + "");
-            HttpRequest
-                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null);
+            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null);
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.getMessage()
-                    .equals("Http error. Status Code: 400. Message: Field name 'pid' is missing in GET request") &&
-                    e.statusCode == 400);
+                    .equals("Http error. Status Code: 400. Message: Field name 'pid' is missing in GET request")
+                    && e.statusCode == 400);
         }
 
         process.kill();
@@ -88,35 +86,33 @@ public class ConfigAPITest2_7 {
 
     @Test
     public void testVersion2InputErrorConfigAPITest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //null for parameters
+        // null for parameters
         try {
-            HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", null, 1000, 1000, null,
-                            Utils.getCdiVersion2_7ForTests(), "");
+            HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", null, 1000,
+                    1000, null, Utils.getCdiVersion2_7ForTests(), "");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.getMessage()
-                    .equals("Http error. Status Code: 400. Message: Field name 'pid' is missing in GET request") &&
-                    e.statusCode == 400);
+                    .equals("Http error. Status Code: 400. Message: Field name 'pid' is missing in GET request")
+                    && e.statusCode == 400);
         }
 
-        //typo in parameter
+        // typo in parameter
         try {
             HashMap<String, String> map = new HashMap<>();
             map.put("pd", ProcessHandle.current().pid() + "");
-            HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
-                            Utils.getCdiVersion2_7ForTests(), "");
+            HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000,
+                    1000, null, Utils.getCdiVersion2_7ForTests(), "");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.getMessage()
-                    .equals("Http error. Status Code: 400. Message: Field name 'pid' is missing in GET request") &&
-                    e.statusCode == 400);
+                    .equals("Http error. Status Code: 400. Message: Field name 'pid' is missing in GET request")
+                    && e.statusCode == 400);
         }
 
         process.kill();
@@ -124,12 +120,10 @@ public class ConfigAPITest2_7 {
 
     }
 
-
     @Test
     public void testCustomConfigPath() throws Exception {
         String path = new File("../temp/config.yaml").getAbsolutePath();
-        String[] args = {"../", "configFile=" + path};
-
+        String[] args = { "../", "configFile=" + path };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -138,9 +132,9 @@ public class ConfigAPITest2_7 {
         Map<String, String> map = new HashMap<>();
         map.put("pid", ProcessHandle.current().pid() + "");
 
-        //check regular output
-        JsonObject response = HttpRequest
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null);
+        // check regular output
+        JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map,
+                1000, 1000, null);
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.get("path").getAsString(), path);
@@ -153,8 +147,7 @@ public class ConfigAPITest2_7 {
     @Test
     public void testVersion2TestCustomConfigPath() throws Exception {
         String path = new File("../temp/config.yaml").getAbsolutePath();
-        String[] args = {"../", "configFile=" + path};
-
+        String[] args = { "../", "configFile=" + path };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -163,10 +156,9 @@ public class ConfigAPITest2_7 {
         Map<String, String> map = new HashMap<>();
         map.put("pid", ProcessHandle.current().pid() + "");
 
-        //check regular output
-        JsonObject response = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "");
+        // check regular output
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/config", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "");
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.get("path").getAsString(), path);
@@ -178,7 +170,7 @@ public class ConfigAPITest2_7 {
 
     @Test
     public void outputPossibilitiesConfigAPITest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -190,24 +182,24 @@ public class ConfigAPITest2_7 {
         File f = new File(path);
         path = f.getAbsolutePath();
 
-        //map to store pid as parameter
+        // map to store pid as parameter
         HashMap<String, String> map = new HashMap<>();
         map.put("pid", ProcessHandle.current().pid() + "");
 
-        //check regular output
-        JsonObject response = HttpRequest
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null);
+        // check regular output
+        JsonObject response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map,
+                1000, 1000, null);
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.get("path").getAsString(), path);
         assertEquals(response.entrySet().size(), 2);
 
-        //incorrect PID input in parameter
+        // incorrect PID input in parameter
         map = new HashMap<>();
         map.put("pid", "-1");
 
-        response = HttpRequest
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null);
+        response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000,
+                null);
 
         assertEquals(response.get("status").getAsString(), "NOT_ALLOWED");
         assertEquals(response.entrySet().size(), 1);
@@ -218,7 +210,7 @@ public class ConfigAPITest2_7 {
 
     @Test
     public void testVersion2OutputPossibilitiesConfigAPITest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -230,26 +222,24 @@ public class ConfigAPITest2_7 {
         File f = new File(path);
         path = f.getAbsolutePath();
 
-        //map to store pid as parameter
+        // map to store pid as parameter
         HashMap<String, String> map = new HashMap<>();
         map.put("pid", ProcessHandle.current().pid() + "");
 
-        //check regular output
-        JsonObject response = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "");
+        // check regular output
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/config", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "");
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.get("path").getAsString(), path);
         assertEquals(response.entrySet().size(), 2);
 
-        //incorrect PID input in parameter
+        // incorrect PID input in parameter
         map = new HashMap<>();
         map.put("pid", "-1");
 
-        response = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "");
+        response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map,
+                1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "");
 
         assertEquals(response.get("status").getAsString(), "NOT_ALLOWED");
         assertEquals(response.entrySet().size(), 1);
@@ -257,6 +247,5 @@ public class ConfigAPITest2_7 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
-
 
 }

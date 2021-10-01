@@ -53,7 +53,7 @@ public class LoggingTest {
 
     @Test
     public void defaultLogging() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -96,7 +96,7 @@ public class LoggingTest {
     @Test
     public void customLogging() throws Exception {
         try {
-            String[] args = {"../"};
+            String[] args = { "../" };
 
             Utils.setValueInConfig("info_log_path", "\"tempLogging/info.log\"");
             Utils.setValueInConfig("error_log_path", "\"tempLogging/error.log\"");
@@ -148,7 +148,7 @@ public class LoggingTest {
     @Test
     public void confirmLoggerClosed() throws Exception {
 
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
 
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -157,7 +157,6 @@ public class LoggingTest {
                 .getLogger("io.supertokens.Info." + process.getProcess().getProcessId());
         Logger comErrorLog = (Logger) LoggerFactory
                 .getLogger("io.supertokens.Error." + process.getProcess().getProcessId());
-
 
         java.util.logging.Logger webLogger = java.util.logging.Logger.getLogger("org.apache");
 
@@ -173,19 +172,17 @@ public class LoggingTest {
 
     @Test
     public void testStandardOutLoggingWithNullStr() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();
         ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
 
         Utils.setValueInConfig("info_log_path", "\"null\"");
         Utils.setValueInConfig("error_log_path", "\"null\"");
 
-
         System.setOut(new PrintStream(stdOutput));
         System.setErr(new PrintStream(errorOutput));
 
         TestingProcess process = TestingProcessManager.start(args, false);
-
 
         try {
             process.startProcess();
@@ -196,7 +193,6 @@ public class LoggingTest {
 
             assertTrue(fileContainsString(stdOutput, "outTest-dfkn3knsakn"));
             assertTrue(fileContainsString(stdOutput, "errTest-sdvjovnoasid"));
-
 
         } finally {
             process.kill();
@@ -209,19 +205,17 @@ public class LoggingTest {
 
     @Test
     public void testStandardOutLoggingWithNull() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();
         ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
 
         Utils.setValueInConfig("info_log_path", "null");
         Utils.setValueInConfig("error_log_path", "null");
 
-
         System.setOut(new PrintStream(stdOutput));
         System.setErr(new PrintStream(errorOutput));
 
         TestingProcess process = TestingProcessManager.start(args, false);
-
 
         try {
             process.startProcess();
@@ -232,7 +226,6 @@ public class LoggingTest {
 
             assertTrue(fileContainsString(stdOutput, "outTest-dfkn3knsakn"));
             assertTrue(fileContainsString(stdOutput, "errTest-sdvjovnoasid"));
-
 
         } finally {
             process.kill();
@@ -245,8 +238,7 @@ public class LoggingTest {
 
     @Test
     public void testThatSubFoldersAreCreated() throws Exception {
-        String[] args = {"../"};
-
+        String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args, false);
         try {
@@ -259,7 +251,6 @@ public class LoggingTest {
 
             logFile = new File("../temp/a/b");
             assertTrue(logFile.isDirectory());
-
 
             logFile = new File("../temp/a/b/info.log");
             assertFalse(logFile.isDirectory());
@@ -274,10 +265,9 @@ public class LoggingTest {
 
     }
 
-
     @Test
     public void testDefaultLoggingFilePath() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
 
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -293,8 +283,7 @@ public class LoggingTest {
 
     }
 
-    private static boolean fileContainsString(ByteArrayOutputStream log, String value)
-            throws IOException {
+    private static boolean fileContainsString(ByteArrayOutputStream log, String value) throws IOException {
         boolean containsString = false;
         try (BufferedReader reader = new BufferedReader(new StringReader(log.toString()))) {
             String currentReadingLine = reader.readLine();

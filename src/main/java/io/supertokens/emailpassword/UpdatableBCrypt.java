@@ -18,12 +18,10 @@ package io.supertokens.emailpassword;
 
 import org.mindrot.jbcrypt.BCrypt;
 
-
 // code from: https://dzone.com/articles/hashing-passwords-in-java-with-bcrypt#:~:text=BCrypt%20Features&text=One
 // %20way%20hashing%20%2D%20BCrypt%20is,hashes%20across%20each%20user's%20password.
 
 public class UpdatableBCrypt {
-
 
     public static String hash(String password) {
         // the number of iterations is 2^ the number below.

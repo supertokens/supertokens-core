@@ -30,7 +30,6 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
-
 public class SessionRegenerateAPITest2_7 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -47,12 +46,12 @@ public class SessionRegenerateAPITest2_7 {
 
     @Test
     public void testCallRegenerateAPIWithNewJwtPayloadAndCheckResponses() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //createSession with JWT payload
+        // createSession with JWT payload
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
@@ -65,15 +64,14 @@ public class SessionRegenerateAPITest2_7 {
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
 
-        JsonObject sessionInfo = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "session");
+        JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
-        AccessToken.AccessTokenInfo accessTokenBefore = AccessToken
-                .getInfoFromAccessToken(process.getProcess(), accessToken, false);
+        AccessToken.AccessTokenInfo accessTokenBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                accessToken, false);
 
         JsonObject newUserDataInJWT = new JsonObject();
         newUserDataInJWT.addProperty("key2", "value2");
@@ -82,21 +80,18 @@ public class SessionRegenerateAPITest2_7 {
         sessionRegenerateRequest.addProperty("accessToken", accessToken);
         sessionRegenerateRequest.add("userDataInJWT", newUserDataInJWT);
 
-        JsonObject sessionRegenerateResponse = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/regenerate",
-                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
-                        "session");
+        JsonObject sessionRegenerateResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "session");
 
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
 
-        //check that session object and all has new payload info
+        // check that session object and all has new payload info
         assertEquals(sessionRegenerateResponse.get("session").getAsJsonObject().get("userDataInJWT"), newUserDataInJWT);
 
         // - exipry time of new token is same as old, but lmrt and payload has been changed
-        AccessToken.AccessTokenInfo accessTokenAfter = AccessToken
-                .getInfoFromAccessToken(process.getProcess(),
-                        sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("token").getAsString(),
-                        false);
+        AccessToken.AccessTokenInfo accessTokenAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("token").getAsString(), false);
 
         assertEquals(accessTokenBefore.expiryTime, accessTokenAfter.expiryTime);
         assertNotEquals(accessTokenBefore.lmrt, accessTokenAfter.lmrt);
@@ -105,21 +100,21 @@ public class SessionRegenerateAPITest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //  * - create session -> wait for access token to expire -> call regenerate API with new JWT payload -> check
-    //  responses:
-    //  * - session object and all has new payload info
+    // * - create session -> wait for access token to expire -> call regenerate API with new JWT payload -> check
+    // responses:
+    // * - session object and all has new payload info
 
-    //  * - access token is null
+    // * - access token is null
 
     @Test
     public void testWaitForAccessTokenToExpireCallRegenerateWithNewJWTPayloadAndCheckResponses() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         Utils.setValueInConfig("access_token_validity", "1");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //createSession with JWT payload
+        // createSession with JWT payload
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
@@ -132,86 +127,15 @@ public class SessionRegenerateAPITest2_7 {
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
 
-        JsonObject sessionInfo = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "session");
+        JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
 
-        //wait for accessToken to expire
+        // wait for accessToken to expire
 
         Thread.sleep(2000);
-
-        //call regenerate API with new JWT payload
-        JsonObject newUserDataInJWT = new JsonObject();
-        newUserDataInJWT.addProperty("key2", "value2");
-
-        JsonObject sessionRegenerateRequest = new JsonObject();
-        sessionRegenerateRequest.addProperty("accessToken", accessToken);
-        sessionRegenerateRequest.add("userDataInJWT", newUserDataInJWT);
-
-        JsonObject sessionRegenerateResponse = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/regenerate",
-                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
-                        "session");
-        assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
-
-        //session object and all has new payload info
-        assertEquals(sessionRegenerateResponse.get("session").getAsJsonObject().get("userDataInJWT"), newUserDataInJWT);
-
-        //access token is null
-        assertNull(sessionRegenerateResponse.get("accessToken"));
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    /* - create session -> wait for refresh token to expire, remove from db -> call regenerate API with new JWT payload
-     *  - throws UNAUTHORISED response.
-     *  - check that not supported CDI 1.0
-     * */
-
-    @Test
-    public void testRefreshTokenExpiryCallRegenerateAPIWithNewPayloadAndCheckResponse() throws Exception {
-
-        String[] args = {"../"};
-
-        Utils.setValueInConfig("refresh_token_validity", "" + 1.0 / 60);// 1 second validity (value in mins)
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        //createSession with JWT payload
-        String userId = "userId";
-        JsonObject userDataInJWT = new JsonObject();
-        userDataInJWT.addProperty("key", "value");
-        JsonObject userDataInDatabase = new JsonObject();
-        userDataInDatabase.addProperty("key", "value");
-
-        JsonObject request = new JsonObject();
-        request.addProperty("userId", userId);
-        request.add("userDataInJWT", userDataInJWT);
-        request.add("userDataInDatabase", userDataInDatabase);
-        request.addProperty("enableAntiCsrf", false);
-
-        JsonObject sessionInfo = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "session");
-        assertEquals(sessionInfo.get("status").getAsString(), "OK");
-        String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
-
-        //wait for refresh token to expire, remove from db
-        Thread.sleep(2000);
-
-        JsonObject removeSessionBody = new JsonObject();
-        removeSessionBody.addProperty("userId", userId);
-
-        JsonObject sessionRemovedResponse = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/remove",
-                        removeSessionBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
-        assertEquals(sessionRemovedResponse.get("status").getAsString(), "OK");
-
 
         // call regenerate API with new JWT payload
         JsonObject newUserDataInJWT = new JsonObject();
@@ -221,12 +145,79 @@ public class SessionRegenerateAPITest2_7 {
         sessionRegenerateRequest.addProperty("accessToken", accessToken);
         sessionRegenerateRequest.add("userDataInJWT", newUserDataInJWT);
 
-        JsonObject sessionRegenerateResponse = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/regenerate",
-                        sessionRegenerateRequest, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
-                        "session");
+        JsonObject sessionRegenerateResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "session");
+        assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
 
-        //throws UNAUTHORISED response.
+        // session object and all has new payload info
+        assertEquals(sessionRegenerateResponse.get("session").getAsJsonObject().get("userDataInJWT"), newUserDataInJWT);
+
+        // access token is null
+        assertNull(sessionRegenerateResponse.get("accessToken"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /*
+     * - create session -> wait for refresh token to expire, remove from db -> call regenerate API with new JWT payload
+     * - throws UNAUTHORISED response.
+     * - check that not supported CDI 1.0
+     */
+
+    @Test
+    public void testRefreshTokenExpiryCallRegenerateAPIWithNewPayloadAndCheckResponse() throws Exception {
+
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("refresh_token_validity", "" + 1.0 / 60);// 1 second validity (value in mins)
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // createSession with JWT payload
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        JsonObject request = new JsonObject();
+        request.addProperty("userId", userId);
+        request.add("userDataInJWT", userDataInJWT);
+        request.add("userDataInDatabase", userDataInDatabase);
+        request.addProperty("enableAntiCsrf", false);
+
+        JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "session");
+        assertEquals(sessionInfo.get("status").getAsString(), "OK");
+        String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
+
+        // wait for refresh token to expire, remove from db
+        Thread.sleep(2000);
+
+        JsonObject removeSessionBody = new JsonObject();
+        removeSessionBody.addProperty("userId", userId);
+
+        JsonObject sessionRemovedResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/remove", removeSessionBody, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "session");
+        assertEquals(sessionRemovedResponse.get("status").getAsString(), "OK");
+
+        // call regenerate API with new JWT payload
+        JsonObject newUserDataInJWT = new JsonObject();
+        newUserDataInJWT.addProperty("key2", "value2");
+
+        JsonObject sessionRegenerateRequest = new JsonObject();
+        sessionRegenerateRequest.addProperty("accessToken", accessToken);
+        sessionRegenerateRequest.add("userDataInJWT", newUserDataInJWT);
+
+        JsonObject sessionRegenerateResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "session");
+
+        // throws UNAUTHORISED response.
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "UNAUTHORISED");
 
         process.kill();

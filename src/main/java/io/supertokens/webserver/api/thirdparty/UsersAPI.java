@@ -71,8 +71,7 @@ public class UsersAPI extends WebserverAPI {
 
         if (timeJoinedOrder != null) {
             if (!timeJoinedOrder.equals("ASC") && !timeJoinedOrder.equals("DESC")) {
-                throw new ServletException(
-                        new BadRequestException("timeJoinedOrder can be either ASC OR DESC"));
+                throw new ServletException(new BadRequestException("timeJoinedOrder can be either ASC OR DESC"));
             }
         } else {
             timeJoinedOrder = "ASC";
@@ -80,8 +79,7 @@ public class UsersAPI extends WebserverAPI {
 
         if (limit != null) {
             if (limit > 1000) {
-                throw new ServletException(
-                        new BadRequestException("max limit allowed is 1000"));
+                throw new ServletException(new BadRequestException("max limit allowed is 1000"));
             } else if (limit < 1) {
                 throw new ServletException(
                         new BadRequestException("limit must a positive integer with max value 1000"));
@@ -101,8 +99,7 @@ public class UsersAPI extends WebserverAPI {
             }
             super.sendJsonResponse(200, result, resp);
         } catch (UserPaginationToken.InvalidTokenException e) {
-            throw new ServletException(
-                    new BadRequestException("invalid pagination token"));
+            throw new ServletException(new BadRequestException("invalid pagination token"));
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }

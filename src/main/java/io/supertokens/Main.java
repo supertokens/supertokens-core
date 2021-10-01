@@ -206,10 +206,8 @@ public class Main {
 
         // NOTE: If the message below is changed, make sure to also change the corresponding check in the CLI program
         // for start command
-        Logging.info(this,
-                "Started SuperTokens on " + Config.getConfig(this).getHost(this) + ":" +
-                        Config.getConfig(this).getPort(this) +
-                        " with PID: " + ProcessHandle.current().pid());
+        Logging.info(this, "Started SuperTokens on " + Config.getConfig(this).getHost(this) + ":"
+                + Config.getConfig(this).getPort(this) + " with PID: " + ProcessHandle.current().pid());
     }
 
     public void setForceInMemoryDB() {
@@ -247,11 +245,11 @@ public class Main {
 
     private void createDotStartedFileForThisProcess() throws IOException {
         CoreConfig config = Config.getConfig(this);
-        String fileName = OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS ?
-                CLIOptions.get(this).getInstallationPath() + ".started\\" + config.getHost(this) + "-" +
-                        config.getPort(this) :
-                CLIOptions.get(this).getInstallationPath() + ".started/" + config.getHost(this) + "-" +
-                        config.getPort(this);
+        String fileName = OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS
+                ? CLIOptions.get(this).getInstallationPath() + ".started\\" + config.getHost(this) + "-"
+                        + config.getPort(this)
+                : CLIOptions.get(this).getInstallationPath() + ".started/" + config.getHost(this) + "-"
+                        + config.getPort(this);
         File dotStarted = new File(fileName);
         if (!dotStarted.exists()) {
             File parent = dotStarted.getParentFile();
@@ -385,7 +383,7 @@ public class Main {
     }
 
     // TODO: figure out some other way to solve this problem. It is used to not show
-    //  illegal access warning in Tomcat
+    // illegal access warning in Tomcat
     private void suppressIllegalAccessWarning() {
         try {
             Field theUnsafe = Unsafe.class.getDeclaredField("theUnsafe");

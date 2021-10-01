@@ -95,9 +95,8 @@ public class UnverifyEmailAPITest2_8 {
     }
 
     private JsonObject unverifyEmail(Main main, JsonObject body) throws IOException, HttpResponseException {
-        return HttpRequestForTesting
-                .sendJsonPOSTRequest(main, "", "http://localhost:3567/recipe/user/email/verify/remove", body,
-                1000,
-                1000, null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_VERIFICATION.toString());
+        return HttpRequestForTesting.sendJsonPOSTRequest(main, "",
+                "http://localhost:3567/recipe/user/email/verify/remove", body, 1000, 1000, null,
+                Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 }

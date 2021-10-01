@@ -126,8 +126,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 // We avoid adding duplicates by enforcing that a legacy key can only ever be
                 // the first one in the new table.
                 noSQLStorage.addAccessTokenSigningKey_Transaction(
-                        new KeyValueInfo(legacyKey.value, legacyKey.createdAtTime), null
-                );
+                        new KeyValueInfo(legacyKey.value, legacyKey.createdAtTime), null);
                 // We don't need to check the lastUpdatedSign here, since we never update or set
                 // legacy keys anymore.
                 noSQLStorage.removeLegacyAccessTokenSigningKey_Transaction();
@@ -155,12 +154,9 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                     .collect(Collectors.toList());
         }
 
-        if (
-                this.validKeys == null ||
-                        this.validKeys.size() == 0 ||
-                        System.currentTimeMillis() >
-                                this.validKeys.get(0).createdAtTime + config.getAccessTokenSigningKeyUpdateInterval()
-        ) {
+        if (this.validKeys == null || this.validKeys.size() == 0
+                || System.currentTimeMillis() > this.validKeys.get(0).createdAtTime
+                        + config.getAccessTokenSigningKeyUpdateInterval()) {
             this.validKeys = maybeGenerateNewKeyAndUpdateInDb();
         }
 
@@ -187,8 +183,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         final long signingKeyLifetime = config.getAccessTokenSigningKeyUpdateInterval()
                 + SIGNING_KEY_VALIDITY_OVERLAP * config.getAccessTokenValidity();
         // Keys created after this timestamp can be used to sign access tokens (ms)
-        final long keysCreatedAfterCanSign =
-                System.currentTimeMillis() - config.getAccessTokenSigningKeyUpdateInterval();
+        final long keysCreatedAfterCanSign = System.currentTimeMillis()
+                - config.getAccessTokenSigningKeyUpdateInterval();
         // Keys created after this timestamp can be used to verify access token signatures (ms)
         final long keysCreatedAfterCanVerify = System.currentTimeMillis() - signingKeyLifetime;
 
@@ -247,8 +243,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 KeyValueInfo[] keysFromStorage = noSQLStorage.getAccessTokenSigningKeys_Transaction();
 
                 for (KeyValueInfo key : keysFromStorage) {
-                    lastCreated =
-                            lastCreated == null || lastCreated < key.createdAtTime ? key.createdAtTime : lastCreated;
+                    lastCreated = lastCreated == null || lastCreated < key.createdAtTime ? key.createdAtTime
+                            : lastCreated;
 
                     if (keysCreatedAfterCanVerify <= key.createdAtTime) {
                         if (keysCreatedAfterCanSign <= key.createdAtTime) {

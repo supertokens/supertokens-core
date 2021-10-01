@@ -43,7 +43,6 @@ import static org.junit.Assert.assertNotNull;
  * - plugin folder exists, with more than one storage plugin
  */
 
-
 public class PluginTest {
 
     @Rule
@@ -61,28 +60,27 @@ public class PluginTest {
 
     @Test
     public void missingPluginFolderTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         try {
-            //copy plugin directory to temp directory
+            // copy plugin directory to temp directory
             copyDirectoryToDirectory(new File(args[0] + "plugin"), new File(args[0] + "temp/plugin"));
 
-            //delete plugin directory
+            // delete plugin directory
             delete(new File(args[0] + "plugin"));
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED);
             assertNotNull(e);
 
-
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         } finally {
-            //copy temp/plugin directory to plugin directory
+            // copy temp/plugin directory to plugin directory
             copyDirectoryToDirectory(new File(args[0] + "temp/plugin"), new File(args[0] + "plugin"));
 
-            //delete temp/plugin directory
+            // delete temp/plugin directory
             delete(new File(args[0] + "temp/plugin"));
         }
 
@@ -90,15 +88,15 @@ public class PluginTest {
 
     @Test
     public void emptyPluginFolderTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         try {
-            //copy plugin directory to temp/plugin directory
+            // copy plugin directory to temp/plugin directory
             copyDirectoryToDirectory(new File(args[0] + "plugin"), new File(args[0] + "temp/plugin"));
 
-            //delete plugin directory
+            // delete plugin directory
             delete(new File(args[0] + "plugin"));
 
-            //create empty plugin directory
+            // create empty plugin directory
             new File(args[0] + "plugin").mkdir();
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -109,17 +107,17 @@ public class PluginTest {
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         } finally {
-            //copy temp/plugin directory to plugin directory
+            // copy temp/plugin directory to plugin directory
             copyDirectoryToDirectory(new File(args[0] + "temp/plugin"), new File(args[0] + "plugin"));
 
-            //delete temp/plugin directory
+            // delete temp/plugin directory
             delete(new File(args[0] + "temp/plugin"));
         }
     }
 
     @Test
     public void doesNotContainPluginTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         String versionFilePath = args[0] + "version.yaml";
@@ -130,10 +128,10 @@ public class PluginTest {
         try {
             if (!versionFile.getPluginName().equals("sqlite")) {
 
-                //copy storage plugin file to temp
+                // copy storage plugin file to temp
                 copyFile(new File(args[0] + "plugin/" + pluginName), new File(args[0] + "temp/"));
 
-                //delete storage plugin
+                // delete storage plugin
                 delete(new File(args[0] + "plugin/" + pluginName));
             }
 
@@ -141,16 +139,15 @@ public class PluginTest {
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED);
             assertNotNull(e);
 
-
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         } finally {
             if (!versionFile.getPluginName().equals("sqlite")) {
-                //copy storage plugin in temp to plugin directory
+                // copy storage plugin in temp to plugin directory
                 copyFile(new File(args[0] + "temp/" + pluginName), new File(args[0] + "plugin/"));
 
-                //delete storage plugin from temp
+                // delete storage plugin from temp
                 delete(new File(args[0] + "temp/" + pluginName));
             }
 
@@ -173,8 +170,7 @@ public class PluginTest {
         if (!mainDestination.exists()) {
             mainDestination.mkdirs();
         }
-        Path to = Paths.get(mainDestination.getAbsolutePath() +
-                File.separatorChar + toCopy.getName());
+        Path to = Paths.get(mainDestination.getAbsolutePath() + File.separatorChar + toCopy.getName());
 
         Files.copy(toCopy.toPath(), to, StandardCopyOption.REPLACE_EXISTING);
     }

@@ -74,8 +74,8 @@ public class SessionAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         try {
-            SessionInformationHolder sessionInfo = Session
-                    .createNewSession(main, userId, userDataInJWT, userDataInDatabase, enableAntiCsrf);
+            SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
+                    userDataInDatabase, enableAntiCsrf);
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
 
@@ -93,9 +93,9 @@ public class SessionAPI extends WebserverAPI {
             }
 
             super.sendJsonResponse(200, result, resp);
-        } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException |
-                StorageTransactionLogicException | SignatureException | IllegalBlockSizeException |
-                BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
+        } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException
+                | StorageTransactionLogicException | SignatureException | IllegalBlockSizeException
+                | BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
             throw new ServletException(e);
         }
     }

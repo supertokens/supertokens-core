@@ -86,8 +86,7 @@ public class Telemetry extends CronTask {
         // we call the API only if we are not testing the core, of if the request can be mocked (in case a test wants
         // to use this)
         if (!Main.isTesting || HttpRequestMocking.getInstance(main).getMockURL(REQUEST_ID, url) != null) {
-            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url,
-                    json, 10000, 10000, 0);
+            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 0);
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENT_TELEMETRY, null);
         }
     }

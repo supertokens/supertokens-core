@@ -25,8 +25,8 @@ import io.supertokens.storageLayer.StorageLayer;
 
 public class DeleteExpiredEmailVerificationTokens extends CronTask {
 
-    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens" +
-            ".DeleteExpiredEmailVerificationTokens";
+    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens"
+            + ".DeleteExpiredEmailVerificationTokens";
 
     private DeleteExpiredEmailVerificationTokens(Main main) {
         super("RemoveOldEmailVerificationTokens", main);
@@ -35,8 +35,8 @@ public class DeleteExpiredEmailVerificationTokens extends CronTask {
     public static DeleteExpiredEmailVerificationTokens getInstance(Main main) {
         ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
         if (instance == null) {
-            instance = main.getResourceDistributor()
-                    .setResource(RESOURCE_KEY, new DeleteExpiredEmailVerificationTokens(main));
+            instance = main.getResourceDistributor().setResource(RESOURCE_KEY,
+                    new DeleteExpiredEmailVerificationTokens(main));
         }
         return (DeleteExpiredEmailVerificationTokens) instance;
     }
@@ -46,8 +46,7 @@ public class DeleteExpiredEmailVerificationTokens extends CronTask {
         if (StorageLayer.getStorage(this.main).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        StorageLayer.getEmailVerificationStorage(this.main)
-                .deleteExpiredEmailVerificationTokens();
+        StorageLayer.getEmailVerificationStorage(this.main).deleteExpiredEmailVerificationTokens();
     }
 
     @Override

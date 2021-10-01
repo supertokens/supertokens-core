@@ -45,8 +45,8 @@ public class UsersCountAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        String[] recipeIds = InputParser
-                .getCommaSeparatedStringArrayQueryParamOrThrowError(req, "includeRecipeIds", true);
+        String[] recipeIds = InputParser.getCommaSeparatedStringArrayQueryParamOrThrowError(req, "includeRecipeIds",
+                true);
 
         Stream.Builder<RECIPE_ID> recipeIdsEnumBuilder = Stream.<RECIPE_ID>builder();
 
@@ -61,8 +61,7 @@ public class UsersCountAPI extends WebserverAPI {
         }
 
         try {
-            long count = AuthRecipe.getUsersCount(super.main,
-                    recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
+            long count = AuthRecipe.getUsersCount(super.main, recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("count", count);

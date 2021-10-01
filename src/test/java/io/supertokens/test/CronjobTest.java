@@ -37,20 +37,17 @@ public class CronjobTest {
 
     static class QuitProgramExceptionCronjob extends CronTask {
 
-        private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest" +
-                ".QuitProgramExceptionCronjob";
+        private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest" + ".QuitProgramExceptionCronjob";
 
         private QuitProgramExceptionCronjob(Main main) {
             super("QuitProgramExceptionCronjob", main);
         }
 
         public static QuitProgramExceptionCronjob getInstance(Main main) {
-            ResourceDistributor.SingletonResource instance = main.getResourceDistributor()
-                    .getResource(RESOURCE_ID);
+            ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_ID);
             if (instance == null) {
-                instance = main.getResourceDistributor()
-                        .setResource(RESOURCE_ID,
-                                new QuitProgramExceptionCronjob(main));
+                instance = main.getResourceDistributor().setResource(RESOURCE_ID,
+                        new QuitProgramExceptionCronjob(main));
             }
             return (QuitProgramExceptionCronjob) instance;
         }
@@ -72,7 +69,6 @@ public class CronjobTest {
         }
     }
 
-
     static class ErrorCronjob extends CronTask {
 
         private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest.ErrorCronjob";
@@ -82,12 +78,9 @@ public class CronjobTest {
         }
 
         public static ErrorCronjob getInstance(Main main) {
-            ResourceDistributor.SingletonResource instance = main.getResourceDistributor()
-                    .getResource(RESOURCE_ID);
+            ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_ID);
             if (instance == null) {
-                instance = main.getResourceDistributor()
-                        .setResource(RESOURCE_ID,
-                                new ErrorCronjob(main));
+                instance = main.getResourceDistributor().setResource(RESOURCE_ID, new ErrorCronjob(main));
             }
             return (ErrorCronjob) instance;
         }
@@ -110,7 +103,6 @@ public class CronjobTest {
         }
     }
 
-
     static class NormalCronjob extends CronTask {
 
         private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest.NormalCronjob";
@@ -120,12 +112,9 @@ public class CronjobTest {
         }
 
         public static NormalCronjob getInstance(Main main) {
-            ResourceDistributor.SingletonResource instance = main.getResourceDistributor()
-                    .getResource(RESOURCE_ID);
+            ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_ID);
             if (instance == null) {
-                instance = main.getResourceDistributor()
-                        .setResource(RESOURCE_ID,
-                                new NormalCronjob(main));
+                instance = main.getResourceDistributor().setResource(RESOURCE_ID, new NormalCronjob(main));
             }
             return (NormalCronjob) instance;
         }
@@ -159,10 +148,9 @@ public class CronjobTest {
         Utils.reset();
     }
 
-
     @Test
     public void testThatCronjobThrowsQuitProgramExceptionAndQuits() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
 
@@ -177,7 +165,7 @@ public class CronjobTest {
 
     @Test
     public void testThatCronjobThrowsError() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
@@ -202,7 +190,7 @@ public class CronjobTest {
 
     @Test
     public void testNormalCronjob() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -218,6 +206,4 @@ public class CronjobTest {
 
     }
 
-
 }
-

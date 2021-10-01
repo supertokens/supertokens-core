@@ -16,6 +16,6 @@
 
 package io.supertokens.jwt.exceptions;
 
-public class UnsupportedJWTSigningAlgorithmException extends Exception{
+public class UnsupportedJWTSigningAlgorithmException extends Exception {
     private static final long serialVersionUID = -125421711462473812L;
 }

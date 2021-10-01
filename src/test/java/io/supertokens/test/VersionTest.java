@@ -49,7 +49,7 @@ public class VersionTest {
 
     @Test
     public void simpleLoadingOfVersionTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -59,14 +59,13 @@ public class VersionTest {
         VersionFile versionFile = mapper.readValue(new File(versionFilePath), VersionFile.class);
         VersionFile versionFileProcess = Version.getVersion(process.getProcess());
 
-        assertTrue(versionFile.getCoreVersion().equals(versionFileProcess.getCoreVersion()) &&
-                versionFile.getPluginInterfaceVersion().equals(versionFileProcess.getPluginInterfaceVersion()) &&
-                versionFile.getPluginName().equals(versionFileProcess.getPluginName()) &&
-                versionFile.getPluginVersion().equals(versionFileProcess.getPluginVersion()));
+        assertTrue(versionFile.getCoreVersion().equals(versionFileProcess.getCoreVersion())
+                && versionFile.getPluginInterfaceVersion().equals(versionFileProcess.getPluginInterfaceVersion())
+                && versionFile.getPluginName().equals(versionFileProcess.getPluginName())
+                && versionFile.getPluginVersion().equals(versionFileProcess.getPluginVersion()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
 
     }
 
@@ -86,7 +85,7 @@ public class VersionTest {
             process1 = pb.start();
             process1.waitFor();
 
-            String[] args = {"../"};
+            String[] args = { "../" };
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
 
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);

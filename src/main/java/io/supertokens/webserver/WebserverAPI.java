@@ -108,12 +108,10 @@ public abstract class WebserverAPI extends HttpServlet {
 
     private void assertThatVersionIsCompatible(String version) throws ServletException {
         if (version == null) {
-            throw new ServletException(new BadRequestException(
-                    "cdi-version not provided"));
+            throw new ServletException(new BadRequestException("cdi-version not provided"));
         }
         if (!supportedVersions.contains(version)) {
-            throw new ServletException(new BadRequestException(
-                    "cdi-version " + version + " not supported"));
+            throw new ServletException(new BadRequestException("cdi-version " + version + " not supported"));
         }
     }
 
@@ -152,16 +150,13 @@ public abstract class WebserverAPI extends HttpServlet {
                 String version = getVersionFromRequest(req);
                 assertThatVersionIsCompatible(version);
                 Logging.debug(main,
-                        "API called: " + this.getPath() + ". Method: " + req.getMethod() + ". Version: " +
-                                version);
+                        "API called: " + this.getPath() + ". Method: " + req.getMethod() + ". Version: " + version);
             } else {
-                Logging.debug(main,
-                        "API called: " + this.getPath() + ". Method: " + req.getMethod());
+                Logging.debug(main, "API called: " + this.getPath() + ". Method: " + req.getMethod());
             }
             super.service(req, resp);
         } catch (Exception e) {
-            Logging.error(main, "API threw an exception: " + this.getPath(),
-                    Main.isTesting, e);
+            Logging.error(main, "API threw an exception: " + this.getPath(), Main.isTesting, e);
 
             if (e instanceof QuitProgramException) {
                 main.wakeUpMainThreadToShutdown();
@@ -210,6 +205,5 @@ public abstract class WebserverAPI extends HttpServlet {
             super();
         }
     }
-
 
 }

@@ -70,8 +70,8 @@ public class SessionRegenerateAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException |
-                NoSuchAlgorithmException | InvalidKeyException | SignatureException | InvalidKeySpecException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
+                | InvalidKeyException | SignatureException | InvalidKeySpecException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));

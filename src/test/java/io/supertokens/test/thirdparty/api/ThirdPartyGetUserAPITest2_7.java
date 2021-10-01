@@ -61,7 +61,7 @@ public class ThirdPartyGetUserAPITest2_7 {
     @Test
     public void testBadInput() throws Exception {
 
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -72,17 +72,13 @@ public class ThirdPartyGetUserAPITest2_7 {
 
         {
             try {
-                HttpRequestForTesting
-                        .sendGETRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user", new HashMap<>(), 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user",
+                        new HashMap<>(), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Please provide one of userId or " +
-                                        "(thirdPartyId & thirdPartyUserId)"));
+                assertTrue(e.statusCode == 400 && e.getMessage()
+                        .equals("Http error. Status Code: 400. Message: Please provide one of userId or "
+                                + "(thirdPartyId & thirdPartyUserId)"));
             }
         }
 
@@ -91,17 +87,13 @@ public class ThirdPartyGetUserAPITest2_7 {
             HashMap<String, String> QueryParams = new HashMap<>();
             QueryParams.put("thirdPartyId", "testThirdPartId");
             try {
-                HttpRequestForTesting
-                        .sendGETRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user", QueryParams, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user",
+                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Please provide one of userId or " +
-                                        "(thirdPartyId & thirdPartyUserId)"));
+                assertTrue(e.statusCode == 400 && e.getMessage()
+                        .equals("Http error. Status Code: 400. Message: Please provide one of userId or "
+                                + "(thirdPartyId & thirdPartyUserId)"));
             }
         }
 
@@ -110,27 +102,23 @@ public class ThirdPartyGetUserAPITest2_7 {
             HashMap<String, String> QueryParams = new HashMap<>();
             QueryParams.put("thirdPartyUserId", "testThirdPartyUserId");
             try {
-                HttpRequestForTesting
-                        .sendGETRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user", QueryParams, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user",
+                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Please provide one of userId or " +
-                                        "(thirdPartyId & thirdPartyUserId)"));
+                assertTrue(e.statusCode == 400 && e.getMessage()
+                        .equals("Http error. Status Code: 400. Message: Please provide one of userId or "
+                                + "(thirdPartyId & thirdPartyUserId)"));
             }
         }
     }
 
     // Check good input works
-    //Failure condition: incorrect query params/returned userInfo does not match
+    // Failure condition: incorrect query params/returned userInfo does not match
     @Test
     public void testGoodInput() throws Exception {
 
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -144,19 +132,17 @@ public class ThirdPartyGetUserAPITest2_7 {
         String thirdPartyId = "testThirdPartyId";
         String thirdPartyUserId = "testThirdPartyUserID";
 
-        ThirdParty.SignInUpResponse signUpResponse = ThirdParty
-                .signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId, email);
+        ThirdParty.SignInUpResponse signUpResponse = ThirdParty.signInUp(process.getProcess(), thirdPartyId,
+                thirdPartyUserId, email);
 
         // query with userId
         {
             HashMap<String, String> QueryParams = new HashMap<>();
             QueryParams.put("userId", signUpResponse.user.id);
 
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user", QueryParams, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", QueryParams, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals("OK", response.get("status").getAsString());
 
             JsonObject userInfo = response.get("user").getAsJsonObject();
@@ -169,11 +155,9 @@ public class ThirdPartyGetUserAPITest2_7 {
             QueryParams.put("thirdPartyId", thirdPartyId);
             QueryParams.put("thirdPartyUserId", thirdPartyUserId);
 
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user", QueryParams, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", QueryParams, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals("OK", response.get("status").getAsString());
 
             JsonObject userInfo = response.get("user").getAsJsonObject();
@@ -187,7 +171,7 @@ public class ThirdPartyGetUserAPITest2_7 {
     @Test
     public void testAllTypesOfOutput() throws Exception {
 
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -196,16 +180,14 @@ public class ThirdPartyGetUserAPITest2_7 {
             return;
         }
 
-        // query with  unknown userId
+        // query with unknown userId
         {
             HashMap<String, String> QueryParams = new HashMap<>();
             QueryParams.put("userId", "randomUserId");
 
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user", QueryParams, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", QueryParams, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals("UNKNOWN_USER_ID_ERROR", response.get("status").getAsString());
         }
 
@@ -215,11 +197,9 @@ public class ThirdPartyGetUserAPITest2_7 {
             QueryParams.put("thirdPartyId", "randomThirdPartyId");
             QueryParams.put("thirdPartyUserId", "randomThirdPartyUserId");
 
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user", QueryParams, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", QueryParams, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals("UNKNOWN_THIRD_PARTY_USER_ERROR", response.get("status").getAsString());
         }
     }

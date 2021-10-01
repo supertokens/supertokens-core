@@ -50,9 +50,9 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                 // Do nothing, when a call to /recipe/jwt POST is made the core will attempt to create a new key
             } catch (UnsupportedJWTSigningAlgorithmException e) {
                 /*
-                    In this case UnsupportedJWTSigningAlgorithmException should never be thrown because we use
-                    the enum to iterate all the supported algorithm values. If this does get thrown this should be
-                    considered a failure.
+                 * In this case UnsupportedJWTSigningAlgorithmException should never be thrown because we use
+                 * the enum to iterate all the supported algorithm values. If this does get thrown this should be
+                 * considered a failure.
                  */
                 throw new QuitProgramException("Trying to create signing key for unsupported JWT signing algorithm");
             }
@@ -94,12 +94,11 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
      * Used to get all signing keys (symmetric or asymmetric) from storage
      *
      * @return List of {@link JWTSigningKeyInfo}. Asymmetric keys use {@link JWTAsymmetricSigningKeyInfo} and
-     * symmetric keys use {@link JWTSymmetricSigningKeyInfo}
+     *         symmetric keys use {@link JWTSymmetricSigningKeyInfo}
      * @throws StorageQueryException            If there is an error interacting with the database
      * @throws StorageTransactionLogicException If there is an error interacting with the database
      */
-    public List<JWTSigningKeyInfo> getAllSigningKeys()
-            throws StorageQueryException, StorageTransactionLogicException {
+    public List<JWTSigningKeyInfo> getAllSigningKeys() throws StorageQueryException, StorageTransactionLogicException {
         JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
@@ -127,7 +126,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
      * @param algorithm The signing algorithm
      * @return {@link JWTSigningKeyInfo} key
      * @throws UnsupportedJWTSigningAlgorithmException If there is an error in the provided algorithm when
-     * getting/generating keys
+     *                                                 getting/generating keys
      * @throws StorageQueryException                   If there is an error interacting with the database
      * @throws StorageTransactionLogicException        If there is an error interacting with the database
      */
@@ -202,8 +201,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                     while (true) {
                         try {
                             keyInfo = generateKeyForAlgorithm(algorithm);
-                            boolean success = noSQLStorage.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(
-                                    keyInfo);
+                            boolean success = noSQLStorage
+                                    .setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(keyInfo);
 
                             if (!success) {
                                 continue;
@@ -225,14 +224,13 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         throw new QuitProgramException("Unsupported storage type detected");
     }
 
-    private JWTSigningKeyInfo generateKeyForAlgorithm(SupportedAlgorithms algorithm) throws NoSuchAlgorithmException,
-            UnsupportedJWTSigningAlgorithmException {
+    private JWTSigningKeyInfo generateKeyForAlgorithm(SupportedAlgorithms algorithm)
+            throws NoSuchAlgorithmException, UnsupportedJWTSigningAlgorithmException {
         if (algorithm.getAlgorithmType().equalsIgnoreCase("rsa")) {
             long currentTimeInMillis = System.currentTimeMillis();
             Utils.PubPriKey newKey = Utils.generateNewPubPriKey();
             return new JWTAsymmetricSigningKeyInfo(Utils.getUUID(), currentTimeInMillis, algorithm.name(),
-                    newKey.publicKey,
-                    newKey.privateKey);
+                    newKey.publicKey, newKey.privateKey);
         }
 
         throw new IllegalArgumentException();

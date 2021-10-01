@@ -59,8 +59,8 @@ public class RefreshSessionAPI extends WebserverAPI {
         assert refreshToken != null;
 
         try {
-            SessionInformationHolder sessionInfo = Session
-                    .refreshSession(main, refreshToken, antiCsrfToken, enableAntiCsrf);
+            SessionInformationHolder sessionInfo = Session.refreshSession(main, refreshToken, antiCsrfToken,
+                    enableAntiCsrf);
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);

@@ -78,7 +78,7 @@ public class WebserverTest extends Mockito {
     // * properly (for all HTTP methods).
     @Test
     public void testInitializeTwoRoutesAndCheckRouting() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -90,35 +90,27 @@ public class WebserverTest extends Mockito {
         // Responses when no recipe is given
         {
             // get request
-            String response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/testRecipe", new HashMap<>(), 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "");
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/testRecipe", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "");
             assertEquals("get request from Recipe1", response);
 
             // post request
-            response = HttpRequestForTesting
-                    .sendJsonPOSTRequest(process.getProcess(), "",
-                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "");
+            response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "");
             assertEquals("post request from Recipe1", response);
 
             // put request
-            response = HttpRequestForTesting
-                    .sendJsonPUTRequest(process.getProcess(), "",
-                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "");
+            response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "");
             assertEquals("put request from Recipe1", response);
 
             // delete request
-            response = HttpRequestForTesting
-                    .sendJsonDELETERequest(process.getProcess(), "",
-                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "");
+            response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
+                    "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "");
             assertEquals("delete request from Recipe1", response);
 
         }
@@ -126,67 +118,51 @@ public class WebserverTest extends Mockito {
         // Responses from recipe 1
         {
             // get request
-            String response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/testRecipe", new HashMap<>(), 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), recipe_1);
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/testRecipe", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), recipe_1);
             assertEquals("get request from Recipe1", response);
 
             // post request
-            response = HttpRequestForTesting
-                    .sendJsonPOSTRequest(process.getProcess(), "",
-                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), recipe_1);
+            response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), recipe_1);
             assertEquals("post request from Recipe1", response);
 
             // put request
-            response = HttpRequestForTesting
-                    .sendJsonPUTRequest(process.getProcess(), "",
-                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), recipe_1);
+            response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), recipe_1);
             assertEquals("put request from Recipe1", response);
 
             // delete request
-            response = HttpRequestForTesting
-                    .sendJsonDELETERequest(process.getProcess(), "",
-                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), recipe_1);
+            response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
+                    "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), recipe_1);
             assertEquals("delete request from Recipe1", response);
 
         }
 
         // recipe2 requests
         {
-            String response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/testRecipe", new HashMap<>(), 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), recipe_2);
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/testRecipe", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), recipe_2);
             assertEquals("get request from Recipe2", response);
 
-            response = HttpRequestForTesting
-                    .sendJsonPOSTRequest(process.getProcess(), "",
-                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), recipe_2);
+            response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), recipe_2);
             assertEquals("post request from Recipe2", response);
 
-            response = HttpRequestForTesting
-                    .sendJsonPUTRequest(process.getProcess(), "",
-                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), recipe_2);
+            response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), recipe_2);
             assertEquals("put request from Recipe2", response);
 
-            response = HttpRequestForTesting
-                    .sendJsonDELETERequest(process.getProcess(), "",
-                            "http://localhost:3567/testRecipe", new JsonObject(), 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), recipe_2);
+            response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
+                    "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), recipe_2);
             assertEquals("delete request from Recipe2", response);
         }
 
@@ -194,10 +170,10 @@ public class WebserverTest extends Mockito {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //Use RecipeRouter in a way that the sub routes have different paths. This should throw an error
+    // Use RecipeRouter in a way that the sub routes have different paths. This should throw an error
     @Test
     public void testRecipeRouterWhereSubRoutesHaveDifferentPaths() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -234,7 +210,7 @@ public class WebserverTest extends Mockito {
 // * - Give no version and makes sure it treats it as 1.0
     @Test
     public void testVersionSupport() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -261,17 +237,15 @@ public class WebserverTest extends Mockito {
         Object[] supportedVersions = WebserverAPI.supportedVersions.toArray();
         for (int i = 0; i < supportedVersions.length; i++) {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/testSupportedVersions", null, 1000,
-                    1000, null, supportedVersions[i]
-                            .toString(), "");
+                    "http://localhost:3567/testSupportedVersions", null, 1000, 1000, null,
+                    supportedVersions[i].toString(), "");
             assertEquals(response, "version supported");
         }
 
         String unsupportedCdiVersion = "234243";
         try {
-            HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/testSupportedVersions", null, 1000,
-                            1000, null, unsupportedCdiVersion, "");
+            HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/testSupportedVersions", null, 1000, 1000, null, unsupportedCdiVersion, "");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(e.getMessage(),
@@ -283,7 +257,7 @@ public class WebserverTest extends Mockito {
     // * - Give no version and makes sure it treats it as the latest
     @Test
     public void testNoVersionGiven() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -303,15 +277,14 @@ public class WebserverTest extends Mockito {
             }
         });
 
-        String response = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/defaultVersion", null, 1000, 1000,
-                        null, null, "");
+        String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/defaultVersion", null, 1000, 1000, null, null, "");
         assertEquals(response, Utils.getCdiVersionLatestForTests());
     }
 
     @Test
     public void testInvalidJSONBadInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -334,9 +307,8 @@ public class WebserverTest extends Mockito {
         });
 
         try {
-            HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/testJsonInput", null, 1000,
-                            1000, null);
+            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/testJsonInput", null, 1000,
+                    1000, null);
             fail();
         } catch (HttpResponseException e) {
             assertEquals("Http error. Status Code: 400. Message: Invalid Json Input", e.getMessage());
@@ -349,7 +321,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void testValidJsonInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -371,9 +343,8 @@ public class WebserverTest extends Mockito {
 
         });
 
-        String response = HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/validJsonInput", new JsonObject(),
-                        1000, 1000, null);
+        String response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/validJsonInput", new JsonObject(), 1000, 1000, null);
         assertEquals(response, "validJsonBody");
 
         process.kill();
@@ -383,7 +354,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void testInvalidGetInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -403,15 +374,12 @@ public class WebserverTest extends Mockito {
                 sendTextResponse(200, "validGetInput", resp);
             }
 
-
         });
 
         // null in parameter field
         try {
-            HttpRequest
-                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/invalidGetInput", null, 1000,
-                            1000,
-                            null);
+            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/invalidGetInput", null, 1000,
+                    1000, null);
             fail();
         } catch (HttpResponseException e) {
             assertEquals(e.getMessage(),
@@ -419,22 +387,19 @@ public class WebserverTest extends Mockito {
             assertEquals(e.statusCode, 400);
         }
 
-        //typo in params field/missing field
+        // typo in params field/missing field
         HashMap<String, String> map = new HashMap<>();
         map.put("keyy", "value");
 
         try {
-            HttpRequest
-                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/invalidGetInput", map, 1000,
-                            1000,
-                            null);
+            HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/invalidGetInput", map, 1000,
+                    1000, null);
             fail();
         } catch (HttpResponseException e) {
             assertEquals(e.statusCode, 400);
             assertEquals(e.getMessage(),
                     "Http error. Status Code: 400. Message: Field name 'key' is missing in GET request");
         }
-
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -442,7 +407,7 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void testValidGetInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -464,28 +429,24 @@ public class WebserverTest extends Mockito {
         });
         HashMap<String, String> map = new HashMap<>();
         map.put("key", "value");
-        String response = HttpRequest
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/validInput", map, 1000, 1000,
-                        null);
+        String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/validInput", map,
+                1000, 1000, null);
         assertEquals(response, "validGetInput");
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
-
     @Test
-    public void serverHello()
-            throws InterruptedException, IOException, HttpResponseException {
+    public void serverHello() throws InterruptedException, IOException, HttpResponseException {
         hello("localhost", "3567");
     }
 
     @Test
-    public void serverHelloWithoutDB()
-            throws Exception {
+    public void serverHelloWithoutDB() throws Exception {
         String hostName = "localhost";
         String port = "3567";
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -493,23 +454,23 @@ public class WebserverTest extends Mockito {
         try {
 
             try {
-                HttpRequest.sendGETRequest(process.getProcess(), "",
-                        "http://" + hostName + ":" + port + "/hello", null, 1000, 1000, null);
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://" + hostName + ":" + port + "/hello", null,
+                        1000, 1000, null);
                 throw new Exception("fail");
             } catch (HttpResponseException ex) {
                 assert (ex.statusCode == 500);
             }
 
             try {
-                HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://" + hostName + ":" + port + "/hello", null, 1000, 1000, null);
+                HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://" + hostName + ":" + port + "/hello",
+                        null, 1000, 1000, null);
             } catch (HttpResponseException ex) {
                 assert (ex.statusCode == 500);
             }
 
             try {
-                HttpRequest.sendJsonPUTRequest(process.getProcess(), "",
-                        "http://" + hostName + ":" + port + "/hello", null, 1000, 1000, null);
+                HttpRequest.sendJsonPUTRequest(process.getProcess(), "", "http://" + hostName + ":" + port + "/hello",
+                        null, 1000, 1000, null);
             } catch (HttpResponseException ex) {
                 assert (ex.statusCode == 500);
             }
@@ -527,9 +488,8 @@ public class WebserverTest extends Mockito {
         }
     }
 
-    private void hello(String hostName, String port)
-            throws InterruptedException, IOException, HttpResponseException {
-        String[] args = {"../"};
+    private void hello(String hostName, String port) throws InterruptedException, IOException, HttpResponseException {
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
         try {
@@ -557,9 +517,8 @@ public class WebserverTest extends Mockito {
     }
 
     @Test
-    public void serverQuitProgramException()
-            throws InterruptedException, IOException {
-        String[] args = {"../"};
+    public void serverQuitProgramException() throws InterruptedException, IOException {
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -591,19 +550,19 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void samePortTwoServersError() throws InterruptedException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         TestingProcess process2 = TestingProcessManager.start(args);
         EventAndException e = process2.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertTrue(e != null && e.exception instanceof QuitProgramException && e.exception.getMessage().equals(
-                "Error while starting webserver. Possible reasons:\n- Another instance of SuperTokens is already " +
-                        "running on the same port. If you want to run another instance, please pass a new config " +
-                        "file to it with a different port or specify the port via CLI options. \n- If you are " +
-                        "running this on port 80 or 443, make " +
-                        "sure to give the right permission to SuperTokens.\n- The provided host is not available" +
-                        " on this server"));
+                "Error while starting webserver. Possible reasons:\n- Another instance of SuperTokens is already "
+                        + "running on the same port. If you want to run another instance, please pass a new config "
+                        + "file to it with a different port or specify the port via CLI options. \n- If you are "
+                        + "running this on port 80 or 443, make "
+                        + "sure to give the right permission to SuperTokens.\n- The provided host is not available"
+                        + " on this server"));
 
         assertNotNull(process2.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
 
@@ -614,8 +573,7 @@ public class WebserverTest extends Mockito {
     }
 
     @Test
-    public void differentHostNameTest() throws InterruptedException,
-            IOException, HttpResponseException {
+    public void differentHostNameTest() throws InterruptedException, IOException, HttpResponseException {
 
         InetAddress inetAddress = InetAddress.getLocalHost();
         if (!inetAddress.getHostAddress().equals("127.0.0.1")) {
@@ -669,23 +627,22 @@ public class WebserverTest extends Mockito {
         Utils.reset();
 
         Utils.setValueInConfig("host", "\"182.168.29.69\"");
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertTrue(e != null && e.exception instanceof QuitProgramException && e.exception.getMessage().equals(
-                "Error while starting webserver. Possible reasons:\n- Another instance of SuperTokens is already " +
-                        "running on the same port. If you want to run another instance, please pass a new config " +
-                        "file to it with a different port or specify the port via CLI options. \n- If you are " +
-                        "running this on port 80 or 443, make " +
-                        "sure to give the right permission to SuperTokens.\n- The provided host is not available" +
-                        " on this server"));
+                "Error while starting webserver. Possible reasons:\n- Another instance of SuperTokens is already "
+                        + "running on the same port. If you want to run another instance, please pass a new config "
+                        + "file to it with a different port or specify the port via CLI options. \n- If you are "
+                        + "running this on port 80 or 443, make "
+                        + "sure to give the right permission to SuperTokens.\n- The provided host is not available"
+                        + " on this server"));
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
     @Test
-    public void differentPorts() throws InterruptedException,
-            IOException, HttpResponseException {
+    public void differentPorts() throws InterruptedException, IOException, HttpResponseException {
         Utils.setValueInConfig("port", "8081");
         hello("localhost", "8081");
         try {
@@ -696,11 +653,10 @@ public class WebserverTest extends Mockito {
     }
 
     @Test
-    public void serverThreadPoolSizeOne() throws InterruptedException,
-            IOException {
+    public void serverThreadPoolSizeOne() throws InterruptedException, IOException {
         Utils.setValueInConfig("max_server_pool_size", "1");
 
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -744,11 +700,10 @@ public class WebserverTest extends Mockito {
     }
 
     @Test
-    public void serverThreadPoolSizeTwo() throws InterruptedException,
-            IOException {
+    public void serverThreadPoolSizeTwo() throws InterruptedException, IOException {
         Utils.setValueInConfig("max_server_pool_size", "2");
 
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -791,9 +746,8 @@ public class WebserverTest extends Mockito {
     }
 
     @Test
-    public void notFoundTest()
-            throws InterruptedException, IOException {
-        String[] args = {"../"};
+    public void notFoundTest() throws InterruptedException, IOException {
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -855,14 +809,12 @@ public class WebserverTest extends Mockito {
             }
 
             @Override
-            protected void doPut(HttpServletRequest req, HttpServletResponse resp)
-                    throws IOException {
+            protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                 sendTextResponse(200, "put request from Recipe1", resp);
             }
 
             @Override
-            protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
-                    throws IOException {
+            protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                 sendTextResponse(200, "delete request from Recipe1", resp);
             }
 
@@ -890,14 +842,12 @@ public class WebserverTest extends Mockito {
             }
 
             @Override
-            protected void doPut(HttpServletRequest req, HttpServletResponse resp)
-                    throws IOException {
+            protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                 sendTextResponse(200, "put request from Recipe2", resp);
             }
 
             @Override
-            protected void doDelete(HttpServletRequest req, HttpServletResponse resp)
-                    throws IOException {
+            protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                 sendTextResponse(200, "delete request from Recipe2", resp);
             }
         };

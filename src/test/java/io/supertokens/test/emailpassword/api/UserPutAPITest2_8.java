@@ -58,11 +58,9 @@ public class UserPutAPITest2_8 {
             body.addProperty("userId", "someUserId");
             body.addProperty("email", "someemail@gmail.com");
 
-            JsonObject response = HttpRequestForTesting
-                    .sendJsonPUTRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user", body, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_PASSWORD.toString());
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(),
+                    RECIPE_ID.EMAIL_PASSWORD.toString());
 
             assertEquals("UNKNOWN_USER_ID_ERROR", response.get("status").getAsString());
             assertEquals(1, response.entrySet().size());
@@ -79,16 +77,13 @@ public class UserPutAPITest2_8 {
             UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
             UserInfo user2 = EmailPassword.signUp(process.getProcess(), "someemail2@gmail.com", "somePass");
 
-
             JsonObject body = new JsonObject();
             body.addProperty("userId", user.id);
             body.addProperty("email", user2.email);
 
-            JsonObject response = HttpRequestForTesting
-                    .sendJsonPUTRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user", body, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_PASSWORD.toString());
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(),
+                    RECIPE_ID.EMAIL_PASSWORD.toString());
 
             assertEquals("EMAIL_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
             assertEquals(1, response.entrySet().size());
@@ -106,11 +101,8 @@ public class UserPutAPITest2_8 {
             body.addProperty("userId", "someUserId");
 
             try {
-                HttpRequestForTesting
-                        .sendJsonPUTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user", body, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_PASSWORD.toString());
+                HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/user",
+                        body, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_PASSWORD.toString());
 
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertEquals(400, e.statusCode);
@@ -133,11 +125,9 @@ public class UserPutAPITest2_8 {
             body.addProperty("userId", user.id);
             body.addProperty("email", "someOtherEmail@gmail.com");
 
-            JsonObject response = HttpRequestForTesting
-                    .sendJsonPUTRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user", body, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_PASSWORD.toString());
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(),
+                    RECIPE_ID.EMAIL_PASSWORD.toString());
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(1, response.entrySet().size());

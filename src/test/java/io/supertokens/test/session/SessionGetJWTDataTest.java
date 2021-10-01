@@ -45,73 +45,72 @@ public class SessionGetJWTDataTest {
         Utils.reset();
     }
 
-    //*- create session with some JWT payload -> verify to see payload is proper -> change JWT payload using session
-    //* handle -> check this is reflected
+    // *- create session with some JWT payload -> verify to see payload is proper -> change JWT payload using session
+    // * handle -> check this is reflected
     @Test
     public void testVerifyJWTPayloadChangePayloadUsingSessionHandle() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //createSession with JWT payload
+        // createSession with JWT payload
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 
-
-        SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase, false);
 
         // verify to see payload is proper
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
 
-
-        //change JWT payload using session handle
+        // change JWT payload using session handle
         JsonObject newUserDataInJwt = new JsonObject();
         newUserDataInJwt.addProperty("key", "value2");
         Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJwt, null);
 
-        //check that this change is reflected
+        // check that this change is reflected
 
-        assertEquals(Session.getSession(process.getProcess(), sessionInfo.session.handle).userDataInJWT, newUserDataInJwt);
+        assertEquals(Session.getSession(process.getProcess(), sessionInfo.session.handle).userDataInJWT,
+                newUserDataInJwt);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // *  - create session with some JWT payload -> verify to see payload is proper -> change JWT payload to be empty
+    // * - create session with some JWT payload -> verify to see payload is proper -> change JWT payload to be empty
     // using
-    // *  session handle -> check this is reflected
+    // * session handle -> check this is reflected
     @Test
     public void testVerifyJWTPayloadChangeToEmptyPayloadUsingSessionHandle() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //createSession with JWT payload
+        // createSession with JWT payload
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 
-
-        SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase, false);
 
         // verify to see payload is proper
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
 
-        //change JWT payload to be empty using session handle
+        // change JWT payload to be empty using session handle
         JsonObject emptyUserDataInJwt = new JsonObject();
         Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, emptyUserDataInJwt, null);
 
-        //check this is reflected
-        assertEquals(Session.getSession(process.getProcess(), sessionInfo.session.handle).userDataInJWT, emptyUserDataInJwt);
+        // check this is reflected
+        assertEquals(Session.getSession(process.getProcess(), sessionInfo.session.handle).userDataInJWT,
+                emptyUserDataInJwt);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -119,32 +118,31 @@ public class SessionGetJWTDataTest {
 
     // * - create session with some JWT payload -> verify to see payload is proper -> pass null to
     // changeJWTPayloadInDatabase
-    // *  function -> check that JWT payload has not changed is reflected
+    // * function -> check that JWT payload has not changed is reflected
     @Test
     public void testVerifyJWTPayloadSetPayloadToNullUsingSessionHandle() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //createSession with JWT payload
+        // createSession with JWT payload
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 
-
-        SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase, false);
 
         // verify to see payload is proper
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
 
-        //change JWT payload to be null
+        // change JWT payload to be null
         Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase, null, null);
 
-        //check that jwtData does not change
+        // check that jwtData does not change
         assertEquals(Session.getSession(process.getProcess(), sessionInfo.session.handle).userDataInJWT, userDataInJWT);
 
         process.kill();
@@ -155,23 +153,22 @@ public class SessionGetJWTDataTest {
     @Test
     public void testExpireSessionCallGetAndCheckUnauthorised() throws Exception {
 
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         Utils.setValueInConfig("refresh_token_validity", "" + 1.0 / 60);// 1 second validity (value in mins)
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //createSession with JWT payload
+        // createSession with JWT payload
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 
-
-        SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase, false);
 
         // Let it expire
         Thread.sleep(2000);
@@ -192,27 +189,26 @@ public class SessionGetJWTDataTest {
     @Test
     public void testRevokedSessionCallGetAndCheckUnauthorised() throws Exception {
 
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //createSession with JWT payload
+        // createSession with JWT payload
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 
-
-        SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase, false);
 
         // Revoke the session
-        String[] sessionHandles = {sessionInfo.session.handle};
+        String[] sessionHandles = { sessionInfo.session.handle };
         Session.revokeSessionUsingSessionHandles(process.getProcess(), sessionHandles);
 
-        //call update function
+        // call update function
         try {
             Session.getSession(process.getProcess(), sessionInfo.session.handle);
             fail();
@@ -226,22 +222,22 @@ public class SessionGetJWTDataTest {
 
     @Test
     public void testGetSessionWithExpiredAccessTokenDoesNotThrowError() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         Utils.setValueInConfig("access_token_validity", "1");// 1 second validity
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //createSession with JWT payload
+        // createSession with JWT payload
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 
-        SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase, false);
 
         // Wait for access token to expire
         Thread.sleep(1000);

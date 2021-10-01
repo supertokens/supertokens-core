@@ -47,11 +47,11 @@ public class RevokeTokenTest {
                 return;
             }
 
-            String token = EmailVerification
-                    .generateEmailVerificationToken(process.getProcess(), "mockUserId", "john.doe@example.com");
+            String token = EmailVerification.generateEmailVerificationToken(process.getProcess(), "mockUserId",
+                    "john.doe@example.com");
 
-            String token2 = EmailVerification
-                    .generateEmailVerificationToken(process.getProcess(), "mockUserId", "john.doe@example.com");
+            String token2 = EmailVerification.generateEmailVerificationToken(process.getProcess(), "mockUserId",
+                    "john.doe@example.com");
 
             EmailVerification.revokeAllTokens(process.getProcess(), "mockUserId", "john.doe@example.com");
 

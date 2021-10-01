@@ -23,7 +23,6 @@ public class TokenInfo {
 
     public final long createdTime;
 
-
     public TokenInfo(String token, long expiry, long createdTime) {
         this.token = token;
         this.expiry = expiry;

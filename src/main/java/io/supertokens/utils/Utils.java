@@ -80,8 +80,7 @@ public class Utils {
         return bytesToString(hash);
     }
 
-    public static String generateNewSigningKey()
-            throws NoSuchAlgorithmException, InvalidKeySpecException {
+    public static String generateNewSigningKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
 
         byte[] random = new byte[64];
         byte[] salt = new byte[64];
@@ -117,9 +116,9 @@ public class Utils {
         }
     }
 
-    public static String encrypt(String plaintext, String masterKey) throws NoSuchAlgorithmException,
-            InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException,
-            IllegalBlockSizeException, BadPaddingException {
+    public static String encrypt(String plaintext, String masterKey)
+            throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException,
+            InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
 
         // Prepare the nonce
         SecureRandom secureRandom = new SecureRandom();
@@ -157,9 +156,9 @@ public class Utils {
      * @param masterkey - key used to decrypt
      * @return String decrypted (original) text
      */
-    public static String decrypt(String encdata, String masterkey) throws NoSuchAlgorithmException,
-            InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException, InvalidAlgorithmParameterException,
-            IllegalBlockSizeException, BadPaddingException {
+    public static String decrypt(String encdata, String masterkey)
+            throws NoSuchAlgorithmException, InvalidKeySpecException, NoSuchPaddingException, InvalidKeyException,
+            InvalidAlgorithmParameterException, IllegalBlockSizeException, BadPaddingException {
 
         // Wrap the data into a byte buffer to ease the reading process
         Decoder decoder = Base64.getDecoder();

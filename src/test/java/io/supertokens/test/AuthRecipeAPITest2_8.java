@@ -31,7 +31,6 @@ import java.util.HashMap;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
 
-
 public class AuthRecipeAPITest2_8 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -48,7 +47,7 @@ public class AuthRecipeAPITest2_8 {
 
     @Test
     public void getUsersCountArrayFormat() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -58,11 +57,8 @@ public class AuthRecipeAPITest2_8 {
         }
 
         {
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users/count", null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), "");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/users/count", null, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 0);
         }
@@ -71,31 +67,24 @@ public class AuthRecipeAPITest2_8 {
         EmailPassword.signUp(process.getProcess(), "test1@example.com", "password1");
 
         {
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users/count", null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), "");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/users/count", null, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 2);
         }
 
         {
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users/count?includeRecipeIds=emailpassword", null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), "");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/users/count?includeRecipeIds=emailpassword", null, 1000, 1000, null,
+                    Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 2);
         }
 
         {
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users/count?includeRecipeIds=thirdparty", null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), "");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/users/count?includeRecipeIds=thirdparty", null, 1000, 1000, null,
+                    Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 0);
         }
@@ -107,43 +96,32 @@ public class AuthRecipeAPITest2_8 {
         ThirdParty.signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId_1, email_1);
 
         {
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users/count", null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), "");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/users/count", null, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 3);
         }
 
         {
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users/count?includeRecipeIds=emailpassword,thirdparty",
-                            null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), "");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/users/count?includeRecipeIds=emailpassword,thirdparty", null, 1000, 1000,
+                    null, Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 3);
         }
 
-
         {
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users/count?includeRecipeIds=emailpassword", null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), "");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/users/count?includeRecipeIds=emailpassword", null, 1000, 1000, null,
+                    Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 2);
         }
 
         {
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users/count?includeRecipeIds=thirdparty", null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), "");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/users/count?includeRecipeIds=thirdparty", null, 1000, 1000, null,
+                    Utils.getCdiVersion2_8ForTests(), "");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 1);
         }
@@ -154,7 +132,7 @@ public class AuthRecipeAPITest2_8 {
 
     @Test
     public void getUsersCountBadInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -163,18 +141,14 @@ public class AuthRecipeAPITest2_8 {
             return;
         }
 
-
         try {
-            HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users/count?includeRecipeIds=thirdparty,random",
-                            null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), "");
+            HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/users/count?includeRecipeIds=thirdparty,random", null, 1000, 1000, null,
+                    Utils.getCdiVersion2_8ForTests(), "");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-            assertTrue(e.statusCode == 400 &&
-                    e.getMessage().equals("Http error. Status Code: 400. Message: Unknown recipe ID: random"));
+            assertTrue(e.statusCode == 400
+                    && e.getMessage().equals("Http error. Status Code: 400. Message: Unknown recipe ID: random"));
         }
 
         process.kill();
@@ -183,7 +157,7 @@ public class AuthRecipeAPITest2_8 {
 
     @Test
     public void paginationtBadInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -192,63 +166,44 @@ public class AuthRecipeAPITest2_8 {
             return;
         }
 
-
         try {
-            HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users?includeRecipeIds=thirdparty,random",
-                            null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), "");
+            HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/users?includeRecipeIds=thirdparty,random", null, 1000, 1000, null,
+                    Utils.getCdiVersion2_8ForTests(), "");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-            assertTrue(e.statusCode == 400 &&
-                    e.getMessage().equals("Http error. Status Code: 400. Message: Unknown recipe ID: random"));
+            assertTrue(e.statusCode == 400
+                    && e.getMessage().equals("Http error. Status Code: 400. Message: Unknown recipe ID: random"));
         }
 
         try {
-            HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users?limit=-1",
-                            null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), "");
+            HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/users?limit=-1", null,
+                    1000, 1000, null, Utils.getCdiVersion2_8ForTests(), "");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-            assertTrue(e.statusCode == 400 &&
-                    e.getMessage()
-                            .equals("Http error. Status Code: 400. Message: limit must a positive integer with min " +
-                                    "value 1"));
+            assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                    "Http error. Status Code: 400. Message: limit must a positive integer with min " + "value 1"));
         }
 
         try {
-            HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users?limit=501",
-                            null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), "");
+            HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/users?limit=501",
+                    null, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(), "");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-            assertTrue(e.statusCode == 400 &&
-                    e.getMessage()
-                            .equals("Http error. Status Code: 400. Message: max limit allowed is 500"));
+            assertTrue(e.statusCode == 400
+                    && e.getMessage().equals("Http error. Status Code: 400. Message: max limit allowed is 500"));
         }
 
         {
             HashMap<String, String> QueryParams = new HashMap<String, String>();
             QueryParams.put("paginationToken", "randomString");
             try {
-                HttpRequestForTesting
-                        .sendGETRequest(process.getProcess(), "",
-                                "http://localhost:3567/users", QueryParams, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "");
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/users",
+                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: invalid pagination token"));
+                assertTrue(e.statusCode == 400
+                        && e.getMessage().equals("Http error. Status Code: 400. Message: invalid pagination token"));
             }
         }
 
@@ -258,7 +213,7 @@ public class AuthRecipeAPITest2_8 {
 
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -268,29 +223,22 @@ public class AuthRecipeAPITest2_8 {
         }
 
         // added Thread.sleep(100) as sometimes tests would fail due to inconsistent signup order
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId", "test@example.com");
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId", "test@example.com");
         Thread.sleep(100);
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId1", "test1@example.com");
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId1", "test1@example.com");
         Thread.sleep(100);
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId2", "test2@example.com");
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId2", "test2@example.com");
         Thread.sleep(100);
         EmailPassword.signUp(process.getProcess(), "test3@example.com", "password123$");
         Thread.sleep(100);
         EmailPassword.signUp(process.getProcess(), "test4@example.com", "password123$");
         Thread.sleep(100);
 
-
         {
             HashMap<String, String> queryParams = new HashMap<>();
             queryParams.put("limit", "1");
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users", queryParams, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/users", queryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "");
 
             Assert.assertEquals("OK", response.get("status").getAsString());
             assertNotNull(response.get("nextPaginationToken"));
@@ -310,11 +258,9 @@ public class AuthRecipeAPITest2_8 {
 
         // no params passed should return 5 users
         {
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/users", new HashMap<>(), 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/users", new HashMap<>(), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                    "");
             Assert.assertEquals(5, response.getAsJsonArray("users").size());
 
             {

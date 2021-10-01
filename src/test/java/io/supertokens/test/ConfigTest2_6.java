@@ -49,10 +49,9 @@ public class ConfigTest2_6 {
         Utils.reset();
     }
 
-
     @Test
     public void testThatDefaultConfigLoadsCorrectly() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args);
 
@@ -70,7 +69,7 @@ public class ConfigTest2_6 {
     public void testThatCustomValuesInConfigAreLoaded() throws Exception {
         Utils.setValueInConfig("refresh_token_validity", "1");
 
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args);
 
@@ -90,9 +89,9 @@ public class ConfigTest2_6 {
 
     @Test
     public void testThatInvalidConfigThrowRightError() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
-        //out of range core_config_version
+        // out of range core_config_version
         Utils.setValueInConfig("core_config_version", "-1");
 
         TestingProcess process = TestingProcessManager.start(args);
@@ -107,21 +106,20 @@ public class ConfigTest2_6 {
 
         Utils.reset();
 
-        //out of range value for access_token_validity
+        // out of range value for access_token_validity
         Utils.setValueInConfig("access_token_validity", "-1");
         process = TestingProcessManager.start(args);
 
         e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
         assertEquals(e.exception.getMessage(),
-                "'access_token_validity' must be between 1 and 86400000 seconds inclusive. The config file can be " +
-                        "found here: " + getConfigFileLocation(process.getProcess()));
+                "'access_token_validity' must be between 1 and 86400000 seconds inclusive. The config file can be "
+                        + "found here: " + getConfigFileLocation(process.getProcess()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
 
         Utils.reset();
-
 
         Utils.setValueInConfig("max_server_pool_size", "-1");
         process = TestingProcessManager.start(args);
@@ -129,8 +127,8 @@ public class ConfigTest2_6 {
         e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
         assertEquals(e.exception.getMessage(),
-                "'max_server_pool_size' must be >= 1. The config file can be found here: " +
-                        getConfigFileLocation(process.getProcess()));
+                "'max_server_pool_size' must be >= 1. The config file can be found here: "
+                        + getConfigFileLocation(process.getProcess()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -145,28 +143,27 @@ public class ConfigTest2_6 {
 
     @Test
     public void testThatNonTestingConfigValuesThrowErrors() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         Utils.setValueInConfig("refresh_token_validity", "-1");
         TestingProcess process = TestingProcessManager.start(args, false);
-        CoreConfigTestContent.getInstance(process.getProcess())
-                .setKeyValue(CoreConfigTestContent.VALIDITY_TESTING, true);
+        CoreConfigTestContent.getInstance(process.getProcess()).setKeyValue(CoreConfigTestContent.VALIDITY_TESTING,
+                true);
         process.startProcess();
         ProcessState.EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
 
         assertEquals(e.exception.getMessage(),
-                "'refresh_token_validity' must be strictly greater than 'access_token_validity'. The config file" +
-                        " can be found here: " + getConfigFileLocation(process.getProcess()));
+                "'refresh_token_validity' must be strictly greater than 'access_token_validity'. The config file"
+                        + " can be found here: " + getConfigFileLocation(process.getProcess()));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
 
     }
 
-
     @Test
     public void testThatMissingConfigFileThrowsError() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         ProcessBuilder pb = new ProcessBuilder("rm", "config.yaml");
         pb.directory(new File(args[0]));
@@ -182,13 +179,12 @@ public class ConfigTest2_6 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
 
-
     }
 
     @Test
     public void testCustomLocationForConfigLoadsCorrectly() throws Exception {
-        //relative file path
-        String[] args = {"../", "configFile=../temp/config.yaml"};
+        // relative file path
+        String[] args = { "../", "configFile=../temp/config.yaml" };
 
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
@@ -198,9 +194,9 @@ public class ConfigTest2_6 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
 
-        //absolute file path
+        // absolute file path
         File f = new File("../temp/config.yaml");
-        args = new String[]{"../", "configFile=" + f.getAbsolutePath()};
+        args = new String[] { "../", "configFile=" + f.getAbsolutePath() };
 
         process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -230,8 +226,7 @@ public class ConfigTest2_6 {
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/error.log");
         assertTrue("Config access signing key dynamic did not match default", config.getAccessTokenSigningKeyDynamic());
         assertEquals("Config access signing key interval did not match default",
-                config.getAccessTokenSigningKeyUpdateInterval(),
-                7 * 24 * 60 * 60 * 1000);
+                config.getAccessTokenSigningKeyUpdateInterval(), 7 * 24 * 60 * 60 * 1000);
 
         assertEquals(config.getHost(process.getProcess()), "localhost");
         assertEquals(config.getPort(process.getProcess()), 3567);

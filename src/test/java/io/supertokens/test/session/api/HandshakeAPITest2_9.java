@@ -53,10 +53,9 @@ public class HandshakeAPITest2_9 {
         Utils.reset();
     }
 
-
     @Test
     public void inputErrorsInHandshakeAPITest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -64,12 +63,11 @@ public class HandshakeAPITest2_9 {
         // null in request body with cdi-version set to 2.0
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/handshake", null, 1000,
-                    1000,
-                    null, Utils.getCdiVersion2_9ForTests(), "session");
+                    "http://localhost:3567/recipe/handshake", null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                    "session");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-            assertTrue(e.statusCode == 400 &&
-                    e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
+            assertTrue(e.statusCode == 400
+                    && e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -78,7 +76,7 @@ public class HandshakeAPITest2_9 {
 
     @Test
     public void signingKeyHandshakeAPITest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -94,16 +92,13 @@ public class HandshakeAPITest2_9 {
         driver.addProperty("name", "testName");
         driver.addProperty("version", "testVersion");
 
-
         JsonObject deviceDriverInfo = new JsonObject();
         deviceDriverInfo.add("frontendSDK", frontendSDK);
         deviceDriverInfo.add("driver", driver);
 
         JsonObject handshakeResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/handshake",
-                deviceDriverInfo,
-                1000, 1000,
-                null, Utils.getCdiVersion2_9ForTests(), "session");
+                "http://localhost:3567/recipe/handshake", deviceDriverInfo, 1000, 1000, null,
+                Utils.getCdiVersion2_9ForTests(), "session");
         checkHandshakeAPIResponse(handshakeResponse, process);
         assertEquals(handshakeResponse.entrySet().size(), 7);
 
@@ -114,7 +109,7 @@ public class HandshakeAPITest2_9 {
 
     @Test
     public void signingKeyHandshakeAPIWithCookiesTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         Utils.setValueInConfig("cookie_domain", "localhost");
 
@@ -132,16 +127,13 @@ public class HandshakeAPITest2_9 {
         driver.addProperty("name", "testName");
         driver.addProperty("version", "testVersion");
 
-
         JsonObject deviceDriverInfo = new JsonObject();
         deviceDriverInfo.add("frontendSDK", frontendSDK);
         deviceDriverInfo.add("driver", driver);
 
-        JsonObject handshakeResponse = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
-                        deviceDriverInfo,
-                        1000, 1000,
-                        null, Utils.getCdiVersion2_9ForTests(), "session");
+        JsonObject handshakeResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/handshake", deviceDriverInfo, 1000, 1000, null,
+                Utils.getCdiVersion2_9ForTests(), "session");
         checkHandshakeAPIResponse(handshakeResponse, process);
         assertEquals(handshakeResponse.entrySet().size(), 7);
 
@@ -152,37 +144,24 @@ public class HandshakeAPITest2_9 {
 
     @Test
     public void changingSigningKeyHandshakeAPITest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00081"); // 0.00027*3 = 3 seconds
         Utils.setValueInConfig("access_token_validity", "1"); // 1 second
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        String jsonInput = "{" +
-                "\"deviceDriverInfo\": {" +
-                "\"frontendSDK\": [{" +
-                "\"name\": \"hName\"," +
-                "\"version\": \"hVersion\"" +
-                "}]," +
-                "\"driver\": {" +
-                "\"name\": \"hDName\"," +
-                "\"version\": \"nDVersion\"" +
-                "}" +
-                "}" +
-                "}";
-        JsonObject response = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
-                        new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
-                        "session");
-
+        String jsonInput = "{" + "\"deviceDriverInfo\": {" + "\"frontendSDK\": [{" + "\"name\": \"hName\","
+                + "\"version\": \"hVersion\"" + "}]," + "\"driver\": {" + "\"name\": \"hDName\","
+                + "\"version\": \"nDVersion\"" + "}" + "}" + "}";
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/handshake", new JsonParser().parse(jsonInput), 1000, 1000, null,
+                Utils.getCdiVersion2_9ForTests(), "session");
 
         assertEquals(response.entrySet().size(), 7);
 
-        List<String> keys = AccessTokenSigningKey.getInstance(process.main).getAllKeys()
-                .stream().map(key ->
-                        new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey
-                ).collect(Collectors.toList());
+        List<String> keys = AccessTokenSigningKey.getInstance(process.main).getAllKeys().stream()
+                .map(key -> new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey).collect(Collectors.toList());
 
         assertEquals(response.get("jwtSigningPublicKey").getAsString(), keys.get(0));
 
@@ -195,20 +174,17 @@ public class HandshakeAPITest2_9 {
 
         Thread.sleep(4000);
 
-        JsonObject changedResponse = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
-                        new JsonParser().parse(jsonInput), 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
-                        "session");
+        JsonObject changedResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/handshake", new JsonParser().parse(jsonInput), 1000, 1000, null,
+                Utils.getCdiVersion2_9ForTests(), "session");
 
         assertEquals(changedResponse.entrySet().size(), 7);
 
-        //check that changed response has the same signing key as the current signing key and it is different from
+        // check that changed response has the same signing key as the current signing key and it is different from
         // the previous signing key
 
-        List<String> changedPubKeys = AccessTokenSigningKey.getInstance(process.main).getAllKeys()
-                .stream().map(key ->
-                        new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey
-                ).collect(Collectors.toList());
+        List<String> changedPubKeys = AccessTokenSigningKey.getInstance(process.main).getAllKeys().stream()
+                .map(key -> new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey).collect(Collectors.toList());
 
         JsonArray changedRespPubKeyList = changedResponse.get("jwtSigningPublicKeyList").getAsJsonArray();
 
@@ -229,19 +205,16 @@ public class HandshakeAPITest2_9 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-
     private static void checkHandshakeAPIResponse(JsonObject response, TestingProcessManager.TestingProcess process)
             throws StorageQueryException, StorageTransactionLogicException {
-        //check status
+        // check status
         assertEquals(response.get("status").getAsString(), "OK");
 
         List<KeyInfo> allKeys = AccessTokenSigningKey.getInstance(process.main).getAllKeys();
-        List<String> pubKeys = allKeys
-                .stream().map(key ->
-                        new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey
-                ).collect(Collectors.toList());
+        List<String> pubKeys = allKeys.stream()
+                .map(key -> new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey).collect(Collectors.toList());
 
-        //check jwtSigningPublicKeyList
+        // check jwtSigningPublicKeyList
         assertTrue(response.has("jwtSigningPublicKeyList"));
         JsonArray respPubKeyList = response.get("jwtSigningPublicKeyList").getAsJsonArray();
         for (int i = 0; i < respPubKeyList.size(); ++i) {
@@ -254,14 +227,14 @@ public class HandshakeAPITest2_9 {
         }
         assertEquals(allKeys.size(), respPubKeyList.size());
 
-        //check jwtSigningPublicKey
+        // check jwtSigningPublicKey
         assertEquals(response.get("jwtSigningPublicKey").getAsString(), pubKeys.get(0));
 
-        //check jwtSigningPublicKeyExpiryTime
+        // check jwtSigningPublicKeyExpiryTime
         assertEquals(response.get("jwtSigningPublicKeyExpiryTime").getAsLong(),
                 AccessTokenSigningKey.getInstance(process.getProcess()).getKeyExpiryTime());
 
-        //check accessTokenBlacklistingEnabled
+        // check accessTokenBlacklistingEnabled
         assertEquals(response.get("accessTokenBlacklistingEnabled").getAsBoolean(),
                 Config.getConfig(process.getProcess()).getAccessTokenBlacklisting());
 

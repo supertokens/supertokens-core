@@ -56,10 +56,10 @@ public class SignUpAPITest2_7 {
         Utils.reset();
     }
 
-    //Check for bad input (missing fields)
+    // Check for bad input (missing fields)
     @Test
     public void testBadInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -70,15 +70,13 @@ public class SignUpAPITest2_7 {
 
         {
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/signup", null, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signup", null, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                        "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
+                assertTrue(e.statusCode == 400
+                        && e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
             }
         }
 
@@ -86,34 +84,26 @@ public class SignUpAPITest2_7 {
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("email", "random@gmail.com");
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/signup", requestBody, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signup", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'password' is invalid in " +
-                                        "JSON input"));
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message: Field name 'password' is invalid in " + "JSON input"));
             }
         }
         {
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("password", "validPass123");
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/signup", requestBody, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signup", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'email' is invalid in " +
-                                        "JSON input"));
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message: Field name 'email' is invalid in " + "JSON input"));
             }
         }
 
@@ -121,10 +111,10 @@ public class SignUpAPITest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //Check good input works and that user is there in db (and then call sign in)
+    // Check good input works and that user is there in db (and then call sign in)
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -150,11 +140,9 @@ public class SignUpAPITest2_7 {
         responseBody.addProperty("email", "random@gmail.com");
         responseBody.addProperty("password", "validPass123");
 
-        JsonObject signInResponse = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signin", responseBody, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+        JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "emailpassword");
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");
         assertEquals(signInResponse.entrySet().size(), 2);
@@ -172,10 +160,10 @@ public class SignUpAPITest2_7 {
 
     // Test the normalise email function
     // Test that only the normalised email is saved in the db
-    //Failure condition: If the email retrieved from the data is not normalised the test will fail
+    // Failure condition: If the email retrieved from the data is not normalised the test will fail
     @Test
     public void testTheNormaliseEmailFunction() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -201,10 +189,10 @@ public class SignUpAPITest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //Test that giving an empty password throws a bad input error
+    // Test that giving an empty password throws a bad input error
     @Test
     public void testEmptyPasswordThrowsBadInputError() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -217,8 +205,8 @@ public class SignUpAPITest2_7 {
             Utils.signUpRequest_2_5(process, "random@gmail.com", "");
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-            assertTrue(e.statusCode == 400 &&
-                    e.getMessage().equals("Http error. Status Code: 400. Message: Password cannot be an empty string"));
+            assertTrue(e.statusCode == 400 && e.getMessage()
+                    .equals("Http error. Status Code: 400. Message: Password cannot be an empty string"));
         }
 
         process.kill();
@@ -227,7 +215,7 @@ public class SignUpAPITest2_7 {
 
     @Test
     public void testSignUpWithDupicateEMail() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
