@@ -151,8 +151,7 @@ public class SignInAPITest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Test that sign in with unnormalised email like Test@gmail.com should also
-    // work
+    // Test that sign in with unnormalised email like Test@gmail.com should also work
     @Test
     public void testThatUnnormalisedEmailShouldAlsoWork() throws Exception {
         String[] args = { "../" };
@@ -191,8 +190,7 @@ public class SignInAPITest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Test that giving an empty password, empty email, invalid email, random email
-    // or wrong password throws a wrong
+    // Test that giving an empty password, empty email, invalid email, random email or wrong password throws a wrong
     // * credentials error
     @Test
     public void testInputsToSignInAPI() throws Exception {

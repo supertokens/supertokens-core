@@ -50,10 +50,8 @@ public class ThirdPartyTest2_7 {
         Utils.reset();
     }
 
-    // - Test simple sign up and then sign in to get the same user. Check number of
-    // rows in db is one
-    // - Failure condition: if signup/signin responses return incorrect values/ an
-    // additional
+    // - Test simple sign up and then sign in to get the same user. Check number of rows in db is one
+    // - Failure condition: if signup/signin responses return incorrect values/ an additional
     // row is created when trying to signin
     @Test
     public void testSignInAndSignUp() throws Exception {
@@ -84,10 +82,8 @@ public class ThirdPartyTest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // After sign up, with verified email being false, check that email is not
-    // verified
-    // Failure condition: test fails if signin is called with isEmailVerified is
-    // true
+    // After sign up, with verified email being false, check that email is not verified
+    // Failure condition: test fails if signin is called with isEmailVerified is true
     @Test
     public void testSignUpWithEmailNotVerifiedAndCheckEmailIsNotVerified() throws Exception {
         String[] args = { "../" };
@@ -140,8 +136,7 @@ public class ThirdPartyTest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // - Sign up with false verified email, and then sign in with verified email and
-    // check that its verified
+    // - Sign up with false verified email, and then sign in with verified email and check that its verified
     // Failure condition: test fails if isEmailVerified is set to false on signin
     @Test
     public void testSignUpWithFalseVerifiedEmailAndSignInWithVerifiedEmail() throws Exception {
@@ -176,11 +171,9 @@ public class ThirdPartyTest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Sign up with email A, then sign in with email B, and check that email is
-    // updated, A is verified, and B is not
+    // Sign up with email A, then sign in with email B, and check that email is updated, A is verified, and B is not
     // * verified
-    // failure condition: if isEmailVerified set to true in signin the test will
-    // fail
+    // failure condition: if isEmailVerified set to true in signin the test will fail
     @Test
     public void testUpdatingEmailAndCheckVerification() throws Exception {
         String[] args = { "../" };
@@ -218,8 +211,7 @@ public class ThirdPartyTest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Sign up with same third party ID, but diff third party userID and check two
-    // diff rows
+    // Sign up with same third party ID, but diff third party userID and check two diff rows
     // Failure condition: if both sign in with same thirdPartyUserId, test fails
     @Test
     public void testSignUpWithSameThirdPartyIdButDiffThirdPartyUserId() throws Exception {
@@ -254,8 +246,7 @@ public class ThirdPartyTest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // - Sign up with same third party ID, diff third party userID, but same email
-    // and check two diff rows
+    // - Sign up with same third party ID, diff third party userID, but same email and check two diff rows
     // Failure condition: if both sign in with same thirdPartyUserId, test fails
     @Test
     public void testSignUpWithSameThirdPartyIdButDiffThirdPartyUserIdWithSameMail() throws Exception {
@@ -289,10 +280,8 @@ public class ThirdPartyTest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Try to sign up with same third part ID and third party userId and check you
-    // get DuplicateThirdPartyUserException
-    // // Failure condition: if you signin with different third part ID and third
-    // party userId
+    // Try to sign up with same third part ID and third party userId and check you get DuplicateThirdPartyUserException
+    // // Failure condition: if you signin with different third part ID and third party userId
     @Test
     public void testSignUpWithSameThirdPartyThirdPartyUserIdException() throws Exception {
         String[] args = { "../" };
@@ -324,8 +313,7 @@ public class ThirdPartyTest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Try to sign up with same userId and check that you get
-    // DuplicateUserIdException
+    // Try to sign up with same userId and check that you get DuplicateUserIdException
     // failure condition: sign up with different userId
     @Test
     public void testSignUpWithSameUserIdAndCheckDuplicateUserIdException() throws Exception {
@@ -358,8 +346,7 @@ public class ThirdPartyTest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Sign up with verified email, then sign in, but make that email unverified.
-    // Check that email is still verified
+    // Sign up with verified email, then sign in, but make that email unverified. Check that email is still verified
     // * in our system
     @Test
     public void testSignUpWithVerifiedEmailSignInWithUnVerifiedEmail() throws Exception {
@@ -436,8 +423,7 @@ public class ThirdPartyTest2_7 {
     }
 
     // getUsers from emailpassword tests
-    // failure condition: more/less signups, changing the order of user signups,
-    // changing limit when calling getUsers...
+    // failure condition: more/less signups, changing the order of user signups, changing limit when calling getUsers...
     @Test
     public void testGetUsers() throws Exception {
         String[] args = { "../" };
@@ -449,8 +435,7 @@ public class ThirdPartyTest2_7 {
             return;
         }
 
-        // added Thread.sleep(100) as sometimes tests would fail due to inconsistent
-        // signup order
+        // added Thread.sleep(100) as sometimes tests would fail due to inconsistent signup order
         ThirdParty.signInUp2_7(process.getProcess(), "thirdPartyId", "thirdPartyUserId", "test@example.com", false);
         Thread.sleep(100);
         ThirdParty.signInUp2_7(process.getProcess(), "thirdPartyId", "thirdPartyUserId1", "test1@example.com", false);

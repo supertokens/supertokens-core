@@ -47,13 +47,12 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
             try {
                 JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(currentAlgorithm);
             } catch (StorageQueryException | StorageTransactionLogicException e) {
-                // Do nothing, when a call to /recipe/jwt POST is made the core will attempt to
-                // create a new key
+                // Do nothing, when a call to /recipe/jwt POST is made the core will attempt to create a new key
             } catch (UnsupportedJWTSigningAlgorithmException e) {
                 /*
-                 * In this case UnsupportedJWTSigningAlgorithmException should never be thrown
-                 * because we use the enum to iterate all the supported algorithm values. If
-                 * this does get thrown this should be considered a failure.
+                 * In this case UnsupportedJWTSigningAlgorithmException should never be thrown because we use
+                 * the enum to iterate all the supported algorithm values. If this does get thrown this should be
+                 * considered a failure.
                  */
                 throw new QuitProgramException("Trying to create signing key for unsupported JWT signing algorithm");
             }
@@ -94,13 +93,10 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     /**
      * Used to get all signing keys (symmetric or asymmetric) from storage
      *
-     * @return List of {@link JWTSigningKeyInfo}. Asymmetric keys use
-     *         {@link JWTAsymmetricSigningKeyInfo} and symmetric keys use
-     *         {@link JWTSymmetricSigningKeyInfo}
-     * @throws StorageQueryException            If there is an error interacting
-     *                                          with the database
-     * @throws StorageTransactionLogicException If there is an error interacting
-     *                                          with the database
+     * @return List of {@link JWTSigningKeyInfo}. Asymmetric keys use {@link JWTAsymmetricSigningKeyInfo} and
+     *         symmetric keys use {@link JWTSymmetricSigningKeyInfo}
+     * @throws StorageQueryException            If there is an error interacting with the database
+     * @throws StorageTransactionLogicException If there is an error interacting with the database
      */
     public List<JWTSigningKeyInfo> getAllSigningKeys() throws StorageQueryException, StorageTransactionLogicException {
         JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(main);
@@ -124,19 +120,15 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     }
 
     /**
-     * Used to retrieve a key for JWT validation, for a given signing algorithm. If
-     * there are no keys in storage that match the given algorithm a new one is
-     * generated.
+     * Used to retrieve a key for JWT validation, for a given signing algorithm. If there are no keys in storage that
+     * match the given algorithm a new one is generated.
      *
      * @param algorithm The signing algorithm
      * @return {@link JWTSigningKeyInfo} key
-     * @throws UnsupportedJWTSigningAlgorithmException If there is an error in the
-     *                                                 provided algorithm when
+     * @throws UnsupportedJWTSigningAlgorithmException If there is an error in the provided algorithm when
      *                                                 getting/generating keys
-     * @throws StorageQueryException                   If there is an error
-     *                                                 interacting with the database
-     * @throws StorageTransactionLogicException        If there is an error
-     *                                                 interacting with the database
+     * @throws StorageQueryException                   If there is an error interacting with the database
+     * @throws StorageTransactionLogicException        If there is an error interacting with the database
      */
     public JWTSigningKeyInfo getOrCreateAndGetKeyForAlgorithm(SupportedAlgorithms algorithm)
             throws UnsupportedJWTSigningAlgorithmException, StorageQueryException, StorageTransactionLogicException {
@@ -151,8 +143,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
                     List<JWTSigningKeyInfo> keysFromStorage = sqlStorage.getJWTSigningKeys_Transaction(con);
 
-                    // Loop through the keys and find the first one for the algorithm, if the list
-                    // is empty a new key
+                    // Loop through the keys and find the first one for the algorithm, if the list is empty a new key
                     // will be created after the loop
                     for (int i = 0; i < keysFromStorage.size(); i++) {
                         JWTSigningKeyInfo currentKey = keysFromStorage.get(i);
@@ -195,8 +186,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
             while (true) {
                 List<JWTSigningKeyInfo> keysFromStorage = noSQLStorage.getJWTSigningKeys_Transaction();
 
-                // Loop through the keys and find the first one for the algorithm, if the list
-                // is empty a new key
+                // Loop through the keys and find the first one for the algorithm, if the list is empty a new key
                 // will be created after the for loop
                 for (int i = 0; i < keysFromStorage.size(); i++) {
                     JWTSigningKeyInfo currentKey = keysFromStorage.get(i);

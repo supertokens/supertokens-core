@@ -49,8 +49,7 @@ public class SessionRemoveAPITest2_7 {
         Utils.reset();
     }
 
-    // * - create session s1, s2, s3, s4. Remove s2 and s4 - make sure they are
-    // returned. Remove s1, s2, s3, s4,
+    // * - create session s1, s2, s3, s4. Remove s2 and s4 - make sure they are returned. Remove s1, s2, s3, s4,
     // make sure
     // * only s1 and s3 are returned.
     @Test

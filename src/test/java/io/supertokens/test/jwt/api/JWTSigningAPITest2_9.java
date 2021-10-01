@@ -83,8 +83,7 @@ public class JWTSigningAPITest2_9 {
     }
 
     /**
-     * Test that the API returns status for unsupported algorithm if an invalid
-     * algorithm parameter is provided
+     * Test that the API returns status for unsupported algorithm if an invalid algorithm parameter is provided
      */
     @Test
     public void testThatWrongAlgorithmReturnsUnsupportedError() throws Exception {
@@ -166,8 +165,7 @@ public class JWTSigningAPITest2_9 {
     }
 
     /**
-     * Test that the API returns 400 if the payload provided is not a valid JSON
-     * object
+     * Test that the API returns 400 if the payload provided is not a valid JSON object
      */
     @Test
     public void testThatNonJSONParseablePayloadThrowsError() throws Exception {
@@ -255,8 +253,7 @@ public class JWTSigningAPITest2_9 {
     }
 
     /**
-     * Test that the API returns 200 with valid response body when called with a
-     * valid request body
+     * Test that the API returns 200 with valid response body when called with a valid request body
      */
     @Test
     public void testThatCallingWithValidParamsSucceeds() throws Exception {
@@ -319,8 +316,7 @@ public class JWTSigningAPITest2_9 {
     }
 
     /**
-     * Test that the returned JWT payload contains provided custom payload
-     * properties
+     * Test that the returned JWT payload contains provided custom payload properties
      */
     @Test
     public void testThatDecodedJWTHasCustomPayload() throws Exception {

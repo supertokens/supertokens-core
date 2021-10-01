@@ -167,8 +167,7 @@ public class ThirdPartyGetUserAPITest2_7 {
     }
 
     // - Check for all types of output
-    // failure condition: valid userid/thirdParty details are sent, status message
-    // does not match
+    // failure condition: valid userid/thirdParty details are sent, status message does not match
     @Test
     public void testAllTypesOfOutput() throws Exception {
 

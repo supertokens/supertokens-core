@@ -89,8 +89,7 @@ public class SessionRegenerateAPITest2_7 {
         // check that session object and all has new payload info
         assertEquals(sessionRegenerateResponse.get("session").getAsJsonObject().get("userDataInJWT"), newUserDataInJWT);
 
-        // - exipry time of new token is same as old, but lmrt and payload has been
-        // changed
+        // - exipry time of new token is same as old, but lmrt and payload has been changed
         AccessToken.AccessTokenInfo accessTokenAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
                 sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("token").getAsString(), false);
 
@@ -101,8 +100,7 @@ public class SessionRegenerateAPITest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // * - create session -> wait for access token to expire -> call regenerate API
-    // with new JWT payload -> check
+    // * - create session -> wait for access token to expire -> call regenerate API with new JWT payload -> check
     // responses:
     // * - session object and all has new payload info
 
@@ -163,9 +161,9 @@ public class SessionRegenerateAPITest2_7 {
     }
 
     /*
-     * - create session -> wait for refresh token to expire, remove from db -> call
-     * regenerate API with new JWT payload - throws UNAUTHORISED response. - check
-     * that not supported CDI 1.0
+     * - create session -> wait for refresh token to expire, remove from db -> call regenerate API with new JWT payload
+     * - throws UNAUTHORISED response.
+     * - check that not supported CDI 1.0
      */
 
     @Test

@@ -44,8 +44,7 @@ public class ShutdownTest {
 
     @Test
     public void shutdownSignalTest() throws TestingProcessManagerException, InterruptedException {
-        // TODO: make sure all processes like cron jobs and tomcat etc are shutdown - to
-        // do later...
+        // TODO: make sure all processes like cron jobs and tomcat etc are shutdown - to do later...
         String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);

@@ -72,8 +72,7 @@ public class CLIOptionsTest {
 
     @Test
     public void cli2ArgsTest() throws Exception {
-        // testing that when badInput is given to second cli argument, default values
-        // for host and port are used
+        // testing that when badInput is given to second cli argument, default values for host and port are used
         String[] args = { "../", "random" };
 
         TestingProcess process = TestingProcessManager.start(args);

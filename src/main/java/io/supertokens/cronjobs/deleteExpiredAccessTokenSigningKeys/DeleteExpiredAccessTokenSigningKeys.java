@@ -56,8 +56,8 @@ public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
             }
         }
 
-        // This can get out of sync with the keys expiring, but this shouldn't be an
-        // issue. We never use the expired keys anyway.
+        // This can get out of sync with the keys expiring, but this shouldn't be an issue. We never use the expired
+        // keys anyway.
         return Math.max((int) (config.getAccessTokenSigningKeyUpdateInterval() / 1000), 1);
     }
 

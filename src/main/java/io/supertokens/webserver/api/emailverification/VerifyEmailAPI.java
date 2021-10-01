@@ -55,8 +55,7 @@ public class VerifyEmailAPI extends WebserverAPI {
         assert method != null;
         assert token != null;
 
-        // used to be according to logic in
-        // https://github.com/supertokens/supertokens-core/issues/141
+        // used to be according to logic in https://github.com/supertokens/supertokens-core/issues/141
         // but then changed slightly when extracting this into its own recipe
 
         if (!method.equals("token")) {

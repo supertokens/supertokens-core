@@ -440,8 +440,7 @@ public class AuthRecipeTest {
 
             // now we paginate in asc order
             {
-                // we sort users in usersCreated based on timeJoined since we added them in
-                // parallel...
+                // we sort users in usersCreated based on timeJoined since we added them in parallel...
                 usersCreated.sort((o1, o2) -> {
                     if (o1.timeJoined != o2.timeJoined) {
                         return (int) (o1.timeJoined - o2.timeJoined);
@@ -481,8 +480,7 @@ public class AuthRecipeTest {
 
             // now we paginate in desc order
             {
-                // we sort users in usersCreated based on timeJoined since we added them in
-                // parallel...
+                // we sort users in usersCreated based on timeJoined since we added them in parallel...
                 usersCreated.sort((o1, o2) -> {
                     if (o1.timeJoined != o2.timeJoined) {
                         return (int) (o1.timeJoined - o2.timeJoined);

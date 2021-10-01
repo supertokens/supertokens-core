@@ -49,8 +49,7 @@ public class JWTCreateTest {
     }
 
     /**
-     * Call JWTSigningFunctions.createJWTToken with valid params and ensure that it
-     * does not throw any errors
+     * Call JWTSigningFunctions.createJWTToken with valid params and ensure that it does not throw any errors
      */
     @Test
     public void testNormalFunctioningOfCreateToken() throws Exception {
@@ -97,8 +96,7 @@ public class JWTCreateTest {
     }
 
     /**
-     * Verify that the JWT header has the required properties and that the values
-     * are valid
+     * Verify that the JWT header has the required properties and that the values are valid
      */
     @Test
     public void testThatDecodedJWTHasAValidHeader() throws Exception {
@@ -142,8 +140,7 @@ public class JWTCreateTest {
     }
 
     /**
-     * Verify that the JWT payload has the required properties and the values as
-     * valid
+     * Verify that the JWT payload has the required properties and the values as valid
      */
     @Test
     public void testThatDecodedJWTPayloadHasRequiredClaims() throws Exception {

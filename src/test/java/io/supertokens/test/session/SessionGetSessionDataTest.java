@@ -50,8 +50,7 @@ public class SessionGetSessionDataTest {
         Utils.reset();
     }
 
-    // * Create session with some user data -> Verify the payload -> Update user
-    // data using session handle
+    // * Create session with some user data -> Verify the payload -> Update user data using session handle
     // * -> Verify that the change is reflected
     @Test
     public void updateSessionInfo() throws Exception {
@@ -90,8 +89,7 @@ public class SessionGetSessionDataTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // * Try getting and updating session information for a non-existent session
-    // handle -> Verify that both throw
+    // * Try getting and updating session information for a non-existent session handle -> Verify that both throw
     // * UnauthorisedException for session not existing
     @Test
     public void gettingAndUpdatingSessionDataForNonExistentSession()

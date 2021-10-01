@@ -35,8 +35,7 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
     private final Integer port;
     private final String host;
 
-    // if this is true, then even in DEV mode, we will not use in memory db, even if
-    // there is an error in the plugin
+    // if this is true, then even in DEV mode, we will not use in memory db, even if there is an error in the plugin
     private final boolean forceNoInMemoryDB;
 
     private CLIOptions(String[] args) {

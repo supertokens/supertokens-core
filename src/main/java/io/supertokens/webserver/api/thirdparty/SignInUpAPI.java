@@ -60,8 +60,7 @@ public class SignInUpAPI extends WebserverAPI {
             assert email != null;
             assert isEmailVerified != null;
 
-            // logic according to
-            // https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
+            // logic according to https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
 
             String normalisedEmail = Utils.normaliseEmail(email);
 
@@ -90,10 +89,8 @@ public class SignInUpAPI extends WebserverAPI {
             assert thirdPartyUserId != null;
             assert email != null;
 
-            // logic according to
-            // https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
-            // and modifed according to
-            // https://github.com/supertokens/supertokens-core/issues/295
+            // logic according to https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
+            // and modifed according to https://github.com/supertokens/supertokens-core/issues/295
 
             String normalisedEmail = Utils.normaliseEmail(email);
 

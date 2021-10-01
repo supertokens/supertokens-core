@@ -87,8 +87,7 @@ public class JWKSAPITest2_9 {
     }
 
     /**
-     * Test that after creating a JWT the returned list of JWKs has a JWK with the
-     * same key id as the JWT header
+     * Test that after creating a JWT the returned list of JWKs has a JWK with the same key id as the JWT header
      */
     @Test
     public void testThatKeysContainsMatchingKeyId() throws Exception {
@@ -135,8 +134,7 @@ public class JWKSAPITest2_9 {
     }
 
     /**
-     * Test that the JWK with the same kid as the JWT header can be used to verify
-     * the JWT signature
+     * Test that the JWK with the same kid as the JWT header can be used to verify the JWT signature
      */
     @Test
     public void testThatKeyFromResponseCanBeUsedForJWTVerification() throws Exception {

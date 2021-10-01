@@ -92,10 +92,8 @@ public abstract class Utils extends Mockito {
             Process process = pb.start();
             process.waitFor();
 
-            // in devConfig, it's set to false. However, in config, it's commented. So we
-            // comment it out so that it
-            // mimics production. Refer to
-            // https://github.com/supertokens/supertokens-core/issues/118
+            // in devConfig, it's set to false. However, in config, it's commented. So we comment it out so that it
+            // mimics production. Refer to https://github.com/supertokens/supertokens-core/issues/118
             commentConfigValue("disable_telemetry");
 
             TestingProcessManager.killAll();

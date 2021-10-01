@@ -58,8 +58,7 @@ public class JWKSTest {
     }
 
     /**
-     * Test that after startup there is one JWK for each supported algorithm type in
-     * storage
+     * Test that after startup there is one JWK for each supported algorithm type in storage
      */
     @Test
     public void testThatThereAreTheSameNumberOfJWKSAsSupportedAlgorithmsBeforeJWTCreation() throws Exception {
@@ -75,9 +74,8 @@ public class JWKSTest {
     }
 
     /**
-     * Test that after creating a JWT the number of JWK in storage does not change,
-     * this is because a key for the algorithm should already exist and a new key
-     * should not get created
+     * Test that after creating a JWT the number of JWK in storage does not change, this is because a key for the
+     * algorithm should already exist and a new key should not get created
      */
     @Test
     public void testThatNoNewJWKIsCreatedDuringJWTCreation() throws Exception {
@@ -105,8 +103,7 @@ public class JWKSTest {
     }
 
     /**
-     * Test that JWK list contains a key with the same id as the kid in the JWT
-     * header
+     * Test that JWK list contains a key with the same id as the kid in the JWT header
      */
     @Test
     public void testThatJWKListContainsValidKeyForCreatedJWT() throws Exception {
@@ -160,8 +157,8 @@ public class JWKSTest {
 
         List<JsonObject> keysFromStorage = JWTSigningFunctions.getJWKS(process.getProcess());
 
-        // TODO: In the future when more algorithm types (EC etc) are supported this
-        // part of the test will need to be updated
+        // TODO: In the future when more algorithm types (EC etc) are supported this part of the test will need to be
+        // updated
         for (int i = 0; i < keysFromStorage.size(); i++) {
             JsonObject key = keysFromStorage.get(i);
             String modulusString = key.get("n").getAsString();
@@ -178,8 +175,7 @@ public class JWKSTest {
     }
 
     /**
-     * Test that the JWK can be used to create a public key and verify the signature
-     * of the JWT
+     * Test that the JWK can be used to create a public key and verify the signature of the JWT
      */
     @Test
     public void testThatJWKCanBeUsedForJWTVerification() throws Exception {

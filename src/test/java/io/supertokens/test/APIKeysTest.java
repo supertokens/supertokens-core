@@ -137,12 +137,9 @@ public class APIKeysTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // * - set a valid API key (with small and capital letter, numbers, =, -) and
-    // check that creating a new session
-    // * requires that key (send request without key and it should fail with 401 and
-    // proper message, and then send
-    // * with key and it should succeed and then send with wrong key and check it
-    // fails).
+    // * - set a valid API key (with small and capital letter, numbers, =, -) and check that creating a new session
+    // * requires that key (send request without key and it should fail with 401 and proper message, and then send
+    // * with key and it should succeed and then send with wrong key and check it fails).
     @Test
     public void testCreatingSessionWithAndWithoutAPIKey() throws Exception {
         String[] args = { "../" };
@@ -193,8 +190,7 @@ public class APIKeysTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // * - set API key and check that you can still call /config and /hello without
-    // it
+    // * - set API key and check that you can still call /config and /hello without it
     @Test
     public void testSettingAPIKeyAndCallingConfigAndHelloWithoutIt() throws Exception {
         String[] args = { "../" };
@@ -225,8 +221,7 @@ public class APIKeysTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // * - set 3 API keys and check that any one of them can be used. Then check
-    // that if you give no key or give wrong
+    // * - set 3 API keys and check that any one of them can be used. Then check that if you give no key or give wrong
     // * key, it fails
     @Test
     public void testSettingMultipleAPIKeys() throws Exception {
@@ -296,8 +291,7 @@ public class APIKeysTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // - set API key like " key1, key2 , key3,key4 " and check that each of the keys
-    // work (the spaces are important)
+    // - set API key like " key1, key2 , key3,key4 " and check that each of the keys work (the spaces are important)
     // * - set API key and check that request with " key ", " key" and "key" work
     @Test
     public void testSettingMultipleAPIKeysWithSpacing() throws Exception {

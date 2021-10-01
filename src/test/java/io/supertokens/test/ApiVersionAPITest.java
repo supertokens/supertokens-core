@@ -50,8 +50,7 @@ public class ApiVersionAPITest {
         Utils.reset();
     }
 
-    // * - add a test to read the value of coreDriverInterfaceSupported.json and
-    // make sure the versions listed there are
+    // * - add a test to read the value of coreDriverInterfaceSupported.json and make sure the versions listed there are
     // * being returned by this API.
     @Test
     public void testThatCoreDriverInterfaceSupportedVersionsAreBeingReturnedByTheAPI() throws Exception {
@@ -110,8 +109,7 @@ public class ApiVersionAPITest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // - test that all returned versions are correct based on WebserverAPI's
-    // supportedVersions set
+    // - test that all returned versions are correct based on WebserverAPI's supportedVersions set
     @Test
     public void testThatApiVersionsAreBasedOnWebserverAPIsSupportedVersions() throws Exception {
         String[] args = { "../" };

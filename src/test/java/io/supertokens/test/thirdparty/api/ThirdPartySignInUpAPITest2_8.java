@@ -82,8 +82,7 @@ public class ThirdPartySignInUpAPITest2_8 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Sign up with unnormalised email, and sign in with normailised email to get
-    // the same user.
+    // Sign up with unnormalised email, and sign in with normailised email to get the same user.
     // failure condition: test fails if signin causes a new user to be created
     @Test
     public void testEmailNormalisation() throws Exception {

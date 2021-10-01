@@ -378,8 +378,7 @@ public class GeneralQueries {
             List<? extends AuthRecipeUserInfo> users = getUserInfoForRecipeIdFromUserIds(start, recipeId,
                     recipeIdToUserIdListMap.get(recipeId));
 
-            // we fill in all the slots in finalResult based on their position in
-            // usersFromQuery
+            // we fill in all the slots in finalResult based on their position in usersFromQuery
             Map<String, AuthRecipeUserInfo> userIdToInfoMap = new HashMap<>();
             for (AuthRecipeUserInfo user : users) {
                 userIdToInfoMap.put(user.id, user);

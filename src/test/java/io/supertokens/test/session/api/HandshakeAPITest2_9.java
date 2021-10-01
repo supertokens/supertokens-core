@@ -180,8 +180,7 @@ public class HandshakeAPITest2_9 {
 
         assertEquals(changedResponse.entrySet().size(), 7);
 
-        // check that changed response has the same signing key as the current signing
-        // key and it is different from
+        // check that changed response has the same signing key as the current signing key and it is different from
         // the previous signing key
 
         List<String> changedPubKeys = AccessTokenSigningKey.getInstance(process.main).getAllKeys().stream()

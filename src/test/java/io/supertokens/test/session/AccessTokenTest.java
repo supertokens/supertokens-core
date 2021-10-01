@@ -64,8 +64,7 @@ public class AccessTokenTest {
         Utils.reset();
     }
 
-    // * - create session with some data -> expire -> get access token without
-    // verifying, check payload is fine.
+    // * - create session with some data -> expire -> get access token without verifying, check payload is fine.
     @Test
     public void testCreateSessionWithDataExpireGetAccessTokenAndCheckPayload() throws Exception {
         String[] args = { "../" };
@@ -102,8 +101,7 @@ public class AccessTokenTest {
 
     }
 
-    // * - create session with some old expiry time for access token -> check the
-    // created token's expiry time is
+    // * - create session with some old expiry time for access token -> check the created token's expiry time is
     // what you gave
     @Test
     public void testSessionWithOldExpiryTimeForAccessToken() throws Exception {

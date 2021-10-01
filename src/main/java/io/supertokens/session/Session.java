@@ -89,22 +89,17 @@ public class Session {
     }
 
     /*
-     * Question: If the incoming access token is expired, do we throw try refresh
-     * token error and not update the db? We should update in database, in SDK
-     * session object and not throw an error, nor set any cookie. This is because,
-     * the user has already verified the session for this API. If it has expired,
-     * the refresh API will be called, and the new JWT info will be set in the token
-     * then.
+     * Question: If the incoming access token is expired, do we throw try refresh token error and not update the db?
+     * We should update in database, in SDK session object and not throw an error, nor set any cookie. This is
+     * because, the user has already verified the session for this API. If it has expired, the refresh API will be
+     * called, and the new JWT info will be set in the token then.
      *
-     * Question: If the incoming session has been revoked, do we throw an
-     * unauthorised error? Yes. It's important that the user knows that this has
-     * happened.
+     * Question: If the incoming session has been revoked, do we throw an unauthorised error?
+     * Yes. It's important that the user knows that this has happened.
      *
-     * Question: If this regenerates session tokens, while another API revokes it,
-     * then how will that work? This is OK since the other API will cause a clearing
-     * of idRefreshToken and this will not set that. This means that next API call,
-     * only the access token will go and that will not pass. In fact, it will be
-     * removed.
+     * Question: If this regenerates session tokens, while another API revokes it, then how will that work?
+     * This is OK since the other API will cause a clearing of idRefreshToken and this will not set that. This means
+     * that next API call, only the access token will go and that will not pass. In fact, it will be removed.
      *
      *
      */
@@ -113,8 +108,7 @@ public class Session {
             UnauthorisedException, InvalidKeySpecException, SignatureException, NoSuchAlgorithmException,
             InvalidKeyException, UnsupportedEncodingException {
 
-        // We assume the token has already been verified at this point. It may be
-        // expired or JWT signing key may have
+        // We assume the token has already been verified at this point. It may be expired or JWT signing key may have
         // changed for it...
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessTokenWithoutVerifying(token);
 
@@ -124,14 +118,11 @@ public class Session {
 
         updateSession(main, accessToken.sessionHandle, null, newJWTUserPayload, lmrt);
 
-        // if the above succeeds but the below fails, it's OK since the client will get
-        // server error and will try
-        // again. In this case, the JWT data will be updated again since the API will
-        // get the old JWT. In case there
+        // if the above succeeds but the below fails, it's OK since the client will get server error and will try
+        // again. In this case, the JWT data will be updated again since the API will get the old JWT. In case there
         // is a refresh call, the new JWT will get the new data.
         if (accessToken.expiryTime < System.currentTimeMillis()) {
-            // in this case, we set the should not set the access token in the response
-            // since they will have to call
+            // in this case, we set the should not set the access token in the response since they will have to call
             // the refresh API anyway.
             return new SessionInformationHolder(
                     new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload), null, null, null,
@@ -230,8 +221,7 @@ public class Session {
                         storage.commitTransaction(con);
                         return new SessionInformationHolder(
                                 new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData),
-                                // here we purposely use accessToken.userData instead of
-                                // sessionInfo.userDataInJWT
+                                // here we purposely use accessToken.userData instead of sessionInfo.userDataInJWT
                                 // because we are not returning a new access token
                                 null, null, null, null);
                     } catch (UnauthorisedException | NoSuchAlgorithmException | UnsupportedEncodingException
@@ -292,8 +282,7 @@ public class Session {
 
                     return new SessionInformationHolder(
                             new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData),
-                            // here we purposely use accessToken.userData instead of
-                            // sessionInfo.userDataInJWT
+                            // here we purposely use accessToken.userData instead of sessionInfo.userDataInJWT
                             // because we are not returning a new access token
                             null, null, null, null);
                 } catch (NoSuchAlgorithmException | UnsupportedEncodingException | InvalidKeyException
@@ -312,8 +301,7 @@ public class Session {
         RefreshToken.RefreshTokenInfo refreshTokenInfo = RefreshToken.getInfoFromRefreshToken(main, refreshToken);
 
         if (enableAntiCsrf && refreshTokenInfo.antiCsrfToken != null) {
-            // anti csrf is enabled, and the refresh token contains an anticsrf token (it's
-            // not the older version)
+            // anti csrf is enabled, and the refresh token contains an anticsrf token (it's not the older version)
             if (!refreshTokenInfo.antiCsrfToken.equals(antiCsrfToken)) {
                 throw new UnauthorisedException("Anti CSRF token missing, or not matching");
             }
@@ -525,7 +513,8 @@ public class Session {
     }
 
     /**
-     * Used to retrieve all session information for a given session handle. Used by:
+     * Used to retrieve all session information for a given session handle.
+     * Used by:
      * - /recipe/session GET
      */
     public static io.supertokens.pluginInterface.session.SessionInfo getSession(Main main, String sessionHandle)

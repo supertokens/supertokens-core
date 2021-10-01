@@ -58,10 +58,8 @@ public class SessionGetUserIDTest {
         Utils.reset();
     }
 
-    // * Create a session with some payload -> Verify the response payload -> Get
-    // session using session handle
-    // * -> Verify that user id returned is the same as the payload used when
-    // creating the session
+    // * Create a session with some payload -> Verify the response payload -> Get session using session handle
+    // * -> Verify that user id returned is the same as the payload used when creating the session
     @Test
     public void testUserIdReturnedFromGetSessionIsCorrect() throws Exception {
         String[] args = { "../" };

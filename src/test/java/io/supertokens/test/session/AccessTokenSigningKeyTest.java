@@ -149,8 +149,7 @@ public class AccessTokenSigningKeyTest {
         List<KeyInfo> oldKeys = accessTokenSigningKeyInstance.getAllKeys();
         assertEquals(oldKeys.size(), 1);
 
-        // Wait for access_token_signing_key_update_interval + 2 * access_token_validity
-        // + margin
+        // Wait for access_token_signing_key_update_interval + 2 * access_token_validity + margin
         Thread.sleep(3500);
 
         List<KeyInfo> newKeys = accessTokenSigningKeyInstance.getAllKeys();

@@ -49,12 +49,14 @@ import java.util.HashMap;
 import static org.junit.Assert.*;
 
 /**
- * TODO: - Give unsupported version and make sure it fails - Give all supported
- * versions and make sure it passes - Give no version and makes sure it treats
- * it as 1.0 - Recipe Router tests - Initialise two routes with the same path,
- * different RID and query each and check that routing is happening properly
- * (for all HTTP methods). - Use RecipeRouter in a way that the sub routes have
- * different paths. This should throw an error
+ * TODO:
+ * - Give unsupported version and make sure it fails
+ * - Give all supported versions and make sure it passes
+ * - Give no version and makes sure it treats it as 1.0
+ * - Recipe Router tests
+ * - Initialise two routes with the same path, different RID and query each and check that routing is happening
+ * properly (for all HTTP methods).
+ * - Use RecipeRouter in a way that the sub routes have different paths. This should throw an error
  */
 
 public class WebserverTest extends Mockito {
@@ -72,8 +74,7 @@ public class WebserverTest extends Mockito {
         Utils.reset();
     }
 
-    // Initialise two routes with the same path, different RID and query each and
-    // check that routing is happening
+    // Initialise two routes with the same path, different RID and query each and check that routing is happening
     // * properly (for all HTTP methods).
     @Test
     public void testInitializeTwoRoutesAndCheckRouting() throws Exception {
@@ -169,8 +170,7 @@ public class WebserverTest extends Mockito {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Use RecipeRouter in a way that the sub routes have different paths. This
-    // should throw an error
+    // Use RecipeRouter in a way that the sub routes have different paths. This should throw an error
     @Test
     public void testRecipeRouterWhereSubRoutesHaveDifferentPaths() throws Exception {
         String[] args = { "../" };

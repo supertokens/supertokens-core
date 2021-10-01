@@ -54,10 +54,8 @@ public class Main {
     public static boolean makeConsolePrintSilent = false;
     // TODO: caching with redis or memcached
     // TODO: in memory storage -> shared across many instances of supertokens
-    // TODO: have last forced change value in session as well -> allow for absolute
-    // changing of tokens
-    // TODO: allow for just one use access tokens & hard limit on lifetime of
-    // access/refresh tokens
+    // TODO: have last forced change value in session as well -> allow for absolute changing of tokens
+    // TODO: allow for just one use access tokens & hard limit on lifetime of access/refresh tokens
     // TODO: device fingerprinting
     // TODO: commenting
     // TODO: database password needs to be given in other ways as well
@@ -195,8 +193,7 @@ public class Main {
             Cronjobs.addCronjob(this, Telemetry.getInstance(this));
         }
 
-        // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token
-        // signing keys can change
+        // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
         if (Config.getConfig(this).getAccessTokenSigningKeyDynamic()) {
             Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.getInstance(this));
         }
@@ -207,8 +204,7 @@ public class Main {
         // this is a sign to the controlling script that this process has started.
         createDotStartedFileForThisProcess();
 
-        // NOTE: If the message below is changed, make sure to also change the
-        // corresponding check in the CLI program
+        // NOTE: If the message below is changed, make sure to also change the corresponding check in the CLI program
         // for start command
         Logging.info(this, "Started SuperTokens on " + Config.getConfig(this).getHost(this) + ":"
                 + Config.getConfig(this).getPort(this) + " with PID: " + ProcessHandle.current().pid());

@@ -46,8 +46,7 @@ public class RegenerateTokenTest {
         Utils.reset();
     }
 
-    // * - create session with some payload -> verify payload exists -> regenerate
-    // with different payload -> verify ->
+    // * - create session with some payload -> verify payload exists -> regenerate with different payload -> verify ->
     // * check payload and lmrt is different.
     @Test
     public void testCrateSessionWithPayloadRegenerateWithDifferentPayloadAndCheck() throws Exception {
@@ -98,8 +97,7 @@ public class RegenerateTokenTest {
 
     }
 
-    // * - create session with some payload -> verify payload exists -> regenerate
-    // with empty payload -> verify -> check
+    // * - create session with some payload -> verify payload exists -> regenerate with empty payload -> verify -> check
     // * payload and lmrt is different & expiry time is same.
     @Test
     public void testSessionRegenerateWithEmptyPayload() throws Exception {
@@ -149,8 +147,7 @@ public class RegenerateTokenTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // * - create session with some payload -> verify payload exists -> regenerate
-    // with no payload -> verify -> check
+    // * - create session with some payload -> verify payload exists -> regenerate with no payload -> verify -> check
     // * payload is same, but lmrt is different & expiry time is same.
     @Test
     public void testSessionRegenerateWithNoPayload() throws Exception {
@@ -199,10 +196,8 @@ public class RegenerateTokenTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // * - create session with some payload -> verify payload exists -> let it
-    // expire -> regenerate with different
-    // payload (should return accessToken as null) -> refresh -> verify -> check
-    // payload and lmrt is different &
+    // * - create session with some payload -> verify payload exists -> let it expire -> regenerate with different
+    // payload (should return accessToken as null) -> refresh -> verify -> check payload and lmrt is different &
     // expiry time is same.
     @Test
     public void testSessionRegenerateWithTokenExpiryAndRefresh() throws Exception {
@@ -272,8 +267,7 @@ public class RegenerateTokenTest {
 
     }
 
-    // * - create session with some payload -> verify payload exists -> change JWT
-    // signing key -> regenerate with
+    // * - create session with some payload -> verify payload exists -> change JWT signing key -> regenerate with
     // different payload -> refresh -> verify -> check payload and lmrt is
     // different & expiry time is same.
 
@@ -302,8 +296,7 @@ public class RegenerateTokenTest {
         // verify payload exists
         assertEquals(accessTokenInfoBefore.userData, userDataInJWT);
 
-        // change JWT signing key by waiting for 1.5 seconds,
-        // access_token_signing_key_update_interval set to 1 second
+        // change JWT signing key by waiting for 1.5 seconds, access_token_signing_key_update_interval set to 1 second
         Thread.sleep(2000);
 
         // regenerate with different payload
@@ -343,8 +336,7 @@ public class RegenerateTokenTest {
 
     }
 
-    // * - create session with some payload -> remove session from db -> regenerate
-    // with different payload -> should
+    // * - create session with some payload -> remove session from db -> regenerate with different payload -> should
     // throw unauthorised error
 
     @Test
@@ -387,12 +379,10 @@ public class RegenerateTokenTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // * - create session with some payload -> verify -> check lmrt & payload is
-    // same & expiry time is same ->
+    // * - create session with some payload -> verify -> check lmrt & payload is same & expiry time is same ->
     // refresh ->
     // * check lmrt & payload is
-    // * same & expiry time is same -> verify -> check payload and lmrt are same &
-    // expiry time is different.
+    // * same & expiry time is same -> verify -> check payload and lmrt are same & expiry time is different.
     @Test
     public void testCreateSessionRefreshAndCheckAccessToken() throws Exception {
         String[] args = { "../" };

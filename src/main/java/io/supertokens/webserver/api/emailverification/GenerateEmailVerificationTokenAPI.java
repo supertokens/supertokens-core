@@ -55,8 +55,7 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
         assert userId != null;
         assert email != null;
 
-        // used to be according to logic according to
-        // https://github.com/supertokens/supertokens-core/issues/139
+        // used to be according to logic according to https://github.com/supertokens/supertokens-core/issues/139
         // but then changed slightly when extracting this into its own recipe
 
         try {

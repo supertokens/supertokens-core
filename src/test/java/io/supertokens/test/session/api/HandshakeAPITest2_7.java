@@ -166,8 +166,7 @@ public class HandshakeAPITest2_7 {
 
         assertEquals(changedResponse.entrySet().size(), 6);
 
-        // check that changed response has the same signing key as the current signing
-        // key and it is different from
+        // check that changed response has the same signing key as the current signing key and it is different from
         // the previous signing key
         assertTrue(changedResponse.get("jwtSigningPublicKey").getAsString()
                 .equals(new io.supertokens.utils.Utils.PubPriKey(

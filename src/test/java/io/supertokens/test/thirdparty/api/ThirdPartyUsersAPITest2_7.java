@@ -114,10 +114,8 @@ public class ThirdPartyUsersAPITest2_7 {
 
     // -- Check good input works (add 5 users)
     // * - no params passed should return 5 users
-    // * - only limit passed (limit: 2. users are returned in ASC order based on
-    // timeJoined)
-    // * - limit and timeJoinedOrder passed (limit: 2, timeJoinedOrder: DESC. users
-    // are returned in DESC order
+    // * - only limit passed (limit: 2. users are returned in ASC order based on timeJoined)
+    // * - limit and timeJoinedOrder passed (limit: 2, timeJoinedOrder: DESC. users are returned in DESC order
     // based on timeJoined)
     @Test
     public void testGoodInput() throws Exception {
@@ -130,8 +128,7 @@ public class ThirdPartyUsersAPITest2_7 {
             return;
         }
 
-        // added Thread.sleep(100) as sometimes tests would fail due to inconsistent
-        // signup order
+        // added Thread.sleep(100) as sometimes tests would fail due to inconsistent signup order
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId", "test@example.com");
         Thread.sleep(100);
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId1", "test1@example.com");
@@ -172,8 +169,7 @@ public class ThirdPartyUsersAPITest2_7 {
             assertEquals(5, response.getAsJsonArray("users").size());
         }
 
-        // only limit passed (limit: 2. users are returned in ASC order based on
-        // timeJoined)
+        // only limit passed (limit: 2. users are returned in ASC order based on timeJoined)
         {
             HashMap<String, String> queryParams = new HashMap<>();
             queryParams.put("limit", "2");
@@ -191,8 +187,7 @@ public class ThirdPartyUsersAPITest2_7 {
             assert (user_1.get("timeJoined").getAsLong() < user_2.get("timeJoined").getAsLong());
         }
 
-        // limit and timeJoinedOrder passed (limit: 2, timeJoinedOrder: DESC. users are
-        // returned in DESC order based on
+        // limit and timeJoinedOrder passed (limit: 2, timeJoinedOrder: DESC. users are returned in DESC order based on
         // * timeJoined)
         {
             HashMap<String, String> queryParams = new HashMap<>();

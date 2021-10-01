@@ -222,8 +222,7 @@ public class AuthRecipeAPITest2_8 {
             return;
         }
 
-        // added Thread.sleep(100) as sometimes tests would fail due to inconsistent
-        // signup order
+        // added Thread.sleep(100) as sometimes tests would fail due to inconsistent signup order
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId", "test@example.com");
         Thread.sleep(100);
         ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId1", "test1@example.com");

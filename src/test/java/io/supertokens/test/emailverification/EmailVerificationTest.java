@@ -62,8 +62,7 @@ public class EmailVerificationTest {
         Utils.reset();
     }
 
-    // Create an email verification token two times, and check that there are two
-    // entries in the db for that user with
+    // Create an email verification token two times, and check that there are two entries in the db for that user with
     // * the right values
     @Test
     public void testGeneratingEmailVerificationTokenTwoTimes() throws Exception {
@@ -95,8 +94,7 @@ public class EmailVerificationTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Verify the email successfully, then create an email verification token and
-    // check that the right error is thrown.
+    // Verify the email successfully, then create an email verification token and check that the right error is thrown.
     @Test
     public void testVerifyingEmailAndGeneratingToken() throws Exception {
         String[] args = { "../" };
@@ -147,8 +145,7 @@ public class EmailVerificationTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Generate two tokens, verify with one token, the other token should throw an
-    // invalid token error
+    // Generate two tokens, verify with one token, the other token should throw an invalid token error
     @Test
     public void testGeneratingTwoTokenVerifyOtherTokenShouldThrowAnError() throws Exception {
         String[] args = { "../" };

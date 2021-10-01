@@ -45,8 +45,7 @@ public class SessionGetJWTDataTest {
         Utils.reset();
     }
 
-    // *- create session with some JWT payload -> verify to see payload is proper ->
-    // change JWT payload using session
+    // *- create session with some JWT payload -> verify to see payload is proper -> change JWT payload using session
     // * handle -> check this is reflected
     @Test
     public void testVerifyJWTPayloadChangePayloadUsingSessionHandle() throws Exception {
@@ -82,8 +81,7 @@ public class SessionGetJWTDataTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // * - create session with some JWT payload -> verify to see payload is proper
-    // -> change JWT payload to be empty
+    // * - create session with some JWT payload -> verify to see payload is proper -> change JWT payload to be empty
     // using
     // * session handle -> check this is reflected
     @Test
@@ -118,8 +116,7 @@ public class SessionGetJWTDataTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // * - create session with some JWT payload -> verify to see payload is proper
-    // -> pass null to
+    // * - create session with some JWT payload -> verify to see payload is proper -> pass null to
     // changeJWTPayloadInDatabase
     // * function -> check that JWT payload has not changed is reflected
     @Test
@@ -152,8 +149,7 @@ public class SessionGetJWTDataTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // * - create session -> let it expire -> call get function -> make sure you get
-    // unauthorised error
+    // * - create session -> let it expire -> call get function -> make sure you get unauthorised error
     @Test
     public void testExpireSessionCallGetAndCheckUnauthorised() throws Exception {
 
@@ -189,8 +185,7 @@ public class SessionGetJWTDataTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // * - create session -> revoke the session -> call get function -> make sure
-    // you get unauthorised error
+    // * - create session -> revoke the session -> call get function -> make sure you get unauthorised error
     @Test
     public void testRevokedSessionCallGetAndCheckUnauthorised() throws Exception {
 

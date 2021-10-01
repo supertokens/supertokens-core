@@ -47,8 +47,7 @@ public class JWTDataAPITest2_7 {
         Utils.reset();
     }
 
-    // * - create session with some JWT payload -> change JWT payload using API ->
-    // check this is reflected in db
+    // * - create session with some JWT payload -> change JWT payload using API -> check this is reflected in db
     @Test
     public void testCreateSessionWithPayloadChangePayloadWithApiAndCheckChangeReflectedInDB() throws Exception {
         String[] args = { "../" };
@@ -102,8 +101,7 @@ public class JWTDataAPITest2_7 {
 
     }
 
-    // * - create session with some JWT payload -> change JWT payload to be empty
-    // using session -> check this is
+    // * - create session with some JWT payload -> change JWT payload to be empty using session -> check this is
     // reflected in db
     @Test
     public void testCreateSessionWithJwtPayloadChangePayloadToEmptyUsingSessionCheckIfReflectedInDB() throws Exception {
@@ -155,8 +153,7 @@ public class JWTDataAPITest2_7 {
 
     }
 
-    // * - create session -> let it expire, remove from db -> call update API ->
-    // make sure you get unauthorised error
+    // * - create session -> let it expire, remove from db -> call update API -> make sure you get unauthorised error
     @Test
     public void testCreateSessionLetItExpireCallPutAPIAndCheckUnauthorised() throws Exception {
         String[] args = { "../" };
@@ -215,8 +212,7 @@ public class JWTDataAPITest2_7 {
 
     }
 
-    // * - create session -> let it expire, remove from db -> call get API -> make
-    // sure you get unauthorised error
+    // * - create session -> let it expire, remove from db -> call get API -> make sure you get unauthorised error
     @Test
     public void testCreateSessionLetItExpreRemoveFromDBCallGetAPIAndCheckUnauthorised() throws Exception {
 

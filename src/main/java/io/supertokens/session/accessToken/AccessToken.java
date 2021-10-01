@@ -52,8 +52,7 @@ public class AccessToken {
         Exception error = null;
         JWT.JWTInfo jwtInfo = null;
         for (KeyInfo keyInfo : keyInfoList) {
-            // getAllKeys already filters out expired keys, so we do not need to check it
-            // here.
+            // getAllKeys already filters out expired keys, so we do not need to check it here.
 
             Utils.PubPriKey signingKey = new Utils.PubPriKey(keyInfo.value);
             try {
@@ -61,35 +60,30 @@ public class AccessToken {
                 error = null;
                 break;
             } catch (NoSuchAlgorithmException e) {
-                // This basically should never happen, but it means, that can't verify any
-                // tokens, no need to retry
+                // This basically should never happen, but it means, that can't verify any tokens, no need to retry
                 throw new TryRefreshTokenException(e);
             } catch (InvalidKeyException | JWTException e) {
                 /*
-                 * There are a couple of reasons the verification could fail: 1) The access
-                 * token is "corrupted" - this is a rare scenario since it probably means that
-                 * someone is trying to break the system. Here we don't mind fetching new keys
-                 * from the db
+                 * There are a couple of reasons the verification could fail:
+                 * 1) The access token is "corrupted" - this is a rare scenario since it probably means
+                 * that someone is trying to break the system. Here we don't mind fetching new keys from the db
                  *
-                 * 2) The signing key was updated and an old access token is being used: In this
-                 * case, the request should ideally not even come to the core:
-                 * https://github.com/supertokens/supertokens-node/issues/136. TODO: However, we
-                 * should replicate this logic here as well since we do not want to rely too
-                 * much on the client of the core.
+                 * 2) The signing key was updated and an old access token is being used: In this case, the request
+                 * should ideally not even come to the core: https://github.com/supertokens/supertokens-node/issues/136.
+                 * TODO: However, we should replicate this logic here as well since we do not want to rely too much
+                 * on the client of the core.
                  *
-                 * 3) This access token was created with a new signing key, which was changed
-                 * manually before its expiry. In here, we want to remove the older signing key
-                 * from memory and fetch again.
+                 * 3) This access token was created with a new signing key, which was changed manually before its
+                 * expiry. In here, we want to remove the older signing key from memory and fetch again.
                  *
-                 * So overall, since (2) should not call the core in the first place, it's OK to
-                 * always refetch the signing key from the db in case of failure and then retry.
+                 * So overall, since (2) should not call the core in the first place, it's OK to always refetch
+                 * the signing key from the db in case of failure and then retry.
                  *
                  */
 
                 // TODO: check if it's ok to throw only one of the exceptions received.
                 // We could log InvalidKeyExceptions separately, since it signals DB corruption.
-                // Other errors besides the JWTException("JWT verification failed") are always
-                // rethrown
+                // Other errors besides the JWTException("JWT verification failed") are always rethrown
                 // even with different keys.
                 // Realistically, only JWTException("JWT verification failed") should get here.
                 error = e;
