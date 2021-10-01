@@ -63,11 +63,9 @@ public class StorageTest {
         Utils.reset();
     }
 
-
     @Test
-    public void transactionIsolationWithoutAnInitialRowTesting()
-            throws Exception {
-        String[] args = {"../"};
+    public void transactionIsolationWithoutAnInitialRowTesting() throws Exception {
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -75,8 +73,8 @@ public class StorageTest {
             String key = "Key" + i;
 
             Storage storage = StorageLayer.getStorage(process.getProcess());
-            if (storage.getType() == STORAGE_TYPE.SQL &&
-                    !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+            if (storage.getType() == STORAGE_TYPE.SQL
+                    && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
                 SQLStorage sqlStorage = (SQLStorage) storage;
 
                 AtomicReference<String> endValueOfCon1 = new AtomicReference<>("c1");
@@ -84,15 +82,18 @@ public class StorageTest {
                 AtomicInteger numberOfIterations = new AtomicInteger(-2);
 
                 /**
-                 * We start two transactions in parallel that will read from storage
-                 * We put the threads to sleep for different durations to simulate a race condition
-                 * Thread 1 should write to the database successfully but when Thread 2 tried to insert it should face a deadlock
-                 * Because of the way deadlocks are handled in startTransaction Thread 2's transaction will retry and when getting it will get an entry in the table and wont try to insert
-                 * When both threads are done we want to make sure:
-                 * - That the value in storage was set to "Value1" because Thread 2 should not be able to write
-                 * - That the counter for the number of iterations is 3 (Thread 1 + Thread 2 deadlock + Thread 2 retry)
+                 * We start two transactions in parallel that will read from storage We put the
+                 * threads to sleep for different durations to simulate a race condition Thread
+                 * 1 should write to the database successfully but when Thread 2 tried to insert
+                 * it should face a deadlock Because of the way deadlocks are handled in
+                 * startTransaction Thread 2's transaction will retry and when getting it will
+                 * get an entry in the table and wont try to insert When both threads are done
+                 * we want to make sure: - That the value in storage was set to "Value1" because
+                 * Thread 2 should not be able to write - That the counter for the number of
+                 * iterations is 3 (Thread 1 + Thread 2 deadlock + Thread 2 retry)
                  *
-                 * NOTE: In this test we use FOR UPDATE with a WHERE clause but it would work the same way without a WHERE clause as well
+                 * NOTE: In this test we use FOR UPDATE with a WHERE clause but it would work
+                 * the same way without a WHERE clause as well
                  */
                 Runnable r1 = () -> {
                     try {
@@ -119,7 +120,6 @@ public class StorageTest {
                     } catch (Exception ignored) {
                     }
                 };
-
 
                 Runnable r2 = () -> {
                     try {
@@ -169,7 +169,6 @@ public class StorageTest {
 
         }
 
-
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -177,7 +176,7 @@ public class StorageTest {
     @Test
     public void transactionIsolationWithAnInitialRowTesting()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -216,7 +215,6 @@ public class StorageTest {
                     } catch (Exception ignored) {
                     }
                 };
-
 
                 Runnable r2 = () -> {
                     try {
@@ -260,7 +258,6 @@ public class StorageTest {
 
         }
 
-
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -268,7 +265,7 @@ public class StorageTest {
     @Test
     public void transactionIsolationTesting()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -392,7 +389,6 @@ public class StorageTest {
                             syncObject.notifyAll();
                         }
 
-
                         try {
                             Thread.sleep(1500);
                         } catch (InterruptedException e) {
@@ -414,7 +410,6 @@ public class StorageTest {
                             t1State.set("after_set");
                             syncObject.notifyAll();
                         }
-
 
                         t1Failed.set(numberOfLoops != 1);
                         break;
@@ -445,7 +440,6 @@ public class StorageTest {
                     synchronized (syncObject) {
                         t2State.set("before_read");
                     }
-
 
                     synchronized (syncObject) {
                         while (!t1State.get().equals("after_set")) {
@@ -485,7 +479,7 @@ public class StorageTest {
 
     @Test
     public void transactionTest() throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -509,17 +503,15 @@ public class StorageTest {
             }
             {
                 KeyValueInfoWithLastUpdated newKey = noSqlStorage.getKeyValue_Transaction("Key");
-                noSqlStorage
-                        .setKeyValue_Transaction("Key",
-                                new KeyValueInfoWithLastUpdated("Value2", newKey.lastUpdatedSign));
+                noSqlStorage.setKeyValue_Transaction("Key",
+                        new KeyValueInfoWithLastUpdated("Value2", newKey.lastUpdatedSign));
                 KeyValueInfo value = noSqlStorage.getKeyValue("Key");
                 assertEquals(value.value, "Value2");
             }
             {
                 KeyValueInfoWithLastUpdated newKey = noSqlStorage.getKeyValue_Transaction("Key");
-                noSqlStorage
-                        .setKeyValue_Transaction("Key",
-                                new KeyValueInfoWithLastUpdated("Value3", "someRandomLastUpdatedSign"));
+                noSqlStorage.setKeyValue_Transaction("Key",
+                        new KeyValueInfoWithLastUpdated("Value3", "someRandomLastUpdatedSign"));
                 KeyValueInfo value = noSqlStorage.getKeyValue("Key");
                 assertEquals(value.value, "Value2");
             }
@@ -534,7 +526,7 @@ public class StorageTest {
     @Test
     public void transactionDoNotCommitButStillCommitsTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -558,9 +550,8 @@ public class StorageTest {
     }
 
     @Test
-    public void transactionDoNotInsertIfAlreadyExistsForNoSQL()
-            throws InterruptedException, StorageQueryException {
-        String[] args = {"../"};
+    public void transactionDoNotInsertIfAlreadyExistsForNoSQL() throws InterruptedException, StorageQueryException {
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -570,8 +561,8 @@ public class StorageTest {
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             NoSQLStorage_1 noSqlStorage = (NoSQLStorage_1) storage;
 
-            boolean success = noSqlStorage
-                    .setKeyValue_Transaction("Key", new KeyValueInfoWithLastUpdated("Value", null));
+            boolean success = noSqlStorage.setKeyValue_Transaction("Key",
+                    new KeyValueInfoWithLastUpdated("Value", null));
 
             assert (success);
 
@@ -590,7 +581,7 @@ public class StorageTest {
     @Test
     public void transactionThrowCompileTimeErrorAndExpectRollbackTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -622,7 +613,7 @@ public class StorageTest {
     @Test
     public void transactionThrowRunTimeErrorAndExpectRollbackTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -653,7 +644,7 @@ public class StorageTest {
 
     @Test
     public void storageDeadAndAlive() throws InterruptedException, IOException, HttpResponseException {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
@@ -667,7 +658,6 @@ public class StorageTest {
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
 
-
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -675,10 +665,8 @@ public class StorageTest {
         storage.setStorageLayerEnabled(false);
 
         try {
-            HttpRequestForTesting
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request,
-                            1000, 1000,
-                            null, Utils.getCdiVersionLatestForTests(), "session");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
+                    request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), "session");
             fail();
         } catch (HttpResponseException ex) {
             assertEquals(ex.statusCode, 500);
@@ -687,11 +675,9 @@ public class StorageTest {
 
         storage.setStorageLayerEnabled(true);
 
-        JsonObject sessionCreated = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
-                        1000,
-                        null, Utils.getCdiVersionLatestForTests(), "session");
-
+        JsonObject sessionCreated = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "session");
 
         JsonObject jsonBody = new JsonObject();
         jsonBody.addProperty("refreshToken",
@@ -701,11 +687,9 @@ public class StorageTest {
         storage.setStorageLayerEnabled(false);
 
         try {
-            HttpRequestForTesting
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh",
-                    jsonBody,
-                    1000,
-                    1000, null, Utils.getCdiVersionLatestForTests(), "session");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/session/refresh", jsonBody, 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "session");
             fail();
         } catch (HttpResponseException ex) {
             assertEquals(ex.statusCode, 500);
@@ -714,11 +698,9 @@ public class StorageTest {
 
         storage.setStorageLayerEnabled(true);
 
-        HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/refresh", jsonBody,
-                        1000,
-                        1000, null, Utils.getCdiVersionLatestForTests(), "session");
-
+        HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/refresh", jsonBody, 1000, 1000, null,
+                Utils.getCdiVersionLatestForTests(), "session");
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -726,7 +708,7 @@ public class StorageTest {
 
     @Test
     public void multipleParallelTransactionTest() throws InterruptedException, IOException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00005");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -771,23 +753,12 @@ public class StorageTest {
         public void run() {
             while (true) {
                 try {
-                    String jsonInput = "{" +
-                            "\"deviceDriverInfo\": {" +
-                            "\"frontendSDK\": [{" +
-                            "\"name\": \"hName\"," +
-                            "\"version\": \"hVersion\"" +
-                            "}]," +
-                            "\"driver\": {" +
-                            "\"name\": \"hDName\"," +
-                            "\"version\": \"nDVersion\"" +
-                            "}" +
-                            "}" +
-                            "}";
-                    HttpRequestForTesting
-                            .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/handshake",
-                                    new JsonParser().parse(jsonInput), 10000,
-                                    20000,
-                                    null, Utils.getCdiVersionLatestForTests(), "session");
+                    String jsonInput = "{" + "\"deviceDriverInfo\": {" + "\"frontendSDK\": [{" + "\"name\": \"hName\","
+                            + "\"version\": \"hVersion\"" + "}]," + "\"driver\": {" + "\"name\": \"hDName\","
+                            + "\"version\": \"nDVersion\"" + "}" + "}" + "}";
+                    HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                            "http://localhost:3567/recipe/handshake", new JsonParser().parse(jsonInput), 10000, 20000,
+                            null, Utils.getCdiVersionLatestForTests(), "session");
                     success = true;
                     break;
                 } catch (Exception error) {

@@ -52,8 +52,8 @@ public class UsersAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        String[] recipeIds = InputParser
-                .getCommaSeparatedStringArrayQueryParamOrThrowError(req, "includeRecipeIds", true);
+        String[] recipeIds = InputParser.getCommaSeparatedStringArrayQueryParamOrThrowError(req, "includeRecipeIds",
+                true);
 
         Stream.Builder<RECIPE_ID> recipeIdsEnumBuilder = Stream.<RECIPE_ID>builder();
 
@@ -68,27 +68,25 @@ public class UsersAPI extends WebserverAPI {
         }
 
         /*
-         * pagination token can be null or string.
-         * if string, it should be a base64 encoded JSON object.
-         * pagination token will corresponds to the first item of the users' list.
+         * pagination token can be null or string. if string, it should be a base64
+         * encoded JSON object. pagination token will corresponds to the first item of
+         * the users' list.
          */
         String paginationToken = InputParser.getQueryParamOrThrowError(req, "paginationToken", true);
         /*
-         * limit can be null or an integer with maximum value 1000.
-         * default value will be 100.
+         * limit can be null or an integer with maximum value 1000. default value will
+         * be 100.
          */
         Integer limit = InputParser.getIntQueryParamOrThrowError(req, "limit", true);
         /*
-         * timeJoinedOrder can be null or string.
-         * if not null, the value should be either "ASC" or "DESC".
-         * default value will be "ASC"
+         * timeJoinedOrder can be null or string. if not null, the value should be
+         * either "ASC" or "DESC". default value will be "ASC"
          */
         String timeJoinedOrder = InputParser.getQueryParamOrThrowError(req, "timeJoinedOrder", true);
 
         if (timeJoinedOrder != null) {
             if (!timeJoinedOrder.equals("ASC") && !timeJoinedOrder.equals("DESC")) {
-                throw new ServletException(
-                        new BadRequestException("timeJoinedOrder can be either ASC OR DESC"));
+                throw new ServletException(new BadRequestException("timeJoinedOrder can be either ASC OR DESC"));
             }
         } else {
             timeJoinedOrder = "ASC";
@@ -96,20 +94,17 @@ public class UsersAPI extends WebserverAPI {
 
         if (limit != null) {
             if (limit > 500) {
-                throw new ServletException(
-                        new BadRequestException("max limit allowed is 500"));
+                throw new ServletException(new BadRequestException("max limit allowed is 500"));
             } else if (limit < 1) {
-                throw new ServletException(
-                        new BadRequestException("limit must a positive integer with min value 1"));
+                throw new ServletException(new BadRequestException("limit must a positive integer with min value 1"));
             }
         } else {
             limit = 100;
         }
 
         try {
-            UserPaginationContainer users = AuthRecipe
-                    .getUsers(super.main, limit, timeJoinedOrder, paginationToken,
-                            recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
+            UserPaginationContainer users = AuthRecipe.getUsers(super.main, limit, timeJoinedOrder, paginationToken,
+                    recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
@@ -122,8 +117,7 @@ public class UsersAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (UserPaginationToken.InvalidTokenException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
-            throw new ServletException(
-                    new BadRequestException("invalid pagination token"));
+            throw new ServletException(new BadRequestException("invalid pagination token"));
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }

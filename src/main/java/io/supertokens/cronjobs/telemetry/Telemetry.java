@@ -56,7 +56,8 @@ public class Telemetry extends CronTask {
         String plugin = Version.getVersion(main).getPluginName();
 
         if (StorageLayer.getInstance(main).isInMemDb() || Config.getConfig(main).isTelemetryDisabled()) {
-            // we do not send any info in this case since it's not under development / production env or the user has
+            // we do not send any info in this case since it's not under development /
+            // production env or the user has
             // disabled Telemetry
             return;
         }
@@ -83,11 +84,11 @@ public class Telemetry extends CronTask {
 
         String url = "https://api.supertokens.io/0/st/telemetry";
 
-        // we call the API only if we are not testing the core, of if the request can be mocked (in case a test wants
+        // we call the API only if we are not testing the core, of if the request can be
+        // mocked (in case a test wants
         // to use this)
         if (!Main.isTesting || HttpRequestMocking.getInstance(main).getMockURL(REQUEST_ID, url) != null) {
-            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url,
-                    json, 10000, 10000, 0);
+            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 0);
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENT_TELEMETRY, null);
         }
     }

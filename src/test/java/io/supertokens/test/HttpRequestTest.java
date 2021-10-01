@@ -54,13 +54,12 @@ public class HttpRequestTest {
 
     @Test
     public void jsonResponseTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-
-        //Json Response API
+        // Json Response API
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = -7347714438908490973L;
 
@@ -76,74 +75,61 @@ public class HttpRequestTest {
 
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-                String jsonInput = "{" +
-                        "\"key\": \"value\"" +
-                        "}";
+                String jsonInput = "{" + "\"key\": \"value\"" + "}";
                 super.sendJsonResponse(200, new JsonParser().parse(jsonInput).getAsJsonObject(), resp);
             }
 
             @Override
             protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-                String jsonInput = "{" +
-                        "\"key2\": \"value2\"" +
-                        "}";
+                String jsonInput = "{" + "\"key2\": \"value2\"" + "}";
                 super.sendJsonResponse(200, new JsonParser().parse(jsonInput).getAsJsonObject(), resp);
 
             }
 
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-                String jsonInput = "{" +
-                        "\"key1\": \"value1\"" +
-                        "}";
+                String jsonInput = "{" + "\"key1\": \"value1\"" + "}";
                 super.sendJsonResponse(200, new JsonParser().parse(jsonInput).getAsJsonObject(), resp);
             }
 
             @Override
             protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-                String jsonInput = "{\n" +
-                        "\"key3\": \"value3\"" +
-                        "}";
+                String jsonInput = "{\n" + "\"key3\": \"value3\"" + "}";
                 super.sendJsonResponse(200, new JsonParser().parse(jsonInput).getAsJsonObject(), resp);
             }
 
         });
 
+        // jsonResponse with post request
 
-        //jsonResponse with post request
-
-        JsonObject response = HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/jsonResponse", null, 1000,
-                        1000, null);
+        JsonObject response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/jsonResponse", null, 1000, 1000, null);
 
         assertEquals(response.get("key").getAsString(), "value");
 
-        //jsonResponse with get request
+        // jsonResponse with get request
 
-        response = HttpRequest
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/jsonResponse", null, 1000, 1000, null);
+        response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/jsonResponse", null,
+                1000, 1000, null);
         assertEquals(response.get("key1").getAsString(), "value1");
 
-        //jsonResponse with put request
-        response = HttpRequest
-                .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/jsonResponse", null, 1000, 1000,
-                        null);
+        // jsonResponse with put request
+        response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/jsonResponse", null,
+                1000, 1000, null);
         assertEquals(response.get("key2").getAsString(), "value2");
 
-        //jsonResponse with delete request
-        response = HttpRequest
-                .sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/jsonResponse", null, 1000, 1000,
-                        null);
+        // jsonResponse with delete request
+        response = HttpRequest.sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/jsonResponse",
+                null, 1000, 1000, null);
         assertEquals(response.get("key3").getAsString(), "value3");
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-
     @Test
     public void nonJsonResponseTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -186,45 +172,38 @@ public class HttpRequestTest {
             }
         });
 
-        //nonJson Post request
-        String response = HttpRequest
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/nonJsonResponse", null, 1000,
-                        1000,
-                        null);
+        // nonJson Post request
+        String response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/nonJsonResponse", null, 1000, 1000, null);
         assertEquals("Non JSON Response", response);
 
-        //nonJson Get request
-        response = HttpRequest
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/nonJsonResponse", null, 1000, 1000,
-                        null);
+        // nonJson Get request
+        response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/nonJsonResponse", null,
+                1000, 1000, null);
         assertEquals("Non JSON Response", response);
 
-        //nonJson Put request
-        response = HttpRequest
-                .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/nonJsonResponse", null, 1000, 1000,
-                        null);
+        // nonJson Put request
+        response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/nonJsonResponse",
+                null, 1000, 1000, null);
         assertEquals("Non JSON Response", response);
 
-        //nonJson Delete request
-        response = HttpRequest
-                .sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/nonJsonResponse", null, 1000,
-                        1000,
-                        null);
+        // nonJson Delete request
+        response = HttpRequest.sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/nonJsonResponse",
+                null, 1000, 1000, null);
         assertEquals("Non JSON Response", response);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-
     @Test
     public void errorRequestTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //error request api
+        // error request api
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = -9210034480396407612L;
 
@@ -261,48 +240,40 @@ public class HttpRequestTest {
             }
         });
 
-        //Post error request
+        // Post error request
         try {
-            HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/errorRequest", null, 1000,
-                            1000, null);
+            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/errorRequest", null, 1000,
+                    1000, null);
             fail();
         } catch (HttpResponseException e) {
-            assertTrue((e.getMessage().equals("Http error. Status Code: 500. Message: ERROR") &&
-                    e.statusCode == 500));
+            assertTrue((e.getMessage().equals("Http error. Status Code: 500. Message: ERROR") && e.statusCode == 500));
         }
 
-        //Get error Request
+        // Get error Request
         try {
-            HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/errorRequest", null, 1000,
-                            1000, null);
+            HttpRequest.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/errorRequest", null, 1000,
+                    1000, null);
             fail();
         } catch (HttpResponseException e) {
-            assertTrue((e.getMessage().equals("Http error. Status Code: 500. Message: ERROR") &&
-                    e.statusCode == 500));
+            assertTrue((e.getMessage().equals("Http error. Status Code: 500. Message: ERROR") && e.statusCode == 500));
         }
 
-        //Put error Request
+        // Put error Request
         try {
-            HttpRequest
-                    .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/errorRequest", null, 1000,
-                            1000, null);
+            HttpRequest.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/errorRequest", null, 1000,
+                    1000, null);
             fail();
         } catch (HttpResponseException e) {
-            assertTrue((e.getMessage().equals("Http error. Status Code: 500. Message: ERROR") &&
-                    e.statusCode == 500));
+            assertTrue((e.getMessage().equals("Http error. Status Code: 500. Message: ERROR") && e.statusCode == 500));
         }
 
-        //Delete error Request
+        // Delete error Request
         try {
-            HttpRequest
-                    .sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/errorRequest", null, 1000,
-                            1000, null);
+            HttpRequest.sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/errorRequest", null,
+                    1000, 1000, null);
             fail();
         } catch (HttpResponseException e) {
-            assertTrue((e.getMessage().equals("Http error. Status Code: 500. Message: ERROR") &&
-                    e.statusCode == 500));
+            assertTrue((e.getMessage().equals("Http error. Status Code: 500. Message: ERROR") && e.statusCode == 500));
         }
 
         process.kill();
@@ -312,12 +283,12 @@ public class HttpRequestTest {
 
     @Test
     public void withAndWithoutBodyTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //api to check with Body
+        // api to check with Body
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = 6527072853102511509L;
 
@@ -383,40 +354,35 @@ public class HttpRequestTest {
             }
         });
 
-        String body = "{\n" +
-                "\t\"message\": \"Body Found\"\n" +
-                "}";
+        String body = "{\n" + "\t\"message\": \"Body Found\"\n" + "}";
         JsonObject jsonBody = new JsonParser().parse(body).getAsJsonObject();
 
-        //Post Request with Body
+        // Post Request with Body
         {
-            JsonObject response = HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/withBody", jsonBody, 1000,
-                            1000, null);
+            JsonObject response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/withBody", jsonBody, 1000, 1000, null);
 
             assertEquals(response.get("message").getAsString(), "Body Found");
         }
-        //Put Request with Body
+        // Put Request with Body
         {
-            JsonObject response = HttpRequest
-                    .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/withBody", jsonBody, 1000,
-                            1000, null);
+            JsonObject response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/withBody", jsonBody, 1000, 1000, null);
 
             assertEquals(response.get("message").getAsString(), "Body Found");
 
         }
 
-        //Delete Request with Body
+        // Delete Request with Body
         {
-            JsonObject response = HttpRequest
-                    .sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/withBody", jsonBody, 1000,
-                            1000, null);
+            JsonObject response = HttpRequest.sendJsonDELETERequest(process.getProcess(), "",
+                    "http://localhost:3567/withBody", jsonBody, 1000, 1000, null);
 
             assertEquals(response.get("message").getAsString(), "Body Found");
 
         }
 
-        //api to check without Body
+        // api to check without Body
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
             private static final long serialVersionUID = 5264933962074907258L;
 
@@ -436,9 +402,7 @@ public class HttpRequestTest {
                 }
 
                 if (body.length() == 0) {
-                    body.append("{" +
-                            "\"message\": \"No Body Found\"" +
-                            "}");
+                    body.append("{" + "\"message\": \"No Body Found\"" + "}");
                     super.sendJsonResponse(200, new JsonParser().parse(body.toString()).getAsJsonObject(), resp);
 
                 } else {
@@ -457,9 +421,7 @@ public class HttpRequestTest {
                 }
 
                 if (body.length() == 0) {
-                    body.append("{\n" +
-                            "\"message\": \"No Body Found\"" +
-                            "}");
+                    body.append("{\n" + "\"message\": \"No Body Found\"" + "}");
                     super.sendJsonResponse(200, new JsonParser().parse(body.toString()).getAsJsonObject(), resp);
                 } else {
                     super.sendTextResponse(500, "Body Found", resp);
@@ -477,9 +439,7 @@ public class HttpRequestTest {
                 }
 
                 if (body.length() == 0) {
-                    body.append("{" +
-                            "\"message\": \"No Body Found\"" +
-                            "}");
+                    body.append("{" + "\"message\": \"No Body Found\"" + "}");
                     super.sendJsonResponse(200, new JsonParser().parse(body.toString()).getAsJsonObject(), resp);
 
                 } else {
@@ -488,31 +448,28 @@ public class HttpRequestTest {
             }
         });
 
-        //post request without body
+        // post request without body
         {
-            JsonObject response = HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/withoutBody", null, 1000,
-                            1000, null);
+            JsonObject response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/withoutBody", null, 1000, 1000, null);
 
             assertEquals(response.get("message").getAsString(), "No Body Found");
 
         }
 
-        //put request without body
+        // put request without body
         {
-            JsonObject response = HttpRequest
-                    .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/withoutBody", null, 1000,
-                            1000, null);
+            JsonObject response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/withoutBody", null, 1000, 1000, null);
 
             assertEquals(response.get("message").getAsString(), "No Body Found");
 
         }
 
-        //Delete request without body
+        // Delete request without body
         {
-            JsonObject response = HttpRequest
-                    .sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/withoutBody", null, 1000,
-                            1000, null);
+            JsonObject response = HttpRequest.sendJsonDELETERequest(process.getProcess(), "",
+                    "http://localhost:3567/withoutBody", null, 1000, 1000, null);
 
             assertEquals(response.get("message").getAsString(), "No Body Found");
 
@@ -525,12 +482,12 @@ public class HttpRequestTest {
 
     @Test
     public void withAndWithoutVersionTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //api to check withVersion
+        // api to check withVersion
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
             private static final long serialVersionUID = 1L;
@@ -583,43 +540,39 @@ public class HttpRequestTest {
 
         });
 
-
-        //Get Request
+        // Get Request
         {
-            String response = HttpRequest.sendGETRequest(process.getProcess(), "",
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/withVersion",
+                    null, 1000, 1000, 0);
+            assertEquals(response, "0");
+
+        }
+
+        // Post Request
+        {
+            String response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/withVersion", null, 1000, 1000, 0);
             assertEquals(response, "0");
 
         }
 
-        //Post Request
+        // Put Request
         {
-            String response = HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/withVersion", null, 1000,
-                            1000, 0);
+            String response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/withVersion", null, 1000, 1000, 0);
             assertEquals(response, "0");
 
         }
 
-        //Put Request
+        // Delete Request
         {
-            String response = HttpRequest
-                    .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/withVersion", null, 1000, 1000,
-                            0);
+            String response = HttpRequest.sendJsonDELETERequest(process.getProcess(), "",
+                    "http://localhost:3567/withVersion", null, 1000, 1000, 0);
             assertEquals(response, "0");
 
         }
 
-        //Delete Request
-        {
-            String response = HttpRequest
-                    .sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/withVersion", null, 1000,
-                            1000, 0);
-            assertEquals(response, "0");
-
-        }
-
-        //api to check without Version
+        // api to check without Version
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
             private static final long serialVersionUID = 1L;
@@ -667,7 +620,7 @@ public class HttpRequestTest {
 
         });
 
-        //Get Request
+        // Get Request
         {
 
             String response = HttpRequest.sendGETRequest(process.getProcess(), "",
@@ -676,47 +629,42 @@ public class HttpRequestTest {
 
         }
 
-        //Post Request
+        // Post Request
         {
-            String response = HttpRequest
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/withoutVersion", null, 1000,
-                            1000, null);
+            String response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/withoutVersion", null, 1000, 1000, null);
             assertEquals(response, "No Version was sent");
 
         }
 
-        //Put Request
+        // Put Request
         {
-            String response = HttpRequest
-                    .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/withoutVersion", null, 1000,
-                            1000,
-                            null);
+            String response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/withoutVersion", null, 1000, 1000, null);
             assertEquals(response, "No Version was sent");
 
         }
 
-        //Delete Request
+        // Delete Request
         {
-            String response = HttpRequest
-                    .sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/withoutVersion", null, 1000,
-                            1000, null);
+            String response = HttpRequest.sendJsonDELETERequest(process.getProcess(), "",
+                    "http://localhost:3567/withoutVersion", null, 1000, 1000, null);
             assertEquals(response, "No Version was sent");
 
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
-
     }
 
     @Test
     public void getRequestTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //api to check getRequestWithParams
+        // api to check getRequestWithParams
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
             private static final long serialVersionUID = 1L;
@@ -750,15 +698,13 @@ public class HttpRequestTest {
         HashMap<String, String> map = new HashMap<>();
         map.put("key", "value");
 
-
         {
             String response = HttpRequest.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/getTestWithParams", map, 1000, 1000, null);
             assertEquals(response, "200");
         }
 
-
-        //api to check getRequestWithoutParams
+        // api to check getRequestWithoutParams
 
         Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 

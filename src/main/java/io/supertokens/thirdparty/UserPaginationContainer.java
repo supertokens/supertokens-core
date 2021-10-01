@@ -16,7 +16,6 @@
 
 package io.supertokens.thirdparty;
 
-
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 
 import javax.annotation.Nonnull;

@@ -47,7 +47,7 @@ public class SessionAPITest2_7 {
 
     @Test
     public void successOutputCheckWithAntiCsrfWithCookieDomain() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         Utils.setValueInConfig("cookie_domain", "localhost");
 
@@ -66,10 +66,9 @@ public class SessionAPITest2_7 {
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", true);
 
-        JsonObject response = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "session");
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "session");
 
         checkSessionResponse(response, process, userId, userDataInJWT);
         assertTrue(response.has("antiCsrfToken"));
@@ -80,7 +79,7 @@ public class SessionAPITest2_7 {
 
     @Test
     public void successOutputCheckWithAntiCsrf() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -97,23 +96,21 @@ public class SessionAPITest2_7 {
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
 
-        JsonObject response = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "session");
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "session");
 
         checkSessionResponse(response, process, userId, userDataInJWT);
         assertFalse(response.has("antiCsrfToken"));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
 
     }
 
     @Test
     public void successOutputCheckWithNoAntiCsrf() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -129,24 +126,21 @@ public class SessionAPITest2_7 {
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
 
-        JsonObject response = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session", request, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "session");
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "session");
         checkSessionResponse(response, process, userId, userDataInJWT);
         assertFalse(response.has("antiCsrfToken"));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
-
     }
-
 
     @Test
     public void badInputTest() throws Exception {
 
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -160,9 +154,8 @@ public class SessionAPITest2_7 {
             JsonObject request = new JsonObject();
             request.add("userDataInJWT", userDataInJWT);
             request.add("userDataInDatabase", userDataInDatabase);
-            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/session", request, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
+                    request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(e.statusCode, 400);
@@ -175,9 +168,8 @@ public class SessionAPITest2_7 {
             request.addProperty("userId", userId);
             request.add("userDataInDatabase", userDataInDatabase);
             request.addProperty("enableAntiCsrf", false);
-            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/session", request, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
+                    request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(e.statusCode, 400);
@@ -190,9 +182,8 @@ public class SessionAPITest2_7 {
             request.addProperty("userId", userId);
             request.add("userDataInDatabase", userDataInDatabase);
             request.addProperty("enableAntiCsrf", "false");
-            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/session", request, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
+                    request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(e.statusCode, 400);
@@ -204,9 +195,8 @@ public class SessionAPITest2_7 {
             JsonObject request = new JsonObject();
             request.addProperty("userId", userId);
             request.add("userDataInDatabase", userDataInDatabase);
-            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/session", request, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
+                    request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(e.statusCode, 400);
@@ -219,15 +209,14 @@ public class SessionAPITest2_7 {
             request.addProperty("userId", userId);
             request.add("userDataInJWT", userDataInJWT);
             request.addProperty("enableAntiCsrf", false);
-            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/session", request, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
+                    request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(e.statusCode, 400);
             assertEquals(e.getMessage(),
-                    "Http error. Status Code: 400. Message: Field name 'userDataInDatabase' is invalid in JSON " +
-                            "input");
+                    "Http error. Status Code: 400. Message: Field name 'userDataInDatabase' is invalid in JSON "
+                            + "input");
         }
 
         JsonObject request = new JsonObject();
@@ -235,25 +224,23 @@ public class SessionAPITest2_7 {
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
-        HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
-                "session");
+        HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
+                request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
 
         request = new JsonObject();
         request.addProperty("userId", userId);
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
-        HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
-                "session");
+        HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
+                request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     public static void checkSessionResponse(JsonObject response, TestingProcessManager.TestingProcess process,
-                                            String userId, JsonObject userDataInJWT) {
+            String userId, JsonObject userDataInJWT) {
         assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
         assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject().toString(),

@@ -29,7 +29,6 @@ import org.junit.rules.TestRule;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-
 public class DeleteExpiredSessionsTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -46,7 +45,7 @@ public class DeleteExpiredSessionsTest {
 
     @Test
     public void intervalTimeSecondsDeleteExpiredSessionsTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

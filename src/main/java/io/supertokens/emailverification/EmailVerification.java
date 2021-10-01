@@ -77,8 +77,8 @@ public class EmailVerification {
             String hashedToken = getHashedToken(token);
 
             try {
-                StorageLayer.getEmailVerificationStorage(main).addEmailVerificationToken(
-                        new EmailVerificationTokenInfo(userId, hashedToken,
+                StorageLayer.getEmailVerificationStorage(main)
+                        .addEmailVerificationToken(new EmailVerificationTokenInfo(userId, hashedToken,
                                 System.currentTimeMillis() + getEmailVerificationTokenLifetime(main), email));
                 return token;
             } catch (DuplicateEmailVerificationTokenException ignored) {
@@ -86,9 +86,8 @@ public class EmailVerification {
         }
     }
 
-    public static User verifyEmail(Main main, String token)
-            throws StorageQueryException, EmailVerificationInvalidTokenException, NoSuchAlgorithmException,
-            StorageTransactionLogicException {
+    public static User verifyEmail(Main main, String token) throws StorageQueryException,
+            EmailVerificationInvalidTokenException, NoSuchAlgorithmException, StorageTransactionLogicException {
 
         String hashedToken = getHashedToken(token);
 

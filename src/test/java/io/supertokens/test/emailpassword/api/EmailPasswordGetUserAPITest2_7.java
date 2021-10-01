@@ -48,10 +48,10 @@ public class EmailPasswordGetUserAPITest2_7 {
         Utils.reset();
     }
 
-    //Check for bad input (missing fields)
+    // Check for bad input (missing fields)
     @Test
     public void testBadInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -62,17 +62,12 @@ public class EmailPasswordGetUserAPITest2_7 {
 
         {
             try {
-                HttpRequestForTesting
-                        .sendGETRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user", null, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user",
+                        null, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Please provide one of userId or " +
-                                        "email"));
+                assertTrue(e.statusCode == 400 && e.getMessage()
+                        .equals("Http error. Status Code: 400. Message: Please provide one of userId or " + "email"));
             }
         }
 
@@ -81,17 +76,12 @@ public class EmailPasswordGetUserAPITest2_7 {
             map.put("userId", "randomID");
             map.put("email", "random@gmail.com");
             try {
-                HttpRequestForTesting
-                        .sendGETRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user", map, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user", map,
+                        1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Please provide only one of userId or " +
-                                        "email"));
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message: Please provide only one of userId or " + "email"));
             }
         }
 
@@ -99,10 +89,10 @@ public class EmailPasswordGetUserAPITest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //Check good input works
+    // Check good input works
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -123,11 +113,9 @@ public class EmailPasswordGetUserAPITest2_7 {
             HashMap<String, String> map = new HashMap<>();
             map.put("email", "random@gmail.com");
 
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user", map, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                    "emailpassword");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.entrySet().size(), 2);
 
@@ -150,11 +138,9 @@ public class EmailPasswordGetUserAPITest2_7 {
             HashMap<String, String> map = new HashMap<>();
             map.put("userId", signUpUser.get("id").getAsString());
 
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user", map, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                    "emailpassword");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.entrySet().size(), 2);
 
@@ -169,11 +155,11 @@ public class EmailPasswordGetUserAPITest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //Check for all types of output
+    // Check for all types of output
     // Failure condition: passing a valid email/userId will cause the test to fail
     @Test
     public void testForAllTypesOfOutput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -186,11 +172,9 @@ public class EmailPasswordGetUserAPITest2_7 {
             HashMap<String, String> map = new HashMap<>();
             map.put("email", "random@gmail.com");
 
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user", map, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                    "emailpassword");
             assertEquals(response.get("status").getAsString(), "UNKNOWN_EMAIL_ERROR");
             assertEquals(response.entrySet().size(), 1);
         }
@@ -199,15 +183,12 @@ public class EmailPasswordGetUserAPITest2_7 {
             HashMap<String, String> map = new HashMap<>();
             map.put("userId", "randomId");
 
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user", map, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                    "emailpassword");
             assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
             assertEquals(response.entrySet().size(), 1);
         }
-
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

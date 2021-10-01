@@ -77,8 +77,7 @@ public class UpdateUsersEmailAndPasswordTest {
             EmailPassword.updateUsersEmailOrPassword(main, userInfo.id, "dave.doe@example.com", null);
 
             // then
-            UserInfo changedEmailUserInfo = EmailPassword
-                    .signIn(main, "dave.doe@example.com", "password");
+            UserInfo changedEmailUserInfo = EmailPassword.signIn(main, "dave.doe@example.com", "password");
 
             Assert.assertEquals(userInfo.id, changedEmailUserInfo.id);
             Assert.assertEquals("dave.doe@example.com", changedEmailUserInfo.email);
@@ -124,8 +123,7 @@ public class UpdateUsersEmailAndPasswordTest {
             EmailPassword.updateUsersEmailOrPassword(main, userInfo.id, null, "newPassword");
 
             // then
-            UserInfo changedEmailUserInfo = EmailPassword
-                    .signIn(main, "john.doe@example.com", "newPassword");
+            UserInfo changedEmailUserInfo = EmailPassword.signIn(main, "john.doe@example.com", "newPassword");
 
             Assert.assertEquals(userInfo.id, changedEmailUserInfo.id);
         });

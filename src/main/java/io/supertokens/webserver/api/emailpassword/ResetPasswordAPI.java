@@ -46,7 +46,6 @@ public class ResetPasswordAPI extends WebserverAPI {
         return "/recipe/user/password/reset";
     }
 
-
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
@@ -64,8 +63,7 @@ public class ResetPasswordAPI extends WebserverAPI {
         }
 
         if (newPassword.equals("")) {
-            throw new ServletException(
-                    new WebserverAPI.BadRequestException("Password cannot be an empty string"));
+            throw new ServletException(new WebserverAPI.BadRequestException("Password cannot be an empty string"));
         }
 
         try {

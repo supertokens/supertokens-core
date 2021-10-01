@@ -32,7 +32,6 @@ import org.junit.rules.TestRule;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-
 public class EmailPasswordUsersCountAPITest2_7 {
 
     @Rule
@@ -50,7 +49,7 @@ public class EmailPasswordUsersCountAPITest2_7 {
 
     @Test
     public void testAPI() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -59,11 +58,9 @@ public class EmailPasswordUsersCountAPITest2_7 {
             return;
         }
         {
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/users/count", null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/users/count", null, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "emailpassword");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 0);
         }

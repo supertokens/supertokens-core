@@ -51,7 +51,8 @@ public class UserAPI extends WebserverAPI {
         String thirdPartyId = InputParser.getQueryParamOrThrowError(req, "thirdPartyId", true);
         String thirdPartyUserId = InputParser.getQueryParamOrThrowError(req, "thirdPartyUserId", true);
 
-        // logic according to https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671924
+        // logic according to
+        // https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671924
 
         if (userId != null && (thirdPartyId != null || thirdPartyUserId != null)) {
             throw new ServletException(

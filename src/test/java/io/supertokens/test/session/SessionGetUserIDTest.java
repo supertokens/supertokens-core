@@ -58,24 +58,25 @@ public class SessionGetUserIDTest {
         Utils.reset();
     }
 
-    //* Create a session with some payload -> Verify the response payload -> Get session using session handle
-    //* -> Verify that user id returned is the same as the payload used when creating the session
+    // * Create a session with some payload -> Verify the response payload -> Get
+    // session using session handle
+    // * -> Verify that user id returned is the same as the payload used when
+    // creating the session
     @Test
-    public void testUserIdReturnedFromGetSessionIsCorrect()
-            throws Exception {
-        String[] args = {"../"};
+    public void testUserIdReturnedFromGetSessionIsCorrect() throws Exception {
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //createSession with JWT payload
+        // createSession with JWT payload
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 
-        SessionInformationHolder sessionInfo = Session
-                .createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase, false);
 
         // verify to see payload is proper
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);

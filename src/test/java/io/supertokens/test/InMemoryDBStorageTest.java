@@ -56,7 +56,7 @@ public class InMemoryDBStorageTest {
     @Test
     public void transactionIsolationTesting()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -83,7 +83,6 @@ public class InMemoryDBStorageTest {
 
                     sqlStorage.getKeyValue_Transaction(con, "Key");
 
-
                     synchronized (syncObject) {
                         t1State.set("read");
                         syncObject.notifyAll();
@@ -106,7 +105,6 @@ public class InMemoryDBStorageTest {
                         Thread.sleep(1500);
                     } catch (InterruptedException e) {
                     }
-
 
                     synchronized (syncObject) {
                         assertEquals("after_read", t2State.get());
@@ -132,11 +130,9 @@ public class InMemoryDBStorageTest {
                         }
                     }
 
-
                     synchronized (syncObject) {
                         t2State.set("before_read");
                     }
-
 
                     KeyValueInfo val = sqlStorage.getKeyValue_Transaction(con, "Key");
 
@@ -170,7 +166,7 @@ public class InMemoryDBStorageTest {
 
     @Test
     public void transactionTest() throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -193,7 +189,7 @@ public class InMemoryDBStorageTest {
     @Test
     public void transactionDoNotCommitButStillCommitsTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -209,7 +205,6 @@ public class InMemoryDBStorageTest {
         KeyValueInfo value = storage.getKeyValue("Key");
         assertEquals(value.value, "Value");
 
-
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -217,7 +212,7 @@ public class InMemoryDBStorageTest {
     @Test
     public void transactionThrowCompileTimeErrorAndExpectRollbackTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -245,7 +240,7 @@ public class InMemoryDBStorageTest {
     @Test
     public void transactionThrowRunTimeErrorAndExpectRollbackTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -271,10 +266,9 @@ public class InMemoryDBStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-
     @Test
     public void multipleParallelTransactionTest() throws InterruptedException, IOException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00005");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();

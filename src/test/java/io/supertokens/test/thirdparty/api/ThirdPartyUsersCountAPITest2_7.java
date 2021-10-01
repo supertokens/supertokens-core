@@ -57,7 +57,7 @@ public class ThirdPartyUsersCountAPITest2_7 {
     // failure condition: number of signed up users not matching the count
     @Test
     public void testAPI() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -67,32 +67,23 @@ public class ThirdPartyUsersCountAPITest2_7 {
         }
 
         {
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/users/count", null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/users/count", null, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 0);
         }
 
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId", "test@example.com");
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId1", "test1@example.com");
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId2", "test2@example.com");
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId3", "test3@example.com");
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId4", "test4@example.com");
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId", "test@example.com");
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId1", "test1@example.com");
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId2", "test2@example.com");
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId3", "test3@example.com");
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId4", "test4@example.com");
 
         {
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/users/count", null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/users/count", null, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 5);
         }

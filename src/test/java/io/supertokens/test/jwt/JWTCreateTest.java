@@ -49,11 +49,12 @@ public class JWTCreateTest {
     }
 
     /**
-     * Call JWTSigningFunctions.createJWTToken with valid params and ensure that it does not throw any errors
+     * Call JWTSigningFunctions.createJWTToken with valid params and ensure that it
+     * does not throw any errors
      */
     @Test
     public void testNormalFunctioningOfCreateToken() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -74,7 +75,7 @@ public class JWTCreateTest {
      */
     @Test
     public void testInvalidAlgorithmThrowsError() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -96,11 +97,12 @@ public class JWTCreateTest {
     }
 
     /**
-     * Verify that the JWT header has the required properties and that the values are valid
+     * Verify that the JWT header has the required properties and that the values
+     * are valid
      */
     @Test
     public void testThatDecodedJWTHasAValidHeader() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -123,7 +125,8 @@ public class JWTCreateTest {
         }
 
         if (!headerAlg.asString().equals(algorithm)) {
-            throw new Exception("Algorithm in JWT header does not match algorithm passed to JWTSigningFunctions.createJWTToken");
+            throw new Exception(
+                    "Algorithm in JWT header does not match algorithm passed to JWTSigningFunctions.createJWTToken");
         }
 
         if (!headerType.asString().equals("JWT")) {
@@ -139,11 +142,12 @@ public class JWTCreateTest {
     }
 
     /**
-     * Verify that the JWT payload has the required properties and the values as valid
+     * Verify that the JWT payload has the required properties and the values as
+     * valid
      */
     @Test
     public void testThatDecodedJWTPayloadHasRequiredClaims() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -189,7 +193,7 @@ public class JWTCreateTest {
      */
     @Test
     public void testThatDecodedJWTPayloadHasCustomProperties() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -210,7 +214,8 @@ public class JWTCreateTest {
         Claim customClaim = decodedJWT.getClaim(customClaimKey);
 
         if (customClaim.isNull()) {
-            throw new Exception("Decoded JWT does not contain properties from payload passed to JWTSigningFunctions.createJWTToken");
+            throw new Exception(
+                    "Decoded JWT does not contain properties from payload passed to JWTSigningFunctions.createJWTToken");
         }
 
         if (!customClaim.asString().equals(customClaimValue)) {

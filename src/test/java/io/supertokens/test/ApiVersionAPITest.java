@@ -50,11 +50,12 @@ public class ApiVersionAPITest {
         Utils.reset();
     }
 
-    // * - add a test to read the value of coreDriverInterfaceSupported.json and make sure the versions listed there are
+    // * - add a test to read the value of coreDriverInterfaceSupported.json and
+    // make sure the versions listed there are
     // * being returned by this API.
     @Test
     public void testThatCoreDriverInterfaceSupportedVersionsAreBeingReturnedByTheAPI() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -71,9 +72,8 @@ public class ApiVersionAPITest {
         JsonObject cdiSupported = new JsonParser().parse(fileContent.toString()).getAsJsonObject();
         JsonArray cdiVersions = cdiSupported.get("versions").getAsJsonArray();
 
-        JsonObject apiVersionResponse = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000, null,
-                        null, "");
+        JsonObject apiVersionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/apiversion", null, 1000, 1000, null, null, "");
         JsonArray apiVersions = apiVersionResponse.get("versions").getAsJsonArray();
 
         for (int i = 0; i < apiVersions.size(); i++) {
@@ -85,26 +85,23 @@ public class ApiVersionAPITest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //- no version needed for this API.
+    // - no version needed for this API.
     @Test
     public void testThatNoVersionIsNeededForThisAPI() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //without setting cdi-version header
-        JsonObject apiVersionResponse = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000,
-                        null, null, "");
+        // without setting cdi-version header
+        JsonObject apiVersionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/apiversion", null, 1000, 1000, null, null, "");
         assertNotNull(apiVersionResponse.getAsJsonArray("versions"));
         assertTrue(apiVersionResponse.getAsJsonArray("versions").size() >= 1);
 
-        //with setting cdi-version header
-        apiVersionResponse = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000,
-                        null,
-                        Utils.getCdiVersionLatestForTests(), "");
+        // with setting cdi-version header
+        apiVersionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/apiversion", null, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), "");
         assertNotNull(apiVersionResponse.getAsJsonArray("versions"));
         assertTrue(apiVersionResponse.getAsJsonArray("versions").size() >= 1);
 
@@ -113,17 +110,17 @@ public class ApiVersionAPITest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //- test that all returned versions are correct based on WebserverAPI's supportedVersions set
+    // - test that all returned versions are correct based on WebserverAPI's
+    // supportedVersions set
     @Test
     public void testThatApiVersionsAreBasedOnWebserverAPIsSupportedVersions() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        JsonObject apiVersionResponse = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000,
-                        null, null, "");
+        JsonObject apiVersionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/apiversion", null, 1000, 1000, null, null, "");
 
         Set<String> supportedVersions = WebserverAPI.supportedVersions;
         JsonArray apiSupportedVersions = apiVersionResponse.getAsJsonArray("versions");
@@ -140,18 +137,16 @@ public class ApiVersionAPITest {
     // - check that all returned versions have X.Y format
     @Test
     public void testThatAllReturnedVersionsHaveXYFormat() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        JsonObject apiVersionResponse = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/apiversion", null, 1000, 1000,
-                        null, null, "");
+        JsonObject apiVersionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/apiversion", null, 1000, 1000, null, null, "");
 
         for (JsonElement i : apiVersionResponse.get("versions").getAsJsonArray()) {
-            assertTrue(i.getAsString()
-                    .matches("\\d+\\.\\d+"));
+            assertTrue(i.getAsString().matches("\\d+\\.\\d+"));
         }
 
         process.kill();
@@ -159,4 +154,3 @@ public class ApiVersionAPITest {
     }
 
 }
-

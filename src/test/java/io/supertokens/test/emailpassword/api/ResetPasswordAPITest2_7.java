@@ -55,10 +55,10 @@ public class ResetPasswordAPITest2_7 {
         Utils.reset();
     }
 
-    //Check for bad input (missing fields)
+    // Check for bad input (missing fields)
     @Test
     public void testBadInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -69,32 +69,26 @@ public class ResetPasswordAPITest2_7 {
 
         {
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user/password/reset", null, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/password/reset", null, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
+                assertTrue(e.statusCode == 400
+                        && e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
             }
         }
 
         {
             JsonObject requestBody = new JsonObject();
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user/password/reset", requestBody, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/password/reset", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'method' is invalid in " +
-                                        "JSON input"));
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message: Field name 'method' is invalid in " + "JSON input"));
             }
         }
 
@@ -103,17 +97,13 @@ public class ResetPasswordAPITest2_7 {
             requestBody.addProperty("token", "randomToken");
             requestBody.addProperty("newPassword", "randomPassword");
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user/password/reset", requestBody, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/password/reset", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'method' is invalid in " +
-                                        "JSON input"));
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message: Field name 'method' is invalid in " + "JSON input"));
             }
         }
 
@@ -123,17 +113,13 @@ public class ResetPasswordAPITest2_7 {
             requestBody.addProperty("newPassword", "randomPassword");
 
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user/password/reset", requestBody, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/password/reset", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'token' is invalid in " +
-                                        "JSON input"));
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message: Field name 'token' is invalid in " + "JSON input"));
             }
         }
 
@@ -143,18 +129,14 @@ public class ResetPasswordAPITest2_7 {
             requestBody.addProperty("token", "randomToken");
 
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user/password/reset", requestBody, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/password/reset", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'newPassword' is invalid " +
-                                        "in " +
-                                        "JSON input"));
+                assertTrue(e.statusCode == 400 && e.getMessage()
+                        .equals("Http error. Status Code: 400. Message: Field name 'newPassword' is invalid " + "in "
+                                + "JSON input"));
             }
         }
 
@@ -165,7 +147,7 @@ public class ResetPasswordAPITest2_7 {
     // Check good input works
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -183,11 +165,9 @@ public class ResetPasswordAPITest2_7 {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", userId);
 
-        JsonObject response = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "emailpassword");
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.entrySet().size(), 2);
@@ -199,11 +179,9 @@ public class ResetPasswordAPITest2_7 {
         resetPasswordBody.addProperty("token", token);
         resetPasswordBody.addProperty("newPassword", "newValidPass123");
 
-        JsonObject passwordResetResponse = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+        JsonObject passwordResetResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "emailpassword");
         assertEquals(passwordResetResponse.get("status").getAsString(), "OK");
         assertEquals(passwordResetResponse.entrySet().size(), 1);
 
@@ -211,11 +189,9 @@ public class ResetPasswordAPITest2_7 {
         signInRequestBody.addProperty("email", "random@gmail.com");
         signInRequestBody.addProperty("password", "validPass123");
 
-        response = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signin", signInRequestBody, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+        response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signin", signInRequestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "emailpassword");
 
         assertEquals(response.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
         assertEquals(response.entrySet().size(), 1);
@@ -224,15 +200,12 @@ public class ResetPasswordAPITest2_7 {
         signInRequestBody.addProperty("email", "random@gmail.com");
         signInRequestBody.addProperty("password", "newValidPass123");
 
-        response = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signin", signInRequestBody, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+        response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signin", signInRequestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "emailpassword");
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.entrySet().size(), 2);
-
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -242,7 +215,7 @@ public class ResetPasswordAPITest2_7 {
     // Failure condition: passing a valid password reset token will fail the test
     @Test
     public void testALLTypesOfOutPut() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -256,11 +229,9 @@ public class ResetPasswordAPITest2_7 {
         resetPasswordBody.addProperty("token", "randomToken");
         resetPasswordBody.addProperty("newPassword", "newValidPass123");
 
-        JsonObject passwordResetResponse = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+        JsonObject passwordResetResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "emailpassword");
 
         assertEquals(passwordResetResponse.get("status").getAsString(), "RESET_PASSWORD_INVALID_TOKEN_ERROR");
         assertEquals(passwordResetResponse.entrySet().size(), 1);
@@ -273,7 +244,7 @@ public class ResetPasswordAPITest2_7 {
     // Failure condition: passing a valid method will fail the test
     @Test
     public void testInvalidMethodThrows400Error() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -288,26 +259,23 @@ public class ResetPasswordAPITest2_7 {
         resetPasswordBody.addProperty("newPassword", "newValidPass123");
 
         try {
-            HttpRequestForTesting
-                    .sendJsonPOSTRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "emailpassword");
 
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-            assertTrue(e.statusCode == 400 &&
-                    e.getMessage()
-                            .equals("Http error. Status Code: 400. Message: Unsupported method for password reset"));
+            assertTrue(e.statusCode == 400 && e.getMessage()
+                    .equals("Http error. Status Code: 400. Message: Unsupported method for password reset"));
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //Check that empty password throws 400 error
+    // Check that empty password throws 400 error
     // Failure condition: submitting a valid password will fail the test
     @Test
     public void testEmptyPasswordThrows400Error() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -322,16 +290,13 @@ public class ResetPasswordAPITest2_7 {
         resetPasswordBody.addProperty("newPassword", "");
 
         try {
-            HttpRequestForTesting
-                    .sendJsonPOSTRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "emailpassword");
 
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-            assertTrue(e.statusCode == 400 &&
-                    e.getMessage()
-                            .equals("Http error. Status Code: 400. Message: Password cannot be an empty string"));
+            assertTrue(e.statusCode == 400 && e.getMessage()
+                    .equals("Http error. Status Code: 400. Message: Password cannot be an empty string"));
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

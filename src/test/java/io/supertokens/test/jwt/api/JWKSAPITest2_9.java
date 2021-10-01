@@ -61,7 +61,7 @@ public class JWKSAPITest2_9 {
      */
     @Test
     public void testThatGettingKeysAfterCreatingJWTDoesNotReturnEmpty() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -72,13 +72,12 @@ public class JWKSAPITest2_9 {
         requestBody.add("payload", new JsonObject());
         requestBody.addProperty("validity", 3600);
 
-        HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+        HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
+                requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
 
-        JsonObject response = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/jwks",
-                        null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "jwt");
 
         JsonArray keys = response.getAsJsonArray("keys");
         assert keys.size() != 0;
@@ -88,11 +87,12 @@ public class JWKSAPITest2_9 {
     }
 
     /**
-     * Test that after creating a JWT the returned list of JWKs has a JWK with the same key id as the JWT header
+     * Test that after creating a JWT the returned list of JWKs has a JWK with the
+     * same key id as the JWT header
      */
     @Test
     public void testThatKeysContainsMatchingKeyId() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -103,18 +103,18 @@ public class JWKSAPITest2_9 {
         requestBody.add("payload", new JsonObject());
         requestBody.addProperty("validity", 3600);
 
-        JsonObject jwtResponse = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+        JsonObject jwtResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "jwt");
 
         String jwt = jwtResponse.get("jwt").getAsString();
         DecodedJWT decodedJWT = JWT.decode(jwt);
 
         String keyIdFromHeader = decodedJWT.getHeaderClaim("kid").asString();
 
-        JsonObject response = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/jwks",
-                        null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "jwt");
 
         JsonArray keys = response.getAsJsonArray("keys");
         boolean didFindKey = false;
@@ -135,11 +135,12 @@ public class JWKSAPITest2_9 {
     }
 
     /**
-     * Test that the JWK with the same kid as the JWT header can be used to verify the JWT signature
+     * Test that the JWK with the same kid as the JWT header can be used to verify
+     * the JWT signature
      */
     @Test
     public void testThatKeyFromResponseCanBeUsedForJWTVerification() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -150,18 +151,18 @@ public class JWKSAPITest2_9 {
         requestBody.add("payload", new JsonObject());
         requestBody.addProperty("validity", 3600);
 
-        JsonObject jwtResponse = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+        JsonObject jwtResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "jwt");
 
         String jwt = jwtResponse.get("jwt").getAsString();
         DecodedJWT decodedJWT = JWT.decode(jwt);
 
         String keyIdFromHeader = decodedJWT.getHeaderClaim("kid").asString();
 
-        JsonObject response = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt/jwks",
-                        null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "jwt");
 
         JsonArray keys = response.getAsJsonArray("keys");
         JsonObject keyToUse = null;
@@ -183,8 +184,8 @@ public class JWKSAPITest2_9 {
         BigInteger modulus = new BigInteger(1, Base64.getUrlDecoder().decode(modulusString));
         BigInteger exponent = new BigInteger(1, Base64.getUrlDecoder().decode(exponentString));
 
-        RSAPublicKey publicKey = (RSAPublicKey) KeyFactory
-                .getInstance("RSA").generatePublic(new RSAPublicKeySpec(modulus, exponent));
+        RSAPublicKey publicKey = (RSAPublicKey) KeyFactory.getInstance("RSA")
+                .generatePublic(new RSAPublicKeySpec(modulus, exponent));
 
         Algorithm verificationAlgorithm = Algorithm.RSA256(new RSAKeyProvider() {
             @Override

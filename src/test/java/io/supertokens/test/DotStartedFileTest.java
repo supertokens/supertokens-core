@@ -43,7 +43,7 @@ public class DotStartedFileTest {
 
     @Test
     public void fiveProcessInParallelDotStartedFileTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process1 = TestingProcessManager.start(args);
         assertNotNull(process1.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -114,10 +114,9 @@ public class DotStartedFileTest {
         assertEquals(processCounter, flist.length);
     }
 
-
     @Test
     public void dotStartedFileNameAndContentTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         String host = "localhost";
         String port = "8081";
         String hostPortNameCheck = host + "-" + port;
@@ -135,7 +134,7 @@ public class DotStartedFileTest {
         assertEquals(dotStartedNameAndContent[0].getName(), hostPortNameCheck);
 
         try (InputStream is = new FileInputStream(dotStartedNameAndContent[0].getPath());
-             BufferedReader buf = new BufferedReader(new InputStreamReader(is))) {
+                BufferedReader buf = new BufferedReader(new InputStreamReader(is))) {
 
             String line = buf.readLine();
             assertEquals(line, Long.toString(ProcessHandle.current().pid()));
@@ -149,7 +148,7 @@ public class DotStartedFileTest {
 
     @Test
     public void processFailToStartDotStartedFileTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         String installDir = "../";
 
         Utils.setValueInConfig("access_token_validity", "-1");

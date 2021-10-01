@@ -49,144 +49,124 @@ public class SessionDataAPITest2_7 {
 
     @Test
     public void inputErrorsInSessionUserAPITest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //Get Request input errors
-        //null is sent in parameters
+        // Get Request input errors
+        // null is sent in parameters
         try {
-            HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", null, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "session");
+            HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data",
+                    null, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
-                    .equals("Http error. Status Code: 400. Message: Field name 'sessionHandle' is missing in GET " +
-                            "request"));
+                    .equals("Http error. Status Code: 400. Message: Field name 'sessionHandle' is missing in GET "
+                            + "request"));
         }
 
-        //typo in parameter
+        // typo in parameter
         HashMap<String, String> map = new HashMap<>();
         map.put("sessiondle", "");
 
         try {
-            HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", map, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "session");
+            HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data",
+                    map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
-                    .equals("Http error. Status Code: 400. Message: Field name 'sessionHandle' is missing in GET " +
-                            "request"));
+                    .equals("Http error. Status Code: 400. Message: Field name 'sessionHandle' is missing in GET "
+                            + "request"));
         }
 
-        //Put request input errors
+        // Put request input errors
 
         try {
-            HttpRequestForTesting
-                    .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", null,
-                            1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "session");
+            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/session/data", null, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "session");
             fail();
         } catch (HttpResponseException e) {
-            assertTrue(e.statusCode == 400 &&
-                    e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
+            assertTrue(e.statusCode == 400
+                    && e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
         }
 
-        //typo in sessionHandle
+        // typo in sessionHandle
         JsonObject jsonBody = new JsonObject();
         jsonBody.addProperty("sessiondle", "temp");
         jsonBody.addProperty("userDataInDatabase", "temp");
 
         try {
-            HttpRequestForTesting
-                    .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", jsonBody,
-                            1000,
-                            1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/session/data", jsonBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "session");
             fail();
         } catch (HttpResponseException e) {
-            assertTrue(e.getMessage()
-                    .equals("Http error. Status Code: 400. Message: Field name 'sessionHandle' is invalid in JSON " +
-                            "input") &&
-                    e.statusCode == 400);
+            assertTrue(e.getMessage().equals(
+                    "Http error. Status Code: 400. Message: Field name 'sessionHandle' is invalid in JSON " + "input")
+                    && e.statusCode == 400);
         }
 
-        //typo in userDataInDatabase
+        // typo in userDataInDatabase
         jsonBody = new JsonObject();
         jsonBody.addProperty("sessionHandle", "");
         jsonBody.addProperty("userDaInDatabase", "");
 
         try {
-            HttpRequestForTesting
-                    .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", jsonBody,
-                            1000,
-                            1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/session/data", jsonBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "session");
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
-                    .equals("Http error. Status Code: 400. Message: Field name 'userDataInDatabase' is invalid in " +
-                            "JSON input"));
+                    .equals("Http error. Status Code: 400. Message: Field name 'userDataInDatabase' is invalid in "
+                            + "JSON input"));
         }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-
     @Test
     public void getRequestSuccessOutputCheckTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
-        String sessionJsonInput = "{\n" +
-                "\t\"userId\": \"UserID\",\n" +
-                "\t\"userDataInJWT\": {\n" +
-                "\t\t\"userData1\": \"temp1\",\n" +
-                "\t\t\"userData2\": \"temp2\"\n" +
-                "\t},\n" +
-                "\t\"userDataInDatabase\": {\n" +
-                "\t\t\"userData\": \"value\"\n" +
-                "\t},\n" +
-                "\t\"customSigningKey\": \"string\",\n" +
-                "\t\"enableAntiCsrf\": false\n" +
-                "}";
+        String sessionJsonInput = "{\n" + "\t\"userId\": \"UserID\",\n" + "\t\"userDataInJWT\": {\n"
+                + "\t\t\"userData1\": \"temp1\",\n" + "\t\t\"userData2\": \"temp2\"\n" + "\t},\n"
+                + "\t\"userDataInDatabase\": {\n" + "\t\t\"userData\": \"value\"\n" + "\t},\n"
+                + "\t\"customSigningKey\": \"string\",\n" + "\t\"enableAntiCsrf\": false\n" + "}";
 
         JsonObject sessionBody = new JsonParser().parse(sessionJsonInput).getAsJsonObject();
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //Get request when no session exists
+        // Get request when no session exists
         HashMap<String, String> map = new HashMap<>();
         map.put("sessionHandle", "");
 
-        JsonObject response = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", map, 1000, 1000,
-                        null,
-                        Utils.getCdiVersion2_7ForTests(), "session");
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/data", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "session");
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
 
         assertEquals(response.get("message").getAsString(), "Session does not exist.");
 
-        //Get request when session exists
-        JsonObject session = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                        sessionBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+        // Get request when session exists
+        JsonObject session = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", sessionBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "session");
 
         assertEquals(session.get("status").getAsString(), "OK");
 
         map = new HashMap<>();
         map.put("sessionHandle", session.get("session").getAsJsonObject().get("handle").getAsString());
 
-        response = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data", map, 1000, 1000,
-                        null,
-                        Utils.getCdiVersion2_7ForTests(), "session");
+        response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/data", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "session");
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.entrySet().size(), 2);
@@ -197,30 +177,21 @@ public class SessionDataAPITest2_7 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
-
     }
 
     @Test
     public void putRequestSuccessOutputCheckTest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
-        String sessionJsonInput = "{\n" +
-                "\t\"userId\": \"UserID\",\n" +
-                "\t\"userDataInJWT\": {\n" +
-                "\t\t\"userData1\": \"temp1\",\n" +
-                "\t\t\"userData2\": \"temp2\"\n" +
-                "\t},\n" +
-                "\t\"userDataInDatabase\": {\n" +
-                "\t\t\"userData\": \"value\"\n" +
-                "\t},\n" +
-                "\t\"customSigningKey\": \"string\",\n" +
-                "\t\"enableAntiCsrf\": false\n" +
-                "}";
+        String sessionJsonInput = "{\n" + "\t\"userId\": \"UserID\",\n" + "\t\"userDataInJWT\": {\n"
+                + "\t\t\"userData1\": \"temp1\",\n" + "\t\t\"userData2\": \"temp2\"\n" + "\t},\n"
+                + "\t\"userDataInDatabase\": {\n" + "\t\t\"userData\": \"value\"\n" + "\t},\n"
+                + "\t\"customSigningKey\": \"string\",\n" + "\t\"enableAntiCsrf\": false\n" + "}";
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        //updating session handle which does not exist
+        // updating session handle which does not exist
 
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("userData1", "value1");
@@ -229,35 +200,30 @@ public class SessionDataAPITest2_7 {
         putRequestBody.addProperty("sessionHandle", "123abc");
         putRequestBody.add("userDataInDatabase", userDataInDatabase);
 
-        JsonObject sessionDataResponse = HttpRequestForTesting
-                .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data",
-                        putRequestBody,
-                        1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+        JsonObject sessionDataResponse = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/data", putRequestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "session");
 
         assertEquals(sessionDataResponse.entrySet().size(), 2);
         assertEquals(sessionDataResponse.get("status").getAsString(), "UNAUTHORISED");
         assertEquals(sessionDataResponse.get("message").getAsString(), "Session does not exist.");
 
+        // updating session handle which exists
 
-        //updating session handle which exists
-
-        JsonObject session = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                        new JsonParser().parse(sessionJsonInput), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
-                        "session");
+        JsonObject session = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", new JsonParser().parse(sessionJsonInput), 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "session");
 
         assertEquals(session.get("status").getAsString(), "OK");
 
         putRequestBody = new JsonObject();
-        putRequestBody
-                .addProperty("sessionHandle", session.get("session").getAsJsonObject().get("handle").getAsString());
+        putRequestBody.addProperty("sessionHandle",
+                session.get("session").getAsJsonObject().get("handle").getAsString());
         putRequestBody.add("userDataInDatabase", userDataInDatabase);
 
-        JsonObject response = HttpRequestForTesting
-                .sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session/data",
-                        putRequestBody,
-                        1000,
-                        1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/data", putRequestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "session");
 
         assertEquals(response.entrySet().size(), 1);
         assertEquals(response.get("status").getAsString(), "OK");

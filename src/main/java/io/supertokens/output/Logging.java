@@ -37,13 +37,13 @@ public class Logging extends ResourceDistributor.SingletonResource {
     private final Logger errorLogger;
 
     private Logging(Main main) {
-        this.infoLogger = Config.getConfig(main).getInfoLogPath(main).equals("null") ?
-                createLoggerForConsole(main, "io.supertokens.Info." + main.getProcessId()) :
-                createLoggerForFile(main, Config.getConfig(main).getInfoLogPath(main),
+        this.infoLogger = Config.getConfig(main).getInfoLogPath(main).equals("null")
+                ? createLoggerForConsole(main, "io.supertokens.Info." + main.getProcessId())
+                : createLoggerForFile(main, Config.getConfig(main).getInfoLogPath(main),
                         "io.supertokens.Info." + main.getProcessId());
-        this.errorLogger = Config.getConfig(main).getErrorLogPath(main).equals("null") ?
-                createLoggerForConsole(main, "io.supertokens.Error." + main.getProcessId()) :
-                createLoggerForFile(main, Config.getConfig(main).getErrorLogPath(main),
+        this.errorLogger = Config.getConfig(main).getErrorLogPath(main).equals("null")
+                ? createLoggerForConsole(main, "io.supertokens.Error." + main.getProcessId())
+                : createLoggerForFile(main, Config.getConfig(main).getErrorLogPath(main),
                         "io.supertokens.Error." + main.getProcessId());
         Storage storage = StorageLayer.getStorage(main);
         if (storage != null) {

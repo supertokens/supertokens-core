@@ -55,15 +55,15 @@ public class CLIOptionsTest {
         String[] args = {};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
-        assertTrue(e != null && e.exception.getMessage()
-                .equals("Please provide installation path location for SuperTokens"));
+        assertTrue(e != null
+                && e.exception.getMessage().equals("Please provide installation path location for SuperTokens"));
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
         process.kill();
     }
 
     @Test
     public void cli1ArgsTest() throws TestingProcessManagerException, InterruptedException {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
@@ -72,8 +72,9 @@ public class CLIOptionsTest {
 
     @Test
     public void cli2ArgsTest() throws Exception {
-        //testing that when badInput is given to second cli argument, default values for host and port are used
-        String[] args = {"../", "random"};
+        // testing that when badInput is given to second cli argument, default values
+        // for host and port are used
+        String[] args = { "../", "random" };
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -84,8 +85,8 @@ public class CLIOptionsTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
 
-        //custom host and port
-        args = new String[]{"../", "host=127.0.0.1", "port=8081"};
+        // custom host and port
+        args = new String[] { "../", "host=127.0.0.1", "port=8081" };
 
         process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -98,13 +99,12 @@ public class CLIOptionsTest {
 
     }
 
-
     @Test
     public void testMultipleInstancesAtTheSameTime() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         try {
-            //Create 2 custom config files
+            // Create 2 custom config files
             ProcessBuilder pb = new ProcessBuilder("cp", "config.yaml", "temp/new1Config.yaml");
             pb.directory(new File(args[0]));
             Process p1 = pb.start();
@@ -115,18 +115,17 @@ public class CLIOptionsTest {
             p1 = pb.start();
             p1.waitFor();
 
-
             TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-            args = new String[]{"../", "port=8081",
-                    "configFile=" + new File("../temp/new1Config.yaml").getAbsolutePath()};
+            args = new String[] { "../", "port=8081",
+                    "configFile=" + new File("../temp/new1Config.yaml").getAbsolutePath() };
 
             TestingProcess process1 = TestingProcessManager.start(args);
             assertNotNull(process1.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-            args = new String[]{"../", "port=8082",
-                    "configFile=" + new File("../temp/new2Config.yaml").getAbsolutePath()};
+            args = new String[] { "../", "port=8082",
+                    "configFile=" + new File("../temp/new2Config.yaml").getAbsolutePath() };
 
             TestingProcess process2 = TestingProcessManager.start(args);
             assertNotNull(process2.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -140,13 +139,13 @@ public class CLIOptionsTest {
             assertEquals(CLIOptions.get(process2.getProcess()).getConfigFilePath(),
                     new File("../temp/new2Config.yaml").getAbsolutePath());
 
-            //check infoLogPath is the same for all 3 processes
+            // check infoLogPath is the same for all 3 processes
             assertEquals(Config.getConfig(process.getProcess()).getInfoLogPath(process.getProcess()),
                     Config.getConfig(process1.getProcess()).getInfoLogPath(process1.getProcess()));
             assertEquals(Config.getConfig(process1.getProcess()).getInfoLogPath(process1.getProcess()),
                     Config.getConfig(process2.getProcess()).getInfoLogPath(process2.getProcess()));
 
-            //check errorLogPath is the same for all 3 processes
+            // check errorLogPath is the same for all 3 processes
             assertEquals(Config.getConfig(process.getProcess()).getErrorLogPath(process.getProcess()),
                     Config.getConfig(process1.getProcess()).getErrorLogPath(process1.getProcess()));
             assertEquals(Config.getConfig(process1.getProcess()).getErrorLogPath(process1.getProcess()),
@@ -167,7 +166,6 @@ public class CLIOptionsTest {
             boolean processErrorLog = false;
             boolean process1ErrorLog = false;
             boolean process2ErrorLog = false;
-
 
             try (BufferedReader reader = new BufferedReader(
                     new FileReader(Config.getConfig(process.getProcess()).getInfoLogPath(process.getProcess())))) {
@@ -210,7 +208,6 @@ public class CLIOptionsTest {
             assertTrue("processes do not log info to the same location",
                     processInfoLog && process2InfoLog && process1InfoLog);
 
-
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
 
@@ -232,7 +229,6 @@ public class CLIOptionsTest {
             p1 = pb.start();
             p1.waitFor();
         }
-
 
     }
 

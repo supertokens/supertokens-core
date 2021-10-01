@@ -35,7 +35,8 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
     private final Integer port;
     private final String host;
 
-    // if this is true, then even in DEV mode, we will not use in memory db, even if there is an error in the plugin
+    // if this is true, then even in DEV mode, we will not use in memory db, even if
+    // there is an error in the plugin
     private final boolean forceNoInMemoryDB;
 
     private CLIOptions(String[] args) {
@@ -88,8 +89,7 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
 
     private void checkIfArgsIsCorrect(String[] args) {
         if (args.length == 0) {
-            throw new QuitProgramException(
-                    "Please provide installation path location for SuperTokens");
+            throw new QuitProgramException("Please provide installation path location for SuperTokens");
         }
     }
 

@@ -37,8 +37,8 @@ public class VersionFile {
     void validate() {
         if (core_version == null || plugin_interface_version == null) {
             throw new QuitProgramException(
-                    "version.yaml file seems to be corrupted. Please redownload and install SuperTokens from " +
-                            "https://supertokens.io/dashboard");
+                    "version.yaml file seems to be corrupted. Please redownload and install SuperTokens from "
+                            + "https://supertokens.io/dashboard");
         }
     }
 

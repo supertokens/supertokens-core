@@ -66,13 +66,15 @@ public class EmailPasswordTest {
         Utils.reset();
     }
 
-    // Check that StorageLayer.getEmailPasswordStorageLayer throws an exception if the storage type is not SQL (and
+    // Check that StorageLayer.getEmailPasswordStorageLayer throws an exception if
+    // the storage type is not SQL (and
     // vice versa)
-    // Failure condition: If the StorageLayer type is NOSQL and if the EmailPasswordStorageLayer is called and it
+    // Failure condition: If the StorageLayer type is NOSQL and if the
+    // EmailPasswordStorageLayer is called and it
     // does not throw an Error, the test will fail
     @Test
     public void testStorageLayerGetMailPasswordStorageLayerThrowsExceptionIfTypeIsNotSQL() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -94,7 +96,7 @@ public class EmailPasswordTest {
     // Test normaliseEmail function
     @Test
     public void testTheNormaliseEmailFunction() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -117,7 +119,6 @@ public class EmailPasswordTest {
         normaliseEmail = io.supertokens.utils.Utils.normaliseEmail("RaNdOm@icloud.com");
         assertEquals(normaliseEmail, "random@icloud.com");
 
-
         normaliseEmail = io.supertokens.utils.Utils.normaliseEmail("RaNdOm@random.com");
         assertEquals(normaliseEmail, "random@random.com");
 
@@ -125,13 +126,15 @@ public class EmailPasswordTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //Test that the reset password token length is 128 and has URL safe characters (generate a token 100 times and
-    // *  for each, check the above).
-    // Failure condition: the test will fail if the generatePasswordResetToken function returns a token whose length
+    // Test that the reset password token length is 128 and has URL safe characters
+    // (generate a token 100 times and
+    // * for each, check the above).
+    // Failure condition: the test will fail if the generatePasswordResetToken
+    // function returns a token whose length
     // is not 128 characters long and is not URL sage
     @Test
     public void testResetPasswordToken() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -156,12 +159,13 @@ public class EmailPasswordTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //After sign up, check that the password is hashed in the db
-    // Failure condition: If the password data returned from the database is not hashed or the hash value does not
+    // After sign up, check that the password is hashed in the db
+    // Failure condition: If the password data returned from the database is not
+    // hashed or the hash value does not
     // match the check, the test will fail
     @Test
     public void testThatAfterSignUpThePasswordIsHashedAndStoredInTheDatabase() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -181,12 +185,13 @@ public class EmailPasswordTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //After reset password generate token, check that the token is hashed in the db
-    // Failure condition: If the token returned from the database is not hashed or the hash value does not
+    // After reset password generate token, check that the token is hashed in the db
+    // Failure condition: If the token returned from the database is not hashed or
+    // the hash value does not
     // match the check, the test will fail
     @Test
     public void testThatAfterResetPasswordGenerateTokenTheTokenIsHashedInTheDatabase() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -199,23 +204,22 @@ public class EmailPasswordTest {
 
         String resetToken = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
         PasswordResetTokenInfo resetTokenInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getPasswordResetTokenInfo(
-                        io.supertokens.utils.Utils.hashSHA256(resetToken));
+                .getPasswordResetTokenInfo(io.supertokens.utils.Utils.hashSHA256(resetToken));
 
         assertNotEquals(resetToken, resetTokenInfo.token);
         assertEquals(io.supertokens.utils.Utils.hashSHA256(resetToken), resetTokenInfo.token);
-
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     // After reset password completed, check that the password is hashed in the db
-    // Failure condition: If the password data returned from the database is not hashed or the hash value does not
+    // Failure condition: If the password data returned from the database is not
+    // hashed or the hash value does not
     // match the check, the test will fail
     @Test
     public void testThatAfterResetPasswordIsCompletedThePasswordIsHashedInTheDatabase() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -242,7 +246,7 @@ public class EmailPasswordTest {
 
     @Test
     public void passwordResetTokenExpiredCheck() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         io.supertokens.emailpassword.EmailPasswordTest.getInstance(process.getProcess())
@@ -279,7 +283,7 @@ public class EmailPasswordTest {
 
     @Test
     public void multiplePasswordResetTokensPerUserAndThenVerifyWithSignin() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -289,7 +293,6 @@ public class EmailPasswordTest {
         }
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
-
 
         EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
         String tok = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
@@ -323,7 +326,7 @@ public class EmailPasswordTest {
 
     @Test
     public void zeroPasswordTokens() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -342,7 +345,7 @@ public class EmailPasswordTest {
 
     @Test
     public void wrongPasswordResetToken() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -364,7 +367,7 @@ public class EmailPasswordTest {
 
     @Test
     public void clashingPassowordResetToken() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -376,18 +379,14 @@ public class EmailPasswordTest {
         // we add a user first.
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
-        StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .addPasswordResetToken(new PasswordResetTokenInfo(
-                        user.id, "token",
-                        System.currentTimeMillis() +
-                                Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime()));
+        StorageLayer.getEmailPasswordStorage(process.getProcess()).addPasswordResetToken(new PasswordResetTokenInfo(
+                user.id, "token",
+                System.currentTimeMillis() + Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime()));
 
         try {
             StorageLayer.getEmailPasswordStorage(process.getProcess())
-                    .addPasswordResetToken(new PasswordResetTokenInfo(
-                            user.id, "token",
-                            System.currentTimeMillis() +
-                                    Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime()));
+                    .addPasswordResetToken(new PasswordResetTokenInfo(user.id, "token", System.currentTimeMillis()
+                            + Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime()));
             assert (false);
         } catch (DuplicatePasswordResetTokenException ignored) {
 
@@ -399,7 +398,7 @@ public class EmailPasswordTest {
 
     @Test
     public void unknownUserIdWhileGeneratingPasswordResetToken() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -421,7 +420,7 @@ public class EmailPasswordTest {
 
     @Test
     public void clashingUserIdDuringSignUp() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -430,14 +429,13 @@ public class EmailPasswordTest {
             return;
         }
 
-        StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
-                        "test@example.com", "password", System.currentTimeMillis()));
+        StorageLayer.getEmailPasswordStorage(process.getProcess()).signUp(new UserInfo(
+                "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test@example.com", "password", System.currentTimeMillis()));
 
         try {
             StorageLayer.getEmailPasswordStorage(process.getProcess())
-                    .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
-                            "test1@example.com", "password", System.currentTimeMillis()));
+                    .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test1@example.com", "password",
+                            System.currentTimeMillis()));
             assert (false);
         } catch (DuplicateUserIdException ignored) {
 
@@ -449,7 +447,7 @@ public class EmailPasswordTest {
 
     @Test
     public void clashingEmailIdDuringSignUp() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -472,7 +470,7 @@ public class EmailPasswordTest {
 
     @Test
     public void clashingEmailAndUserIdDuringSignUp() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -481,14 +479,13 @@ public class EmailPasswordTest {
             return;
         }
 
-        StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
-                        "test@example.com", "password", System.currentTimeMillis()));
+        StorageLayer.getEmailPasswordStorage(process.getProcess()).signUp(new UserInfo(
+                "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test@example.com", "password", System.currentTimeMillis()));
 
         try {
             StorageLayer.getEmailPasswordStorage(process.getProcess())
-                    .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5",
-                            "test@example.com", "password", System.currentTimeMillis()));
+                    .signUp(new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test@example.com", "password",
+                            System.currentTimeMillis()));
             assert (false);
         } catch (DuplicateUserIdException ignored) {
 
@@ -500,7 +497,7 @@ public class EmailPasswordTest {
 
     @Test
     public void signUpAndThenSignIn() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -523,7 +520,7 @@ public class EmailPasswordTest {
 
     @Test
     public void signInWrongEmailWrongPassword() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -554,7 +551,7 @@ public class EmailPasswordTest {
 
     @Test
     public void getUsers() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -603,7 +600,7 @@ public class EmailPasswordTest {
 
     @Test
     public void getUsersCount() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -631,7 +628,7 @@ public class EmailPasswordTest {
     @Test
     public void changePasswordResetLifetimeTest() throws Exception {
         {
-            String[] args = {"../"};
+            String[] args = { "../" };
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -649,7 +646,7 @@ public class EmailPasswordTest {
         {
             Utils.setValueInConfig("password_reset_token_lifetime", "100");
 
-            String[] args = {"../"};
+            String[] args = { "../" };
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -667,13 +664,12 @@ public class EmailPasswordTest {
         {
             Utils.setValueInConfig("password_reset_token_lifetime", "0");
 
-            String[] args = {"../"};
+            String[] args = { "../" };
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(),
-                    "'password_reset_token_lifetime' must be >= 0");
+            assertEquals(e.exception.getMessage(), "'password_reset_token_lifetime' must be >= 0");
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

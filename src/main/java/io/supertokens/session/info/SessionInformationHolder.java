@@ -37,8 +37,7 @@ public class SessionInformationHolder {
     public final String antiCsrfToken;
 
     public SessionInformationHolder(@Nonnull SessionInfo session, @Nullable TokenInfo accessToken,
-                                    @Nullable TokenInfo refreshToken, @Nullable TokenInfo idRefreshToken,
-                                    @Nullable String antiCsrfToken) {
+            @Nullable TokenInfo refreshToken, @Nullable TokenInfo idRefreshToken, @Nullable String antiCsrfToken) {
         this.session = session;
         this.accessToken = accessToken;
         this.refreshToken = refreshToken;

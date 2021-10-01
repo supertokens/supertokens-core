@@ -25,8 +25,8 @@ import io.supertokens.storageLayer.StorageLayer;
 
 public class DeleteExpiredPasswordResetTokens extends CronTask {
 
-    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredPasswordResetTokens" +
-            ".DeleteExpiredPasswordResetTokens";
+    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredPasswordResetTokens"
+            + ".DeleteExpiredPasswordResetTokens";
 
     private DeleteExpiredPasswordResetTokens(Main main) {
         super("RemoveOldPasswordResetTokens", main);
@@ -35,8 +35,8 @@ public class DeleteExpiredPasswordResetTokens extends CronTask {
     public static DeleteExpiredPasswordResetTokens getInstance(Main main) {
         ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
         if (instance == null) {
-            instance = main.getResourceDistributor()
-                    .setResource(RESOURCE_KEY, new DeleteExpiredPasswordResetTokens(main));
+            instance = main.getResourceDistributor().setResource(RESOURCE_KEY,
+                    new DeleteExpiredPasswordResetTokens(main));
         }
         return (DeleteExpiredPasswordResetTokens) instance;
     }
@@ -46,8 +46,7 @@ public class DeleteExpiredPasswordResetTokens extends CronTask {
         if (StorageLayer.getStorage(this.main).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        StorageLayer.getEmailPasswordStorage(this.main)
-                .deleteExpiredPasswordResetTokens();
+        StorageLayer.getEmailPasswordStorage(this.main).deleteExpiredPasswordResetTokens();
     }
 
     @Override

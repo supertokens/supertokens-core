@@ -57,17 +57,20 @@ public class JWTKeyStorageTest {
     }
 
     /**
-     * Test that if a keyId is set when it already exists in storage, a DuplicateKeyIdException should be thrown
+     * Test that if a keyId is set when it already exists in storage, a
+     * DuplicateKeyIdException should be thrown
      *
-     * For NoSQL
-     * - Test that when trying to set with different information (key string in this case) but same algorithm returns false. This is because findOneAndUpdate
-     *   will not throw an exception in this case, but we should treat it as a failure and retry
+     * For NoSQL - Test that when trying to set with different information (key
+     * string in this case) but same algorithm returns false. This is because
+     * findOneAndUpdate will not throw an exception in this case, but we should
+     * treat it as a failure and retry
      *
-     * - Test that when trying to set with a duplicate key but different algorithm throws a DuplicateKeyIdException.
+     * - Test that when trying to set with a duplicate key but different algorithm
+     * throws a DuplicateKeyIdException.
      */
     @Test
     public void testThatWhenSettingKeysWithSameIdDuplicateExceptionIsThrown() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -104,17 +107,21 @@ public class JWTKeyStorageTest {
             }
 
             /*
-             * When using the same algorithm but different information (key string in this case), setting the key to storage should return
-             * false because an older key for the same algorithm is found in storage
+             * When using the same algorithm but different information (key string in this
+             * case), setting the key to storage should return false because an older key
+             * for the same algorithm is found in storage
              */
-            JWTSigningKeyInfo keyWithDifferentKeyString = new JWTSymmetricSigningKeyInfo("keyId-1234", 1000, "RSA", "someDifferentKeyString");
-            boolean successForDifferentKeyString = noSQLStorage_1.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(keyWithDifferentKeyString);
+            JWTSigningKeyInfo keyWithDifferentKeyString = new JWTSymmetricSigningKeyInfo("keyId-1234", 1000, "RSA",
+                    "someDifferentKeyString");
+            boolean successForDifferentKeyString = noSQLStorage_1
+                    .setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(keyWithDifferentKeyString);
             assert !successForDifferentKeyString;
 
             try {
                 /*
-                 * When setting with the same key id but different algorithm, findOneAndUpdate will try to insert but Mongo
-                 * should throw an error because the _id of the new document already exists in storage
+                 * When setting with the same key id but different algorithm, findOneAndUpdate
+                 * will try to insert but Mongo should throw an error because the _id of the new
+                 * document already exists in storage
                  */
                 JWTSigningKeyInfo keyToSet2 = new JWTSymmetricSigningKeyInfo("keyId-1234", 1000, "EC", "somekeystring");
                 noSQLStorage_1.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(keyToSet2);
@@ -131,16 +138,18 @@ public class JWTKeyStorageTest {
     /**
      * For NoSQL only
      *
-     * Note we do not test for SQL, because for SQL plugins in the case of parallel writes a deadlock is encountered and the current
-     * transaction logic handles it (as tested in StorageTest.java) and causes the transaction to be retried
+     * Note we do not test for SQL, because for SQL plugins in the case of parallel
+     * writes a deadlock is encountered and the current transaction logic handles it
+     * (as tested in StorageTest.java) and causes the transaction to be retried
      *
-     * Simulate a race condition for parallel threads trying to read from the database (which results in no rows being found initially)
-     * and writing to storage and make sure that at the end of execution both threads used the same key and only one thread was
-     * able to write to storage
+     * Simulate a race condition for parallel threads trying to read from the
+     * database (which results in no rows being found initially) and writing to
+     * storage and make sure that at the end of execution both threads used the same
+     * key and only one thread was able to write to storage
      */
     @Test
     public void testThatSettingJWTKeysInParallelWorksAsExpectedForNoSQL() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -167,8 +176,10 @@ public class JWTKeyStorageTest {
 
                         JWTSigningKeyInfo matchingKeyInfo = null;
 
-                        // We want to find if there is any key in storage that matches the algorithm. This is because in
-                        // the second iteration onwards the keys from storage will not be empty so we cannot rely on that fact
+                        // We want to find if there is any key in storage that matches the algorithm.
+                        // This is because in
+                        // the second iteration onwards the keys from storage will not be empty so we
+                        // cannot rely on that fact
                         for (int j = 0; j < keysFromStorage.size(); j++) {
                             if (keysFromStorage.get(j).algorithm.equals(algorithm)) {
                                 matchingKeyInfo = keysFromStorage.get(j);
@@ -176,7 +187,8 @@ public class JWTKeyStorageTest {
                             }
                         }
 
-                        // For the first thread we want to make sure that no key for the algorithm was found
+                        // For the first thread we want to make sure that no key for the algorithm was
+                        // found
                         assert matchingKeyInfo == null;
 
                         try {
@@ -186,7 +198,8 @@ public class JWTKeyStorageTest {
                         }
 
                         String keyId = UUID.randomUUID().toString();
-                        boolean success = noSQLStorage_1.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(new JWTSymmetricSigningKeyInfo(keyId, 1000, algorithm, keyId));
+                        boolean success = noSQLStorage_1.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(
+                                new JWTSymmetricSigningKeyInfo(keyId, 1000, algorithm, keyId));
                         // The first thread should always succeed in writing to storage
                         assert success;
 
@@ -207,7 +220,7 @@ public class JWTKeyStorageTest {
 
                             JWTSigningKeyInfo matchingKeyInfo = null;
 
-                            for (int j = 0; j < keysFromStorage.size(); j ++) {
+                            for (int j = 0; j < keysFromStorage.size(); j++) {
                                 if (keysFromStorage.get(j).algorithm.equals(algorithm)) {
                                     matchingKeyInfo = keysFromStorage.get(j);
                                     break;
@@ -228,7 +241,9 @@ public class JWTKeyStorageTest {
 
                             if (matchingKeyInfo == null) {
                                 String keyId = UUID.randomUUID().toString();
-                                boolean success = noSQLStorage_1.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(new JWTSymmetricSigningKeyInfo(keyId, 1000, algorithm, keyId));
+                                boolean success = noSQLStorage_1
+                                        .setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(
+                                                new JWTSymmetricSigningKeyInfo(keyId, 1000, algorithm, keyId));
 
                                 if (!success) {
                                     continue;

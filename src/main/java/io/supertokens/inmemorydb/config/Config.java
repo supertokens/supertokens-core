@@ -20,7 +20,6 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.exceptions.QuitProgramFromPluginException;
 
-
 public class Config extends ResourceDistributor.SingletonResource {
 
     private static final String RESOURCE_KEY = "io.supertokens.inmemorydb.config.Config";

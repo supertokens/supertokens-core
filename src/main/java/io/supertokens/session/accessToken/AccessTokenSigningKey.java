@@ -43,8 +43,10 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource {
-    // We keep the signing keys after generating a new one for accessTokenValidity multiplied by this value
-    // JWTs are still checked for expiration after signature verification, this doesn't extend the lifetime of the
+    // We keep the signing keys after generating a new one for accessTokenValidity
+    // multiplied by this value
+    // JWTs are still checked for expiration after signature verification, this
+    // doesn't extend the lifetime of the
     // sessions.
     private static final int SIGNING_KEY_VALIDITY_OVERLAP = 2;
     private static final String RESOURCE_KEY = "io.supertokens.session.accessToken.AccessTokenSigningKey";
@@ -87,10 +89,12 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         // writeLock - which is not possible:
         // https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/locks/ReentrantReadWriteLock.html
 
-        // This reference comparison should work, since we recreate the list object each time we refresh and it's
+        // This reference comparison should work, since we recreate the list object each
+        // time we refresh and it's
         // unmodifiable
         if (this.validKeys == oldKeyInfo) {
-            // key has not changed since we previously tried to use it.. So we can make it null.
+            // key has not changed since we previously tried to use it.. So we can make it
+            // null.
             // otherwise we might end up making this null unnecessarily.
 
             ProcessState.getInstance(this.main)
@@ -126,8 +130,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 // We avoid adding duplicates by enforcing that a legacy key can only ever be
                 // the first one in the new table.
                 noSQLStorage.addAccessTokenSigningKey_Transaction(
-                        new KeyValueInfo(legacyKey.value, legacyKey.createdAtTime), null
-                );
+                        new KeyValueInfo(legacyKey.value, legacyKey.createdAtTime), null);
                 // We don't need to check the lastUpdatedSign here, since we never update or set
                 // legacy keys anymore.
                 noSQLStorage.removeLegacyAccessTokenSigningKey_Transaction();
@@ -155,12 +158,9 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                     .collect(Collectors.toList());
         }
 
-        if (
-                this.validKeys == null ||
-                        this.validKeys.size() == 0 ||
-                        System.currentTimeMillis() >
-                                this.validKeys.get(0).createdAtTime + config.getAccessTokenSigningKeyUpdateInterval()
-        ) {
+        if (this.validKeys == null || this.validKeys.size() == 0
+                || System.currentTimeMillis() > this.validKeys.get(0).createdAtTime
+                        + config.getAccessTokenSigningKeyUpdateInterval()) {
             this.validKeys = maybeGenerateNewKeyAndUpdateInDb();
         }
 
@@ -187,9 +187,10 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         final long signingKeyLifetime = config.getAccessTokenSigningKeyUpdateInterval()
                 + SIGNING_KEY_VALIDITY_OVERLAP * config.getAccessTokenValidity();
         // Keys created after this timestamp can be used to sign access tokens (ms)
-        final long keysCreatedAfterCanSign =
-                System.currentTimeMillis() - config.getAccessTokenSigningKeyUpdateInterval();
-        // Keys created after this timestamp can be used to verify access token signatures (ms)
+        final long keysCreatedAfterCanSign = System.currentTimeMillis()
+                - config.getAccessTokenSigningKeyUpdateInterval();
+        // Keys created after this timestamp can be used to verify access token
+        // signatures (ms)
         final long keysCreatedAfterCanVerify = System.currentTimeMillis() - signingKeyLifetime;
 
         // Keys we can use for signature verification
@@ -247,8 +248,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 KeyValueInfo[] keysFromStorage = noSQLStorage.getAccessTokenSigningKeys_Transaction();
 
                 for (KeyValueInfo key : keysFromStorage) {
-                    lastCreated =
-                            lastCreated == null || lastCreated < key.createdAtTime ? key.createdAtTime : lastCreated;
+                    lastCreated = lastCreated == null || lastCreated < key.createdAtTime ? key.createdAtTime
+                            : lastCreated;
 
                     if (keysCreatedAfterCanVerify <= key.createdAtTime) {
                         if (keysCreatedAfterCanSign <= key.createdAtTime) {
@@ -270,7 +271,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                     boolean success = noSQLStorage.addAccessTokenSigningKey_Transaction(
                             new KeyValueInfo(newKey.value, newKey.createdAtTime), lastCreated);
 
-                    // If success is false, someone else already updated this particular field. So we must try again.
+                    // If success is false, someone else already updated this particular field. So
+                    // we must try again.
                     if (success) {
                         validKeys.add(newKey);
                         break;

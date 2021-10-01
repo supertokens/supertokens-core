@@ -58,10 +58,9 @@ public class AccessTokenSigningKeyTest {
     }
 
     @Test
-    public void legacySigningKeysAreMigratedProperly()
-            throws InterruptedException,
-            NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = {"../"};
+    public void legacySigningKeysAreMigratedProperly() throws InterruptedException, NoSuchAlgorithmException,
+            StorageQueryException, StorageTransactionLogicException {
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
@@ -85,12 +84,11 @@ public class AccessTokenSigningKeyTest {
 
     @Test
     public void getAllKeysReturnsOrdered()
-            throws IOException, InterruptedException,
-            InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException,
-            InvalidKeySpecException, SignatureException {
+            throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
+            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException {
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 seconds
 
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
@@ -98,8 +96,8 @@ public class AccessTokenSigningKeyTest {
 
         io.supertokens.utils.Utils.PubPriKey rsaKeys = io.supertokens.utils.Utils.generateNewPubPriKey();
         String signingKey = rsaKeys.toString();
-        KeyValueInfo legacyKey = new KeyValueInfo(signingKey,
-                System.currentTimeMillis() - 2000); // 2 seconds in the past
+        KeyValueInfo legacyKey = new KeyValueInfo(signingKey, System.currentTimeMillis() - 2000); // 2 seconds in the
+                                                                                                  // past
 
         SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
         sessionStorage.setKeyValue("access_token_signing_key", legacyKey);
@@ -135,13 +133,12 @@ public class AccessTokenSigningKeyTest {
 
     @Test
     public void getAllKeysFiltersOldKeys()
-            throws IOException, InterruptedException,
-            InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException,
-            InvalidKeySpecException, SignatureException {
+            throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
+            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException {
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 seconds
         Utils.setValueInConfig("access_token_validity", "1");
 
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
@@ -152,7 +149,8 @@ public class AccessTokenSigningKeyTest {
         List<KeyInfo> oldKeys = accessTokenSigningKeyInstance.getAllKeys();
         assertEquals(oldKeys.size(), 1);
 
-        // Wait for access_token_signing_key_update_interval + 2 * access_token_validity + margin
+        // Wait for access_token_signing_key_update_interval + 2 * access_token_validity
+        // + margin
         Thread.sleep(3500);
 
         List<KeyInfo> newKeys = accessTokenSigningKeyInstance.getAllKeys();
@@ -166,12 +164,11 @@ public class AccessTokenSigningKeyTest {
 
     @Test
     public void migratingStaticSigningKeys()
-            throws IOException, InterruptedException,
-            InvalidKeyException, NoSuchAlgorithmException, StorageQueryException, StorageTransactionLogicException,
-            InvalidKeySpecException, SignatureException {
+            throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
+            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException {
         Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
 
-        String[] args = {"../"};
+        String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);

@@ -58,7 +58,7 @@ public class JWTSigningAPITest2_9 {
      */
     @Test
     public void testThatNullAlgorithmThrowsError() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -69,12 +69,13 @@ public class JWTSigningAPITest2_9 {
         requestBody.addProperty("validity", 3600);
 
         try {
-            JsonObject response = HttpRequestForTesting
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                            requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                    "jwt");
             fail();
         } catch (HttpResponseException e) {
-            assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message: Field name 'algorithm' is invalid in JSON input"));
+            assertTrue(e.statusCode == 400 && e.getMessage()
+                    .equals("Http error. Status Code: 400. Message: Field name 'algorithm' is invalid in JSON input"));
         }
 
         process.kill();
@@ -82,11 +83,12 @@ public class JWTSigningAPITest2_9 {
     }
 
     /**
-     * Test that the API returns status for unsupported algorithm if an invalid algorithm parameter is provided
+     * Test that the API returns status for unsupported algorithm if an invalid
+     * algorithm parameter is provided
      */
     @Test
     public void testThatWrongAlgorithmReturnsUnsupportedError() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -97,9 +99,9 @@ public class JWTSigningAPITest2_9 {
         requestBody.add("payload", new JsonObject());
         requestBody.addProperty("validity", 3600);
 
-        JsonObject response = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "jwt");
         assertEquals(response.get("status").getAsString(), JWTSigningAPI.UNSUPPORTED_ALGORITHM_ERROR_STATUS);
 
         process.kill();
@@ -111,7 +113,7 @@ public class JWTSigningAPITest2_9 {
      */
     @Test
     public void testThatNullJwksDomainThrowsError() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -122,12 +124,13 @@ public class JWTSigningAPITest2_9 {
         requestBody.addProperty("validity", 3600);
 
         try {
-            JsonObject response = HttpRequestForTesting
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                            requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                    "jwt");
             fail();
         } catch (HttpResponseException e) {
-            assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message: Field name 'jwksDomain' is invalid in JSON input"));
+            assertTrue(e.statusCode == 400 && e.getMessage()
+                    .equals("Http error. Status Code: 400. Message: Field name 'jwksDomain' is invalid in JSON input"));
         }
 
         process.kill();
@@ -139,7 +142,7 @@ public class JWTSigningAPITest2_9 {
      */
     @Test
     public void testThatNullPayloadThrowsError() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -150,12 +153,12 @@ public class JWTSigningAPITest2_9 {
         requestBody.addProperty("validity", 3600);
 
         try {
-            HttpRequestForTesting
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                            requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
+                    requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
             fail();
         } catch (HttpResponseException e) {
-            assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message: Field name 'payload' is invalid in JSON input"));
+            assertTrue(e.statusCode == 400 && e.getMessage()
+                    .equals("Http error. Status Code: 400. Message: Field name 'payload' is invalid in JSON input"));
         }
 
         process.kill();
@@ -163,11 +166,12 @@ public class JWTSigningAPITest2_9 {
     }
 
     /**
-     * Test that the API returns 400 if the payload provided is not a valid JSON object
+     * Test that the API returns 400 if the payload provided is not a valid JSON
+     * object
      */
     @Test
     public void testThatNonJSONParseablePayloadThrowsError() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -179,12 +183,12 @@ public class JWTSigningAPITest2_9 {
         requestBody.addProperty("validity", 3600);
 
         try {
-            HttpRequestForTesting
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                            requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
+                    requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
             fail();
         } catch (HttpResponseException e) {
-            assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message: Field name 'payload' is invalid in JSON input"));
+            assertTrue(e.statusCode == 400 && e.getMessage()
+                    .equals("Http error. Status Code: 400. Message: Field name 'payload' is invalid in JSON input"));
         }
 
         process.kill();
@@ -196,7 +200,7 @@ public class JWTSigningAPITest2_9 {
      */
     @Test
     public void testThatNullValidityThrowsError() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -207,12 +211,13 @@ public class JWTSigningAPITest2_9 {
         requestBody.add("payload", new JsonObject());
 
         try {
-            JsonObject response = HttpRequestForTesting
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                            requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                    "jwt");
             fail();
         } catch (HttpResponseException e) {
-            assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message: Field name 'validity' is invalid in JSON input"));
+            assertTrue(e.statusCode == 400 && e.getMessage()
+                    .equals("Http error. Status Code: 400. Message: Field name 'validity' is invalid in JSON input"));
         }
 
         process.kill();
@@ -224,7 +229,7 @@ public class JWTSigningAPITest2_9 {
      */
     @Test
     public void testThatNegativeValidityThrowsError() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -236,12 +241,13 @@ public class JWTSigningAPITest2_9 {
         requestBody.addProperty("validity", -3600);
 
         try {
-            JsonObject response = HttpRequestForTesting
-                    .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                            requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                    "jwt");
             fail();
         } catch (HttpResponseException e) {
-            assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message: validity must be greater than or equal to 0"));
+            assertTrue(e.statusCode == 400 && e.getMessage()
+                    .equals("Http error. Status Code: 400. Message: validity must be greater than or equal to 0"));
         }
 
         process.kill();
@@ -249,11 +255,12 @@ public class JWTSigningAPITest2_9 {
     }
 
     /**
-     * Test that the API returns 200 with valid response body when called with a valid request body
+     * Test that the API returns 200 with valid response body when called with a
+     * valid request body
      */
     @Test
     public void testThatCallingWithValidParamsSucceeds() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -264,9 +271,9 @@ public class JWTSigningAPITest2_9 {
         requestBody.add("payload", new JsonObject());
         requestBody.addProperty("validity", 3600);
 
-        JsonObject response = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "jwt");
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertNotNull(response.get("jwt"));
@@ -280,7 +287,7 @@ public class JWTSigningAPITest2_9 {
      */
     @Test
     public void testThatReturnedJWTHasValidHeader() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -291,9 +298,9 @@ public class JWTSigningAPITest2_9 {
         requestBody.add("payload", new JsonObject());
         requestBody.addProperty("validity", 3600);
 
-        JsonObject response = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "jwt");
 
         String jwt = response.get("jwt").getAsString();
         DecodedJWT decodedJWT = JWT.decode(jwt);
@@ -312,11 +319,12 @@ public class JWTSigningAPITest2_9 {
     }
 
     /**
-     * Test that the returned JWT payload contains provided custom payload properties
+     * Test that the returned JWT payload contains provided custom payload
+     * properties
      */
     @Test
     public void testThatDecodedJWTHasCustomPayload() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -331,9 +339,9 @@ public class JWTSigningAPITest2_9 {
 
         requestBody.addProperty("validity", 3600);
 
-        JsonObject response = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "jwt");
 
         String jwt = response.get("jwt").getAsString();
         DecodedJWT decodedJWT = JWT.decode(jwt);
@@ -349,7 +357,7 @@ public class JWTSigningAPITest2_9 {
      */
     @Test
     public void testThatComplexJsonForCustomPayloadWorksFine() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -358,8 +366,8 @@ public class JWTSigningAPITest2_9 {
         requestBody.addProperty("algorithm", "rs256");
         requestBody.addProperty("jwksDomain", "http://localhost");
 
-        String customPayloadString = "{\"somecomplexkey\":{\"anothercomplexkey\":{\"evenmorecomplexkeys" +
-                "\":\"finalValue\"}},\"arrayElement\":[{\"somekey\":\"\"}]}";
+        String customPayloadString = "{\"somecomplexkey\":{\"anothercomplexkey\":{\"evenmorecomplexkeys"
+                + "\":\"finalValue\"}},\"arrayElement\":[{\"somekey\":\"\"}]}";
 
         JsonObject payload = new JsonObject();
         JsonObject customClaim = new JsonObject();
@@ -382,9 +390,9 @@ public class JWTSigningAPITest2_9 {
 
         requestBody.addProperty("validity", 3600);
 
-        JsonObject response = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "jwt");
 
         String jwt = response.get("jwt").getAsString();
         DecodedJWT decodedJWT = JWT.decode(jwt);

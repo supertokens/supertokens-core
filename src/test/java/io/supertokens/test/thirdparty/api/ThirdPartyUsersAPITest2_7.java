@@ -62,7 +62,7 @@ public class ThirdPartyUsersAPITest2_7 {
     // Check for bad input (missing fields)
     @Test
     public void testBadInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -74,49 +74,37 @@ public class ThirdPartyUsersAPITest2_7 {
             HashMap<String, String> QueryParams = new HashMap<>();
             QueryParams.put("paginationToken", "randomValue");
             try {
-                HttpRequestForTesting
-                        .sendGETRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/users", QueryParams, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/users",
+                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage().equals("Http error. Status Code: 400. Message: invalid pagination token"));
+                assertTrue(e.statusCode == 400
+                        && e.getMessage().equals("Http error. Status Code: 400. Message: invalid pagination token"));
             }
         }
         {
             HashMap<String, String> QueryParams = new HashMap<>();
             QueryParams.put("limit", "randomValue");
             try {
-                HttpRequestForTesting
-                        .sendGETRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/users", QueryParams, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/users",
+                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'limit' must be an int in " +
-                                        "the GET request"));
+                assertTrue(e.statusCode == 400 && e.getMessage()
+                        .equals("Http error. Status Code: 400. Message: Field name 'limit' must be an int in "
+                                + "the GET request"));
             }
         }
         {
             HashMap<String, String> QueryParams = new HashMap<>();
             QueryParams.put("timeJoinedOrder", "randomValue");
             try {
-                HttpRequestForTesting
-                        .sendGETRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/users", QueryParams, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/users",
+                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: timeJoinedOrder can be either ASC OR " +
-                                        "DESC"));
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message: timeJoinedOrder can be either ASC OR " + "DESC"));
             }
         }
 
@@ -124,14 +112,16 @@ public class ThirdPartyUsersAPITest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //-- Check good input works (add 5 users)
-    // *    - no params passed should return 5 users
-    // *    - only limit passed (limit: 2. users are returned in ASC order based on timeJoined)
-    // *    - limit and timeJoinedOrder passed (limit: 2, timeJoinedOrder: DESC. users are returned in DESC order
+    // -- Check good input works (add 5 users)
+    // * - no params passed should return 5 users
+    // * - only limit passed (limit: 2. users are returned in ASC order based on
+    // timeJoined)
+    // * - limit and timeJoinedOrder passed (limit: 2, timeJoinedOrder: DESC. users
+    // are returned in DESC order
     // based on timeJoined)
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -140,32 +130,25 @@ public class ThirdPartyUsersAPITest2_7 {
             return;
         }
 
-        // added Thread.sleep(100) as sometimes tests would fail due to inconsistent signup order
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId", "test@example.com");
+        // added Thread.sleep(100) as sometimes tests would fail due to inconsistent
+        // signup order
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId", "test@example.com");
         Thread.sleep(100);
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId1", "test1@example.com");
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId1", "test1@example.com");
         Thread.sleep(100);
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId2", "test2@example.com");
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId2", "test2@example.com");
         Thread.sleep(100);
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId3", "test3@example.com");
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId3", "test3@example.com");
         Thread.sleep(100);
-        ThirdParty.signInUp(process.getProcess(), "thirdPartyId",
-                "thirdPartyUserId4", "test4@example.com");
+        ThirdParty.signInUp(process.getProcess(), "thirdPartyId", "thirdPartyUserId4", "test4@example.com");
         Thread.sleep(100);
-
 
         {
             HashMap<String, String> queryParams = new HashMap<>();
             queryParams.put("limit", "1");
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/users", queryParams, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/users", queryParams, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
 
             assertEquals("OK", response.get("status").getAsString());
             assertNotNull(response.get("nextPaginationToken"));
@@ -183,23 +166,20 @@ public class ThirdPartyUsersAPITest2_7 {
 
         // no params passed should return 5 users
         {
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/users", new HashMap<>(), 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/users", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals(5, response.getAsJsonArray("users").size());
         }
 
-        // only limit passed (limit: 2. users are returned in ASC order based on timeJoined)
+        // only limit passed (limit: 2. users are returned in ASC order based on
+        // timeJoined)
         {
             HashMap<String, String> queryParams = new HashMap<>();
             queryParams.put("limit", "2");
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/users", queryParams, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/users", queryParams, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals(2, response.getAsJsonArray("users").size());
 
             JsonObject user_1 = response.getAsJsonArray("users").get(0).getAsJsonObject();
@@ -211,17 +191,16 @@ public class ThirdPartyUsersAPITest2_7 {
             assert (user_1.get("timeJoined").getAsLong() < user_2.get("timeJoined").getAsLong());
         }
 
-        // limit and timeJoinedOrder passed (limit: 2, timeJoinedOrder: DESC. users are returned in DESC order based on
+        // limit and timeJoinedOrder passed (limit: 2, timeJoinedOrder: DESC. users are
+        // returned in DESC order based on
         // * timeJoined)
         {
             HashMap<String, String> queryParams = new HashMap<>();
             queryParams.put("limit", "2");
             queryParams.put("timeJoinedOrder", "DESC");
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/users", queryParams, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/users", queryParams, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
             assertEquals(2, response.getAsJsonArray("users").size());
 
             JsonObject user_1 = response.getAsJsonArray("users").get(0).getAsJsonObject();

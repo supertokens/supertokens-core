@@ -50,7 +50,7 @@ public class IsEmailVerifiedAPITest2_7 {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -61,15 +61,13 @@ public class IsEmailVerifiedAPITest2_7 {
 
         {
             try {
-                HttpRequestForTesting
-                        .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
-                                null, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailverification");
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/email/verify", null, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "emailverification");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'userId' is missing in GET" +
-                                        " request"));
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message: Field name 'userId' is missing in GET" + " request"));
             }
         }
 
@@ -79,15 +77,13 @@ public class IsEmailVerifiedAPITest2_7 {
                 HashMap<String, String> map = new HashMap<>();
                 map.put("randomKey", "");
 
-                HttpRequestForTesting
-                        .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
-                                map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailverification");
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/email/verify", map, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "emailverification");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'userId' is missing in GET" +
-                                        " request"));
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message: Field name 'userId' is missing in GET" + " request"));
             }
         }
 
@@ -98,7 +94,7 @@ public class IsEmailVerifiedAPITest2_7 {
     // Check good input works
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -117,24 +113,20 @@ public class IsEmailVerifiedAPITest2_7 {
         map.put("userId", userId);
         map.put("email", "random@gmail.com");
 
-        JsonObject verifyResponse = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
-                        map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailverification");
+        JsonObject verifyResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/email/verify", map, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "emailverification");
         assertEquals(verifyResponse.entrySet().size(), 2);
         assertEquals(verifyResponse.get("status").getAsString(), "OK");
         assertEquals(verifyResponse.get("isVerified").getAsBoolean(), false);
-
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", userId);
         requestBody.addProperty("email", "random@gmail.com");
 
-
-        JsonObject response = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "emailverification");
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "emailverification");
 
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "OK");
@@ -144,11 +136,9 @@ public class IsEmailVerifiedAPITest2_7 {
         verifyResponseBody.addProperty("method", "token");
         verifyResponseBody.addProperty("token", response.get("token").getAsString());
 
-        JsonObject response2 = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/user/email/verify", verifyResponseBody, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "emailverification");
+        JsonObject response2 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/email/verify", verifyResponseBody, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "emailverification");
 
         assertEquals(response2.entrySet().size(), 3);
         assertEquals(response2.get("status").getAsString(), "OK");
@@ -156,9 +146,9 @@ public class IsEmailVerifiedAPITest2_7 {
         assertEquals(response2.get("userId").getAsString(), userId);
         assertEquals(response2.get("email").getAsString(), "random@gmail.com");
 
-        verifyResponse = HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/email/verify",
-                        map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailverification");
+        verifyResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/email/verify", map, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "emailverification");
         assertEquals(verifyResponse.entrySet().size(), 2);
         assertEquals(verifyResponse.get("status").getAsString(), "OK");
         assertTrue(verifyResponse.get("isVerified").getAsBoolean());
@@ -170,7 +160,7 @@ public class IsEmailVerifiedAPITest2_7 {
     // Check for all types of output
     @Test
     public void testAllTypesOfOutput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

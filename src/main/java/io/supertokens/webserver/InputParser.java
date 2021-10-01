@@ -55,9 +55,7 @@ public class InputParser {
     }
 
     public static String[] getCommaSeparatedStringArrayQueryParamOrThrowError(HttpServletRequest request,
-                                                                              String fieldName,
-                                                                              boolean nullable)
-            throws ServletException {
+            String fieldName, boolean nullable) throws ServletException {
         String[] value = null;
         // expect val1,val2,val3 and so on...
         String queryParamValue = getQueryParamOrThrowError(request, fieldName, nullable);
@@ -82,9 +80,8 @@ public class InputParser {
             assert key != null;
             return Integer.parseInt(key);
         } catch (Exception e) {
-            throw new ServletException(
-                    new WebserverAPI.BadRequestException(
-                            "Field name '" + fieldName + "' must be an int in the GET request"));
+            throw new ServletException(new WebserverAPI.BadRequestException(
+                    "Field name '" + fieldName + "' must be an int in the GET request"));
         }
     }
 
@@ -119,8 +116,7 @@ public class InputParser {
     }
 
     public static String parseStringFromElementOrThrowError(JsonElement element, String parentFieldName,
-                                                            boolean nullable)
-            throws ServletException {
+            boolean nullable) throws ServletException {
         try {
             if (nullable && element == null) {
                 return null;
@@ -131,9 +127,8 @@ public class InputParser {
             }
             return element.getAsString();
         } catch (Exception e) {
-            throw new ServletException(
-                    new WebserverAPI.BadRequestException(
-                            "Field name '" + parentFieldName + "' is invalid in JSON input"));
+            throw new ServletException(new WebserverAPI.BadRequestException(
+                    "Field name '" + parentFieldName + "' is invalid in JSON input"));
         }
     }
 

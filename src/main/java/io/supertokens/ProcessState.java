@@ -58,23 +58,21 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
     }
 
     /**
-     * INIT: Initialization started INIT_FAILURE: Initialization failed
-     * STARTED: Initialized successfully SHUTTING_DOWN: Shut down signal received STOPPED
-     * RETRYING_ACCESS_TOKEN_JWT_VERIFICATION: When access
-     * token verification fails due to change in signing key, so we retry it
-     * CRON_TASK_ERROR_LOGGING: When an exception is thrown from a Cronjob
-     * DEVICE_DRIVER_INFO_LOGGED:When program is saving deviceDriverInfo into ping
-     * SERVER_PING: When program is pinging the server with information
-     * WAITING_TO_INIT_STORAGE_MODULE: When the program is going to possibly wait to init the storage module
-     * GET_SESSION_NEW_TOKENS: When new tokens are being issued in get session
-     * DEADLOCK_FOUND: For SQLite transactions
-     * CREATING_NEW_TABLE: For SQLite
-     * SENDING_TELEMETRY, SENT_TELEMETRY: For Telemetry
+     * INIT: Initialization started INIT_FAILURE: Initialization failed STARTED:
+     * Initialized successfully SHUTTING_DOWN: Shut down signal received STOPPED
+     * RETRYING_ACCESS_TOKEN_JWT_VERIFICATION: When access token verification fails
+     * due to change in signing key, so we retry it CRON_TASK_ERROR_LOGGING: When an
+     * exception is thrown from a Cronjob DEVICE_DRIVER_INFO_LOGGED:When program is
+     * saving deviceDriverInfo into ping SERVER_PING: When program is pinging the
+     * server with information WAITING_TO_INIT_STORAGE_MODULE: When the program is
+     * going to possibly wait to init the storage module GET_SESSION_NEW_TOKENS:
+     * When new tokens are being issued in get session DEADLOCK_FOUND: For SQLite
+     * transactions CREATING_NEW_TABLE: For SQLite SENDING_TELEMETRY,
+     * SENT_TELEMETRY: For Telemetry
      */
     public enum PROCESS_STATE {
-        INIT, INIT_FAILURE, STARTED, SHUTTING_DOWN, STOPPED,
-        RETRYING_ACCESS_TOKEN_JWT_VERIFICATION, CRON_TASK_ERROR_LOGGING,
-        WAITING_TO_INIT_STORAGE_MODULE, GET_SESSION_NEW_TOKENS, DEADLOCK_FOUND,
+        INIT, INIT_FAILURE, STARTED, SHUTTING_DOWN, STOPPED, RETRYING_ACCESS_TOKEN_JWT_VERIFICATION,
+        CRON_TASK_ERROR_LOGGING, WAITING_TO_INIT_STORAGE_MODULE, GET_SESSION_NEW_TOKENS, DEADLOCK_FOUND,
         CREATING_NEW_TABLE, SENDING_TELEMETRY, SENT_TELEMETRY, SETTING_ACCESS_TOKEN_SIGNING_KEY_TO_NULL
     }
 

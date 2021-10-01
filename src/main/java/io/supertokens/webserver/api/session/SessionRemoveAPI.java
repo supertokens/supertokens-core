@@ -67,8 +67,8 @@ public class SessionRemoveAPI extends WebserverAPI {
             numberOfNullItems++;
         }
         if (numberOfNullItems == 0 || numberOfNullItems > 1) {
-            throw new ServletException(new BadRequestException(
-                    "Invalid JSON input - use one of userId or sessionHandles array"));
+            throw new ServletException(
+                    new BadRequestException("Invalid JSON input - use one of userId or sessionHandles array"));
         }
 
         if (userId != null) {
@@ -102,4 +102,3 @@ public class SessionRemoveAPI extends WebserverAPI {
         }
     }
 }
-

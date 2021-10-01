@@ -49,8 +49,7 @@ public class JWT {
     }
 
     public static String createJWT(JsonElement jsonObj, String privateSigningKey, AccessToken.VERSION version)
-            throws InvalidKeyException, NoSuchAlgorithmException,
-            InvalidKeySpecException, SignatureException {
+            throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException {
         initHeader();
         String payload = Utils.convertToBase64(jsonObj.toString());
         String header = version == AccessToken.VERSION.V1 ? JWT.HEADERv1 : JWT.HEADERv2;

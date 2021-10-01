@@ -56,7 +56,7 @@ public class TelemetryTest extends Mockito {
 
     @Test
     public void testThatDisablingTelemetryDoesNotSendOne() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         Utils.setValueInConfig("disable_telemetry", "true");
 
@@ -71,7 +71,7 @@ public class TelemetryTest extends Mockito {
 
     @Test
     public void testThatTelemetryDoesNotSendOneIfInMemDb() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -88,7 +88,7 @@ public class TelemetryTest extends Mockito {
 
     @Test
     public void testThatTelemetryDoesNotSendOneIfInMemDbButActualDBThere() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
@@ -108,7 +108,7 @@ public class TelemetryTest extends Mockito {
 
     @Test
     public void testThatTelemetryWorks() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args, false);
 
@@ -124,9 +124,8 @@ public class TelemetryTest extends Mockito {
             }
         });
 
-
-        HttpRequestMocking.getInstance(process.getProcess()).setMockURL(
-                Telemetry.REQUEST_ID, new HttpRequestMocking.URLGetter() {
+        HttpRequestMocking.getInstance(process.getProcess()).setMockURL(Telemetry.REQUEST_ID,
+                new HttpRequestMocking.URLGetter() {
 
                     @Override
                     public URL getUrl(String url) throws MalformedURLException {
@@ -149,8 +148,7 @@ public class TelemetryTest extends Mockito {
 
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.SENT_TELEMETRY));
 
-        JsonObject telemetryData = new JsonParser().parse(output.toString())
-                .getAsJsonObject();
+        JsonObject telemetryData = new JsonParser().parse(output.toString()).getAsJsonObject();
 
         assertTrue(telemetryData.has("telemetryId"));
         assertEquals(telemetryData.get("superTokensVersion").getAsString(),
@@ -164,7 +162,7 @@ public class TelemetryTest extends Mockito {
     public void testThatTelemetryIdDoesNotChange() throws Exception {
         String telemetryId = null;
         {
-            String[] args = {"../"};
+            String[] args = { "../" };
 
             TestingProcess process = TestingProcessManager.start(args, false);
 
@@ -180,9 +178,8 @@ public class TelemetryTest extends Mockito {
                 }
             });
 
-
-            HttpRequestMocking.getInstance(process.getProcess()).setMockURL(
-                    Telemetry.REQUEST_ID, new HttpRequestMocking.URLGetter() {
+            HttpRequestMocking.getInstance(process.getProcess()).setMockURL(Telemetry.REQUEST_ID,
+                    new HttpRequestMocking.URLGetter() {
 
                         @Override
                         public URL getUrl(String url) throws MalformedURLException {
@@ -205,8 +202,7 @@ public class TelemetryTest extends Mockito {
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.SENT_TELEMETRY));
 
-            JsonObject telemetryData = new JsonParser().parse(output.toString())
-                    .getAsJsonObject();
+            JsonObject telemetryData = new JsonParser().parse(output.toString()).getAsJsonObject();
 
             telemetryId = telemetryData.get("telemetryId").getAsString();
 
@@ -215,7 +211,7 @@ public class TelemetryTest extends Mockito {
         }
 
         {
-            String[] args = {"../"};
+            String[] args = { "../" };
 
             TestingProcess process = TestingProcessManager.start(args, false);
 
@@ -231,9 +227,8 @@ public class TelemetryTest extends Mockito {
                 }
             });
 
-
-            HttpRequestMocking.getInstance(process.getProcess()).setMockURL(
-                    Telemetry.REQUEST_ID, new HttpRequestMocking.URLGetter() {
+            HttpRequestMocking.getInstance(process.getProcess()).setMockURL(Telemetry.REQUEST_ID,
+                    new HttpRequestMocking.URLGetter() {
 
                         @Override
                         public URL getUrl(String url) throws MalformedURLException {
@@ -256,8 +251,7 @@ public class TelemetryTest extends Mockito {
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.SENT_TELEMETRY));
 
-            JsonObject telemetryData = new JsonParser().parse(output.toString())
-                    .getAsJsonObject();
+            JsonObject telemetryData = new JsonParser().parse(output.toString()).getAsJsonObject();
 
             String thisTelemetryId = telemetryData.get("telemetryId").getAsString();
 
@@ -272,7 +266,7 @@ public class TelemetryTest extends Mockito {
 
     @Test
     public void testThatTelemetryWillNotGoIfTestingAndNoMockRequest() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

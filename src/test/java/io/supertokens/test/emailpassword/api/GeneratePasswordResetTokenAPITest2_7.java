@@ -46,10 +46,10 @@ public class GeneratePasswordResetTokenAPITest2_7 {
         Utils.reset();
     }
 
-    //Check for bad input (missing fields)
+    // Check for bad input (missing fields)
     @Test
     public void testBadInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -60,32 +60,26 @@ public class GeneratePasswordResetTokenAPITest2_7 {
 
         {
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user/password/reset/token", null, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/password/reset/token", null, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
+                assertTrue(e.statusCode == 400
+                        && e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
             }
         }
 
         {
             JsonObject requestBody = new JsonObject();
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'userId' is invalid in " +
-                                        "JSON input"));
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message: Field name 'userId' is invalid in " + "JSON input"));
 
             }
         }
@@ -94,17 +88,13 @@ public class GeneratePasswordResetTokenAPITest2_7 {
             JsonObject requestBody = new JsonObject();
             requestBody.add("userId", null);
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'userId' is invalid in " +
-                                        "JSON input"));
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message: Field name 'userId' is invalid in " + "JSON input"));
             }
         }
 
@@ -115,7 +105,7 @@ public class GeneratePasswordResetTokenAPITest2_7 {
     // Check good input works
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -132,11 +122,9 @@ public class GeneratePasswordResetTokenAPITest2_7 {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", userId);
 
-        JsonObject response = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "emailpassword");
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertNotNull(response.get("token"));
@@ -146,11 +134,11 @@ public class GeneratePasswordResetTokenAPITest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //Check for all types of output
+    // Check for all types of output
     // Failure condition: passing a valid userId will cause the test to fail
     @Test
     public void testForAllTypesOfOutput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -162,11 +150,9 @@ public class GeneratePasswordResetTokenAPITest2_7 {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", "randomUserId");
 
-        JsonObject response = HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "emailpassword");
 
         assertEquals(response.get("status").getAsString(), "UNKNOWN_USER_ID_ERROR");
         assertEquals(response.entrySet().size(), 1);

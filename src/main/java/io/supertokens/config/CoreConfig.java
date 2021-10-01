@@ -74,7 +74,7 @@ public class CoreConfig {
     @JsonProperty
     private boolean disable_telemetry = false;
 
-    //	TODO: add https in later version
+    // TODO: add https in later version
 //	# (OPTIONAL) boolean value (true or false). Set to true if you want to enable https requests to SuperTokens.
 //	# If you are not running SuperTokens within a closed network along with your API process, for 
 //	# example if you are using multiple cloud vendors, then it is recommended to set this to true.
@@ -137,8 +137,8 @@ public class CoreConfig {
     }
 
     public long getAccessTokenSigningKeyUpdateInterval() {
-        return access_token_signing_key_dynamic ?
-            (long) (access_token_signing_key_update_interval * 3600 * 1000) : (10L * 365 * 24 * 3600 * 1000);
+        return access_token_signing_key_dynamic ? (long) (access_token_signing_key_update_interval * 3600 * 1000)
+                : (10L * 365 * 24 * 3600 * 1000);
     }
 
     public String[] getAPIKeys() {
@@ -181,13 +181,13 @@ public class CoreConfig {
     void validateAndInitialise(Main main) throws IOException {
         if (getConfigVersion() == -1) {
             throw new QuitProgramException(
-                    "'core_config_version' is not set in the config.yaml file. Please redownload and install " +
-                            "SuperTokens");
+                    "'core_config_version' is not set in the config.yaml file. Please redownload and install "
+                            + "SuperTokens");
         }
         if (access_token_validity < 1 || access_token_validity > 86400000) {
             throw new QuitProgramException(
-                    "'access_token_validity' must be between 1 and 86400000 seconds inclusive. The config file can be" +
-                            " found here: " + getConfigFileLocation(main));
+                    "'access_token_validity' must be between 1 and 86400000 seconds inclusive. The config file can be"
+                            + " found here: " + getConfigFileLocation(main));
         }
         Boolean validityTesting = CoreConfigTestContent.getInstance(main)
                 .getValue(CoreConfigTestContent.VALIDITY_TESTING);
@@ -195,16 +195,16 @@ public class CoreConfig {
         if ((refresh_token_validity * 60) <= access_token_validity) {
             if (!Main.isTesting || validityTesting) {
                 throw new QuitProgramException(
-                        "'refresh_token_validity' must be strictly greater than 'access_token_validity'. The config " +
-                                "file can be found here: " + getConfigFileLocation(main));
+                        "'refresh_token_validity' must be strictly greater than 'access_token_validity'. The config "
+                                + "file can be found here: " + getConfigFileLocation(main));
             }
         }
 
         if (!Main.isTesting || validityTesting) { // since in testing we make this really small
             if (access_token_signing_key_update_interval < 1) {
                 throw new QuitProgramException(
-                        "'access_token_signing_key_update_interval' must be greater than, equal to 1 hour. The " +
-                                "config file can be found here: " + getConfigFileLocation(main));
+                        "'access_token_signing_key_update_interval' must be greater than, equal to 1 hour. The "
+                                + "config file can be found here: " + getConfigFileLocation(main));
             }
         }
 
@@ -217,10 +217,9 @@ public class CoreConfig {
         }
 
         if (max_server_pool_size <= 0) {
-            throw new QuitProgramException("'max_server_pool_size' must be >= 1. The config file can be found here: " +
-                    getConfigFileLocation(main));
+            throw new QuitProgramException("'max_server_pool_size' must be >= 1. The config file can be found here: "
+                    + getConfigFileLocation(main));
         }
-
 
         if (api_keys != null) {
             String[] keys = api_keys.split(",");
@@ -232,11 +231,11 @@ public class CoreConfig {
                 }
                 for (int y = 0; y < currKey.length(); y++) {
                     char currChar = currKey.charAt(y);
-                    if (!(currChar == '=' || currChar == '-' || (currChar >= '0' && currChar <= '9') ||
-                            (currChar >= 'a' && currChar <= 'z') || (currChar >= 'A' && currChar <= 'Z'))) {
+                    if (!(currChar == '=' || currChar == '-' || (currChar >= '0' && currChar <= '9')
+                            || (currChar >= 'a' && currChar <= 'z') || (currChar >= 'A' && currChar <= 'Z'))) {
                         throw new QuitProgramException(
-                                "Invalid characters in API key. Please only use '=', '-' and alpha-numeric (including" +
-                                        " capitals)");
+                                "Invalid characters in API key. Please only use '=', '-' and alpha-numeric (including"
+                                        + " capitals)");
                     }
                 }
             }

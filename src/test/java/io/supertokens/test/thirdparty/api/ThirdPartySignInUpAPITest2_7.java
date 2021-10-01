@@ -56,11 +56,11 @@ public class ThirdPartySignInUpAPITest2_7 {
         Utils.reset();
     }
 
-    //good input
+    // good input
     // failure condition: test fails if signinup response does not match api spec
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -69,26 +69,25 @@ public class ThirdPartySignInUpAPITest2_7 {
             return;
         }
 
-        JsonObject response = Utils
-                .signInUpRequest_2_7(process, "test@example.com", true, "testThirdPartyId",
-                        "testThirdPartyUserId");
+        JsonObject response = Utils.signInUpRequest_2_7(process, "test@example.com", true, "testThirdPartyId",
+                "testThirdPartyUserId");
         checkSignInUpResponse(response, "testThirdPartyId", "testThirdPartyUserId", "test@example.com", true);
 
         {
             JsonObject user = response.getAsJsonObject("user");
-            assertTrue(EmailVerification
-                    .isEmailVerified(process.getProcess(), user.get("id").getAsString(),
-                            user.get("email").getAsString()));
+            assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.get("id").getAsString(),
+                    user.get("email").getAsString()));
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    //Sign up with unnormalised email, and sign in with normailised email to get the same user.
+    // Sign up with unnormalised email, and sign in with normailised email to get
+    // the same user.
     // failure condition: test fails if signin causes a new user to be created
     @Test
     public void testEmailNormalisation() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -97,14 +96,12 @@ public class ThirdPartySignInUpAPITest2_7 {
             return;
         }
 
-        JsonObject response_1 = Utils
-                .signInUpRequest_2_7(process, "TeSt@example.com", false, "testThirdPartyId",
-                        "testThirdPartyUserId");
+        JsonObject response_1 = Utils.signInUpRequest_2_7(process, "TeSt@example.com", false, "testThirdPartyId",
+                "testThirdPartyUserId");
         checkSignInUpResponse(response_1, "testThirdPartyId", "testThirdPartyUserId", "test@example.com", true);
 
-        JsonObject response_2 = Utils
-                .signInUpRequest_2_7(process, "test@example.com", false, "testThirdPartyId",
-                        "testThirdPartyUserId");
+        JsonObject response_2 = Utils.signInUpRequest_2_7(process, "test@example.com", false, "testThirdPartyId",
+                "testThirdPartyUserId");
         checkSignInUpResponse(response_2, "testThirdPartyId", "testThirdPartyUserId", "test@example.com", false);
 
         JsonObject response_1_user = response_1.getAsJsonObject("user");
@@ -121,7 +118,7 @@ public class ThirdPartySignInUpAPITest2_7 {
     // simple bad input
     @Test
     public void testBadInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -131,15 +128,13 @@ public class ThirdPartySignInUpAPITest2_7 {
         }
         {
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/signinup", null, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup", null, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
+                assertTrue(e.statusCode == 400
+                        && e.getMessage().equals("Http error. Status Code: 400. Message: Invalid Json Input"));
             }
         }
 
@@ -154,19 +149,14 @@ public class ThirdPartySignInUpAPITest2_7 {
             requestBody.addProperty("thirdPartyUserId", "testThirdPartyUserID");
             requestBody.add("email", emailObject);
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/signinup", requestBody, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'thirdPartyId' is " +
-                                        "invalid " +
-                                        "in " +
-                                        "JSON input"));
+                assertTrue(e.statusCode == 400
+                        && e.getMessage().equals("Http error. Status Code: 400. Message: Field name 'thirdPartyId' is "
+                                + "invalid " + "in " + "JSON input"));
             }
         }
         {
@@ -175,19 +165,14 @@ public class ThirdPartySignInUpAPITest2_7 {
             requestBody.addProperty("thirdPartyUserId", 12345);
             requestBody.add("email", emailObject);
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/signinup", requestBody, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'thirdPartyUserId' is " +
-                                        "invalid " +
-                                        "in " +
-                                        "JSON input"));
+                assertTrue(e.statusCode == 400 && e.getMessage()
+                        .equals("Http error. Status Code: 400. Message: Field name 'thirdPartyUserId' is " + "invalid "
+                                + "in " + "JSON input"));
             }
         }
         process.kill();
@@ -197,7 +182,7 @@ public class ThirdPartySignInUpAPITest2_7 {
     // email sub object's fields are missing
     @Test
     public void testBadInputInEmailSubObject() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -210,26 +195,20 @@ public class ThirdPartySignInUpAPITest2_7 {
         requestBody.addProperty("thirdPartyId", "testThirdPartyId");
         requestBody.addProperty("thirdPartyUserId", "testThirdPartyUserID");
 
-
         {
             JsonObject emailObject = new JsonObject();
             emailObject.addProperty("isVerified", false);
             requestBody.add("email", emailObject);
 
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/signinup", requestBody, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'id' is " +
-                                        "invalid " +
-                                        "in " +
-                                        "JSON input"));
+                assertTrue(e.statusCode == 400
+                        && e.getMessage().equals("Http error. Status Code: 400. Message: Field name 'id' is "
+                                + "invalid " + "in " + "JSON input"));
             }
         }
         {
@@ -237,19 +216,14 @@ public class ThirdPartySignInUpAPITest2_7 {
             emailObject.addProperty("id", "test@example.com");
             requestBody.add("email", emailObject);
             try {
-                HttpRequestForTesting
-                        .sendJsonPOSTRequest(process.getProcess(), "",
-                                "http://localhost:3567/recipe/signinup", requestBody, 1000,
-                                1000,
-                                null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_7ForTests(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-                assertTrue(e.statusCode == 400 &&
-                        e.getMessage()
-                                .equals("Http error. Status Code: 400. Message: Field name 'isVerified' is " +
-                                        "invalid " +
-                                        "in " +
-                                        "JSON input"));
+                assertTrue(e.statusCode == 400
+                        && e.getMessage().equals("Http error. Status Code: 400. Message: Field name 'isVerified' is "
+                                + "invalid " + "in " + "JSON input"));
             }
         }
         process.kill();
@@ -257,7 +231,7 @@ public class ThirdPartySignInUpAPITest2_7 {
     }
 
     public static void checkSignInUpResponse(JsonObject response, String thirdPartyId, String thirdPartyUserId,
-                                             String email, boolean createdNewUser) {
+            String email, boolean createdNewUser) {
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(3, response.entrySet().size());
         assertEquals(createdNewUser, response.get("createdNewUser").getAsBoolean());

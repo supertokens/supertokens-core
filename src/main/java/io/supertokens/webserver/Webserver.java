@@ -55,9 +55,9 @@ public class Webserver extends ResourceDistributor.SingletonResource {
     // we add the random UUI because we want to allow two instances of SuperTokens
     // to run (on different ports) and their tomcat servers should not affect each
     // other.
-    private final String TEMP_FOLDER =
-            OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS ? "webserver-temp\\" + UUID.randomUUID().
-                    toString() + "\\" : "webserver-temp/" + UUID.randomUUID().toString() + "/";
+    private final String TEMP_FOLDER = OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS
+            ? "webserver-temp\\" + UUID.randomUUID().toString() + "\\"
+            : "webserver-temp/" + UUID.randomUUID().toString() + "/";
     // contextPath is the prefix to all paths for all URLs. So it's "" for us.
     private final String CONTEXT_PATH = "";
     private final Main main;
@@ -125,12 +125,12 @@ public class Webserver extends ResourceDistributor.SingletonResource {
             // reusing same port OR not right permissions given.
             Logging.error(main, null, false, e);
             throw new QuitProgramException(
-                    "Error while starting webserver. Possible reasons:\n- Another instance of SuperTokens is already " +
-                            "running on the same port. If you want to run another instance, please pass a new config " +
-                            "file to it with a different port or specify the port via CLI options. \n- If you are " +
-                            "running this on port 80 or 443, make " +
-                            "sure to give the right permission to SuperTokens.\n- The provided host is not available" +
-                            " on this server");
+                    "Error while starting webserver. Possible reasons:\n- Another instance of SuperTokens is already "
+                            + "running on the same port. If you want to run another instance, please pass a new config "
+                            + "file to it with a different port or specify the port via CLI options. \n- If you are "
+                            + "running this on port 80 or 443, make "
+                            + "sure to give the right permission to SuperTokens.\n- The provided host is not available"
+                            + " on this server");
         }
 
         tomcatReference = new TomcatReference(tomcat, context);
@@ -139,8 +139,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
             setupRoutes();
         } catch (Exception e) {
             Logging.error(main, null, false, e);
-            throw new QuitProgramException(
-                    "API routes not initialised properly: " + e.getMessage());
+            throw new QuitProgramException("API routes not initialised properly: " + e.getMessage());
         }
     }
 
@@ -162,8 +161,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new SignInAPI(main));
         addAPI(new GeneratePasswordResetTokenAPI(main));
         addAPI(new ResetPasswordAPI(main));
-        addAPI(new RecipeRouter(main, new UserAPI(main),
-                new io.supertokens.webserver.api.thirdparty.UserAPI(main)));
+        addAPI(new RecipeRouter(main, new UserAPI(main), new io.supertokens.webserver.api.thirdparty.UserAPI(main)));
         addAPI(new GenerateEmailVerificationTokenAPI(main));
         addAPI(new VerifyEmailAPI(main));
         addAPI(new GetUsersByEmailAPI(main));

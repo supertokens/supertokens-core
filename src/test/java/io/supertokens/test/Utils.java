@@ -33,7 +33,6 @@ import java.nio.charset.StandardCharsets;
 
 public abstract class Utils extends Mockito {
 
-
     private static ByteArrayOutputStream byteArrayOutputStream;
 
     public static void afterTesting() {
@@ -93,8 +92,10 @@ public abstract class Utils extends Mockito {
             Process process = pb.start();
             process.waitFor();
 
-            // in devConfig, it's set to false. However, in config, it's commented. So we comment it out so that it
-            // mimics production. Refer to https://github.com/supertokens/supertokens-core/issues/118
+            // in devConfig, it's set to false. However, in config, it's commented. So we
+            // comment it out so that it
+            // mimics production. Refer to
+            // https://github.com/supertokens/supertokens-core/issues/118
             commentConfigValue("disable_telemetry");
 
             TestingProcessManager.killAll();
@@ -125,7 +126,6 @@ public abstract class Utils extends Mockito {
             }
         }
 
-
     }
 
     public static void setValueInConfig(String key, String value) throws IOException {
@@ -155,38 +155,31 @@ public abstract class Utils extends Mockito {
     }
 
     public static JsonObject signUpRequest_2_4(TestingProcessManager.TestingProcess process, String email,
-                                               String password)
-            throws IOException, HttpResponseException {
+            String password) throws IOException, HttpResponseException {
 
         JsonObject signUpRequestBody = new JsonObject();
         signUpRequestBody.addProperty("email", email);
         signUpRequestBody.addProperty("password", password);
 
-        return HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signup", signUpRequestBody, 1000,
-                        1000,
-                        null, getCdiVersion2_7ForTests(), "emailpassword");
+        return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signup", signUpRequestBody, 1000, 1000, null, getCdiVersion2_7ForTests(),
+                "emailpassword");
     }
 
     public static JsonObject signUpRequest_2_5(TestingProcessManager.TestingProcess process, String email,
-                                               String password)
-            throws IOException, HttpResponseException {
+            String password) throws IOException, HttpResponseException {
 
         JsonObject signUpRequestBody = new JsonObject();
         signUpRequestBody.addProperty("email", email);
         signUpRequestBody.addProperty("password", password);
 
-        return HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signup", signUpRequestBody, 1000,
-                        1000,
-                        null, getCdiVersion2_7ForTests(), "emailpassword");
+        return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signup", signUpRequestBody, 1000, 1000, null, getCdiVersion2_7ForTests(),
+                "emailpassword");
     }
 
     public static JsonObject signInUpRequest_2_7(TestingProcessManager.TestingProcess process, String email,
-                                                 boolean isVerified,
-                                                 String thirdPartyId, String thirdPartyUserId)
+            boolean isVerified, String thirdPartyId, String thirdPartyUserId)
             throws IOException, HttpResponseException {
 
         JsonObject emailObject = new JsonObject();
@@ -198,16 +191,13 @@ public abstract class Utils extends Mockito {
         signUpRequestBody.addProperty("thirdPartyUserId", thirdPartyUserId);
         signUpRequestBody.add("email", emailObject);
 
-        return HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000,
-                        1000,
-                        null, getCdiVersion2_7ForTests(), "thirdparty");
+        return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000, 1000, null,
+                getCdiVersion2_7ForTests(), "thirdparty");
     }
 
     public static JsonObject signInUpRequest_2_8(TestingProcessManager.TestingProcess process, String email,
-                                                 String thirdPartyId, String thirdPartyUserId)
-            throws IOException, HttpResponseException {
+            String thirdPartyId, String thirdPartyUserId) throws IOException, HttpResponseException {
 
         JsonObject emailObject = new JsonObject();
         emailObject.addProperty("id", email);
@@ -217,11 +207,9 @@ public abstract class Utils extends Mockito {
         signUpRequestBody.addProperty("thirdPartyUserId", thirdPartyUserId);
         signUpRequestBody.add("email", emailObject);
 
-        return HttpRequestForTesting
-                .sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000,
-                        1000,
-                        null, getCdiVersion2_8ForTests(), "thirdparty");
+        return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000, 1000, null,
+                getCdiVersion2_8ForTests(), "thirdparty");
     }
 
 }

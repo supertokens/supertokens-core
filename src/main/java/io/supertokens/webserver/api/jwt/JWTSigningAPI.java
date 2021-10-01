@@ -61,11 +61,13 @@ public class JWTSigningAPI extends WebserverAPI {
         long validity = InputParser.parseLongOrThrowError(input, "validity", false);
 
         if (validity <= 0) {
-            throw new ServletException(new WebserverAPI.BadRequestException("validity must be greater than or equal to 0"));
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("validity must be greater than or equal to 0"));
         }
 
         try {
-            String jwt = JWTSigningFunctions.createJWTToken(main, algorithm.toUpperCase(), payload, jwksDomain, validity);
+            String jwt = JWTSigningFunctions.createJWTToken(main, algorithm.toUpperCase(), payload, jwksDomain,
+                    validity);
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "OK");
             reply.addProperty("jwt", jwt);

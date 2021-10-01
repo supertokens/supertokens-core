@@ -43,10 +43,8 @@ public class TelemetryAPI extends WebserverAPI {
         return "/telemetry";
     }
 
-
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws
-            IOException, ServletException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
             Storage storage = StorageLayer.getStorage(main);
             KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);

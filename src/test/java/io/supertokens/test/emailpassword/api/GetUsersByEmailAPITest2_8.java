@@ -59,9 +59,8 @@ public class GetUsersByEmailAPITest2_8 {
 
             // given
             {
-                JsonObject signUpResponse = Utils
-                        .signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty",
-                                "mockThirdPartyUserId");
+                JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true,
+                        "mockThirdParty", "mockThirdPartyUserId");
                 assertEquals(signUpResponse.get("status").getAsString(), "OK");
 
                 JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
@@ -69,9 +68,8 @@ public class GetUsersByEmailAPITest2_8 {
                 assertNotNull(signUpUser.get("id"));
             }
             {
-                JsonObject signUpResponse = Utils
-                        .signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty2",
-                                "mockThirdParty2UserId");
+                JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true,
+                        "mockThirdParty2", "mockThirdParty2UserId");
                 assertEquals(signUpResponse.get("status").getAsString(), "OK");
 
                 JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
@@ -83,11 +81,9 @@ public class GetUsersByEmailAPITest2_8 {
             HashMap<String, String> query = new HashMap<>();
             query.put("email", "john.doe@example.com");
 
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/users/by-email", query, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/users/by-email", query, 1000, 1000, null,
+                    Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
 
             // then
             JsonArray jsonUsers = response.get("users").getAsJsonArray();
@@ -113,8 +109,8 @@ public class GetUsersByEmailAPITest2_8 {
 
             // given
             {
-                JsonObject signUpResponse = Utils
-                        .signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "johnDoeId");
+                JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true,
+                        "mockThirdParty", "johnDoeId");
                 assertEquals(signUpResponse.get("status").getAsString(), "OK");
 
                 JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
@@ -122,8 +118,8 @@ public class GetUsersByEmailAPITest2_8 {
                 assertNotNull(signUpUser.get("id"));
             }
             {
-                JsonObject signUpResponse = Utils
-                        .signInUpRequest_2_7(process, "karl.doe@example.com", true, "mockThirdParty", "karlDoeId");
+                JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "karl.doe@example.com", true,
+                        "mockThirdParty", "karlDoeId");
                 assertEquals(signUpResponse.get("status").getAsString(), "OK");
 
                 JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
@@ -136,11 +132,9 @@ public class GetUsersByEmailAPITest2_8 {
 
             query.put("email", "john.doe@example.com");
 
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/users/by-email", query, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/users/by-email", query, 1000, 1000, null,
+                    Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
 
             JsonArray users = response.getAsJsonArray("users");
             JsonElement status = response.get("status");
@@ -161,8 +155,8 @@ public class GetUsersByEmailAPITest2_8 {
 
             // given
             {
-                JsonObject signUpResponse = Utils
-                        .signInUpRequest_2_7(process, "john.doe@example.com", true, "mockThirdParty", "johnDoeId");
+                JsonObject signUpResponse = Utils.signInUpRequest_2_7(process, "john.doe@example.com", true,
+                        "mockThirdParty", "johnDoeId");
                 assertEquals(signUpResponse.get("status").getAsString(), "OK");
 
                 JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
@@ -175,11 +169,9 @@ public class GetUsersByEmailAPITest2_8 {
 
             query.put("email", "inexistent@example.com");
 
-            JsonObject response = HttpRequestForTesting
-                    .sendGETRequest(process.getProcess(), "",
-                            "http://localhost:3567/recipe/users/by-email", query, 1000,
-                            1000,
-                            null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/users/by-email", query, 1000, 1000, null,
+                    Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
 
             JsonArray users = response.getAsJsonArray("users");
             JsonElement status = response.get("status");
@@ -213,11 +205,8 @@ public class GetUsersByEmailAPITest2_8 {
 
     private void testBadInput(TestingProcessManager.TestingProcess process, Map<String, String> query)
             throws Exception {
-        HttpRequestForTesting
-                .sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/users/by-email", query, 1000,
-                        1000,
-                        null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
+        HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/users/by-email",
+                query, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
 
         throw new Exception("Request didn't throw as expected");
     }

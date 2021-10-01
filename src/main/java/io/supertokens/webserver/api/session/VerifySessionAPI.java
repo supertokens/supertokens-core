@@ -66,8 +66,8 @@ public class VerifySessionAPI extends WebserverAPI {
         assert enableAntiCsrf != null;
 
         try {
-            SessionInformationHolder sessionInfo = Session
-                    .getSession(main, accessToken, antiCsrfToken, enableAntiCsrf, doAntiCsrfCheck);
+            SessionInformationHolder sessionInfo = Session.getSession(main, accessToken, antiCsrfToken, enableAntiCsrf,
+                    doAntiCsrfCheck);
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
             result.addProperty("status", "OK");
@@ -98,12 +98,13 @@ public class VerifySessionAPI extends WebserverAPI {
                 JsonObject reply = new JsonObject();
                 reply.addProperty("status", "TRY_REFRESH_TOKEN");
 
-                reply.addProperty("jwtSigningPublicKey",
-                        new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value).publicKey);
+                reply.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(
+                        AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value).publicKey);
                 reply.addProperty("jwtSigningPublicKeyExpiryTime",
                         AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
 
-                if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
+                if (!super.getVersionFromRequest(req).equals("2.7")
+                        && !super.getVersionFromRequest(req).equals("2.8")) {
                     List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getAllKeys();
                     JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                     reply.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
