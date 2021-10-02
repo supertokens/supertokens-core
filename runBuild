@@ -24,13 +24,13 @@ then
 	cp ./build/libs/* ./jar
 fi
 
-(cd ./cli/ && ./runBuild)
+(cd ./cli/ && ./runBuild "$@")
 if [[ $? -ne 0 ]]
 then
     echo "Failed to build"
 	exit 1
 fi
-(cd ./downloader/ && ./runBuild)
+(cd ./downloader/ && ./runBuild "$@")
 if [[ $? -ne 0 ]]
 then
     echo "Failed to build"
