@@ -137,6 +137,7 @@ Mihály Lengyel</b></sub></a></td>
   <tr>
 <td align="center"><a href="https://github.com/cerino-ligutom"><img src="https://avatars.githubusercontent.com/u/6721822?v=4" width="100px;" alt=""/><br /><sub><b>Cerino O. Ligutom III</b></sub></a></td>
 <td align="center"><a href="https://github.com/nadilas"><img src="https://avatars.githubusercontent.com/u/5324856?v=4" width="100px;" alt=""/><br /><sub><b>nadilas</b></sub></a></td>
+<td align="center"><a href="https://github.com/vasica38"><img src="https://avatars.githubusercontent.com/u/26538079?v=4" width="100px;" alt=""/><br /><sub><b>Vasile Catana</b></sub></a></td>
   </tr> 
 </table>
 
