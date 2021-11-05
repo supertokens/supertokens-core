@@ -17,6 +17,7 @@ labels:
      - [ ] mongodb-plugin
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
  - [ ] [supertokens-golang:X.Y](https://github.com/supertokens/supertokens-golang/tree/X.Y)
+ - [ ] [supertokens-python:X.Y](https://github.com/supertokens/supertokens-python/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/X.Y)
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
     - [ ] Updated dependencies to use supertokens-website from npm registry
@@ -24,25 +25,20 @@ labels:
     - [ ] Mobile responsiveness
     - [ ] Make sure using with-typescript example that types are correct for every new configs exposed to users
     - [ ] Make sure frontend login UI shows even if backend is not working.
+ - [ ] [supertokens-react-native:X.Y](https://github.com/supertokens/supertokens-react-native/X.Y)
 
 ### Others
 
- - Examples apps in supertokens-auth-react
-     - [ ] Run and test all the demo apps
- - [ ] Run on NextJS to test that it works fine there
+ - [ ] Examples apps in supertokens-auth-react
+ - [ ] Examples apps in supertokens-react-native
+ - [ ] Examples apps in supertokens-golang
+ - [ ] Examples apps in supertokens-python
+ - [ ] [next.js:canary](https://github.com/supertokens/next.js/tree/canary/examples/with-supertokens)
  - [ ] Run on netlify (and hence AWS lambda) to check if it works fine there
 
 ### 📚 Documentation (test site)
 
 - [ ] All recipe main documentation update
-
-- [ ] nodejs documentation update
-
-- [ ] golang documentation update
-
-- [ ] auth-react documentation update
-
-- [ ] supertokens-website documentation update
 
 - [ ] community documentation update
 
@@ -74,15 +70,9 @@ labels:
  - [ ] [supertokens-golang:X.Y](https://github.com/supertokens/supertokens-golang/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/tree/X.Y)
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
+ - [ ] [supertokens-python:X.Y](https://github.com/supertokens/supertokens-python/tree/X.Y)
+ - [ ] [supertokens-react-native:X.Y](https://github.com/supertokens/supertokens-react-native/X.Y)
 
-### 🔀 Others
-
-- [supertokens-auth-react:master](https://github.com/supertokens/supertokens-auth-react/tree/master)
-   - [ ] Update examples to use latest `supertokens-node` and `supertokens-auth-react`
-   - [ ] Pushed to `master` and updated live demo sites
-
-- [next.js:canary](https://github.com/supertokens/next.js/tree/canary/examples/with-supertokens)
-   - [ ] Update `with-supertokens` examples to use latest `supertokens-node` and `supertokens-auth-react`
 
 ### 📚 Documentation
 
