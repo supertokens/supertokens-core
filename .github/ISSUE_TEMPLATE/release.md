@@ -33,6 +33,7 @@ labels:
  - [ ] Examples apps in supertokens-react-native
  - [ ] Examples apps in supertokens-golang
  - [ ] Examples apps in supertokens-python
+ - [ ] Examples apps in supertokens-node
  - [ ] [next.js:canary](https://github.com/supertokens/next.js/tree/canary/examples/with-supertokens)
  - [ ] Run on netlify (and hence AWS lambda) to check if it works fine there
 
