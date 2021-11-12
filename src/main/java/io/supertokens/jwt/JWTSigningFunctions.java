@@ -83,8 +83,8 @@ public class JWTSigningFunctions {
         headerClaims.put("typ", "JWT");
         headerClaims.put("kid", keyToUse.keyId);
 
-        double currentTimeInMillis = System.currentTimeMillis();
-        double jwtExpiry = (currentTimeInMillis / 1000) + (jwtValidity); // JWT Expiry is seconds from epoch not millis
+        long currentTimeInMillis = System.currentTimeMillis();
+        long jwtExpiry = Double.valueOf(Math.ceil((currentTimeInMillis / 1000.0))).longValue() + (jwtValidity); // JWT Expiry is seconds from epoch not millis
 
         // Add relevant claims to the payload, note we only add/override ones that we absolutely need to.
         Map<String, Object> jwtPayload = new Gson().fromJson(payload, HashMap.class);
