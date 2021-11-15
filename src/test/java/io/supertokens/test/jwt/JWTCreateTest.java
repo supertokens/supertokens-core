@@ -222,4 +222,33 @@ public class JWTCreateTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    /**
+     * Test that final JWT uses custom iss claim instead of jwks domain
+     */
+    @Test
+    public void testThatDecodedJWTUsesCustomIssuer() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String algorithm = "RS256";
+        JsonObject payload = new JsonObject();
+        payload.addProperty("iss", "http://customiss");
+
+        String jwksDomain = "http://localhost";
+        long validity = 3600;
+
+        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
+        DecodedJWT decodedJWT = JWT.decode(jwt);
+
+        String issuer = decodedJWT.getIssuer();
+
+        if (!issuer.equals("http://customiss")) {
+            throw new Exception("Decoded JWT does not contain 'iss' claim matching user defined value");
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
