@@ -89,7 +89,7 @@ public class JWTSigningFunctions {
 
         // Add relevant claims to the payload, note we only add/override ones that we absolutely need to.
         Map<String, Object> jwtPayload = new Gson().fromJson(payload, HashMap.class);
-        jwtPayload.put("iss", jwksDomain);
+        jwtPayload.putIfAbsent("iss", jwksDomain);
         jwtPayload.put("exp", jwtExpiry);
         jwtPayload.put("iat", currentTimeInMillis / 1000); // JWT uses seconds from epoch not millis
 
