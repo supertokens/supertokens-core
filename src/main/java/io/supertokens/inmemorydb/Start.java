@@ -935,7 +935,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     public io.supertokens.pluginInterface.passwordless.UserInfo getUserByEmail(String email)
             throws StorageQueryException {
         try {
-            return PasswordlessQueries.getUserById(this, email);
+            return PasswordlessQueries.getUserByEmail(this, email);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
