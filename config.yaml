@@ -48,6 +48,13 @@ core_config_version: 0
 # email_verification_token_lifetime:
 
 
+# (OPTIONAL | Default: 5) integer value. The maximum number of code input attempts per login before the user needs to restart.
+# passwordless_max_code_input_attempts:
+
+# (OPTIONAL | Default: 900000) long value. Time in milliseconds for how long a passwordless code is valid for.
+# passwordless_code_lifetime:
+
+
 # (OPTIONAL | Default: installation directory/logs/info.log) string value. Give the path to a file (on your local
 #  system) in which the SuperTokens service can write INFO logs to. Set it to "null" if you want it to log to
 # standard output instead.
