@@ -230,6 +230,14 @@ public class CoreConfig {
             throw new QuitProgramException("'email_verification_token_lifetime' must be >= 0");
         }
 
+        if (passwordless_code_lifetime <= 0) {
+            throw new QuitProgramException("'passwordless_code_lifetime' must be > 0");
+        }
+
+        if (passwordless_max_code_input_attempts <= 0) {
+            throw new QuitProgramException("'passwordless_max_code_input_attempts' must be > 0");
+        }
+
         if (max_server_pool_size <= 0) {
             throw new QuitProgramException("'max_server_pool_size' must be >= 1. The config file can be found here: "
                     + getConfigFileLocation(main));
