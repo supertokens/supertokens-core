@@ -227,7 +227,7 @@ public class PasswordlessQueries {
 
         {
             String QUERY = "INSERT INTO " + Config.getConfig(start).getPasswordlessUsersTable()
-                    + "(user_id, email, phone_number, time_joined)" + " VALUES(?, ?, ?)";
+                    + "(user_id, email, phone_number, time_joined)" + " VALUES(?, ?, ?, ?)";
             try (PreparedStatement pst = con.prepareStatement(QUERY)) {
                 pst.setString(1, userId);
                 pst.setString(2, email);
@@ -357,6 +357,9 @@ public class PasswordlessQueries {
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, userId);
             ResultSet result = pst.executeQuery();
+            if (result.isAfterLast()) {
+                return null;
+            }
 
             return UserInfoRowMapper.getInstance().mapOrThrow(result);
         }
@@ -371,6 +374,9 @@ public class PasswordlessQueries {
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, email);
             ResultSet result = pst.executeQuery();
+            if (result.isAfterLast()) {
+                return null;
+            }
 
             return UserInfoRowMapper.getInstance().mapOrThrow(result);
         }
@@ -385,6 +391,9 @@ public class PasswordlessQueries {
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, phoneNumber);
             ResultSet result = pst.executeQuery();
+            if (result.isAfterLast()) {
+                return null;
+            }
 
             return UserInfoRowMapper.getInstance().mapOrThrow(result);
         }
