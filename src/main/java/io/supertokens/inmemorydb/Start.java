@@ -1110,17 +1110,6 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void deleteCodesOfDeviceBefore_Transaction(TransactionConnection con, String deviceIdHash, long time)
-            throws StorageQueryException {
-        Connection sqlCon = (Connection) con.getConnection();
-        try {
-            PasswordlessQueries.deleteCodesOfDeviceBefore_Transaction(this, sqlCon, deviceIdHash, time);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     public void createUser(String userId, String email, String phoneNumber, long timeJoined)
             throws StorageQueryException, DuplicateEmailException, DuplicatePhoneNumberException,
             DuplicateUserIdException {

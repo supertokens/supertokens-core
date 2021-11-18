@@ -217,17 +217,6 @@ public class PasswordlessQueries {
         }
     }
 
-    public static void deleteCodesOfDeviceBefore_Transaction(Start start, Connection con, String deviceIdHash,
-            long time) throws SQLException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getPasswordlessCodesTable()
-                + " WHERE device_id_hash = ? AND created_at < ?";
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, deviceIdHash);
-            pst.setLong(2, time);
-            pst.executeUpdate();
-        }
-    }
-
     public static void createUser(Start start, String userId, String email, String phoneNumber, long timeJoined)
             throws StorageTransactionLogicException, StorageQueryException {
         start.startTransaction(con -> {
