@@ -18,10 +18,6 @@ package io.supertokens.test.passwordless;
 
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.passwordless.Passwordless;
-import io.supertokens.passwordless.exceptions.IncorrectUserInputCodeException;
-import io.supertokens.passwordless.exceptions.RestartFlowException;
-import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
@@ -86,14 +82,15 @@ public class PasswordlessStorageTest {
         String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
         String linkCodeHash2 = "F0aZHCBYSJIghP5e0flGa8gvoUYEgGus2yIJYmdpFY4";
 
-        storage.createDeviceWithCode(deviceIdHash, email, null, codeId, linkCodeHash, System.currentTimeMillis());
+        storage.createDeviceWithCode(email, null,
+                new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
         assertEquals(1, storage.getDevicesByEmail(email).length);
 
         {
             Exception error = null;
             try {
-                storage.createDeviceWithCode(deviceIdHash2, email, null, codeId, linkCodeHash2,
-                        System.currentTimeMillis());
+                storage.createDeviceWithCode(email, null,
+                        new PasswordlessCode(codeId, deviceIdHash2, linkCodeHash2, System.currentTimeMillis()));
             } catch (Exception e) {
                 error = e;
             }
@@ -108,8 +105,8 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createDeviceWithCode(deviceIdHash, email, null, codeId2, linkCodeHash2,
-                        System.currentTimeMillis());
+                storage.createDeviceWithCode(email, null,
+                        new PasswordlessCode(codeId2, deviceIdHash, linkCodeHash2, System.currentTimeMillis()));
             } catch (Exception e) {
                 error = e;
             }
@@ -123,8 +120,8 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createDeviceWithCode(deviceIdHash2, email, null, codeId2, linkCodeHash,
-                        System.currentTimeMillis());
+                storage.createDeviceWithCode(email, null,
+                        new PasswordlessCode(codeId2, deviceIdHash2, linkCodeHash, System.currentTimeMillis()));
             } catch (Exception e) {
                 error = e;
             }
@@ -138,8 +135,8 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createDeviceWithCode(deviceIdHash2, null, null, codeId2, linkCodeHash2,
-                        System.currentTimeMillis());
+                storage.createDeviceWithCode(null, null,
+                        new PasswordlessCode(codeId2, deviceIdHash2, linkCodeHash2, System.currentTimeMillis()));
             } catch (Exception e) {
                 error = e;
             }
@@ -149,7 +146,8 @@ public class PasswordlessStorageTest {
             assertNull(storage.getDevice(deviceIdHash2));
         }
 
-        storage.createDeviceWithCode(deviceIdHash2, email, null, codeId2, linkCodeHash2, System.currentTimeMillis());
+        storage.createDeviceWithCode(email, null,
+                new PasswordlessCode(codeId2, deviceIdHash2, linkCodeHash2, System.currentTimeMillis()));
 
         assertEquals(2, storage.getDevicesByEmail(email).length);
 
@@ -181,7 +179,8 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis());
+                storage.createCode(
+                        new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
             } catch (Exception e) {
                 error = e;
             }
@@ -192,13 +191,15 @@ public class PasswordlessStorageTest {
             assertNull(storage.getCode(codeId));
         }
 
-        storage.createDeviceWithCode(deviceIdHash, email, null, codeId, linkCodeHash, System.currentTimeMillis());
+        storage.createDeviceWithCode(email, null,
+                new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
         assertEquals(1, storage.getDevicesByEmail(email).length);
 
         {
             Exception error = null;
             try {
-                storage.createCode(codeId, deviceIdHash, linkCodeHash2, System.currentTimeMillis());
+                storage.createCode(
+                        new PasswordlessCode(codeId, deviceIdHash, linkCodeHash2, System.currentTimeMillis()));
             } catch (Exception e) {
                 error = e;
             }
@@ -211,7 +212,8 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createCode(codeId2, deviceIdHash, linkCodeHash, System.currentTimeMillis());
+                storage.createCode(
+                        new PasswordlessCode(codeId2, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
             } catch (Exception e) {
                 error = e;
             }
@@ -222,7 +224,7 @@ public class PasswordlessStorageTest {
             assertNull(storage.getCode(codeId2));
         }
 
-        storage.createCode(codeId2, deviceIdHash, linkCodeHash2, System.currentTimeMillis());
+        storage.createCode(new PasswordlessCode(codeId2, deviceIdHash, linkCodeHash2, System.currentTimeMillis()));
 
         assertEquals(2, storage.getCodesOfDevice(deviceIdHash).length);
 
@@ -255,14 +257,14 @@ public class PasswordlessStorageTest {
 
         long joinedAt = System.currentTimeMillis();
 
-        storage.createUser(userId, email, null, joinedAt);
-        storage.createUser(userId2, null, phoneNumber, joinedAt);
+        storage.createUser(new UserInfo(userId, email, null, joinedAt));
+        storage.createUser(new UserInfo(userId2, null, phoneNumber, joinedAt));
         assertNotNull(storage.getUserById(userId));
 
         {
             Exception error = null;
             try {
-                storage.createUser(userId, email2, null, joinedAt);
+                storage.createUser(new UserInfo(userId, email2, null, joinedAt));
             } catch (Exception e) {
                 error = e;
             }
@@ -275,7 +277,7 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createUser(userId, null, phoneNumber2, joinedAt);
+                storage.createUser(new UserInfo(userId, null, phoneNumber2, joinedAt));
             } catch (Exception e) {
                 error = e;
             }
@@ -288,7 +290,7 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createUser(userId3, email, null, joinedAt);
+                storage.createUser(new UserInfo(userId3, email, null, joinedAt));
             } catch (Exception e) {
                 error = e;
             }
@@ -301,7 +303,7 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createUser(userId3, null, phoneNumber, joinedAt);
+                storage.createUser(new UserInfo(userId3, null, phoneNumber, joinedAt));
             } catch (Exception e) {
                 error = e;
             }
@@ -314,7 +316,7 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createUser(userId3, null, null, joinedAt);
+                storage.createUser(new UserInfo(userId3, null, null, joinedAt));
             } catch (Exception e) {
                 error = e;
             }
@@ -354,26 +356,19 @@ public class PasswordlessStorageTest {
 
         long joinedAt = System.currentTimeMillis();
 
-        storage.createUser(userIdEmail1, email, null, joinedAt);
-        storage.createUser(userIdEmail2, email2, null, joinedAt);
-        storage.createUser(userIdPhone1, null, phoneNumber, joinedAt);
-        storage.createUser(userIdPhone2, null, phoneNumber2, joinedAt);
+        storage.createUser(new UserInfo(userIdEmail1, email, null, joinedAt));
+        storage.createUser(new UserInfo(userIdEmail2, email2, null, joinedAt));
+        storage.createUser(new UserInfo(userIdPhone1, null, phoneNumber, joinedAt));
+        storage.createUser(new UserInfo(userIdPhone2, null, phoneNumber2, joinedAt));
 
         assertNotNull(storage.getUserById(userIdEmail1));
 
         {
             Exception error = null;
             try {
-                storage.startTransaction(con -> {
-                    try {
-                        storage.updateUser_Transaction(con, userIdEmail1, email2, null);
-                    } catch (Exception e) {
-                        throw new StorageTransactionLogicException(e);
-                    }
-                    return null;
-                });
-            } catch (StorageTransactionLogicException e) {
-                error = e.actualException;
+                storage.updateUser(userIdEmail1, email2, null);
+            } catch (Exception e) {
+                error = e;
             }
 
             assertNotNull(error);
@@ -384,16 +379,9 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.startTransaction(con -> {
-                    try {
-                        storage.updateUser_Transaction(con, userIdPhone1, null, phoneNumber2);
-                    } catch (Exception e) {
-                        throw new StorageTransactionLogicException(e);
-                    }
-                    return null;
-                });
-            } catch (StorageTransactionLogicException e) {
-                error = e.actualException;
+                storage.updateUser(userIdPhone1, null, phoneNumber2);
+            } catch (Exception e) {
+                error = e;
             }
 
             assertNotNull(error);
@@ -404,16 +392,9 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.startTransaction(con -> {
-                    try {
-                        storage.updateUser_Transaction(con, userIdEmail1, null, phoneNumber);
-                    } catch (Exception e) {
-                        throw new StorageTransactionLogicException(e);
-                    }
-                    return null;
-                });
-            } catch (StorageTransactionLogicException e) {
-                error = e.actualException;
+                storage.updateUser(userIdEmail1, null, phoneNumber);
+            } catch (Exception e) {
+                error = e;
             }
 
             assertNotNull(error);
@@ -426,16 +407,9 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.startTransaction(con -> {
-                    try {
-                        storage.updateUser_Transaction(con, userIdPhone1, email, null);
-                    } catch (Exception e) {
-                        throw new StorageTransactionLogicException(e);
-                    }
-                    return null;
-                });
-            } catch (StorageTransactionLogicException e) {
-                error = e.actualException;
+                storage.updateUser(userIdPhone1, email, null);
+            } catch (Exception e) {
+                error = e;
             }
 
             assertNotNull(error);
@@ -448,16 +422,9 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.startTransaction(con -> {
-                    try {
-                        storage.updateUser_Transaction(con, userIdPhone1, null, null);
-                    } catch (Exception e) {
-                        throw new StorageTransactionLogicException(e);
-                    }
-                    return null;
-                });
-            } catch (StorageTransactionLogicException e) {
-                error = e.actualException;
+                storage.updateUser(userIdPhone1, null, null);
+            } catch (Exception e) {
+                error = e;
             }
 
             assertNotNull(error);
@@ -494,38 +461,17 @@ public class PasswordlessStorageTest {
 
         long joinedAt = System.currentTimeMillis();
 
-        storage.createUser(userId, email, null, joinedAt);
+        storage.createUser(new UserInfo(userId, email, null, joinedAt));
 
         assertNotNull(storage.getUserById(userId));
 
-        storage.startTransaction(con -> {
-            try {
-                storage.updateUser_Transaction(con, userId, email2, null);
-            } catch (Exception e) {
-                throw new StorageTransactionLogicException(e);
-            }
-            return null;
-        });
+        storage.updateUser(userId, email2, null);
         checkUser(storage, userId, email2, null);
 
-        storage.startTransaction(con -> {
-            try {
-                storage.updateUser_Transaction(con, userId, null, phoneNumber);
-            } catch (Exception e) {
-                throw new StorageTransactionLogicException(e);
-            }
-            return null;
-        });
+        storage.updateUser(userId, null, phoneNumber);
         checkUser(storage, userId, null, phoneNumber);
 
-        storage.startTransaction(con -> {
-            try {
-                storage.updateUser_Transaction(con, userId, null, phoneNumber2);
-            } catch (Exception e) {
-                throw new StorageTransactionLogicException(e);
-            }
-            return null;
-        });
+        storage.updateUser(userId, null, phoneNumber2);
         checkUser(storage, userId, null, phoneNumber2);
 
         process.kill();

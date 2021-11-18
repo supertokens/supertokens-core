@@ -952,15 +952,14 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void createDeviceWithCode(String deviceIdHash, @Nullable String email, @Nullable String phoneNumber,
-            String codeId, String linkCodeHash, long createdAt) throws StorageQueryException,
-            DuplicateDeviceIdHashException, DuplicateCodeIdException, DuplicateLinkCodeHashException {
+    public void createDeviceWithCode(@Nullable String email, @Nullable String phoneNumber, PasswordlessCode code)
+            throws StorageQueryException, DuplicateDeviceIdHashException, DuplicateCodeIdException,
+            DuplicateLinkCodeHashException {
         if (email == null && phoneNumber == null) {
             throw new IllegalArgumentException("Both email and phoneNumber can't be null");
         }
         try {
-            PasswordlessQueries.createDeviceWithCode(this, deviceIdHash, email, phoneNumber, codeId, linkCodeHash,
-                    createdAt);
+            PasswordlessQueries.createDeviceWithCode(this, email, phoneNumber, code);
         } catch (StorageTransactionLogicException e) {
             String message = e.actualException.getMessage();
             if (message.equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
@@ -1049,27 +1048,11 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void createCode(String codeId, String deviceIdHash, String linkCodeHash, long createdAt)
-            throws StorageQueryException, UnknownDeviceIdHash, DuplicateCodeIdException,
-            DuplicateLinkCodeHashException {
+    public void createCode(PasswordlessCode code) throws StorageQueryException, UnknownDeviceIdHash,
+            DuplicateCodeIdException, DuplicateLinkCodeHashException {
 
         try {
-            this.startTransaction(con -> {
-                Connection sqlCon = (Connection) con.getConnection();
-                // SQLite is not compiled with foreign key constraint and so we must check for
-                // the deviceIdHash manually
-                if (this.getDevice_Transaction(con, deviceIdHash) == null) {
-                    throw new StorageTransactionLogicException(new UnknownDeviceIdHash());
-                }
-                try {
-                    PasswordlessQueries.createCode_Transaction(this, sqlCon, codeId, deviceIdHash, linkCodeHash,
-                            createdAt);
-                    sqlCon.commit();
-                } catch (SQLException e) {
-                    throw new StorageTransactionLogicException(e);
-                }
-                return null;
-            });
+            PasswordlessQueries.createCode(this, code);
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof UnknownDeviceIdHash) {
                 throw (UnknownDeviceIdHash) e.actualException;
@@ -1110,15 +1093,10 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void createUser(String userId, String email, String phoneNumber, long timeJoined)
-            throws StorageQueryException, DuplicateEmailException, DuplicatePhoneNumberException,
-            DuplicateUserIdException {
-        if (email == null && phoneNumber == null) {
-            throw new IllegalArgumentException("Both email and phoneNumber can't be null");
-        }
-
+    public void createUser(io.supertokens.pluginInterface.passwordless.UserInfo user) throws StorageQueryException,
+            DuplicateEmailException, DuplicatePhoneNumberException, DuplicateUserIdException {
         try {
-            PasswordlessQueries.createUser(this, userId, email, phoneNumber, timeJoined);
+            PasswordlessQueries.createUser(this, user);
         } catch (StorageTransactionLogicException e) {
             String message = e.actualException.getMessage();
             if (message
@@ -1145,22 +1123,14 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void updateUser_Transaction(TransactionConnection con, String userId, String email, String phoneNumber)
-            throws StorageQueryException, DuplicateEmailException, DuplicatePhoneNumberException,
-            UnknownUserIdException {
+    public void updateUser(String userId, String email, String phoneNumber)
+            throws StorageQueryException, DuplicateEmailException, DuplicatePhoneNumberException {
         if (email == null && phoneNumber == null) {
             throw new IllegalArgumentException("Both email and phoneNumber can't be null");
         }
 
-        Connection sqlCon = (Connection) con.getConnection();
         try {
-            // SQLite is not compiled with foreign key constraint and so we must check for
-            // the userId manually
-            if (this.getUserById(userId) == null) {
-                throw new UnknownUserIdException();
-            }
-
-            PasswordlessQueries.updateUser_Transaction(this, sqlCon, userId, email, phoneNumber);
+            PasswordlessQueries.updateUser(this, userId, email, phoneNumber);
         } catch (SQLException e) {
             if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
