@@ -442,6 +442,8 @@ public class GeneralQueries {
             return EmailPasswordQueries.getUsersInfoUsingIdList(start, userIds);
         } else if (recipeId == RECIPE_ID.THIRD_PARTY) {
             return ThirdPartyQueries.getUsersInfoUsingIdList(start, userIds);
+        } else if (recipeId == RECIPE_ID.PASSWORDLESS) {
+            return PasswordlessQueries.getUsersByIdList(start, userIds);
         } else {
             throw new IllegalArgumentException("No implementation of get users for recipe: " + recipeId.toString());
         }

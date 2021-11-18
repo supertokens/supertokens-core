@@ -952,19 +952,29 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void createDevice_Transaction(TransactionConnection con, String deviceIdHash, @Nullable String email,
-            @Nullable String phoneNumber) throws StorageQueryException, DuplicateDeviceIdHashException {
+    public void createDeviceWithCode(String deviceIdHash, @Nullable String email, @Nullable String phoneNumber,
+            String codeId, String linkCodeHash, long createdAt) throws StorageQueryException,
+            DuplicateDeviceIdHashException, DuplicateCodeIdException, DuplicateLinkCodeHashException {
         if (email == null && phoneNumber == null) {
             throw new IllegalArgumentException("Both email and phoneNumber can't be null");
         }
-        Connection sqlCon = (Connection) con.getConnection();
         try {
-            PasswordlessQueries.createDevice_Transaction(this, sqlCon, deviceIdHash, email, phoneNumber);
-        } catch (SQLException e) {
-            if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                            + Config.getConfig(this).getJWTSigningKeysTable() + ".device_id_hash)")) {
+            PasswordlessQueries.createDeviceWithCode(this, deviceIdHash, email, phoneNumber, codeId, linkCodeHash,
+                    createdAt);
+        } catch (StorageTransactionLogicException e) {
+            String message = e.actualException.getMessage();
+            if (message.equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                    + Config.getConfig(this).getPasswordlessDevicesTable() + ".device_id_hash)")) {
                 throw new DuplicateDeviceIdHashException();
+            }
+            if (message.equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                    + Config.getConfig(this).getPasswordlessCodesTable() + ".code_id)")) {
+                throw new DuplicateCodeIdException();
+            }
+
+            if (message.equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                    + Config.getConfig(this).getPasswordlessCodesTable() + ".link_code_hash)")) {
+                throw new DuplicateLinkCodeHashException();
             }
 
             throw new StorageQueryException(e);
@@ -1039,33 +1049,43 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void createCode_Transaction(TransactionConnection con, String codeId, String deviceIdHash,
-            String linkCodeHash, long createdAt) throws StorageQueryException, UnknownDeviceIdHash,
-            DuplicateCodeIdException, DuplicateLinkCodeHashException {
-        Connection sqlCon = (Connection) con.getConnection();
-        // SQLite is not compiled with foreign key constraint and so we must check for
-        // the deviceIdHash manually
-        if (this.getDevice_Transaction(con, deviceIdHash) == null) {
-            throw new UnknownDeviceIdHash();
-        }
+    public void createCode(String codeId, String deviceIdHash, String linkCodeHash, long createdAt)
+            throws StorageQueryException, UnknownDeviceIdHash, DuplicateCodeIdException,
+            DuplicateLinkCodeHashException {
+
         try {
-            PasswordlessQueries.createCode_Transaction(this, sqlCon, codeId, deviceIdHash, linkCodeHash, createdAt);
-        } catch (SQLException e) {
-            if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                            + Config.getConfig(this).getPasswordlessCodesTable() + ".code_id)")) {
+            this.startTransaction(con -> {
+                Connection sqlCon = (Connection) con.getConnection();
+                // SQLite is not compiled with foreign key constraint and so we must check for
+                // the deviceIdHash manually
+                if (this.getDevice_Transaction(con, deviceIdHash) == null) {
+                    throw new StorageTransactionLogicException(new UnknownDeviceIdHash());
+                }
+                try {
+                    PasswordlessQueries.createCode_Transaction(this, sqlCon, codeId, deviceIdHash, linkCodeHash,
+                            createdAt);
+                    sqlCon.commit();
+                } catch (SQLException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
+                return null;
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof UnknownDeviceIdHash) {
+                throw (UnknownDeviceIdHash) e.actualException;
+            }
+            String message = e.actualException.getMessage();
+            if (message.equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                    + Config.getConfig(this).getPasswordlessCodesTable() + ".code_id)")) {
                 throw new DuplicateCodeIdException();
             }
 
-            if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                            + Config.getConfig(this).getPasswordlessCodesTable() + ".link_code_hash)")) {
+            if (message.equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                    + Config.getConfig(this).getPasswordlessCodesTable() + ".link_code_hash)")) {
                 throw new DuplicateLinkCodeHashException();
             }
-
-            throw new StorageQueryException(e);
+            throw new StorageQueryException(e.actualException);
         }
-
     }
 
     @Override
@@ -1098,36 +1118,40 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
-
     }
 
     @Override
-    public void createUser_Transaction(TransactionConnection con, String userId, String email, String phoneNumber,
-            long timeJoined) throws StorageQueryException, DuplicateEmailException, DuplicateUserIdException {
+    public void createUser(String userId, String email, String phoneNumber, long timeJoined)
+            throws StorageQueryException, DuplicateEmailException, DuplicatePhoneNumberException,
+            DuplicateUserIdException {
         if (email == null && phoneNumber == null) {
             throw new IllegalArgumentException("Both email and phoneNumber can't be null");
         }
 
-        Connection sqlCon = (Connection) con.getConnection();
         try {
-            PasswordlessQueries.createUser_Transaction(this, sqlCon, userId, email, phoneNumber, timeJoined);
-        } catch (SQLException e) {
-            if (e.getMessage()
+            PasswordlessQueries.createUser(this, userId, email, phoneNumber, timeJoined);
+        } catch (StorageTransactionLogicException e) {
+            String message = e.actualException.getMessage();
+            if (message
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getPasswordlessUsersTable() + ".user_id)")
-                    || e.getMessage()
+                    || message
                             .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                                     + Config.getConfig(this).getUsersTable() + ".user_id)")) {
                 throw new DuplicateUserIdException();
             }
 
-            if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                            + Config.getConfig(this).getPasswordlessUsersTable() + ".email)")) {
+            if (message.equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                    + Config.getConfig(this).getPasswordlessUsersTable() + ".email)")) {
                 throw new DuplicateEmailException();
             }
 
-            throw new StorageQueryException(e);
+            if (message.equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                    + Config.getConfig(this).getPasswordlessUsersTable() + ".phone_number)")) {
+                throw new DuplicatePhoneNumberException();
+            }
+
+            throw new StorageQueryException(e.actualException);
         }
     }
 
