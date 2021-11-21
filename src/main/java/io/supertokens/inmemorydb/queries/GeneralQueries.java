@@ -176,6 +176,49 @@ public class GeneralQueries {
             }
         }
 
+        if (!doesTableExists(start, Config.getConfig(start).getPasswordlessUsersTable())) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
+            try (Connection con = ConnectionPool.getConnection(start);
+                    PreparedStatement pst = con
+                            .prepareStatement(PasswordlessQueries.getQueryToCreateUsersTable(start))) {
+                pst.executeUpdate();
+            }
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getPasswordlessDevicesTable())) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
+            try (Connection con = ConnectionPool.getConnection(start);
+                    PreparedStatement pst = con
+                            .prepareStatement(PasswordlessQueries.getQueryToCreateDevicesTable(start))) {
+                pst.executeUpdate();
+            }
+            // index
+            try (Connection con = ConnectionPool.getConnection(start);
+                    PreparedStatement pstIndex = con
+                            .prepareStatement(PasswordlessQueries.getQueryToCreateDeviceEmailIndex(start))) {
+                pstIndex.executeUpdate();
+            }
+            try (Connection con = ConnectionPool.getConnection(start);
+                    PreparedStatement pstIndex = con
+                            .prepareStatement(PasswordlessQueries.getQueryToCreateDevicePhoneNumberIndex(start))) {
+                pstIndex.executeUpdate();
+            }
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getPasswordlessCodesTable())) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CREATING_NEW_TABLE, null);
+            try (Connection con = ConnectionPool.getConnection(start);
+                    PreparedStatement pst = con
+                            .prepareStatement(PasswordlessQueries.getQueryToCreateCodesTable(start))) {
+                pst.executeUpdate();
+            }
+            // index
+            try (Connection con = ConnectionPool.getConnection(start);
+                    PreparedStatement pstIndex = con
+                            .prepareStatement(PasswordlessQueries.getQueryToCreateCodeCreatedAtIndex(start))) {
+                pstIndex.executeUpdate();
+            }
+        }
     }
 
     public static void setKeyValue_Transaction(Start start, Connection con, String key, KeyValueInfo info)
@@ -399,6 +442,8 @@ public class GeneralQueries {
             return EmailPasswordQueries.getUsersInfoUsingIdList(start, userIds);
         } else if (recipeId == RECIPE_ID.THIRD_PARTY) {
             return ThirdPartyQueries.getUsersInfoUsingIdList(start, userIds);
+        } else if (recipeId == RECIPE_ID.PASSWORDLESS) {
+            return PasswordlessQueries.getUsersByIdList(start, userIds);
         } else {
             throw new IllegalArgumentException("No implementation of get users for recipe: " + recipeId.toString());
         }
