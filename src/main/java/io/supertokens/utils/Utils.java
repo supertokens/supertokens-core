@@ -80,6 +80,16 @@ public class Utils {
         return bytesToString(hash);
     }
 
+    public static byte[] hashSHA256Bytes(byte[] base) throws NoSuchAlgorithmException {
+        return MessageDigest.getInstance("SHA-256").digest(base);
+    }
+
+    public static byte[] hmacSHA256(byte[] key, String data) throws InvalidKeyException, NoSuchAlgorithmException {
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(key, "HmacSHA256"));
+        return mac.doFinal(stringToBytes(data));
+    }
+
     public static String generateNewSigningKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
 
         byte[] random = new byte[64];

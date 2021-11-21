@@ -33,6 +33,7 @@ import io.supertokens.webserver.api.emailverification.UnverifyEmailAPI;
 import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
 import io.supertokens.webserver.api.jwt.JWKSAPI;
 import io.supertokens.webserver.api.jwt.JWTSigningAPI;
+import io.supertokens.webserver.api.passwordless.CreateCodeAPI;
 import io.supertokens.webserver.api.session.*;
 import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
 import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
@@ -166,6 +167,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new VerifyEmailAPI(main));
         addAPI(new GetUsersByEmailAPI(main));
         addAPI(new SignInUpAPI(main));
+        addAPI(new CreateCodeAPI(main));
         addAPI(new TelemetryAPI(main));
         addAPI(new UsersCountAPI(main));
         addAPI(new UsersAPI(main));
