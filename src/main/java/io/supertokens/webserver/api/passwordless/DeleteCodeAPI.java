@@ -45,6 +45,7 @@ public class DeleteCodeAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // Logic based on: https://app.code2flow.com/DDhe9U1rsFsQ
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String codeId = InputParser.parseStringOrThrowError(input, "codeId", false);
