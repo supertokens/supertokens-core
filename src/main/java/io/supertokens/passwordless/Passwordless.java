@@ -121,6 +121,12 @@ public class Passwordless {
     }
 
     private static String generateUserInputCode() {
+        // This logic is based on the idea that we wanted to incorporate letters as well as numbers in the code.
+        // We are allowing at most 2 letters in a row, to try and avoid generating slurs or other abusive codes.
+
+        // Note: this implementation gives an equal chance to either numbers or letters, so the probability of any
+        // character is lower than the probability of a number, but the distribution is uniform inside both alphabets.
+
         SecureRandom generator = new SecureRandom();
         StringBuilder sb = new StringBuilder();
         int prevAlphaCharCount = 0;
