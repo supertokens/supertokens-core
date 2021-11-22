@@ -81,6 +81,9 @@ public class CreateCodeAPI extends WebserverAPI {
         }
 
         String userInputCode = InputParser.parseStringOrThrowError(input, "userInputCode", true);
+        if (userInputCode.length() == 0) {
+            throw new ServletException(new BadRequestException("userInputCode cannot be an empty string."));
+        }
 
         try {
             CreateCodeResponse createCodeResponse = Passwordless.createCode(main, email, phoneNumber, deviceId,
