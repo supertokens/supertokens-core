@@ -44,10 +44,10 @@ import javax.annotation.Nullable;
 import org.apache.tomcat.util.codec.binary.Base64;
 
 public class Passwordless {
-    // We are storing the "alphabets" like this because we might want to change this later,
+    // We are storing the "alphabets" like this because we remove a few characters from the normal English alphabet.
     // e.g.: remove easy to confuse chars (oO0, Il)
-    private static final String USER_INPUT_CODE_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
-    private static final String USER_INPUT_CODE_NUM_CHARS = "0123456789";
+    private static final String USER_INPUT_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";
+    private static final String USER_INPUT_CODE_NUM_CHARS = "123456789";
 
     private static Character getRandomAlphaChar(SecureRandom generator) {
         return USER_INPUT_CODE_ALPHABET.charAt(generator.nextInt(USER_INPUT_CODE_ALPHABET.length()));
