@@ -478,6 +478,99 @@ public class PasswordlessStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testDeleteDevicesByEmailCascades() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String email = "test@example.com";
+        String email2 = "test2@example.com";
+        String codeId = io.supertokens.utils.Utils.getUUID();
+        String codeId2 = io.supertokens.utils.Utils.getUUID();
+
+        String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
+        String deviceIdHash2 = "!!!!!keep!!!!!";
+        String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
+        String linkCodeHash2 = "F0aZHCBYSJIghP5e0flGa8gvoUYEgGus2yIJYmdpFY4";
+
+        storage.createDeviceWithCode(email, null,
+                new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
+        storage.createDeviceWithCode(email2, null,
+                new PasswordlessCode(codeId2, deviceIdHash2, linkCodeHash2, System.currentTimeMillis()));
+
+        storage.startTransaction(con -> {
+            storage.deleteDevicesByEmail_Transaction(con, email);
+            storage.commitTransaction(con);
+            return null;
+        });
+
+        assertEquals(0, storage.getDevicesByEmail(email).length);
+        assertNull(storage.getDevice(deviceIdHash));
+        assertNull(storage.getCode(codeId));
+
+        assertEquals(1, storage.getDevicesByEmail(email2).length);
+        assertNotNull(storage.getDevice(deviceIdHash2));
+        assertNotNull(storage.getCode(codeId2));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDeleteDevicesByPhoneNumberCascades() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String phoneNumber = "+442071838750";
+        String phoneNumber2 = "+442082949861";
+
+        String codeId = io.supertokens.utils.Utils.getUUID();
+        String codeId2 = io.supertokens.utils.Utils.getUUID();
+
+        String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
+        String deviceIdHash2 = "!!!!!keep!!!!!";
+        String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
+        String linkCodeHash2 = "F0aZHCBYSJIghP5e0flGa8gvoUYEgGus2yIJYmdpFY4";
+
+        storage.createDeviceWithCode(null, phoneNumber,
+                new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
+        storage.createDeviceWithCode(null, phoneNumber2,
+                new PasswordlessCode(codeId2, deviceIdHash2, linkCodeHash2, System.currentTimeMillis()));
+
+        storage.startTransaction(con -> {
+            storage.deleteDevicesByPhoneNumber_Transaction(con, phoneNumber);
+            storage.commitTransaction(con);
+            return null;
+        });
+
+        assertEquals(0, storage.getDevicesByPhoneNumber(phoneNumber).length);
+        assertNull(storage.getDevice(deviceIdHash));
+        assertNull(storage.getCode(codeId));
+
+        assertEquals(1, storage.getDevicesByPhoneNumber(phoneNumber2).length);
+        assertNotNull(storage.getDevice(deviceIdHash2));
+        assertNotNull(storage.getCode(codeId2));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     private void checkUser(PasswordlessSQLStorage storage, String userId, String email, String phoneNumber)
             throws StorageQueryException {
         UserInfo userById = storage.getUserById(userId);
