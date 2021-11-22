@@ -81,7 +81,7 @@ public class CreateCodeAPI extends WebserverAPI {
         }
 
         String userInputCode = InputParser.parseStringOrThrowError(input, "userInputCode", true);
-        if (userInputCode.length() == 0) {
+        if (userInputCode != null && userInputCode.length() == 0) {
             throw new ServletException(new BadRequestException("userInputCode cannot be an empty string."));
         }
 

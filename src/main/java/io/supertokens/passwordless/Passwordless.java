@@ -65,57 +65,59 @@ public class Passwordless {
         boolean gotDeviceId = deviceId != null;
         boolean gotUserInputCode = userInputCode != null;
 
-        if (userInputCode == null) {
-            userInputCode = generateUserInputCode();
-        }
-
         byte[] deviceIdBytes = new byte[32];
         String deviceIdHash = null;
         if (gotDeviceId) {
             deviceIdBytes = Base64.decodeBase64(deviceId);
             deviceIdHash = Base64.encodeBase64URLSafeString(Utils.hashSHA256Bytes(deviceIdBytes));
-            PasswordlessDevice device = passwordlessStorage.getDevice(deviceIdHash);
-            if (device == null) {
+            if (passwordlessStorage.getDevice(deviceIdHash) == null) {
                 throw new RestartFlowException();
             }
         }
 
         SecureRandom generator = new SecureRandom();
-        while (true) {
-            if (!gotDeviceId) {
+        if (!gotDeviceId) {
+            while (true) {
                 generator.nextBytes(deviceIdBytes);
                 deviceId = Base64.encodeBase64String(deviceIdBytes);
-                deviceIdHash = Base64.encodeBase64URLSafeString(Utils.hashSHA256Bytes(deviceIdBytes));
+
+                if (!gotUserInputCode) {
+                    userInputCode = generateUserInputCode();
+                }
+
+                CreateCodeInfo info = CreateCodeInfo.generate(deviceIdBytes, userInputCode);
+                try {
+                    passwordlessStorage.createDeviceWithCode(email, phoneNumber, info.code);
+
+                    return new CreateCodeResponse(info.code.deviceIdHash, info.code.id, deviceId, userInputCode,
+                            info.linkCode, info.code.createdAt);
+                } catch (DuplicateLinkCodeHashException | DuplicateCodeIdException | DuplicateDeviceIdHashException e) {
+                    // These are retryable, so ignored here.
+                }
             }
-            String codeId = Utils.getUUID();
-
-            byte[] linkCodeBytes = Utils.hmacSHA256(deviceIdBytes, userInputCode);
-            byte[] linkCodeHashBytes = Utils.hashSHA256Bytes(linkCodeBytes);
-
-            String linkCode = Base64.encodeBase64URLSafeString(linkCodeBytes);
-            String linkCodeHash = Base64.encodeBase64String(linkCodeHashBytes);
-
-            long createdAt = System.currentTimeMillis();
-
-            PasswordlessCode code = new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, createdAt);
-            try {
-                if (!gotDeviceId) {
-                    passwordlessStorage.createDeviceWithCode(email, phoneNumber, code);
-                } else {
-                    passwordlessStorage.createCode(code);
+        } else {
+            while (true) {
+                if (!gotUserInputCode) {
+                    userInputCode = generateUserInputCode();
                 }
-                return new CreateCodeResponse(deviceIdHash, codeId, deviceId, userInputCode, linkCode, createdAt);
-            } catch (DuplicateLinkCodeHashException e) {
-                if (gotDeviceId && gotUserInputCode) {
-                    // We only need to rethrow if the user supplied both the deviceId and the userInputCode,
-                    // because in that case the linkCodeHash will always be the same.
-                    throw e;
+
+                CreateCodeInfo info = CreateCodeInfo.generate(deviceIdBytes, userInputCode);
+                try {
+                    passwordlessStorage.createCode(info.code);
+                    return new CreateCodeResponse(info.code.deviceIdHash, info.code.id, deviceId, userInputCode,
+                            info.linkCode, info.code.createdAt);
+                } catch (DuplicateLinkCodeHashException e) {
+                    if (gotUserInputCode) {
+                        // We only need to rethrow if the user supplied both the deviceId and the userInputCode,
+                        // because in that case the linkCodeHash will always be the same.
+                        throw e;
+                    }
+                    // It's retrieable otherwise
+                } catch (UnknownDeviceIdHash e) {
+                    throw new RestartFlowException();
+                } catch (DuplicateCodeIdException e) {
+                    // Retryable, so ignored here.
                 }
-                // It's retrieable otherwise
-            } catch (UnknownDeviceIdHash e) {
-                throw new RestartFlowException();
-            } catch (DuplicateCodeIdException | DuplicateDeviceIdHashException e) {
-                // These are retryable, so ignored here.
             }
         }
     }
@@ -161,4 +163,29 @@ public class Passwordless {
         }
     }
 
+    private static class CreateCodeInfo {
+        public final String linkCode;
+        public final PasswordlessCode code;
+
+        public CreateCodeInfo(String id, String deviceIdHash, String linkCode, String linkCodeHash, Long createdAt) {
+            this.code = new PasswordlessCode(id, deviceIdHash, linkCodeHash, createdAt);
+            this.linkCode = linkCode;
+        }
+
+        public static CreateCodeInfo generate(byte[] deviceIdBytes, String userInputCode)
+                throws InvalidKeyException, NoSuchAlgorithmException {
+            String deviceIdHash = Base64.encodeBase64URLSafeString(Utils.hashSHA256Bytes(deviceIdBytes));
+            String codeId = Utils.getUUID();
+
+            byte[] linkCodeBytes = Utils.hmacSHA256(deviceIdBytes, userInputCode);
+            byte[] linkCodeHashBytes = Utils.hashSHA256Bytes(linkCodeBytes);
+
+            String linkCode = Base64.encodeBase64URLSafeString(linkCodeBytes);
+            String linkCodeHash = Base64.encodeBase64String(linkCodeHashBytes);
+
+            long createdAt = System.currentTimeMillis();
+
+            return new CreateCodeInfo(codeId, deviceIdHash, linkCode, linkCodeHash, createdAt);
+        }
+    }
 }
