@@ -45,12 +45,11 @@ public class DeleteCodesAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // Logic based on: https://app.code2flow.com/0493FY2rkyZm
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String email = InputParser.parseStringOrThrowError(input, "email", true);
         String phoneNumber = InputParser.parseStringOrThrowError(input, "phoneNumber", true);
-
-        // logic according to https://github.com/supertokens/supertokens-core/issues/111
 
         if (phoneNumber != null && email != null) {
             throw new ServletException(new BadRequestException("Please provide exactly one of email or phoneNumber"));
