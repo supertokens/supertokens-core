@@ -433,8 +433,8 @@ public class PasswordlessCreateCodeAPITest2_10 {
 
     private void checkResponse(JsonObject response, String userInputCode) {
         assertEquals("OK", response.get("status").getAsString());
-        assert (response.has("loginAttemptId"));
-        byte[] deviceIdHashBytes = Base64.decodeBase64URLSafe(response.get("loginAttemptId").getAsString());
+        assert (response.has("preAuthSessionId"));
+        byte[] deviceIdHashBytes = Base64.decodeBase64URLSafe(response.get("preAuthSessionId").getAsString());
         assertEquals(32, deviceIdHashBytes.length);
         assert (response.has("codeId"));
         // This tests that it is actually a UUID

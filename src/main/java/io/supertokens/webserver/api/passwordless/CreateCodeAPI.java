@@ -90,7 +90,7 @@ public class CreateCodeAPI extends WebserverAPI {
             result.addProperty("status", "OK");
 
             // We are renaming intentionally here to make the API more user friendly.
-            result.addProperty("loginAttemptId", createCodeResponse.deviceIdHash);
+            result.addProperty("preAuthSessionId", createCodeResponse.deviceIdHash);
             result.addProperty("codeId", createCodeResponse.codeId);
             result.addProperty("deviceId", createCodeResponse.deviceId);
             result.addProperty("userInputCode", createCodeResponse.userInputCode);
