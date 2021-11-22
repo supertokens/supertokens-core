@@ -51,6 +51,7 @@ public class CreateCodeAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // Logic based on: https://app.code2flow.com/e3yKIdE25SXE
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String email = null;
