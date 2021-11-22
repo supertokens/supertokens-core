@@ -185,6 +185,7 @@ public class Passwordless {
                             throw new StorageTransactionLogicException(new RestartFlowException());
                         } else {
                             passwordlessStorage.incrementDeviceFailedAttemptCount_Transaction(con, deviceIdHash);
+                            passwordlessStorage.commitTransaction(con);
                             if (code != null) {
                                 throw new StorageTransactionLogicException(new ExpiredUserInputCodeException(
                                         device.failedAttempts + 1, maxCodeInputAttempts));
@@ -214,8 +215,8 @@ public class Passwordless {
                     if (user.phoneNumber != null) {
                         passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(con, user.phoneNumber);
                     }
-                    passwordlessStorage.commitTransaction(con);
                 }
+                passwordlessStorage.commitTransaction(con);
                 return device;
             });
         } catch (StorageTransactionLogicException e) {
