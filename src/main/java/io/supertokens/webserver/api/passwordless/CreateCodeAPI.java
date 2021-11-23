@@ -56,7 +56,9 @@ public class CreateCodeAPI extends WebserverAPI {
         // Logic based on: https://app.code2flow.com/e3yKIdE25SXE
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String email = Utils.normaliseEmail(InputParser.parseStringOrThrowError(input, "email", true));
+        String email = input.has("email")
+                ? Utils.normaliseEmail(InputParser.parseStringOrThrowError(input, "email", false))
+                : null;
         String phoneNumber = InputParser.parseStringOrThrowError(input, "phoneNumber", true);
         String deviceId = InputParser.parseStringOrThrowError(input, "deviceId", true);
 
