@@ -75,10 +75,8 @@ public class Passwordless {
                 }
             }
         } else {
-            byte[] deviceIdBytes = Base64.decodeBase64(deviceId);
-
             while (true) {
-                CreateCodeInfo info = CreateCodeInfo.generate(userInputCode, deviceIdBytes);
+                CreateCodeInfo info = CreateCodeInfo.generate(userInputCode, deviceId);
                 try {
                     passwordlessStorage.createCode(info.code);
 
@@ -155,6 +153,12 @@ public class Passwordless {
             SecureRandom generator = new SecureRandom();
             byte[] deviceIdBytes = new byte[32];
             generator.nextBytes(deviceIdBytes);
+            return generate(userInputCode, deviceIdBytes);
+        }
+
+        public static CreateCodeInfo generate(String userInputCode, String deviceId)
+                throws InvalidKeyException, NoSuchAlgorithmException {
+            byte[] deviceIdBytes = Base64.decodeBase64(deviceId);
             return generate(userInputCode, deviceIdBytes);
         }
 
