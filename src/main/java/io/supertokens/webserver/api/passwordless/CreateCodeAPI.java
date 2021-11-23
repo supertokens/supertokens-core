@@ -35,6 +35,8 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 public class CreateCodeAPI extends WebserverAPI {
 
@@ -54,28 +56,11 @@ public class CreateCodeAPI extends WebserverAPI {
         // Logic based on: https://app.code2flow.com/e3yKIdE25SXE
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String email = null;
-        String phoneNumber = null;
-        String deviceId = null;
-        if (input.has("email")) {
-            if (input.has("phoneNumber") || input.has("deviceId")) {
-                throw new ServletException(
-                        new BadRequestException("Please provide exactly one of email, phoneNumber or deviceId"));
-            }
-            email = Utils.normaliseEmail(InputParser.parseStringOrThrowError(input, "email", false));
-        } else if (input.has("phoneNumber")) {
-            if (input.has("email") || input.has("deviceId")) {
-                throw new ServletException(
-                        new BadRequestException("Please provide exactly one of email, phoneNumber or deviceId"));
-            }
-            phoneNumber = InputParser.parseStringOrThrowError(input, "phoneNumber", false);
-        } else if (input.has("deviceId")) {
-            if (input.has("email") || input.has("phoneNumber")) {
-                throw new ServletException(
-                        new BadRequestException("Please provide exactly one of email, phoneNumber or deviceId"));
-            }
-            deviceId = InputParser.parseStringOrThrowError(input, "deviceId", false);
-        } else {
+        String email = Utils.normaliseEmail(InputParser.parseStringOrThrowError(input, "email", true));
+        String phoneNumber = InputParser.parseStringOrThrowError(input, "phoneNumber", true);
+        String deviceId = InputParser.parseStringOrThrowError(input, "deviceId", true);
+
+        if (Stream.of(email, phoneNumber, deviceId).filter(Objects::nonNull).count() != 1) {
             throw new ServletException(
                     new BadRequestException("Please provide exactly one of email, phoneNumber or deviceId"));
         }
