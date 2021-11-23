@@ -49,7 +49,44 @@ public class PasswordlessDeleteCodeAPITest2_10 {
     }
 
     @Test
-    public void testNonExistantCode() throws Exception {
+    public void testDeleteCode() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String phoneNumber = "+442071838750";
+        String codeId = "codeId";
+
+        String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
+        String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
+
+        storage.createDeviceWithCode(null, phoneNumber,
+                new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
+
+        JsonObject createCodeRequestBody = new JsonObject();
+        createCodeRequestBody.addProperty("codeId", codeId);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signinup/code/remove", createCodeRequestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_10ForTests(), "passwordless");
+
+        assertEquals("OK", response.get("status").getAsString());
+
+        assertNull(storage.getCode(codeId));
+        assertNull(storage.getDevice(deviceIdHash));
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDeleteNonExistentCode() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
