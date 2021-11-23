@@ -61,11 +61,7 @@ public class Passwordless {
             @Nullable String userInputCode) throws RestartFlowException, DuplicateLinkCodeHashException,
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
-
-        boolean gotDeviceId = deviceId != null;
-        boolean gotUserInputCode = userInputCode != null;
-
-        if (!gotDeviceId) {
+        if (deviceId != null) {
             while (true) {
                 CreateCodeInfo info = CreateCodeInfo.generate(userInputCode);
                 try {
@@ -88,7 +84,7 @@ public class Passwordless {
 
                     return info.resp;
                 } catch (DuplicateLinkCodeHashException e) {
-                    if (gotUserInputCode) {
+                    if (userInputCode != null) {
                         // We only need to rethrow if the user supplied both the deviceId and the userInputCode,
                         // because in that case the linkCodeHash will always be the same.
                         throw e;
