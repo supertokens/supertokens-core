@@ -35,7 +35,7 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
-public class UserPutAPITest2_10 {
+public class PasswordlessUserPutAPITest2_10 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

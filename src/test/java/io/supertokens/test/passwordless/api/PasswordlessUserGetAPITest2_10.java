@@ -37,7 +37,7 @@ import static org.junit.Assert.*;
 
 import java.util.HashMap;
 
-public class UserGetAPITest2_10 {
+public class PasswordlessUserGetAPITest2_10 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -70,7 +70,6 @@ public class UserGetAPITest2_10 {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user", map,
                         1000, 1000, null, Utils.getCdiVersion2_10ForTests(), "passwordless");
-                throw new Exception("Should not come here");
             } catch (HttpResponseException e) {
                 error = e;
             }
@@ -130,33 +129,6 @@ public class UserGetAPITest2_10 {
         String phoneNumber = "1234";
 
         storage.createUser(new UserInfo(userIdEmail, email, null, System.currentTimeMillis()));
-        {
-            HashMap<String, String> map = new HashMap<>();
-            map.put("userId", userIdEmail);
-            map.put("email", email);
-            HttpResponseException error = null;
-            try {
-                HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user", map,
-                        1000, 1000, null, Utils.getCdiVersion2_10ForTests(), "passwordless");
-                throw new Exception("Should not come here");
-            } catch (HttpResponseException e) {
-                error = e;
-            }
-            assertNotNull(error);
-            assertEquals(400, error.statusCode);
-            assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of userId, email or phoneNumber",
-                    error.getMessage());
-        }
-        {
-            HashMap<String, String> map = new HashMap<>();
-            map.put("phoneNumber", "notExists");
-            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", map, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(),
-                    "passwordless");
-
-            assertEquals("UNKNOWN_PHONE_NUMBER_ERROR", response.get("status").getAsString());
-        }
         {
             HashMap<String, String> map = new HashMap<>();
             map.put("userId", userIdEmail);

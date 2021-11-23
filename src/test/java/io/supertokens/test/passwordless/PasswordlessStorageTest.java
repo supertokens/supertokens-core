@@ -352,6 +352,7 @@ public class PasswordlessStorageTest {
         String phoneNumber2 = "+442082949861";
         String phoneNumber3 = "+442082949862";
 
+        String userIdNotExists = io.supertokens.utils.Utils.getUUID();
         String userIdEmail1 = io.supertokens.utils.Utils.getUUID();
         String userIdEmail2 = io.supertokens.utils.Utils.getUUID();
         String userIdPhone1 = io.supertokens.utils.Utils.getUUID();
@@ -371,7 +372,7 @@ public class PasswordlessStorageTest {
             try {
                 storage.startTransaction(con -> {
                     try {
-                        storage.updateUserEmail_Transaction(con, "not_exists", email3);
+                        storage.updateUserEmail_Transaction(con, userIdNotExists, email3);
                     } catch (UnknownUserIdException | DuplicateEmailException e) {
                         throw new StorageTransactionLogicException(e);
                     }
@@ -384,7 +385,7 @@ public class PasswordlessStorageTest {
 
             assertNotNull(error);
             assert (error instanceof UnknownUserIdException);
-            assertEquals(email, storage.getUserById(userIdEmail1).email);
+            assertNull(storage.getUserById(userIdNotExists));
         }
 
         {
@@ -392,7 +393,7 @@ public class PasswordlessStorageTest {
             try {
                 storage.startTransaction(con -> {
                     try {
-                        storage.updateUserPhoneNumber_Transaction(con, "not_exists", phoneNumber3);
+                        storage.updateUserPhoneNumber_Transaction(con, userIdNotExists, phoneNumber3);
                     } catch (UnknownUserIdException | DuplicatePhoneNumberException e) {
                         throw new StorageTransactionLogicException(e);
                     }
@@ -405,7 +406,7 @@ public class PasswordlessStorageTest {
 
             assertNotNull(error);
             assert (error instanceof UnknownUserIdException);
-            assertEquals(email, storage.getUserById(userIdEmail1).email);
+            assertNull(storage.getUserById(userIdNotExists));
         }
 
         {
