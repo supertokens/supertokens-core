@@ -61,7 +61,7 @@ public class Passwordless {
             @Nullable String userInputCode) throws RestartFlowException, DuplicateLinkCodeHashException,
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
-        if (deviceId != null) {
+        if (deviceId == null) {
             while (true) {
                 CreateCodeInfo info = CreateCodeInfo.generate(userInputCode);
                 try {
