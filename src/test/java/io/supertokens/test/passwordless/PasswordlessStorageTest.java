@@ -21,6 +21,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
@@ -345,9 +346,11 @@ public class PasswordlessStorageTest {
 
         String email = "test@example.com";
         String email2 = "test2@example.com";
+        String email3 = "test3@example.com";
 
         String phoneNumber = "+442071838750";
         String phoneNumber2 = "+442082949861";
+        String phoneNumber3 = "+442082949862";
 
         String userIdEmail1 = io.supertokens.utils.Utils.getUUID();
         String userIdEmail2 = io.supertokens.utils.Utils.getUUID();
@@ -366,9 +369,59 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.updateUser(userIdEmail1, email2, null);
-            } catch (Exception e) {
-                error = e;
+                storage.startTransaction(con -> {
+                    try {
+                        storage.updateUserEmail_Transaction(con, "not_exists", email3);
+                    } catch (UnknownUserIdException | DuplicateEmailException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                    storage.commitTransaction(con);
+                    return null;
+                });
+            } catch (StorageTransactionLogicException e) {
+                error = e.actualException;
+            }
+
+            assertNotNull(error);
+            assert (error instanceof UnknownUserIdException);
+            assertEquals(email, storage.getUserById(userIdEmail1).email);
+        }
+
+        {
+            Exception error = null;
+            try {
+                storage.startTransaction(con -> {
+                    try {
+                        storage.updateUserPhoneNumber_Transaction(con, "not_exists", phoneNumber3);
+                    } catch (UnknownUserIdException | DuplicatePhoneNumberException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                    storage.commitTransaction(con);
+                    return null;
+                });
+            } catch (StorageTransactionLogicException e) {
+                error = e.actualException;
+            }
+
+            assertNotNull(error);
+            assert (error instanceof UnknownUserIdException);
+            assertEquals(email, storage.getUserById(userIdEmail1).email);
+        }
+
+        {
+            Exception error = null;
+            try {
+                storage.startTransaction(con -> {
+                    try {
+                        storage.updateUserEmail_Transaction(con, userIdEmail1, email2);
+                    } catch (UnknownUserIdException | DuplicateEmailException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                    storage.commitTransaction(con);
+                    return null;
+                });
+            } catch (StorageTransactionLogicException e) {
+                error = e.actualException;
             }
 
             assertNotNull(error);
@@ -379,9 +432,38 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.updateUser(userIdPhone1, null, phoneNumber2);
-            } catch (Exception e) {
-                error = e;
+                storage.startTransaction(con -> {
+                    try {
+                        storage.updateUserEmail_Transaction(con, userIdEmail1, email2);
+                    } catch (UnknownUserIdException | DuplicateEmailException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                    storage.commitTransaction(con);
+                    return null;
+                });
+            } catch (StorageTransactionLogicException e) {
+                error = e.actualException;
+            }
+
+            assertNotNull(error);
+            assert (error instanceof DuplicateEmailException);
+            assertEquals(email, storage.getUserById(userIdEmail1).email);
+        }
+
+        {
+            Exception error = null;
+            try {
+                storage.startTransaction(con -> {
+                    try {
+                        storage.updateUserPhoneNumber_Transaction(con, userIdPhone1, phoneNumber2);
+                    } catch (UnknownUserIdException | DuplicatePhoneNumberException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                    storage.commitTransaction(con);
+                    return null;
+                });
+            } catch (StorageTransactionLogicException e) {
+                error = e.actualException;
             }
 
             assertNotNull(error);
@@ -392,9 +474,17 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.updateUser(userIdEmail1, null, phoneNumber);
-            } catch (Exception e) {
-                error = e;
+                storage.startTransaction(con -> {
+                    try {
+                        storage.updateUserPhoneNumber_Transaction(con, userIdEmail1, phoneNumber);
+                    } catch (UnknownUserIdException | DuplicatePhoneNumberException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                    storage.commitTransaction(con);
+                    return null;
+                });
+            } catch (StorageTransactionLogicException e) {
+                error = e.actualException;
             }
 
             assertNotNull(error);
@@ -407,28 +497,21 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.updateUser(userIdPhone1, email, null);
-            } catch (Exception e) {
-                error = e;
+                storage.startTransaction(con -> {
+                    try {
+                        storage.updateUserEmail_Transaction(con, userIdPhone1, email);
+                    } catch (UnknownUserIdException | DuplicateEmailException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                    storage.commitTransaction(con);
+                    return null;
+                });
+            } catch (StorageTransactionLogicException e) {
+                error = e.actualException;
             }
 
             assertNotNull(error);
             assert (error instanceof DuplicateEmailException);
-            UserInfo userInDb = storage.getUserById(userIdPhone1);
-            assertEquals(null, userInDb.email);
-            assertEquals(phoneNumber, userInDb.phoneNumber);
-        }
-
-        {
-            Exception error = null;
-            try {
-                storage.updateUser(userIdPhone1, null, null);
-            } catch (Exception e) {
-                error = e;
-            }
-
-            assertNotNull(error);
-            assert (error instanceof IllegalArgumentException);
             UserInfo userInDb = storage.getUserById(userIdPhone1);
             assertEquals(null, userInDb.email);
             assertEquals(phoneNumber, userInDb.phoneNumber);
@@ -465,15 +548,60 @@ public class PasswordlessStorageTest {
 
         assertNotNull(storage.getUserById(userId));
 
-        storage.updateUser(userId, email2, null);
+        storage.startTransaction(con -> {
+            try {
+                storage.updateUserEmail_Transaction(con, userId, email2);
+            } catch (UnknownUserIdException | DuplicateEmailException e) {
+                throw new StorageTransactionLogicException(e);
+            }
+            storage.commitTransaction(con);
+            return null;
+        });
         checkUser(storage, userId, email2, null);
 
-        storage.updateUser(userId, null, phoneNumber);
+        storage.startTransaction(con -> {
+            try {
+                storage.updateUserEmail_Transaction(con, userId, null);
+            } catch (UnknownUserIdException | DuplicateEmailException e) {
+                throw new StorageTransactionLogicException(e);
+            }
+            try {
+                storage.updateUserPhoneNumber_Transaction(con, userId, phoneNumber);
+            } catch (UnknownUserIdException | DuplicatePhoneNumberException e) {
+                throw new StorageTransactionLogicException(e);
+            }
+            storage.commitTransaction(con);
+            return null;
+        });
         checkUser(storage, userId, null, phoneNumber);
 
-        storage.updateUser(userId, null, phoneNumber2);
+        storage.startTransaction(con -> {
+            try {
+                storage.updateUserPhoneNumber_Transaction(con, userId, phoneNumber2);
+            } catch (UnknownUserIdException | DuplicatePhoneNumberException e) {
+                throw new StorageTransactionLogicException(e);
+            }
+            storage.commitTransaction(con);
+            return null;
+        });
         checkUser(storage, userId, null, phoneNumber2);
 
+        storage.startTransaction(con -> {
+            try {
+                storage.updateUserEmail_Transaction(con, userId, email);
+            } catch (UnknownUserIdException | DuplicateEmailException e) {
+                throw new StorageTransactionLogicException(e);
+            }
+            try {
+                storage.updateUserPhoneNumber_Transaction(con, userId, null);
+            } catch (UnknownUserIdException | DuplicatePhoneNumberException e) {
+                throw new StorageTransactionLogicException(e);
+            }
+            storage.commitTransaction(con);
+            return null;
+        });
+
+        checkUser(storage, userId, email, null);
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

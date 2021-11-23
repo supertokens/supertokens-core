@@ -41,10 +41,11 @@ public abstract class WebserverAPI extends HttpServlet {
         supportedVersions.add("2.7");
         supportedVersions.add("2.8");
         supportedVersions.add("2.9");
+        supportedVersions.add("2.10");
     }
 
     public static String getLatestCDIVersion() {
-        return "2.9";
+        return "2.10";
     }
 
     public WebserverAPI(Main main, String rid) {
@@ -156,7 +157,7 @@ public abstract class WebserverAPI extends HttpServlet {
             }
             super.service(req, resp);
         } catch (Exception e) {
-            Logging.error(main, "API threw an exception: " + this.getPath(), Main.isTesting, e);
+            Logging.error(main, "API threw an exception: " + req.getMethod() + " " + this.getPath(), Main.isTesting, e);
 
             if (e instanceof QuitProgramException) {
                 main.wakeUpMainThreadToShutdown();

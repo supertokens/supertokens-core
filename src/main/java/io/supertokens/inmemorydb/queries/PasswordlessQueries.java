@@ -270,17 +270,30 @@ public class PasswordlessQueries {
         });
     }
 
-    public static void updateUser(Start start, String userId, String email, String phoneNumber) throws SQLException {
+    public static void updateUserEmail_Transaction(Start start, Connection con, String userId, String email)
+            throws SQLException, UnknownUserIdException {
+        String QUERY = "UPDATE " + Config.getConfig(start).getPasswordlessUsersTable()
+                + " SET email = ? WHERE user_id = ?";
 
-        try (Connection con = ConnectionPool.getConnection(start)) {
-            String QUERY = "UPDATE " + Config.getConfig(start).getPasswordlessUsersTable()
-                    + " SET email = ?, phone_number = ? WHERE user_id = ?";
+        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, email);
+            pst.setString(2, userId);
+            if (pst.executeUpdate() != 1) {
+                throw new UnknownUserIdException();
+            }
+        }
+    }
 
-            try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-                pst.setString(1, email);
-                pst.setString(2, phoneNumber);
-                pst.setString(3, userId);
-                pst.executeUpdate();
+    public static void updateUserPhoneNumber_Transaction(Start start, Connection con, String userId, String phoneNumber)
+            throws SQLException, UnknownUserIdException {
+        String QUERY = "UPDATE " + Config.getConfig(start).getPasswordlessUsersTable()
+                + " SET phone_number = ? WHERE user_id = ?";
+
+        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, phoneNumber);
+            pst.setString(2, userId);
+            if (pst.executeUpdate() != 1) {
+                throw new UnknownUserIdException();
             }
         }
     }
@@ -425,6 +438,23 @@ public class PasswordlessQueries {
             }
         }
         return finalResult;
+    }
+
+    public static UserInfo getUserById_Transaction(Start start, Connection con, String userId)
+            throws StorageQueryException, SQLException {
+        ((ConnectionWithLocks) con).lock(userId + Config.getConfig(start).getPasswordlessUsersTable());
+
+        String QUERY = "SELECT user_id, email, phone_number, time_joined FROM "
+                + Config.getConfig(start).getPasswordlessUsersTable() + " WHERE user_id = ?";
+
+        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, userId);
+            ResultSet result = pst.executeQuery();
+            if (result.next()) {
+                return UserInfoRowMapper.getInstance().mapOrThrow(result);
+            }
+            return null;
+        }
     }
 
     public static UserInfo getUserById(Start start, String userId) throws StorageQueryException, SQLException {
