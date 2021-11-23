@@ -495,7 +495,6 @@ public class PasswordlessQueries {
             StringBuilder QUERY = new StringBuilder("DELETE FROM " + tableName);
             QUERY.append(" WHERE device_id_hash IN (");
             for (int i = 0; i < deviceIdHashes.size(); i++) {
-
                 QUERY.append("?");
                 if (i != deviceIdHashes.size() - 1) {
                     // not the last element
