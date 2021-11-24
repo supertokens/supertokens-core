@@ -29,14 +29,14 @@ public class ConnectionWithLocks implements Connection {
     private ConnectionPool connectionPool;
     private Set<String> lockedKeys = new HashSet<String>();
 
-    public void lock(String key) {
+    public synchronized void lock(String key) {
         if (!this.lockedKeys.contains(key)) {
             this.lockedKeys.add(key);
             connectionPool.lock(key);
         }
     }
 
-    private void unlockAllLocks() {
+    private synchronized void unlockAllLocks() {
         for (String key : lockedKeys) {
             connectionPool.unlock(key);
         }

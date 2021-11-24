@@ -195,7 +195,7 @@ public class PasswordlessQueries {
                 deviceIdHashes);
     }
 
-    public static void createCode_Transaction(Start start, Connection con, PasswordlessCode code) throws SQLException {
+    private static void createCode_Transaction(Start start, Connection con, PasswordlessCode code) throws SQLException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getPasswordlessCodesTable()
                 + "(code_id, device_id_hash, link_code_hash, created_at)" + " VALUES(?, ?, ?, ?)";
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
