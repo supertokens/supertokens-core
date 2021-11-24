@@ -157,7 +157,7 @@ public abstract class WebserverAPI extends HttpServlet {
             }
             super.service(req, resp);
         } catch (Exception e) {
-            Logging.error(main, "API threw an exception: " + this.getPath(), Main.isTesting, e);
+            Logging.error(main, "API threw an exception: " + req.getMethod() + " " + this.getPath(), Main.isTesting, e);
 
             if (e instanceof QuitProgramException) {
                 main.wakeUpMainThreadToShutdown();
