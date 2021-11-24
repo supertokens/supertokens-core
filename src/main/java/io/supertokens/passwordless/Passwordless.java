@@ -134,6 +134,8 @@ public class Passwordless {
             StorageTransactionLogicException, StorageQueryException, NoSuchAlgorithmException, InvalidKeyException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
         long passwordlessCodeLifetime = Config.getConfig(main).getPasswordlessCodeLifetime();
+        int maxCodeInputAttempts = Config.getConfig(main).getPasswordlessMaxCodeInputAttempts();
+
         String deviceIdHash;
         String linkCodeHash;
         if (linkCode != null) {
@@ -154,7 +156,7 @@ public class Passwordless {
             byte[] linkCodeHashBytes = Utils.hashSHA256Bytes(linkCodeBytes);
             linkCodeHash = Base64.encodeBase64String(linkCodeHashBytes);
         }
-        int maxCodeInputAttempts = Config.getConfig(main).getPasswordlessMaxCodeInputAttempts();
+
         PasswordlessDevice consumedDevice;
         try {
             consumedDevice = passwordlessStorage.startTransaction(con -> {
@@ -167,16 +169,18 @@ public class Passwordless {
                     passwordlessStorage.commitTransaction(con);
                     throw new StorageTransactionLogicException(new RestartFlowException());
                 }
+
                 PasswordlessCode code = passwordlessStorage.getCodeByLinkCodeHash_Transaction(con, linkCodeHash);
                 if (code == null || code.createdAt < System.currentTimeMillis() - passwordlessCodeLifetime) {
                     if (deviceId != null) {
-                        if (device.failedAttempts + 1 == maxCodeInputAttempts) {
+                        if (device.failedAttempts >= maxCodeInputAttempts) {
                             passwordlessStorage.deleteDevice_Transaction(con, deviceIdHash);
                             passwordlessStorage.commitTransaction(con);
                             throw new StorageTransactionLogicException(new RestartFlowException());
                         } else {
                             passwordlessStorage.incrementDeviceFailedAttemptCount_Transaction(con, deviceIdHash);
                             passwordlessStorage.commitTransaction(con);
+
                             if (code != null) {
                                 throw new StorageTransactionLogicException(new ExpiredUserInputCodeException(
                                         device.failedAttempts + 1, maxCodeInputAttempts));
@@ -189,24 +193,12 @@ public class Passwordless {
                     throw new StorageTransactionLogicException(new RestartFlowException());
                 }
 
-                // Code exists and is valid
-                UserInfo user = device.email != null ? passwordlessStorage.getUserByEmail(device.email)
-                        : passwordlessStorage.getUserByPhoneNumber(device.phoneNumber);
-
-                if (user == null) {
-                    if (device.email != null) {
-                        passwordlessStorage.deleteDevicesByEmail_Transaction(con, device.email);
-                    } else if (device.phoneNumber != null) {
-                        passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(con, device.phoneNumber);
-                    }
-                } else {
-                    if (user.email != null) {
-                        passwordlessStorage.deleteDevicesByEmail_Transaction(con, user.email);
-                    }
-                    if (user.phoneNumber != null) {
-                        passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(con, user.phoneNumber);
-                    }
+                if (device.email != null) {
+                    passwordlessStorage.deleteDevicesByEmail_Transaction(con, device.email);
+                } else if (device.phoneNumber != null) {
+                    passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(con, device.phoneNumber);
                 }
+
                 passwordlessStorage.commitTransaction(con);
                 return device;
             });
@@ -216,6 +208,9 @@ public class Passwordless {
             }
             if (e.actualException instanceof IncorrectUserInputCodeException) {
                 throw (IncorrectUserInputCodeException) e.actualException;
+            }
+            if (e.actualException instanceof RestartFlowException) {
+                throw (RestartFlowException) e.actualException;
             }
             throw e;
         }
@@ -237,6 +232,13 @@ public class Passwordless {
                 } catch (DuplicateUserIdException e) {
                     // We can retry..
                 }
+            }
+        } else {
+            if (user.email != null) {
+                removeCodesByEmail(main, user.email);
+            }
+            if (user.phoneNumber != null) {
+                removeCodesByPhoneNumber(main, user.phoneNumber);
             }
         }
         return new ConsumeCodeResponse(false, user);

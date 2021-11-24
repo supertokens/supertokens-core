@@ -16,7 +16,17 @@
 
 package io.supertokens.test.passwordless.api;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import com.google.gson.JsonObject;
+
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
 import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.CreateCodeResponse;
@@ -26,15 +36,6 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
-
-import org.apache.tomcat.util.codec.binary.Base64;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
-import static org.junit.Assert.*;
 
 public class PasswordlessConsumeCodeAPITest2_10 {
     @Rule
@@ -48,6 +49,123 @@ public class PasswordlessConsumeCodeAPITest2_10 {
     @Before
     public void beforeEach() {
         Utils.reset();
+    }
+
+    @Test
+    public void testBadInput() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String email = "test@example.com";
+        CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
+        {
+            HttpResponseException error = null;
+            try {
+                JsonObject consumeCodeRequestBody = new JsonObject();
+
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException ex) {
+                error = ex;
+            }
+
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    error.getMessage());
+        }
+
+        {
+            HttpResponseException error = null;
+            try {
+                JsonObject consumeCodeRequestBody = new JsonObject();
+                consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
+                consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId);
+                consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
+
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException ex) {
+                error = ex;
+            }
+
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    error.getMessage());
+        }
+
+        {
+            HttpResponseException error = null;
+            try {
+                JsonObject consumeCodeRequestBody = new JsonObject();
+                consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
+                consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
+
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException ex) {
+                error = ex;
+            }
+
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    error.getMessage());
+        }
+        {
+            HttpResponseException error = null;
+            try {
+                JsonObject consumeCodeRequestBody = new JsonObject();
+                consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
+
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException ex) {
+                error = ex;
+            }
+
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    error.getMessage());
+        }
+        {
+            HttpResponseException error = null;
+            try {
+                JsonObject consumeCodeRequestBody = new JsonObject();
+                consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId);
+
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException ex) {
+                error = ex;
+            }
+
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    error.getMessage());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
@@ -78,6 +196,35 @@ public class PasswordlessConsumeCodeAPITest2_10 {
     }
 
     @Test
+    public void testExpiredLinkCode() throws Exception {
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("passwordless_code_lifetime", "1");// 1 second validity
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String email = "test@example.com";
+        CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
+        Thread.sleep(1500);
+        JsonObject consumeCodeRequestBody = new JsonObject();
+        consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_10ForTests(), "passwordless");
+
+        assertEquals("RESTART_FLOW_ERROR", response.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testUserInputCode() throws Exception {
         String[] args = { "../" };
 
@@ -101,6 +248,75 @@ public class PasswordlessConsumeCodeAPITest2_10 {
 
         checkResponse(response, true, email, null);
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testExpiredUserInputCode() throws Exception {
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("passwordless_code_lifetime", "1");// 1 second validity
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String email = "test@example.com";
+        CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
+        Thread.sleep(1500);
+
+        JsonObject consumeCodeRequestBody = new JsonObject();
+        consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId);
+        consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_10ForTests(), "passwordless");
+
+        assertEquals("EXPIRED_USER_INPUT_CODE", response.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testIncorrectUserInputCode() throws Exception {
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("passwordless_max_code_input_attempts", "1"); // Only 1 code entry permitted
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String email = "test@example.com";
+        CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
+
+        JsonObject consumeCodeRequestBody = new JsonObject();
+        consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId);
+        consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode + "nope");
+
+        {
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+
+            assertEquals("INCORRECT_USER_INPUT_CODE", response.get("status").getAsString());
+        }
+
+        {
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+
+            assertEquals("RESTART_FLOW_ERROR", response.get("status").getAsString());
+        }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
