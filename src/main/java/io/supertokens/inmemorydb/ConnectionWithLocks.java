@@ -17,26 +17,28 @@
 package io.supertokens.inmemorydb;
 
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.Executor;
 
 public class ConnectionWithLocks implements Connection {
 
     private Connection con;
     private ConnectionPool connectionPool;
-    private List<String> lockedKeys = new ArrayList<>();
+    private Set<String> lockedKeys = new HashSet<String>();
 
-    public void lock(String key) {
-        connectionPool.lock(key);
-        this.lockedKeys.add(key);
+    public synchronized void lock(String key) {
+        if (!this.lockedKeys.contains(key)) {
+            this.lockedKeys.add(key);
+            connectionPool.lock(key);
+        }
     }
 
-    private void unlockAllLocks() {
-        for (int i = this.lockedKeys.size() - 1; i >= 0; i--) {
-            connectionPool.unlock(this.lockedKeys.get(i));
+    private synchronized void unlockAllLocks() {
+        for (String key : lockedKeys) {
+            connectionPool.unlock(key);
         }
         this.lockedKeys.clear();
     }

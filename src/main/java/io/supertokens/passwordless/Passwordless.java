@@ -274,6 +274,28 @@ public class Passwordless {
         });
     }
 
+    public static void removeCodesByEmail(Main main, String email)
+            throws StorageQueryException, StorageTransactionLogicException {
+        PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
+
+        passwordlessStorage.startTransaction(con -> {
+            passwordlessStorage.deleteDevicesByEmail_Transaction(con, email);
+            passwordlessStorage.commitTransaction(con);
+            return null;
+        });
+    }
+
+    public static void removeCodesByPhoneNumber(Main main, String phoneNumber)
+            throws StorageQueryException, StorageTransactionLogicException {
+        PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
+
+        passwordlessStorage.startTransaction(con -> {
+            passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(con, phoneNumber);
+            passwordlessStorage.commitTransaction(con);
+            return null;
+        });
+    }
+
     public static UserInfo getUserById(Main main, String userId) throws StorageQueryException {
         return StorageLayer.getPasswordlessStorage(main).getUserById(userId);
     }
