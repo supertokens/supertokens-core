@@ -102,7 +102,9 @@ public class PasswordlessQueries {
 
     public static PasswordlessDevice getDevice_Transaction(Start start, Connection con, String deviceIdHash)
             throws StorageQueryException, SQLException {
-        ((ConnectionWithLocks) con).lock(deviceIdHash + Config.getConfig(start).getPasswordlessDevicesTable());
+        // We lock the whole table instead of the individual devices. This is not intended for production use.
+        ((ConnectionWithLocks) con).lock(Config.getConfig(start).getPasswordlessDevicesTable());
+
         String QUERY = "SELECT device_id_hash, email, phone_number, failed_attempts FROM "
                 + Config.getConfig(start).getPasswordlessDevicesTable() + " WHERE device_id_hash = ?";
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
@@ -149,6 +151,9 @@ public class PasswordlessQueries {
 
     public static void deleteDevicesByPhoneNumber_Transaction(Start start, Connection con, @Nonnull String phoneNumber)
             throws SQLException {
+        // We lock the whole table instead of the individual devices. This is not intended for production use.
+        ((ConnectionWithLocks) con).lock(Config.getConfig(start).getPasswordlessDevicesTable());
+
         // SQLite is not compiled with foreign key constraint and so we must implement cascading deletes here
         String QUERY = "SELECT device_id_hash FROM " + Config.getConfig(start).getPasswordlessDevicesTable()
                 + " WHERE phone_number = ?";
@@ -169,6 +174,9 @@ public class PasswordlessQueries {
 
     public static void deleteDevicesByEmail_Transaction(Start start, Connection con, @Nonnull String email)
             throws SQLException, StorageQueryException {
+        // We lock the whole table instead of the individual devices. This is not intended for production use.
+        ((ConnectionWithLocks) con).lock(Config.getConfig(start).getPasswordlessDevicesTable());
+
         // SQLite is not compiled with foreign key constraint and so we must implement cascading deletes here
         String QUERY = "SELECT device_id_hash FROM " + Config.getConfig(start).getPasswordlessDevicesTable()
                 + " WHERE email = ?";
@@ -203,6 +211,10 @@ public class PasswordlessQueries {
             throws StorageTransactionLogicException, StorageQueryException {
         start.startTransaction(con -> {
             Connection sqlCon = (Connection) con.getConnection();
+
+            // We lock the whole table instead of the individual devices. This is not intended for production use.
+            ((ConnectionWithLocks) sqlCon).lock(Config.getConfig(start).getPasswordlessDevicesTable());
+
             // SQLite is not compiled with foreign key constraint and so we must check for
             // the deviceIdHash manually
             try {
