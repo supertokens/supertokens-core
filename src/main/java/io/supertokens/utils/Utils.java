@@ -80,6 +80,10 @@ public class Utils {
         return bytesToString(hash);
     }
 
+    public static byte[] hashSHA256Bytes(byte[] base) throws NoSuchAlgorithmException {
+        return MessageDigest.getInstance("SHA-256").digest(base);
+    }
+
     public static String generateNewSigningKey() throws NoSuchAlgorithmException, InvalidKeySpecException {
 
         byte[] random = new byte[64];
