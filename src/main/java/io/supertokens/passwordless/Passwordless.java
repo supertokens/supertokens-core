@@ -140,12 +140,14 @@ public class Passwordless {
             DuplicatePhoneNumberException {
         PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(main);
 
+        // We do not lock the user here, because we decided that even if the device cleanup used outdated information
+        // it wouldn't leave the system in an incosistent state/cause problems.
+        UserInfo user = storage.getUserById(userId);
+        if (user == null) {
+            throw new UnknownUserIdException();
+        }
         try {
             storage.startTransaction(con -> {
-                UserInfo user = storage.getUserById(userId);
-                if (user == null) {
-                    throw new StorageTransactionLogicException(new UnknownUserIdException());
-                }
 
                 if (emailUpdate != null && !Objects.equals(emailUpdate.newValue, user.email)) {
                     try {
@@ -191,6 +193,10 @@ public class Passwordless {
         }
     }
 
+    // This class represents an optional update that can have null as a new value.
+    // By passing null instead of this object, we can signify no-update, while passing the object
+    // with null (or a new value) can request an update to that value.
+    // This is like a specifically named Optional.
     public static class FieldUpdate {
         public final String newValue;
 

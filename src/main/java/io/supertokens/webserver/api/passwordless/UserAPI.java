@@ -77,7 +77,7 @@ public class UserAPI extends WebserverAPI {
             if (user == null) {
                 JsonObject result = new JsonObject();
                 result.addProperty("status", userId != null ? "UNKNOWN_USER_ID_ERROR"
-                        : email != null ? "UNKNOWN_EMAIL_ERROR" : "UNKNOWN_PHONE_NUMBER_ERROR");
+                        : (email != null ? "UNKNOWN_EMAIL_ERROR" : "UNKNOWN_PHONE_NUMBER_ERROR"));
                 super.sendJsonResponse(200, result, resp);
             } else {
                 JsonObject result = new JsonObject();

@@ -922,17 +922,6 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public io.supertokens.pluginInterface.passwordless.UserInfo getUserById_Transaction(TransactionConnection con,
-            String userId) throws StorageQueryException {
-        Connection sqlCon = (Connection) con.getConnection();
-        try {
-            return PasswordlessQueries.getUserById_Transaction(this, sqlCon, userId);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     public io.supertokens.pluginInterface.passwordless.UserInfo getUserById(String userId)
             throws StorageQueryException {
         try {

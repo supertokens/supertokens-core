@@ -440,23 +440,6 @@ public class PasswordlessQueries {
         return finalResult;
     }
 
-    public static UserInfo getUserById_Transaction(Start start, Connection con, String userId)
-            throws StorageQueryException, SQLException {
-        ((ConnectionWithLocks) con).lock(userId + Config.getConfig(start).getPasswordlessUsersTable());
-
-        String QUERY = "SELECT user_id, email, phone_number, time_joined FROM "
-                + Config.getConfig(start).getPasswordlessUsersTable() + " WHERE user_id = ?";
-
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, userId);
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return UserInfoRowMapper.getInstance().mapOrThrow(result);
-            }
-            return null;
-        }
-    }
-
     public static UserInfo getUserById(Start start, String userId) throws StorageQueryException, SQLException {
         List<String> input = new ArrayList<>();
         input.add(userId);
