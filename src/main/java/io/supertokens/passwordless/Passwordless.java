@@ -16,15 +16,22 @@
 
 package io.supertokens.passwordless;
 
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
+import java.util.Objects;
+
+import javax.annotation.Nullable;
+
+import org.apache.tomcat.util.codec.binary.Base64;
+
 import io.supertokens.Main;
-import io.supertokens.config.Config;
 import io.supertokens.passwordless.exceptions.RestartFlowException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
-import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
-import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicateCodeIdException;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicateDeviceIdHashException;
@@ -34,14 +41,6 @@ import io.supertokens.pluginInterface.passwordless.exception.UnknownDeviceIdHash
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
-
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-
-import javax.annotation.Nullable;
-
-import org.apache.tomcat.util.codec.binary.Base64;
 
 public class Passwordless {
     // We are storing the "alphabets" like this because we remove a few characters from the normal English alphabet.
@@ -83,7 +82,8 @@ public class Passwordless {
                     return info.resp;
                 } catch (DuplicateLinkCodeHashException e) {
                     if (userInputCode != null) {
-                        // We only need to rethrow if the user supplied both the deviceId and the userInputCode,
+                        // We only need to rethrow if the user supplied both the deviceId and the
+                        // userInputCode,
                         // because in that case the linkCodeHash will always be the same.
                         throw e;
                     }
@@ -98,11 +98,15 @@ public class Passwordless {
     }
 
     private static String generateUserInputCode() {
-        // This logic is based on the idea that we wanted to incorporate letters as well as numbers in the code.
-        // We are allowing at most 2 letters in a row, to try and avoid generating slurs or other abusive codes.
+        // This logic is based on the idea that we wanted to incorporate letters as well
+        // as numbers in the code.
+        // We are allowing at most 2 letters in a row, to try and avoid generating slurs
+        // or other abusive codes.
 
-        // Note: this implementation gives an equal chance to either numbers or letters, so the probability of any
-        // character is lower than the probability of a number, but the distribution is uniform inside both alphabets.
+        // Note: this implementation gives an equal chance to either numbers or letters,
+        // so the probability of any
+        // character is lower than the probability of a number, but the distribution is
+        // uniform inside both alphabets.
 
         SecureRandom generator = new SecureRandom();
         StringBuilder sb = new StringBuilder();
@@ -117,6 +121,88 @@ public class Passwordless {
             }
         }
         return sb.toString();
+    }
+
+    public static UserInfo getUserById(Main main, String userId) throws StorageQueryException {
+        return StorageLayer.getPasswordlessStorage(main).getUserById(userId);
+    }
+
+    public static UserInfo getUserByPhoneNumber(Main main, String phoneNumber) throws StorageQueryException {
+        return StorageLayer.getPasswordlessStorage(main).getUserByPhoneNumber(phoneNumber);
+    }
+
+    public static UserInfo getUserByEmail(Main main, String email) throws StorageQueryException {
+        return StorageLayer.getPasswordlessStorage(main).getUserByEmail(email);
+    }
+
+    public static void updateUser(Main main, String userId, FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
+            throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
+            DuplicatePhoneNumberException {
+        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(main);
+
+        // We do not lock the user here, because we decided that even if the device cleanup used outdated information
+        // it wouldn't leave the system in an incosistent state/cause problems.
+        UserInfo user = storage.getUserById(userId);
+        if (user == null) {
+            throw new UnknownUserIdException();
+        }
+        try {
+            storage.startTransaction(con -> {
+
+                if (emailUpdate != null && !Objects.equals(emailUpdate.newValue, user.email)) {
+                    try {
+                        storage.updateUserEmail_Transaction(con, userId, emailUpdate.newValue);
+                    } catch (UnknownUserIdException | DuplicateEmailException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                    if (user.email != null) {
+                        storage.deleteDevicesByEmail_Transaction(con, user.email);
+                    }
+                    if (emailUpdate.newValue != null) {
+                        storage.deleteDevicesByEmail_Transaction(con, emailUpdate.newValue);
+                    }
+                }
+                if (phoneNumberUpdate != null && !Objects.equals(phoneNumberUpdate.newValue, user.phoneNumber)) {
+                    try {
+                        storage.updateUserPhoneNumber_Transaction(con, userId, phoneNumberUpdate.newValue);
+                    } catch (UnknownUserIdException | DuplicatePhoneNumberException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                    if (user.phoneNumber != null) {
+                        storage.deleteDevicesByPhoneNumber_Transaction(con, user.phoneNumber);
+                    }
+                    if (phoneNumberUpdate.newValue != null) {
+                        storage.deleteDevicesByPhoneNumber_Transaction(con, phoneNumberUpdate.newValue);
+                    }
+                }
+                storage.commitTransaction(con);
+                return null;
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof UnknownUserIdException) {
+                throw (UnknownUserIdException) e.actualException;
+            }
+
+            if (e.actualException instanceof DuplicateEmailException) {
+                throw (DuplicateEmailException) e.actualException;
+            }
+
+            if (e.actualException instanceof DuplicatePhoneNumberException) {
+                throw (DuplicatePhoneNumberException) e.actualException;
+            }
+        }
+    }
+
+    // This class represents an optional update that can have null as a new value.
+    // By passing null instead of this object, we can signify no-update, while passing the object
+    // with null (or a new value) can request an update to that value.
+    // This is like a specifically named Optional.
+    public static class FieldUpdate {
+        public final String newValue;
+
+        public FieldUpdate(String newValue) {
+            this.newValue = newValue;
+        }
     }
 
     public static class CreateCodeResponse {
