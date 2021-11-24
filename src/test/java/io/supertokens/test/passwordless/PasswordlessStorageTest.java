@@ -607,6 +607,47 @@ public class PasswordlessStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testDeleteDeviceCascades() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String email = "test@example.com";
+        String codeId = io.supertokens.utils.Utils.getUUID();
+        String codeId2 = io.supertokens.utils.Utils.getUUID();
+
+        String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
+        String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
+        String linkCodeHash2 = "F0aZHCBYSJIghP5e0flGa8gvoUYEgGus2yIJYmdpFY4";
+
+        storage.createDeviceWithCode(email, null,
+                new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
+        assertEquals(1, storage.getDevicesByEmail(email).length);
+
+        storage.createCode(new PasswordlessCode(codeId2, deviceIdHash, linkCodeHash2, System.currentTimeMillis()));
+
+        storage.startTransaction(con -> {
+            storage.deleteDevice_Transaction(con, deviceIdHash);
+            storage.commitTransaction(con);
+            return null;
+        });
+
+        assertNull(storage.getDevice(deviceIdHash));
+        assertNull(storage.getCode(codeId));
+        assertNull(storage.getCode(codeId2));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     private void checkUser(PasswordlessSQLStorage storage, String userId, String email, String phoneNumber)
             throws StorageQueryException {
         UserInfo userById = storage.getUserById(userId);

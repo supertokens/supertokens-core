@@ -20,6 +20,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
@@ -121,6 +122,38 @@ public class Passwordless {
             }
         }
         return sb.toString();
+    }
+
+    public static void removeCode(Main main, String codeId)
+            throws StorageQueryException, StorageTransactionLogicException {
+        PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
+
+        PasswordlessCode code = passwordlessStorage.getCode(codeId);
+
+        if (code == null) {
+            return;
+        }
+
+        passwordlessStorage.startTransaction(con -> {
+            // Locking the device
+            passwordlessStorage.getDevice_Transaction(con, code.deviceIdHash);
+
+            PasswordlessCode[] allCodes = passwordlessStorage.getCodesOfDevice_Transaction(con, code.deviceIdHash);
+            if (!Stream.of(allCodes).anyMatch(code::equals)) {
+                // Already deleted
+                return null;
+            }
+
+            if (allCodes.length == 1) {
+                // If the device contains only the current code we should delete the device as well.
+                passwordlessStorage.deleteDevice_Transaction(con, code.deviceIdHash);
+            } else {
+                // Otherwise we can just delete the code
+                passwordlessStorage.deleteCode_Transaction(con, codeId);
+            }
+            passwordlessStorage.commitTransaction(con);
+            return null;
+        });
     }
 
     public static UserInfo getUserById(Main main, String userId) throws StorageQueryException {
