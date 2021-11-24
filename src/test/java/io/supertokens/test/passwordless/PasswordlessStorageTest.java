@@ -80,24 +80,17 @@ public class PasswordlessStorageTest {
         PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
 
         String email = "test@example.com";
-        String codeId = io.supertokens.utils.Utils.getUUID();
-        String codeId2 = io.supertokens.utils.Utils.getUUID();
+        PasswordlessCode code1 = getRandomCodeInfo();
+        PasswordlessCode code2 = getRandomCodeInfo();
 
-        String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
-        String deviceIdHash2 = "CBrV6o5XICEdnK4iPjxwVHetDBVjhRIgVYH8CzdFMhQ";
-
-        String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
-        String linkCodeHash2 = "F0aZHCBYSJIghP5e0flGa8gvoUYEgGus2yIJYmdpFY4";
-
-        storage.createDeviceWithCode(email, null,
-                new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
+        storage.createDeviceWithCode(email, null, code1);
         assertEquals(1, storage.getDevicesByEmail(email).length);
 
         {
             Exception error = null;
             try {
-                storage.createDeviceWithCode(email, null,
-                        new PasswordlessCode(codeId, deviceIdHash2, linkCodeHash2, System.currentTimeMillis()));
+                storage.createDeviceWithCode(email, null, new PasswordlessCode(code1.id, code2.deviceIdHash,
+                        code2.linkCodeHash, System.currentTimeMillis()));
             } catch (Exception e) {
                 error = e;
             }
@@ -105,15 +98,15 @@ public class PasswordlessStorageTest {
             assertNotNull(error);
             assert (error instanceof DuplicateCodeIdException);
             assertEquals(1, storage.getDevicesByEmail(email).length);
-            assertEquals(1, storage.getCodesOfDevice(deviceIdHash).length);
-            assertNull(storage.getDevice(deviceIdHash2));
+            assertEquals(1, storage.getCodesOfDevice(code1.deviceIdHash).length);
+            assertNull(storage.getDevice(code2.deviceIdHash));
         }
 
         {
             Exception error = null;
             try {
-                storage.createDeviceWithCode(email, null,
-                        new PasswordlessCode(codeId2, deviceIdHash, linkCodeHash2, System.currentTimeMillis()));
+                storage.createDeviceWithCode(email, null, new PasswordlessCode(code2.id, code1.deviceIdHash,
+                        code2.linkCodeHash, System.currentTimeMillis()));
             } catch (Exception e) {
                 error = e;
             }
@@ -121,14 +114,14 @@ public class PasswordlessStorageTest {
             assertNotNull(error);
             assert (error instanceof DuplicateDeviceIdHashException);
             assertEquals(1, storage.getDevicesByEmail(email).length);
-            assertEquals(1, storage.getCodesOfDevice(deviceIdHash).length);
+            assertEquals(1, storage.getCodesOfDevice(code1.deviceIdHash).length);
         }
 
         {
             Exception error = null;
             try {
-                storage.createDeviceWithCode(email, null,
-                        new PasswordlessCode(codeId2, deviceIdHash2, linkCodeHash, System.currentTimeMillis()));
+                storage.createDeviceWithCode(email, null, new PasswordlessCode(code2.id, code2.deviceIdHash,
+                        code1.linkCodeHash, System.currentTimeMillis()));
             } catch (Exception e) {
                 error = e;
             }
@@ -136,25 +129,23 @@ public class PasswordlessStorageTest {
             assertNotNull(error);
             assert (error instanceof DuplicateLinkCodeHashException);
             assertEquals(1, storage.getDevicesByEmail(email).length);
-            assertNull(storage.getDevice(deviceIdHash2));
+            assertNull(storage.getDevice(code2.deviceIdHash));
         }
 
         {
             Exception error = null;
             try {
-                storage.createDeviceWithCode(null, null,
-                        new PasswordlessCode(codeId2, deviceIdHash2, linkCodeHash2, System.currentTimeMillis()));
+                storage.createDeviceWithCode(null, null, code2);
             } catch (Exception e) {
                 error = e;
             }
 
             assertNotNull(error);
             assert (error instanceof IllegalArgumentException);
-            assertNull(storage.getDevice(deviceIdHash2));
+            assertNull(storage.getDevice(code2.deviceIdHash));
         }
 
-        storage.createDeviceWithCode(email, null,
-                new PasswordlessCode(codeId2, deviceIdHash2, linkCodeHash2, System.currentTimeMillis()));
+        storage.createDeviceWithCode(email, null, code2);
 
         assertEquals(2, storage.getDevicesByEmail(email).length);
 
