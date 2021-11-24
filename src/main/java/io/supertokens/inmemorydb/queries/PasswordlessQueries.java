@@ -128,12 +128,22 @@ public class PasswordlessQueries {
     }
 
     public static void deleteDevice_Transaction(Start start, Connection con, String deviceIdHash) throws SQLException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getPasswordlessDevicesTable()
-                + " WHERE device_id_hash = ?";
-
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, deviceIdHash);
-            pst.executeUpdate();
+        // SQLite is not compiled with foreign key constraint and so we must implement cascading deletes here
+        {
+            String QUERY = "DELETE FROM " + Config.getConfig(start).getPasswordlessDevicesTable()
+                    + " WHERE device_id_hash = ?";
+            try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+                pst.setString(1, deviceIdHash);
+                pst.executeUpdate();
+            }
+        }
+        {
+            String QUERY = "DELETE FROM " + Config.getConfig(start).getPasswordlessCodesTable()
+                    + " WHERE device_id_hash = ?";
+            try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+                pst.setString(1, deviceIdHash);
+                pst.executeUpdate();
+            }
         }
     }
 
@@ -270,17 +280,30 @@ public class PasswordlessQueries {
         });
     }
 
-    public static void updateUser(Start start, String userId, String email, String phoneNumber) throws SQLException {
+    public static void updateUserEmail_Transaction(Start start, Connection con, String userId, String email)
+            throws SQLException, UnknownUserIdException {
+        String QUERY = "UPDATE " + Config.getConfig(start).getPasswordlessUsersTable()
+                + " SET email = ? WHERE user_id = ?";
 
-        try (Connection con = ConnectionPool.getConnection(start)) {
-            String QUERY = "UPDATE " + Config.getConfig(start).getPasswordlessUsersTable()
-                    + " SET email = ?, phone_number = ? WHERE user_id = ?";
+        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, email);
+            pst.setString(2, userId);
+            if (pst.executeUpdate() != 1) {
+                throw new UnknownUserIdException();
+            }
+        }
+    }
 
-            try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-                pst.setString(1, email);
-                pst.setString(2, phoneNumber);
-                pst.setString(3, userId);
-                pst.executeUpdate();
+    public static void updateUserPhoneNumber_Transaction(Start start, Connection con, String userId, String phoneNumber)
+            throws SQLException, UnknownUserIdException {
+        String QUERY = "UPDATE " + Config.getConfig(start).getPasswordlessUsersTable()
+                + " SET phone_number = ? WHERE user_id = ?";
+
+        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+            pst.setString(1, phoneNumber);
+            pst.setString(2, userId);
+            if (pst.executeUpdate() != 1) {
+                throw new UnknownUserIdException();
             }
         }
     }

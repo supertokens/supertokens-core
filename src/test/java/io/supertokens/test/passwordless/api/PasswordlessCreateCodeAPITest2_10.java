@@ -296,6 +296,9 @@ public class PasswordlessCreateCodeAPITest2_10 {
 
         assertNotNull(error);
         assertEquals(400, error.statusCode);
+        assertEquals(
+                "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber or deviceId",
+                error.getMessage());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -327,7 +330,9 @@ public class PasswordlessCreateCodeAPITest2_10 {
 
         assertNotNull(error);
         assertEquals(400, error.statusCode);
-        assert (error.getMessage().contains("Please provide exactly one of email, phoneNumber or deviceId"));
+        assertEquals(
+                "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber or deviceId",
+                error.getMessage());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -359,7 +364,9 @@ public class PasswordlessCreateCodeAPITest2_10 {
 
         assertNotNull(error);
         assertEquals(400, error.statusCode);
-        assert (error.getMessage().contains("Please provide exactly one of email, phoneNumber or deviceId"));
+        assertEquals(
+                "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber or deviceId",
+                error.getMessage());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -391,7 +398,9 @@ public class PasswordlessCreateCodeAPITest2_10 {
 
         assertNotNull(error);
         assertEquals(400, error.statusCode);
-        assert (error.getMessage().contains("Please provide exactly one of email, phoneNumber or deviceId"));
+        assertEquals(
+                "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber or deviceId",
+                error.getMessage());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -421,7 +430,9 @@ public class PasswordlessCreateCodeAPITest2_10 {
 
         assertNotNull(error);
         assertEquals(400, error.statusCode);
-        assert (error.getMessage().contains("Please provide exactly one of email, phoneNumber or deviceId"));
+        assertEquals(
+                "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber or deviceId",
+                error.getMessage());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -433,6 +444,7 @@ public class PasswordlessCreateCodeAPITest2_10 {
 
     private void checkResponse(JsonObject response, String userInputCode) {
         assertEquals("OK", response.get("status").getAsString());
+        assertEquals(8, response.entrySet().size());
         assert (response.has("preAuthSessionId"));
         byte[] deviceIdHashBytes = Base64.decodeBase64URLSafe(response.get("preAuthSessionId").getAsString());
         assertEquals(32, deviceIdHashBytes.length);
@@ -444,10 +456,12 @@ public class PasswordlessCreateCodeAPITest2_10 {
         byte[] deviceIdBytes = Base64.decodeBase64(response.get("deviceId").getAsString());
         assertEquals(32, deviceIdBytes.length);
 
+        assert (response.has("userInputCode"));
+        String respUserInputCode = response.get("userInputCode").getAsString();
         if (userInputCode == null) {
-            assertEquals(6, response.get("userInputCode").getAsString().length());
+            assertEquals(6, respUserInputCode.length());
         } else {
-            assertEquals(userInputCode, response.get("userInputCode").getAsString());
+            assertEquals(userInputCode, respUserInputCode);
         }
         byte[] linkCodeBytes = Base64.decodeBase64URLSafe(response.get("linkCode").getAsString());
         assertEquals(32, linkCodeBytes.length);
