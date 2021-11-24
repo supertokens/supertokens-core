@@ -34,6 +34,7 @@ import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
 import io.supertokens.webserver.api.jwt.JWKSAPI;
 import io.supertokens.webserver.api.jwt.JWTSigningAPI;
 import io.supertokens.webserver.api.passwordless.DeleteCodesAPI;
+import io.supertokens.webserver.api.passwordless.DeleteCodeAPI;
 import io.supertokens.webserver.api.passwordless.CreateCodeAPI;
 import io.supertokens.webserver.api.session.*;
 import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
@@ -163,12 +164,14 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new SignInAPI(main));
         addAPI(new GeneratePasswordResetTokenAPI(main));
         addAPI(new ResetPasswordAPI(main));
-        addAPI(new RecipeRouter(main, new UserAPI(main), new io.supertokens.webserver.api.thirdparty.UserAPI(main)));
+        addAPI(new RecipeRouter(main, new UserAPI(main), new io.supertokens.webserver.api.thirdparty.UserAPI(main),
+                new io.supertokens.webserver.api.passwordless.UserAPI(main)));
         addAPI(new GenerateEmailVerificationTokenAPI(main));
         addAPI(new VerifyEmailAPI(main));
         addAPI(new GetUsersByEmailAPI(main));
         addAPI(new SignInUpAPI(main));
         addAPI(new DeleteCodesAPI(main));
+        addAPI(new DeleteCodeAPI(main));
         addAPI(new CreateCodeAPI(main));
         addAPI(new TelemetryAPI(main));
         addAPI(new UsersCountAPI(main));
