@@ -286,7 +286,7 @@ public class PasswordlessConsumeCodeAPITest2_10 {
     public void testIncorrectUserInputCode() throws Exception {
         String[] args = { "../" };
 
-        Utils.setValueInConfig("passwordless_max_code_input_attempts", "1"); // Only 1 code entry permitted
+        Utils.setValueInConfig("passwordless_max_code_input_attempts", "2"); // Only 1 code entry permitted
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

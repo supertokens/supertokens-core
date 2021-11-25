@@ -39,7 +39,6 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 
-import org.apache.tomcat.util.codec.binary.Base64;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,6 +48,7 @@ import org.junit.rules.TestRule;
 import static org.junit.Assert.*;
 
 import java.security.SecureRandom;
+import java.util.Base64;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class PasswordlessStorageTest {
@@ -773,7 +773,7 @@ public class PasswordlessStorageTest {
         SecureRandom gen = new SecureRandom();
         byte[] randomBytes = new byte[32];
         gen.nextBytes(randomBytes);
-        String linkCodeHash = Base64.encodeBase64URLSafeString(randomBytes);
+        String linkCodeHash = Base64.getUrlEncoder().encodeToString(randomBytes);
 
         return new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis());
 
@@ -784,7 +784,7 @@ public class PasswordlessStorageTest {
 
         byte[] randomBytes = new byte[32];
         gen.nextBytes(randomBytes);
-        String deviceIdHash = Base64.encodeBase64URLSafeString(randomBytes);
+        String deviceIdHash = Base64.getUrlEncoder().encodeToString(randomBytes);
 
         return getRandomCodeInfo(deviceIdHash);
     }
