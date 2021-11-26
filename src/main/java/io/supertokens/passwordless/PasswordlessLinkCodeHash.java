@@ -11,11 +11,6 @@ public class PasswordlessLinkCodeHash {
         this.encodedValue = Base64.getUrlEncoder().encodeToString(bytes);
     }
 
-    public PasswordlessLinkCodeHash(String encodedValue) {
-        this.encodedValue = encodedValue;
-        // We could do validation here...
-    }
-
     public String encode() {
         return encodedValue;
     }
