@@ -47,7 +47,7 @@ public class CoreConfig {
     private long email_verification_token_lifetime = 24 * 3600 * 1000; // in MS
 
     @JsonProperty
-    private long passwordless_max_code_input_attempts = 5;
+    private int passwordless_max_code_input_attempts = 5;
 
     @JsonProperty
     private long passwordless_code_lifetime = 900000; // in MS
@@ -112,7 +112,7 @@ public class CoreConfig {
         return email_verification_token_lifetime;
     }
 
-    public long getPasswordlessMaxCodeInputAttempts() {
+    public int getPasswordlessMaxCodeInputAttempts() {
         return passwordless_max_code_input_attempts;
     }
 
