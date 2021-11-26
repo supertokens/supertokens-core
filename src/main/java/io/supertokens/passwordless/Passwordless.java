@@ -49,7 +49,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 
 public class Passwordless {
-// We are storing the "alphabets" like this because we remove a few characters from the normal English alphabet.
+    // We are storing the "alphabets" like this because we remove a few characters from the normal English alphabet.
     // e.g.: remove easy to confuse chars (oO0, Il)
     private static final String USER_INPUT_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";
     private static final String USER_INPUT_CODE_NUM_CHARS = "123456789";
