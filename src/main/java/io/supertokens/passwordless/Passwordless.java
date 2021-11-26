@@ -19,6 +19,8 @@ package io.supertokens.passwordless;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.stream.Stream;
 
@@ -125,6 +127,53 @@ public class Passwordless {
             }
         }
         return sb.toString();
+    }
+
+    public static DeviceWithCodes getDeviceWithCodesById(Main main, String deviceId)
+            throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException {
+        return getDeviceWithCodesByIdHash(main, PasswordlessDeviceId.decodeString(deviceId).getHash().encode());
+    }
+
+    public static DeviceWithCodes getDeviceWithCodesByIdHash(Main main, String deviceIdHash)
+            throws StorageQueryException, StorageTransactionLogicException {
+        PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
+
+        PasswordlessDevice device = passwordlessStorage.getDevice(deviceIdHash);
+
+        if (device == null) {
+            return null;
+        }
+        PasswordlessCode[] codes = passwordlessStorage.getCodesOfDevice(deviceIdHash);
+
+        return new DeviceWithCodes(device, codes);
+    }
+
+    public static List<DeviceWithCodes> getDevicesWithCodesByEmail(Main main, String email)
+            throws StorageQueryException, StorageTransactionLogicException {
+        PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
+
+        PasswordlessDevice[] devices = passwordlessStorage.getDevicesByEmail(email);
+        ArrayList<DeviceWithCodes> result = new ArrayList<DeviceWithCodes>();
+        for (PasswordlessDevice device : devices) {
+            PasswordlessCode[] codes = passwordlessStorage.getCodesOfDevice(device.deviceIdHash);
+            result.add(new DeviceWithCodes(device, codes));
+        }
+
+        return result;
+    }
+
+    public static List<DeviceWithCodes> getDevicesWithCodesByPhoneNumber(Main main, String phoneNumber)
+            throws StorageQueryException, StorageTransactionLogicException {
+        PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
+
+        PasswordlessDevice[] devices = passwordlessStorage.getDevicesByPhoneNumber(phoneNumber);
+        ArrayList<DeviceWithCodes> result = new ArrayList<DeviceWithCodes>();
+        for (PasswordlessDevice device : devices) {
+            PasswordlessCode[] codes = passwordlessStorage.getCodesOfDevice(device.deviceIdHash);
+            result.add(new DeviceWithCodes(device, codes));
+        }
+
+        return result;
     }
 
     public static ConsumeCodeResponse consumeCode(Main main, String deviceId, String userInputCode, String linkCode)
@@ -373,6 +422,16 @@ public class Passwordless {
             if (e.actualException instanceof DuplicatePhoneNumberException) {
                 throw (DuplicatePhoneNumberException) e.actualException;
             }
+        }
+    }
+
+    public static class DeviceWithCodes {
+        public final PasswordlessDevice device;
+        public final PasswordlessCode[] codes;
+
+        public DeviceWithCodes(PasswordlessDevice device, PasswordlessCode[] codes) {
+            this.device = device;
+            this.codes = codes;
         }
     }
 
