@@ -25,7 +25,6 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 
-import org.apache.tomcat.util.codec.binary.Base64;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,6 +33,7 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
+import java.util.Base64;
 import java.util.UUID;
 
 public class PasswordlessCreateCodeAPITest2_10 {
@@ -446,14 +446,14 @@ public class PasswordlessCreateCodeAPITest2_10 {
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(8, response.entrySet().size());
         assert (response.has("preAuthSessionId"));
-        byte[] deviceIdHashBytes = Base64.decodeBase64URLSafe(response.get("preAuthSessionId").getAsString());
+        byte[] deviceIdHashBytes = Base64.getUrlDecoder().decode(response.get("preAuthSessionId").getAsString());
         assertEquals(32, deviceIdHashBytes.length);
         assert (response.has("codeId"));
         // This tests that it is actually a UUID
         UUID.fromString(response.get("codeId").getAsString());
 
         assert (response.has("deviceId"));
-        byte[] deviceIdBytes = Base64.decodeBase64(response.get("deviceId").getAsString());
+        byte[] deviceIdBytes = Base64.getDecoder().decode(response.get("deviceId").getAsString());
         assertEquals(32, deviceIdBytes.length);
 
         assert (response.has("userInputCode"));
@@ -463,7 +463,7 @@ public class PasswordlessCreateCodeAPITest2_10 {
         } else {
             assertEquals(userInputCode, respUserInputCode);
         }
-        byte[] linkCodeBytes = Base64.decodeBase64URLSafe(response.get("linkCode").getAsString());
+        byte[] linkCodeBytes = Base64.getUrlDecoder().decode(response.get("linkCode").getAsString());
         assertEquals(32, linkCodeBytes.length);
         assert (response.has("linkCode"));
         assert ((System.currentTimeMillis() - 50L) < response.get("timeCreated").getAsLong());

@@ -24,15 +24,18 @@ import java.util.stream.Stream;
 
 import javax.annotation.Nullable;
 
-import org.apache.tomcat.util.codec.binary.Base64;
-
 import io.supertokens.Main;
+import io.supertokens.config.Config;
+import io.supertokens.passwordless.exceptions.ExpiredUserInputCodeException;
+import io.supertokens.passwordless.exceptions.IncorrectUserInputCodeException;
 import io.supertokens.passwordless.exceptions.RestartFlowException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
+import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicateCodeIdException;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicateDeviceIdHashException;
@@ -122,6 +125,131 @@ public class Passwordless {
             }
         }
         return sb.toString();
+    }
+
+    public static ConsumeCodeResponse consumeCode(Main main, String deviceId, String userInputCode, String linkCode)
+            throws RestartFlowException, ExpiredUserInputCodeException, IncorrectUserInputCodeException,
+            StorageTransactionLogicException, StorageQueryException, NoSuchAlgorithmException, InvalidKeyException {
+        PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
+        long passwordlessCodeLifetime = Config.getConfig(main).getPasswordlessCodeLifetime();
+        int maxCodeInputAttempts = Config.getConfig(main).getPasswordlessMaxCodeInputAttempts();
+
+        PasswordlessDeviceIdHash deviceIdHash;
+        PasswordlessLinkCodeHash linkCodeHash;
+        if (linkCode != null) {
+            PasswordlessLinkCode parsedCode = PasswordlessLinkCode.decodeString(linkCode);
+            linkCodeHash = parsedCode.getHash();
+
+            PasswordlessCode code = passwordlessStorage.getCodeByLinkCodeHash(linkCodeHash.encode());
+            if (code == null || code.createdAt < (System.currentTimeMillis() - passwordlessCodeLifetime)) {
+                throw new RestartFlowException();
+            }
+            deviceIdHash = new PasswordlessDeviceIdHash(code.deviceIdHash);
+        } else {
+            PasswordlessDeviceId parsedDeviceId = PasswordlessDeviceId.decodeString(deviceId);
+
+            deviceIdHash = parsedDeviceId.getHash();
+            linkCodeHash = parsedDeviceId.getLinkCode(userInputCode).getHash();
+        }
+
+        PasswordlessDevice consumedDevice;
+        try {
+            consumedDevice = passwordlessStorage.startTransaction(con -> {
+                PasswordlessDevice device = passwordlessStorage.getDevice_Transaction(con, deviceIdHash.encode());
+                if (device == null) {
+                    throw new StorageTransactionLogicException(new RestartFlowException());
+                }
+                if (device.failedAttempts >= maxCodeInputAttempts) {
+                    // This can happen if the configured maxCodeInputAttempts changes
+                    passwordlessStorage.deleteDevice_Transaction(con, deviceIdHash.encode());
+                    passwordlessStorage.commitTransaction(con);
+                    throw new StorageTransactionLogicException(new RestartFlowException());
+                }
+
+                PasswordlessCode code = passwordlessStorage.getCodeByLinkCodeHash_Transaction(con,
+                        linkCodeHash.encode());
+                if (code == null || code.createdAt < System.currentTimeMillis() - passwordlessCodeLifetime) {
+                    if (deviceId != null) {
+                        // If we get here, it means that the user tried to use a userInputCode, but it was incorrect or
+                        // the code expired. This means that we need to increment failedAttempts or clean up the device
+                        // if it would exceed the configured max.
+                        if (device.failedAttempts + 1 >= maxCodeInputAttempts) {
+                            passwordlessStorage.deleteDevice_Transaction(con, deviceIdHash.encode());
+                            passwordlessStorage.commitTransaction(con);
+                            throw new StorageTransactionLogicException(new RestartFlowException());
+                        } else {
+                            passwordlessStorage.incrementDeviceFailedAttemptCount_Transaction(con,
+                                    deviceIdHash.encode());
+                            passwordlessStorage.commitTransaction(con);
+
+                            if (code != null) {
+                                throw new StorageTransactionLogicException(new ExpiredUserInputCodeException(
+                                        device.failedAttempts + 1, maxCodeInputAttempts));
+                            } else {
+                                throw new StorageTransactionLogicException(new IncorrectUserInputCodeException(
+                                        device.failedAttempts + 1, maxCodeInputAttempts));
+                            }
+                        }
+                    }
+                    throw new StorageTransactionLogicException(new RestartFlowException());
+                }
+
+                if (device.email != null) {
+                    passwordlessStorage.deleteDevicesByEmail_Transaction(con, device.email);
+                } else if (device.phoneNumber != null) {
+                    passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(con, device.phoneNumber);
+                }
+
+                passwordlessStorage.commitTransaction(con);
+                return device;
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof ExpiredUserInputCodeException) {
+                throw (ExpiredUserInputCodeException) e.actualException;
+            }
+            if (e.actualException instanceof IncorrectUserInputCodeException) {
+                throw (IncorrectUserInputCodeException) e.actualException;
+            }
+            if (e.actualException instanceof RestartFlowException) {
+                throw (RestartFlowException) e.actualException;
+            }
+            throw e;
+        }
+
+        // Getting here means that we successfully consumed the code
+        UserInfo user = consumedDevice.email != null ? passwordlessStorage.getUserByEmail(consumedDevice.email)
+                : passwordlessStorage.getUserByPhoneNumber(consumedDevice.phoneNumber);
+        if (user == null) {
+            while (true) {
+                try {
+                    String userId = Utils.getUUID();
+                    long timeJoined = System.currentTimeMillis();
+                    user = new UserInfo(userId, consumedDevice.email, consumedDevice.phoneNumber, timeJoined);
+                    passwordlessStorage.createUser(user);
+                    return new ConsumeCodeResponse(true, user);
+                } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
+                    // Getting these would mean that between getting the user and trying creating it:
+                    // 1. the user managed to do a full create+consume flow
+                    // 2. the users email or phoneNumber was updated to the new one (including device cleanup)
+                    // These should be almost impossibly rare, so it's safe to just ask the user to restart.
+                    // Also, both would make the current login fail if done before the transaction
+                    // by cleaning up the device/code this consume would've used.
+                    throw new RestartFlowException();
+                } catch (DuplicateUserIdException e) {
+                    // We can retry..
+                }
+            }
+        } else {
+            // We do not need this cleanup if we are creating the user, since it uses the email/phoneNumber of the
+            // device, which has already been cleaned up
+            if (user.email != null && !user.email.equals(consumedDevice.email)) {
+                removeCodesByEmail(main, user.email);
+            }
+            if (user.phoneNumber != null && !user.phoneNumber.equals(consumedDevice.phoneNumber)) {
+                removeCodesByPhoneNumber(main, user.phoneNumber);
+            }
+        }
+        return new ConsumeCodeResponse(false, user);
     }
 
     public static void removeCode(Main main, String codeId)
@@ -279,6 +407,16 @@ public class Passwordless {
         }
     }
 
+    public static class ConsumeCodeResponse {
+        public boolean createdNewUser;
+        public UserInfo user;
+
+        public ConsumeCodeResponse(boolean createdNewUser, UserInfo user) {
+            this.createdNewUser = createdNewUser;
+            this.user = user;
+        }
+    }
+
     private static class CreateCodeInfo {
         public final CreateCodeResponse resp;
         public final PasswordlessCode code;
@@ -294,34 +432,35 @@ public class Passwordless {
             SecureRandom generator = new SecureRandom();
             byte[] deviceIdBytes = new byte[32];
             generator.nextBytes(deviceIdBytes);
-            return generate(userInputCode, deviceIdBytes);
+            return generate(userInputCode, new PasswordlessDeviceId(deviceIdBytes));
         }
 
-        public static CreateCodeInfo generate(String userInputCode, String deviceId)
+        public static CreateCodeInfo generate(String userInputCode, String deviceIdString)
                 throws InvalidKeyException, NoSuchAlgorithmException {
-            byte[] deviceIdBytes = Base64.decodeBase64(deviceId);
-            return generate(userInputCode, deviceIdBytes);
+            PasswordlessDeviceId deviceId = PasswordlessDeviceId.decodeString(deviceIdString);
+            return generate(userInputCode, deviceId);
         }
 
-        public static CreateCodeInfo generate(String userInputCode, byte[] deviceIdBytes)
+        public static CreateCodeInfo generate(String userInputCode, PasswordlessDeviceId deviceId)
                 throws InvalidKeyException, NoSuchAlgorithmException {
             if (userInputCode == null) {
                 userInputCode = generateUserInputCode();
             }
 
-            String deviceId = Base64.encodeBase64String(deviceIdBytes);
-            String deviceIdHash = Base64.encodeBase64URLSafeString(Utils.hashSHA256Bytes(deviceIdBytes));
             String codeId = Utils.getUUID();
 
-            byte[] linkCodeBytes = Utils.hmacSHA256(deviceIdBytes, userInputCode);
-            byte[] linkCodeHashBytes = Utils.hashSHA256Bytes(linkCodeBytes);
+            String deviceIdStr = deviceId.encode();
+            String deviceIdHash = deviceId.getHash().encode();
 
-            String linkCode = Base64.encodeBase64URLSafeString(linkCodeBytes);
-            String linkCodeHash = Base64.encodeBase64String(linkCodeHashBytes);
+            PasswordlessLinkCode linkCode = deviceId.getLinkCode(userInputCode);
+            String linkCodeStr = linkCode.encode();
+
+            String linkCodeHashStr = linkCode.getHash().encode();
 
             long createdAt = System.currentTimeMillis();
 
-            return new CreateCodeInfo(codeId, deviceId, deviceIdHash, linkCode, linkCodeHash, userInputCode, createdAt);
+            return new CreateCodeInfo(codeId, deviceIdStr, deviceIdHash, linkCodeStr, linkCodeHashStr, userInputCode,
+                    createdAt);
         }
     }
 }

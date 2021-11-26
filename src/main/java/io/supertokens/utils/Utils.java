@@ -84,6 +84,16 @@ public class Utils {
         return MessageDigest.getInstance("SHA-256").digest(base);
     }
 
+    public static String hashSHA256Base64UrlSafe(byte[] base) throws NoSuchAlgorithmException {
+        byte[] hashBytes = Utils.hashSHA256Bytes(base);
+        return Base64.getUrlEncoder().encodeToString(hashBytes);
+    }
+
+    public static String hashSHA256Base64(byte[] base) throws NoSuchAlgorithmException {
+        byte[] hashBytes = Utils.hashSHA256Bytes(base);
+        return Base64.getEncoder().encodeToString(hashBytes);
+    }
+
     public static byte[] hmacSHA256(byte[] key, String data) throws InvalidKeyException, NoSuchAlgorithmException {
         Mac mac = Mac.getInstance("HmacSHA256");
         mac.init(new SecretKeySpec(key, "HmacSHA256"));
