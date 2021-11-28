@@ -7,6 +7,21 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [3.7.0] - 2021-11-28
 
+### Added
+
+- Adds Passwordless recipe
+
+### Database changes
+
+- Adds new tables for passwordless:
+  - `passwordless_users` that stores the users of the passwordless recipe
+  - `passwordless_devices` that stores devices/information about passwordless login attempts
+  - `passwordless_codes` that stores the codes each device can consume to finish the login process
+
+### Changes
+
+- New recipeId in `/users` response with a corresponding new user type
+
 ## [3.6.1] - 2021-11-15
 
 ### Fixes
