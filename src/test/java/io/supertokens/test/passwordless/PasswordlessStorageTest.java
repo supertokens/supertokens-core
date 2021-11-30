@@ -248,16 +248,16 @@ public class PasswordlessStorageTest {
         String userId2 = io.supertokens.utils.Utils.getUUID();
         String userId3 = io.supertokens.utils.Utils.getUUID();
 
-        long joinedAt = System.currentTimeMillis();
+        long timeJoined = System.currentTimeMillis();
 
-        storage.createUser(new UserInfo(userId, email, null, joinedAt));
-        storage.createUser(new UserInfo(userId2, null, phoneNumber, joinedAt));
+        storage.createUser(new UserInfo(userId, email, null, timeJoined));
+        storage.createUser(new UserInfo(userId2, null, phoneNumber, timeJoined));
         assertNotNull(storage.getUserById(userId));
 
         {
             Exception error = null;
             try {
-                storage.createUser(new UserInfo(userId, email2, null, joinedAt));
+                storage.createUser(new UserInfo(userId, email2, null, timeJoined));
             } catch (Exception e) {
                 error = e;
             }
@@ -270,7 +270,7 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createUser(new UserInfo(userId, null, phoneNumber2, joinedAt));
+                storage.createUser(new UserInfo(userId, null, phoneNumber2, timeJoined));
             } catch (Exception e) {
                 error = e;
             }
@@ -283,7 +283,7 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createUser(new UserInfo(userId3, email, null, joinedAt));
+                storage.createUser(new UserInfo(userId3, email, null, timeJoined));
             } catch (Exception e) {
                 error = e;
             }
@@ -296,7 +296,7 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createUser(new UserInfo(userId3, null, phoneNumber, joinedAt));
+                storage.createUser(new UserInfo(userId3, null, phoneNumber, timeJoined));
             } catch (Exception e) {
                 error = e;
             }
@@ -309,7 +309,7 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createUser(new UserInfo(userId3, null, null, joinedAt));
+                storage.createUser(new UserInfo(userId3, null, null, timeJoined));
             } catch (Exception e) {
                 error = e;
             }
@@ -350,12 +350,12 @@ public class PasswordlessStorageTest {
         String userIdPhone1 = io.supertokens.utils.Utils.getUUID();
         String userIdPhone2 = io.supertokens.utils.Utils.getUUID();
 
-        long joinedAt = System.currentTimeMillis();
+        long timeJoined = System.currentTimeMillis();
 
-        storage.createUser(new UserInfo(userIdEmail1, email, null, joinedAt));
-        storage.createUser(new UserInfo(userIdEmail2, email2, null, joinedAt));
-        storage.createUser(new UserInfo(userIdPhone1, null, phoneNumber, joinedAt));
-        storage.createUser(new UserInfo(userIdPhone2, null, phoneNumber2, joinedAt));
+        storage.createUser(new UserInfo(userIdEmail1, email, null, timeJoined));
+        storage.createUser(new UserInfo(userIdEmail2, email2, null, timeJoined));
+        storage.createUser(new UserInfo(userIdPhone1, null, phoneNumber, timeJoined));
+        storage.createUser(new UserInfo(userIdPhone2, null, phoneNumber2, timeJoined));
 
         assertNotNull(storage.getUserById(userIdEmail1));
 
@@ -535,9 +535,9 @@ public class PasswordlessStorageTest {
 
         String userId = io.supertokens.utils.Utils.getUUID();
 
-        long joinedAt = System.currentTimeMillis();
+        long timeJoined = System.currentTimeMillis();
 
-        storage.createUser(new UserInfo(userId, email, null, joinedAt));
+        storage.createUser(new UserInfo(userId, email, null, timeJoined));
 
         assertNotNull(storage.getUserById(userId));
 

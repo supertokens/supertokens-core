@@ -189,7 +189,7 @@ public class PasswordlessConsumeCodeAPITest2_10 {
                 "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
                 Utils.getCdiVersion2_10ForTests(), "passwordless");
 
-        checkResponse(response, true, email, null);
+        checkResponse(response, true, email, null, createResp.deviceIdHash);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -246,7 +246,7 @@ public class PasswordlessConsumeCodeAPITest2_10 {
                 "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
                 Utils.getCdiVersion2_10ForTests(), "passwordless");
 
-        checkResponse(response, true, email, null);
+        checkResponse(response, true, email, null, createResp.deviceIdHash);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -276,7 +276,7 @@ public class PasswordlessConsumeCodeAPITest2_10 {
                 "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
                 Utils.getCdiVersion2_10ForTests(), "passwordless");
 
-        assertEquals("EXPIRED_USER_INPUT_CODE", response.get("status").getAsString());
+        assertEquals("EXPIRED_USER_INPUT_CODE_ERROR", response.get("status").getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -307,7 +307,7 @@ public class PasswordlessConsumeCodeAPITest2_10 {
                     "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
                     Utils.getCdiVersion2_10ForTests(), "passwordless");
 
-            assertEquals("INCORRECT_USER_INPUT_CODE", response.get("status").getAsString());
+            assertEquals("INCORRECT_USER_INPUT_CODE_ERROR", response.get("status").getAsString());
         }
 
         {
@@ -321,21 +321,27 @@ public class PasswordlessConsumeCodeAPITest2_10 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    private void checkResponse(JsonObject response, Boolean isNewUser, String email, String phoneNumber) {
+    private void checkResponse(JsonObject response, Boolean isNewUser, String email, String phoneNumber,
+            String preAuthSessionId) {
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(isNewUser, response.get("createdNewUser").getAsBoolean());
+        assertEquals(preAuthSessionId, response.get("preAuthSessionId").getAsString());
         assert (response.has("user"));
 
+        assertEquals(4, response.entrySet().size());
+
+        JsonObject userJson = response.getAsJsonObject("user");
         if (email == null) {
-            assert (!response.getAsJsonObject("user").has("email"));
+            assert (!userJson.has("email"));
         } else {
-            assertEquals(email, response.getAsJsonObject("user").get("email").getAsString());
+            assertEquals(email, userJson.get("email").getAsString());
         }
 
         if (phoneNumber == null) {
-            assert (!response.getAsJsonObject("user").has("phoneNumber"));
+            assert (!userJson.has("phoneNumber"));
         } else if (phoneNumber != null) {
-            assertEquals(phoneNumber, response.getAsJsonObject("user").get("phoneNumber").getAsString());
+            assertEquals(phoneNumber, userJson.get("phoneNumber").getAsString());
         }
+        assertEquals(3, userJson.entrySet().size());
     }
 }

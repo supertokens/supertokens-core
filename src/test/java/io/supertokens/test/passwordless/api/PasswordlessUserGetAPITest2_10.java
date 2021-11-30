@@ -169,5 +169,9 @@ public class PasswordlessUserGetAPITest2_10 {
         } else {
             assert (!user.has("phoneNumber"));
         }
+
+        assert (user.has("timeJoined"));
+        assert (System.currentTimeMillis() - 10000 < user.get("timeJoined").getAsLong());
+        assertEquals(3, user.entrySet().size());
     }
 }

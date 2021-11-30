@@ -181,6 +181,8 @@ public class PasswordlessGetCodesAPITest2_10 {
         for (int i = 0; i < codeIds.length; ++i) {
             checkCodeInJsonArray(jsonCodeList, i, codeIds[i]);
         }
+
+        assertEquals(4, device.entrySet().size());
     }
 
     private void checkCodeInJsonArray(JsonArray jsonCodeList, int index, String codeId2) {

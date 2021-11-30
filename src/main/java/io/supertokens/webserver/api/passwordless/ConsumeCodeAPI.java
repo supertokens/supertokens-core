@@ -83,6 +83,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             JsonObject userJson = new JsonParser().parse(new Gson().toJson(consumeCodeResponse.user)).getAsJsonObject();
 
+            result.addProperty("preAuthSessionId", consumeCodeResponse.deviceIdHash.encode());
             result.addProperty("createdNewUser", consumeCodeResponse.createdNewUser);
             result.add("user", userJson);
 
@@ -93,13 +94,13 @@ public class ConsumeCodeAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (ExpiredUserInputCodeException ex) {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "EXPIRED_USER_INPUT_CODE");
+            result.addProperty("status", "EXPIRED_USER_INPUT_CODE_ERROR");
             result.addProperty("failedCodeInputAttemptCount", ex.failedCodeInputs);
             result.addProperty("maximumCodeInputAttempts", ex.maximumCodeInputAttempts);
             super.sendJsonResponse(200, result, resp);
         } catch (IncorrectUserInputCodeException ex) {
             JsonObject result = new JsonObject();
-            result.addProperty("status", "INCORRECT_USER_INPUT_CODE");
+            result.addProperty("status", "INCORRECT_USER_INPUT_CODE_ERROR");
             result.addProperty("failedCodeInputAttemptCount", ex.failedCodeInputs);
             result.addProperty("maximumCodeInputAttempts", ex.maximumCodeInputAttempts);
 
