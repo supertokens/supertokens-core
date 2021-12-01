@@ -140,6 +140,9 @@ Mihály Lengyel</b></sub></a></td>
 <td align="center"><a href="https://github.com/vasica38"><img src="https://avatars.githubusercontent.com/u/26538079?v=4" width="100px;" alt=""/><br /><sub><b>Vasile Catana</b></sub></a></td>
 <td align="center"><a href="https://github.com/rossoskull"><img src="https://avatars.githubusercontent.com/u/27884543?v=4" width="100px;" alt=""/><br /><sub><b>Jay Mistry</b></sub></a></td>
   </tr> 
+  <tr>
+<td align="center"><a href="https://github.com/jacobhq"><img src="https://avatars.githubusercontent.com/u/29145479?v=4" width="100px;" alt=""/><br /><sub><b>Jacob Marshall</b></sub></a></td>
+  </tr>
 </table>
 
 ## 👩‍💻 Contributing
