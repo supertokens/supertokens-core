@@ -31,6 +31,7 @@ import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
+import io.supertokens.passwordless.exceptions.DeviceIdHashMismatchException;
 import io.supertokens.passwordless.exceptions.ExpiredUserInputCodeException;
 import io.supertokens.passwordless.exceptions.IncorrectUserInputCodeException;
 import io.supertokens.passwordless.exceptions.RestartFlowException;
@@ -62,6 +63,8 @@ public class ConsumeCodeAPI extends WebserverAPI {
         String deviceId = null;
         String userInputCode = null;
 
+        String deviceIdHash = InputParser.parseStringOrThrowError(input, "preAuthSessionId", false);
+
         if (input.has("linkCode")) {
             if (input.has("userInputCode") || input.has("deviceId")) {
                 throw new ServletException(
@@ -77,7 +80,8 @@ public class ConsumeCodeAPI extends WebserverAPI {
         }
 
         try {
-            ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(main, deviceId, userInputCode, linkCode);
+            ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(main, deviceId, deviceIdHash,
+                    userInputCode, linkCode);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -105,6 +109,8 @@ public class ConsumeCodeAPI extends WebserverAPI {
             result.addProperty("maximumCodeInputAttempts", ex.maximumCodeInputAttempts);
 
             super.sendJsonResponse(200, result, resp);
+        } catch (DeviceIdHashMismatchException ex) {
+            throw new ServletException(new BadRequestException("preAuthSessionId and deviceId doesn't match"));
         } catch (StorageTransactionLogicException | StorageQueryException | NoSuchAlgorithmException
                 | InvalidKeyException e) {
             throw new ServletException(e);
