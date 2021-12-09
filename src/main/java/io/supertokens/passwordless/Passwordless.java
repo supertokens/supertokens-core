@@ -283,7 +283,7 @@ public class Passwordless {
                     long timeJoined = System.currentTimeMillis();
                     user = new UserInfo(userId, consumedDevice.email, consumedDevice.phoneNumber, timeJoined);
                     passwordlessStorage.createUser(user);
-                    return new ConsumeCodeResponse(true, user, deviceIdHash);
+                    return new ConsumeCodeResponse(true, user);
                 } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
                     // Getting these would mean that between getting the user and trying creating it:
                     // 1. the user managed to do a full create+consume flow
@@ -306,7 +306,7 @@ public class Passwordless {
                 removeCodesByPhoneNumber(main, user.phoneNumber);
             }
         }
-        return new ConsumeCodeResponse(false, user, deviceIdHash);
+        return new ConsumeCodeResponse(false, user);
     }
 
     public static void removeCode(Main main, String codeId)
@@ -480,14 +480,12 @@ public class Passwordless {
     }
 
     public static class ConsumeCodeResponse {
-        public PasswordlessDeviceIdHash deviceIdHash;
         public boolean createdNewUser;
         public UserInfo user;
 
-        public ConsumeCodeResponse(boolean createdNewUser, UserInfo user, PasswordlessDeviceIdHash deviceIdHash) {
+        public ConsumeCodeResponse(boolean createdNewUser, UserInfo user) {
             this.createdNewUser = createdNewUser;
             this.user = user;
-            this.deviceIdHash = deviceIdHash;
         }
     }
 

@@ -87,7 +87,6 @@ public class ConsumeCodeAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             JsonObject userJson = new JsonParser().parse(new Gson().toJson(consumeCodeResponse.user)).getAsJsonObject();
 
-            result.addProperty("preAuthSessionId", consumeCodeResponse.deviceIdHash.encode());
             result.addProperty("createdNewUser", consumeCodeResponse.createdNewUser);
             result.add("user", userJson);
 
