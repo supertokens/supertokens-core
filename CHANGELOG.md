@@ -5,11 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.6.1] - 2021-11-15
+## [3.6.1] - 2021-12-09
 
 ### Fixes
 
 - Issue with JWT expiry always being lower than expected
+- Modulus and exponent for JsonWebKeys are now sent as unsigned when fetching public keys from the /jwt/jwks.json 
+  endpoint. Both values are url encoded without any padding.
 
 ### Changes
 
