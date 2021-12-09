@@ -30,6 +30,7 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.passwordless.exceptions.ExpiredUserInputCodeException;
 import io.supertokens.passwordless.exceptions.IncorrectUserInputCodeException;
+import io.supertokens.passwordless.exceptions.UserWithoutContactInfoException;
 import io.supertokens.passwordless.exceptions.RestartFlowException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
@@ -369,7 +370,7 @@ public class Passwordless {
 
     public static void updateUser(Main main, String userId, FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
-            DuplicatePhoneNumberException {
+            DuplicatePhoneNumberException, UserWithoutContactInfoException {
         PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(main);
 
         // We do not lock the user here, because we decided that even if the device cleanup used outdated information
@@ -378,9 +379,16 @@ public class Passwordless {
         if (user == null) {
             throw new UnknownUserIdException();
         }
+
+        boolean emailWillBeDefined = emailUpdate != null ? emailUpdate.newValue != null : user.email != null;
+        boolean phoneNumberWillBeDefined = phoneNumberUpdate != null ? phoneNumberUpdate.newValue != null
+                : user.phoneNumber != null;
+        if (!emailWillBeDefined && !phoneNumberWillBeDefined) {
+            throw new UserWithoutContactInfoException();
+        }
+
         try {
             storage.startTransaction(con -> {
-
                 if (emailUpdate != null && !Objects.equals(emailUpdate.newValue, user.email)) {
                     try {
                         storage.updateUserEmail_Transaction(con, userId, emailUpdate.newValue);
