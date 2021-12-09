@@ -199,7 +199,7 @@ public class PasswordlessConsumeCodeAPITest2_10 {
     public void testExpiredLinkCode() throws Exception {
         String[] args = { "../" };
 
-        Utils.setValueInConfig("passwordless_code_lifetime", "1");// 1 second validity
+        Utils.setValueInConfig("passwordless_code_lifetime", "100");
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -210,7 +210,7 @@ public class PasswordlessConsumeCodeAPITest2_10 {
 
         String email = "test@example.com";
         CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
-        Thread.sleep(1500);
+        Thread.sleep(150);
         JsonObject consumeCodeRequestBody = new JsonObject();
         consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
 
@@ -256,7 +256,7 @@ public class PasswordlessConsumeCodeAPITest2_10 {
     public void testExpiredUserInputCode() throws Exception {
         String[] args = { "../" };
 
-        Utils.setValueInConfig("passwordless_code_lifetime", "1");// 1 second validity
+        Utils.setValueInConfig("passwordless_code_lifetime", "100");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -266,7 +266,7 @@ public class PasswordlessConsumeCodeAPITest2_10 {
 
         String email = "test@example.com";
         CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
-        Thread.sleep(1500);
+        Thread.sleep(150);
 
         JsonObject consumeCodeRequestBody = new JsonObject();
         consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId);
