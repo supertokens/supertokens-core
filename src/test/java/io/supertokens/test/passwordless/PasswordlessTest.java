@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
+import io.supertokens.pluginInterface.passwordless.exception.DuplicateLinkCodeHashException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -94,6 +95,55 @@ public class PasswordlessTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    /**
+     * Create multiple devices using a single email
+     * TODO: review
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testCreateCodeForMultipleDevicesWithSingleEmail() throws Exception {
+        String[] args = { "../" };
+        final int NUMBER_OF_DEVICES_TO_CREATE = 5;
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String email = "test@example.com";
+
+        for (int counter = 1; counter < NUMBER_OF_DEVICES_TO_CREATE; counter++) {
+
+            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), email, null,
+                    null, null);
+            assertNotNull(codeResponse);
+
+            PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+            assertEquals(counter, devices.length);
+
+            PasswordlessDevice device = devices[counter - 1];
+            assertEquals(codeResponse.deviceIdHash, device.deviceIdHash);
+            assertEquals(email, device.email);
+            assertEquals(null, device.phoneNumber);
+            assertEquals(0, device.failedAttempts);
+
+            PasswordlessCode[] codes = storage.getCodesOfDevice(device.deviceIdHash);
+            assertEquals(1, codes.length);
+
+            PasswordlessCode code = codes[0];
+            assertEquals(device.deviceIdHash, code.deviceIdHash);
+            assertEquals(codeResponse.codeId, code.id);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     @Test
     public void testCreateCodeWithPhoneNumber() throws Exception {
         String[] args = { "../" };
@@ -128,6 +178,55 @@ public class PasswordlessTest {
         PasswordlessCode code = codes[0];
         assertEquals(device.deviceIdHash, code.deviceIdHash);
         assertEquals(createCodeResponse.codeId, code.id);
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * Create multiple devices using a single phone number
+     * TODO: review
+     * 
+     * @throws Exception
+     */
+
+    @Test
+    public void testCreateCodeForMultipleDevicesWithSinglePhoneNumber() throws Exception {
+        String[] args = { "../" };
+        final int NUMBER_OF_DEVICES_TO_CREATE = 5;
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String phoneNumber = "+442071838750";
+
+        for (int counter = 1; counter < NUMBER_OF_DEVICES_TO_CREATE; counter++) {
+
+            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), null,
+                    phoneNumber, null, null);
+            assertNotNull(codeResponse);
+
+            PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(phoneNumber);
+            assertEquals(counter, devices.length);
+
+            PasswordlessDevice device = devices[counter - 1];
+            assertEquals(codeResponse.deviceIdHash, device.deviceIdHash);
+            assertEquals(null, device.email);
+            assertEquals(phoneNumber, device.phoneNumber);
+            assertEquals(0, device.failedAttempts);
+
+            PasswordlessCode[] codes = storage.getCodesOfDevice(device.deviceIdHash);
+            assertEquals(1, codes.length);
+
+            PasswordlessCode code = codes[0];
+            assertEquals(device.deviceIdHash, code.deviceIdHash);
+            assertEquals(codeResponse.codeId, code.id);
+        }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -169,6 +268,44 @@ public class PasswordlessTest {
         for (PasswordlessCode code : codes) {
             assertEquals(device.deviceIdHash, code.deviceIdHash);
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * create code with same deviceId+userInputCode twice -> DuplicateLinkCodeHashException
+     * TODO: review
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testCreateCodeWithSameDeviceIdAndUserInputCode() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String phoneNumber = "+442071838750";
+
+        Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), null, phoneNumber,
+                null, null);
+        Exception error = null;
+
+        try {
+            Passwordless.CreateCodeResponse resendCodeResponse = Passwordless.createCode(process.getProcess(), null,
+                    null, codeResponse.deviceId, codeResponse.userInputCode);
+        } catch (Exception e) {
+            error = e;
+        }
+        assertNotNull(error);
+        assert (error instanceof DuplicateLinkCodeHashException);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
