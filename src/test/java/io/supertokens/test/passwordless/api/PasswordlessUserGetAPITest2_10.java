@@ -64,6 +64,22 @@ public class PasswordlessUserGetAPITest2_10 {
 
         {
             HashMap<String, String> map = new HashMap<>();
+            HttpResponseException error = null;
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user", map,
+                        1000, 1000, null, Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException e) {
+                error = e;
+            }
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Please provide exactly one of userId, email or phoneNumber",
+                    error.getMessage());
+        }
+
+        {
+            HashMap<String, String> map = new HashMap<>();
             map.put("userId", "notExists");
             map.put("email", "notExists");
             HttpResponseException error = null;
@@ -106,6 +122,26 @@ public class PasswordlessUserGetAPITest2_10 {
 
             assertEquals("UNKNOWN_PHONE_NUMBER_ERROR", response.get("status").getAsString());
         }
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("phoneNumber", "+918888823456");
+            map.put("email", "sample@test.com");
+            Exception exception = null;
+            try {
+                JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user", map, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(),
+                        "passwordless");
+            } catch (Exception ex) {
+                exception = ex;
+            }
+
+            assertNotNull(exception);
+            assert (exception instanceof HttpResponseException);
+            assertEquals(400, ((HttpResponseException) exception).statusCode);
+            assertEquals(exception.getMessage(),
+                    "Http error. Status Code: 400. Message: Please provide exactly one of userId, email or phoneNumber");
+        }
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
