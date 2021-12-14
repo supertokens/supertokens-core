@@ -72,36 +72,36 @@ public class PasswordlessUserPutAPITest2_10 {
         storage.createUser(new UserInfo("userId3", null, phoneNumber, System.currentTimeMillis()));
 
         {
-            JsonObject createCodeRequestBody = new JsonObject();
-            createCodeRequestBody.addProperty("userId", "notexists");
-            createCodeRequestBody.addProperty("email", "notexists");
+            JsonObject updateUserRequestBody = new JsonObject();
+            updateUserRequestBody.addProperty("userId", "notexists");
+            updateUserRequestBody.addProperty("email", "notexists");
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", createCodeRequestBody, 1000, 1000, null,
+                    "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
                     Utils.getCdiVersion2_10ForTests(), "passwordless");
 
             assertEquals("UNKNOWN_USER_ID_ERROR", response.get("status").getAsString());
         }
 
         {
-            JsonObject createCodeRequestBody = new JsonObject();
-            createCodeRequestBody.addProperty("userId", userId);
-            createCodeRequestBody.addProperty("email", email2);
+            JsonObject updateUserRequestBody = new JsonObject();
+            updateUserRequestBody.addProperty("userId", userId);
+            updateUserRequestBody.addProperty("email", email2);
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", createCodeRequestBody, 1000, 1000, null,
+                    "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
                     Utils.getCdiVersion2_10ForTests(), "passwordless");
 
             assertEquals("EMAIL_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
         }
 
         {
-            JsonObject createCodeRequestBody = new JsonObject();
-            createCodeRequestBody.addProperty("userId", userId);
-            createCodeRequestBody.addProperty("phoneNumber", phoneNumber);
+            JsonObject updateUserRequestBody = new JsonObject();
+            updateUserRequestBody.addProperty("userId", userId);
+            updateUserRequestBody.addProperty("phoneNumber", phoneNumber);
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", createCodeRequestBody, 1000, 1000, null,
+                    "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
                     Utils.getCdiVersion2_10ForTests(), "passwordless");
 
             assertEquals("PHONE_NUMBER_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
@@ -129,13 +129,13 @@ public class PasswordlessUserPutAPITest2_10 {
         String email = "email";
         storage.createUser(new UserInfo(userId, email, null, System.currentTimeMillis()));
 
-        JsonObject createCodeRequestBody = new JsonObject();
-        createCodeRequestBody.addProperty("userId", userId);
-        createCodeRequestBody.add("email", JsonNull.INSTANCE);
-        createCodeRequestBody.addProperty("phoneNumber", phoneNumber);
+        JsonObject updateUserRequestBody = new JsonObject();
+        updateUserRequestBody.addProperty("userId", userId);
+        updateUserRequestBody.add("email", JsonNull.INSTANCE);
+        updateUserRequestBody.addProperty("phoneNumber", phoneNumber);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/user", createCodeRequestBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
                 Utils.getCdiVersion2_10ForTests(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());

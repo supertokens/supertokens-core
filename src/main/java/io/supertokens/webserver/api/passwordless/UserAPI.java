@@ -22,6 +22,7 @@ import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.FieldUpdate;
+import io.supertokens.passwordless.exceptions.UserWithoutContactInfoException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -126,6 +127,9 @@ public class UserAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "PHONE_NUMBER_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, result, resp);
+        } catch (UserWithoutContactInfoException e) {
+            throw new ServletException(
+                    new BadRequestException("You cannot clear both email and phone number of a user"));
         }
     }
 }

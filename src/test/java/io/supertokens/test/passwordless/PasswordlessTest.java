@@ -24,6 +24,7 @@ import io.supertokens.passwordless.exceptions.ExpiredUserInputCodeException;
 import io.supertokens.passwordless.exceptions.IncorrectUserInputCodeException;
 import io.supertokens.passwordless.exceptions.RestartFlowException;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
+import io.supertokens.passwordless.exceptions.UserWithoutContactInfoException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -383,7 +384,7 @@ public class PasswordlessTest {
 
         long consumeStart = System.currentTimeMillis();
         Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(), null,
-                null, createCodeResponse.linkCode);
+                createCodeResponse.deviceIdHash, null, createCodeResponse.linkCode);
         assertNotNull(consumeCodeResponse);
         checkUserWithConsumeResponse(storage, consumeCodeResponse, email, null, consumeStart);
 
@@ -420,7 +421,7 @@ public class PasswordlessTest {
 
         long consumeStart = System.currentTimeMillis();
         Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
-                createCodeResponse.deviceId, createCodeResponse.userInputCode, null);
+                createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
         assertNotNull(consumeCodeResponse);
         assert (consumeCodeResponse.createdNewUser);
         checkUserWithConsumeResponse(storage, consumeCodeResponse, email, null, consumeStart);
@@ -459,7 +460,7 @@ public class PasswordlessTest {
         assertNotNull(createCodeResponse);
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
-                createCodeResponse.deviceId, createCodeResponse.userInputCode, null);
+                createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
         assertNotNull(consumeCodeResponse);
 
         user = storage.getUserById(consumeCodeResponse.user.id);
@@ -495,7 +496,7 @@ public class PasswordlessTest {
 
         // consume code
         Passwordless.ConsumeCodeResponse consumeCode = Passwordless.consumeCode(process.getProcess(),
-                codeResponse.deviceId, codeResponse.userInputCode, null);
+                codeResponse.deviceId, codeResponse.deviceIdHash, codeResponse.userInputCode, null);
 
         devices = storage.getDevicesByEmail(email);
         assertEquals(0, devices.length);
@@ -534,7 +535,7 @@ public class PasswordlessTest {
         assertNotNull(createCodeResponse);
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
-                createCodeResponse.deviceId, createCodeResponse.userInputCode, null);
+                createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
         assertNotNull(consumeCodeResponse);
 
         user = storage.getUserById(consumeCodeResponse.user.id);
@@ -570,7 +571,7 @@ public class PasswordlessTest {
 
         // consume code
         Passwordless.ConsumeCodeResponse consumeCode = Passwordless.consumeCode(process.getProcess(),
-                codeResponse.deviceId, null, codeResponse.linkCode);
+                codeResponse.deviceId, codeResponse.deviceIdHash, null, codeResponse.linkCode);
 
         devices = storage.getDevicesByEmail(email);
         assertEquals(0, devices.length);
@@ -604,7 +605,8 @@ public class PasswordlessTest {
 
             long consumeStart = System.currentTimeMillis();
             Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
-                    createCodeResponse.deviceId, createCodeResponse.userInputCode, null);
+                    createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
+                    null);
             assertNotNull(consumeCodeResponse);
             user = checkUserWithConsumeResponse(storage, consumeCodeResponse, email, null, consumeStart);
         }
@@ -614,7 +616,8 @@ public class PasswordlessTest {
             assertNotNull(createCodeResponse);
 
             Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
-                    createCodeResponse.deviceId, createCodeResponse.userInputCode, null);
+                    createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
+                    null);
             assertNotNull(consumeCodeResponse);
             assert (!consumeCodeResponse.createdNewUser);
             UserInfo user2 = checkUserWithConsumeResponse(storage, consumeCodeResponse, email, null, 0);
@@ -656,7 +659,7 @@ public class PasswordlessTest {
 
             long consumeStart = System.currentTimeMillis();
             Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
-                    createCodeResponse.deviceId, null, createCodeResponse.linkCode);
+                    createCodeResponse.deviceId, createCodeResponse.deviceIdHash, null, createCodeResponse.linkCode);
             assertNotNull(consumeCodeResponse);
             user = checkUserWithConsumeResponse(storage, consumeCodeResponse, email, null, consumeStart);
         }
@@ -666,7 +669,7 @@ public class PasswordlessTest {
             assertNotNull(createCodeResponse);
 
             Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
-                    createCodeResponse.deviceId, null, createCodeResponse.linkCode);
+                    createCodeResponse.deviceId, createCodeResponse.deviceIdHash, null, createCodeResponse.linkCode);
             assertNotNull(consumeCodeResponse);
             assert (!consumeCodeResponse.createdNewUser);
             UserInfo user2 = checkUserWithConsumeResponse(storage, consumeCodeResponse, email, null, 0);
@@ -708,7 +711,7 @@ public class PasswordlessTest {
 
         Exception error = null;
         try {
-            Passwordless.consumeCode(process.getProcess(), null, null, createCodeResponse.linkCode + "##");
+            Passwordless.consumeCode(process.getProcess(), null, null, null, createCodeResponse.linkCode + "##");
         } catch (Exception ex) {
             error = ex;
         }
@@ -749,7 +752,9 @@ public class PasswordlessTest {
 
         Exception error = null;
         try {
-            Passwordless.consumeCode(process.getProcess(), null, null, "bbbbbbbbbbbbbb20JgnKPL5lwFBrfJexadmg9I_Ilp0=");
+            Passwordless.consumeCode(process.getProcess(), null, null, null,
+                    "bbbbbbbbbbbbbb20JgnKPL5lwFBrfJexadmg9I_Ilp0=");
+
         } catch (Exception ex) {
             error = ex;
         }
@@ -787,7 +792,8 @@ public class PasswordlessTest {
         Thread.sleep(120);
         Exception error = null;
         try {
-            Passwordless.consumeCode(process.getProcess(), null, null, createCodeResponse.linkCode);
+            Passwordless.consumeCode(process.getProcess(), null, null, null, createCodeResponse.linkCode);
+
         } catch (Exception ex) {
             error = ex;
         }
@@ -825,7 +831,7 @@ public class PasswordlessTest {
         Thread.sleep(120);
         Exception error = null;
         try {
-            Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
+            Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
                     createCodeResponse.userInputCode, null);
         } catch (Exception ex) {
             error = ex;
@@ -865,7 +871,7 @@ public class PasswordlessTest {
         Passwordless.createCode(process.getProcess(), null, null, createCodeResponse.deviceId, null);
         Exception error = null;
         try {
-            Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
+            Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
                     createCodeResponse.userInputCode, null);
         } catch (Exception ex) {
             error = ex;
@@ -902,7 +908,8 @@ public class PasswordlessTest {
 
         Exception error = null;
         try {
-            Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, "n0p321", null);
+            Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
+                    "n0p321", null);
         } catch (Exception ex) {
             error = ex;
         }
@@ -948,14 +955,16 @@ public class PasswordlessTest {
         for (int counter = 0; counter < maxCodeInputAttempts; counter++) {
 
             try {
-                Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, "n0p321", null);
+                Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
+                        createCodeResponse.deviceIdHash, "n0p321", null);
             } catch (Exception ex) {
 
             }
 
         }
         try {
-            Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, "n0p321", null);
+            Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
+                    "n0p321", null);
         } catch (Exception ex) {
             error = ex;
         }
@@ -1002,7 +1011,8 @@ public class PasswordlessTest {
         for (int counter = 0; counter < maxCodeInputAttempts; counter++) {
 
             try {
-                Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, null, "n0p321");
+                Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
+                        createCodeResponse.deviceIdHash, null, "n0p321");
             } catch (Exception ex) {
                 error = ex;
             }
@@ -1054,7 +1064,8 @@ public class PasswordlessTest {
         for (int counter = 0; counter < maxCodeInputAttempts - 2; counter++) {
 
             try {
-                Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, "n0p321", null);
+                Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
+                        createCodeResponse.deviceIdHash, "n0p321", null);
             } catch (Exception ex) {
 
             }
@@ -1085,7 +1096,8 @@ public class PasswordlessTest {
         assertNotNull(createCodeResponse);
 
         try {
-            Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, "n0p321", null);
+            Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
+                    "n0p321", null);
         } catch (Exception ex) {
             error = ex;
         }
@@ -1883,7 +1895,6 @@ public class PasswordlessTest {
      * clear both email and phone -> UserWithoutContactInfoException
      * 
      * @throws Exception
-     *                   TODO: no exception is thrown
      */
     @Test
     public void clearPhoneNumberAndEmail() throws Exception {
@@ -1906,7 +1917,7 @@ public class PasswordlessTest {
         }
 
         assertNotNull(ex);
-
+        assert (ex instanceof UserWithoutContactInfoException);
     }
 
     /**
@@ -1950,7 +1961,7 @@ public class PasswordlessTest {
         assertNotNull(createCodeResponse);
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
-                createCodeResponse.deviceId, createCodeResponse.userInputCode, null);
+                createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
         assertNotNull(consumeCodeResponse);
 
         return consumeCodeResponse;

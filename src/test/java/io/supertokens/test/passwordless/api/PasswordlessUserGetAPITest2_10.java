@@ -124,7 +124,7 @@ public class PasswordlessUserGetAPITest2_10 {
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
 
         String userIdEmail = "userId";
-        String userIdPhone = "userId";
+        String userIdPhone = "userIdPhone";
         String email = "random@gmail.com";
         String phoneNumber = "1234";
 
@@ -149,6 +149,22 @@ public class PasswordlessUserGetAPITest2_10 {
             assertEquals("OK", response.get("status").getAsString());
             checkUser(response, userIdEmail, email, null);
         }
+
+        /*
+         * get user with phone number
+         */
+        storage.createUser(new UserInfo(userIdPhone, null, phoneNumber, System.currentTimeMillis()));
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("phoneNumber", phoneNumber);
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", map, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(),
+                    "passwordless");
+
+            assertEquals("OK", response.get("status").getAsString());
+            checkUser(response, userIdPhone, null, phoneNumber);
+        }
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

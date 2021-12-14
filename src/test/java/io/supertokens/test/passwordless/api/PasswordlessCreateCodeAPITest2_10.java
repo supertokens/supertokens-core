@@ -406,6 +406,84 @@ public class PasswordlessCreateCodeAPITest2_10 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    /**
+     * malformed deviceId -> BadRequest
+     * TODO: not working as expected 500
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testMalformedDeviceId() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject createCodeRequestBody = new JsonObject();
+        createCodeRequestBody.addProperty("deviceId", "+442071838750");
+
+        HttpResponseException error = null;
+        try {
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+        } catch (HttpResponseException ex) {
+            error = ex;
+        }
+
+        assertNotNull(error);
+        assertEquals(400, error.statusCode);
+        assertEquals(
+                "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber or deviceId",
+                error.getMessage());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * only userInputCode -> BadRequest
+     * TODO: not working as expected 500
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testUserInputCode() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject createCodeRequestBody = new JsonObject();
+        createCodeRequestBody.addProperty("userInputCode", "442071838750");
+
+        HttpResponseException error = null;
+        try {
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+        } catch (HttpResponseException ex) {
+            error = ex;
+        }
+
+        assertNotNull(error);
+        assertEquals(400, error.statusCode);
+        assertEquals(
+                "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber or deviceId",
+                error.getMessage());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     @Test
     public void testNoParams() throws Exception {
         String[] args = { "../" };

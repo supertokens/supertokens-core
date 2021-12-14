@@ -79,7 +79,7 @@ public class PasswordlessConsumeCodeAPITest2_10 {
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    "Http error. Status Code: 400. Message: Field name 'preAuthSessionId' is invalid in JSON input",
                     error.getMessage());
         }
 
@@ -87,9 +87,7 @@ public class PasswordlessConsumeCodeAPITest2_10 {
             HttpResponseException error = null;
             try {
                 JsonObject consumeCodeRequestBody = new JsonObject();
-                consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
-                consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId);
-                consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
+                consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
@@ -110,6 +108,30 @@ public class PasswordlessConsumeCodeAPITest2_10 {
             try {
                 JsonObject consumeCodeRequestBody = new JsonObject();
                 consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
+                consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId);
+                consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+                consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
+
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException ex) {
+                error = ex;
+            }
+
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    error.getMessage());
+        }
+
+        {
+            HttpResponseException error = null;
+            try {
+                JsonObject consumeCodeRequestBody = new JsonObject();
+                consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+                consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
                 consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
@@ -129,6 +151,7 @@ public class PasswordlessConsumeCodeAPITest2_10 {
             HttpResponseException error = null;
             try {
                 JsonObject consumeCodeRequestBody = new JsonObject();
+                consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
                 consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
@@ -149,6 +172,98 @@ public class PasswordlessConsumeCodeAPITest2_10 {
             try {
                 JsonObject consumeCodeRequestBody = new JsonObject();
                 consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId);
+                consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException ex) {
+                error = ex;
+            }
+
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    error.getMessage());
+        }
+
+        {
+            HttpResponseException error = null;
+            try {
+                JsonObject consumeCodeRequestBody = new JsonObject();
+                consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId);
+                consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash + "asdf");
+                consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
+
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException ex) {
+                error = ex;
+            }
+
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: preAuthSessionId and deviceId doesn't match",
+                    error.getMessage());
+        }
+
+        {
+            HttpResponseException error = null;
+            try {
+                JsonObject consumeCodeRequestBody = new JsonObject();
+                consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash + "asdf");
+                consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
+
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException ex) {
+                error = ex;
+            }
+
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals("Http error. Status Code: 400. Message: preAuthSessionId and deviceId doesn't match",
+                    error.getMessage());
+        }
+
+        /*
+         * malformed linkCode -> BadRequest
+         * TODO: throwing 500 error
+         */
+        {
+            HttpResponseException error = null;
+            try {
+                JsonObject consumeCodeRequestBody = new JsonObject();
+                consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+                consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode + "==#");
+
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException ex) {
+                error = ex;
+            }
+
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    error.getMessage());
+        }
+
+        /*
+         * malformed deviceId -> BadRequest
+         * TODO: throwing 500 error
+         */
+        {
+            HttpResponseException error = null;
+            try {
+                JsonObject consumeCodeRequestBody = new JsonObject();
+                consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+                consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId + "==#");
 
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
@@ -183,13 +298,14 @@ public class PasswordlessConsumeCodeAPITest2_10 {
         CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
 
         JsonObject consumeCodeRequestBody = new JsonObject();
+        consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
         consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
                 Utils.getCdiVersion2_10ForTests(), "passwordless");
 
-        checkResponse(response, true, email, null, createResp.deviceIdHash);
+        checkResponse(response, true, email, null);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -199,7 +315,7 @@ public class PasswordlessConsumeCodeAPITest2_10 {
     public void testExpiredLinkCode() throws Exception {
         String[] args = { "../" };
 
-        Utils.setValueInConfig("passwordless_code_lifetime", "1");// 1 second validity
+        Utils.setValueInConfig("passwordless_code_lifetime", "100");
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -210,8 +326,9 @@ public class PasswordlessConsumeCodeAPITest2_10 {
 
         String email = "test@example.com";
         CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
-        Thread.sleep(1500);
+        Thread.sleep(150);
         JsonObject consumeCodeRequestBody = new JsonObject();
+        consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
         consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
@@ -240,13 +357,14 @@ public class PasswordlessConsumeCodeAPITest2_10 {
 
         JsonObject consumeCodeRequestBody = new JsonObject();
         consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId);
+        consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
         consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
                 Utils.getCdiVersion2_10ForTests(), "passwordless");
 
-        checkResponse(response, true, email, null, createResp.deviceIdHash);
+        checkResponse(response, true, email, null);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -256,7 +374,7 @@ public class PasswordlessConsumeCodeAPITest2_10 {
     public void testExpiredUserInputCode() throws Exception {
         String[] args = { "../" };
 
-        Utils.setValueInConfig("passwordless_code_lifetime", "1");// 1 second validity
+        Utils.setValueInConfig("passwordless_code_lifetime", "100");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -266,10 +384,11 @@ public class PasswordlessConsumeCodeAPITest2_10 {
 
         String email = "test@example.com";
         CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
-        Thread.sleep(1500);
+        Thread.sleep(150);
 
         JsonObject consumeCodeRequestBody = new JsonObject();
         consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId);
+        consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
         consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
@@ -300,6 +419,7 @@ public class PasswordlessConsumeCodeAPITest2_10 {
 
         JsonObject consumeCodeRequestBody = new JsonObject();
         consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId);
+        consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
         consumeCodeRequestBody.addProperty("userInputCode", createResp.userInputCode + "nope");
 
         {
@@ -321,14 +441,12 @@ public class PasswordlessConsumeCodeAPITest2_10 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    private void checkResponse(JsonObject response, Boolean isNewUser, String email, String phoneNumber,
-            String preAuthSessionId) {
+    private void checkResponse(JsonObject response, Boolean isNewUser, String email, String phoneNumber) {
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(isNewUser, response.get("createdNewUser").getAsBoolean());
-        assertEquals(preAuthSessionId, response.get("preAuthSessionId").getAsString());
         assert (response.has("user"));
 
-        assertEquals(4, response.entrySet().size());
+        assertEquals(3, response.entrySet().size());
 
         JsonObject userJson = response.getAsJsonObject("user");
         if (email == null) {

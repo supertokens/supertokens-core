@@ -134,12 +134,12 @@ public class AuthRecipeTest {
         {
             CreateCodeResponse createCode = Passwordless.createCode(process.getProcess(), "testX@example.com", null,
                     null, null);
-            Passwordless.consumeCode(process.getProcess(), null, null, createCode.linkCode);
+            Passwordless.consumeCode(process.getProcess(), null, createCode.deviceIdHash, null, createCode.linkCode);
         }
         {
             CreateCodeResponse createCode = Passwordless.createCode(process.getProcess(), null, "+442071838750", null,
                     null);
-            Passwordless.consumeCode(process.getProcess(), null, null, createCode.linkCode);
+            Passwordless.consumeCode(process.getProcess(), null, createCode.deviceIdHash, null, createCode.linkCode);
         }
 
         {
@@ -605,7 +605,8 @@ public class AuthRecipeTest {
             try {
                 String email = "test" + count.getAndIncrement() + "@example.com";
                 CreateCodeResponse createCode = Passwordless.createCode(process.getProcess(), email, null, null, null);
-                return Passwordless.consumeCode(process.getProcess(), null, null, createCode.linkCode).user;
+                return Passwordless.consumeCode(process.getProcess(), null, createCode.deviceIdHash, null,
+                        createCode.linkCode).user;
             } catch (Exception ignored) {
             }
             return null;
