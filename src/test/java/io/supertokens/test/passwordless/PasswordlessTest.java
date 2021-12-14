@@ -25,12 +25,14 @@ import io.supertokens.passwordless.exceptions.IncorrectUserInputCodeException;
 import io.supertokens.passwordless.exceptions.RestartFlowException;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicateLinkCodeHashException;
+import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -59,6 +61,10 @@ public class PasswordlessTest {
     public void beforeEach() {
         Utils.reset();
     }
+
+    // CONSTANTS
+    final String EMAIL = "test@example.com";
+    final String PHONE_NUMBER = "+442071838750";
 
     /**
      * CREATE CODE SECTION BEGINS
@@ -1550,6 +1556,405 @@ public class PasswordlessTest {
     /**
      * getUserById
      */
+
+    /**
+     * with email set
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void getUserByIdWithEmail() throws Exception {
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
+
+        user = storage.getUserById(consumeCodeResponse.user.id);
+        assertNotNull(user);
+        assertEquals(user.email, EMAIL);
+
+    }
+
+    /**
+     * with phone number set
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void getUserByIdWithPhoneNumber() throws Exception {
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
+
+        user = storage.getUserById(consumeCodeResponse.user.id);
+        assertNotNull(user);
+        assertEquals(user.phoneNumber, PHONE_NUMBER);
+    }
+
+    /**
+     * with both email and phoneNumber set
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void getUserByIdWithEmailAndPhoneNumber() throws Exception {
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, PHONE_NUMBER);
+
+        user = storage.getUserById(consumeCodeResponse.user.id);
+        assertNotNull(user);
+        assertEquals(user.email, EMAIL);
+        assertEquals(user.phoneNumber, PHONE_NUMBER);
+    }
+
+    /**
+     * returns null if it doesn't exist
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void getUserByInvalidId() throws Exception {
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
+
+        user = storage.getUserById(consumeCodeResponse.user.id + "1");
+        assertNull(user);
+    }
+
+    /**
+     * getUserByEmail
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void getUserByEmail() throws Exception {
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
+
+        user = storage.getUserByEmail(EMAIL);
+        assertNotNull(user);
+        assertEquals(user.email, EMAIL);
+
+    }
+
+    /**
+     * getUserByEmail
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void getUserByInvalidEmail() throws Exception {
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
+
+        user = storage.getUserByEmail(EMAIL + "A");
+        assertNull(user);
+
+    }
+
+    /**
+     * getUserByPhoneNumber
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void getUserByPhoneNumber() throws Exception {
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
+
+        user = storage.getUserByPhoneNumber(PHONE_NUMBER);
+        assertNotNull(user);
+        assertEquals(user.phoneNumber, PHONE_NUMBER);
+    }
+
+    /**
+     * getUserByPhoneNumber
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void getUserByInvalidPhoneNumber() throws Exception {
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
+
+        user = storage.getUserByPhoneNumber(PHONE_NUMBER + "1");
+        assertNull(user);
+    }
+
+    /**
+     * updateUser
+     */
+
+    /**
+     * try update email to an existing one -> DuplicateEmailException + no change
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void updateEmailToAnExistingOne() throws Exception {
+        String alternate_email = "alternate_testing@example.com";
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponseAlternate = createUserWith(process, alternate_email, null);
+
+        user = storage.getUserByEmail(EMAIL);
+        assertNotNull(user);
+
+        Exception ex = null;
+        try {
+            Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(alternate_email), null);
+        } catch (Exception e) {
+            ex = e;
+        }
+
+        assertNotNull(ex);
+        assert (ex instanceof DuplicateEmailException);
+
+        assertEquals(EMAIL, storage.getUserByEmail(EMAIL).email);
+    }
+
+    /**
+     * try update phone number to an existing one -> DuplicatePhoneNumberException + no change
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void updatePhoneNumberToAnExistingOne() throws Exception {
+        String alternate_phoneNumber = PHONE_NUMBER + "1";
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponseAlternate = createUserWith(process, null,
+                alternate_phoneNumber);
+
+        user = storage.getUserByPhoneNumber(PHONE_NUMBER);
+        assertNotNull(user);
+
+        Exception ex = null;
+        try {
+            Passwordless.updateUser(process.getProcess(), user.id, null,
+                    new Passwordless.FieldUpdate(alternate_phoneNumber));
+        } catch (Exception e) {
+            ex = e;
+        }
+
+        assertNotNull(ex);
+        assert (ex instanceof DuplicatePhoneNumberException);
+
+        assertEquals(PHONE_NUMBER, storage.getUserByPhoneNumber(PHONE_NUMBER).phoneNumber);
+    }
+
+    /**
+     * update email leaving phoneNumber
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void updateEmail() throws Exception {
+        String alternate_email = "alternate_testing@example.com";
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
+
+        user = storage.getUserByEmail(EMAIL);
+        assertNotNull(user);
+
+        Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(alternate_email), null);
+
+        assertEquals(alternate_email, storage.getUserById(user.id).email);
+    }
+
+    /**
+     * update phone leaving email
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void updatePhoneNumber() throws Exception {
+        String alternate_phoneNumber = PHONE_NUMBER + "1";
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
+
+        user = storage.getUserByPhoneNumber(PHONE_NUMBER);
+        assertNotNull(user);
+
+        Passwordless.updateUser(process.getProcess(), user.id, null,
+                new Passwordless.FieldUpdate(alternate_phoneNumber));
+
+        assertEquals(alternate_phoneNumber, storage.getUserById(user.id).phoneNumber);
+    }
+
+    /**
+     * clear email + set phoneNumber
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void clearEmailSetPhoneNumber() throws Exception {
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
+
+        user = storage.getUserByEmail(EMAIL);
+        assertNotNull(user);
+
+        Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(null),
+                new Passwordless.FieldUpdate(PHONE_NUMBER));
+
+        assertEquals(PHONE_NUMBER, storage.getUserById(user.id).phoneNumber);
+        assertEquals(null, storage.getUserById(user.id).email);
+
+    }
+
+    /**
+     * clear phone + set email
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void clearPhoneNumberSetEmail() throws Exception {
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
+
+        user = storage.getUserByPhoneNumber(PHONE_NUMBER);
+        assertNotNull(user);
+
+        Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(EMAIL),
+                new Passwordless.FieldUpdate(null));
+
+        assertEquals(EMAIL, storage.getUserById(user.id).email);
+        assertEquals(null, storage.getUserById(user.id).phoneNumber);
+
+    }
+
+    /**
+     * clear both email and phone -> UserWithoutContactInfoException
+     * 
+     * @throws Exception
+     *                   TODO: no exception is thrown
+     */
+    @Test
+    public void clearPhoneNumberAndEmail() throws Exception {
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
+
+        user = storage.getUserByPhoneNumber(PHONE_NUMBER);
+        assertNotNull(user);
+        Exception ex = null;
+
+        try {
+            Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(null),
+                    new Passwordless.FieldUpdate(null));
+        } catch (Exception e) {
+            ex = e;
+        }
+
+        assertNotNull(ex);
+
+    }
+
+    /**
+     * set both email and phone
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void setPhoneNumberSetEmail() throws Exception {
+        String alternate_phoneNumber = PHONE_NUMBER + "1";
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
+
+        user = storage.getUserByPhoneNumber(PHONE_NUMBER);
+        assertNotNull(user);
+
+        Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(EMAIL),
+                new Passwordless.FieldUpdate(alternate_phoneNumber));
+
+        assertEquals(EMAIL, storage.getUserById(user.id).email);
+        assertEquals(alternate_phoneNumber, storage.getUserById(user.id).phoneNumber);
+
+    }
+
+    /**
+     * Helper function to create a user
+     * 
+     * @param email
+     * @param phoneNumber
+     * @throws Exception
+     */
+    private Passwordless.ConsumeCodeResponse createUserWith(TestingProcessManager.TestingProcess process, String email,
+            String phoneNumber) throws Exception {
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), email,
+                phoneNumber, null, null);
+        assertNotNull(createCodeResponse);
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
+                createCodeResponse.deviceId, createCodeResponse.userInputCode, null);
+        assertNotNull(consumeCodeResponse);
+
+        return consumeCodeResponse;
+    }
 
     /**
      * Helper function to kill application
