@@ -18,6 +18,7 @@ package io.supertokens.test.passwordless;
 
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.config.Config;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.exceptions.ExpiredUserInputCodeException;
 import io.supertokens.passwordless.exceptions.IncorrectUserInputCodeException;
@@ -39,6 +40,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.util.Arrays;
+import java.util.Iterator;
+
 import static org.junit.Assert.*;
 
 public class PasswordlessTest {
@@ -55,6 +59,10 @@ public class PasswordlessTest {
     public void beforeEach() {
         Utils.reset();
     }
+
+    /**
+     * CREATE CODE SECTION BEGINS
+     */
 
     @Test
     public void testCreateCodeWithEmail() throws Exception {
@@ -339,6 +347,15 @@ public class PasswordlessTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    /**
+     * CONSUME CODE SECTION BEGINS
+     */
+
+    /**
+     * success without existing user - link code
+     * 
+     * @throws Exception
+     */
     @Test
     public void testConsumeLinkCode() throws Exception {
         String[] args = { "../" };
@@ -364,10 +381,18 @@ public class PasswordlessTest {
         assertNotNull(consumeCodeResponse);
         checkUserWithConsumeResponse(storage, consumeCodeResponse, email, null, consumeStart);
 
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+        assertEquals(0, devices.length);
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    /**
+     * Success without existing user - input code
+     * 
+     * @throws Exception
+     */
     @Test
     public void testConsumeUserInputCode() throws Exception {
         String[] args = { "../" };
@@ -393,6 +418,160 @@ public class PasswordlessTest {
         assertNotNull(consumeCodeResponse);
         assert (consumeCodeResponse.createdNewUser);
         checkUserWithConsumeResponse(storage, consumeCodeResponse, email, null, consumeStart);
+
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+        assertEquals(0, devices.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * Check device clean up when user input code is generated via email & phone number
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testConsumeCodeCleanupUserInputCodeWithEmailAndPhoneNumber() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String email = "test@example.com";
+        String phoneNumber = "+442071838750";
+        UserInfo user = null;
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), email, null,
+                null, null);
+        assertNotNull(createCodeResponse);
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
+                createCodeResponse.deviceId, createCodeResponse.userInputCode, null);
+        assertNotNull(consumeCodeResponse);
+
+        user = storage.getUserById(consumeCodeResponse.user.id);
+        Passwordless.updateUser(process.getProcess(), user.id, null, new Passwordless.FieldUpdate(phoneNumber));
+        user = storage.getUserById(consumeCodeResponse.user.id);
+        assertEquals(user.phoneNumber, phoneNumber);
+
+        // create code with email twice
+        {
+            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), email, null,
+                    null, null);
+        }
+        {
+            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), email, null,
+                    null, null);
+        }
+
+        // create code with phone number twice
+        {
+            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), null,
+                    phoneNumber, null, null);
+        }
+
+        Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), null, phoneNumber,
+                null, null);
+
+        // 4 codes should be available
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(phoneNumber);
+        assertEquals(2, devices.length);
+
+        devices = storage.getDevicesByEmail(email);
+        assertEquals(2, devices.length);
+
+        // consume code
+        Passwordless.ConsumeCodeResponse consumeCode = Passwordless.consumeCode(process.getProcess(),
+                codeResponse.deviceId, codeResponse.userInputCode, null);
+
+        devices = storage.getDevicesByEmail(email);
+        assertEquals(0, devices.length);
+
+        devices = storage.getDevicesByPhoneNumber(phoneNumber);
+        assertEquals(0, devices.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * Check device clean up when link code is generated via email & phone number
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testConsumeCodeCleanupLinkCodeWithEmailAndPhoneNumber() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String email = "test@example.com";
+        String phoneNumber = "+442071838750";
+        UserInfo user = null;
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), email, null,
+                null, null);
+        assertNotNull(createCodeResponse);
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
+                createCodeResponse.deviceId, createCodeResponse.userInputCode, null);
+        assertNotNull(consumeCodeResponse);
+
+        user = storage.getUserById(consumeCodeResponse.user.id);
+        Passwordless.updateUser(process.getProcess(), user.id, null, new Passwordless.FieldUpdate(phoneNumber));
+        user = storage.getUserById(consumeCodeResponse.user.id);
+        assertEquals(user.phoneNumber, phoneNumber);
+
+        // create code with email twice
+        {
+            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), email, null,
+                    null, null);
+        }
+        {
+            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), email, null,
+                    null, null);
+        }
+
+        // create code with phone number twice
+        {
+            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), null,
+                    phoneNumber, null, null);
+        }
+
+        Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), null, phoneNumber,
+                null, null);
+
+        // 4 codes should be available
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(phoneNumber);
+        assertEquals(2, devices.length);
+
+        devices = storage.getDevicesByEmail(email);
+        assertEquals(2, devices.length);
+
+        // consume code
+        Passwordless.ConsumeCodeResponse consumeCode = Passwordless.consumeCode(process.getProcess(),
+                codeResponse.deviceId, null, codeResponse.linkCode);
+
+        devices = storage.getDevicesByEmail(email);
+        assertEquals(0, devices.length);
+
+        devices = storage.getDevicesByPhoneNumber(phoneNumber);
+        assertEquals(0, devices.length);
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -436,6 +615,145 @@ public class PasswordlessTest {
 
             assert (user.equals(user2));
         }
+
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+        assertEquals(0, devices.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * Test consume link code with existing user
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testConsumeLinkCodeWithExistingUser() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String email = "test@example.com";
+        UserInfo user = null;
+        {
+            Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), email,
+                    null, null, null);
+            assertNotNull(createCodeResponse);
+
+            long consumeStart = System.currentTimeMillis();
+            Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
+                    createCodeResponse.deviceId, null, createCodeResponse.linkCode);
+            assertNotNull(consumeCodeResponse);
+            user = checkUserWithConsumeResponse(storage, consumeCodeResponse, email, null, consumeStart);
+        }
+        {
+            Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), email,
+                    null, null, null);
+            assertNotNull(createCodeResponse);
+
+            Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
+                    createCodeResponse.deviceId, null, createCodeResponse.linkCode);
+            assertNotNull(consumeCodeResponse);
+            assert (!consumeCodeResponse.createdNewUser);
+            UserInfo user2 = checkUserWithConsumeResponse(storage, consumeCodeResponse, email, null, 0);
+
+            assert (user.equals(user2));
+        }
+
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+        assertEquals(0, devices.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * consume code malformed linkCode
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testConsumeMalformedLinkCode() throws Exception {
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("passwordless_code_lifetime", "100");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String email = "test@example.com";
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), email, null,
+                null, null);
+        assertNotNull(createCodeResponse);
+
+        Exception error = null;
+        try {
+            Passwordless.consumeCode(process.getProcess(), null, null, createCodeResponse.linkCode + "##");
+        } catch (Exception ex) {
+            error = ex;
+        }
+        assertNotNull(error);
+        assert (error instanceof IllegalArgumentException);
+
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+        assertNotEquals(0, devices.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * non existing linkCode
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testConsumeNonExistingLinkCode() throws Exception {
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("passwordless_code_lifetime", "100");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String email = "test@example.com";
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), email, null,
+                null, null);
+        assertNotNull(createCodeResponse);
+
+        Exception error = null;
+        try {
+            Passwordless.consumeCode(process.getProcess(), null, null, "bbbbbbbbbbbbbb20JgnKPL5lwFBrfJexadmg9I_Ilp0=");
+        } catch (Exception ex) {
+            error = ex;
+        }
+        assertNotNull(error);
+        assert (error instanceof RestartFlowException);
+
+        // verify that devices have not been cleared
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+        assertNotEquals(0, devices.length);
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -469,6 +787,10 @@ public class PasswordlessTest {
         }
         assertNotNull(error);
         assert (error instanceof RestartFlowException);
+
+        // verify that devices have not been cleared
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+        assertNotEquals(0, devices.length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -504,6 +826,10 @@ public class PasswordlessTest {
         }
         assertNotNull(error);
         assert (error instanceof ExpiredUserInputCodeException);
+
+        // verify that devices have not been cleared
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+        assertNotEquals(0, devices.length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -541,6 +867,10 @@ public class PasswordlessTest {
         assertNotNull(error);
         assert (error instanceof ExpiredUserInputCodeException);
 
+        // verify that devices have not been cleared
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+        assertNotEquals(0, devices.length);
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -573,6 +903,189 @@ public class PasswordlessTest {
         assertNotNull(error);
         assert (error instanceof IncorrectUserInputCodeException);
 
+        // verify that devices have not been cleared
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+        assertNotEquals(0, devices.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * wrong userInputCode exceeding maxCodeInputAttempts
+     * 
+     * @throws Exception
+     *
+     */
+
+    @Test
+    public void testConsumeWrongUserInputCodeExceedingMaxAttempts() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String email = "test@example.com";
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), email, null,
+                null, null);
+        assertNotNull(createCodeResponse);
+
+        Exception error = null;
+        int maxCodeInputAttempts = Config.getConfig(process.getProcess()).getPasswordlessMaxCodeInputAttempts();
+        for (int counter = 0; counter < maxCodeInputAttempts; counter++) {
+
+            try {
+                Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, "n0p321", null);
+            } catch (Exception ex) {
+
+            }
+
+        }
+        try {
+            Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, "n0p321", null);
+        } catch (Exception ex) {
+            error = ex;
+        }
+        assertNotNull(error);
+        assert (error instanceof RestartFlowException);
+
+        // verify that devices have been cleared, since max attempt reached
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+        assertEquals(0, devices.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * wrong linkCode exceeding maxCodeInputAttempts
+     * 
+     * @throws Exception
+     *
+     */
+
+    @Test
+    public void testConsumeWrongLinkCodeExceedingMaxAttempts() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String email = "test@example.com";
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), email, null,
+                null, null);
+        assertNotNull(createCodeResponse);
+
+        Exception error = null;
+        int maxCodeInputAttempts = Config.getConfig(process.getProcess()).getPasswordlessMaxCodeInputAttempts();
+
+        for (int counter = 0; counter < maxCodeInputAttempts; counter++) {
+
+            try {
+                Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, null, "n0p321");
+            } catch (Exception ex) {
+                error = ex;
+            }
+
+        }
+
+        assertNotNull(error);
+        assert (error instanceof RestartFlowException);
+
+        // verify that devices have not been cleared
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+        assertNotEquals(0, devices.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * link with too many failedAttempts (changed maxCodeInputAttempts configuration between consumes)
+     * 
+     * @throws Exception
+     *
+     */
+
+    @Test
+    public void testConsumeWrongUserInputCodeExceedingMaxAttemptsWithConfigUpdate() throws Exception {
+        String[] args = { "../" };
+
+        // start process with default configuration for max attempt
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String email = "test@example.com";
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), email, null,
+                null, null);
+        assertNotNull(createCodeResponse);
+
+        Exception error = null;
+        int maxCodeInputAttempts = Config.getConfig(process.getProcess()).getPasswordlessMaxCodeInputAttempts();
+
+        // input wrong code max attempts - 2 times
+        for (int counter = 0; counter < maxCodeInputAttempts - 2; counter++) {
+
+            try {
+                Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, "n0p321", null);
+            } catch (Exception ex) {
+
+            }
+
+        }
+
+        // verify that devices have not been cleared
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+        assertNotEquals(0, devices.length);
+
+        // kill process and restart with increased max code input attempts
+        process.kill();
+        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED);
+
+        Utils.setValueInConfig("passwordless_max_code_input_attempts", "6");
+        process = TestingProcessManager.start(args);
+
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        createCodeResponse = Passwordless.createCode(process.getProcess(), email, null, null, null);
+
+        assertNotNull(createCodeResponse);
+
+        try {
+            Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, "n0p321", null);
+        } catch (Exception ex) {
+            error = ex;
+        }
+        assertNotNull(error);
+        assert (error instanceof IncorrectUserInputCodeException);
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -593,4 +1106,481 @@ public class PasswordlessTest {
 
         return user;
     }
+
+    /**
+     * getDeviceWithCodesByIdHash
+     */
+
+    /**
+     * returns created device (with multiple codes)
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void getDevicesFromHashIDWithCodes() throws Exception {
+
+        int NUMBER_OF_CODES_TO_GENERATE = 5;
+
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String email = "test@example.com";
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), email, null,
+                null, null);
+        assertNotNull(createCodeResponse);
+
+        // create multiple codes with this device
+        for (int counter = 0; counter < NUMBER_OF_CODES_TO_GENERATE; counter++) {
+
+            createCodeResponse = Passwordless.createCode(process.getProcess(), null, null, createCodeResponse.deviceId,
+                    null);
+            assertNotNull(createCodeResponse);
+
+        }
+        PasswordlessDevice device = storage.getDevice(createCodeResponse.deviceIdHash);
+
+        // verify device retrieved
+        assertNotNull(device);
+        assertEquals(createCodeResponse.deviceIdHash, device.deviceIdHash);
+        assertEquals(email, device.email);
+        assertEquals(null, device.phoneNumber);
+        assertEquals(0, device.failedAttempts);
+
+        PasswordlessCode[] codes = storage.getCodesOfDevice(device.deviceIdHash);
+        assertEquals(NUMBER_OF_CODES_TO_GENERATE + 1, codes.length);
+
+        for (int counter = 0; counter < codes.length; counter++) {
+
+            PasswordlessCode code = codes[counter];
+            assertEquals(device.deviceIdHash, code.deviceIdHash);
+
+        }
+
+        killApplication(process);
+
+    }
+
+    /**
+     * returns null if no device exists
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void getDevicesFromInvalidHashID() throws Exception {
+
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        PasswordlessDevice device = storage.getDevice("32");
+
+        // verify null device retrieved
+        assertNull(device);
+        killApplication(process);
+
+    }
+
+    /**
+     * getDevicesWithCodesByEmail
+     */
+
+    /**
+     * returns created device (with multiple codes)
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void getDevicesFromIDWithCodes() throws Exception {
+
+        int NUMBER_OF_CODES_TO_GENERATE = 5;
+
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String email = "test@example.com";
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), email, null,
+                null, null);
+        assertNotNull(createCodeResponse);
+
+        // create multiple codes with this device
+        for (int counter = 0; counter < NUMBER_OF_CODES_TO_GENERATE; counter++) {
+
+            createCodeResponse = Passwordless.createCode(process.getProcess(), email, null, createCodeResponse.deviceId,
+                    null);
+            assertNotNull(createCodeResponse);
+
+        }
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+
+        for (int counter = 0; counter < devices.length; counter++) {
+            PasswordlessDevice device = devices[counter];
+
+            // verify device retrieved
+            assertNotNull(device);
+            assertEquals(createCodeResponse.deviceIdHash, device.deviceIdHash);
+            assertEquals(email, device.email);
+            assertEquals(null, device.phoneNumber);
+            assertEquals(0, device.failedAttempts);
+
+            PasswordlessCode[] codes = storage.getCodesOfDevice(device.deviceIdHash);
+            assertEquals(NUMBER_OF_CODES_TO_GENERATE + 1, codes.length);
+
+            for (int counter_code = 0; counter_code < codes.length; counter_code++) {
+
+                PasswordlessCode code = codes[counter];
+                assertEquals(device.deviceIdHash, code.deviceIdHash);
+
+            }
+        }
+
+        killApplication(process);
+
+    }
+
+    /**
+     * returns null if no device exists with email
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void getDevicesFromInvalidEmail() throws Exception {
+
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        PasswordlessDevice[] devices = storage.getDevicesByEmail("aa@aa.com");
+
+        // verify null device retrieved
+        assertEquals(0, devices.length);
+        killApplication(process);
+
+    }
+
+    /**
+     * getDevicesWithCodesByPhoneNumber
+     */
+
+    /**
+     * returns created device (with multiple codes)
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void getDevicesFromPhoneNumberWithCodes() throws Exception {
+
+        int NUMBER_OF_CODES_TO_GENERATE = 5;
+
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String phoneNumber = "+442071838750";
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
+                phoneNumber, null, null);
+        assertNotNull(createCodeResponse);
+
+        // create multiple codes with this device
+        for (int counter = 0; counter < NUMBER_OF_CODES_TO_GENERATE; counter++) {
+
+            createCodeResponse = Passwordless.createCode(process.getProcess(), null, phoneNumber,
+                    createCodeResponse.deviceId, null);
+            assertNotNull(createCodeResponse);
+
+        }
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(phoneNumber);
+
+        for (int counter = 0; counter < devices.length; counter++) {
+            PasswordlessDevice device = devices[counter];
+
+            // verify device retrieved
+            assertNotNull(device);
+            assertEquals(createCodeResponse.deviceIdHash, device.deviceIdHash);
+            assertEquals(null, device.email);
+            assertEquals(phoneNumber, device.phoneNumber);
+            assertEquals(0, device.failedAttempts);
+
+            PasswordlessCode[] codes = storage.getCodesOfDevice(device.deviceIdHash);
+            assertEquals(NUMBER_OF_CODES_TO_GENERATE + 1, codes.length);
+
+            for (int counter_code = 0; counter_code < codes.length; counter_code++) {
+
+                PasswordlessCode code = codes[counter];
+                assertEquals(device.deviceIdHash, code.deviceIdHash);
+
+            }
+        }
+
+        killApplication(process);
+
+    }
+
+    /**
+     * returns null if no device exists with phone
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void getDevicesFromInvalidPhoneNumber() throws Exception {
+
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber("9231");
+
+        // verify null device retrieved
+        assertEquals(0, devices.length);
+        killApplication(process);
+
+    }
+
+    /**
+     * removeCode
+     */
+
+    /**
+     * deletes code and leaves device if other code exists
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void deleteCodeAndLeaveDevices() throws Exception {
+
+        int NUMBER_OF_CODES_TO_GENERATE = 5;
+
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String phoneNumber = "+442071838750";
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
+                phoneNumber, null, null);
+        assertNotNull(createCodeResponse);
+
+        // create multiple codes with this device
+        for (int counter = 0; counter < NUMBER_OF_CODES_TO_GENERATE; counter++) {
+
+            createCodeResponse = Passwordless.createCode(process.getProcess(), null, phoneNumber,
+                    createCodeResponse.deviceId, null);
+            assertNotNull(createCodeResponse);
+
+        }
+
+        Passwordless.removeCode(process.getProcess(), createCodeResponse.codeId);
+
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(phoneNumber);
+
+        for (int counter = 0; counter < devices.length; counter++) {
+            PasswordlessDevice device = devices[counter];
+
+            // verify device retrieved
+            assertNotNull(device);
+            assertEquals(createCodeResponse.deviceIdHash, device.deviceIdHash);
+            assertEquals(null, device.email);
+            assertEquals(phoneNumber, device.phoneNumber);
+            assertEquals(0, device.failedAttempts);
+
+            PasswordlessCode[] codes = storage.getCodesOfDevice(device.deviceIdHash);
+            assertEquals(NUMBER_OF_CODES_TO_GENERATE, codes.length);
+
+            for (int counter_code = 0; counter_code < codes.length; counter_code++) {
+
+                PasswordlessCode code = codes[counter];
+                assertEquals(device.deviceIdHash, code.deviceIdHash);
+
+            }
+        }
+
+        killApplication(process);
+
+    }
+
+    /**
+     * deletes code and cleans device if no other code exists
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void deleteCodeAndCleansDevice() throws Exception {
+
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String phoneNumber = "+442071838750";
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
+                phoneNumber, null, null);
+        assertNotNull(createCodeResponse);
+
+        Passwordless.removeCode(process.getProcess(), createCodeResponse.codeId);
+
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(phoneNumber);
+        assertEquals(0, devices.length);
+
+        killApplication(process);
+
+    }
+
+    /**
+     * no op if code doesn't exist
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void doNothingIfCodeDoesNotExist() throws Exception {
+
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String phoneNumber = "+442071838750";
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
+                phoneNumber, null, null);
+        assertNotNull(createCodeResponse);
+
+        Passwordless.removeCode(process.getProcess(), "1234");
+
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(phoneNumber);
+        assertEquals(1, devices.length);
+
+        PasswordlessCode[] codes = storage.getCodesOfDevice(createCodeResponse.deviceIdHash);
+        assertEquals(1, codes.length);
+
+        killApplication(process);
+
+    }
+
+    /**
+     * removeCodesByEmail
+     */
+
+    /**
+     * removes devices with matching email (leaving others)
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void removeDevicesFromEmail() throws Exception {
+
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String email = "test@example.com";
+        String alternate_email = "alternateTest@example.com";
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), email, null,
+                null, null);
+        assertNotNull(createCodeResponse);
+
+        createCodeResponse = Passwordless.createCode(process.getProcess(), email, null, null, null);
+        assertNotNull(createCodeResponse);
+
+        createCodeResponse = Passwordless.createCode(process.getProcess(), alternate_email, null, null, null);
+        assertNotNull(createCodeResponse);
+
+        Passwordless.removeCodesByEmail(process.getProcess(), email);
+
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(email);
+        assertEquals(0, devices.length);
+
+        devices = storage.getDevicesByEmail(alternate_email);
+        assertEquals(1, devices.length);
+
+        PasswordlessCode[] codes = storage.getCodesOfDevice(devices[0].deviceIdHash);
+        assertEquals(1, codes.length);
+
+        killApplication(process);
+
+    }
+
+    /**
+     * removeCodesByPhoneNumber
+     */
+
+    /**
+     * removes devices with matching phone number (leaving others)
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void removeDevicesFromPhoneNumber() throws Exception {
+
+        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
+        String phoneNumber = "+442071838750";
+        String alternate_phoneNumber = "+442071838751";
+
+        Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
+                phoneNumber, null, null);
+        assertNotNull(createCodeResponse);
+
+        createCodeResponse = Passwordless.createCode(process.getProcess(), null, phoneNumber, null, null);
+        assertNotNull(createCodeResponse);
+
+        createCodeResponse = Passwordless.createCode(process.getProcess(), null, alternate_phoneNumber, null, null);
+        assertNotNull(createCodeResponse);
+
+        Passwordless.removeCodesByPhoneNumber(process.getProcess(), phoneNumber);
+
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(phoneNumber);
+        assertEquals(0, devices.length);
+
+        devices = storage.getDevicesByPhoneNumber(alternate_phoneNumber);
+        assertEquals(1, devices.length);
+
+        PasswordlessCode[] codes = storage.getCodesOfDevice(devices[0].deviceIdHash);
+        assertEquals(1, codes.length);
+
+        killApplication(process);
+
+    }
+
+    /**
+     * getUserById
+     */
+
+    /**
+     * Helper function to kill application
+     * 
+     * @throws Exception
+     */
+    private void killApplication(TestingProcessManager.TestingProcess process) throws InterruptedException {
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+    }
+
+    /**
+     * Helper function to load application with default args
+     * 
+     * @throws Exception
+     */
+    private TestingProcessManager.TestingProcess startApplicationWithDefaultArgs() throws Exception {
+
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return null;
+        }
+
+        return process;
+
+    }
+
 }
