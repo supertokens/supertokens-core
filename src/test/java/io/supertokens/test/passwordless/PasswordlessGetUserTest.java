@@ -143,7 +143,7 @@ public class PasswordlessGetUserTest {
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
+        createUserWith(process, EMAIL, null);
 
         user = storage.getUserByEmail(EMAIL);
         assertNotNull(user);
@@ -163,7 +163,7 @@ public class PasswordlessGetUserTest {
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
+        createUserWith(process, EMAIL, null);
 
         user = storage.getUserByEmail(EMAIL + "A");
         assertNull(user);
@@ -182,7 +182,7 @@ public class PasswordlessGetUserTest {
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
+        createUserWith(process, null, PHONE_NUMBER);
 
         user = storage.getUserByPhoneNumber(PHONE_NUMBER);
         assertNotNull(user);
@@ -201,7 +201,7 @@ public class PasswordlessGetUserTest {
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
+        createUserWith(process, null, PHONE_NUMBER);
 
         user = storage.getUserByPhoneNumber(PHONE_NUMBER + "1");
         assertNull(user);

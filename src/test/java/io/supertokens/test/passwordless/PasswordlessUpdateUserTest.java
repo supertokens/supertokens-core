@@ -25,10 +25,7 @@ import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumbe
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TestRule;
 
 import static io.supertokens.test.passwordless.PasswordlessUtility.*;
@@ -54,7 +51,7 @@ public class PasswordlessUpdateUserTest {
     }
 
     /**
-     * try update email to an existing one -> DuplicateEmailException + no change
+     * try to update email of an user to an email that already exists -> DuplicateEmailException + no change
      *
      * @throws Exception
      */
@@ -64,14 +61,16 @@ public class PasswordlessUpdateUserTest {
         TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
+        UserInfo user = null, user_two = null;
 
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
-
-        Passwordless.ConsumeCodeResponse consumeCodeResponseAlternate = createUserWith(process, alternate_email, null);
+        createUserWith(process, EMAIL, null);
+        createUserWith(process, alternate_email, null);
 
         user = storage.getUserByEmail(EMAIL);
         assertNotNull(user);
+
+        user_two = storage.getUserByEmail(alternate_email);
+        assertNotNull(user_two);
 
         Exception ex = null;
         try {
@@ -97,15 +96,15 @@ public class PasswordlessUpdateUserTest {
         TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
+        UserInfo user = null, user_two = null;
 
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
-
-        Passwordless.ConsumeCodeResponse consumeCodeResponseAlternate = createUserWith(process, null,
-                alternate_phoneNumber);
+        createUserWith(process, null, PHONE_NUMBER);
+        createUserWith(process, null, alternate_phoneNumber);
 
         user = storage.getUserByPhoneNumber(PHONE_NUMBER);
         assertNotNull(user);
+        user_two = storage.getUserByPhoneNumber(alternate_phoneNumber);
+        assertNotNull(user_two);
 
         Exception ex = null;
         try {
@@ -134,7 +133,7 @@ public class PasswordlessUpdateUserTest {
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
+        createUserWith(process, EMAIL, null);
 
         user = storage.getUserByEmail(EMAIL);
         assertNotNull(user);
@@ -180,7 +179,7 @@ public class PasswordlessUpdateUserTest {
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
+        createUserWith(process, EMAIL, null);
 
         user = storage.getUserByEmail(EMAIL);
         assertNotNull(user);
@@ -205,7 +204,7 @@ public class PasswordlessUpdateUserTest {
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
+        createUserWith(process, null, PHONE_NUMBER);
 
         user = storage.getUserByPhoneNumber(PHONE_NUMBER);
         assertNotNull(user);
@@ -230,7 +229,7 @@ public class PasswordlessUpdateUserTest {
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
+        createUserWith(process, null, PHONE_NUMBER);
 
         user = storage.getUserByPhoneNumber(PHONE_NUMBER);
         assertNotNull(user);
@@ -260,7 +259,7 @@ public class PasswordlessUpdateUserTest {
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
+        createUserWith(process, null, PHONE_NUMBER);
 
         user = storage.getUserByPhoneNumber(PHONE_NUMBER);
         assertNotNull(user);
