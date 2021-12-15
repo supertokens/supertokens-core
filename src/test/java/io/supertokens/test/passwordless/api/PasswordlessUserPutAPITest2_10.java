@@ -89,7 +89,6 @@ public class PasswordlessUserPutAPITest2_10 {
             assertEquals(400, ((HttpResponseException) ex).statusCode);
             assertEquals("Http error. Status Code: 400. Message: Field name 'userId' is invalid in JSON input",
                     ex.getMessage());
-            // assertEquals("UNKNOWN_USER_ID_ERROR", response.get("status").getAsString());
         }
 
         {
