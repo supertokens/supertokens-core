@@ -9,7 +9,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
-- Adds Passwordless recipe
+- Adds Passwordless recipe ( with unit test coverage )
 
 ### Database changes
 
