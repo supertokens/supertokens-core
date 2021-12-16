@@ -445,7 +445,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void deleteUser(String userId) throws StorageQueryException {
+    public void deleteEmailPasswordUser(String userId) throws StorageQueryException {
         try {
             EmailPasswordQueries.deleteUser(this, userId);
         } catch (StorageTransactionLogicException e) {
@@ -673,7 +673,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void deleteUserInfo(String userId) throws StorageQueryException {
+    public void deleteEmailVerificationUserInfo(String userId) throws StorageQueryException {
         try {
             EmailVerificationQueries.deleteUserInfo(this, userId);
         } catch (StorageTransactionLogicException e) {

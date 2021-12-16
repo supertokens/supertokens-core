@@ -56,9 +56,9 @@ public class AuthRecipe {
     }
 
     public static void deleteUser(Main main, String userId) throws StorageQueryException {
-        StorageLayer.getEmailPasswordStorage(main).deleteUser(userId);
-        StorageLayer.getThirdPartyStorage(main).deleteThirdPartyUser(userId);
-        StorageLayer.getEmailVerificationStorage(main).deleteUserInfo(userId);
         StorageLayer.getSessionStorage(main).deleteSessionsOfUser(userId);
+        StorageLayer.getEmailVerificationStorage(main).deleteEmailVerificationUserInfo(userId);
+        StorageLayer.getEmailPasswordStorage(main).deleteEmailPasswordUser(userId);
+        StorageLayer.getThirdPartyStorage(main).deleteThirdPartyUser(userId);
     }
 }
