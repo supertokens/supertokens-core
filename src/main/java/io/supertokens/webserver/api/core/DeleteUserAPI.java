@@ -36,7 +36,7 @@ public class DeleteUserAPI extends WebserverAPI {
     private static final long serialVersionUID = -2225750492558064634L;
 
     public DeleteUserAPI(Main main) {
-        super(main, RECIPE_ID.EMAIL_PASSWORD.toString());
+        super(main, "");
     }
 
     @Override
