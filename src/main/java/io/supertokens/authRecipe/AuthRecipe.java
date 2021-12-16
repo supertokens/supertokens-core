@@ -56,7 +56,11 @@ public class AuthRecipe {
     }
 
     public static void deleteUser(Main main, String userId) throws StorageQueryException {
-        // We delete the users last because we want to avoid an error if the user has been deleted.
+        // We clean up the user last so that if anything before that throws an error, then that will throw a 500 to the
+        // developer. In this case, they expect that the user has not been deleted (which will be true). This is as
+        // opposed to deleting the user first, in which case if something later throws an error, then the user has
+        // actually been deleted already (which is not expected by the dev)
+
         // For things created after the intial cleanup and before finishing the operation:
         // - session: the session will expire anyway
         // - email verification: email verification tokens can be created for any userId anyway
