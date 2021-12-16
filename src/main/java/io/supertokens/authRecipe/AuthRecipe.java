@@ -56,6 +56,11 @@ public class AuthRecipe {
     }
 
     public static void deleteUser(Main main, String userId) throws StorageQueryException {
+        // We delete the users last because we want to avoid an error if the user has been deleted.
+        // For things created after the intial cleanup and before finishing the operation:
+        // - session: the session will expire anyway
+        // - email verification: email verification tokens can be created for any userId anyway
+
         StorageLayer.getSessionStorage(main).deleteSessionsOfUser(userId);
         StorageLayer.getEmailVerificationStorage(main).deleteEmailVerificationUserInfo(userId);
         StorageLayer.getEmailPasswordStorage(main).deleteEmailPasswordUser(userId);
