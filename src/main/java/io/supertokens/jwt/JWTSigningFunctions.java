@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 
+import java.math.BigInteger;
 import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -97,6 +98,49 @@ public class JWTSigningFunctions {
     }
 
     /**
+     * Returns a byte array representation of the specified big integer
+     * without the sign bit.
+     *
+     * @param bigInt The big integer to be converted. Must not be
+     *               {@code null}.
+     *
+     * @return A byte array representation of the big integer, without the
+     *         sign bit.
+     */
+    private static byte[] toBytesUnsigned(final BigInteger bigInt) {
+
+        // Copied from Apache Commons Codec 1.8
+
+        int bitlen = bigInt.bitLength();
+
+        // round bitlen
+        bitlen = ((bitlen + 7) >> 3) << 3;
+        final byte[] bigBytes = bigInt.toByteArray();
+
+        if (((bigInt.bitLength() % 8) != 0) && (((bigInt.bitLength() / 8) + 1) == (bitlen / 8))) {
+
+            return bigBytes;
+
+        }
+
+        // set up params for copying everything but sign bit
+        int startSrc = 0;
+        int len = bigBytes.length;
+
+        // if bigInt is exactly byte-aligned, just skip signbit in copy
+        if ((bigInt.bitLength() % 8) == 0) {
+
+            startSrc = 1;
+            len--;
+        }
+
+        final int startDst = bitlen / 8 - len; // to pad w/ nulls as per spec
+        final byte[] resizedBytes = new byte[bitlen / 8];
+        System.arraycopy(bigBytes, startSrc, resizedBytes, startDst, len);
+        return resizedBytes;
+    }
+
+    /**
      * Used to return public keys that a JWT verifier will use. Note returns an empty array if there are no keys in
      * storage.
      *
@@ -131,10 +175,10 @@ public class JWTSigningFunctions {
                     // Most verifiers seem to expect kty and alg to be in upper case so forcing that here
                     jwk.addProperty("kty", algorithm.getAlgorithmType().toUpperCase());
                     jwk.addProperty("kid", currentKeyInfo.keyId);
-                    jwk.addProperty("n", Base64.getUrlEncoder()
-                            .encodeToString(((RSAPublicKey) publicKey).getModulus().toByteArray()));
-                    jwk.addProperty("e", Base64.getUrlEncoder()
-                            .encodeToString(((RSAPublicKey) publicKey).getPublicExponent().toByteArray()));
+                    jwk.addProperty("n", Base64.getUrlEncoder().withoutPadding()
+                            .encodeToString(toBytesUnsigned(((RSAPublicKey) publicKey).getModulus())));
+                    jwk.addProperty("e", Base64.getUrlEncoder().withoutPadding()
+                            .encodeToString(toBytesUnsigned(((RSAPublicKey) publicKey).getPublicExponent())));
                     jwk.addProperty("alg", currentKeyInfo.algorithm.toUpperCase());
                     jwk.addProperty("use", "sig"); // We generate JWKs that are meant to be used for signature
                                                    // verification
