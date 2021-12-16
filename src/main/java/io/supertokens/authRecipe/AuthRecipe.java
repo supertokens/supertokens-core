@@ -54,4 +54,11 @@ public class AuthRecipe {
         System.arraycopy(users, 0, resultUsers, 0, maxLoop);
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
+
+    public static void deleteUser(Main main, String userId) throws StorageQueryException {
+        StorageLayer.getEmailPasswordStorage(main).deleteUser(userId);
+        StorageLayer.getThirdPartyStorage(main).deleteThirdPartyUser(userId);
+        StorageLayer.getEmailVerificationStorage(main).deleteUserInfo(userId);
+        StorageLayer.getSessionStorage(main).deleteSessionsOfUser(userId);
+    }
 }

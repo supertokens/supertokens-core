@@ -136,6 +136,16 @@ public class SessionQueries {
         }
     }
 
+    public static void deleteSessionsOfUser(Start start, String userId) throws SQLException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getSessionInfoTable() + " WHERE user_id = ?";
+
+        try (Connection con = ConnectionPool.getConnection(start);
+                PreparedStatement pst = con.prepareStatement(QUERY.toString())) {
+            pst.setString(1, userId);
+            pst.executeUpdate();
+        }
+    }
+
     public static String[] getAllSessionHandlesForUser(Start start, String userId) throws SQLException {
         String QUERY = "SELECT session_handle FROM " + Config.getConfig(start).getSessionInfoTable()
                 + " WHERE user_id = ?";

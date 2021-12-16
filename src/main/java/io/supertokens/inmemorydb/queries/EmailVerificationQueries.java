@@ -23,6 +23,7 @@ import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -198,6 +199,38 @@ public class EmailVerificationQueries {
             pst.setString(2, email);
             pst.executeUpdate();
         }
+    }
+
+    public static void deleteUserInfo(Start start, String userId)
+            throws StorageQueryException, StorageTransactionLogicException {
+        start.startTransaction(con -> {
+            Connection sqlCon = (Connection) con.getConnection();
+            try {
+                {
+                    String QUERY = "DELETE FROM " + Config.getConfig(start).getEmailVerificationTable()
+                            + " WHERE user_id = ?";
+                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                        pst.setString(1, userId);
+                        pst.executeUpdate();
+                    }
+                }
+
+                {
+                    String QUERY = "DELETE FROM " + Config.getConfig(start).getEmailVerificationTokensTable()
+                            + " WHERE user_id = ?";
+
+                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                        pst.setString(1, userId);
+                        pst.executeUpdate();
+                    }
+                }
+
+                sqlCon.commit();
+            } catch (SQLException throwables) {
+                throw new StorageTransactionLogicException(throwables);
+            }
+            return null;
+        });
     }
 
     public static void revokeAllTokens(Start start, String userId, String email) throws SQLException {
