@@ -11,21 +11,32 @@ labels:
 ### Dev Tag
  - [supertokens-core:X.Y](https://github.com/supertokens/supertokens-core/tree/X.Y)
      - [ ] core
+        - [ ] check CDI, plugin interface list
      - [ ] plugin-interface
+        - [ ] check plugin interface list
      - [ ] mysql-plugin
+         - [ ] check plugin interface list
      - [ ] postgresql-plugin
+         - [ ] check plugin interface list
      - [ ] mongodb-plugin
+         - [ ] check plugin interface list
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
+   - [ ] check CDI, FDI list
  - [ ] [supertokens-golang:X.Y](https://github.com/supertokens/supertokens-golang/tree/X.Y)
+   - [ ] check CDI, FDI list
  - [ ] [supertokens-python:X.Y](https://github.com/supertokens/supertokens-python/tree/X.Y)
+   - [ ] check CDI, FDI list
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/X.Y)
+   - [ ] check FDI list
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
+    - [ ] check FDI list
     - [ ] Updated dependencies to use supertokens-website from npm registry
     - [ ] Various browsers - Safari, Firefox, Chrome, Edge
     - [ ] Mobile responsiveness
     - [ ] Make sure using with-typescript example that types are correct for every new configs exposed to users
     - [ ] Make sure frontend login UI shows even if backend is not working.
  - [ ] [supertokens-react-native:X.Y](https://github.com/supertokens/supertokens-react-native/X.Y)
+    - [ ] check FDI list
 
 ### Others
 
@@ -35,6 +46,7 @@ labels:
  - [ ] Examples apps in supertokens-python
  - [ ] Examples apps in supertokens-node
  - [ ] [next.js:canary](https://github.com/supertokens/next.js/tree/canary/examples/with-supertokens)
+ - [ ] RedwoodJS and playground-auth
  - [ ] Run on netlify (and hence AWS lambda) to check if it works fine there
 
 ### 📚 Documentation (test site)
@@ -47,6 +59,7 @@ labels:
    - [ ] homepage
    - [ ] pricing page feature list
    - [ ] comparison chart in the pricing page
+   - [ ] product roadmap page
 
 ## 🔥 Production 
 
