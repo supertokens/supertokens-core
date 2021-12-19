@@ -100,6 +100,8 @@ public class CreateCodeAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeyException e) {
             throw new ServletException(e);
+        } catch (IllegalArgumentException ex) {
+            throw new ServletException(new BadRequestException("Input encoding error"));
         }
     }
 }

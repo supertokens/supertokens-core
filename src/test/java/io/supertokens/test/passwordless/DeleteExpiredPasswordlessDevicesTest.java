@@ -70,7 +70,7 @@ public class DeleteExpiredPasswordlessDevicesTest {
 
         String codeId = "deletedCode";
         String deviceIdHash = "deviceIdHash";
-        passwordlessStorage.createDeviceWithCode("test@example.com", null,
+        passwordlessStorage.createDeviceWithCode("test@example.com", null, "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, "linkCodeHash", System.currentTimeMillis() - codeLifetime));
 
         Thread.sleep(1500);
@@ -101,7 +101,7 @@ public class DeleteExpiredPasswordlessDevicesTest {
 
         String codeId = "expiredCode";
         String deviceIdHash = "deviceIdHash";
-        passwordlessStorage.createDeviceWithCode("test@example.com", null,
+        passwordlessStorage.createDeviceWithCode("test@example.com", null, "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, "linkCodeHash", System.currentTimeMillis() - codeLifetime));
         passwordlessStorage
                 .createCode(new PasswordlessCode("id", deviceIdHash, "linkCodeHash2", System.currentTimeMillis()));

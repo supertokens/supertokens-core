@@ -67,7 +67,7 @@ public class PasswordlessDeleteCodeAPITest2_10 {
         String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
         String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
 
-        storage.createDeviceWithCode(null, phoneNumber,
+        storage.createDeviceWithCode(null, phoneNumber, "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
 
         JsonObject createCodeRequestBody = new JsonObject();

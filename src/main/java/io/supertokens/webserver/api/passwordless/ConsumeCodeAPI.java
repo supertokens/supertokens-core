@@ -113,6 +113,8 @@ public class ConsumeCodeAPI extends WebserverAPI {
         } catch (StorageTransactionLogicException | StorageQueryException | NoSuchAlgorithmException
                 | InvalidKeyException e) {
             throw new ServletException(e);
+        } catch (IllegalArgumentException ex) {
+            throw new ServletException(new BadRequestException("Input encoding error"));
         }
     }
 }

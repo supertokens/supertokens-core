@@ -1,5 +1,7 @@
 package io.supertokens.passwordless;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
@@ -25,7 +27,14 @@ public class PasswordlessDeviceId {
         return new PasswordlessDeviceIdHash(Utils.hashSHA256Bytes(bytes));
     }
 
-    public PasswordlessLinkCode getLinkCode(String userInputCode) throws NoSuchAlgorithmException, InvalidKeyException {
-        return new PasswordlessLinkCode(Utils.hmacSHA256(bytes, userInputCode));
+    public PasswordlessLinkCode getLinkCode(PasswordlessLinkCodeSalt linkCodeSalt, String userInputCode)
+            throws NoSuchAlgorithmException, InvalidKeyException, IOException {
+        // We mix in the salt into the deviceId by concatenating them.
+        // HMAC-SHA256 takes 64 byte keys by default (and would hash them otherwise to get 64 bytes)
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        outputStream.write(bytes);
+        outputStream.write(linkCodeSalt.bytes);
+
+        return new PasswordlessLinkCode(Utils.hmacSHA256(outputStream.toByteArray(), userInputCode));
     }
 }

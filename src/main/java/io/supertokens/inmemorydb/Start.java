@@ -952,14 +952,14 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void createDeviceWithCode(@Nullable String email, @Nullable String phoneNumber, PasswordlessCode code)
-            throws StorageQueryException, DuplicateDeviceIdHashException, DuplicateCodeIdException,
-            DuplicateLinkCodeHashException {
+    public void createDeviceWithCode(@Nullable String email, @Nullable String phoneNumber, String linkCodeSalt,
+            PasswordlessCode code) throws StorageQueryException, DuplicateDeviceIdHashException,
+            DuplicateCodeIdException, DuplicateLinkCodeHashException {
         if (email == null && phoneNumber == null) {
             throw new IllegalArgumentException("Both email and phoneNumber can't be null");
         }
         try {
-            PasswordlessQueries.createDeviceWithCode(this, email, phoneNumber, code);
+            PasswordlessQueries.createDeviceWithCode(this, email, phoneNumber, linkCodeSalt, code);
         } catch (StorageTransactionLogicException e) {
             String message = e.actualException.getMessage();
             if (message.equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "

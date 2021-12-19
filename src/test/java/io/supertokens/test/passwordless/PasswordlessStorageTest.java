@@ -83,14 +83,14 @@ public class PasswordlessStorageTest {
         PasswordlessCode code1 = getRandomCodeInfo();
         PasswordlessCode code2 = getRandomCodeInfo();
 
-        storage.createDeviceWithCode(email, null, code1);
+        storage.createDeviceWithCode(email, null, "linkCodeSalt", code1);
         assertEquals(1, storage.getDevicesByEmail(email).length);
 
         {
             Exception error = null;
             try {
-                storage.createDeviceWithCode(email, null, new PasswordlessCode(code1.id, code2.deviceIdHash,
-                        code2.linkCodeHash, System.currentTimeMillis()));
+                storage.createDeviceWithCode(email, null, "linkCodeSalt", new PasswordlessCode(code1.id,
+                        code2.deviceIdHash, code2.linkCodeHash, System.currentTimeMillis()));
             } catch (Exception e) {
                 error = e;
             }
@@ -105,8 +105,8 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createDeviceWithCode(email, null, new PasswordlessCode(code2.id, code1.deviceIdHash,
-                        code2.linkCodeHash, System.currentTimeMillis()));
+                storage.createDeviceWithCode(email, null, "linkCodeSalt", new PasswordlessCode(code2.id,
+                        code1.deviceIdHash, code2.linkCodeHash, System.currentTimeMillis()));
             } catch (Exception e) {
                 error = e;
             }
@@ -120,8 +120,8 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createDeviceWithCode(email, null, new PasswordlessCode(code2.id, code2.deviceIdHash,
-                        code1.linkCodeHash, System.currentTimeMillis()));
+                storage.createDeviceWithCode(email, null, "linkCodeSalt", new PasswordlessCode(code2.id,
+                        code2.deviceIdHash, code1.linkCodeHash, System.currentTimeMillis()));
             } catch (Exception e) {
                 error = e;
             }
@@ -135,7 +135,7 @@ public class PasswordlessStorageTest {
         {
             Exception error = null;
             try {
-                storage.createDeviceWithCode(null, null, code2);
+                storage.createDeviceWithCode(null, null, "linkCodeSalt", code2);
             } catch (Exception e) {
                 error = e;
             }
@@ -145,7 +145,7 @@ public class PasswordlessStorageTest {
             assertNull(storage.getDevice(code2.deviceIdHash));
         }
 
-        storage.createDeviceWithCode(email, null, code2);
+        storage.createDeviceWithCode(email, null, "linkCodeSalt", code2);
 
         assertEquals(2, storage.getDevicesByEmail(email).length);
 
@@ -185,7 +185,7 @@ public class PasswordlessStorageTest {
             assertNull(storage.getCode(code1.id));
         }
 
-        storage.createDeviceWithCode(email, null, code1);
+        storage.createDeviceWithCode(email, null, "linkCodeSalt", code1);
         assertEquals(1, storage.getDevicesByEmail(email).length);
 
         {
@@ -616,7 +616,7 @@ public class PasswordlessStorageTest {
         PasswordlessCode code1 = getRandomCodeInfo();
         PasswordlessCode code2 = getRandomCodeInfo(code1.deviceIdHash);
 
-        storage.createDeviceWithCode(email, null, code1);
+        storage.createDeviceWithCode(email, null, "linkCodeSalt", code1);
         assertEquals(1, storage.getDevicesByEmail(email).length);
 
         storage.createCode(code2);
@@ -654,8 +654,8 @@ public class PasswordlessStorageTest {
         PasswordlessCode code1 = getRandomCodeInfo();
         PasswordlessCode code2 = getRandomCodeInfo();
 
-        storage.createDeviceWithCode(email, null, code1);
-        storage.createDeviceWithCode(email2, null, code2);
+        storage.createDeviceWithCode(email, null, "linkCodeSalt", code1);
+        storage.createDeviceWithCode(email2, null, "linkCodeSalt", code2);
 
         storage.startTransaction(con -> {
             storage.deleteDevicesByEmail_Transaction(con, email);
@@ -694,8 +694,8 @@ public class PasswordlessStorageTest {
         PasswordlessCode code1 = getRandomCodeInfo();
         PasswordlessCode code2 = getRandomCodeInfo();
 
-        storage.createDeviceWithCode(null, phoneNumber, code1);
-        storage.createDeviceWithCode(null, phoneNumber2, code2);
+        storage.createDeviceWithCode(null, phoneNumber, "linkCodeSalt", code1);
+        storage.createDeviceWithCode(null, phoneNumber2, "linkCodeSalt", code2);
 
         storage.startTransaction(con -> {
             storage.deleteDevicesByPhoneNumber_Transaction(con, phoneNumber);
@@ -749,8 +749,8 @@ public class PasswordlessStorageTest {
             // We are intentionally testing: AB, BA and AA as well, since these are all different testcases
             for (TestFunction func2 : lockingFuncs) {
                 // Setup
-                storage.createDeviceWithCode(email, null, code1);
-                storage.createDeviceWithCode(null, phoneNumber, code2);
+                storage.createDeviceWithCode(email, null, "linkCodeSalt", code1);
+                storage.createDeviceWithCode(null, phoneNumber, "linkCodeSalt", code2);
 
                 checkLockingCalls(storage, func1, func2);
 
