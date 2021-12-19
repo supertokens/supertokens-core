@@ -571,6 +571,7 @@ public class AuthRecipeTest {
 
             AuthRecipe.deleteUser(process.getProcess(), user2.id);
             assertEquals(0, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { user1.getRecipeId() }));
+            assertEquals(0, Session.getAllSessionHandlesForUser(process.getProcess(), user2.id).length);
 
             Exception error = null;
             try {
