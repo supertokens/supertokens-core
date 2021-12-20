@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.CreateCodeResponse;
+import io.supertokens.passwordless.exceptions.Base64EncodingException;
 import io.supertokens.passwordless.exceptions.RestartFlowException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -100,6 +101,8 @@ public class CreateCodeAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeyException e) {
             throw new ServletException(e);
+        } catch (Base64EncodingException ex) {
+            throw new ServletException(new BadRequestException("Input encoding error in " + ex.source));
         }
     }
 }

@@ -3,6 +3,7 @@ package io.supertokens.passwordless;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
+import io.supertokens.passwordless.exceptions.Base64EncodingException;
 import io.supertokens.utils.Utils;
 
 public class PasswordlessLinkCode {
@@ -12,8 +13,13 @@ public class PasswordlessLinkCode {
         this.bytes = bytes;
     }
 
-    public static PasswordlessLinkCode decodeString(String linkCode) {
-        return new PasswordlessLinkCode(Base64.getUrlDecoder().decode(linkCode));
+    public static PasswordlessLinkCode decodeString(String linkCode) throws Base64EncodingException {
+        try {
+            return new PasswordlessLinkCode(Base64.getUrlDecoder().decode(linkCode));
+
+        } catch (IllegalArgumentException ex) {
+            throw new Base64EncodingException("LinkCode");
+        }
     }
 
     public String encode() {

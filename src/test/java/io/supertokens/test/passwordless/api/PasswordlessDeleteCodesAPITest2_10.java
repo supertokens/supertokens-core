@@ -167,7 +167,7 @@ public class PasswordlessDeleteCodesAPITest2_10 {
         String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
         String linkCodeHash2 = "F0aZHCBYSJIghP5e0flGa8gvoUYEgGus2yIJYmdpFY4";
 
-        storage.createDeviceWithCode(email, null,
+        storage.createDeviceWithCode(email, null, "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
         storage.createCode(new PasswordlessCode(codeId2, deviceIdHash, linkCodeHash2, System.currentTimeMillis()));
 
@@ -209,7 +209,7 @@ public class PasswordlessDeleteCodesAPITest2_10 {
         String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
         String linkCodeHash2 = "F0aZHCBYSJIghP5e0flGa8gvoUYEgGus2yIJYmdpFY4";
 
-        storage.createDeviceWithCode(null, phoneNumber,
+        storage.createDeviceWithCode(null, phoneNumber, "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
         storage.createCode(new PasswordlessCode(codeId2, deviceIdHash, linkCodeHash2, System.currentTimeMillis()));
 

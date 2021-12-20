@@ -31,6 +31,7 @@ import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
+import io.supertokens.passwordless.exceptions.Base64EncodingException;
 import io.supertokens.passwordless.exceptions.DeviceIdHashMismatchException;
 import io.supertokens.passwordless.exceptions.ExpiredUserInputCodeException;
 import io.supertokens.passwordless.exceptions.IncorrectUserInputCodeException;
@@ -113,6 +114,8 @@ public class ConsumeCodeAPI extends WebserverAPI {
         } catch (StorageTransactionLogicException | StorageQueryException | NoSuchAlgorithmException
                 | InvalidKeyException e) {
             throw new ServletException(e);
+        } catch (Base64EncodingException ex) {
+            throw new ServletException(new BadRequestException("Input encoding error in " + ex.source));
         }
     }
 }

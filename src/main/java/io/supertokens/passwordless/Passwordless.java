@@ -16,6 +16,7 @@
 
 package io.supertokens.passwordless;
 
+import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
@@ -29,6 +30,7 @@ import javax.annotation.Nullable;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.passwordless.exceptions.DeviceIdHashMismatchException;
+import io.supertokens.passwordless.exceptions.Base64EncodingException;
 import io.supertokens.passwordless.exceptions.ExpiredUserInputCodeException;
 import io.supertokens.passwordless.exceptions.IncorrectUserInputCodeException;
 import io.supertokens.passwordless.exceptions.UserWithoutContactInfoException;
@@ -66,13 +68,13 @@ public class Passwordless {
 
     public static CreateCodeResponse createCode(Main main, String email, String phoneNumber, @Nullable String deviceId,
             @Nullable String userInputCode) throws RestartFlowException, DuplicateLinkCodeHashException,
-            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException {
+            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
         if (deviceId == null) {
             while (true) {
                 CreateCodeInfo info = CreateCodeInfo.generate(userInputCode);
                 try {
-                    passwordlessStorage.createDeviceWithCode(email, phoneNumber, info.code);
+                    passwordlessStorage.createDeviceWithCode(email, phoneNumber, info.linkCodeSalt.encode(), info.code);
 
                     return info.resp;
                 } catch (DuplicateLinkCodeHashException | DuplicateCodeIdException | DuplicateDeviceIdHashException e) {
@@ -82,8 +84,14 @@ public class Passwordless {
                 }
             }
         } else {
+            PasswordlessDeviceId parsedDeviceId = PasswordlessDeviceId.decodeString(deviceId);
+
+            PasswordlessDevice device = passwordlessStorage.getDevice(parsedDeviceId.getHash().encode());
+            if (device == null) {
+                throw new RestartFlowException();
+            }
             while (true) {
-                CreateCodeInfo info = CreateCodeInfo.generate(userInputCode, deviceId);
+                CreateCodeInfo info = CreateCodeInfo.generate(userInputCode, deviceId, device.linkCodeSalt);
                 try {
                     passwordlessStorage.createCode(info.code);
 
@@ -131,8 +139,8 @@ public class Passwordless {
         return sb.toString();
     }
 
-    public static DeviceWithCodes getDeviceWithCodesById(Main main, String deviceId)
-            throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException {
+    public static DeviceWithCodes getDeviceWithCodesById(Main main, String deviceId) throws StorageQueryException,
+            StorageTransactionLogicException, NoSuchAlgorithmException, Base64EncodingException {
         return getDeviceWithCodesByIdHash(main, PasswordlessDeviceId.decodeString(deviceId).getHash().encode());
     }
 
@@ -181,7 +189,7 @@ public class Passwordless {
     public static ConsumeCodeResponse consumeCode(Main main, String deviceId, String deviceIdHashFromUser,
             String userInputCode, String linkCode) throws RestartFlowException, ExpiredUserInputCodeException,
             IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
-            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException {
+            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
         long passwordlessCodeLifetime = Config.getConfig(main).getPasswordlessCodeLifetime();
         int maxCodeInputAttempts = Config.getConfig(main).getPasswordlessMaxCodeInputAttempts();
@@ -202,7 +210,12 @@ public class Passwordless {
             PasswordlessDeviceId parsedDeviceId = PasswordlessDeviceId.decodeString(deviceId);
 
             deviceIdHash = parsedDeviceId.getHash();
-            linkCodeHash = parsedDeviceId.getLinkCode(userInputCode).getHash();
+            PasswordlessDevice device = passwordlessStorage.getDevice(deviceIdHash.encode());
+            if (device == null) {
+                throw new RestartFlowException();
+            }
+            PasswordlessLinkCodeSalt linkCodeSalt = PasswordlessLinkCodeSalt.decodeString(device.linkCodeSalt);
+            linkCodeHash = parsedDeviceId.getLinkCode(linkCodeSalt, userInputCode).getHash();
         }
 
         if (!deviceIdHash.encode().equals(deviceIdHashFromUser)) {
@@ -490,31 +503,40 @@ public class Passwordless {
     }
 
     private static class CreateCodeInfo {
+        public final PasswordlessLinkCodeSalt linkCodeSalt;
         public final CreateCodeResponse resp;
         public final PasswordlessCode code;
 
         private CreateCodeInfo(String codeId, String deviceId, String deviceIdHash, String linkCode,
-                String linkCodeHash, String userInputCode, Long createdAt) {
+                PasswordlessLinkCodeSalt linkCodeSalt, String linkCodeHash, String userInputCode, Long createdAt) {
+            this.linkCodeSalt = linkCodeSalt;
             this.code = new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, createdAt);
             this.resp = new CreateCodeResponse(deviceIdHash, codeId, deviceId, userInputCode, linkCode, createdAt);
         }
 
         public static CreateCodeInfo generate(String userInputCode)
-                throws InvalidKeyException, NoSuchAlgorithmException {
+                throws InvalidKeyException, NoSuchAlgorithmException, IOException {
             SecureRandom generator = new SecureRandom();
             byte[] deviceIdBytes = new byte[32];
             generator.nextBytes(deviceIdBytes);
-            return generate(userInputCode, new PasswordlessDeviceId(deviceIdBytes));
+
+            byte[] linkCodeSaltBytes = new byte[32];
+            generator.nextBytes(linkCodeSaltBytes);
+
+            return generate(userInputCode, new PasswordlessDeviceId(deviceIdBytes),
+                    new PasswordlessLinkCodeSalt(linkCodeSaltBytes));
         }
 
-        public static CreateCodeInfo generate(String userInputCode, String deviceIdString)
-                throws InvalidKeyException, NoSuchAlgorithmException {
+        public static CreateCodeInfo generate(String userInputCode, String deviceIdString, String linkCodeSaltString)
+                throws InvalidKeyException, NoSuchAlgorithmException, IOException, Base64EncodingException {
             PasswordlessDeviceId deviceId = PasswordlessDeviceId.decodeString(deviceIdString);
-            return generate(userInputCode, deviceId);
+            PasswordlessLinkCodeSalt linkCodeSalt = PasswordlessLinkCodeSalt.decodeString(linkCodeSaltString);
+            return generate(userInputCode, deviceId, linkCodeSalt);
         }
 
-        public static CreateCodeInfo generate(String userInputCode, PasswordlessDeviceId deviceId)
-                throws InvalidKeyException, NoSuchAlgorithmException {
+        public static CreateCodeInfo generate(String userInputCode, PasswordlessDeviceId deviceId,
+                PasswordlessLinkCodeSalt linkCodeSalt)
+                throws InvalidKeyException, NoSuchAlgorithmException, IOException {
             if (userInputCode == null) {
                 userInputCode = generateUserInputCode();
             }
@@ -524,15 +546,15 @@ public class Passwordless {
             String deviceIdStr = deviceId.encode();
             String deviceIdHash = deviceId.getHash().encode();
 
-            PasswordlessLinkCode linkCode = deviceId.getLinkCode(userInputCode);
+            PasswordlessLinkCode linkCode = deviceId.getLinkCode(linkCodeSalt, userInputCode);
             String linkCodeStr = linkCode.encode();
 
             String linkCodeHashStr = linkCode.getHash().encode();
 
             long createdAt = System.currentTimeMillis();
 
-            return new CreateCodeInfo(codeId, deviceIdStr, deviceIdHash, linkCodeStr, linkCodeHashStr, userInputCode,
-                    createdAt);
+            return new CreateCodeInfo(codeId, deviceIdStr, deviceIdHash, linkCodeStr, linkCodeSalt, linkCodeHashStr,
+                    userInputCode, createdAt);
         }
     }
 }
