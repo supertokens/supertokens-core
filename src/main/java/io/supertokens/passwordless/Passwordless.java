@@ -30,6 +30,7 @@ import javax.annotation.Nullable;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.passwordless.exceptions.DeviceIdHashMismatchException;
+import io.supertokens.passwordless.exceptions.Base64EncodingException;
 import io.supertokens.passwordless.exceptions.ExpiredUserInputCodeException;
 import io.supertokens.passwordless.exceptions.IncorrectUserInputCodeException;
 import io.supertokens.passwordless.exceptions.UserWithoutContactInfoException;
@@ -67,7 +68,7 @@ public class Passwordless {
 
     public static CreateCodeResponse createCode(Main main, String email, String phoneNumber, @Nullable String deviceId,
             @Nullable String userInputCode) throws RestartFlowException, DuplicateLinkCodeHashException,
-            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException {
+            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
         if (deviceId == null) {
             while (true) {
@@ -138,8 +139,8 @@ public class Passwordless {
         return sb.toString();
     }
 
-    public static DeviceWithCodes getDeviceWithCodesById(Main main, String deviceId)
-            throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException {
+    public static DeviceWithCodes getDeviceWithCodesById(Main main, String deviceId) throws StorageQueryException,
+            StorageTransactionLogicException, NoSuchAlgorithmException, Base64EncodingException {
         return getDeviceWithCodesByIdHash(main, PasswordlessDeviceId.decodeString(deviceId).getHash().encode());
     }
 
@@ -188,7 +189,7 @@ public class Passwordless {
     public static ConsumeCodeResponse consumeCode(Main main, String deviceId, String deviceIdHashFromUser,
             String userInputCode, String linkCode) throws RestartFlowException, ExpiredUserInputCodeException,
             IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
-            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException {
+            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
         long passwordlessCodeLifetime = Config.getConfig(main).getPasswordlessCodeLifetime();
         int maxCodeInputAttempts = Config.getConfig(main).getPasswordlessMaxCodeInputAttempts();
@@ -527,7 +528,7 @@ public class Passwordless {
         }
 
         public static CreateCodeInfo generate(String userInputCode, String deviceIdString, String linkCodeSaltString)
-                throws InvalidKeyException, NoSuchAlgorithmException, IOException {
+                throws InvalidKeyException, NoSuchAlgorithmException, IOException, Base64EncodingException {
             PasswordlessDeviceId deviceId = PasswordlessDeviceId.decodeString(deviceIdString);
             PasswordlessLinkCodeSalt linkCodeSalt = PasswordlessLinkCodeSalt.decodeString(linkCodeSaltString);
             return generate(userInputCode, deviceId, linkCodeSalt);

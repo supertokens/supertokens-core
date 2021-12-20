@@ -6,6 +6,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Base64;
 
+import io.supertokens.passwordless.exceptions.Base64EncodingException;
 import io.supertokens.utils.Utils;
 
 public class PasswordlessDeviceId {
@@ -15,8 +16,12 @@ public class PasswordlessDeviceId {
         this.bytes = bytes;
     }
 
-    public static PasswordlessDeviceId decodeString(String deviceId) {
-        return new PasswordlessDeviceId(Base64.getDecoder().decode(deviceId));
+    public static PasswordlessDeviceId decodeString(String deviceId) throws Base64EncodingException {
+        try {
+            return new PasswordlessDeviceId(Base64.getDecoder().decode(deviceId));
+        } catch (IllegalArgumentException ex) {
+            throw new Base64EncodingException("DeviceId");
+        }
     }
 
     public String encode() {
