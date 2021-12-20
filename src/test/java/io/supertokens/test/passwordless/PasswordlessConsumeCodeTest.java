@@ -602,7 +602,8 @@ public class PasswordlessConsumeCodeTest {
         assertNotNull(createCodeResponse);
 
         Thread.sleep(120);
-        Passwordless.createCode(process.getProcess(), null, null, createCodeResponse.deviceId, null);
+        Passwordless.CreateCodeResponse newCodeResponse = Passwordless.createCode(process.getProcess(), null, null,
+                createCodeResponse.deviceId, null);
         Exception error = null;
         try {
             Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
@@ -616,6 +617,11 @@ public class PasswordlessConsumeCodeTest {
         // verify that devices have not been cleared
         PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
         assertNotEquals(0, devices.length);
+
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
+                newCodeResponse.deviceId, newCodeResponse.deviceIdHash, newCodeResponse.userInputCode, null);
+
+        assertNotNull(consumeCodeResponse);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -645,15 +651,18 @@ public class PasswordlessConsumeCodeTest {
 
         Exception error = null;
         int maxCodeInputAttempts = Config.getConfig(process.getProcess()).getPasswordlessMaxCodeInputAttempts();
-        for (int counter = 0; counter < maxCodeInputAttempts; counter++) {
+        for (int counter = 0; counter < maxCodeInputAttempts - 1; counter++) {
 
+            Exception exception = null;
             try {
                 Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
                         createCodeResponse.deviceIdHash, "n0p321", null);
             } catch (Exception ex) {
-
+                exception = ex;
             }
 
+            assertNotNull(exception);
+            assert (exception instanceof IncorrectUserInputCodeException);
         }
         try {
             Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
@@ -701,8 +710,7 @@ public class PasswordlessConsumeCodeTest {
         for (int counter = 0; counter < maxCodeInputAttempts; counter++) {
 
             try {
-                Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
-                        createCodeResponse.deviceIdHash, null, "n0p321");
+                Passwordless.consumeCode(process.getProcess(), null, null, null, "n0p321");
             } catch (Exception ex) {
                 error = ex;
             }
@@ -721,7 +729,7 @@ public class PasswordlessConsumeCodeTest {
     }
 
     /**
-     * link with too many failedAttempts (changed maxCodeInputAttempts configuration between consumes)
+     * user input code with too many failedAttempts (changed maxCodeInputAttempts configuration between consumes)
      * TODO: review -> do we need to create code again post restart ?
      *
      * @throws Exception
@@ -730,7 +738,14 @@ public class PasswordlessConsumeCodeTest {
     @Test
     public void testConsumeWrongUserInputCodeExceedingMaxAttemptsWithConfigUpdate() throws Exception {
         // start process with default configuration for max attempt
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
@@ -740,8 +755,8 @@ public class PasswordlessConsumeCodeTest {
         Exception error = null;
         int maxCodeInputAttempts = Config.getConfig(process.getProcess()).getPasswordlessMaxCodeInputAttempts();
 
-        // input wrong code max attempts - 2 times
-        for (int counter = 0; counter < maxCodeInputAttempts - 2; counter++) {
+        // input wrong code max attempts - 1 times
+        for (int counter = 0; counter < maxCodeInputAttempts - 1; counter++) {
 
             Exception exception = null;
             try {
@@ -761,10 +776,11 @@ public class PasswordlessConsumeCodeTest {
         assertNotEquals(0, devices.length);
 
         // kill process and restart with increased max code input attempts
-        killApplication(process);
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        ;
 
-        String[] args = { "../" };
-        Utils.setValueInConfig("passwordless_max_code_input_attempts", String.valueOf(maxCodeInputAttempts + 2));
+        Utils.setValueInConfig("passwordless_max_code_input_attempts", String.valueOf(maxCodeInputAttempts - 3));
         process = TestingProcessManager.start(args);
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -773,14 +789,19 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
+        storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
         try {
             Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
-                    "n0p321", null);
+                    createCodeResponse.userInputCode, null);
         } catch (Exception ex) {
             error = ex;
         }
         assertNotNull(error);
         assert (error instanceof RestartFlowException);
+
+        devices = storage.getDevicesByEmail(EMAIL);
+        assertEquals(0, devices.length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

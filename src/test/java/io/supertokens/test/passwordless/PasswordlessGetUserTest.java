@@ -16,7 +16,9 @@
 
 package io.supertokens.test.passwordless;
 
+import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
@@ -61,14 +63,21 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByIdWithEmail() throws Exception {
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
 
-        user = storage.getUserById(consumeCodeResponse.user.id);
+        user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
         assertNotNull(user);
         assertEquals(user.email, EMAIL);
 
@@ -81,14 +90,21 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByIdWithPhoneNumber() throws Exception {
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
 
-        user = storage.getUserById(consumeCodeResponse.user.id);
+        user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
         assertNotNull(user);
         assertEquals(user.phoneNumber, PHONE_NUMBER);
     }
@@ -100,14 +116,21 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByIdWithEmailAndPhoneNumber() throws Exception {
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, PHONE_NUMBER);
 
-        user = storage.getUserById(consumeCodeResponse.user.id);
+        user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
         assertNotNull(user);
         assertEquals(user.email, EMAIL);
         assertEquals(user.phoneNumber, PHONE_NUMBER);
@@ -120,14 +143,21 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByInvalidId() throws Exception {
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
 
-        user = storage.getUserById(consumeCodeResponse.user.id + "1");
+        user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id + "1");
         assertNull(user);
     }
 
@@ -138,14 +168,21 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByEmail() throws Exception {
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
         createUserWith(process, EMAIL, null);
 
-        user = storage.getUserByEmail(EMAIL);
+        user = Passwordless.getUserByEmail(process.getProcess(), EMAIL);
         assertNotNull(user);
         assertEquals(user.email, EMAIL);
 
@@ -158,14 +195,21 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByInvalidEmail() throws Exception {
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
         createUserWith(process, EMAIL, null);
 
-        user = storage.getUserByEmail(EMAIL + "A");
+        user = Passwordless.getUserByEmail(process.getProcess(), EMAIL + "a");
         assertNull(user);
 
     }
@@ -177,14 +221,21 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByPhoneNumber() throws Exception {
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
         createUserWith(process, null, PHONE_NUMBER);
 
-        user = storage.getUserByPhoneNumber(PHONE_NUMBER);
+        user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER);
         assertNotNull(user);
         assertEquals(user.phoneNumber, PHONE_NUMBER);
     }
@@ -196,14 +247,21 @@ public class PasswordlessGetUserTest {
      */
     @Test
     public void getUserByInvalidPhoneNumber() throws Exception {
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
 
         createUserWith(process, null, PHONE_NUMBER);
 
-        user = storage.getUserByPhoneNumber(PHONE_NUMBER + "1");
+        user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER + "1");
         assertNull(user);
     }
 

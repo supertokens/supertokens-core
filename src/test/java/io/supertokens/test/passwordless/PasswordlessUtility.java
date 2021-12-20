@@ -54,36 +54,4 @@ public class PasswordlessUtility {
         return consumeCodeResponse;
     }
 
-    /**
-     * Helper function to kill application
-     *
-     * @throws Exception
-     */
-    public static void killApplication(TestingProcessManager.TestingProcess process) throws InterruptedException {
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
-    }
-
-    /**
-     * Helper function to load application with default args
-     *
-     * @throws Exception
-     */
-    public static TestingProcessManager.TestingProcess startApplicationWithDefaultArgs() throws Exception {
-
-        String[] args = { "../" };
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return null;
-        }
-
-        return process;
-
-    }
-
 }

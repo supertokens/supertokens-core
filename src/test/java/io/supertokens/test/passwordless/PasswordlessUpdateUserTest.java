@@ -16,8 +16,10 @@
 
 package io.supertokens.test.passwordless;
 
+import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.exceptions.UserWithoutContactInfoException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
@@ -58,7 +60,14 @@ public class PasswordlessUpdateUserTest {
     @Test
     public void updateEmailToAnExistingOne() throws Exception {
         String alternate_email = "alternate_testing@example.com";
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null, user_two = null;
@@ -93,7 +102,14 @@ public class PasswordlessUpdateUserTest {
     @Test
     public void updatePhoneNumberToAnExistingOne() throws Exception {
         String alternate_phoneNumber = PHONE_NUMBER + "1";
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null, user_two = null;
@@ -128,7 +144,14 @@ public class PasswordlessUpdateUserTest {
     @Test
     public void updateEmail() throws Exception {
         String alternate_email = "alternate_testing@example.com";
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
@@ -151,7 +174,14 @@ public class PasswordlessUpdateUserTest {
     @Test
     public void updatePhoneNumber() throws Exception {
         String alternate_phoneNumber = PHONE_NUMBER + "1";
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
@@ -174,7 +204,14 @@ public class PasswordlessUpdateUserTest {
      */
     @Test
     public void clearEmailSetPhoneNumber() throws Exception {
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
@@ -199,7 +236,14 @@ public class PasswordlessUpdateUserTest {
      */
     @Test
     public void clearPhoneNumberSetEmail() throws Exception {
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
@@ -224,7 +268,14 @@ public class PasswordlessUpdateUserTest {
      */
     @Test
     public void clearPhoneNumberAndEmail() throws Exception {
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;
@@ -247,6 +298,80 @@ public class PasswordlessUpdateUserTest {
     }
 
     /**
+     * clear email of an email only user
+     *
+     * @throws Exception
+     */
+    @Test
+    public void clearEmailOfEmailOnlyUser() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        createUserWith(process, EMAIL, null);
+
+        user = storage.getUserByEmail(EMAIL);
+        assertNotNull(user);
+
+        Exception ex = null;
+
+        try {
+            Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(null), null);
+        } catch (Exception e) {
+            ex = e;
+        }
+
+        assertNotNull(ex);
+        assert (ex instanceof UserWithoutContactInfoException);
+
+    }
+
+    /**
+     * clear phone of a phone only user
+     *
+     * @throws Exception
+     */
+    @Test
+    public void clearPhoneOfPhoneOnlyUser() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        UserInfo user = null;
+
+        createUserWith(process, null, PHONE_NUMBER);
+
+        user = storage.getUserByPhoneNumber(PHONE_NUMBER);
+        assertNotNull(user);
+
+        Exception ex = null;
+
+        try {
+            Passwordless.updateUser(process.getProcess(), user.id, null, new Passwordless.FieldUpdate(null));
+        } catch (Exception e) {
+            ex = e;
+        }
+
+        assertNotNull(ex);
+        assert (ex instanceof UserWithoutContactInfoException);
+
+    }
+
+    /**
      * set both email and phone
      *
      * @throws Exception
@@ -254,7 +379,14 @@ public class PasswordlessUpdateUserTest {
     @Test
     public void setPhoneNumberSetEmail() throws Exception {
         String alternate_phoneNumber = PHONE_NUMBER + "1";
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
         UserInfo user = null;

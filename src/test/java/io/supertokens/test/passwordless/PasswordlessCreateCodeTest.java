@@ -62,7 +62,15 @@ public class PasswordlessCreateCodeTest {
      */
     @Test
     public void testCreateCodeWithEmail() throws Exception {
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
 
         // create code
@@ -89,7 +97,9 @@ public class PasswordlessCreateCodeTest {
         assertEquals(device.deviceIdHash, code.deviceIdHash);
         assertEquals(createCodeResponse.codeId, code.id);
 
-        killApplication(process);
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        ;
     }
 
     /**
@@ -101,7 +111,14 @@ public class PasswordlessCreateCodeTest {
     public void testCreateCodeForMultipleDevicesWithSingleEmail() throws Exception {
         final int NUMBER_OF_DEVICES_TO_CREATE = 5;
 
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
 
         // create 'n' devices
@@ -111,11 +128,12 @@ public class PasswordlessCreateCodeTest {
                     null, null);
             assertNotNull(codeResponse);
 
-            PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
-            assertEquals(counter, devices.length);
+        }
+        PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
+        assertEquals(NUMBER_OF_DEVICES_TO_CREATE, devices.length);
+        for (int counter = 0; counter < NUMBER_OF_DEVICES_TO_CREATE; counter++) {
 
-            PasswordlessDevice device = devices[counter - 1];
-            assertEquals(codeResponse.deviceIdHash, device.deviceIdHash);
+            PasswordlessDevice device = devices[counter];
             assertEquals(EMAIL, device.email);
             assertNull(device.phoneNumber);
             assertEquals(0, device.failedAttempts);
@@ -125,10 +143,11 @@ public class PasswordlessCreateCodeTest {
 
             PasswordlessCode code = codes[0];
             assertEquals(device.deviceIdHash, code.deviceIdHash);
-            assertEquals(codeResponse.codeId, code.id);
         }
 
-        killApplication(process);
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        ;
     }
 
     /**
@@ -139,7 +158,14 @@ public class PasswordlessCreateCodeTest {
     @Test
     public void testCreateCodeWithPhoneNumber() throws Exception {
 
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
@@ -162,7 +188,9 @@ public class PasswordlessCreateCodeTest {
         assertEquals(device.deviceIdHash, code.deviceIdHash);
         assertEquals(createCodeResponse.codeId, code.id);
 
-        killApplication(process);
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        ;
     }
 
     /**
@@ -175,7 +203,14 @@ public class PasswordlessCreateCodeTest {
     public void testCreateCodeForMultipleDevicesWithSinglePhoneNumber() throws Exception {
         final int NUMBER_OF_DEVICES_TO_CREATE = 5;
 
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
 
         for (int counter = 1; counter <= NUMBER_OF_DEVICES_TO_CREATE; counter++) {
@@ -183,12 +218,14 @@ public class PasswordlessCreateCodeTest {
             Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), null,
                     PHONE_NUMBER, null, null);
             assertNotNull(codeResponse);
+        }
 
-            PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(PHONE_NUMBER);
-            assertEquals(counter, devices.length);
+        PasswordlessDevice[] devices = storage.getDevicesByPhoneNumber(PHONE_NUMBER);
+        assertEquals(NUMBER_OF_DEVICES_TO_CREATE, devices.length);
 
-            PasswordlessDevice device = devices[counter - 1];
-            assertEquals(codeResponse.deviceIdHash, device.deviceIdHash);
+        for (int counter = 0; counter < NUMBER_OF_DEVICES_TO_CREATE; counter++) {
+
+            PasswordlessDevice device = devices[counter];
             assertNull(device.email);
             assertEquals(PHONE_NUMBER, device.phoneNumber);
             assertEquals(0, device.failedAttempts);
@@ -198,10 +235,11 @@ public class PasswordlessCreateCodeTest {
 
             PasswordlessCode code = codes[0];
             assertEquals(device.deviceIdHash, code.deviceIdHash);
-            assertEquals(codeResponse.codeId, code.id);
         }
 
-        killApplication(process);
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        ;
     }
 
     /**
@@ -212,7 +250,14 @@ public class PasswordlessCreateCodeTest {
     @Test
     public void testCreateCodeWithDeviceId() throws Exception {
 
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
@@ -238,7 +283,9 @@ public class PasswordlessCreateCodeTest {
             assertEquals(device.deviceIdHash, code.deviceIdHash);
         }
 
-        killApplication(process);
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        ;
     }
 
     /**
@@ -248,7 +295,14 @@ public class PasswordlessCreateCodeTest {
      */
     @Test
     public void testCreateCodeWithSameDeviceIdAndUserInputCode() throws Exception {
-        TestingProcessManager.TestingProcess process = startApplicationWithDefaultArgs();
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), null, PHONE_NUMBER,
                 null, null);
@@ -263,7 +317,9 @@ public class PasswordlessCreateCodeTest {
         assertNotNull(error);
         assert (error instanceof DuplicateLinkCodeHashException);
 
-        killApplication(process);
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        ;
     }
 
     /**
