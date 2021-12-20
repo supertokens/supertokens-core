@@ -9,8 +9,8 @@ public class PasswordlessLinkCodeSalt {
         this.bytes = bytes;
     }
 
-    public static PasswordlessLinkCodeSalt decodeString(String linkCode) {
-        return new PasswordlessLinkCodeSalt(Base64.getDecoder().decode(linkCode));
+    public static PasswordlessLinkCodeSalt decodeString(String linkCodeSalt) {
+        return new PasswordlessLinkCodeSalt(Base64.getDecoder().decode(linkCodeSalt));
     }
 
     public String encode() {
