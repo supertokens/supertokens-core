@@ -20,10 +20,13 @@ import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailverification.EmailVerification;
+import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.ThirdParty;
 import org.junit.AfterClass;
@@ -41,6 +44,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import com.google.gson.JsonObject;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
@@ -516,6 +523,63 @@ public class AuthRecipeTest {
 
                 assert (indexIntoUsers == -1);
             }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void deleteUserTest() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Map<String, Function<Object, ? extends AuthRecipeUserInfo>> signUpMap = getSignUpMap(process);
+
+        List<String> classes = getUserInfoClassNameList();
+
+        for (String className : classes) {
+            if (!signUpMap.containsKey(className)) {
+                fail();
+            }
+        }
+
+        for (String userType : classes) {
+            AuthRecipeUserInfo user1 = signUpMap.get(userType).apply(null);
+            Session.createNewSession(process.getProcess(), user1.id, new JsonObject(), new JsonObject());
+            String emailVerificationToken = EmailVerification.generateEmailVerificationToken(process.getProcess(),
+                    user1.id, "email");
+            EmailVerification.verifyEmail(process.getProcess(), emailVerificationToken);
+
+            AuthRecipeUserInfo user2 = signUpMap.get(userType).apply(null);
+            Session.createNewSession(process.getProcess(), user2.id, new JsonObject(), new JsonObject());
+            String emailVerificationToken2 = EmailVerification.generateEmailVerificationToken(process.getProcess(),
+                    user2.id, "email");
+
+            assertEquals(2, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { user1.getRecipeId() }));
+            AuthRecipe.deleteUser(process.getProcess(), user1.id);
+            assertEquals(1, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { user1.getRecipeId() }));
+            assertEquals(0, Session.getAllSessionHandlesForUser(process.getProcess(), user1.id).length);
+            assertEquals(1, Session.getAllSessionHandlesForUser(process.getProcess(), user2.id).length);
+            assertFalse(EmailVerification.isEmailVerified(process.getProcess(), user1.id, "email"));
+
+            AuthRecipe.deleteUser(process.getProcess(), user2.id);
+            assertEquals(0, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { user1.getRecipeId() }));
+            assertEquals(0, Session.getAllSessionHandlesForUser(process.getProcess(), user2.id).length);
+
+            Exception error = null;
+            try {
+                EmailVerification.verifyEmail(process.getProcess(), emailVerificationToken2);
+            } catch (EmailVerificationInvalidTokenException ex) {
+                error = ex;
+            }
+            assertNotNull(error);
         }
 
         process.kill();
