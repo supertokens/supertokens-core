@@ -76,6 +76,11 @@ labels:
        - [ ] Postgres
        - [ ] MongoDB
     - [ ] try.supertokens.io
+      ```
+      docker rm try-supertokens -f
+      docker rmi supertokens/supertokens-postgresql:<VERSION>
+      ~/try-supertokens/start_container.sh
+      ```
     - [ ] Update SaaS config
     - [ ] Update to tables checked for user count / or to know if a deployment is being used or not
     - [ ] Update logic for exporting csv file for registered users
