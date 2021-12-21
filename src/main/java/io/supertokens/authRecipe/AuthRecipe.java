@@ -54,4 +54,20 @@ public class AuthRecipe {
         System.arraycopy(users, 0, resultUsers, 0, maxLoop);
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
+
+    public static void deleteUser(Main main, String userId) throws StorageQueryException {
+        // We clean up the user last so that if anything before that throws an error, then that will throw a 500 to the
+        // developer. In this case, they expect that the user has not been deleted (which will be true). This is as
+        // opposed to deleting the user first, in which case if something later throws an error, then the user has
+        // actually been deleted already (which is not expected by the dev)
+
+        // For things created after the intial cleanup and before finishing the operation:
+        // - session: the session will expire anyway
+        // - email verification: email verification tokens can be created for any userId anyway
+
+        StorageLayer.getSessionStorage(main).deleteSessionsOfUser(userId);
+        StorageLayer.getEmailVerificationStorage(main).deleteEmailVerificationUserInfo(userId);
+        StorageLayer.getEmailPasswordStorage(main).deleteEmailPasswordUser(userId);
+        StorageLayer.getThirdPartyStorage(main).deleteThirdPartyUser(userId);
+    }
 }

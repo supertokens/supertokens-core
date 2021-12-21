@@ -37,7 +37,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 
-public class PasswordlessConsumeCodeAPITest2_10 {
+public class PasswordlessConsumeCodeAPITest2_11 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -228,6 +228,57 @@ public class PasswordlessConsumeCodeAPITest2_10 {
             assertEquals("Http error. Status Code: 400. Message: preAuthSessionId and deviceId doesn't match",
                     error.getMessage());
         }
+
+        /*
+         * malformed linkCode -> BadRequest
+         * TODO: throwing 500 error
+         */
+        {
+            HttpResponseException error = null;
+            try {
+                JsonObject consumeCodeRequestBody = new JsonObject();
+                consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+                consumeCodeRequestBody.addProperty("linkCode", createResp.linkCode + "==#");
+
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException ex) {
+                error = ex;
+            }
+
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    error.getMessage());
+        }
+
+        /*
+         * malformed deviceId -> BadRequest
+         * TODO: throwing 500 error
+         */
+        {
+            HttpResponseException error = null;
+            try {
+                JsonObject consumeCodeRequestBody = new JsonObject();
+                consumeCodeRequestBody.addProperty("preAuthSessionId", createResp.deviceIdHash);
+                consumeCodeRequestBody.addProperty("deviceId", createResp.deviceId + "==#");
+
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException ex) {
+                error = ex;
+            }
+
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Please provide exactly one of linkCode or deviceId+userInputCode",
+                    error.getMessage());
+        }
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

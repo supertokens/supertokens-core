@@ -238,4 +238,32 @@ public class JWKSTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    /**
+     * Test that the modulus of the JWK is unsigned
+     */
+    @Test
+    public void testThatJWKModulusIsUnsigned() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        List<JsonObject> keysFromStorage = JWTSigningFunctions.getJWKS(process.getProcess());
+
+        for (int i = 0; i < keysFromStorage.size(); i++) {
+            JsonObject key = keysFromStorage.get(i);
+            byte[] modulusBytes = Base64.getUrlDecoder().decode(key.get("n").getAsString());
+
+            // The modulus is always positive and should not contain the sign byte (0)
+            assert modulusBytes[0] != 0;
+
+            byte[] exponentBytes = Base64.getUrlDecoder().decode(key.get("e").getAsString());
+
+            // The exponent is always positive and should not contain the sign byte (0)
+            assert exponentBytes[0] != 0;
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

@@ -180,6 +180,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new TelemetryAPI(main));
         addAPI(new UsersCountAPI(main));
         addAPI(new UsersAPI(main));
+        addAPI(new DeleteUserAPI(main));
         addAPI(new RevokeAllTokensForUserAPI(main));
         addAPI(new UnverifyEmailAPI(main));
         addAPI(new JWTSigningAPI(main));

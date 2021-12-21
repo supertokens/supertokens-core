@@ -26,6 +26,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 
+import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -34,7 +35,7 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
-public class PasswordlessDeleteCodeAPITest2_10 {
+public class PasswordlessDeleteCodeAPITest2_11 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -106,6 +107,43 @@ public class PasswordlessDeleteCodeAPITest2_10 {
                 Utils.getCdiVersion2_10ForTests(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * empty request body -> BadRequest
+     * 
+     * @throws Exception
+     */
+    @Test
+    public void testEmptyRequestBody() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject createCodeRequestBody = new JsonObject();
+
+        HttpResponseException error = null;
+        try {
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/code/remove", createCodeRequestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+
+        } catch (HttpResponseException ex) {
+            error = ex;
+        }
+
+        assertNotNull(error);
+        assertEquals(400, error.statusCode);
+        assertEquals("Http error. Status Code: 400. Message: Field name 'codeId' is invalid in JSON input",
+                error.getMessage());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

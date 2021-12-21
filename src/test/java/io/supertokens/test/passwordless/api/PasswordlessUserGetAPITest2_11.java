@@ -37,7 +37,7 @@ import static org.junit.Assert.*;
 
 import java.util.HashMap;
 
-public class PasswordlessUserGetAPITest2_10 {
+public class PasswordlessUserGetAPITest2_11 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -60,6 +60,22 @@ public class PasswordlessUserGetAPITest2_10 {
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
+        }
+
+        {
+            HashMap<String, String> map = new HashMap<>();
+            HttpResponseException error = null;
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user", map,
+                        1000, 1000, null, Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException e) {
+                error = e;
+            }
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Please provide exactly one of userId, email or phoneNumber",
+                    error.getMessage());
         }
 
         {
@@ -106,6 +122,26 @@ public class PasswordlessUserGetAPITest2_10 {
 
             assertEquals("UNKNOWN_PHONE_NUMBER_ERROR", response.get("status").getAsString());
         }
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("phoneNumber", "+918888823456");
+            map.put("email", "sample@test.com");
+            Exception exception = null;
+            try {
+                JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user", map, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(),
+                        "passwordless");
+            } catch (Exception ex) {
+                exception = ex;
+            }
+
+            assertNotNull(exception);
+            assert (exception instanceof HttpResponseException);
+            assertEquals(400, ((HttpResponseException) exception).statusCode);
+            assertEquals(exception.getMessage(),
+                    "Http error. Status Code: 400. Message: Please provide exactly one of userId, email or phoneNumber");
+        }
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -124,7 +160,7 @@ public class PasswordlessUserGetAPITest2_10 {
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
 
         String userIdEmail = "userId";
-        String userIdPhone = "userId";
+        String userIdPhone = "userIdPhone";
         String email = "random@gmail.com";
         String phoneNumber = "1234";
 
@@ -149,6 +185,22 @@ public class PasswordlessUserGetAPITest2_10 {
             assertEquals("OK", response.get("status").getAsString());
             checkUser(response, userIdEmail, email, null);
         }
+
+        /*
+         * get user with phone number
+         */
+        storage.createUser(new UserInfo(userIdPhone, null, phoneNumber, System.currentTimeMillis()));
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("phoneNumber", phoneNumber);
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", map, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(),
+                    "passwordless");
+
+            assertEquals("OK", response.get("status").getAsString());
+            checkUser(response, userIdPhone, null, phoneNumber);
+        }
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
