@@ -711,7 +711,7 @@ public class PasswordlessConsumeCodeTest {
         for (int counter = 0; counter < maxCodeInputAttempts; counter++) {
 
             try {
-                Passwordless.consumeCode(process.getProcess(), null, null, null, "n0p321");
+                Passwordless.consumeCode(process.getProcess(), null, createCodeResponse.deviceIdHash, null, "n0p321");
             } catch (Exception ex) {
                 error = ex;
             }
@@ -779,7 +779,6 @@ public class PasswordlessConsumeCodeTest {
         // kill process and restart with increased max code input attempts
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
 
         Utils.setValueInConfig("passwordless_max_code_input_attempts", String.valueOf(maxCodeInputAttempts - 3));
         process = TestingProcessManager.start(args);

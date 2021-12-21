@@ -65,7 +65,7 @@ public class PasswordlessDevicesTest {
      * @throws Exception
      */
     @Test
-    public void getDevicesFromIDWithCodes() throws Exception {
+    public void getDeviceWithCodesByValidId() throws Exception {
 
         int NUMBER_OF_CODES_TO_GENERATE = 5;
 
@@ -115,7 +115,6 @@ public class PasswordlessDevicesTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
 
     }
 
@@ -125,7 +124,7 @@ public class PasswordlessDevicesTest {
      * @throws Exception
      */
     @Test
-    public void getDevicesFromInvalidID() throws Exception {
+    public void getDeviceWithCodesByInvalidId() throws Exception {
 
         String[] args = { "../" };
 
@@ -142,7 +141,6 @@ public class PasswordlessDevicesTest {
         assertNull(deviceWithCodes);
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
 
     }
 
@@ -206,7 +204,6 @@ public class PasswordlessDevicesTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
 
     }
 
@@ -234,7 +231,6 @@ public class PasswordlessDevicesTest {
         assertNull(deviceWithCodes);
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
 
     }
 
@@ -295,7 +291,6 @@ public class PasswordlessDevicesTest {
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
 
     }
 
@@ -325,7 +320,6 @@ public class PasswordlessDevicesTest {
         assertEquals(0, list.size());
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
 
     }
 
@@ -387,7 +381,6 @@ public class PasswordlessDevicesTest {
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
 
     }
 
@@ -417,7 +410,6 @@ public class PasswordlessDevicesTest {
         assertEquals(0, list.size());
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
 
     }
 

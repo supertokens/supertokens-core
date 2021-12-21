@@ -115,7 +115,6 @@ public class PasswordlessRemoveCodeTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
 
     }
 
@@ -149,7 +148,6 @@ public class PasswordlessRemoveCodeTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
 
     }
 
@@ -186,7 +184,6 @@ public class PasswordlessRemoveCodeTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
 
     }
 
@@ -238,7 +235,6 @@ public class PasswordlessRemoveCodeTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
 
     }
 
@@ -290,7 +286,6 @@ public class PasswordlessRemoveCodeTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
 
     }
 }

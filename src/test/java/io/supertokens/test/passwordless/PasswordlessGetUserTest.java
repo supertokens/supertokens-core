@@ -81,6 +81,9 @@ public class PasswordlessGetUserTest {
         assertNotNull(user);
         assertEquals(user.email, EMAIL);
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
     }
 
     /**
@@ -107,6 +110,10 @@ public class PasswordlessGetUserTest {
         user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
         assertNotNull(user);
         assertEquals(user.phoneNumber, PHONE_NUMBER);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
     }
 
     /**
@@ -134,6 +141,10 @@ public class PasswordlessGetUserTest {
         assertNotNull(user);
         assertEquals(user.email, EMAIL);
         assertEquals(user.phoneNumber, PHONE_NUMBER);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
     }
 
     /**
@@ -159,6 +170,10 @@ public class PasswordlessGetUserTest {
 
         user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id + "1");
         assertNull(user);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
     }
 
     /**
@@ -186,6 +201,9 @@ public class PasswordlessGetUserTest {
         assertNotNull(user);
         assertEquals(user.email, EMAIL);
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
     }
 
     /**
@@ -211,6 +229,9 @@ public class PasswordlessGetUserTest {
 
         user = Passwordless.getUserByEmail(process.getProcess(), EMAIL + "a");
         assertNull(user);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
     }
 
@@ -238,6 +259,9 @@ public class PasswordlessGetUserTest {
         user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER);
         assertNotNull(user);
         assertEquals(user.phoneNumber, PHONE_NUMBER);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     /**
@@ -263,6 +287,9 @@ public class PasswordlessGetUserTest {
 
         user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER + "1");
         assertNull(user);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
 }

@@ -99,7 +99,6 @@ public class PasswordlessCreateCodeTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
     }
 
     /**
@@ -147,7 +146,6 @@ public class PasswordlessCreateCodeTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
     }
 
     /**
@@ -190,7 +188,6 @@ public class PasswordlessCreateCodeTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
     }
 
     /**
@@ -239,7 +236,6 @@ public class PasswordlessCreateCodeTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
     }
 
     /**
@@ -285,7 +281,6 @@ public class PasswordlessCreateCodeTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
     }
 
     /**
@@ -319,7 +314,6 @@ public class PasswordlessCreateCodeTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        ;
     }
 
     /**

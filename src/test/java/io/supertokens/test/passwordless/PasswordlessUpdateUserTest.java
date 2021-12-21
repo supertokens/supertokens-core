@@ -92,6 +92,9 @@ public class PasswordlessUpdateUserTest {
         assert (ex instanceof DuplicateEmailException);
 
         assertEquals(EMAIL, storage.getUserByEmail(EMAIL).email);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     /**
@@ -134,6 +137,10 @@ public class PasswordlessUpdateUserTest {
         assert (ex instanceof DuplicatePhoneNumberException);
 
         assertEquals(PHONE_NUMBER, storage.getUserByPhoneNumber(PHONE_NUMBER).phoneNumber);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
     }
 
     /**
@@ -164,6 +171,10 @@ public class PasswordlessUpdateUserTest {
         Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(alternate_email), null);
 
         assertEquals(alternate_email, storage.getUserById(user.id).email);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
     }
 
     /**
@@ -195,6 +206,10 @@ public class PasswordlessUpdateUserTest {
                 new Passwordless.FieldUpdate(alternate_phoneNumber));
 
         assertEquals(alternate_phoneNumber, storage.getUserById(user.id).phoneNumber);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
     }
 
     /**
@@ -227,6 +242,9 @@ public class PasswordlessUpdateUserTest {
         assertEquals(PHONE_NUMBER, storage.getUserById(user.id).phoneNumber);
         assertEquals(null, storage.getUserById(user.id).email);
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
     }
 
     /**
@@ -258,6 +276,9 @@ public class PasswordlessUpdateUserTest {
 
         assertEquals(EMAIL, storage.getUserById(user.id).email);
         assertEquals(null, storage.getUserById(user.id).phoneNumber);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
     }
 
@@ -295,6 +316,10 @@ public class PasswordlessUpdateUserTest {
 
         assertNotNull(ex);
         assert (ex instanceof UserWithoutContactInfoException);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
     }
 
     /**
@@ -331,6 +356,9 @@ public class PasswordlessUpdateUserTest {
 
         assertNotNull(ex);
         assert (ex instanceof UserWithoutContactInfoException);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
     }
 
@@ -369,6 +397,9 @@ public class PasswordlessUpdateUserTest {
         assertNotNull(ex);
         assert (ex instanceof UserWithoutContactInfoException);
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
     }
 
     /**
@@ -402,6 +433,8 @@ public class PasswordlessUpdateUserTest {
         assertEquals(EMAIL, storage.getUserById(user.id).email);
         assertEquals(alternate_phoneNumber, storage.getUserById(user.id).phoneNumber);
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
 }
