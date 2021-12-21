@@ -77,6 +77,11 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 - plugin tests:  
 ![plugin tests passing](https://github.com/supertokens/supertokens-logo/blob/master/images/plugin-tests-passing.png)
 
+## Running the core manually
+1. Run `startTestingEnv --wait` in a terminal, and keep it running
+2. Then open `supertokens-root` in another terminal and run `cp ./temp/config.yaml .`
+3. Then run `java -classpath "./core/*:./plugin-interface/*" io.supertokens.Main ./ DEV`. This will start the core to listen on `http://localhost:3567`
+
 ## Pull Request
 1. Before submitting a pull request make sure all tests have passed  
 2. Reference the relevant issue or pull request and give a clear description of changes/features added when submitting a pull request

@@ -142,6 +142,9 @@ Mihály Lengyel</b></sub></a></td>
   </tr> 
   <tr>
 <td align="center"><a href="https://github.com/jacobhq"><img src="https://avatars.githubusercontent.com/u/29145479?v=4" width="100px;" alt=""/><br /><sub><b>Jacob Marshall</b></sub></a></td>
+<td align="center"><a href="https://github.com/miketromba"><img src="https://avatars.githubusercontent.com/u/25141252?v=4" width="100px;" alt=""/><br /><sub><b>miketromba</b></sub></a></td>
+<td align="center"><a href="https://github.com/olhapi"><img src="https://avatars.githubusercontent.com/u/4780263?v=4" width="100px;" alt=""/><br /><sub><b>Oleg Vdovenko</b></sub></a></td>
+<td align="center"><a href="https://github.com/siddharthmudgal"><img src="https://avatars.githubusercontent.com/u/9314217?v=4" width="100px;" alt=""/><br /><sub><b>Siddharth</b></sub></a></td>
   </tr>
 </table>
 

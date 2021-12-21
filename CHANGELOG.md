@@ -16,6 +16,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixes
 
 - Issue with JWT expiry always being lower than expected
+- Modulus and exponent for JsonWebKeys are now sent as unsigned when fetching public keys from the /jwt/jwks.json 
+  endpoint. Both values are url encoded without any padding.
 
 ### Changes
 
