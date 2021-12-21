@@ -79,6 +79,38 @@ public class ThirdPartyQueries {
         });
     }
 
+    public static void deleteUser(Start start, String userId)
+            throws StorageQueryException, StorageTransactionLogicException {
+        start.startTransaction(con -> {
+            Connection sqlCon = (Connection) con.getConnection();
+            try {
+                {
+                    String QUERY = "DELETE FROM " + Config.getConfig(start).getUsersTable()
+                            + " WHERE user_id = ? AND recipe_id = ?";
+                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                        pst.setString(1, userId);
+                        pst.setString(2, RECIPE_ID.THIRD_PARTY.toString());
+                        pst.executeUpdate();
+                    }
+                }
+
+                {
+                    String QUERY = "DELETE FROM " + Config.getConfig(start).getThirdPartyUsersTable()
+                            + " WHERE user_id = ? ";
+                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                        pst.setString(1, userId);
+                        pst.executeUpdate();
+                    }
+                }
+
+                sqlCon.commit();
+            } catch (SQLException throwables) {
+                throw new StorageTransactionLogicException(throwables);
+            }
+            return null;
+        });
+    }
+
     public static UserInfo getThirdPartyUserInfoUsingId(Start start, String userId)
             throws SQLException, StorageQueryException {
         List<String> input = new ArrayList<>();

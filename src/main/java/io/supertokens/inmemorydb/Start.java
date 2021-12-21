@@ -277,6 +277,15 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
+    public void deleteSessionsOfUser(String userId) throws StorageQueryException {
+        try {
+            SessionQueries.deleteSessionsOfUser(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public int getNumberOfSessions() throws StorageQueryException {
         try {
             return SessionQueries.getNumberOfSessions(this);
@@ -442,6 +451,15 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
                 throw new DuplicateUserIdException();
             }
             throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteEmailPasswordUser(String userId) throws StorageQueryException {
+        try {
+            EmailPasswordQueries.deleteUser(this, userId);
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e.actualException);
         }
     }
 
@@ -665,6 +683,15 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
+    public void deleteEmailVerificationUserInfo(String userId) throws StorageQueryException {
+        try {
+            EmailVerificationQueries.deleteUserInfo(this, userId);
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e.actualException);
+        }
+    }
+
+    @Override
     public EmailVerificationTokenInfo getEmailVerificationTokenInfo(String token) throws StorageQueryException {
         try {
             return EmailVerificationQueries.getEmailVerificationTokenInfo(this, token);
@@ -763,6 +790,15 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
                 throw new io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException();
             }
             throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteThirdPartyUser(String userId) throws StorageQueryException {
+        try {
+            ThirdPartyQueries.deleteUser(this, userId);
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e.actualException);
         }
     }
 

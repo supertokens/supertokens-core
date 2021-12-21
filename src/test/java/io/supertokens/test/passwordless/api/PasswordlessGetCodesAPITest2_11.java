@@ -116,9 +116,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             }
             assertNotNull(error);
             assertEquals(400, error.statusCode);
-            assertEquals(
-                    "Http error. Status Code: 400. Message: Input encoding error in DeviceId",
-                    error.getMessage());
+            assertEquals("Http error. Status Code: 400. Message: Input encoding error in DeviceId", error.getMessage());
         }
 
         process.kill();
@@ -233,8 +231,8 @@ public class PasswordlessGetCodesAPITest2_11 {
             HashMap<String, String> map = new HashMap<>();
             map.put("email", email);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(),
-                    "passwordless");
+                    "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
+                    Utils.getCdiVersion2_10ForTests(), "passwordless");
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.entrySet().size());
@@ -260,7 +258,7 @@ public class PasswordlessGetCodesAPITest2_11 {
                 assert (response.has("devices"));
                 JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
                 assertEquals(1, jsonDeviceList.size());
-                checkDevice(jsonDeviceList, 0, email, null, deviceIdHash, new String[]{codeId});
+                checkDevice(jsonDeviceList, 0, email, null, deviceIdHash, new String[] { codeId });
             }
         }
         process.kill();
@@ -290,8 +288,8 @@ public class PasswordlessGetCodesAPITest2_11 {
             HashMap<String, String> map = new HashMap<>();
             map.put("phoneNumber", phoneNumber);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(),
-                    "passwordless");
+                    "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
+                    Utils.getCdiVersion2_10ForTests(), "passwordless");
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.entrySet().size());
@@ -317,7 +315,7 @@ public class PasswordlessGetCodesAPITest2_11 {
                 assert (response.has("devices"));
                 JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
                 assertEquals(1, jsonDeviceList.size());
-                checkDevice(jsonDeviceList, 0, null, phoneNumber, deviceIdHash, new String[]{codeId});
+                checkDevice(jsonDeviceList, 0, null, phoneNumber, deviceIdHash, new String[] { codeId });
             }
         }
         process.kill();
@@ -344,8 +342,8 @@ public class PasswordlessGetCodesAPITest2_11 {
             HashMap<String, String> map = new HashMap<>();
             map.put("deviceId", deviceID);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(),
-                    "passwordless");
+                    "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
+                    Utils.getCdiVersion2_10ForTests(), "passwordless");
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.entrySet().size());
@@ -355,15 +353,14 @@ public class PasswordlessGetCodesAPITest2_11 {
 
         // OK with matching codes
         {
-            Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(
-                    process.getProcess(), null,
+            Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
                     phoneNumber, null, null);
             assertNotNull(createCodeResponse);
 
             deviceID = createCodeResponse.deviceId;
 
             assertEquals(1, storage.getDevicesByPhoneNumber(phoneNumber).length);
-            //TODO: deviceID =
+            // TODO: deviceID =
             {
                 HashMap<String, String> map = new HashMap<>();
                 map.put("deviceId", deviceID);
@@ -376,7 +373,8 @@ public class PasswordlessGetCodesAPITest2_11 {
                 assert (response.has("devices"));
                 JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
                 assertEquals(1, jsonDeviceList.size());
-                checkDevice(jsonDeviceList, 0, null, phoneNumber, createCodeResponse.deviceIdHash, new String[]{createCodeResponse.codeId});
+                checkDevice(jsonDeviceList, 0, null, phoneNumber, createCodeResponse.deviceIdHash,
+                        new String[] { createCodeResponse.codeId });
             }
         }
         process.kill();
