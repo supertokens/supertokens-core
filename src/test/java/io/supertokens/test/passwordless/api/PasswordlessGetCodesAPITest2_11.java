@@ -19,6 +19,7 @@ package io.supertokens.test.passwordless.api;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.passwordless.Passwordless;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
@@ -35,6 +36,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import static io.supertokens.test.passwordless.PasswordlessUtility.EMAIL;
 import static org.junit.Assert.*;
 
 import java.util.HashMap;
@@ -63,23 +65,61 @@ public class PasswordlessGetCodesAPITest2_11 {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-
-        HashMap<String, String> map = new HashMap<>();
-        map.put("deviceId", "anythin");
-        map.put("email", "anythin");
-        HttpResponseException error = null;
-        try {
-            HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
-        } catch (HttpResponseException e) {
-            error = e;
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("deviceId", "anythin");
+            map.put("email", "anythin");
+            HttpResponseException error = null;
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException e) {
+                error = e;
+            }
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber, deviceId or preAuthSessionId",
+                    error.getMessage());
         }
-        assertNotNull(error);
-        assertEquals(400, error.statusCode);
-        assertEquals(
-                "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber, deviceId or preAuthSessionId",
-                error.getMessage());
+
+        // no input param
+        {
+            HashMap<String, String> map = new HashMap<>();
+            HttpResponseException error = null;
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException e) {
+                error = e;
+            }
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber, deviceId or preAuthSessionId",
+                    error.getMessage());
+        }
+
+        // malformed device ID
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("deviceId", "anythin-does-anything");
+            HttpResponseException error = null;
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+            } catch (HttpResponseException e) {
+                error = e;
+            }
+            assertNotNull(error);
+            assertEquals(400, error.statusCode);
+            assertEquals(
+                    "Http error. Status Code: 400. Message: Input encoding error in DeviceId",
+                    error.getMessage());
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -126,17 +166,30 @@ public class PasswordlessGetCodesAPITest2_11 {
 
         String email = "test@example.com";
         String codeId = io.supertokens.utils.Utils.getUUID();
-        String codeId2 = io.supertokens.utils.Utils.getUUID();
 
         String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
         String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
-        String linkCodeHash2 = "F0aZHCBYSJIghP5e0flGa8gvoUYEgGus2yIJYmdpFY4";
+
+        // no match
+
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("preAuthSessionId", deviceIdHash);
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
+                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(2, response.entrySet().size());
+            assert (response.has("devices"));
+            assertEquals(0, response.get("devices").getAsJsonArray().size());
+        }
 
         storage.createDeviceWithCode(email, null, "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
         assertEquals(1, storage.getDevicesByEmail(email).length);
 
-        storage.createCode(new PasswordlessCode(codeId2, deviceIdHash, linkCodeHash2, System.currentTimeMillis()));
+        // match
 
         {
             HashMap<String, String> map = new HashMap<>();
@@ -150,7 +203,181 @@ public class PasswordlessGetCodesAPITest2_11 {
             assert (response.has("devices"));
             JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
             assertEquals(1, jsonDeviceList.size());
-            checkDevice(jsonDeviceList, 0, email, null, deviceIdHash, new String[] { codeId, codeId2 });
+
+            checkDevice(jsonDeviceList, 0, email, null, deviceIdHash, new String[] { codeId });
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testGetCodesWithEmail() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        String email = "test@example.com";
+        String codeId = io.supertokens.utils.Utils.getUUID();
+
+        String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
+        String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
+
+        // OK without matching codes
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("email", email);
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(),
+                    "passwordless");
+
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(2, response.entrySet().size());
+            assert (response.has("devices"));
+            assertEquals(0, response.get("devices").getAsJsonArray().size());
+        }
+
+        // OK with matching codes
+        {
+            storage.createDeviceWithCode(email, null, "linkCodeSalt",
+                    new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
+            assertEquals(1, storage.getDevicesByEmail(email).length);
+
+            {
+                HashMap<String, String> map = new HashMap<>();
+                map.put("email", email);
+                JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+
+                assertEquals("OK", response.get("status").getAsString());
+                assertEquals(2, response.entrySet().size());
+                assert (response.has("devices"));
+                JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
+                assertEquals(1, jsonDeviceList.size());
+                checkDevice(jsonDeviceList, 0, email, null, deviceIdHash, new String[]{codeId});
+            }
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testGetCodesWithPhoneNumber() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        String phoneNumber = "+918989898989";
+        String codeId = io.supertokens.utils.Utils.getUUID();
+
+        String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
+        String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
+
+        // OK without matching codes
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("phoneNumber", phoneNumber);
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(),
+                    "passwordless");
+
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(2, response.entrySet().size());
+            assert (response.has("devices"));
+            assertEquals(0, response.get("devices").getAsJsonArray().size());
+        }
+
+        // OK with matching codes
+        {
+            storage.createDeviceWithCode(null, phoneNumber, "linkCodeSalt",
+                    new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
+            assertEquals(1, storage.getDevicesByPhoneNumber(phoneNumber).length);
+
+            {
+                HashMap<String, String> map = new HashMap<>();
+                map.put("phoneNumber", phoneNumber);
+                JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+
+                assertEquals("OK", response.get("status").getAsString());
+                assertEquals(2, response.entrySet().size());
+                assert (response.has("devices"));
+                JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
+                assertEquals(1, jsonDeviceList.size());
+                checkDevice(jsonDeviceList, 0, null, phoneNumber, deviceIdHash, new String[]{codeId});
+            }
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testGetCodesWithDeviceID() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        String deviceID = "randomDeviceID";
+        String phoneNumber = "+918989898989";
+
+        // OK without matching codes
+        {
+            HashMap<String, String> map = new HashMap<>();
+            map.put("deviceId", deviceID);
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(),
+                    "passwordless");
+
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(2, response.entrySet().size());
+            assert (response.has("devices"));
+            assertEquals(0, response.get("devices").getAsJsonArray().size());
+        }
+
+        // OK with matching codes
+        {
+            Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(
+                    process.getProcess(), null,
+                    phoneNumber, null, null);
+            assertNotNull(createCodeResponse);
+
+            deviceID = createCodeResponse.deviceId;
+
+            assertEquals(1, storage.getDevicesByPhoneNumber(phoneNumber).length);
+            //TODO: deviceID =
+            {
+                HashMap<String, String> map = new HashMap<>();
+                map.put("deviceId", deviceID);
+                JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
+                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+
+                assertEquals("OK", response.get("status").getAsString());
+                assertEquals(2, response.entrySet().size());
+                assert (response.has("devices"));
+                JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
+                assertEquals(1, jsonDeviceList.size());
+                checkDevice(jsonDeviceList, 0, null, phoneNumber, createCodeResponse.deviceIdHash, new String[]{createCodeResponse.codeId});
+            }
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
