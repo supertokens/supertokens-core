@@ -36,7 +36,7 @@ import static org.junit.Assert.*;
 import java.util.Base64;
 import java.util.UUID;
 
-public class PasswordlessCreateCodeAPITest2_10 {
+public class PasswordlessCreateCodeAPITest2_11 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

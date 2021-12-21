@@ -39,7 +39,7 @@ import static org.junit.Assert.*;
 
 import java.util.HashMap;
 
-public class PasswordlessGetCodesAPITest2_10 {
+public class PasswordlessGetCodesAPITest2_11 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

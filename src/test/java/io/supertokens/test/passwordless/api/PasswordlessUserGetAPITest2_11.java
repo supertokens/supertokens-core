@@ -37,7 +37,7 @@ import static org.junit.Assert.*;
 
 import java.util.HashMap;
 
-public class PasswordlessUserGetAPITest2_10 {
+public class PasswordlessUserGetAPITest2_11 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

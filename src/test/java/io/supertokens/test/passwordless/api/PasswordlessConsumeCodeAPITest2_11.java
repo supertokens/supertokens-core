@@ -37,7 +37,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 
-public class PasswordlessConsumeCodeAPITest2_10 {
+public class PasswordlessConsumeCodeAPITest2_11 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
