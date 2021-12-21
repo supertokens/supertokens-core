@@ -19,6 +19,7 @@ package io.supertokens.test.passwordless;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.passwordless.Passwordless;
+import io.supertokens.passwordless.exceptions.Base64EncodingException;
 import io.supertokens.passwordless.exceptions.ExpiredUserInputCodeException;
 import io.supertokens.passwordless.exceptions.IncorrectUserInputCodeException;
 import io.supertokens.passwordless.exceptions.RestartFlowException;
@@ -408,7 +409,7 @@ public class PasswordlessConsumeCodeTest {
             error = ex;
         }
         assertNotNull(error);
-        assert (error instanceof IllegalArgumentException);
+        assert (error instanceof Base64EncodingException);
 
         PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
         assertNotEquals(0, devices.length);
