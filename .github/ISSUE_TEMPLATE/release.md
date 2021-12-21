@@ -60,6 +60,7 @@ labels:
    - [ ] pricing page feature list
    - [ ] comparison chart in the pricing page
    - [ ] product roadmap page
+   - [ ] Update API key code snippet in SaaS dashboard
 
 ## 🔥 Production 
 
@@ -79,6 +80,7 @@ labels:
       ```
       docker rm try-supertokens -f
       docker rmi supertokens/supertokens-postgresql:<VERSION>
+      nano ~/try-supertokens/start_container.sh (update version tag)
       ~/try-supertokens/start_container.sh
       ```
     - [ ] Update SaaS config
