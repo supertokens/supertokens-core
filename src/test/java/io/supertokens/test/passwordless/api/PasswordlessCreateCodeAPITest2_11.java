@@ -437,9 +437,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
         assertNotNull(error);
         assertEquals(400, error.statusCode);
-        assertEquals(
-                "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber or deviceId",
-                error.getMessage());
+        assertEquals("Http error. Status Code: 400. Message: Input encoding error in DeviceId", error.getMessage());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
