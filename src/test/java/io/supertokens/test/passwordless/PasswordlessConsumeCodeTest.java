@@ -603,8 +603,7 @@ public class PasswordlessConsumeCodeTest {
         assertNotNull(createCodeResponse);
 
         Thread.sleep(120);
-        Passwordless.CreateCodeResponse newCodeResponse = Passwordless.createCode(process.getProcess(), null, null,
-                createCodeResponse.deviceId, null);
+
         Exception error = null;
         try {
             Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
@@ -618,6 +617,9 @@ public class PasswordlessConsumeCodeTest {
         // verify that devices have not been cleared
         PasswordlessDevice[] devices = storage.getDevicesByEmail(EMAIL);
         assertNotEquals(0, devices.length);
+
+        Passwordless.CreateCodeResponse newCodeResponse = Passwordless.createCode(process.getProcess(), null, null,
+                createCodeResponse.deviceId, null);
 
         Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.getProcess(),
                 newCodeResponse.deviceId, newCodeResponse.deviceIdHash, newCodeResponse.userInputCode, null);
