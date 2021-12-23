@@ -116,7 +116,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             }
             assertNotNull(error);
             assertEquals(400, error.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: Input encoding error in DeviceId", error.getMessage());
+            assertEquals("Http error. Status Code: 400. Message: Input encoding error in deviceId", error.getMessage());
         }
 
         process.kill();
@@ -165,7 +165,7 @@ public class PasswordlessGetCodesAPITest2_11 {
         String email = "test@example.com";
         String codeId = io.supertokens.utils.Utils.getUUID();
 
-        String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
+        String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqcc";
         String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
 
         // no match
@@ -223,7 +223,7 @@ public class PasswordlessGetCodesAPITest2_11 {
         String email = "test@example.com";
         String codeId = io.supertokens.utils.Utils.getUUID();
 
-        String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
+        String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqcc";
         String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
 
         // OK without matching codes
@@ -280,7 +280,7 @@ public class PasswordlessGetCodesAPITest2_11 {
         String phoneNumber = "+918989898989";
         String codeId = io.supertokens.utils.Utils.getUUID();
 
-        String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
+        String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqcc";
         String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
 
         // OK without matching codes

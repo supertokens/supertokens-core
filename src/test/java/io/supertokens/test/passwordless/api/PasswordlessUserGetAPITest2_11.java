@@ -159,8 +159,8 @@ public class PasswordlessUserGetAPITest2_11 {
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
 
-        String userIdEmail = "userId";
-        String userIdPhone = "userIdPhone";
+        String userIdEmail = "userIdSampleRandomWithLengththiemail";
+        String userIdPhone = "userIdSampleRandomWithLengththiphone";
         String email = "random@gmail.com";
         String phoneNumber = "1234";
 

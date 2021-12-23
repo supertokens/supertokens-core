@@ -20,7 +20,7 @@ public class PasswordlessDeviceId {
         try {
             return new PasswordlessDeviceId(Base64.getDecoder().decode(deviceId));
         } catch (IllegalArgumentException ex) {
-            throw new Base64EncodingException("DeviceId");
+            throw new Base64EncodingException("deviceId");
         }
     }
 

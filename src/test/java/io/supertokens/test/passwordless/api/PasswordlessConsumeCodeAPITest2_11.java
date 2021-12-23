@@ -248,7 +248,7 @@ public class PasswordlessConsumeCodeAPITest2_11 {
 
             assertNotNull(error);
             assertEquals(400, error.statusCode);
-            assertEquals("Http error. Status Code: 400. Message: Input encoding error in LinkCode", error.getMessage());
+            assertEquals("Http error. Status Code: 400. Message: Input encoding error in linkCode", error.getMessage());
         }
 
         /*
