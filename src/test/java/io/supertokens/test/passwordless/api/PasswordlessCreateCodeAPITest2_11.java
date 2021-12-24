@@ -408,8 +408,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
     /**
      * malformed deviceId -> BadRequest
-     * TODO: not working as expected 500
-     * 
+     *
      * @throws Exception
      */
     @Test
@@ -445,8 +444,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
     /**
      * only userInputCode -> BadRequest
-     * TODO: not working as expected 500
-     * 
+     *
      * @throws Exception
      */
     @Test
@@ -542,7 +540,6 @@ public class PasswordlessCreateCodeAPITest2_11 {
         byte[] linkCodeBytes = Base64.getUrlDecoder().decode(response.get("linkCode").getAsString());
         assertEquals(32, linkCodeBytes.length);
         assert (response.has("linkCode"));
-        // TODO: how was this number calculated, initial value was 50L and was causing test cases to fail
         assert ((System.currentTimeMillis() - 200L) < response.get("timeCreated").getAsLong());
         assertEquals(900000, response.get("codeLifetime").getAsLong());
     }
