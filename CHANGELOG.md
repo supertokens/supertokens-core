@@ -10,10 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Delete user endpoint
-
-### Added
-
-- Adds Passwordless recipe ( with unit test coverage )
+- Added Passwordless recipe ( with unit test coverage )
 
 ### Database changes
 

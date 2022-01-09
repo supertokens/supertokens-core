@@ -18,7 +18,7 @@ public class PasswordlessLinkCode {
             return new PasswordlessLinkCode(Base64.getUrlDecoder().decode(linkCode));
 
         } catch (IllegalArgumentException ex) {
-            throw new Base64EncodingException("LinkCode");
+            throw new Base64EncodingException("linkCode");
         }
     }
 

@@ -408,8 +408,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
     /**
      * malformed deviceId -> BadRequest
-     * TODO: not working as expected 500
-     * 
+     *
      * @throws Exception
      */
     @Test
@@ -437,9 +436,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
         assertNotNull(error);
         assertEquals(400, error.statusCode);
-        assertEquals(
-                "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber or deviceId",
-                error.getMessage());
+        assertEquals("Http error. Status Code: 400. Message: Input encoding error in deviceId", error.getMessage());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -447,8 +444,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
     /**
      * only userInputCode -> BadRequest
-     * TODO: not working as expected 500
-     * 
+     *
      * @throws Exception
      */
     @Test
@@ -544,7 +540,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
         byte[] linkCodeBytes = Base64.getUrlDecoder().decode(response.get("linkCode").getAsString());
         assertEquals(32, linkCodeBytes.length);
         assert (response.has("linkCode"));
-        assert ((System.currentTimeMillis() - 50L) < response.get("timeCreated").getAsLong());
+        assert ((System.currentTimeMillis() - 200L) < response.get("timeCreated").getAsLong());
         assertEquals(900000, response.get("codeLifetime").getAsLong());
     }
 }

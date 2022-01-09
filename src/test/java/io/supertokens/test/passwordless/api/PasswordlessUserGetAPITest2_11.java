@@ -159,8 +159,9 @@ public class PasswordlessUserGetAPITest2_11 {
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
 
-        String userIdEmail = "userId";
-        String userIdPhone = "userIdPhone";
+        // length of user ID needs to be 36 character long, otherwise it throws error with postgres DB
+        String userIdEmail = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkF";
+        String userIdPhone = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkD";
         String email = "random@gmail.com";
         String phoneNumber = "1234";
 
