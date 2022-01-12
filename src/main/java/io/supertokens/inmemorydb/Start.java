@@ -1159,6 +1159,15 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
+    public void deletePasswordlessUser(String userId) throws StorageQueryException {
+        try {
+            PasswordlessQueries.deleteUser(this, userId);
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e.actualException);
+        }
+    }
+
+    @Override
     public void updateUserEmail_Transaction(TransactionConnection con, String userId, String email)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException {
         Connection sqlCon = (Connection) con.getConnection();
