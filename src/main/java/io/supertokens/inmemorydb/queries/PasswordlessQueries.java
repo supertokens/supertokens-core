@@ -326,7 +326,6 @@ public class PasswordlessQueries {
         start.startTransaction(con -> {
             Connection sqlCon = (Connection) con.getConnection();
             try {
-                UserInfo user = getUserById(start, userId);
                 {
                     String QUERY = "DELETE FROM " + Config.getConfig(start).getUsersTable()
                             + " WHERE user_id = ? AND recipe_id = ?";
@@ -338,6 +337,9 @@ public class PasswordlessQueries {
                     }
                 }
 
+                // Even if the user is changed after we read it here (which is unlikely),
+                // we'd only leave devices that will be cleaned up later automatically when they expire.
+                UserInfo user = getUserById(start, userId);
                 {
                     String QUERY = "DELETE FROM " + Config.getConfig(start).getPasswordlessUsersTable()
                             + " WHERE user_id = ?";
