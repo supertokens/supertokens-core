@@ -53,14 +53,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 
 public class Passwordless {
-    // We are storing the "alphabets" like this because we remove a few characters from the normal English alphabet.
-    // e.g.: remove easy to confuse chars (oO0, Il)
-    private static final String USER_INPUT_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz";
-    private static final String USER_INPUT_CODE_NUM_CHARS = "123456789";
-
-    private static Character getRandomAlphaChar(SecureRandom generator) {
-        return USER_INPUT_CODE_ALPHABET.charAt(generator.nextInt(USER_INPUT_CODE_ALPHABET.length()));
-    }
+    private static final String USER_INPUT_CODE_NUM_CHARS = "0123456789";
 
     private static Character getRandomNumChar(SecureRandom generator) {
         return USER_INPUT_CODE_NUM_CHARS.charAt(generator.nextInt(USER_INPUT_CODE_NUM_CHARS.length()));
@@ -114,27 +107,10 @@ public class Passwordless {
     }
 
     private static String generateUserInputCode() {
-        // This logic is based on the idea that we wanted to incorporate letters as well
-        // as numbers in the code.
-        // We are allowing at most 2 letters in a row, to try and avoid generating slurs
-        // or other abusive codes.
-
-        // Note: this implementation gives an equal chance to either numbers or letters,
-        // so the probability of any
-        // character is lower than the probability of a number, but the distribution is
-        // uniform inside both alphabets.
-
         SecureRandom generator = new SecureRandom();
         StringBuilder sb = new StringBuilder();
-        int prevAlphaCharCount = 0;
         for (int i = 0; i < 6; ++i) {
-            if ((i < 2 || prevAlphaCharCount < 2) && generator.nextBoolean()) {
-                ++prevAlphaCharCount;
-                sb.append(getRandomAlphaChar(generator));
-            } else {
-                prevAlphaCharCount = 0;
-                sb.append(getRandomNumChar(generator));
-            }
+            sb.append(getRandomNumChar(generator));
         }
         return sb.toString();
     }
