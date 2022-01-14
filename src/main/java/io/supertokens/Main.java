@@ -23,6 +23,7 @@ import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys;
 import io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpiredEmailVerificationTokens;
 import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens;
+import io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPasswordlessDevices;
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.exceptions.QuitProgramException;
@@ -187,6 +188,9 @@ public class Main {
 
         // starts removing expired email verification tokens
         Cronjobs.addCronjob(this, DeleteExpiredEmailVerificationTokens.getInstance(this));
+
+        // removes passwordless devices with only expired codes
+        Cronjobs.addCronjob(this, DeleteExpiredPasswordlessDevices.getInstance(this));
 
         // starts Telemetry cronjob if the user has not disabled it
         if (!Config.getConfig(this).isTelemetryDisabled()) {

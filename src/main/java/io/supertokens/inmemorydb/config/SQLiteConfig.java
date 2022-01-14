@@ -57,4 +57,16 @@ public class SQLiteConfig {
     public String getJWTSigningKeysTable() {
         return "jwt_signing_keys";
     }
+
+    public String getPasswordlessUsersTable() {
+        return "passwordless_users";
+    }
+
+    public String getPasswordlessDevicesTable() {
+        return "passwordless_devices";
+    }
+
+    public String getPasswordlessCodesTable() {
+        return "passwordless_codes";
+    }
 }

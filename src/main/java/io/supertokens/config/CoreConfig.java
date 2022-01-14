@@ -46,6 +46,12 @@ public class CoreConfig {
     @JsonProperty
     private long email_verification_token_lifetime = 24 * 3600 * 1000; // in MS
 
+    @JsonProperty
+    private int passwordless_max_code_input_attempts = 5;
+
+    @JsonProperty
+    private long passwordless_code_lifetime = 900000; // in MS
+
     private final String logDefault = "asdkfahbdfk3kjHS";
     @JsonProperty
     private String info_log_path = logDefault;
@@ -104,6 +110,14 @@ public class CoreConfig {
 
     public long getEmailVerificationTokenLifetime() {
         return email_verification_token_lifetime;
+    }
+
+    public int getPasswordlessMaxCodeInputAttempts() {
+        return passwordless_max_code_input_attempts;
+    }
+
+    public long getPasswordlessCodeLifetime() {
+        return passwordless_code_lifetime;
     }
 
     public boolean isTelemetryDisabled() {
@@ -214,6 +228,14 @@ public class CoreConfig {
 
         if (email_verification_token_lifetime <= 0) {
             throw new QuitProgramException("'email_verification_token_lifetime' must be >= 0");
+        }
+
+        if (passwordless_code_lifetime <= 0) {
+            throw new QuitProgramException("'passwordless_code_lifetime' must be > 0");
+        }
+
+        if (passwordless_max_code_input_attempts <= 0) {
+            throw new QuitProgramException("'passwordless_max_code_input_attempts' must be > 0");
         }
 
         if (max_server_pool_size <= 0) {

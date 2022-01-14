@@ -20,6 +20,8 @@ import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.passwordless.Passwordless;
+import io.supertokens.passwordless.Passwordless.CreateCodeResponse;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -99,6 +101,11 @@ public class AuthRecipeTest {
             assert (count == 0);
         }
 
+        {
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { RECIPE_ID.PASSWORDLESS });
+            assert (count == 0);
+        }
+
         String thirdPartyId = "testThirdParty";
         String thirdPartyUserId_1 = "thirdPartyUserIdA";
         String email_1 = "testA@example.com";
@@ -126,6 +133,47 @@ public class AuthRecipeTest {
             assert (count == 1);
         }
 
+        {
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { RECIPE_ID.PASSWORDLESS });
+            assert (count == 0);
+        }
+
+        {
+            CreateCodeResponse createCode = Passwordless.createCode(process.getProcess(), "testX@example.com", null,
+                    null, null);
+            Passwordless.consumeCode(process.getProcess(), null, createCode.deviceIdHash, null, createCode.linkCode);
+        }
+        {
+            CreateCodeResponse createCode = Passwordless.createCode(process.getProcess(), null, "+442071838750", null,
+                    null);
+            Passwordless.consumeCode(process.getProcess(), null, createCode.deviceIdHash, null, createCode.linkCode);
+        }
+
+        {
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] {});
+            assert (count == 5);
+        }
+
+        {
+            long count = AuthRecipe.getUsersCount(process.getProcess(),
+                    new RECIPE_ID[] { RECIPE_ID.EMAIL_PASSWORD, RECIPE_ID.PASSWORDLESS });
+            assert (count == 4);
+        }
+
+        {
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { RECIPE_ID.EMAIL_PASSWORD });
+            assert (count == 2);
+        }
+
+        {
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { RECIPE_ID.THIRD_PARTY });
+            assert (count == 1);
+        }
+
+        {
+            long count = AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { RECIPE_ID.PASSWORDLESS });
+            assert (count == 2);
+        }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -613,6 +661,16 @@ public class AuthRecipeTest {
                 String email = "test" + count.getAndIncrement() + "@example.com";
 
                 return ThirdParty.signInUp(process.getProcess(), thirdPartyId, thirdPartyUserId, email).user;
+            } catch (Exception ignored) {
+            }
+            return null;
+        });
+        signUpMap.put("io.supertokens.pluginInterface.passwordless.UserInfo", o -> {
+            try {
+                String email = "test" + count.getAndIncrement() + "@example.com";
+                CreateCodeResponse createCode = Passwordless.createCode(process.getProcess(), email, null, null, null);
+                return Passwordless.consumeCode(process.getProcess(), null, createCode.deviceIdHash, null,
+                        createCode.linkCode).user;
             } catch (Exception ignored) {
             }
             return null;
