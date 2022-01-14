@@ -28,6 +28,7 @@ import io.supertokens.session.accessToken.AccessToken.AccessTokenInfo;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.session.info.TokenInfo;
+import io.supertokens.test.Retry;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import io.supertokens.test.Utils;
@@ -63,6 +64,9 @@ public class AccessTokenTest {
     public void beforeEach() {
         Utils.reset();
     }
+
+    @Rule
+    public Retry retry = new Retry(3);
 
     // * - create session with some data -> expire -> get access token without verifying, check payload is fine.
     @Test

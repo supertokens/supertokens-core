@@ -63,6 +63,9 @@ public class StorageTest {
         Utils.reset();
     }
 
+    @Rule
+    public Retry retry = new Retry(3);
+
     @Test
     public void transactionIsolationWithoutAnInitialRowTesting() throws Exception {
         String[] args = { "../" };
