@@ -67,10 +67,15 @@ public class ResetPasswordAPI extends WebserverAPI {
         }
 
         try {
-            EmailPassword.resetPassword(super.main, token, newPassword);
+            String userId = EmailPassword.resetPassword(super.main, token, newPassword);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
+
+            if (super.getVersionFromRequest(req).equals("2.11")) {
+                result.addProperty("userId", userId);
+            }
+
             super.sendJsonResponse(200, result, resp);
 
         } catch (ResetPasswordInvalidTokenException e) {
