@@ -5,11 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.7.0] - 2021-12-16
+## [3.8.0] - 2022-01-14
 
 ### Added
 
-- Delete user endpoint
 - Added Passwordless recipe ( with unit test coverage )
 
 ### Database changes
@@ -22,6 +21,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changes
 
 - New recipeId in `/users` response with a corresponding new user type
+
+## [3.7.0] - 2021-12-16
+
+### Added
+
+- Delete user endpoint
 
 ## [3.6.1] - 2021-11-15
 
