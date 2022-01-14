@@ -32,7 +32,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
@@ -61,11 +60,12 @@ public class DeleteExpiredPasswordlessDevicesTest {
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        PasswordlessStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(process.getProcess());
-
-        if (passwordlessStorage.getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
+
+        PasswordlessStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
         long codeLifetime = Config.getConfig(process.getProcess()).getPasswordlessCodeLifetime();
 
         String codeId = "deletedCode";
@@ -92,11 +92,12 @@ public class DeleteExpiredPasswordlessDevicesTest {
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        PasswordlessStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(process.getProcess());
-
-        if (passwordlessStorage.getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
+
+        PasswordlessStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(process.getProcess());
+
         long codeLifetime = Config.getConfig(process.getProcess()).getPasswordlessCodeLifetime();
 
         String codeId = "expiredCode";
