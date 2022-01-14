@@ -21,6 +21,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changes
 
 - New recipeId in `/users` response with a corresponding new user type
+- Adding the `userId` to the reponse of `recipe/user/password/reset`
 
 ## [3.7.0] - 2021-12-16
 
