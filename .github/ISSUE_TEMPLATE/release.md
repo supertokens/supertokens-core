@@ -101,3 +101,5 @@ labels:
 - [ ] Post message on discord about new update
 - [ ] Updated swaggerhub FDI spec
 - [ ] Updated swaggerhub CDI spec
+- [ ] Algolia search update for docs
+- [ ] robots.txt, sitemap.xml, noindex page update
