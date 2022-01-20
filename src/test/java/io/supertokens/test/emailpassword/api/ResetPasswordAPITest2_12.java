@@ -40,7 +40,7 @@ import static org.junit.Assert.*;
  *  - Check that empty password throws 400 error
  * */
 
-public class ResetPasswordAPITest2_11 {
+public class ResetPasswordAPITest2_12 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
