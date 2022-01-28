@@ -26,6 +26,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.webserver.api.core.UsersAPI;
 import io.supertokens.webserver.api.core.UsersCountAPI;
 import io.supertokens.webserver.api.core.*;
+import io.supertokens.webserver.api.emailpassword.UserAPI;
 import io.supertokens.webserver.api.emailpassword.*;
 import io.supertokens.webserver.api.emailverification.GenerateEmailVerificationTokenAPI;
 import io.supertokens.webserver.api.emailverification.RevokeAllTokensForUserAPI;
@@ -33,11 +34,7 @@ import io.supertokens.webserver.api.emailverification.UnverifyEmailAPI;
 import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
 import io.supertokens.webserver.api.jwt.JWKSAPI;
 import io.supertokens.webserver.api.jwt.JWTSigningAPI;
-import io.supertokens.webserver.api.passwordless.GetCodesAPI;
-import io.supertokens.webserver.api.passwordless.ConsumeCodeAPI;
-import io.supertokens.webserver.api.passwordless.DeleteCodesAPI;
-import io.supertokens.webserver.api.passwordless.DeleteCodeAPI;
-import io.supertokens.webserver.api.passwordless.CreateCodeAPI;
+import io.supertokens.webserver.api.passwordless.*;
 import io.supertokens.webserver.api.session.*;
 import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
 import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
@@ -64,7 +61,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
             ? "webserver-temp\\" + UUID.randomUUID().toString() + "\\"
             : "webserver-temp/" + UUID.randomUUID().toString() + "/";
     // contextPath is the prefix to all paths for all URLs. So it's "" for us.
-    private final String CONTEXT_PATH = "";
+    private String CONTEXT_PATH = "";
     private final Main main;
 
     private final WebServerLogging logging;
@@ -92,6 +89,8 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         if (!webserverTemp.exists()) {
             webserverTemp.mkdir();
         }
+
+        CONTEXT_PATH = Config.getConfig(main).getBasePath();
 
         // this will make it so that if there is a failure, then tomcat will throw an
         // error...

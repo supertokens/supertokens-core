@@ -11,6 +11,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Supporting CDI v2.12
 - Adding the `userId` to the reponse of `recipe/user/password/reset`
+- Adds support for providing base path for all APIs: https://github.com/supertokens/supertokens-node/issues/252
+
+### New config param:
+
+- `base_path` - default is `""` (No base path)
 
 ## [3.8.0] - 2022-01-14
 
@@ -21,9 +26,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Database changes
 
 - Adds new tables for passwordless:
-  - `passwordless_users` that stores the users of the passwordless recipe
-  - `passwordless_devices` that stores devices/information about passwordless login attempts
-  - `passwordless_codes` that stores the codes each device can consume to finish the login process
+    - `passwordless_users` that stores the users of the passwordless recipe
+    - `passwordless_devices` that stores devices/information about passwordless login attempts
+    - `passwordless_codes` that stores the codes each device can consume to finish the login process
 
 ### Changes
 
@@ -40,7 +45,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixes
 
 - Issue with JWT expiry always being lower than expected
-- Modulus and exponent for JsonWebKeys are now sent as unsigned when fetching public keys from the /jwt/jwks.json 
+- Modulus and exponent for JsonWebKeys are now sent as unsigned when fetching public keys from the /jwt/jwks.json
   endpoint. Both values are url encoded without any padding.
 
 ### Changes

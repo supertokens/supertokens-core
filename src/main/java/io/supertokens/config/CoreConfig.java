@@ -88,6 +88,16 @@ public class CoreConfig {
     @JsonProperty
     private boolean webserver_https_enabled = false;
 
+    @JsonProperty
+    private String base_path = "";
+
+    public String getBasePath() {
+        if (base_path == null || base_path.equals("/")) {
+            return "";
+        }
+        return base_path;
+    }
+
     public int getConfigVersion() {
         return core_config_version;
     }
@@ -260,6 +270,18 @@ public class CoreConfig {
                                         + " capitals)");
                     }
                 }
+            }
+        }
+
+        if (base_path != null && !base_path.equals("") && !base_path.equals("/")) {
+            if (base_path.contains(" ")) {
+                throw new QuitProgramException("Invalid characters in base_path config");
+            }
+            if (!base_path.startsWith("/")) {
+                throw new QuitProgramException("base_path must start with a '/'");
+            }
+            if (base_path.endsWith("/")) {
+                throw new QuitProgramException("base_path cannot end with '/'");
             }
         }
 
