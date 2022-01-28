@@ -81,3 +81,6 @@ core_config_version: 0
 # in CICD, we do not want to send telemetry data. For unit tests, this is commented again in Utils.reset function (in
 # the test package)
 disable_telemetry: true
+
+# (OPTIONAL | Default: ""). Used to prepend a base path to all APIs when querying the core.
+# base_path:

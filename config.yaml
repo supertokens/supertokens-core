@@ -80,3 +80,7 @@ core_config_version: 0
 # (OPTIONAL | Default: false). Learn more about Telemetry here:
 # https://github.com/supertokens/supertokens-core/wiki/Telemetry
 # disable_telemetry:
+
+
+# (OPTIONAL | Default: ""). Used to prepend a base path to all APIs when querying the core.
+# base_path:

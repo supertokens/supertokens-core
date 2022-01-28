@@ -785,6 +785,141 @@ public class WebserverTest extends Mockito {
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void invalidBasePathTest() throws InterruptedException, IOException {
+        {
+            Utils.setValueInConfig("base_path", "somepath/");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
+            assertTrue(e != null && e.exception instanceof QuitProgramException
+                    && e.exception.getMessage().equals("base_path must start with a '/'"));
+            Utils.reset();
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "/somepath/");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
+            assertTrue(e != null && e.exception instanceof QuitProgramException
+                    && e.exception.getMessage().equals("base_path cannot end with '/'"));
+            Utils.reset();
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "/some path");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
+            assertTrue(e != null && e.exception instanceof QuitProgramException
+                    && e.exception.getMessage().equals("Invalid characters in base_path config"));
+            Utils.reset();
+        }
+
+    }
+
+    @Test
+    public void validBasePath() throws InterruptedException, IOException, HttpResponseException {
+        {
+            Utils.setValueInConfig("base_path", "/");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
+                    1000, 1000, null);
+            assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+            Utils.reset();
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "\"\"");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
+                    1000, 1000, null);
+            assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+            Utils.reset();
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "\"/test\"");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/test/hello",
+                    null, 1000, 1000, null);
+            assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+            Utils.reset();
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "\"/test/path\"");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/test/path/hello", null, 1000, 1000, null);
+            assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "\"/te3st/Pa23th\"");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            {
+                String response = HttpRequest.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/te3st/Pa23th/hello", null, 1000, 1000, null);
+                assertEquals("Hello", response);
+            }
+
+            try {
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                        null);
+                fail();
+            } catch (Exception e) {
+                assert (e.getMessage().startsWith("Http error. Status Code: 404"));
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
+                    1000, 1000, null);
+            assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+    }
+
     private static RecipeRouter getRecipeRouter(TestingProcess process, String recipe_1, String recipe_2)
             throws Exception {
         WebserverAPI recipe_1_api = new WebserverAPI(process.getProcess(), recipe_1) {

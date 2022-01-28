@@ -131,7 +131,7 @@ public class EmailPassword {
         }
     }
 
-    public static void resetPassword(Main main, String token, String password)
+    public static String resetPassword(Main main, String token, String password)
             throws ResetPasswordInvalidTokenException, NoSuchAlgorithmException, StorageQueryException,
             StorageTransactionLogicException {
 
@@ -149,7 +149,7 @@ public class EmailPassword {
         final String userId = resetInfo.userId;
 
         try {
-            storage.startTransaction(con -> {
+            return storage.startTransaction(con -> {
 
                 PasswordResetTokenInfo[] allTokens = storage.getAllPasswordResetTokenInfoForUser_Transaction(con,
                         userId);
@@ -176,7 +176,7 @@ public class EmailPassword {
                 storage.updateUsersPassword_Transaction(con, userId, hashedPassword);
 
                 storage.commitTransaction(con);
-                return null;
+                return userId;
             });
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof ResetPasswordInvalidTokenException) {
