@@ -5,14 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [3.9.0] - 2022-01-20
+## [unreleased]
 
 ### Changes
 
 - Supporting CDI v2.12
 - Adding the `userId` to the reponse of `recipe/user/password/reset`
 - Adds support for providing base path for all APIs: https://github.com/supertokens/supertokens-node/issues/252
-
+- Add workflow to verify if pr title follows conventional commits
 ### New config param:
 
 - `base_path` - default is `""` (No base path)
