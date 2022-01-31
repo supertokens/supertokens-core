@@ -1,7 +1,7 @@
 
-![SuperTokens banner](https://raw.githubusercontent.com/supertokens/supertokens-logo/master/images/Artboard%20%E2%80%93%2027%402x.png)
+[![SuperTokens banner](https://raw.githubusercontent.com/supertokens/supertokens-logo/master/images/Artboard%20%E2%80%93%2027%402x.png)](https://supertokens.com/)
 
-# SuperTokens
+# SuperTokens 
 
 <a href="https://supertokens.io/discord">
 <img src="https://img.shields.io/discord/603466164219281420.svg?logo=discord"
@@ -145,6 +145,10 @@ Mihály Lengyel</b></sub></a></td>
 <td align="center"><a href="https://github.com/miketromba"><img src="https://avatars.githubusercontent.com/u/25141252?v=4" width="100px;" alt=""/><br /><sub><b>miketromba</b></sub></a></td>
 <td align="center"><a href="https://github.com/olhapi"><img src="https://avatars.githubusercontent.com/u/4780263?v=4" width="100px;" alt=""/><br /><sub><b>Oleg Vdovenko</b></sub></a></td>
 <td align="center"><a href="https://github.com/siddharthmudgal"><img src="https://avatars.githubusercontent.com/u/9314217?v=4" width="100px;" alt=""/><br /><sub><b>Siddharth</b></sub></a></td>
+  </tr>
+  <tr>
+<td align="center"><a href="https://github.com/xuatz"><img src="https://avatars.githubusercontent.com/u/9292261?v=4" width="100px;" alt=""/><br /><sub><b>xuatz</b></sub></a></td>
+<td align="center"><a href="https://github.com/yowayb"><img src="https://avatars.githubusercontent.com/u/603829?v=4" width="100px;" alt=""/><br /><sub><b>Yoway Buorn</b></sub></a></td>
   </tr>
 </table>
 
