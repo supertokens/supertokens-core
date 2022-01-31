@@ -171,7 +171,7 @@ public class LoggingTest {
     }
 
     @Test
-    public void testStandardOutLoggingWithNullStr() throws Exception {
+    public void testStdoutStderrWithNullStr() throws Exception {
         String[] args = { "../" };
         ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();
         ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
@@ -192,7 +192,7 @@ public class LoggingTest {
             Logging.error(process.getProcess(), "errTest-sdvjovnoasid", false);
 
             assertTrue(fileContainsString(stdOutput, "outTest-dfkn3knsakn"));
-            assertTrue(fileContainsString(stdOutput, "errTest-sdvjovnoasid"));
+            assertTrue(fileContainsString(errorOutput, "errTest-sdvjovnoasid"));
 
         } finally {
             process.kill();
@@ -204,7 +204,7 @@ public class LoggingTest {
     }
 
     @Test
-    public void testStandardOutLoggingWithNull() throws Exception {
+    public void testStdoutStderrWithNull() throws Exception {
         String[] args = { "../" };
         ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();
         ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
@@ -225,7 +225,7 @@ public class LoggingTest {
             Logging.error(process.getProcess(), "errTest-sdvjovnoasid", false);
 
             assertTrue(fileContainsString(stdOutput, "outTest-dfkn3knsakn"));
-            assertTrue(fileContainsString(stdOutput, "errTest-sdvjovnoasid"));
+            assertTrue(fileContainsString(errorOutput, "errTest-sdvjovnoasid"));
 
         } finally {
             process.kill();

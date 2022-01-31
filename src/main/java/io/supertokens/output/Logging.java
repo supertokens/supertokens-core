@@ -186,6 +186,9 @@ public class Logging extends ResourceDistributor.SingletonResource {
         ConsoleAppender<ILoggingEvent> logConsoleAppender = new ConsoleAppender<>();
         logConsoleAppender.setEncoder(ple);
         logConsoleAppender.setContext(lc);
+        if (name.startsWith("io.supertokens.Error")) {
+            logConsoleAppender.setTarget("System.err");
+        }
         logConsoleAppender.start();
 
         Logger logger = (Logger) LoggerFactory.getLogger(name);
