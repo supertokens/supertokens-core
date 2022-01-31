@@ -72,7 +72,10 @@ public class ResetPasswordAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
-            if (super.getVersionFromRequest(req).equals("2.12")) {
+            if (!(super.getVersionFromRequest(req).equals("2.7") || super.getVersionFromRequest(req).equals("2.8")
+                    || super.getVersionFromRequest(req).equals("2.9") || super.getVersionFromRequest(req).equals("2.10")
+                    || super.getVersionFromRequest(req).equals("2.11"))) {
+                // >= 2.12
                 result.addProperty("userId", userId);
             }
 
