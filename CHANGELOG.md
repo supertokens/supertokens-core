@@ -7,6 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [3.9.0] - 2022-01-31
 ### Changes
 
 - Supporting CDI v2.12
