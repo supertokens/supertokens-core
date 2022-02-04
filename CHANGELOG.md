@@ -6,6 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
+### Changes
+
+- Fixed ResultSet instances to avoid Memory Leaks
 
 ## [3.9.0] - 2022-01-31
 ### Changes
@@ -14,7 +17,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adding the `userId` to the reponse of `recipe/user/password/reset`
 - Adds support for providing base path for all APIs: https://github.com/supertokens/supertokens-node/issues/252
 - Add workflow to verify if pr title follows conventional commits
-- Fixed ResultSet instances to avoid Memory Leaks
+
 ### New config param:
 
 - `base_path` - default is `""` (No base path)
