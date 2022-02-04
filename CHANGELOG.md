@@ -14,6 +14,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adding the `userId` to the reponse of `recipe/user/password/reset`
 - Adds support for providing base path for all APIs: https://github.com/supertokens/supertokens-node/issues/252
 - Add workflow to verify if pr title follows conventional commits
+- Closed ResultSet instances to avoid Memory Leaks
 ### New config param:
 
 - `base_path` - default is `""` (No base path)
