@@ -109,16 +109,17 @@ public class EmailPasswordQueries {
         try (Connection con = ConnectionPool.getConnection(start);
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, userId);
-            ResultSet result = pst.executeQuery();
-            List<PasswordResetTokenInfo> temp = new ArrayList<>();
-            while (result.next()) {
-                temp.add(PasswordResetTokenInfoRowMapper.getInstance().mapOrThrow(result));
+            try (ResultSet result = pst.executeQuery()) {
+                List<PasswordResetTokenInfo> temp = new ArrayList<>();
+                while (result.next()) {
+                    temp.add(PasswordResetTokenInfoRowMapper.getInstance().mapOrThrow(result));
+                }
+                PasswordResetTokenInfo[] finalResult = new PasswordResetTokenInfo[temp.size()];
+                for (int i = 0; i < temp.size(); i++) {
+                    finalResult[i] = temp.get(i);
+                }
+                return finalResult;
             }
-            PasswordResetTokenInfo[] finalResult = new PasswordResetTokenInfo[temp.size()];
-            for (int i = 0; i < temp.size(); i++) {
-                finalResult[i] = temp.get(i);
-            }
-            return finalResult;
         }
     }
 
@@ -132,16 +133,17 @@ public class EmailPasswordQueries {
 
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, userId);
-            ResultSet result = pst.executeQuery();
-            List<PasswordResetTokenInfo> temp = new ArrayList<>();
-            while (result.next()) {
-                temp.add(PasswordResetTokenInfoRowMapper.getInstance().mapOrThrow(result));
+            try (ResultSet result = pst.executeQuery()) {
+                List<PasswordResetTokenInfo> temp = new ArrayList<>();
+                while (result.next()) {
+                    temp.add(PasswordResetTokenInfoRowMapper.getInstance().mapOrThrow(result));
+                }
+                PasswordResetTokenInfo[] finalResult = new PasswordResetTokenInfo[temp.size()];
+                for (int i = 0; i < temp.size(); i++) {
+                    finalResult[i] = temp.get(i);
+                }
+                return finalResult;
             }
-            PasswordResetTokenInfo[] finalResult = new PasswordResetTokenInfo[temp.size()];
-            for (int i = 0; i < temp.size(); i++) {
-                finalResult[i] = temp.get(i);
-            }
-            return finalResult;
         }
     }
 
@@ -152,9 +154,10 @@ public class EmailPasswordQueries {
         try (Connection con = ConnectionPool.getConnection(start);
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, token);
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return PasswordResetTokenInfoRowMapper.getInstance().mapOrThrow(result);
+            try (ResultSet result = pst.executeQuery()) {
+                if (result.next()) {
+                    return PasswordResetTokenInfoRowMapper.getInstance().mapOrThrow(result);
+                }
             }
         }
         return null;
@@ -288,9 +291,10 @@ public class EmailPasswordQueries {
                     // i+1 cause this starts with 1 and not 0
                     pst.setString(i + 1, ids.get(i));
                 }
-                ResultSet result = pst.executeQuery();
-                while (result.next()) {
-                    finalResult.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+                try (ResultSet result = pst.executeQuery()) {
+                    while (result.next()) {
+                        finalResult.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+                    }
                 }
             }
         }
@@ -306,9 +310,10 @@ public class EmailPasswordQueries {
                 + Config.getConfig(start).getEmailPasswordUsersTable() + " WHERE user_id = ?";
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, id);
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return UserInfoRowMapper.getInstance().mapOrThrow(result);
+            try (ResultSet result = pst.executeQuery()) {
+                if (result.next()) {
+                    return UserInfoRowMapper.getInstance().mapOrThrow(result);
+                }
             }
         }
         return null;
@@ -320,9 +325,10 @@ public class EmailPasswordQueries {
         try (Connection con = ConnectionPool.getConnection(start);
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, email);
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return UserInfoRowMapper.getInstance().mapOrThrow(result);
+            try (ResultSet result = pst.executeQuery()) {
+                if (result.next()) {
+                    return UserInfoRowMapper.getInstance().mapOrThrow(result);
+                }
             }
         }
         return null;
@@ -337,16 +343,17 @@ public class EmailPasswordQueries {
         try (Connection con = ConnectionPool.getConnection(start);
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setInt(1, limit);
-            ResultSet result = pst.executeQuery();
-            List<UserInfo> temp = new ArrayList<>();
-            while (result.next()) {
-                temp.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+            try (ResultSet result = pst.executeQuery()) {
+                List<UserInfo> temp = new ArrayList<>();
+                while (result.next()) {
+                    temp.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+                }
+                UserInfo[] finalResult = new UserInfo[temp.size()];
+                for (int i = 0; i < temp.size(); i++) {
+                    finalResult[i] = temp.get(i);
+                }
+                return finalResult;
             }
-            UserInfo[] finalResult = new UserInfo[temp.size()];
-            for (int i = 0; i < temp.size(); i++) {
-                finalResult[i] = temp.get(i);
-            }
-            return finalResult;
         }
     }
 
@@ -364,16 +371,17 @@ public class EmailPasswordQueries {
             pst.setLong(2, timeJoined);
             pst.setString(3, userId);
             pst.setInt(4, limit);
-            ResultSet result = pst.executeQuery();
-            List<UserInfo> temp = new ArrayList<>();
-            while (result.next()) {
-                temp.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+            try (ResultSet result = pst.executeQuery()) {
+                List<UserInfo> temp = new ArrayList<>();
+                while (result.next()) {
+                    temp.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+                }
+                UserInfo[] finalResult = new UserInfo[temp.size()];
+                for (int i = 0; i < temp.size(); i++) {
+                    finalResult[i] = temp.get(i);
+                }
+                return finalResult;
             }
-            UserInfo[] finalResult = new UserInfo[temp.size()];
-            for (int i = 0; i < temp.size(); i++) {
-                finalResult[i] = temp.get(i);
-            }
-            return finalResult;
         }
     }
 
@@ -382,11 +390,12 @@ public class EmailPasswordQueries {
         String QUERY = "SELECT COUNT(*) as total FROM " + Config.getConfig(start).getEmailPasswordUsersTable();
         try (Connection con = ConnectionPool.getConnection(start);
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return result.getLong("total");
+            try (ResultSet result = pst.executeQuery()) {
+                if (result.next()) {
+                    return result.getLong("total");
+                }
+                return 0;
             }
-            return 0;
         }
     }
 

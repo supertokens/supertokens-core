@@ -57,14 +57,15 @@ public class JWTSigningQueries {
                 + " ORDER BY created_at DESC;";
 
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-            ResultSet result = pst.executeQuery();
-            List<JWTSigningKeyInfo> keys = new ArrayList<>();
+            try (ResultSet result = pst.executeQuery()) {
+                List<JWTSigningKeyInfo> keys = new ArrayList<>();
 
-            while (result.next()) {
-                keys.add(JWTSigningKeyInfoRowMapper.getInstance().mapOrThrow(result));
+                while (result.next()) {
+                    keys.add(JWTSigningKeyInfoRowMapper.getInstance().mapOrThrow(result));
+                }
+
+                return keys;
             }
-
-            return keys;
         }
     }
 

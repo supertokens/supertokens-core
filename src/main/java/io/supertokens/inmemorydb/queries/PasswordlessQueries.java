@@ -112,9 +112,10 @@ public class PasswordlessQueries {
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, deviceIdHash);
 
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return PasswordlessDeviceRowMapper.getInstance().mapOrThrow(result);
+            try (ResultSet result = pst.executeQuery()) {
+                if (result.next()) {
+                    return PasswordlessDeviceRowMapper.getInstance().mapOrThrow(result);
+                }
             }
         }
         return null;
@@ -166,9 +167,10 @@ public class PasswordlessQueries {
         List<String> deviceIdHashes = new ArrayList<>();
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, phoneNumber);
-            ResultSet result = pst.executeQuery();
-            while (result.next()) {
-                deviceIdHashes.add(result.getString("device_id_hash"));
+            try (ResultSet result = pst.executeQuery()) {
+                while (result.next()) {
+                    deviceIdHashes.add(result.getString("device_id_hash"));
+                }
             }
         }
         deleteRowsByDeviceIdHashList_Transaction(con, Config.getConfig(start).getPasswordlessCodesTable(),
@@ -191,9 +193,10 @@ public class PasswordlessQueries {
         List<String> deviceIdHashes = new ArrayList<>();
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, email);
-            ResultSet result = pst.executeQuery();
-            while (result.next()) {
-                deviceIdHashes.add(result.getString("device_id_hash"));
+            try (ResultSet result = pst.executeQuery()) {
+                while (result.next()) {
+                    deviceIdHashes.add(result.getString("device_id_hash"));
+                }
             }
         }
         deleteRowsByDeviceIdHashList_Transaction(con, Config.getConfig(start).getPasswordlessCodesTable(),
@@ -247,16 +250,17 @@ public class PasswordlessQueries {
 
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, deviceIdHash);
-            ResultSet result = pst.executeQuery();
-            List<PasswordlessCode> temp = new ArrayList<>();
-            while (result.next()) {
-                temp.add(PasswordlessCodeRowMapper.getInstance().mapOrThrow(result));
+            try (ResultSet result = pst.executeQuery()) {
+                List<PasswordlessCode> temp = new ArrayList<>();
+                while (result.next()) {
+                    temp.add(PasswordlessCodeRowMapper.getInstance().mapOrThrow(result));
+                }
+                PasswordlessCode[] finalResult = new PasswordlessCode[temp.size()];
+                for (int i = 0; i < temp.size(); i++) {
+                    finalResult[i] = temp.get(i);
+                }
+                return finalResult;
             }
-            PasswordlessCode[] finalResult = new PasswordlessCode[temp.size()];
-            for (int i = 0; i < temp.size(); i++) {
-                finalResult[i] = temp.get(i);
-            }
-            return finalResult;
         }
     }
 
@@ -269,9 +273,10 @@ public class PasswordlessQueries {
 
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, linkCodeHash);
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return PasswordlessCodeRowMapper.getInstance().mapOrThrow(result);
+            try (ResultSet result = pst.executeQuery()) {
+                if (result.next()) {
+                    return PasswordlessCodeRowMapper.getInstance().mapOrThrow(result);
+                }
             }
         }
         return null;
@@ -402,10 +407,10 @@ public class PasswordlessQueries {
                     + Config.getConfig(start).getPasswordlessDevicesTable() + " WHERE device_id_hash = ?";
             try (PreparedStatement pst = con.prepareStatement(QUERY)) {
                 pst.setString(1, deviceIdHash);
-                ResultSet result = pst.executeQuery();
-
-                if (result.next()) {
-                    return PasswordlessDeviceRowMapper.getInstance().mapOrThrow(result);
+                try (ResultSet result = pst.executeQuery()) {
+                    if (result.next()) {
+                        return PasswordlessDeviceRowMapper.getInstance().mapOrThrow(result);
+                    }
                 }
             }
             return null;
@@ -420,16 +425,17 @@ public class PasswordlessQueries {
         try (Connection con = ConnectionPool.getConnection(start);
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, email);
-            ResultSet result = pst.executeQuery();
-            List<PasswordlessDevice> temp = new ArrayList<>();
-            while (result.next()) {
-                temp.add(PasswordlessDeviceRowMapper.getInstance().mapOrThrow(result));
+            try (ResultSet result = pst.executeQuery()) {
+                List<PasswordlessDevice> temp = new ArrayList<>();
+                while (result.next()) {
+                    temp.add(PasswordlessDeviceRowMapper.getInstance().mapOrThrow(result));
+                }
+                PasswordlessDevice[] finalResult = new PasswordlessDevice[temp.size()];
+                for (int i = 0; i < temp.size(); i++) {
+                    finalResult[i] = temp.get(i);
+                }
+                return finalResult;
             }
-            PasswordlessDevice[] finalResult = new PasswordlessDevice[temp.size()];
-            for (int i = 0; i < temp.size(); i++) {
-                finalResult[i] = temp.get(i);
-            }
-            return finalResult;
         }
     }
 
@@ -441,16 +447,17 @@ public class PasswordlessQueries {
         try (Connection con = ConnectionPool.getConnection(start);
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, phoneNumber);
-            ResultSet result = pst.executeQuery();
-            List<PasswordlessDevice> temp = new ArrayList<>();
-            while (result.next()) {
-                temp.add(PasswordlessDeviceRowMapper.getInstance().mapOrThrow(result));
+            try (ResultSet result = pst.executeQuery()) {
+                List<PasswordlessDevice> temp = new ArrayList<>();
+                while (result.next()) {
+                    temp.add(PasswordlessDeviceRowMapper.getInstance().mapOrThrow(result));
+                }
+                PasswordlessDevice[] finalResult = new PasswordlessDevice[temp.size()];
+                for (int i = 0; i < temp.size(); i++) {
+                    finalResult[i] = temp.get(i);
+                }
+                return finalResult;
             }
-            PasswordlessDevice[] finalResult = new PasswordlessDevice[temp.size()];
-            for (int i = 0; i < temp.size(); i++) {
-                finalResult[i] = temp.get(i);
-            }
-            return finalResult;
         }
     }
 
@@ -469,16 +476,17 @@ public class PasswordlessQueries {
         try (Connection con = ConnectionPool.getConnection(start);
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setLong(1, time);
-            ResultSet result = pst.executeQuery();
-            List<PasswordlessCode> temp = new ArrayList<>();
-            while (result.next()) {
-                temp.add(PasswordlessCodeRowMapper.getInstance().mapOrThrow(result));
+            try (ResultSet result = pst.executeQuery()) {
+                List<PasswordlessCode> temp = new ArrayList<>();
+                while (result.next()) {
+                    temp.add(PasswordlessCodeRowMapper.getInstance().mapOrThrow(result));
+                }
+                PasswordlessCode[] finalResult = new PasswordlessCode[temp.size()];
+                for (int i = 0; i < temp.size(); i++) {
+                    finalResult[i] = temp.get(i);
+                }
+                return finalResult;
             }
-            PasswordlessCode[] finalResult = new PasswordlessCode[temp.size()];
-            for (int i = 0; i < temp.size(); i++) {
-                finalResult[i] = temp.get(i);
-            }
-            return finalResult;
         }
     }
 
@@ -489,9 +497,10 @@ public class PasswordlessQueries {
         try (Connection con = ConnectionPool.getConnection(start);
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, codeId);
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return PasswordlessCodeRowMapper.getInstance().mapOrThrow(result);
+            try (ResultSet result = pst.executeQuery()) {
+                if (result.next()) {
+                    return PasswordlessCodeRowMapper.getInstance().mapOrThrow(result);
+                }
             }
         }
         return null;
@@ -528,9 +537,10 @@ public class PasswordlessQueries {
                     // i+1 cause this starts with 1 and not 0
                     pst.setString(i + 1, ids.get(i));
                 }
-                ResultSet result = pst.executeQuery();
-                while (result.next()) {
-                    finalResult.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+                try (ResultSet result = pst.executeQuery()) {
+                    while (result.next()) {
+                        finalResult.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
+                    }
                 }
             }
         }
@@ -555,9 +565,10 @@ public class PasswordlessQueries {
         try (Connection con = ConnectionPool.getConnection(start);
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, email);
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return UserInfoRowMapper.getInstance().mapOrThrow(result);
+            try (ResultSet result = pst.executeQuery()) {
+                if (result.next()) {
+                    return UserInfoRowMapper.getInstance().mapOrThrow(result);
+                }
             }
         }
         return null;
@@ -571,10 +582,10 @@ public class PasswordlessQueries {
         try (Connection con = ConnectionPool.getConnection(start);
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, phoneNumber);
-            ResultSet result = pst.executeQuery();
-
-            if (result.next()) {
-                return UserInfoRowMapper.getInstance().mapOrThrow(result);
+            try (ResultSet result = pst.executeQuery()) {
+                if (result.next()) {
+                    return UserInfoRowMapper.getInstance().mapOrThrow(result);
+                }
             }
         }
         return null;

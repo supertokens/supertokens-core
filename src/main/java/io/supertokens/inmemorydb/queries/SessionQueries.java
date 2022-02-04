@@ -79,9 +79,10 @@ public class SessionQueries {
                 + " WHERE session_handle = ?";
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, sessionHandle);
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return SessionInfoRowMapper.getInstance().mapOrThrow(result);
+            try (ResultSet result = pst.executeQuery()) {
+                if (result.next()) {
+                    return SessionInfoRowMapper.getInstance().mapOrThrow(result);
+                }
             }
         }
         return null;
@@ -105,11 +106,12 @@ public class SessionQueries {
 
         try (Connection con = ConnectionPool.getConnection(start);
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return result.getInt("num");
+            try (ResultSet result = pst.executeQuery()) {
+                if (result.next()) {
+                    return result.getInt("num");
+                }
+                throw new SQLException("Should not have come here.");
             }
-            throw new SQLException("Should not have come here.");
         }
     }
 
@@ -153,16 +155,17 @@ public class SessionQueries {
         try (Connection con = ConnectionPool.getConnection(start);
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, userId);
-            ResultSet result = pst.executeQuery();
-            List<String> temp = new ArrayList<>();
-            while (result.next()) {
-                temp.add(result.getString("session_handle"));
+            try (ResultSet result = pst.executeQuery()) {
+                List<String> temp = new ArrayList<>();
+                while (result.next()) {
+                    temp.add(result.getString("session_handle"));
+                }
+                String[] finalResult = new String[temp.size()];
+                for (int i = 0; i < temp.size(); i++) {
+                    finalResult[i] = temp.get(i);
+                }
+                return finalResult;
             }
-            String[] finalResult = new String[temp.size()];
-            for (int i = 0; i < temp.size(); i++) {
-                finalResult[i] = temp.get(i);
-            }
-            return finalResult;
         }
     }
 
@@ -183,9 +186,10 @@ public class SessionQueries {
         try (Connection con = ConnectionPool.getConnection(start);
                 PreparedStatement pst = con.prepareStatement(QUERY)) {
             pst.setString(1, sessionHandle);
-            ResultSet result = pst.executeQuery();
-            if (result.next()) {
-                return SessionInfoRowMapper.getInstance().mapOrThrow(result);
+            try (ResultSet result = pst.executeQuery()) {
+                if (result.next()) {
+                    return SessionInfoRowMapper.getInstance().mapOrThrow(result);
+                }
             }
         }
         return null;
@@ -245,16 +249,17 @@ public class SessionQueries {
         String QUERY = "SELECT * FROM " + accessTokenSigningKeysTableName;
 
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-            ResultSet result = pst.executeQuery();
-            List<KeyValueInfo> temp = new ArrayList<>();
-            while (result.next()) {
-                temp.add(AccessTokenSigningKeyRowMapper.getInstance().mapOrThrow(result));
+            try (ResultSet result = pst.executeQuery()) {
+                List<KeyValueInfo> temp = new ArrayList<>();
+                while (result.next()) {
+                    temp.add(AccessTokenSigningKeyRowMapper.getInstance().mapOrThrow(result));
+                }
+                KeyValueInfo[] finalResult = new KeyValueInfo[temp.size()];
+                for (int i = 0; i < temp.size(); i++) {
+                    finalResult[i] = temp.get(i);
+                }
+                return finalResult;
             }
-            KeyValueInfo[] finalResult = new KeyValueInfo[temp.size()];
-            for (int i = 0; i < temp.size(); i++) {
-                finalResult[i] = temp.get(i);
-            }
-            return finalResult;
         }
     }
 
