@@ -4,7 +4,7 @@ We're so excited you're interested in helping with SuperTokens! We are happy to 
 
 ## New to Open Source?
 1. Take a look at [How to Contribute to an Open Source Project on GitHub](https://egghead.io/courses/how-to-contribute-to-an-open-source-project-on-github)
-2. Go thorugh the [SuperTokens Code of Conduct](https://github.com/supertokens/supertokens-core/blob/master/CODE_OF_CONDUCT.md)
+2. Go through the [SuperTokens Code of Conduct](https://github.com/supertokens/supertokens-core/blob/master/CODE_OF_CONDUCT.md)
 
 ## Where to ask Questions?
 1. Check our [Github Issues](https://github.com/supertokens/supertokens-core/issues) to see if someone has already answered your question.  
