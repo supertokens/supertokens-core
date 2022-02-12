@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.inmemorydb.ConnectionWithLocks;
+import io.supertokens.inmemorydb.PreparedStatementValueSetter;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.KeyValueInfo;
@@ -33,6 +34,10 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static io.supertokens.inmemorydb.PreparedStatementValueSetter.NO_OP_SETTER;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
+import static io.supertokens.inmemorydb.config.Config.getConfig;
 
 public class SessionQueries {
 
@@ -101,18 +106,15 @@ public class SessionQueries {
         }
     }
 
-    public static int getNumberOfSessions(Start start) throws SQLException {
-        String QUERY = "SELECT count(*) as num FROM " + Config.getConfig(start).getSessionInfoTable();
+    public static int getNumberOfSessions(Start start) throws SQLException, StorageQueryException {
+        String QUERY = "SELECT count(*) as num FROM " + getConfig(start).getSessionInfoTable();
 
-        try (Connection con = ConnectionPool.getConnection(start);
-                PreparedStatement pst = con.prepareStatement(QUERY)) {
-            try (ResultSet result = pst.executeQuery()) {
-                if (result.next()) {
-                    return result.getInt("num");
-                }
-                throw new SQLException("Should not have come here.");
+        return execute(start, QUERY, NO_OP_SETTER, result -> {
+            if (result.next()) {
+                return result.getInt("num");
             }
-        }
+            throw new SQLException("Should not have come here.");
+        });
     }
 
     public static int deleteSession(Start start, String[] sessionHandles) throws SQLException {
@@ -148,25 +150,17 @@ public class SessionQueries {
         }
     }
 
-    public static String[] getAllSessionHandlesForUser(Start start, String userId) throws SQLException {
-        String QUERY = "SELECT session_handle FROM " + Config.getConfig(start).getSessionInfoTable()
-                + " WHERE user_id = ?";
+    public static String[] getAllSessionHandlesForUser(Start start, String userId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT session_handle FROM " + getConfig(start).getSessionInfoTable() + " WHERE user_id = ?";
 
-        try (Connection con = ConnectionPool.getConnection(start);
-                PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, userId);
-            try (ResultSet result = pst.executeQuery()) {
-                List<String> temp = new ArrayList<>();
-                while (result.next()) {
-                    temp.add(result.getString("session_handle"));
-                }
-                String[] finalResult = new String[temp.size()];
-                for (int i = 0; i < temp.size(); i++) {
-                    finalResult[i] = temp.get(i);
-                }
-                return finalResult;
+        return execute(start, QUERY, pst -> pst.setString(1, userId), result -> {
+            List<String> temp = new ArrayList<>();
+            while (result.next()) {
+                temp.add(result.getString("session_handle"));
             }
-        }
+            return temp.toArray(String[]::new);
+        });
     }
 
     public static void deleteAllExpiredSessions(Start start) throws SQLException {
@@ -183,16 +177,12 @@ public class SessionQueries {
         String QUERY = "SELECT session_handle, user_id, refresh_token_hash_2, session_data, expires_at, "
                 + "created_at_time, jwt_user_payload FROM " + Config.getConfig(start).getSessionInfoTable()
                 + " WHERE session_handle = ?";
-        try (Connection con = ConnectionPool.getConnection(start);
-                PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, sessionHandle);
-            try (ResultSet result = pst.executeQuery()) {
-                if (result.next()) {
-                    return SessionInfoRowMapper.getInstance().mapOrThrow(result);
-                }
+        return execute(start, QUERY, pst -> pst.setString(1, sessionHandle), result -> {
+            if (result.next()) {
+                return SessionInfoRowMapper.getInstance().mapOrThrow(result);
             }
-        }
-        return null;
+            return null;
+        });
     }
 
     public static int updateSession(Start start, String sessionHandle, JsonObject sessionData, JsonObject jwtPayload)

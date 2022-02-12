@@ -18,9 +18,7 @@ package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.inmemorydb.ConnectionPool;
-import io.supertokens.inmemorydb.ConnectionWithLocks;
-import io.supertokens.inmemorydb.Start;
+import io.supertokens.inmemorydb.*;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -38,6 +36,10 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static io.supertokens.inmemorydb.PreparedStatementValueSetter.NO_OP_SETTER;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
+import static io.supertokens.inmemorydb.config.Config.getConfig;
 
 public class GeneralQueries {
 
@@ -261,19 +263,14 @@ public class GeneralQueries {
     }
 
     public static KeyValueInfo getKeyValue(Start start, String key) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT value, created_at_time FROM " + Config.getConfig(start).getKeyValueTable()
-                + " WHERE name = ?";
+        String QUERY = "SELECT value, created_at_time FROM " + getConfig(start).getKeyValueTable() + " WHERE name = ?";
 
-        try (Connection con = ConnectionPool.getConnection(start);
-                PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, key);
-            try (ResultSet result = pst.executeQuery()) {
-                if (result.next()) {
-                    return KeyValueInfoRowMapper.getInstance().mapOrThrow(result);
-                }
+        return QueryExecutorTemplate.execute(start, QUERY, pst -> pst.setString(1, key), result -> {
+            if (result.next()) {
+                return KeyValueInfoRowMapper.getInstance().mapOrThrow(result);
             }
-        }
-        return null;
+            return null;
+        });
     }
 
     public static KeyValueInfo getKeyValue_Transaction(Start start, Connection con, String key)
@@ -311,9 +308,9 @@ public class GeneralQueries {
         }
     }
 
-    public static long getUsersCount(Start start, RECIPE_ID[] includeRecipeIds) throws SQLException {
-        StringBuilder QUERY = new StringBuilder(
-                "SELECT COUNT(*) as total FROM " + Config.getConfig(start).getUsersTable());
+    public static long getUsersCount(Start start, RECIPE_ID[] includeRecipeIds)
+            throws SQLException, StorageQueryException {
+        StringBuilder QUERY = new StringBuilder("SELECT COUNT(*) as total FROM " + getConfig(start).getUsersTable());
         if (includeRecipeIds != null && includeRecipeIds.length > 0) {
             QUERY.append(" WHERE recipe_id IN (");
             for (int i = 0; i < includeRecipeIds.length; i++) {
@@ -327,15 +324,12 @@ public class GeneralQueries {
             QUERY.append(")");
         }
 
-        try (Connection con = ConnectionPool.getConnection(start);
-                PreparedStatement pst = con.prepareStatement(QUERY.toString())) {
-            try (ResultSet result = pst.executeQuery()) {
-                if (result.next()) {
-                    return result.getLong("total");
-                }
-                return 0;
+        return execute(start, QUERY.toString(), NO_OP_SETTER, result -> {
+            if (result.next()) {
+                return result.getLong("total");
             }
-        }
+            return 0L;
+        });
     }
 
     public static AuthRecipeUserInfo[] getUsers(Start start, @NotNull Integer limit, @NotNull String timeJoinedOrder,
@@ -343,7 +337,7 @@ public class GeneralQueries {
             throws SQLException, StorageQueryException {
 
         // This list will be used to keep track of the result's order from the db
-        List<UserInfoPaginationResultHolder> usersFromQuery = new ArrayList<>();
+        List<UserInfoPaginationResultHolder> usersFromQuery;
 
         {
             StringBuilder RECIPE_ID_CONDITION = new StringBuilder();
@@ -366,40 +360,41 @@ public class GeneralQueries {
                     recipeIdCondition = recipeIdCondition + " AND";
                 }
                 String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
-                String QUERY = "SELECT user_id, recipe_id FROM " + Config.getConfig(start).getUsersTable() + " WHERE "
+                String QUERY = "SELECT user_id, recipe_id FROM " + getConfig(start).getUsersTable() + " WHERE "
                         + recipeIdCondition + " (time_joined " + timeJoinedOrderSymbol
                         + " ? OR (time_joined = ? AND user_id <= ?)) ORDER BY time_joined " + timeJoinedOrder
                         + ", user_id DESC LIMIT ?";
-                try (Connection con = ConnectionPool.getConnection(start);
-                        PreparedStatement pst = con.prepareStatement(QUERY)) {
+                usersFromQuery = execute(start, QUERY, pst -> {
                     pst.setLong(1, timeJoined);
                     pst.setLong(2, timeJoined);
                     pst.setString(3, userId);
                     pst.setInt(4, limit);
-                    try (ResultSet result = pst.executeQuery()) {
-                        while (result.next()) {
-                            usersFromQuery.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
-                                    result.getString("recipe_id")));
-                        }
+                }, result -> {
+                    List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
+                    while (result.next()) {
+                        temp.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
+                                result.getString("recipe_id")));
                     }
-                }
+                    return temp;
+                });
+
             } else {
                 String recipeIdCondition = RECIPE_ID_CONDITION.toString();
                 if (!recipeIdCondition.equals("")) {
                     recipeIdCondition = " WHERE " + recipeIdCondition;
                 }
-                String QUERY = "SELECT user_id, recipe_id FROM " + Config.getConfig(start).getUsersTable()
-                        + recipeIdCondition + " ORDER BY time_joined " + timeJoinedOrder + ", user_id DESC LIMIT ?";
-                try (Connection con = ConnectionPool.getConnection(start);
-                        PreparedStatement pst = con.prepareStatement(QUERY)) {
+                String QUERY = "SELECT user_id, recipe_id FROM " + getConfig(start).getUsersTable() + recipeIdCondition
+                        + " ORDER BY time_joined " + timeJoinedOrder + ", user_id DESC LIMIT ?";
+                usersFromQuery = execute(start, QUERY, pst -> {
                     pst.setInt(1, limit);
-                    try (ResultSet result = pst.executeQuery()) {
-                        while (result.next()) {
-                            usersFromQuery.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
-                                    result.getString("recipe_id")));
-                        }
+                }, result -> {
+                    List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
+                    while (result.next()) {
+                        temp.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
+                                result.getString("recipe_id")));
                     }
-                }
+                    return temp;
+                });
             }
         }
 
