@@ -34,6 +34,8 @@ public interface QueryExecutorTemplate {
 
     static <T> T execute(Connection con, String QUERY, PreparedStatementValueSetter setter,
             ResultSetValueExtractor<T> mapper) throws SQLException, StorageQueryException {
+        if (setter == null)
+            setter = PreparedStatementValueSetter.NO_OP_SETTER;
         try (PreparedStatement pst = con.prepareStatement(QUERY)) {
             setter.setValues(pst);
             try (ResultSet result = pst.executeQuery()) {
