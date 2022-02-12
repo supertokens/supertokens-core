@@ -17,8 +17,9 @@
 package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.Main;
-import io.supertokens.ProcessState;
-import io.supertokens.inmemorydb.*;
+import io.supertokens.inmemorydb.ConnectionPool;
+import io.supertokens.inmemorydb.ConnectionWithLocks;
+import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -37,10 +38,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static io.supertokens.ProcessState.PROCESS_STATE;
 import static io.supertokens.ProcessState.PROCESS_STATE.CREATING_NEW_TABLE;
 import static io.supertokens.ProcessState.getInstance;
-import static io.supertokens.inmemorydb.ConnectionPool.getConnection;
 import static io.supertokens.inmemorydb.PreparedStatementValueSetter.NO_OP_SETTER;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
@@ -93,125 +92,79 @@ public class GeneralQueries {
     public static void createTablesIfNotExists(Start start, Main main) throws SQLException, StorageQueryException {
         if (!doesTableExists(start, Config.getConfig(start).getKeyValueTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, getQueryToCreateKeyValueTable(start), pst -> {
-
-            });
+            update(start, getQueryToCreateKeyValueTable(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getUsersTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, getQueryToCreateUsersTable(start), pst -> {
-
-            });
+            update(start, getQueryToCreateUsersTable(start), NO_OP_SETTER);
 
             // index
-            try (Connection con = getConnection(start);
-                    PreparedStatement pstIndex = con.prepareStatement(getQueryToCreateUserPaginationIndex(start))) {
-                pstIndex.executeUpdate();
-            }
+            update(start, getQueryToCreateUserPaginationIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getAccessTokenSigningKeysTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, getQueryToCreateAccessTokenSigningKeysTable(start), pst -> {
-
-            });
+            update(start, getQueryToCreateAccessTokenSigningKeysTable(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getSessionInfoTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, getQueryToCreateSessionInfoTable(start), pst -> {
-
-            });
+            update(start, getQueryToCreateSessionInfoTable(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getEmailPasswordUsersTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, EmailPasswordQueries.getQueryToCreateUsersTable(start), pst -> {
-
-            });
+            update(start, EmailPasswordQueries.getQueryToCreateUsersTable(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getPasswordResetTokensTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, getQueryToCreatePasswordResetTokensTable(start), pst -> {
-
-            });
+            update(start, getQueryToCreatePasswordResetTokensTable(start), NO_OP_SETTER);
             // index
-            try (Connection con = getConnection(start);
-                    PreparedStatement pstIndex = con
-                            .prepareStatement(getQueryToCreatePasswordResetTokenExpiryIndex(start))) {
-                pstIndex.executeUpdate();
-            }
+            update(start, getQueryToCreatePasswordResetTokenExpiryIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getEmailVerificationTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, getQueryToCreateEmailVerificationTable(start), pst -> {
-
-            });
+            update(start, getQueryToCreateEmailVerificationTable(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getEmailVerificationTokensTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, getQueryToCreateEmailVerificationTokensTable(start), pst -> {
-
-            });
+            update(start, getQueryToCreateEmailVerificationTokensTable(start), NO_OP_SETTER);
             // index
-            try (Connection con = getConnection(start);
-                    PreparedStatement pstIndex = con
-                            .prepareStatement(getQueryToCreateEmailVerificationTokenExpiryIndex(start))) {
-                pstIndex.executeUpdate();
-            }
+            update(start, getQueryToCreateEmailVerificationTokenExpiryIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getThirdPartyUsersTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, ThirdPartyQueries.getQueryToCreateUsersTable(start), pst -> {
-
-            });
+            update(start, ThirdPartyQueries.getQueryToCreateUsersTable(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getJWTSigningKeysTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, getQueryToCreateJWTSigningTable(start), pst -> {
-
-            });
+            update(start, getQueryToCreateJWTSigningTable(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getPasswordlessUsersTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, PasswordlessQueries.getQueryToCreateUsersTable(start), pst -> {
-
-            });
+            update(start, PasswordlessQueries.getQueryToCreateUsersTable(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getPasswordlessDevicesTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, getQueryToCreateDevicesTable(start), pst -> {
-
-            });
+            update(start, getQueryToCreateDevicesTable(start), NO_OP_SETTER);
             // index
-            try (Connection con = getConnection(start);
-                    PreparedStatement pstIndex = con.prepareStatement(getQueryToCreateDeviceEmailIndex(start))) {
-                pstIndex.executeUpdate();
-            }
-            try (Connection con = getConnection(start);
-                    PreparedStatement pstIndex = con.prepareStatement(getQueryToCreateDevicePhoneNumberIndex(start))) {
-                pstIndex.executeUpdate();
-            }
+            update(start, getQueryToCreateDeviceEmailIndex(start), NO_OP_SETTER);
+            update(start, getQueryToCreateDevicePhoneNumberIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getPasswordlessCodesTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, getQueryToCreateCodesTable(start), pst -> {
-
-            });
+            update(start, getQueryToCreateCodesTable(start), NO_OP_SETTER);
             // index
-            try (Connection con = getConnection(start);
-                    PreparedStatement pstIndex = con.prepareStatement(getQueryToCreateCodeCreatedAtIndex(start))) {
-                pstIndex.executeUpdate();
-            }
+            update(start, getQueryToCreateCodeCreatedAtIndex(start), NO_OP_SETTER);
         }
     }
 
@@ -255,7 +208,7 @@ public class GeneralQueries {
     public static KeyValueInfo getKeyValue(Start start, String key) throws SQLException, StorageQueryException {
         String QUERY = "SELECT value, created_at_time FROM " + getConfig(start).getKeyValueTable() + " WHERE name = ?";
 
-        return QueryExecutorTemplate.execute(start, QUERY, pst -> pst.setString(1, key), result -> {
+        return execute(start, QUERY, pst -> pst.setString(1, key), result -> {
             if (result.next()) {
                 return KeyValueInfoRowMapper.getInstance().mapOrThrow(result);
             }
@@ -268,18 +221,16 @@ public class GeneralQueries {
 
         ((ConnectionWithLocks) con).lock(key);
 
-        String QUERY = "SELECT value, created_at_time FROM " + Config.getConfig(start).getKeyValueTable()
-                + " WHERE name = ?";
+        String QUERY = "SELECT value, created_at_time FROM " + getConfig(start).getKeyValueTable() + " WHERE name = ?";
 
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+        return execute(con, QUERY, pst -> {
             pst.setString(1, key);
-            try (ResultSet result = pst.executeQuery()) {
-                if (result.next()) {
-                    return KeyValueInfoRowMapper.getInstance().mapOrThrow(result);
-                }
+        }, result -> {
+            if (result.next()) {
+                return KeyValueInfoRowMapper.getInstance().mapOrThrow(result);
             }
-        }
-        return null;
+            return null;
+        });
     }
 
     private static class KeyValueInfoRowMapper implements RowMapper<KeyValueInfo, ResultSet> {

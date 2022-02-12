@@ -18,6 +18,7 @@ package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.PreparedStatementValueSetter;
+import io.supertokens.inmemorydb.QueryExecutorTemplate;
 import io.supertokens.inmemorydb.ResultSetValueExtractor;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
@@ -29,7 +30,6 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import org.jetbrains.annotations.NotNull;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -120,17 +120,12 @@ public class EmailPasswordQueries {
     public static PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser_Transaction(Start start, Connection con,
             String userId) throws SQLException, StorageQueryException {
 
-        ((ConnectionWithLocks) con).lock(userId + Config.getConfig(start).getPasswordResetTokensTable());
+        ((ConnectionWithLocks) con).lock(userId + getConfig(start).getPasswordResetTokensTable());
 
-        String QUERY = "SELECT user_id, token, token_expiry FROM "
-                + Config.getConfig(start).getPasswordResetTokensTable() + " WHERE user_id = ?";
+        String QUERY = "SELECT user_id, token, token_expiry FROM " + getConfig(start).getPasswordResetTokensTable()
+                + " WHERE user_id = ?";
 
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, userId);
-            try (ResultSet result = pst.executeQuery()) {
-                return getPasswordResetTokenInfos(result);
-            }
-        }
+        return execute(con, QUERY, pst -> pst.setString(1, userId), EmailPasswordQueries::getPasswordResetTokenInfos);
     }
 
     public static PasswordResetTokenInfo getPasswordResetTokenInfo(Start start, String token)
@@ -275,19 +270,18 @@ public class EmailPasswordQueries {
     public static UserInfo getUserInfoUsingId_Transaction(Start start, Connection con, String id)
             throws SQLException, StorageQueryException {
 
-        ((ConnectionWithLocks) con).lock(id + Config.getConfig(start).getEmailPasswordUsersTable());
+        ((ConnectionWithLocks) con).lock(id + getConfig(start).getEmailPasswordUsersTable());
 
         String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
-                + Config.getConfig(start).getEmailPasswordUsersTable() + " WHERE user_id = ?";
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+                + getConfig(start).getEmailPasswordUsersTable() + " WHERE user_id = ?";
+        return execute(con, QUERY, pst -> {
             pst.setString(1, id);
-            try (ResultSet result = pst.executeQuery()) {
-                if (result.next()) {
-                    return UserInfoRowMapper.getInstance().mapOrThrow(result);
-                }
+        }, result -> {
+            if (result.next()) {
+                return UserInfoRowMapper.getInstance().mapOrThrow(result);
             }
-        }
-        return null;
+            return null;
+        });
     }
 
     public static UserInfo getUserInfoUsingEmail(Start start, String email) throws SQLException, StorageQueryException {

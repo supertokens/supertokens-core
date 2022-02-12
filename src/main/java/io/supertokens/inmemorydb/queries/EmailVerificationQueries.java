@@ -123,26 +123,25 @@ public class EmailVerificationQueries {
     public static EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser_Transaction(Start start,
             Connection con, String userId, String email) throws SQLException, StorageQueryException {
 
-        ((ConnectionWithLocks) con).lock(userId + Config.getConfig(start).getEmailVerificationTokensTable());
+        ((ConnectionWithLocks) con).lock(userId + getConfig(start).getEmailVerificationTokensTable());
 
         String QUERY = "SELECT user_id, token, token_expiry, email FROM "
-                + Config.getConfig(start).getEmailVerificationTokensTable() + " WHERE user_id = ? AND email = ?";
+                + getConfig(start).getEmailVerificationTokensTable() + " WHERE user_id = ? AND email = ?";
 
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+        return execute(con, QUERY, pst -> {
             pst.setString(1, userId);
             pst.setString(2, email);
-            try (ResultSet result = pst.executeQuery()) {
-                List<EmailVerificationTokenInfo> temp = new ArrayList<>();
-                while (result.next()) {
-                    temp.add(EmailVerificationTokenInfoRowMapper.getInstance().mapOrThrow(result));
-                }
-                EmailVerificationTokenInfo[] finalResult = new EmailVerificationTokenInfo[temp.size()];
-                for (int i = 0; i < temp.size(); i++) {
-                    finalResult[i] = temp.get(i);
-                }
-                return finalResult;
+        }, result -> {
+            List<EmailVerificationTokenInfo> temp = new ArrayList<>();
+            while (result.next()) {
+                temp.add(EmailVerificationTokenInfoRowMapper.getInstance().mapOrThrow(result));
             }
-        }
+            EmailVerificationTokenInfo[] finalResult = new EmailVerificationTokenInfo[temp.size()];
+            for (int i = 0; i < temp.size(); i++) {
+                finalResult[i] = temp.get(i);
+            }
+            return finalResult;
+        });
     }
 
     public static EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser(Start start, String userId,

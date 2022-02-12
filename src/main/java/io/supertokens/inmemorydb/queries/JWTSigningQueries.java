@@ -26,12 +26,13 @@ import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSymmetricSigningKeyInfo;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.supertokens.inmemorydb.PreparedStatementValueSetter.NO_OP_SETTER;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 import static io.supertokens.inmemorydb.config.Config.getConfig;
 
@@ -56,20 +57,16 @@ public class JWTSigningQueries {
 
         ((ConnectionWithLocks) con).lock(LOCK_STRING);
 
-        String QUERY = "SELECT * FROM " + Config.getConfig(start).getJWTSigningKeysTable()
-                + " ORDER BY created_at DESC;";
+        String QUERY = "SELECT * FROM " + getConfig(start).getJWTSigningKeysTable() + " ORDER BY created_at DESC;";
 
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-            try (ResultSet result = pst.executeQuery()) {
-                List<JWTSigningKeyInfo> keys = new ArrayList<>();
+        return execute(con, QUERY, NO_OP_SETTER, result -> {
+            List<JWTSigningKeyInfo> keys = new ArrayList<>();
 
-                while (result.next()) {
-                    keys.add(JWTSigningKeyInfoRowMapper.getInstance().mapOrThrow(result));
-                }
-
-                return keys;
+            while (result.next()) {
+                keys.add(JWTSigningKeyInfoRowMapper.getInstance().mapOrThrow(result));
             }
-        }
+            return keys;
+        });
     }
 
     private static class JWTSigningKeyInfoRowMapper implements RowMapper<JWTSigningKeyInfo, ResultSet> {

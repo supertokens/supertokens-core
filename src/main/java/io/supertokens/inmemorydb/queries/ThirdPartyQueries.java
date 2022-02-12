@@ -17,9 +17,9 @@
 package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.ConnectionWithLocks;
+import io.supertokens.inmemorydb.QueryExecutorTemplate;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
-import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -28,7 +28,6 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -192,21 +191,19 @@ public class ThirdPartyQueries {
             String thirdPartyUserId) throws SQLException, StorageQueryException {
 
         ((ConnectionWithLocks) con)
-                .lock(thirdPartyId + "," + thirdPartyUserId + Config.getConfig(start).getThirdPartyUsersTable());
+                .lock(thirdPartyId + "," + thirdPartyUserId + getConfig(start).getThirdPartyUsersTable());
 
         String QUERY = "SELECT user_id, third_party_id, third_party_user_id, email, time_joined FROM "
-                + Config.getConfig(start).getThirdPartyUsersTable()
-                + " WHERE third_party_id = ? AND third_party_user_id = ?";
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+                + getConfig(start).getThirdPartyUsersTable() + " WHERE third_party_id = ? AND third_party_user_id = ?";
+        return execute(con, QUERY, pst -> {
             pst.setString(1, thirdPartyId);
             pst.setString(2, thirdPartyUserId);
-            try (ResultSet result = pst.executeQuery()) {
-                if (result.next()) {
-                    return UserInfoRowMapper.getInstance().mapOrThrow(result);
-                }
+        }, result -> {
+            if (result.next()) {
+                return UserInfoRowMapper.getInstance().mapOrThrow(result);
             }
-        }
-        return null;
+            return null;
+        });
     }
 
     @Deprecated
