@@ -32,6 +32,9 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
+import static io.supertokens.inmemorydb.config.Config.getConfig;
+
 public class JWTSigningQueries {
     private final static String LOCK_STRING = "jwt_signing_keys_table_lock";
 
@@ -95,17 +98,16 @@ public class JWTSigningQueries {
     }
 
     public static void setJWTSigningKeyInfo_Transaction(Start start, Connection con, JWTSigningKeyInfo info)
-            throws SQLException {
+            throws SQLException, StorageQueryException {
 
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getJWTSigningKeysTable()
+        String QUERY = "INSERT INTO " + getConfig(start).getJWTSigningKeysTable()
                 + "(key_id, key_string, created_at, algorithm) VALUES(?, ?, ?, ?)";
 
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+        update(con, QUERY, pst -> {
             pst.setString(1, info.keyId);
             pst.setString(2, info.keyString);
             pst.setLong(3, info.createdAtTime);
             pst.setString(4, info.algorithm);
-            pst.executeUpdate();
-        }
+        });
     }
 }

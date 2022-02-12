@@ -37,7 +37,9 @@ import java.util.List;
 
 import static io.supertokens.inmemorydb.PreparedStatementValueSetter.NO_OP_SETTER;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 import static io.supertokens.inmemorydb.config.Config.getConfig;
+import static java.lang.System.currentTimeMillis;
 
 public class SessionQueries {
 
@@ -56,13 +58,12 @@ public class SessionQueries {
 
     public static void createNewSession(Start start, String sessionHandle, String userId, String refreshTokenHash2,
             JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT, long createdAtTime)
-            throws SQLException {
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getSessionInfoTable()
+            throws SQLException, StorageQueryException {
+        String QUERY = "INSERT INTO " + getConfig(start).getSessionInfoTable()
                 + "(session_handle, user_id, refresh_token_hash_2, session_data, expires_at, jwt_user_payload, "
                 + "created_at_time)" + " VALUES(?, ?, ?, ?, ?, ?, ?)";
 
-        try (Connection con = ConnectionPool.getConnection(start);
-                PreparedStatement pst = con.prepareStatement(QUERY)) {
+        update(start, QUERY, pst -> {
             pst.setString(1, sessionHandle);
             pst.setString(2, userId);
             pst.setString(3, refreshTokenHash2);
@@ -70,8 +71,7 @@ public class SessionQueries {
             pst.setLong(5, expiry);
             pst.setString(6, userDataInJWT.toString());
             pst.setLong(7, createdAtTime);
-            pst.executeUpdate();
-        }
+        });
     }
 
     public static SessionInfo getSessionInfo_Transaction(Start start, Connection con, String sessionHandle)
@@ -94,16 +94,15 @@ public class SessionQueries {
     }
 
     public static void updateSessionInfo_Transaction(Start start, Connection con, String sessionHandle,
-            String refreshTokenHash2, long expiry) throws SQLException {
-        String QUERY = "UPDATE " + Config.getConfig(start).getSessionInfoTable()
+            String refreshTokenHash2, long expiry) throws SQLException, StorageQueryException {
+        String QUERY = "UPDATE " + getConfig(start).getSessionInfoTable()
                 + " SET refresh_token_hash_2 = ?, expires_at = ?" + " WHERE session_handle = ?";
 
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+        update(con, QUERY, pst -> {
             pst.setString(1, refreshTokenHash2);
             pst.setLong(2, expiry);
             pst.setString(3, sessionHandle);
-            pst.executeUpdate();
-        }
+        });
     }
 
     public static int getNumberOfSessions(Start start) throws SQLException, StorageQueryException {
@@ -140,14 +139,10 @@ public class SessionQueries {
         }
     }
 
-    public static void deleteSessionsOfUser(Start start, String userId) throws SQLException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getSessionInfoTable() + " WHERE user_id = ?";
+    public static void deleteSessionsOfUser(Start start, String userId) throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + getConfig(start).getSessionInfoTable() + " WHERE user_id = ?";
 
-        try (Connection con = ConnectionPool.getConnection(start);
-                PreparedStatement pst = con.prepareStatement(QUERY.toString())) {
-            pst.setString(1, userId);
-            pst.executeUpdate();
-        }
+        update(start, QUERY.toString(), pst -> pst.setString(1, userId));
     }
 
     public static String[] getAllSessionHandlesForUser(Start start, String userId)
@@ -163,14 +158,10 @@ public class SessionQueries {
         });
     }
 
-    public static void deleteAllExpiredSessions(Start start) throws SQLException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getSessionInfoTable() + " WHERE expires_at <= ?";
+    public static void deleteAllExpiredSessions(Start start) throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + getConfig(start).getSessionInfoTable() + " WHERE expires_at <= ?";
 
-        try (Connection con = ConnectionPool.getConnection(start);
-                PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setLong(1, System.currentTimeMillis());
-            pst.executeUpdate();
-        }
+        update(start, QUERY, pst -> pst.setLong(1, currentTimeMillis()));
     }
 
     public static SessionInfo getSession(Start start, String sessionHandle) throws SQLException, StorageQueryException {
@@ -220,15 +211,14 @@ public class SessionQueries {
     }
 
     public static void addAccessTokenSigningKey_Transaction(Start start, Connection con, long createdAtTime,
-            String value) throws SQLException {
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getAccessTokenSigningKeysTable()
-                + "(created_at_time, value)" + " VALUES(?, ?)";
+            String value) throws SQLException, StorageQueryException {
+        String QUERY = "INSERT INTO " + getConfig(start).getAccessTokenSigningKeysTable() + "(created_at_time, value)"
+                + " VALUES(?, ?)";
 
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+        update(con, QUERY, pst -> {
             pst.setLong(1, createdAtTime);
             pst.setString(2, value);
-            pst.executeUpdate();
-        }
+        });
     }
 
     public static KeyValueInfo[] getAccessTokenSigningKeys_Transaction(Start start, Connection con)
@@ -253,14 +243,11 @@ public class SessionQueries {
         }
     }
 
-    public static void removeAccessTokenSigningKeysBefore(Start start, long time) throws SQLException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getAccessTokenSigningKeysTable()
+    public static void removeAccessTokenSigningKeysBefore(Start start, long time)
+            throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + getConfig(start).getAccessTokenSigningKeysTable()
                 + " WHERE created_at_time < ?";
-        try (Connection con = ConnectionPool.getConnection(start);
-                PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setLong(1, time);
-            pst.executeUpdate();
-        }
+        update(start, QUERY, pst -> pst.setLong(1, time));
     }
 
     private static class SessionInfoRowMapper implements RowMapper<SessionInfo, ResultSet> {

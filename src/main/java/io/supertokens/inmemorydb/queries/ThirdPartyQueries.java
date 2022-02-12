@@ -37,7 +37,9 @@ import java.util.List;
 
 import static io.supertokens.inmemorydb.PreparedStatementValueSetter.NO_OP_SETTER;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 import static io.supertokens.inmemorydb.config.Config.getConfig;
+import static io.supertokens.pluginInterface.RECIPE_ID.THIRD_PARTY;
 
 public class ThirdPartyQueries {
 
@@ -54,28 +56,26 @@ public class ThirdPartyQueries {
             Connection sqlCon = (Connection) con.getConnection();
             try {
                 {
-                    String QUERY = "INSERT INTO " + Config.getConfig(start).getUsersTable()
+                    String QUERY = "INSERT INTO " + getConfig(start).getUsersTable()
                             + "(user_id, recipe_id, time_joined)" + " VALUES(?, ?, ?)";
-                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                    update(sqlCon, QUERY, pst -> {
                         pst.setString(1, userInfo.id);
-                        pst.setString(2, RECIPE_ID.THIRD_PARTY.toString());
+                        pst.setString(2, THIRD_PARTY.toString());
                         pst.setLong(3, userInfo.timeJoined);
-                        pst.executeUpdate();
-                    }
+                    });
                 }
 
                 {
-                    String QUERY = "INSERT INTO " + Config.getConfig(start).getThirdPartyUsersTable()
+                    String QUERY = "INSERT INTO " + getConfig(start).getThirdPartyUsersTable()
                             + "(third_party_id, third_party_user_id, user_id, email, time_joined)"
                             + " VALUES(?, ?, ?, ?, ?)";
-                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                    update(sqlCon, QUERY, pst -> {
                         pst.setString(1, userInfo.thirdParty.id);
                         pst.setString(2, userInfo.thirdParty.userId);
                         pst.setString(3, userInfo.id);
                         pst.setString(4, userInfo.email);
                         pst.setLong(5, userInfo.timeJoined);
-                        pst.executeUpdate();
-                    }
+                    });
                 }
 
                 sqlCon.commit();
@@ -92,22 +92,19 @@ public class ThirdPartyQueries {
             Connection sqlCon = (Connection) con.getConnection();
             try {
                 {
-                    String QUERY = "DELETE FROM " + Config.getConfig(start).getUsersTable()
+                    String QUERY = "DELETE FROM " + getConfig(start).getUsersTable()
                             + " WHERE user_id = ? AND recipe_id = ?";
-                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                    update(sqlCon, QUERY, pst -> {
                         pst.setString(1, userId);
-                        pst.setString(2, RECIPE_ID.THIRD_PARTY.toString());
-                        pst.executeUpdate();
-                    }
+                        pst.setString(2, THIRD_PARTY.toString());
+                    });
                 }
 
                 {
-                    String QUERY = "DELETE FROM " + Config.getConfig(start).getThirdPartyUsersTable()
-                            + " WHERE user_id = ? ";
-                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                    String QUERY = "DELETE FROM " + getConfig(start).getThirdPartyUsersTable() + " WHERE user_id = ? ";
+                    update(sqlCon, QUERY, pst -> {
                         pst.setString(1, userId);
-                        pst.executeUpdate();
-                    }
+                    });
                 }
 
                 sqlCon.commit();
@@ -180,16 +177,15 @@ public class ThirdPartyQueries {
     }
 
     public static void updateUserEmail_Transaction(Start start, Connection con, String thirdPartyId,
-            String thirdPartyUserId, String newEmail) throws SQLException {
-        String QUERY = "UPDATE " + Config.getConfig(start).getThirdPartyUsersTable()
+            String thirdPartyUserId, String newEmail) throws SQLException, StorageQueryException {
+        String QUERY = "UPDATE " + getConfig(start).getThirdPartyUsersTable()
                 + " SET email = ? WHERE third_party_id = ? AND third_party_user_id = ?";
 
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+        update(con, QUERY, pst -> {
             pst.setString(1, newEmail);
             pst.setString(2, thirdPartyId);
             pst.setString(3, thirdPartyUserId);
-            pst.executeUpdate();
-        }
+        });
     }
 
     public static UserInfo getUserInfoUsingId_Transaction(Start start, Connection con, String thirdPartyId,

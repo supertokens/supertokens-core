@@ -40,7 +40,9 @@ import java.util.Collections;
 import java.util.List;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 import static io.supertokens.inmemorydb.config.Config.getConfig;
+import static io.supertokens.pluginInterface.RECIPE_ID.PASSWORDLESS;
 
 public class PasswordlessQueries {
     public static String getQueryToCreateUsersTable(Start start) {
@@ -84,18 +86,17 @@ public class PasswordlessQueries {
         start.startTransaction(con -> {
             Connection sqlCon = (Connection) con.getConnection();
             try {
-                String QUERY = "INSERT INTO " + Config.getConfig(start).getPasswordlessDevicesTable()
+                String QUERY = "INSERT INTO " + getConfig(start).getPasswordlessDevicesTable()
                         + "(device_id_hash, email, phone_number, link_code_salt, failed_attempts)"
                         + " VALUES(?, ?, ?, ?, 0)";
-                try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                update(sqlCon, QUERY, pst -> {
                     pst.setString(1, code.deviceIdHash);
                     pst.setString(2, email);
                     pst.setString(3, phoneNumber);
                     pst.setString(4, linkCodeSalt);
-                    pst.executeUpdate();
-                }
+                });
 
-                PasswordlessQueries.createCode_Transaction(start, sqlCon, code);
+                createCode_Transaction(start, sqlCon, code);
                 sqlCon.commit();
             } catch (SQLException throwables) {
                 throw new StorageTransactionLogicException(throwables);
@@ -125,39 +126,30 @@ public class PasswordlessQueries {
     }
 
     public static void incrementDeviceFailedAttemptCount_Transaction(Start start, Connection con, String deviceIdHash)
-            throws SQLException {
-        String QUERY = "UPDATE " + Config.getConfig(start).getPasswordlessDevicesTable()
+            throws SQLException, StorageQueryException {
+        String QUERY = "UPDATE " + getConfig(start).getPasswordlessDevicesTable()
                 + " SET failed_attempts = failed_attempts + 1 WHERE device_id_hash = ?";
 
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, deviceIdHash);
-            pst.executeUpdate();
-        }
+        update(con, QUERY, pst -> pst.setString(1, deviceIdHash));
     }
 
-    public static void deleteDevice_Transaction(Start start, Connection con, String deviceIdHash) throws SQLException {
+    public static void deleteDevice_Transaction(Start start, Connection con, String deviceIdHash)
+            throws SQLException, StorageQueryException {
         // SQLite is not compiled with foreign key constraint and so we must implement
         // cascading deletes here
         {
-            String QUERY = "DELETE FROM " + Config.getConfig(start).getPasswordlessDevicesTable()
+            String QUERY = "DELETE FROM " + getConfig(start).getPasswordlessDevicesTable()
                     + " WHERE device_id_hash = ?";
-            try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-                pst.setString(1, deviceIdHash);
-                pst.executeUpdate();
-            }
+            update(con, QUERY, pst -> pst.setString(1, deviceIdHash));
         }
         {
-            String QUERY = "DELETE FROM " + Config.getConfig(start).getPasswordlessCodesTable()
-                    + " WHERE device_id_hash = ?";
-            try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-                pst.setString(1, deviceIdHash);
-                pst.executeUpdate();
-            }
+            String QUERY = "DELETE FROM " + getConfig(start).getPasswordlessCodesTable() + " WHERE device_id_hash = ?";
+            update(con, QUERY, pst -> pst.setString(1, deviceIdHash));
         }
     }
 
     public static void deleteDevicesByPhoneNumber_Transaction(Start start, Connection con, @Nonnull String phoneNumber)
-            throws SQLException {
+            throws SQLException, StorageQueryException {
         // We lock the whole table instead of the individual devices. This is not
         // intended for production use.
         ((ConnectionWithLocks) con).lock(Config.getConfig(start).getPasswordlessDevicesTable());
@@ -208,16 +200,16 @@ public class PasswordlessQueries {
                 deviceIdHashes);
     }
 
-    private static void createCode_Transaction(Start start, Connection con, PasswordlessCode code) throws SQLException {
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getPasswordlessCodesTable()
+    private static void createCode_Transaction(Start start, Connection con, PasswordlessCode code)
+            throws SQLException, StorageQueryException {
+        String QUERY = "INSERT INTO " + getConfig(start).getPasswordlessCodesTable()
                 + "(code_id, device_id_hash, link_code_hash, created_at)" + " VALUES(?, ?, ?, ?)";
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
+        update(con, QUERY, pst -> {
             pst.setString(1, code.id);
             pst.setString(2, code.deviceIdHash);
             pst.setString(3, code.linkCodeHash);
             pst.setLong(4, code.createdAt);
-            pst.executeUpdate();
-        }
+        });
     }
 
     public static void createCode(Start start, PasswordlessCode code)
@@ -285,13 +277,11 @@ public class PasswordlessQueries {
         return null;
     }
 
-    public static void deleteCode_Transaction(Start start, Connection con, String codeId) throws SQLException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getPasswordlessCodesTable() + " WHERE code_id = ?";
+    public static void deleteCode_Transaction(Start start, Connection con, String codeId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + getConfig(start).getPasswordlessCodesTable() + " WHERE code_id = ?";
 
-        try (PreparedStatement pst = con.prepareStatement(QUERY)) {
-            pst.setString(1, codeId);
-            pst.executeUpdate();
-        }
+        update(con, QUERY, pst -> pst.setString(1, codeId));
     }
 
     public static void createUser(Start start, UserInfo user)
@@ -300,26 +290,24 @@ public class PasswordlessQueries {
             Connection sqlCon = (Connection) con.getConnection();
             try {
                 {
-                    String QUERY = "INSERT INTO " + Config.getConfig(start).getUsersTable()
+                    String QUERY = "INSERT INTO " + getConfig(start).getUsersTable()
                             + "(user_id, recipe_id, time_joined)" + " VALUES(?, ?, ?)";
-                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                    update(sqlCon, QUERY, pst -> {
                         pst.setString(1, user.id);
-                        pst.setString(2, RECIPE_ID.PASSWORDLESS.toString());
+                        pst.setString(2, PASSWORDLESS.toString());
                         pst.setLong(3, user.timeJoined);
-                        pst.executeUpdate();
-                    }
+                    });
                 }
 
                 {
-                    String QUERY = "INSERT INTO " + Config.getConfig(start).getPasswordlessUsersTable()
+                    String QUERY = "INSERT INTO " + getConfig(start).getPasswordlessUsersTable()
                             + "(user_id, email, phone_number, time_joined)" + " VALUES(?, ?, ?, ?)";
-                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                    update(sqlCon, QUERY, pst -> {
                         pst.setString(1, user.id);
                         pst.setString(2, user.email);
                         pst.setString(3, user.phoneNumber);
                         pst.setLong(4, user.timeJoined);
-                        pst.executeUpdate();
-                    }
+                    });
                 }
                 sqlCon.commit();
             } catch (SQLException throwables) {
@@ -335,27 +323,22 @@ public class PasswordlessQueries {
             Connection sqlCon = (Connection) con.getConnection();
             try {
                 {
-                    String QUERY = "DELETE FROM " + Config.getConfig(start).getUsersTable()
+                    String QUERY = "DELETE FROM " + getConfig(start).getUsersTable()
                             + " WHERE user_id = ? AND recipe_id = ?";
 
-                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
+                    update(sqlCon, QUERY, pst -> {
                         pst.setString(1, userId);
-                        pst.setString(2, RECIPE_ID.PASSWORDLESS.toString());
-                        pst.executeUpdate();
-                    }
+                        pst.setString(2, PASSWORDLESS.toString());
+                    });
                 }
 
                 // Even if the user is changed after we read it here (which is unlikely),
                 // we'd only leave devices that will be cleaned up later automatically when they expire.
                 UserInfo user = getUserById(start, userId);
                 {
-                    String QUERY = "DELETE FROM " + Config.getConfig(start).getPasswordlessUsersTable()
-                            + " WHERE user_id = ?";
+                    String QUERY = "DELETE FROM " + getConfig(start).getPasswordlessUsersTable() + " WHERE user_id = ?";
 
-                    try (PreparedStatement pst = sqlCon.prepareStatement(QUERY)) {
-                        pst.setString(1, userId);
-                        pst.executeUpdate();
-                    }
+                    update(sqlCon, QUERY, pst -> pst.setString(1, userId));
                 }
 
                 if (user != null) {
@@ -559,7 +542,7 @@ public class PasswordlessQueries {
     }
 
     private static void deleteRowsByDeviceIdHashList_Transaction(Connection con, String tableName,
-            List<String> deviceIdHashes) throws SQLException {
+            List<String> deviceIdHashes) throws SQLException, StorageQueryException {
         if (deviceIdHashes.size() > 0) {
             StringBuilder QUERY = new StringBuilder("DELETE FROM " + tableName);
             QUERY.append(" WHERE device_id_hash IN (");
@@ -572,13 +555,12 @@ public class PasswordlessQueries {
             }
             QUERY.append(")");
 
-            try (PreparedStatement pst = con.prepareStatement(QUERY.toString())) {
+            update(con, QUERY.toString(), pst -> {
                 for (int i = 0; i < deviceIdHashes.size(); i++) {
                     // i+1 cause this starts with 1 and not 0
                     pst.setString(i + 1, deviceIdHashes.get(i));
                 }
-                pst.executeUpdate();
-            }
+            });
         }
     }
 
