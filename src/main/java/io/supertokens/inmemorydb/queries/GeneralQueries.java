@@ -30,7 +30,6 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -46,15 +45,9 @@ import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 import static io.supertokens.inmemorydb.config.Config.getConfig;
 import static io.supertokens.inmemorydb.queries.EmailPasswordQueries.getQueryToCreatePasswordResetTokenExpiryIndex;
 import static io.supertokens.inmemorydb.queries.EmailPasswordQueries.getQueryToCreatePasswordResetTokensTable;
-import static io.supertokens.inmemorydb.queries.EmailVerificationQueries.getQueryToCreateEmailVerificationTable;
-import static io.supertokens.inmemorydb.queries.EmailVerificationQueries.getQueryToCreateEmailVerificationTokenExpiryIndex;
-import static io.supertokens.inmemorydb.queries.EmailVerificationQueries.getQueryToCreateEmailVerificationTokensTable;
+import static io.supertokens.inmemorydb.queries.EmailVerificationQueries.*;
 import static io.supertokens.inmemorydb.queries.JWTSigningQueries.getQueryToCreateJWTSigningTable;
-import static io.supertokens.inmemorydb.queries.PasswordlessQueries.getQueryToCreateCodeCreatedAtIndex;
-import static io.supertokens.inmemorydb.queries.PasswordlessQueries.getQueryToCreateCodesTable;
-import static io.supertokens.inmemorydb.queries.PasswordlessQueries.getQueryToCreateDeviceEmailIndex;
-import static io.supertokens.inmemorydb.queries.PasswordlessQueries.getQueryToCreateDevicePhoneNumberIndex;
-import static io.supertokens.inmemorydb.queries.PasswordlessQueries.getQueryToCreateDevicesTable;
+import static io.supertokens.inmemorydb.queries.PasswordlessQueries.*;
 import static io.supertokens.inmemorydb.queries.SessionQueries.getQueryToCreateAccessTokenSigningKeysTable;
 import static io.supertokens.inmemorydb.queries.SessionQueries.getQueryToCreateSessionInfoTable;
 
@@ -63,12 +56,9 @@ public class GeneralQueries {
     private static boolean doesTableExists(Start start, String tableName) {
         try {
             String QUERY = "SELECT 1 FROM " + tableName + " LIMIT 1";
-            try (Connection con = ConnectionPool.getConnection(start);
-                    PreparedStatement pst = con.prepareStatement(QUERY)) {
-                pst.executeQuery();
-            }
+            execute(start, QUERY, NO_OP_SETTER, result -> null);
             return true;
-        } catch (SQLException e) {
+        } catch (SQLException | StorageQueryException e) {
             return false;
         }
     }
