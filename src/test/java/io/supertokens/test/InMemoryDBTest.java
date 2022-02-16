@@ -24,6 +24,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
@@ -45,6 +46,10 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
@@ -65,6 +70,44 @@ public class InMemoryDBTest {
     @Before
     public void beforeEach() {
         Utils.reset();
+    }
+
+    @Test
+    public void testCodeCreationRapidly() throws Exception {
+
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        process.getProcess().setForceInMemoryDB();
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        ExecutorService es = Executors.newCachedThreadPool();
+
+        AtomicBoolean pass = new AtomicBoolean(true);
+
+        for (int i = 0; i < 2000; i++) {
+            es.execute(() -> {
+                try {
+                    Passwordless.CreateCodeResponse resp = Passwordless.createCode(process.getProcess(),
+                            "test@example.com", null, null, null);
+                    Passwordless.ConsumeCodeResponse resp2 = Passwordless.consumeCode(process.getProcess(),
+                            resp.deviceId, resp.deviceIdHash, resp.userInputCode, resp.linkCode);
+
+                } catch (Exception e) {
+                    if (e.getMessage() != null && e.getMessage().toLowerCase().contains("deadlock")) {
+                        pass.set(false);
+                    }
+                }
+            });
+        }
+
+        es.shutdown();
+        es.awaitTermination(2, TimeUnit.MINUTES);
+
+        assert (pass.get());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test

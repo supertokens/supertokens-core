@@ -44,11 +44,7 @@ import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
-import io.supertokens.pluginInterface.passwordless.exception.DuplicateCodeIdException;
-import io.supertokens.pluginInterface.passwordless.exception.DuplicateDeviceIdHashException;
-import io.supertokens.pluginInterface.passwordless.exception.DuplicateLinkCodeHashException;
-import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
-import io.supertokens.pluginInterface.passwordless.exception.UnknownDeviceIdHash;
+import io.supertokens.pluginInterface.passwordless.exception.*;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
@@ -57,9 +53,8 @@ import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUs
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import org.jetbrains.annotations.NotNull;
 
-import javax.annotation.Nullable;
 import javax.annotation.Nonnull;
-
+import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransactionRollbackException;
@@ -135,8 +130,9 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             tries++;
             try {
                 return startTransactionHelper(logic);
-            } catch (SQLException | StorageQueryException e) {
-                if ((e instanceof SQLTransactionRollbackException || e.getMessage().toLowerCase().contains("deadlock"))
+            } catch (SQLException | StorageQueryException | StorageTransactionLogicException e) {
+                if ((e instanceof SQLTransactionRollbackException
+                        || (e.getMessage() != null && e.getMessage().toLowerCase().contains("deadlock")))
                         && tries < 3) {
                     ProcessState.getInstance(this.main).addState(ProcessState.PROCESS_STATE.DEADLOCK_FOUND, e);
                     continue; // this because deadlocks are not necessarily a result of faulty logic. They can
