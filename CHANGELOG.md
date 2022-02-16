@@ -7,13 +7,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [3.9.1] - 2022-02-16
+
+- Fixed https://github.com/supertokens/supertokens-core/issues/373: Catching `StorageTransactionLogicException` in
+  transaction helper function for retries
+
 ## [3.9.0] - 2022-01-31
+
 ### Changes
 
 - Supporting CDI v2.12
 - Adding the `userId` to the reponse of `recipe/user/password/reset`
 - Adds support for providing base path for all APIs: https://github.com/supertokens/supertokens-node/issues/252
 - Add workflow to verify if pr title follows conventional commits
+
 ### New config param:
 
 - `base_path` - default is `""` (No base path)
