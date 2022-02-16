@@ -140,6 +140,8 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
                 }
                 if (e instanceof StorageQueryException) {
                     throw (StorageQueryException) e;
+                } else if (e instanceof StorageTransactionLogicException) {
+                    throw (StorageTransactionLogicException) e;
                 }
                 throw new StorageQueryException(e);
             }
