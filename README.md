@@ -150,6 +150,7 @@ Mihály Lengyel</b></sub></a></td>
 <td align="center"><a href="https://github.com/xuatz"><img src="https://avatars.githubusercontent.com/u/9292261?v=4" width="100px;" alt=""/><br /><sub><b>xuatz</b></sub></a></td>
 <td align="center"><a href="https://github.com/yowayb"><img src="https://avatars.githubusercontent.com/u/603829?v=4" width="100px;" alt=""/><br /><sub><b>Yoway Buorn</b></sub></a></td>
 <td align="center"><a href="https://github.com/rtpa25"><img src="https://avatars.githubusercontent.com/u/72537293?v=4" width="100px;" alt=""/><br /><sub><b>Ronit Panda</b></sub></a></td>
+<td align="center"><a href="https://github.com/anugrahsinghal"><img src="https://avatars.githubusercontent.com/u/18058884?v=4" width="100px;" alt=""/><br /><sub><b>Anugrah Singhal</b></sub></a></td>
   </tr>
 </table>
 
