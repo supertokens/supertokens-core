@@ -117,7 +117,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
         try {
             ConnectionPool.initPool(this);
             GeneralQueries.createTablesIfNotExists(this, this.main);
-        } catch (SQLException e) {
+        } catch (SQLException | StorageQueryException e) {
             throw new QuitProgramFromPluginException(e);
         }
     }
