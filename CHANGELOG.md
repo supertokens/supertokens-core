@@ -10,7 +10,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fixed ResultSet instances to avoid Memory Leaks
 
+## [3.9.1] - 2022-02-16
+
+- Fixed https://github.com/supertokens/supertokens-core/issues/373: Catching `StorageTransactionLogicException` in
+  transaction helper function for retries
+
 ## [3.9.0] - 2022-01-31
+
 ### Changes
 
 - Supporting CDI v2.12
