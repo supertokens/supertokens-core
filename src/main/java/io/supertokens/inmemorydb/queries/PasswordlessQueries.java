@@ -98,7 +98,7 @@ public class PasswordlessQueries {
                 throw new StorageTransactionLogicException(throwables);
             }
             return null;
-        });
+        }, false);
     }
 
     public static PasswordlessDevice getDevice_Transaction(Start start, Connection con, String deviceIdHash)

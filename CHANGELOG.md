@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [3.10.0] - 2022-02-23
+
+- Updated plugin interface version
+
+
 ## [3.9.1] - 2022-02-16
 
 - Fixed https://github.com/supertokens/supertokens-core/issues/373: Catching `StorageTransactionLogicException` in

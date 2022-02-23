@@ -125,6 +125,12 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     @Override
     public <T> T startTransaction(TransactionLogic<T> logic)
             throws StorageTransactionLogicException, StorageQueryException {
+        return startTransaction(logic, true);
+    }
+
+    @Override
+    public <T> T startTransaction(TransactionLogic<T> logic, boolean serializableIsolation)
+            throws StorageTransactionLogicException, StorageQueryException {
         int tries = 0;
         while (true) {
             tries++;
