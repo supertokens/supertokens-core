@@ -1,11 +1,17 @@
 
 [![SuperTokens banner](https://raw.githubusercontent.com/supertokens/supertokens-logo/master/images/Artboard%20%E2%80%93%2027%402x.png)](https://supertokens.com/)
 
-# SuperTokens 
+# Open-Source auth provider
 
 <a href="https://supertokens.io/discord">
 <img src="https://img.shields.io/discord/603466164219281420.svg?logo=discord"
     alt="chat on Discord"></a>
+
+Add **secure login and session management** to your apps. [SDKs available](https://supertokens.com/docs/community/sdks) for popular languages and front-end frameworks e.g. Node.js, Go, Python, React.js, React Native, Vanilla JS, etc.
+
+![Architecture Diagram](https://supertokens.com/img/architecture/self_hosted_generic.png)
+Supertokens architecture is optimized to add secure authentication for your users without compromising on user and developer experience
+
 
 ## Table of Contents
 - [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#-what-is-supertokens)
