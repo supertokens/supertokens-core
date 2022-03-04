@@ -34,13 +34,8 @@ public class UserMetadata {
         return storage.startTransaction((con) -> {
             JsonObject originalMetadata = storage.getUserMetadata_Transaction(con, userId);
 
-            final JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
-            metadataUpdate.entrySet().forEach((entry) -> {
-                updatedMetadata.remove(entry.getKey());
-                if (!entry.getValue().isJsonNull()) {
-                    updatedMetadata.add(entry.getKey(), entry.getValue());
-                }
-            });
+            JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
+            MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, metadataUpdate);
 
             storage.setUserMetadata_Transaction(con, userId, updatedMetadata);
 
