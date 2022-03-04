@@ -139,7 +139,7 @@ public class SetUserMetadataAPITest2_13 {
         assertEquals(updateResult, newMetadata);
 
         // We removed what we set to null
-        assert (!newMetadata.has("toClear"));
+        assert (!newMetadata.has("cleared"));
 
         // The old metadata is left intact
         assertEquals("123", newMetadata.get("unmodified").getAsString());
