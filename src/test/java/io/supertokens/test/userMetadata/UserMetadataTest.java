@@ -31,6 +31,10 @@ import static io.supertokens.test.passwordless.PasswordlessUtility.*;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 
@@ -153,7 +157,7 @@ public class UserMetadataTest {
         assertEquals(updateResult, newMetadata);
 
         // We removed what we set to null
-        assert (!newMetadata.has("toClear"));
+        assert (!newMetadata.has("cleared"));
 
         // The old metadata is left intact
         assertEquals("123", newMetadata.get("unmodified").getAsString());
@@ -169,5 +173,4 @@ public class UserMetadataTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
-
 }
