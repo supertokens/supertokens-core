@@ -1,4 +1,4 @@
-package io.supertokens.usermetadata;
+package io.supertokens.utils;
 
 import com.google.gson.JsonObject;
 

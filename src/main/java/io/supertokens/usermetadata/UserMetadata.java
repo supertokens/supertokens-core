@@ -21,6 +21,7 @@ import javax.annotation.Nonnull;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
+import io.supertokens.utils.MetadataUtils;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
