@@ -10,8 +10,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Fixed ResultSet instances to avoid Memory Leaks
 - Updated plugin interface version
-  - Added `user_metadata` table
 - Adds usermetadata recipe
+
+### Database changes
+
+- Added `user_metadata` table
 
 ## [3.10.0] - 2022-02-23
 
