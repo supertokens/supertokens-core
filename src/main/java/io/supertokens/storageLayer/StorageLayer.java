@@ -175,6 +175,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         if (getInstance(main) == null) {
             throw new QuitProgramException("please call init() before calling getStorageLayer");
         }
+
+        if (getInstance(main).storage.getType() != STORAGE_TYPE.SQL) {
+            // we only support SQL for now
+            throw new UnsupportedOperationException("");
+        }
+
         return (UserMetadataSQLStorage) getInstance(main).storage;
     }
 
