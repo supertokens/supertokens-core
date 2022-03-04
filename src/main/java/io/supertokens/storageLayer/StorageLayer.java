@@ -31,6 +31,8 @@ import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
+import io.supertokens.pluginInterface.usermetadata.UserMetadataStorage;
+import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -167,6 +169,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
 
         return (JWTRecipeStorage) getInstance(main).storage;
+    }
+
+    public static UserMetadataSQLStorage getUserMetadataStorage(Main main) {
+        if (getInstance(main) == null) {
+            throw new QuitProgramException("please call init() before calling getStorageLayer");
+        }
+        return (UserMetadataSQLStorage) getInstance(main).storage;
     }
 
     public boolean isInMemDb() {
