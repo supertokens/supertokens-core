@@ -31,6 +31,7 @@ import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -43,45 +44,76 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     private static final String RESOURCE_KEY = "io.supertokens.storageLayer.StorageLayer";
     private final Storage storage;
+    private static Storage static_ref_to_storage = null;
 
     private StorageLayer(Main main, String pluginFolderPath, String configFilePath) throws MalformedURLException {
         Logging.info(main, "Loading storage layer.");
-        File loc = new File(pluginFolderPath);
-        Storage storageLayerTemp = null;
+        if (static_ref_to_storage != null && Main.isTesting) {
+            // we reuse the storage layer during testing so that we do not waste
+            // time reconnecting to the db.
+            this.storage = StorageLayer.static_ref_to_storage;
+        } else {
+            File loc = new File(pluginFolderPath);
+            Storage storageLayerTemp = null;
 
-        File[] flist = loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar"));
+            File[] flist = loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar"));
 
-        if (flist != null) {
-            URL[] urls = new URL[flist.length];
-            for (int i = 0; i < flist.length; i++) {
-                urls[i] = flist[i].toURI().toURL();
-            }
-            URLClassLoader ucl = new URLClassLoader(urls);
+            if (flist != null) {
+                URL[] urls = new URL[flist.length];
+                for (int i = 0; i < flist.length; i++) {
+                    urls[i] = flist[i].toURI().toURL();
+                }
+                URLClassLoader ucl = new URLClassLoader(urls);
 
-            ServiceLoader<Storage> sl = ServiceLoader.load(Storage.class, ucl);
-            Iterator<Storage> it = sl.iterator();
-            while (it.hasNext()) {
-                Storage plugin = it.next();
-                if (storageLayerTemp == null) {
-                    storageLayerTemp = plugin;
-                } else {
-                    throw new QuitProgramException(
-                            "Multiple database plugins found. Please make sure that just one plugin is in the /plugin"
-                                    + " " + "folder of the installation. Alternatively, please redownload and install "
-                                    + "SuperTokens" + ".");
+                ServiceLoader<Storage> sl = ServiceLoader.load(Storage.class, ucl);
+                Iterator<Storage> it = sl.iterator();
+                while (it.hasNext()) {
+                    Storage plugin = it.next();
+                    if (storageLayerTemp == null) {
+                        storageLayerTemp = plugin;
+                    } else {
+                        throw new QuitProgramException(
+                                "Multiple database plugins found. Please make sure that just one plugin is in the /plugin"
+                                        + " "
+                                        + "folder of the installation. Alternatively, please redownload and install "
+                                        + "SuperTokens" + ".");
+                    }
                 }
             }
-        }
 
-        if (storageLayerTemp != null && !main.isForceInMemoryDB()
-                && (storageLayerTemp.canBeUsed(configFilePath) || CLIOptions.get(main).isForceNoInMemoryDB())) {
-            this.storage = storageLayerTemp;
-        } else {
-            Logging.info(main, "Using in memory storage.");
-            this.storage = new Start(main);
+            if (storageLayerTemp != null && !main.isForceInMemoryDB()
+                    && (storageLayerTemp.canBeUsed(configFilePath) || CLIOptions.get(main).isForceNoInMemoryDB())) {
+                this.storage = storageLayerTemp;
+            } else {
+                Logging.info(main, "Using in memory storage.");
+                this.storage = new Start(main);
+            }
         }
         this.storage.constructor(main.getProcessId(), Main.makeConsolePrintSilent);
         this.storage.loadConfig(configFilePath);
+        if (Main.isTesting) {
+            // we save the storage layer for testing purposes so that
+            // next time, we can just reuse this.
+            // StorageLayer.static_ref_to_storage is set to null by the testing framework in case
+            // something in the config or CLI args change.
+            StorageLayer.static_ref_to_storage = this.storage;
+        }
+    }
+
+    public static void close(Main main) {
+        if (getInstance(main) == null) {
+            return;
+        }
+        getInstance(main).storage.close();
+        StorageLayer.static_ref_to_storage = null;
+    }
+
+    @TestOnly
+    public static void close() {
+        if (StorageLayer.static_ref_to_storage != null) {
+            StorageLayer.static_ref_to_storage.close();
+        }
+        StorageLayer.static_ref_to_storage = null;
     }
 
     public static StorageLayer getInstance(Main main) {
