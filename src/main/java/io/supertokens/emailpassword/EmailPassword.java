@@ -149,9 +149,9 @@ public class EmailPassword {
         final String userId = resetInfo.userId;
 
         try {
-            return storage.startTransaction(con -> {
+            return storage.startTransactionHibernate(session -> {
 
-                PasswordResetTokenInfo[] allTokens = storage.getAllPasswordResetTokenInfoForUser_Transaction(con,
+                PasswordResetTokenInfo[] allTokens = storage.getAllPasswordResetTokenInfoForUser_Transaction(session,
                         userId);
 
                 PasswordResetTokenInfo matchedToken = null;
@@ -166,16 +166,16 @@ public class EmailPassword {
                     throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
                 }
 
-                storage.deleteAllPasswordResetTokensForUser_Transaction(con, userId);
+                storage.deleteAllPasswordResetTokensForUser_Transaction(session, userId);
 
                 if (matchedToken.tokenExpiry < System.currentTimeMillis()) {
-                    storage.commitTransaction(con);
+                    storage.commitTransaction(session);
                     throw new StorageTransactionLogicException(new ResetPasswordInvalidTokenException());
                 }
 
-                storage.updateUsersPassword_Transaction(con, userId, hashedPassword);
+                storage.updateUsersPassword_Transaction(session, userId, hashedPassword);
 
-                storage.commitTransaction(con);
+                storage.commitTransaction(session);
                 return userId;
             });
         } catch (StorageTransactionLogicException e) {
@@ -191,27 +191,35 @@ public class EmailPassword {
             UnknownUserIdException, DuplicateEmailException {
         EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
         try {
-            storage.startTransaction(transaction -> {
-                UserInfo userInfo = storage.getUserInfoUsingId_Transaction(transaction, userId);
+            storage.startTransactionHibernate(session -> {
+
+                UserInfo userInfo = null;
+                try {
+                    userInfo = storage.getUserInfoUsingId_Transaction(session, userId);
+                } catch (StorageQueryException e) {
+                    throw new StorageTransactionLogicException(new UnknownUserIdException());
+                }
 
                 if (userInfo == null) {
                     throw new StorageTransactionLogicException(new UnknownUserIdException());
                 }
 
                 if (email != null) {
+
                     try {
-                        storage.updateUsersEmail_Transaction(transaction, userId, email);
-                    } catch (DuplicateEmailException e) {
+                        storage.updateUsersEmail_Transaction(session, userId, email);
+                    } catch (DuplicateEmailException | StorageQueryException e) {
                         throw new StorageTransactionLogicException(e);
                     }
+
                 }
 
                 if (password != null) {
                     String hashedPassword = UpdatableBCrypt.hash(password);
-                    storage.updateUsersPassword_Transaction(transaction, userId, hashedPassword);
+                    storage.updateUsersPassword_Transaction(session, userId, hashedPassword);
                 }
 
-                storage.commitTransaction(transaction);
+                storage.commitTransaction(session);
                 return null;
             });
         } catch (StorageTransactionLogicException e) {

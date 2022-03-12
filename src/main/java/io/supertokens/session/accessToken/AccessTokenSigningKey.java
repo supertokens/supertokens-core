@@ -107,13 +107,13 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
             SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
 
             // start transaction
-            sqlStorage.startTransaction(con -> {
-                KeyValueInfo legacyKey = sqlStorage.getLegacyAccessTokenSigningKey_Transaction(con);
+            sqlStorage.startTransactionHibernate(session -> {
+                KeyValueInfo legacyKey = sqlStorage.getLegacyAccessTokenSigningKey_Transaction(session);
 
                 if (legacyKey != null) {
-                    sqlStorage.addAccessTokenSigningKey_Transaction(con, legacyKey);
-                    sqlStorage.removeLegacyAccessTokenSigningKey_Transaction(con);
-                    sqlStorage.commitTransaction(con);
+                    sqlStorage.addAccessTokenSigningKey_Transaction(session, legacyKey);
+                    sqlStorage.removeLegacyAccessTokenSigningKey_Transaction(session);
+                    sqlStorage.commitTransaction(session);
                 }
                 return legacyKey;
             });
@@ -195,13 +195,13 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
             SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
 
             // start transaction
-            validKeys = sqlStorage.startTransaction(con -> {
+            validKeys = sqlStorage.startTransactionHibernate(session -> {
                 List<KeyInfo> validKeysFromSQL = new ArrayList<KeyInfo>();
 
                 // We have to generate a new key if we couldn't find one we can use for signing
                 boolean generateNewKey = true;
 
-                KeyValueInfo[] keysFromStorage = sqlStorage.getAccessTokenSigningKeys_Transaction(con);
+                KeyValueInfo[] keysFromStorage = sqlStorage.getAccessTokenSigningKeys_Transaction(session);
 
                 for (KeyValueInfo key : keysFromStorage) {
                     if (keysCreatedAfterCanVerify <= key.createdAtTime) {
@@ -221,12 +221,12 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                         throw new StorageTransactionLogicException(e);
                     }
                     KeyInfo newKey = new KeyInfo(signingKey, System.currentTimeMillis(), signingKeyLifetime);
-                    sqlStorage.addAccessTokenSigningKey_Transaction(con,
+                    sqlStorage.addAccessTokenSigningKey_Transaction(session,
                             new KeyValueInfo(newKey.value, newKey.createdAtTime));
                     validKeysFromSQL.add(newKey);
                 }
 
-                sqlStorage.commitTransaction(con);
+                sqlStorage.commitTransaction(session);
                 return validKeysFromSQL;
             });
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {

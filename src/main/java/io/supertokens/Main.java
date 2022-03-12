@@ -175,7 +175,7 @@ public class Main {
         }
         StorageLayer.getStorage(this).initStorage();
 
-        // init signing keys
+        // TODO: init signing keys
         AccessTokenSigningKey.init(this);
         RefreshTokenKey.init(this);
         JWTSigningKey.init(this);

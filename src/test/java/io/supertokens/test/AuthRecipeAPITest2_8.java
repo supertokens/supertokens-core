@@ -238,7 +238,7 @@ public class AuthRecipeAPITest2_8 {
             HashMap<String, String> queryParams = new HashMap<>();
             queryParams.put("limit", "1");
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/users", queryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "");
+                    "http://localhost:3567/users", queryParams, 5000, 5000, null, Utils.getCdiVersion2_7ForTests(), "");
 
             Assert.assertEquals("OK", response.get("status").getAsString());
             assertNotNull(response.get("nextPaginationToken"));

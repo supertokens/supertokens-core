@@ -200,19 +200,19 @@ public class Passwordless {
 
         PasswordlessDevice consumedDevice;
         try {
-            consumedDevice = passwordlessStorage.startTransaction(con -> {
-                PasswordlessDevice device = passwordlessStorage.getDevice_Transaction(con, deviceIdHash.encode());
+            consumedDevice = passwordlessStorage.startTransactionHibernate(session -> {
+                PasswordlessDevice device = passwordlessStorage.getDevice_Transaction(session, deviceIdHash.encode());
                 if (device == null) {
                     throw new StorageTransactionLogicException(new RestartFlowException());
                 }
                 if (device.failedAttempts >= maxCodeInputAttempts) {
                     // This can happen if the configured maxCodeInputAttempts changes
-                    passwordlessStorage.deleteDevice_Transaction(con, deviceIdHash.encode());
-                    passwordlessStorage.commitTransaction(con);
+                    passwordlessStorage.deleteDevice_Transaction(session, deviceIdHash.encode());
+                    passwordlessStorage.commitTransaction(session);
                     throw new StorageTransactionLogicException(new RestartFlowException());
                 }
 
-                PasswordlessCode code = passwordlessStorage.getCodeByLinkCodeHash_Transaction(con,
+                PasswordlessCode code = passwordlessStorage.getCodeByLinkCodeHash_Transaction(session,
                         linkCodeHash.encode());
                 if (code == null || code.createdAt < System.currentTimeMillis() - passwordlessCodeLifetime) {
                     if (deviceId != null) {
@@ -220,13 +220,13 @@ public class Passwordless {
                         // the code expired. This means that we need to increment failedAttempts or clean up the device
                         // if it would exceed the configured max.
                         if (device.failedAttempts + 1 >= maxCodeInputAttempts) {
-                            passwordlessStorage.deleteDevice_Transaction(con, deviceIdHash.encode());
-                            passwordlessStorage.commitTransaction(con);
+                            passwordlessStorage.deleteDevice_Transaction(session, deviceIdHash.encode());
+                            passwordlessStorage.commitTransaction(session);
                             throw new StorageTransactionLogicException(new RestartFlowException());
                         } else {
-                            passwordlessStorage.incrementDeviceFailedAttemptCount_Transaction(con,
+                            passwordlessStorage.incrementDeviceFailedAttemptCount_Transaction(session,
                                     deviceIdHash.encode());
-                            passwordlessStorage.commitTransaction(con);
+                            passwordlessStorage.commitTransaction(session);
 
                             if (code != null) {
                                 throw new StorageTransactionLogicException(new ExpiredUserInputCodeException(
@@ -241,12 +241,12 @@ public class Passwordless {
                 }
 
                 if (device.email != null) {
-                    passwordlessStorage.deleteDevicesByEmail_Transaction(con, device.email);
+                    passwordlessStorage.deleteDevicesByEmail_Transaction(session, device.email);
                 } else if (device.phoneNumber != null) {
-                    passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(con, device.phoneNumber);
+                    passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(session, device.phoneNumber);
                 }
 
-                passwordlessStorage.commitTransaction(con);
+                passwordlessStorage.commitTransaction(session);
                 return device;
             });
         } catch (StorageTransactionLogicException e) {
@@ -308,11 +308,11 @@ public class Passwordless {
             return;
         }
 
-        passwordlessStorage.startTransaction(con -> {
+        passwordlessStorage.startTransactionHibernate(session -> {
             // Locking the device
-            passwordlessStorage.getDevice_Transaction(con, code.deviceIdHash);
+            passwordlessStorage.getDevice_Transaction(session, code.deviceIdHash);
 
-            PasswordlessCode[] allCodes = passwordlessStorage.getCodesOfDevice_Transaction(con, code.deviceIdHash);
+            PasswordlessCode[] allCodes = passwordlessStorage.getCodesOfDevice_Transaction(session, code.deviceIdHash);
             if (!Stream.of(allCodes).anyMatch(code::equals)) {
                 // Already deleted
                 return null;
@@ -320,12 +320,12 @@ public class Passwordless {
 
             if (allCodes.length == 1) {
                 // If the device contains only the current code we should delete the device as well.
-                passwordlessStorage.deleteDevice_Transaction(con, code.deviceIdHash);
+                passwordlessStorage.deleteDevice_Transaction(session, code.deviceIdHash);
             } else {
                 // Otherwise we can just delete the code
-                passwordlessStorage.deleteCode_Transaction(con, codeId);
+                passwordlessStorage.deleteCode_Transaction(session, codeId);
             }
-            passwordlessStorage.commitTransaction(con);
+            passwordlessStorage.commitTransaction(session);
             return null;
         });
     }
@@ -334,9 +334,9 @@ public class Passwordless {
             throws StorageQueryException, StorageTransactionLogicException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
 
-        passwordlessStorage.startTransaction(con -> {
-            passwordlessStorage.deleteDevicesByEmail_Transaction(con, email);
-            passwordlessStorage.commitTransaction(con);
+        passwordlessStorage.startTransactionHibernate(session -> {
+            passwordlessStorage.deleteDevicesByEmail_Transaction(session, email);
+            passwordlessStorage.commitTransaction(session);
             return null;
         });
     }
@@ -345,9 +345,9 @@ public class Passwordless {
             throws StorageQueryException, StorageTransactionLogicException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(main);
 
-        passwordlessStorage.startTransaction(con -> {
-            passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(con, phoneNumber);
-            passwordlessStorage.commitTransaction(con);
+        passwordlessStorage.startTransactionHibernate(session -> {
+            passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(session, phoneNumber);
+            passwordlessStorage.commitTransaction(session);
             return null;
         });
     }
@@ -382,34 +382,34 @@ public class Passwordless {
             throw new UserWithoutContactInfoException();
         }
         try {
-            storage.startTransaction(con -> {
+            storage.startTransactionHibernate(session -> {
                 if (emailUpdate != null && !Objects.equals(emailUpdate.newValue, user.email)) {
                     try {
-                        storage.updateUserEmail_Transaction(con, userId, emailUpdate.newValue);
+                        storage.updateUserEmail_Transaction(session, userId, emailUpdate.newValue);
                     } catch (UnknownUserIdException | DuplicateEmailException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     if (user.email != null) {
-                        storage.deleteDevicesByEmail_Transaction(con, user.email);
+                        storage.deleteDevicesByEmail_Transaction(session, user.email);
                     }
                     if (emailUpdate.newValue != null) {
-                        storage.deleteDevicesByEmail_Transaction(con, emailUpdate.newValue);
+                        storage.deleteDevicesByEmail_Transaction(session, emailUpdate.newValue);
                     }
                 }
                 if (phoneNumberUpdate != null && !Objects.equals(phoneNumberUpdate.newValue, user.phoneNumber)) {
                     try {
-                        storage.updateUserPhoneNumber_Transaction(con, userId, phoneNumberUpdate.newValue);
+                        storage.updateUserPhoneNumber_Transaction(session, userId, phoneNumberUpdate.newValue);
                     } catch (UnknownUserIdException | DuplicatePhoneNumberException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     if (user.phoneNumber != null) {
-                        storage.deleteDevicesByPhoneNumber_Transaction(con, user.phoneNumber);
+                        storage.deleteDevicesByPhoneNumber_Transaction(session, user.phoneNumber);
                     }
                     if (phoneNumberUpdate.newValue != null) {
-                        storage.deleteDevicesByPhoneNumber_Transaction(con, phoneNumberUpdate.newValue);
+                        storage.deleteDevicesByPhoneNumber_Transaction(session, phoneNumberUpdate.newValue);
                     }
                 }
-                storage.commitTransaction(con);
+                storage.commitTransaction(session);
                 return null;
             });
         } catch (StorageTransactionLogicException e) {

@@ -78,15 +78,20 @@ public class JWTKeyStorageTest {
             JWTRecipeSQLStorage sqlStorage = (JWTRecipeSQLStorage) storage;
             JWTSigningKeyInfo keyToSet = new JWTSymmetricSigningKeyInfo("keyId-1234", 1000, "RSA", "somekeystring");
 
-            boolean success = sqlStorage.startTransaction(con -> {
+            boolean success = sqlStorage.startTransactionHibernate(session -> {
                 try {
-                    sqlStorage.setJWTSigningKey_Transaction(con, keyToSet);
+                    sqlStorage.setJWTSigningKey_Transaction(session, keyToSet);
+                    sqlStorage.commitTransaction(session);
+                    return true;
                 } catch (DuplicateKeyIdException e) {
                     return false;
                 }
+            });
 
+            success = sqlStorage.startTransactionHibernate(session -> {
                 try {
-                    sqlStorage.setJWTSigningKey_Transaction(con, keyToSet);
+                    sqlStorage.setJWTSigningKey_Transaction(session, keyToSet);
+                    sqlStorage.commitTransaction(session);
                     return false;
                 } catch (DuplicateKeyIdException e) {
                     return true;

@@ -58,6 +58,7 @@ import static org.junit.Assert.*;
  * TODO: Add tests for locks
  * */
 
+//TODO: do we need these?
 public class InMemoryDBTest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();

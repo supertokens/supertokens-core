@@ -175,14 +175,14 @@ public class Session {
         if (StorageLayer.getSessionStorage(main).getType() == STORAGE_TYPE.SQL) {
             SessionSQLStorage storage = (SessionSQLStorage) StorageLayer.getSessionStorage(main);
             try {
-                return storage.startTransaction(con -> {
+                return storage.startTransactionHibernate(session -> {
                     try {
 
                         io.supertokens.pluginInterface.session.SessionInfo sessionInfo = storage
-                                .getSessionInfo_Transaction(con, accessToken.sessionHandle);
+                                .getSessionInfo_Transaction(session, accessToken.sessionHandle);
 
                         if (sessionInfo == null) {
-                            storage.commitTransaction(con);
+                            storage.commitTransaction(session);
                             throw new UnauthorisedException("Session missing in db");
                         }
 
@@ -192,11 +192,11 @@ public class Session {
                                 || sessionInfo.refreshTokenHash2.equals(Utils.hashSHA256(accessToken.refreshTokenHash1))
                                 || JWTPayloadNeedsUpdating) {
                             if (promote) {
-                                storage.updateSessionInfo_Transaction(con, accessToken.sessionHandle,
+                                storage.updateSessionInfo_Transaction(session, accessToken.sessionHandle,
                                         Utils.hashSHA256(accessToken.refreshTokenHash1),
                                         System.currentTimeMillis() + Config.getConfig(main).getRefreshTokenValidity());
                             }
-                            storage.commitTransaction(con);
+                            storage.commitTransaction(session);
 
                             TokenInfo newAccessToken;
                             if (AccessToken.getAccessTokenVersion(accessToken) == AccessToken.VERSION.V1) {
@@ -218,7 +218,7 @@ public class Session {
                                     null, null, null);
                         }
 
-                        storage.commitTransaction(con);
+                        storage.commitTransaction(session);
                         return new SessionInformationHolder(
                                 new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData),
                                 // here we purposely use accessToken.userData instead of sessionInfo.userDataInJWT
@@ -323,20 +323,20 @@ public class Session {
         if (StorageLayer.getSessionStorage(main).getType() == STORAGE_TYPE.SQL) {
             SessionSQLStorage storage = (SessionSQLStorage) StorageLayer.getSessionStorage(main);
             try {
-                return storage.startTransaction(con -> {
+                return storage.startTransactionHibernate(session -> {
                     try {
                         String sessionHandle = refreshTokenInfo.sessionHandle;
                         io.supertokens.pluginInterface.session.SessionInfo sessionInfo = storage
-                                .getSessionInfo_Transaction(con, sessionHandle);
+                                .getSessionInfo_Transaction(session, sessionHandle);
 
                         if (sessionInfo == null || sessionInfo.expiry < System.currentTimeMillis()) {
-                            storage.commitTransaction(con);
+                            storage.commitTransaction(session);
                             throw new UnauthorisedException("Session missing in db or has expired");
                         }
 
                         if (sessionInfo.refreshTokenHash2.equals(Utils.hashSHA256(Utils.hashSHA256(refreshToken)))) {
                             // at this point, the input refresh token is the parent one.
-                            storage.commitTransaction(con);
+                            storage.commitTransaction(session);
                             String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
                             final TokenInfo newRefreshToken = RefreshToken.createNewRefreshToken(main, sessionHandle,
                                     sessionInfo.userId, Utils.hashSHA256(refreshToken), antiCsrfToken);
@@ -360,16 +360,16 @@ public class Session {
                                 || (refreshTokenInfo.parentRefreshTokenHash1 != null
                                         && Utils.hashSHA256(refreshTokenInfo.parentRefreshTokenHash1)
                                                 .equals(sessionInfo.refreshTokenHash2))) {
-                            storage.updateSessionInfo_Transaction(con, sessionHandle,
+                            storage.updateSessionInfo_Transaction(session, sessionHandle,
                                     Utils.hashSHA256(Utils.hashSHA256(refreshToken)),
                                     System.currentTimeMillis() + Config.getConfig(main).getRefreshTokenValidity());
 
-                            storage.commitTransaction(con);
+                            storage.commitTransaction(session);
 
                             return refreshSessionHelper(main, refreshToken, refreshTokenInfo, enableAntiCsrf);
                         }
 
-                        storage.commitTransaction(con);
+                        storage.commitTransaction(session);
 
                         throw new TokenTheftDetectedException(sessionHandle, sessionInfo.userId);
 

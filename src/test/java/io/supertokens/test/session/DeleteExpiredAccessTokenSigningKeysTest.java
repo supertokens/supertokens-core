@@ -84,7 +84,7 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
         long signingKeyUpdateInterval = Config.getConfig(process.getProcess()).getAccessTokenSigningKeyUpdateInterval();
 
         SessionSQLStorage sqlStorage = (SessionSQLStorage) sessionStorage;
-        sqlStorage.startTransaction(con -> {
+        sqlStorage.startTransactionHibernate(con -> {
             sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("clean!", 100));
             sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("clean!",
                     System.currentTimeMillis() - signingKeyUpdateInterval - 3 * accessTokenValidity));
@@ -95,12 +95,13 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
             sqlStorage.addAccessTokenSigningKey_Transaction(con,
                     new KeyValueInfo("keep!", System.currentTimeMillis() - signingKeyUpdateInterval));
             sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("keep!", System.currentTimeMillis()));
+            sqlStorage.commitTransaction(con);
             return true;
         });
 
         Thread.sleep(1500);
 
-        sqlStorage.startTransaction(con -> {
+        sqlStorage.startTransactionHibernate(con -> {
             KeyValueInfo[] keys = sqlStorage.getAccessTokenSigningKeys_Transaction(con);
             assertEquals(keys.length, 3);
             for (KeyValueInfo key : keys) {
@@ -135,7 +136,7 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
         long signingKeyUpdateInterval = Config.getConfig(process.getProcess()).getAccessTokenSigningKeyUpdateInterval();
 
         SessionSQLStorage sqlStorage = (SessionSQLStorage) sessionStorage;
-        sqlStorage.startTransaction(con -> {
+        sqlStorage.startTransactionHibernate(con -> {
             sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("clean!", 100));
             sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("clean!",
                     System.currentTimeMillis() - signingKeyUpdateInterval - 3 * accessTokenValidity));
@@ -146,12 +147,13 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
             sqlStorage.addAccessTokenSigningKey_Transaction(con,
                     new KeyValueInfo("keep!", System.currentTimeMillis() - signingKeyUpdateInterval));
             sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("keep!", System.currentTimeMillis()));
+            sqlStorage.commitTransaction(con);
             return true;
         });
 
         Thread.sleep(1500);
 
-        sqlStorage.startTransaction(con -> {
+        sqlStorage.startTransactionHibernate(con -> {
             KeyValueInfo[] keys = sqlStorage.getAccessTokenSigningKeys_Transaction(con);
             assertEquals(keys.length, 6);
             return true;

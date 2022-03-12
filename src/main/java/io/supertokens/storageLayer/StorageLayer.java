@@ -20,7 +20,6 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.inmemorydb.Start;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
@@ -36,13 +35,14 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.sql.Driver;
 import java.util.Iterator;
 import java.util.ServiceLoader;
 
 public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     private static final String RESOURCE_KEY = "io.supertokens.storageLayer.StorageLayer";
-    private final Storage storage;
+    private Storage storage = null;
 
     private StorageLayer(Main main, String pluginFolderPath, String configFilePath) throws MalformedURLException {
         Logging.info(main, "Loading storage layer.");
@@ -78,7 +78,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             this.storage = storageLayerTemp;
         } else {
             Logging.info(main, "Using in memory storage.");
-            this.storage = new Start(main);
         }
         this.storage.constructor(main.getProcessId(), Main.makeConsolePrintSilent);
         this.storage.loadConfig(configFilePath);
@@ -170,6 +169,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     public boolean isInMemDb() {
-        return this.storage instanceof Start;
+        // TODO: return this.storage instanceof Start;
+        return false;
     }
 }

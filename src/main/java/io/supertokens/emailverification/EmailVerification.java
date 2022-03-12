@@ -101,10 +101,10 @@ public class EmailVerification {
         final String userId = tokenInfo.userId;
 
         try {
-            return storage.startTransaction(con -> {
+            return storage.startTransactionHibernate(session -> {
 
                 EmailVerificationTokenInfo[] allTokens = storage
-                        .getAllEmailVerificationTokenInfoForUser_Transaction(con, userId, tokenInfo.email);
+                        .getAllEmailVerificationTokenInfoForUser_Transaction(session, userId, tokenInfo.email);
 
                 EmailVerificationTokenInfo matchedToken = null;
                 for (EmailVerificationTokenInfo tok : allTokens) {
@@ -118,16 +118,16 @@ public class EmailVerification {
                     throw new StorageTransactionLogicException(new EmailVerificationInvalidTokenException());
                 }
 
-                storage.deleteAllEmailVerificationTokensForUser_Transaction(con, userId, tokenInfo.email);
+                storage.deleteAllEmailVerificationTokensForUser_Transaction(session, userId, tokenInfo.email);
 
                 if (matchedToken.tokenExpiry < System.currentTimeMillis()) {
-                    storage.commitTransaction(con);
+                    storage.commitTransaction(session);
                     throw new StorageTransactionLogicException(new EmailVerificationInvalidTokenException());
                 }
 
-                storage.updateIsEmailVerified_Transaction(con, userId, tokenInfo.email, true);
+                storage.updateIsEmailVerified_Transaction(session, userId, tokenInfo.email, true);
 
-                storage.commitTransaction(con);
+                storage.commitTransaction(session);
 
                 return new User(userId, tokenInfo.email);
             });

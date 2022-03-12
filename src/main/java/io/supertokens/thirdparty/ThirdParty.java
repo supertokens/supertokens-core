@@ -52,10 +52,10 @@ public class ThirdParty {
 
         if (isEmailVerified) {
             try {
-                StorageLayer.getEmailVerificationStorage(main).startTransaction(con -> {
-                    StorageLayer.getEmailVerificationStorage(main).updateIsEmailVerified_Transaction(con,
+                StorageLayer.getEmailVerificationStorage(main).startTransactionHibernate(session -> {
+                    StorageLayer.getEmailVerificationStorage(main).updateIsEmailVerified_Transaction(session,
                             response.user.id, response.user.email, true);
-                    StorageLayer.getEmailVerificationStorage(main).commitTransaction(con);
+                    StorageLayer.getEmailVerificationStorage(main).commitTransaction(session);
                     return null;
                 });
             } catch (StorageTransactionLogicException e) {
@@ -100,23 +100,23 @@ public class ThirdParty {
             // we try to get user and update their email
             SignInUpResponse response = null;
             try {
-                response = storage.startTransaction(con -> {
-                    UserInfo user = storage.getUserInfoUsingId_Transaction(con, thirdPartyId, thirdPartyUserId);
+                response = storage.startTransactionHibernate(session -> {
+                    UserInfo user = storage.getUserInfoUsingId_Transaction(session, thirdPartyId, thirdPartyUserId);
 
                     if (user == null) {
                         // we retry everything..
-                        storage.commitTransaction(con);
+                        storage.commitTransaction(session);
                         return null;
                     }
 
                     if (!email.equals(user.email)) {
-                        storage.updateUserEmail_Transaction(con, thirdPartyId, thirdPartyUserId, email);
+                        storage.updateUserEmail_Transaction(session, thirdPartyId, thirdPartyUserId, email);
 
                         user = new UserInfo(user.id, email,
                                 new UserInfo.ThirdParty(user.thirdParty.id, user.thirdParty.userId), user.timeJoined);
                     }
 
-                    storage.commitTransaction(con);
+                    storage.commitTransaction(session);
                     return new SignInUpResponse(false, user);
                 });
             } catch (StorageTransactionLogicException ignored) {

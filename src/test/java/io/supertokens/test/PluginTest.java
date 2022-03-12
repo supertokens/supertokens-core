@@ -43,6 +43,7 @@ import static org.junit.Assert.assertNotNull;
  * - plugin folder exists, with more than one storage plugin
  */
 
+//TODO: how to debug this?
 public class PluginTest {
 
     @Rule

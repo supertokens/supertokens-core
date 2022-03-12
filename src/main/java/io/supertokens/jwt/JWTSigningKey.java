@@ -104,10 +104,10 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         if (storage.getType() == STORAGE_TYPE.SQL) {
             JWTRecipeSQLStorage sqlStorage = (JWTRecipeSQLStorage) storage;
 
-            return sqlStorage.startTransaction(con -> {
-                List<JWTSigningKeyInfo> keys = sqlStorage.getJWTSigningKeys_Transaction(con);
+            return sqlStorage.startTransactionHibernate(session -> {
+                List<JWTSigningKeyInfo> keys = sqlStorage.getJWTSigningKeys_Transaction(session);
 
-                sqlStorage.commitTransaction(con);
+                sqlStorage.commitTransaction(session);
                 return keys;
             });
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
@@ -138,10 +138,10 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
             JWTRecipeSQLStorage sqlStorage = (JWTRecipeSQLStorage) storage;
 
             try {
-                return sqlStorage.startTransaction(con -> {
+                return sqlStorage.startTransactionHibernate(session -> {
                     JWTSigningKeyInfo keyInfo = null;
 
-                    List<JWTSigningKeyInfo> keysFromStorage = sqlStorage.getJWTSigningKeys_Transaction(con);
+                    List<JWTSigningKeyInfo> keysFromStorage = sqlStorage.getJWTSigningKeys_Transaction(session);
 
                     // Loop through the keys and find the first one for the algorithm, if the list is empty a new key
                     // will be created after the loop
@@ -158,7 +158,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                         while (true) {
                             try {
                                 keyInfo = generateKeyForAlgorithm(algorithm);
-                                sqlStorage.setJWTSigningKey_Transaction(con, keyInfo);
+                                sqlStorage.setJWTSigningKey_Transaction(session, keyInfo);
                                 break;
                             } catch (NoSuchAlgorithmException | UnsupportedJWTSigningAlgorithmException e) {
                                 throw new StorageTransactionLogicException(e);
@@ -168,7 +168,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                         }
                     }
 
-                    sqlStorage.commitTransaction(con);
+                    sqlStorage.commitTransaction(session);
                     return keyInfo;
                 });
             } catch (StorageTransactionLogicException e) {

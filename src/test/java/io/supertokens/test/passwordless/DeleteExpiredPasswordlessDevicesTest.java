@@ -73,7 +73,7 @@ public class DeleteExpiredPasswordlessDevicesTest {
         passwordlessStorage.createDeviceWithCode("test@example.com", null, "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, "linkCodeHash", System.currentTimeMillis() - codeLifetime));
 
-        Thread.sleep(1500);
+        Thread.sleep(5000);
 
         assertNull(passwordlessStorage.getDevice(deviceIdHash));
 

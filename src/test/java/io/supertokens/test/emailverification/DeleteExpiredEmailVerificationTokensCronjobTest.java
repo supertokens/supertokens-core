@@ -67,8 +67,9 @@ public class DeleteExpiredEmailVerificationTokensCronjobTest {
         String tok = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
         String tok2 = EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
 
+        // TODO: discuss how to decide token lifetime
         io.supertokens.emailverification.EmailVerificationTest.getInstance(process.getProcess())
-                .setEmailVerificationTokenLifetime(10);
+                .setEmailVerificationTokenLifetime(100);
 
         EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
         EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);

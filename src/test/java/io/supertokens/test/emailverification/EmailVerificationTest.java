@@ -314,7 +314,7 @@ public class EmailVerificationTest {
         EmailVerification.verifyEmail(process.getProcess(), token);
         assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.id, user.email));
 
-        StorageLayer.getEmailVerificationStorage(process.getProcess()).startTransaction(con -> {
+        StorageLayer.getEmailVerificationStorage(process.getProcess()).startTransactionHibernate(con -> {
             StorageLayer.getEmailVerificationStorage(process.getProcess()).updateIsEmailVerified_Transaction(con,
                     user.id, user.email, false);
             return null;
@@ -344,7 +344,7 @@ public class EmailVerificationTest {
         EmailVerification.verifyEmail(process.getProcess(), token);
         assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.id, user.email));
 
-        StorageLayer.getEmailVerificationStorage(process.getProcess()).startTransaction(con -> {
+        StorageLayer.getEmailVerificationStorage(process.getProcess()).startTransactionHibernate(con -> {
             StorageLayer.getEmailVerificationStorage(process.getProcess()).updateIsEmailVerified_Transaction(con,
                     user.id, user.email, true);
             return null;

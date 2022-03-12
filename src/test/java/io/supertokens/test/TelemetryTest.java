@@ -40,6 +40,7 @@ import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.*;
 
+//TODO: what is this?
 public class TelemetryTest extends Mockito {
     @Rule
     public TestRule watchman = Utils.getOnFailure();

@@ -70,8 +70,8 @@ dependencies {
     // https://mvnrepository.com/artifact/org.reflections/reflections
     testImplementation group: 'org.reflections', name: 'reflections', version: '0.9.10'
 
-    testImplementation 'com.tngtech.archunit:archunit-junit4:0.22.0'
 
+    testImplementation 'com.tngtech.archunit:archunit-junit4:0.22.0'
 }
 
 application {
