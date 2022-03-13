@@ -23,17 +23,19 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.usermetadata.UserMetadata;
+import io.supertokens.utils.MetadataUtils;
 
 import org.junit.*;
 import org.junit.rules.TestRule;
 
-import static io.supertokens.test.passwordless.PasswordlessUtility.*;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
@@ -169,6 +171,144 @@ public class UserMetadataTest {
 
         assert (newMetadata.has("testNew"));
         assertEquals("new!", newMetadata.get("testNew").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUserMetadataEmptyRowLocking() throws Exception {
+
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String userId = "userId";
+
+        JsonObject expected = new JsonObject();
+        JsonObject update1 = new JsonObject();
+        update1.addProperty("a", 1);
+        expected.addProperty("a", 1);
+
+        JsonObject update2 = new JsonObject();
+        update2.addProperty("b", 2);
+        expected.addProperty("b", 2);
+
+        UserMetadataSQLStorage sqlStorage = StorageLayer.getUserMetadataStorage(process.getProcess());
+
+        AtomicReference<String> t1State = new AtomicReference<>("init");
+        AtomicReference<String> t2State = new AtomicReference<>("init");
+        final Object syncObject = new Object();
+
+        AtomicInteger tryCount1 = new AtomicInteger(0);
+        AtomicInteger tryCount2 = new AtomicInteger(0);
+        AtomicBoolean success1 = new AtomicBoolean(false);
+        AtomicBoolean success2 = new AtomicBoolean(false);
+
+        Runnable r1 = () -> {
+            try {
+                sqlStorage.startTransaction(con -> {
+                    tryCount1.incrementAndGet();
+                    JsonObject originalMetadata = sqlStorage.getUserMetadata_Transaction(con, userId);
+
+                    synchronized (syncObject) {
+                        t1State.set("read");
+                        syncObject.notifyAll();
+                    }
+
+                    synchronized (syncObject) {
+                        while (!t2State.get().equals("read")) {
+                            try {
+                                syncObject.wait();
+                            } catch (InterruptedException e) {
+                            }
+                        }
+                    }
+
+                    JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
+                    MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, update1);
+
+                    sqlStorage.setUserMetadata_Transaction(con, userId, updatedMetadata);
+                    sqlStorage.commitTransaction(con);
+                    success1.set(true); // it should come here because we will try three times.
+                    return null;
+                });
+            } catch (Exception ignored) {
+            }
+        };
+
+        Runnable r2 = () -> {
+            try {
+                sqlStorage.startTransaction(con -> {
+                    tryCount2.incrementAndGet();
+
+                    JsonObject originalMetadata = sqlStorage.getUserMetadata_Transaction(con, userId);
+
+                    synchronized (syncObject) {
+                        t2State.set("read");
+                        syncObject.notifyAll();
+                    }
+
+                    synchronized (syncObject) {
+                        while (!t1State.get().equals("read")) {
+                            try {
+                                syncObject.wait();
+                            } catch (InterruptedException e) {
+                            }
+                        }
+                    }
+
+                    JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
+                    MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, update2);
+
+                    sqlStorage.setUserMetadata_Transaction(con, userId, updatedMetadata);
+
+                    sqlStorage.commitTransaction(con);
+                    success2.set(true); // it should come here because we will try three times.
+                    return null;
+                });
+            } catch (Exception ignored) {
+            }
+        };
+        Thread t1 = new Thread(r1);
+        Thread t2 = new Thread(r2);
+
+        t1.start();
+        t2.start();
+
+        t1.join(1000);
+        t2.join(1000);
+
+        // In this case the empty row was actually locked (SQLite)
+        if (t1.isAlive() && t2.isAlive()) {
+            // There were no retries in this case
+            assertEquals(1, tryCount1.get());
+            assertEquals(1, tryCount2.get());
+
+            // Only one of the threads got to the "read" state blocking the other in "init"
+            assertNotEquals(t1State.get(), t2State.get());
+
+            // Neither of the threads were successful
+            assertTrue(!success1.get());
+            assertTrue(!success2.get());
+        } else {
+            // The empty row did not lock, so we check if the system found a deadlock and that we could resolve it.
+
+            // Both succeeds in the end
+            assertTrue(success1.get());
+            assertTrue(success2.get());
+
+            // One of them had to be retried (not deterministic which)
+            assertEquals(3, tryCount1.get() + tryCount2.get());
+            // assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.DEADLOCK_FOUND));
+
+            // The end result is as expected
+            assertEquals(expected, sqlStorage.getUserMetadata(userId));
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
