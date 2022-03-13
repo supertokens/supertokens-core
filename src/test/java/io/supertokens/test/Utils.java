@@ -131,6 +131,7 @@ public abstract class Utils extends Mockito {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        System.gc();
     }
 
     static void commentConfigValue(String key) throws IOException {
