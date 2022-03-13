@@ -83,13 +83,14 @@ public class SessionTest3 {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
 
-        Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
+        Session.createNewSession(process.getProcess(), userId, userDataInJWT, grantPayload, userDataInDatabase, false);
 
         assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 2);
 
@@ -134,9 +135,10 @@ public class SessionTest3 {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
 
@@ -183,23 +185,25 @@ public class SessionTest3 {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
 
         SessionInformationHolder sessionInfo2 = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
         assert sessionInfo2.refreshToken != null;
         assert sessionInfo2.accessToken != null;
 
         SessionInformationHolder sessionInfo3 = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
         assert sessionInfo3.refreshToken != null;
         assert sessionInfo3.accessToken != null;
 
-        Session.createNewSession(process.getProcess(), "userId2", userDataInJWT, userDataInDatabase, false);
+        Session.createNewSession(process.getProcess(), "userId2", userDataInJWT, grantPayload, userDataInDatabase,
+                false);
 
         assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 4);
 
@@ -239,26 +243,27 @@ public class SessionTest3 {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
 
         SessionInformationHolder sessionInfo2 = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
         assert sessionInfo2.refreshToken != null;
         assert sessionInfo2.accessToken != null;
 
         SessionInformationHolder sessionInfo3 = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
         assert sessionInfo3.refreshToken != null;
         assert sessionInfo3.accessToken != null;
 
         assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 3);
 
         Thread.sleep(2500);
-        Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
+        Session.createNewSession(process.getProcess(), userId, userDataInJWT, grantPayload, userDataInDatabase, false);
 
         assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
 

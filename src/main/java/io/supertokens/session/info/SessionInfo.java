@@ -19,6 +19,7 @@ package io.supertokens.session.info;
 import com.google.gson.JsonObject;
 
 import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
 
 public class SessionInfo {
     @Nonnull
@@ -30,9 +31,14 @@ public class SessionInfo {
     @Nonnull
     public final JsonObject userDataInJWT;
 
-    public SessionInfo(@Nonnull String handle, @Nonnull String userId, @Nonnull JsonObject userDataInJWT) {
+    @Nullable
+    public final JsonObject grants;
+
+    public SessionInfo(@Nonnull String handle, @Nonnull String userId, @Nonnull JsonObject userDataInJWT,
+            @Nullable JsonObject grants) {
         this.handle = handle;
         this.userId = userId;
         this.userDataInJWT = userDataInJWT;
+        this.grants = grants;
     }
 }

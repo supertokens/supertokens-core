@@ -46,7 +46,11 @@ public class SessionQueries {
                 + "session_handle VARCHAR(255) NOT NULL," + "user_id VARCHAR(128) NOT NULL,"
                 + "refresh_token_hash_2 VARCHAR(128) NOT NULL," + "session_data TEXT,"
                 + "expires_at BIGINT UNSIGNED NOT NULL," + "created_at_time BIGINT UNSIGNED NOT NULL,"
-                + "jwt_user_payload TEXT," + "PRIMARY KEY(session_handle)" + " );";
+                + "jwt_user_payload TEXT," + "grant_payload TEXT, " + "PRIMARY KEY(session_handle)" + " );";
+    }
+
+    static String getQueryToCreateGrantPayloadColumn(Start start) {
+        return "ALTER TABLE " + Config.getConfig(start).getSessionInfoTable() + "ADD grant_payload TEXT;";
     }
 
     static String getQueryToCreateAccessTokenSigningKeysTable(Start start) {
@@ -55,11 +59,11 @@ public class SessionQueries {
     }
 
     public static void createNewSession(Start start, String sessionHandle, String userId, String refreshTokenHash2,
-            JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT, long createdAtTime)
-            throws SQLException, StorageQueryException {
+            JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT, JsonObject grantPayload,
+            long createdAtTime) throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + getConfig(start).getSessionInfoTable()
-                + "(session_handle, user_id, refresh_token_hash_2, session_data, expires_at, jwt_user_payload, "
-                + "created_at_time)" + " VALUES(?, ?, ?, ?, ?, ?, ?)";
+                + "(session_handle, user_id, refresh_token_hash_2, session_data, expires_at, jwt_user_payload, grant_payload,"
+                + "created_at_time)" + " VALUES(?, ?, ?, ?, ?, ?, ?, ?)";
 
         update(start, QUERY, pst -> {
             pst.setString(1, sessionHandle);
@@ -68,7 +72,8 @@ public class SessionQueries {
             pst.setString(4, userDataInDatabase.toString());
             pst.setLong(5, expiry);
             pst.setString(6, userDataInJWT.toString());
-            pst.setLong(7, createdAtTime);
+            pst.setString(7, grantPayload == null ? null : grantPayload.toString());
+            pst.setLong(8, createdAtTime);
         });
     }
 
@@ -78,7 +83,7 @@ public class SessionQueries {
         ((ConnectionWithLocks) con).lock(sessionHandle);
 
         String QUERY = "SELECT session_handle, user_id, refresh_token_hash_2, session_data, expires_at, "
-                + "created_at_time, jwt_user_payload FROM " + getConfig(start).getSessionInfoTable()
+                + "created_at_time, jwt_user_payload, grant_payload FROM " + getConfig(start).getSessionInfoTable()
                 + " WHERE session_handle = ?";
         return QueryExecutorTemplate.execute(con, QUERY, pst -> {
             pst.setString(1, sessionHandle);
@@ -87,6 +92,17 @@ public class SessionQueries {
                 return SessionInfoRowMapper.getInstance().mapOrThrow(result);
             }
             return null;
+        });
+    }
+
+    public static void updateSessionGrantPayload_Transaction(Start start, Connection con, String sessionHandle,
+            String grantPayload) throws SQLException, StorageQueryException {
+        String QUERY = "UPDATE " + getConfig(start).getSessionInfoTable() + " SET grant_payload = ?"
+                + " WHERE session_handle = ?";
+
+        update(con, QUERY, pst -> {
+            pst.setString(1, grantPayload);
+            pst.setString(2, sessionHandle);
         });
     }
 
@@ -161,8 +177,8 @@ public class SessionQueries {
 
     public static SessionInfo getSession(Start start, String sessionHandle) throws SQLException, StorageQueryException {
         String QUERY = "SELECT session_handle, user_id, refresh_token_hash_2, session_data, expires_at, "
-                + "created_at_time, jwt_user_payload FROM " + Config.getConfig(start).getSessionInfoTable()
-                + " WHERE session_handle = ?";
+                + "created_at_time, jwt_user_payload, grant_payload FROM "
+                + Config.getConfig(start).getSessionInfoTable() + " WHERE session_handle = ?";
         return execute(start, QUERY, pst -> pst.setString(1, sessionHandle), result -> {
             if (result.next()) {
                 return SessionInfoRowMapper.getInstance().mapOrThrow(result);
@@ -171,10 +187,10 @@ public class SessionQueries {
         });
     }
 
-    public static int updateSession(Start start, String sessionHandle, JsonObject sessionData, JsonObject jwtPayload)
-            throws SQLException, StorageQueryException {
+    public static int updateSession(Start start, String sessionHandle, JsonObject sessionData, JsonObject jwtPayload,
+            JsonObject grantPayload) throws SQLException, StorageQueryException {
 
-        if (sessionData == null && jwtPayload == null) {
+        if (sessionData == null && jwtPayload == null && grantPayload == null) {
             throw new SQLException("sessionData and jwtPayload are null when updating session info");
         }
 
@@ -186,6 +202,10 @@ public class SessionQueries {
         }
         if (jwtPayload != null) {
             QUERY += (somethingBefore ? "," : "") + " jwt_user_payload = ?";
+            somethingBefore = true;
+        }
+        if (grantPayload != null) {
+            QUERY += (somethingBefore ? "," : "") + " grant_payload = ?";
         }
         QUERY += " WHERE session_handle = ?";
 
@@ -199,6 +219,11 @@ public class SessionQueries {
                 pst.setString(currIndex, jwtPayload.toString());
                 currIndex++;
             }
+            if (grantPayload != null) {
+                pst.setString(currIndex, grantPayload.toString());
+                currIndex++;
+            }
+
             pst.setString(currIndex, sessionHandle);
         });
     }
@@ -256,10 +281,13 @@ public class SessionQueries {
         @Override
         public SessionInfo map(ResultSet result) throws Exception {
             JsonParser jp = new JsonParser();
+
             return new SessionInfo(result.getString("session_handle"), result.getString("user_id"),
                     result.getString("refresh_token_hash_2"),
                     jp.parse(result.getString("session_data")).getAsJsonObject(), result.getLong("expires_at"),
                     jp.parse(result.getString("jwt_user_payload")).getAsJsonObject(),
+                    result.getString("grant_payload") == null ? null
+                            : jp.parse(result.getString("grant_payload")).getAsJsonObject(),
                     result.getLong("created_at_time"));
         }
     }

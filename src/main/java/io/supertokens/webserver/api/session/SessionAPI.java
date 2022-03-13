@@ -70,14 +70,24 @@ public class SessionAPI extends WebserverAPI {
         assert enableAntiCsrf != null;
         JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", false);
         assert userDataInJWT != null;
+
         JsonObject userDataInDatabase = InputParser.parseJsonObjectOrThrowError(input, "userDataInDatabase", false);
         assert userDataInDatabase != null;
 
+        JsonObject grantPayload = super.getVersionFromRequest(req).equals("2.13")
+                ? InputParser.parseJsonObjectOrThrowError(input, "grants", false)
+                : null;
+
         try {
-            SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
+            SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT, grantPayload,
                     userDataInDatabase, enableAntiCsrf);
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
+            if (!super.getVersionFromRequest(req).equals("2.13")) {
+                result.getAsJsonObject("session").remove("grants");
+            } else if (!result.getAsJsonObject("session").has("grants")) {
+                result.getAsJsonObject("session").add("grants", new JsonObject());
+            }
 
             result.addProperty("status", "OK");
 
@@ -91,7 +101,6 @@ public class SessionAPI extends WebserverAPI {
                 JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                 result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
             }
-
             super.sendJsonResponse(200, result, resp);
         } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException
                 | StorageTransactionLogicException | SignatureException | IllegalBlockSizeException
@@ -109,6 +118,11 @@ public class SessionAPI extends WebserverAPI {
             SessionInfo sessionInfo = Session.getSession(main, sessionHandle);
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
+            if (!super.getVersionFromRequest(req).equals("2.13")) {
+                result.remove("grants");
+            } else if (!result.has("grants")) {
+                result.add("grants", new JsonObject());
+            }
             result.addProperty("status", "OK");
 
             super.sendJsonResponse(200, result, resp);

@@ -600,13 +600,15 @@ public class AuthRecipeTest {
 
         for (String userType : classes) {
             AuthRecipeUserInfo user1 = signUpMap.get(userType).apply(null);
-            Session.createNewSession(process.getProcess(), user1.id, new JsonObject(), new JsonObject());
+            Session.createNewSession(process.getProcess(), user1.id, new JsonObject(), new JsonObject(),
+                    new JsonObject());
             String emailVerificationToken = EmailVerification.generateEmailVerificationToken(process.getProcess(),
                     user1.id, "email");
             EmailVerification.verifyEmail(process.getProcess(), emailVerificationToken);
 
             AuthRecipeUserInfo user2 = signUpMap.get(userType).apply(null);
-            Session.createNewSession(process.getProcess(), user2.id, new JsonObject(), new JsonObject());
+            Session.createNewSession(process.getProcess(), user2.id, new JsonObject(), new JsonObject(),
+                    new JsonObject());
             String emailVerificationToken2 = EmailVerification.generateEmailVerificationToken(process.getProcess(),
                     user2.id, "email");
 

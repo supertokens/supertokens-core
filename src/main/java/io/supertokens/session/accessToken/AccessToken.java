@@ -34,6 +34,7 @@ import io.supertokens.utils.Utils;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.io.UnsupportedEncodingException;
+import java.net.http.HttpClient.Version;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
@@ -89,7 +90,6 @@ public class AccessToken {
                 error = e;
             }
         }
-
         if (jwtInfo == null) {
             if (retry) {
                 ProcessState.getInstance(main).addState(PROCESS_STATE.RETRYING_ACCESS_TOKEN_JWT_VERIFICATION, error);
@@ -107,9 +107,16 @@ public class AccessToken {
                 throw new TryRefreshTokenException(
                         "Access token does not contain all the information. Maybe the structure has changed?");
             }
-        } else {
+        } else if (jwtInfo.version == VERSION.V2) {
             if (tokenInfo.sessionHandle == null || tokenInfo.userId == null || tokenInfo.refreshTokenHash1 == null
                     || tokenInfo.userData == null || tokenInfo.lmrt == null
+                    || (doAntiCsrfCheck && tokenInfo.antiCsrfToken == null)) {
+                throw new TryRefreshTokenException(
+                        "Access token does not contain all the information. Maybe the structure has changed?");
+            }
+        } else {
+            if (tokenInfo.sessionHandle == null || tokenInfo.userId == null || tokenInfo.refreshTokenHash1 == null
+                    || tokenInfo.userData == null || tokenInfo.grants == null || tokenInfo.lmrt == null
                     || (doAntiCsrfCheck && tokenInfo.antiCsrfToken == null)) {
                 throw new TryRefreshTokenException(
                         "Access token does not contain all the information. Maybe the structure has changed?");
@@ -134,6 +141,26 @@ public class AccessToken {
 
     public static TokenInfo createNewAccessToken(@Nonnull Main main, @Nonnull String sessionHandle,
             @Nonnull String userId, @Nonnull String refreshTokenHash1, @Nullable String parentRefreshTokenHash1,
+            @Nonnull JsonObject userData, @Nonnull JsonObject grantPayload, @Nullable String antiCsrfToken, long lmrt,
+            @Nullable Long expiryTime)
+            throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
+            NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
+
+        Utils.PubPriKey signingKey = new Utils.PubPriKey(
+                AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value);
+        long now = System.currentTimeMillis();
+        if (expiryTime == null) {
+            expiryTime = now + Config.getConfig(main).getAccessTokenValidity();
+        }
+        AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime,
+                parentRefreshTokenHash1, userData, grantPayload, antiCsrfToken, now, lmrt);
+        String token = JWT.createJWT(new Gson().toJsonTree(accessToken), signingKey.privateKey, VERSION.V3);
+        return new TokenInfo(token, expiryTime, now);
+
+    }
+
+    public static TokenInfo createNewAccessTokenV2(@Nonnull Main main, @Nonnull String sessionHandle,
+            @Nonnull String userId, @Nonnull String refreshTokenHash1, @Nullable String parentRefreshTokenHash1,
             @Nonnull JsonObject userData, @Nullable String antiCsrfToken, long lmrt, @Nullable Long expiryTime)
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
@@ -145,7 +172,7 @@ public class AccessToken {
             expiryTime = now + Config.getConfig(main).getAccessTokenValidity();
         }
         AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime,
-                parentRefreshTokenHash1, userData, antiCsrfToken, now, lmrt);
+                parentRefreshTokenHash1, userData, null, antiCsrfToken, now, lmrt);
         String token = JWT.createJWT(new Gson().toJsonTree(accessToken), signingKey.privateKey, VERSION.V2);
         return new TokenInfo(token, expiryTime, now);
 
@@ -164,7 +191,7 @@ public class AccessToken {
 
         long expiryTime = now + Config.getConfig(main).getAccessTokenValidity();
         accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime, parentRefreshTokenHash1,
-                userData, antiCsrfToken, now, null);
+                userData, null, antiCsrfToken, now, null);
 
         String token = JWT.createJWT(new Gson().toJsonTree(accessToken), signingKey.privateKey, VERSION.V1);
         return new TokenInfo(token, expiryTime, now);
@@ -175,7 +202,10 @@ public class AccessToken {
         if (accessToken.lmrt == null) {
             return VERSION.V1;
         }
-        return VERSION.V2;
+        if (accessToken.grants == null) {
+            return VERSION.V2;
+        }
+        return VERSION.V3;
     }
 
     public static class AccessTokenInfo {
@@ -190,6 +220,8 @@ public class AccessToken {
         @Nonnull
         public final JsonObject userData;
         @Nullable
+        public final JsonObject grants;
+        @Nullable
         public final String antiCsrfToken;
         public final long expiryTime;
         final long timeCreated;
@@ -198,13 +230,14 @@ public class AccessToken {
 
         AccessTokenInfo(@Nonnull String sessionHandle, @Nonnull String userId, @Nonnull String refreshTokenHash1,
                 long expiryTime, @Nullable String parentRefreshTokenHash1, @Nonnull JsonObject userData,
-                @Nullable String antiCsrfToken, long timeCreated, @Nullable Long lmrt) {
+                @Nonnull JsonObject grants, @Nullable String antiCsrfToken, long timeCreated, @Nullable Long lmrt) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.refreshTokenHash1 = refreshTokenHash1;
             this.expiryTime = expiryTime;
             this.parentRefreshTokenHash1 = parentRefreshTokenHash1;
             this.userData = userData;
+            this.grants = grants;
             this.antiCsrfToken = antiCsrfToken;
             this.timeCreated = timeCreated;
             this.lmrt = lmrt;
@@ -212,6 +245,6 @@ public class AccessToken {
     }
 
     public enum VERSION {
-        V1, V2
+        V1, V2, V3
     }
 }

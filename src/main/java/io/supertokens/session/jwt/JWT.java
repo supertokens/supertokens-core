@@ -30,6 +30,7 @@ import java.security.spec.InvalidKeySpecException;
 public class JWT {
     private static String HEADERv1 = null;
     private static String HEADERv2 = null;
+    private static String HEADERv3 = null;
 
     private static void initHeader() {
         if (HEADERv1 == null) {
@@ -46,13 +47,21 @@ public class JWT {
             header.addProperty("version", "2");
             JWT.HEADERv2 = Utils.convertToBase64(header.toString());
         }
+        if (HEADERv3 == null) {
+            JsonObject header = new JsonObject();
+            header.addProperty("alg", "RS256");
+            header.addProperty("typ", "JWT");
+            header.addProperty("version", "3");
+            JWT.HEADERv3 = Utils.convertToBase64(header.toString());
+        }
     }
 
     public static String createJWT(JsonElement jsonObj, String privateSigningKey, AccessToken.VERSION version)
             throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException {
         initHeader();
         String payload = Utils.convertToBase64(jsonObj.toString());
-        String header = version == AccessToken.VERSION.V1 ? JWT.HEADERv1 : JWT.HEADERv2;
+        String header = version == AccessToken.VERSION.V1 ? JWT.HEADERv1
+                : version == AccessToken.VERSION.V2 ? JWT.HEADERv2 : JWT.HEADERv3;
         String signature = Utils.signWithPrivateKey(header + "." + payload, privateSigningKey);
         return header + "." + payload + "." + signature;
     }
@@ -65,7 +74,8 @@ public class JWT {
             throw new JWTException("Invalid JWT");
         }
         // checking header
-        if (!splittedInput[0].equals(JWT.HEADERv1) && !splittedInput[0].equals(JWT.HEADERv2)) {
+        AccessToken.VERSION version = parseVersionHeader(splittedInput[0]);
+        if (version == null) {
             throw new JWTException("JWT header mismatch");
         }
         // verifying signature
@@ -77,15 +87,30 @@ public class JWT {
         } catch (InvalidKeySpecException | SignatureException e) {
             throw new JWTException("JWT verification failed");
         }
-        return new JWTInfo(new JsonParser().parse(Utils.convertFromBase64(splittedInput[1])),
-                splittedInput[0].equals(JWT.HEADERv1) ? AccessToken.VERSION.V1 : AccessToken.VERSION.V2);
+        return new JWTInfo(new JsonParser().parse(Utils.convertFromBase64(splittedInput[1])), version);
+    }
+
+    private static AccessToken.VERSION parseVersionHeader(String header) {
+        if (header.equals(JWT.HEADERv1)) {
+            return AccessToken.VERSION.V1;
+        } else if (header.equals(JWT.HEADERv2)) {
+            return AccessToken.VERSION.V2;
+        } else if (header.equals(JWT.HEADERv3)) {
+            return AccessToken.VERSION.V3;
+        }
+
+        return null;
     }
 
     public static JWTInfo getPayloadWithoutVerifying(String jwt) {
         initHeader();
         String[] splittedInput = jwt.split("\\.");
-        return new JWTInfo(new JsonParser().parse(Utils.convertFromBase64(splittedInput[1])),
-                splittedInput[0].equals(JWT.HEADERv1) ? AccessToken.VERSION.V1 : AccessToken.VERSION.V2);
+        AccessToken.VERSION version = parseVersionHeader(splittedInput[0]);
+        if (version == null) {
+            version = AccessToken.VERSION.V3;
+        }
+
+        return new JWTInfo(new JsonParser().parse(Utils.convertFromBase64(splittedInput[1])), version);
     }
 
     public static class JWTException extends Exception {

@@ -56,15 +56,17 @@ public class Session {
 
     @TestOnly
     public static SessionInformationHolder createNewSession(Main main, @Nonnull String userId,
-            @Nonnull JsonObject userDataInJWT, @Nonnull JsonObject userDataInDatabase)
+            @Nonnull JsonObject userDataInJWT, @Nullable JsonObject grantPayload,
+            @Nonnull JsonObject userDataInDatabase)
             throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
-        return createNewSession(main, userId, userDataInJWT, userDataInDatabase, false);
+        return createNewSession(main, userId, userDataInJWT, grantPayload, userDataInDatabase, false);
     }
 
     public static SessionInformationHolder createNewSession(Main main, @Nonnull String userId,
-            @Nonnull JsonObject userDataInJWT, @Nonnull JsonObject userDataInDatabase, boolean enableAntiCsrf)
+            @Nonnull JsonObject userDataInJWT, @Nullable JsonObject grantPayload,
+            @Nonnull JsonObject userDataInDatabase, boolean enableAntiCsrf)
             throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
@@ -73,18 +75,22 @@ public class Session {
         final TokenInfo refreshToken = RefreshToken.createNewRefreshToken(main, sessionHandle, userId, null,
                 antiCsrfToken);
 
-        TokenInfo accessToken = AccessToken.createNewAccessToken(main, sessionHandle, userId,
-                Utils.hashSHA256(refreshToken.token), null, userDataInJWT, antiCsrfToken, System.currentTimeMillis(),
-                null);
+        // We are creating V2 access tokens in case the user called with CDI < 2.13
+        TokenInfo accessToken = grantPayload == null
+                ? AccessToken.createNewAccessTokenV2(main, sessionHandle, userId, Utils.hashSHA256(refreshToken.token),
+                        null, userDataInJWT, antiCsrfToken, System.currentTimeMillis(), null)
+                : AccessToken.createNewAccessToken(main, sessionHandle, userId, Utils.hashSHA256(refreshToken.token),
+                        null, userDataInJWT, grantPayload, antiCsrfToken, System.currentTimeMillis(), null);
 
         StorageLayer.getSessionStorage(main).createNewSession(sessionHandle, userId,
                 Utils.hashSHA256(Utils.hashSHA256(refreshToken.token)), userDataInDatabase, refreshToken.expiry,
-                userDataInJWT, refreshToken.createdTime); // TODO: add lmrt to database
+                userDataInJWT, grantPayload, refreshToken.createdTime); // TODO: add lmrt to database
 
         TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(), refreshToken.expiry,
                 refreshToken.createdTime);
-        return new SessionInformationHolder(new SessionInfo(sessionHandle, userId, userDataInJWT), accessToken,
-                refreshToken, idRefreshToken, antiCsrfToken);
+
+        return new SessionInformationHolder(new SessionInfo(sessionHandle, userId, userDataInJWT, grantPayload),
+                accessToken, refreshToken, idRefreshToken, antiCsrfToken);
 
     }
 
@@ -104,19 +110,25 @@ public class Session {
      *
      */
     public static SessionInformationHolder regenerateToken(Main main, @Nonnull String token,
-            @Nullable JsonObject userDataInJWT) throws StorageQueryException, StorageTransactionLogicException,
-            UnauthorisedException, InvalidKeySpecException, SignatureException, NoSuchAlgorithmException,
-            InvalidKeyException, UnsupportedEncodingException {
+            @Nullable JsonObject userDataInJWT, @Nullable JsonObject grantPayload) throws StorageQueryException,
+            StorageTransactionLogicException, UnauthorisedException, InvalidKeySpecException, SignatureException,
+            NoSuchAlgorithmException, InvalidKeyException, UnsupportedEncodingException {
 
         // We assume the token has already been verified at this point. It may be expired or JWT signing key may have
         // changed for it...
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessTokenWithoutVerifying(token);
 
+        // TODO(mihaly) dont call getSession twice
         JsonObject newJWTUserPayload = userDataInJWT == null ? getSession(main, accessToken.sessionHandle).userDataInJWT
                 : userDataInJWT;
+        JsonObject newGrantPayload = grantPayload == null ? getSession(main, accessToken.sessionHandle).grants
+                : grantPayload;
+        if (newGrantPayload == null) {
+            newGrantPayload = new JsonObject();
+        }
         long lmrt = System.currentTimeMillis();
 
-        updateSession(main, accessToken.sessionHandle, null, newJWTUserPayload, lmrt);
+        updateSession(main, accessToken.sessionHandle, null, newJWTUserPayload, newGrantPayload, lmrt);
 
         // if the above succeeds but the below fails, it's OK since the client will get server error and will try
         // again. In this case, the JWT data will be updated again since the API will get the old JWT. In case there
@@ -125,16 +137,16 @@ public class Session {
             // in this case, we set the should not set the access token in the response since they will have to call
             // the refresh API anyway.
             return new SessionInformationHolder(
-                    new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload), null, null, null,
-                    null);
+                    new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload, newGrantPayload),
+                    null, null, null, null);
         }
 
         TokenInfo newAccessToken = AccessToken.createNewAccessToken(main, accessToken.sessionHandle, accessToken.userId,
-                accessToken.refreshTokenHash1, accessToken.parentRefreshTokenHash1, newJWTUserPayload,
+                accessToken.refreshTokenHash1, accessToken.parentRefreshTokenHash1, newJWTUserPayload, newGrantPayload,
                 accessToken.antiCsrfToken, lmrt, accessToken.expiryTime);
 
         return new SessionInformationHolder(
-                new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload),
+                new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload, newGrantPayload),
                 new TokenInfo(newAccessToken.token, newAccessToken.expiry, newAccessToken.createdTime), null, null,
                 null);
     }
@@ -161,13 +173,13 @@ public class Session {
         }
 
         boolean JWTPayloadNeedsUpdating = sessionInfoForBlacklisting != null
-                && !accessToken.userData.equals(sessionInfoForBlacklisting.userDataInJWT);
+                && (!accessToken.userData.equals(sessionInfoForBlacklisting.userDataInJWT)
+                        || !accessToken.grants.equals(sessionInfoForBlacklisting.grants));
         if (accessToken.parentRefreshTokenHash1 == null && !JWTPayloadNeedsUpdating) {
             // this means that the refresh token associated with this access token is
             // already the parent - and JWT payload doesn't need to be updated.
-            return new SessionInformationHolder(
-                    new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData), null, null,
-                    null, null);
+            return new SessionInformationHolder(new SessionInfo(accessToken.sessionHandle, accessToken.userId,
+                    accessToken.userData, accessToken.grants), null, null, null, null);
         }
 
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS, null);
@@ -180,7 +192,6 @@ public class Session {
 
                         io.supertokens.pluginInterface.session.SessionInfo sessionInfo = storage
                                 .getSessionInfo_Transaction(con, accessToken.sessionHandle);
-
                         if (sessionInfo == null) {
                             storage.commitTransaction(con);
                             throw new UnauthorisedException("Session missing in db");
@@ -203,16 +214,24 @@ public class Session {
                                 newAccessToken = AccessToken.createNewAccessTokenV1(main, accessToken.sessionHandle,
                                         accessToken.userId, accessToken.refreshTokenHash1, null,
                                         sessionInfo.userDataInJWT, accessToken.antiCsrfToken);
-                            } else {
+                            } else if (AccessToken.getAccessTokenVersion(accessToken) == AccessToken.VERSION.V2) {
                                 assert accessToken.lmrt != null;
-                                newAccessToken = AccessToken.createNewAccessToken(main, accessToken.sessionHandle,
+                                newAccessToken = AccessToken.createNewAccessTokenV2(main, accessToken.sessionHandle,
                                         accessToken.userId, accessToken.refreshTokenHash1, null,
                                         sessionInfo.userDataInJWT, accessToken.antiCsrfToken, accessToken.lmrt, null);
+                            } else {
+                                assert accessToken.lmrt != null;
+                                assert sessionInfo.grants != null;
+
+                                newAccessToken = AccessToken.createNewAccessToken(main, accessToken.sessionHandle,
+                                        accessToken.userId, accessToken.refreshTokenHash1, null,
+                                        sessionInfo.userDataInJWT, sessionInfo.grants, accessToken.antiCsrfToken,
+                                        accessToken.lmrt, null);
                             }
 
                             return new SessionInformationHolder(
                                     new SessionInfo(accessToken.sessionHandle, accessToken.userId,
-                                            sessionInfo.userDataInJWT),
+                                            sessionInfo.userDataInJWT, sessionInfo.grants),
                                     new TokenInfo(newAccessToken.token, newAccessToken.expiry,
                                             newAccessToken.createdTime),
                                     null, null, null);
@@ -220,7 +239,8 @@ public class Session {
 
                         storage.commitTransaction(con);
                         return new SessionInformationHolder(
-                                new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData),
+                                new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData,
+                                        accessToken.grants),
                                 // here we purposely use accessToken.userData instead of sessionInfo.userDataInJWT
                                 // because we are not returning a new access token
                                 null, null, null, null);
@@ -266,22 +286,29 @@ public class Session {
                             newAccessToken = AccessToken.createNewAccessTokenV1(main, accessToken.sessionHandle,
                                     accessToken.userId, accessToken.refreshTokenHash1, null, sessionInfo.userDataInJWT,
                                     accessToken.antiCsrfToken);
-                        } else {
+                        } else if (AccessToken.getAccessTokenVersion(accessToken) == AccessToken.VERSION.V2) {
                             assert accessToken.lmrt != null;
-                            newAccessToken = AccessToken.createNewAccessToken(main, accessToken.sessionHandle,
+                            newAccessToken = AccessToken.createNewAccessTokenV2(main, accessToken.sessionHandle,
                                     accessToken.userId, accessToken.refreshTokenHash1, null, sessionInfo.userDataInJWT,
                                     accessToken.antiCsrfToken, accessToken.lmrt, null);
+                        } else {
+                            assert accessToken.lmrt != null;
+                            assert sessionInfo.grants != null;
+                            newAccessToken = AccessToken.createNewAccessToken(main, accessToken.sessionHandle,
+                                    accessToken.userId, accessToken.refreshTokenHash1, null, sessionInfo.userDataInJWT,
+                                    sessionInfo.grants, accessToken.antiCsrfToken, accessToken.lmrt, null);
                         }
 
                         return new SessionInformationHolder(
                                 new SessionInfo(accessToken.sessionHandle, accessToken.userId,
-                                        sessionInfo.userDataInJWT),
+                                        sessionInfo.userDataInJWT, sessionInfo.grants),
                                 new TokenInfo(newAccessToken.token, newAccessToken.expiry, newAccessToken.createdTime),
                                 null, null, null);
                     }
 
                     return new SessionInformationHolder(
-                            new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData),
+                            new SessionInfo(accessToken.sessionHandle, accessToken.userId, accessToken.userData,
+                                    accessToken.grants),
                             // here we purposely use accessToken.userData instead of sessionInfo.userDataInJWT
                             // because we are not returning a new access token
                             null, null, null, null);
@@ -336,21 +363,29 @@ public class Session {
 
                         if (sessionInfo.refreshTokenHash2.equals(Utils.hashSHA256(Utils.hashSHA256(refreshToken)))) {
                             // at this point, the input refresh token is the parent one.
+
+                            JsonObject grantPayload = sessionInfo.grants;
+                            // TODO(mihaly): we could skip updating this in DB until a value is set
+                            if (grantPayload == null) {
+                                grantPayload = new JsonObject();
+                                storage.updateSessionGrantPayload_Transaction(con, sessionHandle,
+                                        grantPayload.toString());
+                            }
                             storage.commitTransaction(con);
                             String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
                             final TokenInfo newRefreshToken = RefreshToken.createNewRefreshToken(main, sessionHandle,
                                     sessionInfo.userId, Utils.hashSHA256(refreshToken), antiCsrfToken);
-
                             TokenInfo newAccessToken = AccessToken.createNewAccessToken(main, sessionHandle,
                                     sessionInfo.userId, Utils.hashSHA256(newRefreshToken.token),
-                                    Utils.hashSHA256(refreshToken), sessionInfo.userDataInJWT, antiCsrfToken,
-                                    System.currentTimeMillis(), null); // TODO: get lmrt from database
+                                    Utils.hashSHA256(refreshToken), sessionInfo.userDataInJWT, grantPayload,
+                                    antiCsrfToken, System.currentTimeMillis(), null); // TODO: get lmrt from database
 
                             TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(),
                                     newRefreshToken.expiry, newRefreshToken.createdTime);
 
                             return new SessionInformationHolder(
-                                    new SessionInfo(sessionHandle, sessionInfo.userId, sessionInfo.userDataInJWT),
+                                    new SessionInfo(sessionHandle, sessionInfo.userId, sessionInfo.userDataInJWT,
+                                            grantPayload),
                                     newAccessToken, newRefreshToken, idRefreshToken, antiCsrfToken);
                         }
 
@@ -408,6 +443,17 @@ public class Session {
                     }
 
                     if (sessionInfo.refreshTokenHash2.equals(Utils.hashSHA256(Utils.hashSHA256(refreshToken)))) {
+
+                        JsonObject grantPayload = sessionInfo.grants;
+                        // TODO(mihaly): we could skip updating this in DB until a value is set
+                        if (grantPayload == null) {
+                            grantPayload = new JsonObject();
+                            boolean success = storage.updateSessionGrantPayload_Transaction(sessionHandle,
+                                    grantPayload.toString(), sessionInfo.lastUpdatedSign);
+                            if (!success) {
+                                continue;
+                            }
+                        }
                         // at this point, the input refresh token is the parent one.
                         String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
 
@@ -415,15 +461,15 @@ public class Session {
                                 sessionInfo.userId, Utils.hashSHA256(refreshToken), antiCsrfToken);
                         TokenInfo newAccessToken = AccessToken.createNewAccessToken(main, sessionHandle,
                                 sessionInfo.userId, Utils.hashSHA256(newRefreshToken.token),
-                                Utils.hashSHA256(refreshToken), sessionInfo.userDataInJWT, antiCsrfToken,
+                                Utils.hashSHA256(refreshToken), sessionInfo.userDataInJWT, grantPayload, antiCsrfToken,
                                 System.currentTimeMillis(), null); // TODO: get lmrt from database
 
                         TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(), newRefreshToken.expiry,
                                 newRefreshToken.createdTime);
 
-                        return new SessionInformationHolder(
-                                new SessionInfo(sessionHandle, sessionInfo.userId, sessionInfo.userDataInJWT),
-                                newAccessToken, newRefreshToken, idRefreshToken, antiCsrfToken);
+                        return new SessionInformationHolder(new SessionInfo(sessionHandle, sessionInfo.userId,
+                                sessionInfo.userDataInJWT, grantPayload), newAccessToken, newRefreshToken,
+                                idRefreshToken, antiCsrfToken);
                     }
 
                     if ((refreshTokenInfo.type == RefreshToken.TYPE.FREE
@@ -531,9 +577,10 @@ public class Session {
     }
 
     public static void updateSession(Main main, String sessionHandle, @Nullable JsonObject sessionData,
-            @Nullable JsonObject jwtData, @Nullable Long lmrt) throws StorageQueryException, UnauthorisedException {
+            @Nullable JsonObject jwtData, @Nullable JsonObject grantPayload, @Nullable Long lmrt)
+            throws StorageQueryException, UnauthorisedException {
         int numberOfRowsAffected = StorageLayer.getSessionStorage(main).updateSession(sessionHandle, sessionData,
-                jwtData); // TODO: update lmrt as well
+                jwtData, grantPayload); // TODO: update lmrt as well
         if (numberOfRowsAffected != 1) {
             throw new UnauthorisedException("Session does not exist.");
         }

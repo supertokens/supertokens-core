@@ -56,7 +56,7 @@ public class JWTDataAPI extends WebserverAPI {
         assert userDataInJWT != null;
 
         try {
-            Session.updateSession(main, sessionHandle, null, userDataInJWT, null);
+            Session.updateSession(main, sessionHandle, null, userDataInJWT, null, null);
 
             JsonObject result = new JsonObject();
 

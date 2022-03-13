@@ -88,6 +88,10 @@ public abstract class Utils extends Mockito {
         return "2.12";
     }
 
+    public static String getCdiVersion2_13ForTests() {
+        return "2.13";
+    }
+
     public static String getCdiVersionLatestForTests() {
         return WebserverAPI.getLatestCDIVersion();
     }
@@ -222,4 +226,19 @@ public abstract class Utils extends Mockito {
                 getCdiVersion2_8ForTests(), "thirdparty");
     }
 
+    public static JsonObject getExampleGrantPayload() {
+        return getExampleGrantPayload(0);
+    }
+
+    public static JsonObject getExampleGrantPayload(int ind) {
+        JsonObject grants = new JsonObject();
+
+        JsonObject exGrant = new JsonObject();
+        exGrant.addProperty("v", true);
+        exGrant.addProperty("t", System.currentTimeMillis());
+
+        grants.add("example-grant-" + ind, exGrant);
+
+        return grants;
+    }
 }

@@ -70,6 +70,12 @@ public class VerifySessionAPI extends WebserverAPI {
                     doAntiCsrfCheck);
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
+            if (!super.getVersionFromRequest(req).equals("2.13")) {
+                result.getAsJsonObject("session").remove("grants");
+            } else if (!result.getAsJsonObject("session").has("grants")) { // This means that we are getting
+                result.getAsJsonObject("session").add("grants", new JsonObject());
+            }
+
             result.addProperty("status", "OK");
 
             result.addProperty("jwtSigningPublicKey",

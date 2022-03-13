@@ -72,9 +72,10 @@ public class SessionGetUserIDTest {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
 
         // verify to see payload is proper
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);

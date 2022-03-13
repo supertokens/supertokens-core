@@ -155,11 +155,13 @@ public class APIKeysTest {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         JsonObject request = new JsonObject();
         request.addProperty("userId", userId);
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
+        request.add("grants", grantPayload);
         request.addProperty("enableAntiCsrf", false);
 
         try {
@@ -175,7 +177,7 @@ public class APIKeysTest {
                 "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
                 apiKey, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
-        checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
+        checkSessionResponse(sessionInfo, process, userId, userDataInJWT, grantPayload);
 
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
@@ -241,11 +243,13 @@ public class APIKeysTest {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         JsonObject request = new JsonObject();
         request.addProperty("userId", userId);
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
+        request.add("grants", grantPayload);
         request.addProperty("enableAntiCsrf", false);
 
         // check that any one of the keys can be used
@@ -253,19 +257,19 @@ public class APIKeysTest {
                 "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
                 apiKey1, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
-        checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
+        checkSessionResponse(sessionInfo, process, userId, userDataInJWT, grantPayload);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
                 apiKey2, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
-        checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
+        checkSessionResponse(sessionInfo, process, userId, userDataInJWT, grantPayload);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
                 apiKey3, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
-        checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
+        checkSessionResponse(sessionInfo, process, userId, userDataInJWT, grantPayload);
 
         // sending request with no api key
         try {
@@ -313,11 +317,13 @@ public class APIKeysTest {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         JsonObject request = new JsonObject();
         request.addProperty("userId", userId);
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
+        request.add("grants", grantPayload);
         request.addProperty("enableAntiCsrf", false);
 
         // check that any one of the keys can be used
@@ -326,40 +332,42 @@ public class APIKeysTest {
                 " " + apiKey1 + " ", "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
-        checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
+        checkSessionResponse(sessionInfo, process, userId, userDataInJWT, grantPayload);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
                 " " + apiKey2, "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
-        checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
+        checkSessionResponse(sessionInfo, process, userId, userDataInJWT, grantPayload);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
                 apiKey3, "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
-        checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
+        checkSessionResponse(sessionInfo, process, userId, userDataInJWT, grantPayload);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
                 apiKey4, "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
-        checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
+        checkSessionResponse(sessionInfo, process, userId, userDataInJWT, grantPayload);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     public static void checkSessionResponse(JsonObject response, TestingProcessManager.TestingProcess process,
-            String userId, JsonObject userDataInJWT) {
+            String userId, JsonObject userDataInJWT, JsonObject grantPayload) {
         assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
         assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject().toString(),
                 userDataInJWT.toString());
-        assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 3);
+        assertEquals(response.get("session").getAsJsonObject().get("grants").getAsJsonObject().toString(),
+                grantPayload.toString());
+        assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 4);
 
         assertTrue(response.get("accessToken").getAsJsonObject().has("token"));
         assertTrue(response.get("accessToken").getAsJsonObject().has("expiry"));

@@ -60,9 +60,10 @@ public class SessionGetJWTDataTest {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
 
         // verify to see payload is proper
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
@@ -70,7 +71,7 @@ public class SessionGetJWTDataTest {
         // change JWT payload using session handle
         JsonObject newUserDataInJwt = new JsonObject();
         newUserDataInJwt.addProperty("key", "value2");
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJwt, null);
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJwt, null, null);
 
         // check that this change is reflected
 
@@ -97,16 +98,17 @@ public class SessionGetJWTDataTest {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
 
         // verify to see payload is proper
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
 
         // change JWT payload to be empty using session handle
         JsonObject emptyUserDataInJwt = new JsonObject();
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, emptyUserDataInJwt, null);
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, emptyUserDataInJwt, null, null);
 
         // check this is reflected
         assertEquals(Session.getSession(process.getProcess(), sessionInfo.session.handle).userDataInJWT,
@@ -132,15 +134,16 @@ public class SessionGetJWTDataTest {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
 
         // verify to see payload is proper
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
 
         // change JWT payload to be null
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase, null, null);
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase, null, null, null);
 
         // check that jwtData does not change
         assertEquals(Session.getSession(process.getProcess(), sessionInfo.session.handle).userDataInJWT, userDataInJWT);
@@ -166,9 +169,10 @@ public class SessionGetJWTDataTest {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
 
         // Let it expire
         Thread.sleep(2000);
@@ -200,9 +204,10 @@ public class SessionGetJWTDataTest {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
 
         // Revoke the session
         String[] sessionHandles = { sessionInfo.session.handle };
@@ -235,9 +240,10 @@ public class SessionGetJWTDataTest {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
 
         // Wait for access token to expire
         Thread.sleep(1000);

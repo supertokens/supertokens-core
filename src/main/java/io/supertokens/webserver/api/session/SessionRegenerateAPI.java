@@ -61,9 +61,11 @@ public class SessionRegenerateAPI extends WebserverAPI {
         assert accessToken != null;
 
         JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", true);
+        JsonObject grantPayload = InputParser.parseJsonObjectOrThrowError(input, "grants", true);
 
         try {
-            SessionInformationHolder sessionInfo = Session.regenerateToken(main, accessToken, userDataInJWT);
+            SessionInformationHolder sessionInfo = Session.regenerateToken(main, accessToken, userDataInJWT,
+                    grantPayload);
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
 

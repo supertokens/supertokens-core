@@ -17,6 +17,7 @@
 package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.Main;
+import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.inmemorydb.ConnectionPool;
 import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.Start;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.Map;
 
 import static io.supertokens.ProcessState.PROCESS_STATE.CREATING_NEW_TABLE;
+import static io.supertokens.ProcessState.PROCESS_STATE.ALTERING_TABLE;
 import static io.supertokens.ProcessState.getInstance;
 import static io.supertokens.inmemorydb.PreparedStatementValueSetter.NO_OP_SETTER;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
@@ -50,12 +52,24 @@ import static io.supertokens.inmemorydb.queries.JWTSigningQueries.getQueryToCrea
 import static io.supertokens.inmemorydb.queries.PasswordlessQueries.*;
 import static io.supertokens.inmemorydb.queries.SessionQueries.getQueryToCreateAccessTokenSigningKeysTable;
 import static io.supertokens.inmemorydb.queries.SessionQueries.getQueryToCreateSessionInfoTable;
+import static io.supertokens.inmemorydb.queries.SessionQueries.getQueryToCreateGrantPayloadColumn;
 
 public class GeneralQueries {
 
     private static boolean doesTableExists(Start start, String tableName) {
         try {
             String QUERY = "SELECT 1 FROM " + tableName + " LIMIT 1";
+            execute(start, QUERY, NO_OP_SETTER, result -> null);
+            return true;
+        } catch (SQLException | StorageQueryException e) {
+            return false;
+        }
+    }
+
+    // TODO(mihaly): maybe we could be doing something smart here (checking schema info, pragma, etc)
+    private static boolean doesColumnExists(Start start, String tableName, String colName) {
+        try {
+            String QUERY = "SELECT " + colName + " FROM " + tableName + " LIMIT 1";
             execute(start, QUERY, NO_OP_SETTER, result -> null);
             return true;
         } catch (SQLException | StorageQueryException e) {
@@ -101,6 +115,9 @@ public class GeneralQueries {
         if (!doesTableExists(start, Config.getConfig(start).getSessionInfoTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, getQueryToCreateSessionInfoTable(start), NO_OP_SETTER);
+        } else if (!doesColumnExists(start, Config.getConfig(start).getSessionInfoTable(), "grant_payload")) {
+            getInstance(main).addState(ALTERING_TABLE, null);
+            update(start, getQueryToCreateGrantPayloadColumn(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getEmailPasswordUsersTable())) {

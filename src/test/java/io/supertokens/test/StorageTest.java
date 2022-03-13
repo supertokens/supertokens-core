@@ -654,11 +654,13 @@ public class StorageTest {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         JsonObject request = new JsonObject();
         request.addProperty("userId", userId);
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
+        request.add("grants", grantPayload);
         request.addProperty("enableAntiCsrf", false);
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);

@@ -16,18 +16,13 @@
 
 package io.supertokens.webserver.api.session;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
-import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -37,39 +32,34 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-public class RefreshSessionAPI extends WebserverAPI {
-    private static final long serialVersionUID = 7142317017402226537L;
+public class SessionGrantAPI extends WebserverAPI {
+    private static final long serialVersionUID = -6901312482713647177L;
 
-    public RefreshSessionAPI(Main main) {
+    public SessionGrantAPI(Main main) {
         super(main, RECIPE_ID.SESSION.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/session/refresh";
+        return "/recipe/session/grant";
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String refreshToken = InputParser.parseStringOrThrowError(input, "refreshToken", false);
-        String antiCsrfToken = InputParser.parseStringOrThrowError(input, "antiCsrfToken", true);
-        Boolean enableAntiCsrf = InputParser.parseBooleanOrThrowError(input, "enableAntiCsrf", false);
-        assert enableAntiCsrf != null;
-        assert refreshToken != null;
+        String sessionHandle = InputParser.parseStringOrThrowError(input, "sessionHandle", false);
+        assert sessionHandle != null;
+        JsonObject grants = InputParser.parseJsonObjectOrThrowError(input, "grants", false);
+        assert grants != null;
 
         try {
-            SessionInformationHolder sessionInfo = Session.refreshSession(main, refreshToken, antiCsrfToken,
-                    enableAntiCsrf);
-            JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
+            Session.updateSession(main, sessionHandle, null, null, grants, null);
 
-            if (!super.getVersionFromRequest(req).equals("2.13")) {
-                result.getAsJsonObject("session").remove("grants");
-            }
-
+            JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+
+        } catch (StorageQueryException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
@@ -77,17 +67,7 @@ public class RefreshSessionAPI extends WebserverAPI {
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
             super.sendJsonResponse(200, reply, resp);
-        } catch (TokenTheftDetectedException e) {
-            Logging.debug(main, Utils.exceptionStacktraceToString(e));
-            JsonObject reply = new JsonObject();
-            reply.addProperty("status", "TOKEN_THEFT_DETECTED");
-
-            JsonObject session = new JsonObject();
-            session.addProperty("handle", e.sessionHandle);
-            session.addProperty("userId", e.userId);
-            reply.add("session", session);
-
-            super.sendJsonResponse(200, reply, resp);
         }
     }
+
 }

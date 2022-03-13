@@ -7,6 +7,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+### Changes
+
+- Added support for session grants
+  - New access token version
+  - `/recipe/session` POST: added grants to both request and response (as part of the session)
+  - `/recipe/session` GET: added grants to the response
+  - `/recipe/session/verify` POST: added grants to the response (as part of the session)
+  - `/recipe/session/refresh` POST: added grants to the response (as part of the session)
+  - `/recipe/session/regenerate` POST: added grants to both request and response (as part of the session)
+
+### Database changes
+
+- Added `grant_payload` column to `session_info`
+
 ## [3.10.0] - 2022-02-23
 
 - Updated plugin interface version

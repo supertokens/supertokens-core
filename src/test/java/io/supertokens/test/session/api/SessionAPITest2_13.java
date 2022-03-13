@@ -19,6 +19,7 @@ package io.supertokens.test.session.api;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 
 import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
@@ -33,7 +34,9 @@ import org.junit.rules.TestRule;
 import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotNull;
 
-public class SessionAPITest2_9 {
+import java.util.HashMap;
+
+public class SessionAPITest2_13 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -49,7 +52,75 @@ public class SessionAPITest2_9 {
     }
 
     @Test
-    public void successOutputCheckWithAntiCsrfWithCookieDomain() throws Exception {
+    public void successOutputCheckWithGrantPayload() throws Exception {
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("cookie_domain", "localhost");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
+
+        JsonObject request = new JsonObject();
+        request.addProperty("userId", userId);
+        request.add("userDataInJWT", userDataInJWT);
+        request.add("userDataInDatabase", userDataInDatabase);
+        request.add("grants", grantPayload);
+        request.addProperty("enableAntiCsrf", true);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_13ForTests(),
+                "session");
+
+        checkSessionResponse(response, process, userId, userDataInJWT, grantPayload);
+        assertTrue(response.has("antiCsrfToken"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void successOutputCheckWithEmptyGrantPayload() throws Exception {
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("cookie_domain", "localhost");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = new JsonObject();
+
+        JsonObject request = new JsonObject();
+        request.addProperty("userId", userId);
+        request.add("userDataInJWT", userDataInJWT);
+        request.add("userDataInDatabase", userDataInDatabase);
+        request.add("grants", grantPayload);
+        request.addProperty("enableAntiCsrf", true);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_13ForTests(),
+                "session");
+
+        checkSessionResponse(response, process, userId, userDataInJWT, grantPayload);
+        assertTrue(response.has("antiCsrfToken"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void successGetOutputCheckWithOldToken() throws Exception {
         String[] args = { "../" };
 
         Utils.setValueInConfig("cookie_domain", "localhost");
@@ -63,81 +134,47 @@ public class SessionAPITest2_9 {
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 
-        JsonObject request = new JsonObject();
-        request.addProperty("userId", userId);
-        request.add("userDataInJWT", userDataInJWT);
-        request.add("userDataInDatabase", userDataInDatabase);
-        request.addProperty("enableAntiCsrf", true);
+        JsonObject createReq = new JsonObject();
+        createReq.addProperty("userId", userId);
+        createReq.add("userDataInJWT", userDataInJWT);
+        createReq.add("userDataInDatabase", userDataInDatabase);
+        createReq.addProperty("enableAntiCsrf", true);
 
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+        JsonObject session = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", createReq, 1000, 1000, null, Utils.getCdiVersion2_12ForTests(),
+                "session");
+        assertEquals(session.get("status").getAsString(), "OK");
+
+        // Get session info
+        HashMap<String, String> map = new HashMap<>();
+        map.put("sessionHandle", session.get("session").getAsJsonObject().get("handle").getAsString());
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", map, 1000, 1000, null, Utils.getCdiVersion2_13ForTests(),
                 "session");
 
-        checkSessionResponse(response, process, userId, userDataInJWT);
-        assertTrue(response.has("antiCsrfToken"));
+        // Validate response
+        assertEquals(response.get("status").getAsString(), "OK");
+        assertEquals(response.entrySet().size(), 8);
+
+        assertEquals(response.get("userDataInDatabase").getAsJsonObject(), userDataInDatabase);
+
+        assertEquals(response.get("userDataInJWT").getAsJsonObject(), userDataInJWT.getAsJsonObject());
+
+        assertEquals(response.get("grants").getAsJsonObject(), new JsonObject());
+
+        assertEquals(response.get("userId").getAsString(), userId);
+
+        JsonPrimitive expiry = response.get("expiry").getAsJsonPrimitive();
+        assertNotNull(expiry);
+        assertTrue(expiry.isNumber());
+
+        JsonPrimitive timeCreated = response.get("timeCreated").getAsJsonPrimitive();
+        assertNotNull(timeCreated);
+        assertTrue(timeCreated.isNumber());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void successOutputCheckWithAntiCsrf() throws Exception {
-        String[] args = { "../" };
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String userId = "userId";
-        JsonObject userDataInJWT = new JsonObject();
-        userDataInJWT.addProperty("key", "value");
-        JsonObject userDataInDatabase = new JsonObject();
-        userDataInDatabase.addProperty("key", "value");
-
-        JsonObject request = new JsonObject();
-        request.addProperty("userId", userId);
-        request.add("userDataInJWT", userDataInJWT);
-        request.add("userDataInDatabase", userDataInDatabase);
-        request.addProperty("enableAntiCsrf", false);
-
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
-                "session");
-
-        checkSessionResponse(response, process, userId, userDataInJWT);
-        assertFalse(response.has("antiCsrfToken"));
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
-    }
-
-    @Test
-    public void successOutputCheckWithNoAntiCsrf() throws Exception {
-        String[] args = { "../" };
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        String userId = "userId";
-        JsonObject userDataInJWT = new JsonObject();
-        userDataInJWT.addProperty("key", "value");
-        JsonObject userDataInDatabase = new JsonObject();
-        userDataInDatabase.addProperty("key", "value");
-
-        JsonObject request = new JsonObject();
-        request.addProperty("userId", userId);
-        request.add("userDataInJWT", userDataInJWT);
-        request.add("userDataInDatabase", userDataInDatabase);
-        request.addProperty("enableAntiCsrf", false);
-
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
-                "session");
-        checkSessionResponse(response, process, userId, userDataInJWT);
-        assertFalse(response.has("antiCsrfToken"));
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
     }
 
     @Test
@@ -155,100 +192,53 @@ public class SessionAPITest2_9 {
 
         try {
             JsonObject request = new JsonObject();
-            request.add("userDataInJWT", userDataInJWT);
-            request.add("userDataInDatabase", userDataInDatabase);
-            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                    request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "session");
-            fail();
-        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-            assertEquals(e.statusCode, 400);
-            assertEquals(e.getMessage(),
-                    "Http error. Status Code: 400. Message: Field name 'userId' is invalid in JSON input");
-        }
-
-        try {
-            JsonObject request = new JsonObject();
             request.addProperty("userId", userId);
+            request.add("userDataInJWT", userDataInJWT);
             request.add("userDataInDatabase", userDataInDatabase);
             request.addProperty("enableAntiCsrf", false);
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                    request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "session");
+                    request, 1000, 1000, null, Utils.getCdiVersion2_13ForTests(), "session");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(e.statusCode, 400);
             assertEquals(e.getMessage(),
-                    "Http error. Status Code: 400. Message: Field name 'userDataInJWT' is invalid in JSON input");
-        }
-
-        try {
-            JsonObject request = new JsonObject();
-            request.addProperty("userId", userId);
-            request.add("userDataInDatabase", userDataInDatabase);
-            request.addProperty("enableAntiCsrf", "false");
-            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                    request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "session");
-            fail();
-        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-            assertEquals(e.statusCode, 400);
-            assertEquals(e.getMessage(),
-                    "Http error. Status Code: 400. Message: Field name 'enableAntiCsrf' is invalid in JSON input");
-        }
-
-        try {
-            JsonObject request = new JsonObject();
-            request.addProperty("userId", userId);
-            request.add("userDataInDatabase", userDataInDatabase);
-            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                    request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "session");
-            fail();
-        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
-            assertEquals(e.statusCode, 400);
-            assertEquals(e.getMessage(),
-                    "Http error. Status Code: 400. Message: Field name 'enableAntiCsrf' is invalid in JSON input");
+                    "Http error. Status Code: 400. Message: Field name 'grants' is invalid in JSON input");
         }
 
         try {
             JsonObject request = new JsonObject();
             request.addProperty("userId", userId);
             request.add("userDataInJWT", userDataInJWT);
+            request.add("userDataInDatabase", userDataInDatabase);
             request.addProperty("enableAntiCsrf", false);
+            request.addProperty("grants", "test");
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                    request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "session");
+                    request, 1000, 1000, null, Utils.getCdiVersion2_13ForTests(), "session");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(e.statusCode, 400);
             assertEquals(e.getMessage(),
-                    "Http error. Status Code: 400. Message: Field name 'userDataInDatabase' is invalid in JSON "
-                            + "input");
+                    "Http error. Status Code: 400. Message: Field name 'grants' is invalid in JSON input");
         }
-
-        JsonObject request = new JsonObject();
-        request.addProperty("userId", userId);
-        request.add("userDataInJWT", userDataInJWT);
-        request.add("userDataInDatabase", userDataInDatabase);
-        request.addProperty("enableAntiCsrf", false);
-        HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "session");
-
-        request = new JsonObject();
-        request.addProperty("userId", userId);
-        request.add("userDataInJWT", userDataInJWT);
-        request.add("userDataInDatabase", userDataInDatabase);
-        request.addProperty("enableAntiCsrf", false);
-        HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "session");
-
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     public static void checkSessionResponse(JsonObject response, TestingProcessManager.TestingProcess process,
-            String userId, JsonObject userDataInJWT) {
+            String userId, JsonObject userDataInJWT, JsonObject grantPayload) {
         assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
         assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject().toString(),
                 userDataInJWT.toString());
-        assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 3);
+
+        if (grantPayload != null) {
+            assertEquals(response.get("session").getAsJsonObject().get("grants").getAsJsonObject().toString(),
+                    grantPayload.toString());
+        } else {
+            assertEquals(response.get("session").getAsJsonObject().get("grants").getAsJsonObject().toString(),
+                    new JsonObject().toString());
+        }
+        assertEquals(response.get("session").getAsJsonObject().entrySet().size(), 4);
 
         assertTrue(response.get("accessToken").getAsJsonObject().has("token"));
         assertTrue(response.get("accessToken").getAsJsonObject().has("expiry"));
@@ -260,7 +250,7 @@ public class SessionAPITest2_9 {
         JsonObject payload = (JsonObject) new JsonParser()
                 .parse(io.supertokens.utils.Utils.convertFromBase64(splittedToken[1]));
         assertTrue(payload.has("userData"));
-        assertTrue(!payload.has("grants"));
+        assertTrue(payload.has("grants"));
 
         assertTrue(response.get("refreshToken").getAsJsonObject().has("token"));
         assertTrue(response.get("refreshToken").getAsJsonObject().has("expiry"));

@@ -85,8 +85,10 @@ public class AccessTokenTest {
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
+
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
 
         // expire
         Thread.sleep(2000);
@@ -98,11 +100,11 @@ public class AccessTokenTest {
 
         // check payload is fine
         assertEquals(accessTokenInfo.userData, userDataInJWT);
+        assertEquals(accessTokenInfo.grants, grantPayload);
         assertEquals(accessTokenInfo.userId, userId);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-
     }
 
     // * - create session with some old expiry time for access token -> check the created token's expiry time is
@@ -121,8 +123,10 @@ public class AccessTokenTest {
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
+
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
 
         assert sessionInfo.accessToken != null;
         AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -133,13 +137,15 @@ public class AccessTokenTest {
         assert accessTokenInfo.lmrt != null;
         TokenInfo newAccessTokenInfo = AccessToken.createNewAccessToken(process.getProcess(),
                 sessionInfo.session.handle, userId, accessTokenInfo.refreshTokenHash1,
-                accessTokenInfo.parentRefreshTokenHash1, userDataInDatabase, accessTokenInfo.antiCsrfToken,
-                accessTokenInfo.lmrt, value);
+                accessTokenInfo.parentRefreshTokenHash1, userDataInDatabase, grantPayload,
+                accessTokenInfo.antiCsrfToken, accessTokenInfo.lmrt, value);
 
         AccessTokenInfo customAccessToken = AccessToken
                 .getInfoFromAccessTokenWithoutVerifying(newAccessTokenInfo.token);
         assertEquals(customAccessToken.expiryTime, value);
 
+        assertEquals(AccessToken.getAccessTokenVersion(accessTokenInfo), AccessToken.VERSION.V3);
+        assertEquals(AccessToken.getAccessTokenVersion(customAccessToken), AccessToken.VERSION.V3);
     }
 
     // * - create access token version 2 -> get version -> should be 2
@@ -158,13 +164,44 @@ public class AccessTokenTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                null, userDataInDatabase, false);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(process.getProcess(),
                 sessionInfo.accessToken.token, false);
 
         assertEquals(AccessToken.getAccessTokenVersion(accessTokenInfo), AccessToken.VERSION.V2);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+
+    }
+
+    // * - create access token version 3 -> get version -> should be 3
+    @Test
+    public void testCreateAccessTokenVersion3AndCheck() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        // - create session with some data
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
+
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                grantPayload, userDataInDatabase, false);
+
+        assert sessionInfo.accessToken != null;
+        AccessToken.AccessTokenInfo accessTokenInfo = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                sessionInfo.accessToken.token, false);
+
+        assertEquals(AccessToken.getAccessTokenVersion(accessTokenInfo), AccessToken.VERSION.V3);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -182,11 +219,44 @@ public class AccessTokenTest {
         assertNotNull(e);
         JsonObject jsonObj = new JsonObject();
         jsonObj.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         // db key
         long lmrt = System.currentTimeMillis();
         long expiryTime = System.currentTimeMillis() + 1000;
         TokenInfo newToken = AccessToken.createNewAccessToken(process.getProcess(), "sessionHandle", "userId",
+                "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, grantPayload, "antiCsrfToken", lmrt,
+                expiryTime);
+        AccessTokenInfo info = AccessToken.getInfoFromAccessToken(process.getProcess(), newToken.token, true);
+        assertEquals("sessionHandle", info.sessionHandle);
+        assertEquals("userId", info.userId);
+        assertEquals("refreshTokenHash1", info.refreshTokenHash1);
+        assertEquals("parentRefreshTokenHash1", info.parentRefreshTokenHash1);
+        assertEquals("value", info.userData.get("key").getAsString());
+        assertEquals(grantPayload, info.grants);
+        assertEquals("antiCsrfToken", info.antiCsrfToken);
+        assert info.lmrt != null;
+        assertEquals(lmrt, info.lmrt.longValue());
+        assertEquals(expiryTime, info.expiryTime);
+        process.kill();
+    }
+
+    // good case test
+    @Test
+    public void inputOutputTestV2() throws InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
+            StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException,
+            UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
+        String[] args = { "../" };
+        TestingProcess process = TestingProcessManager.start(args);
+        EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
+        assertNotNull(e);
+        JsonObject jsonObj = new JsonObject();
+        jsonObj.addProperty("key", "value");
+
+        // db key
+        long lmrt = System.currentTimeMillis();
+        long expiryTime = System.currentTimeMillis() + 1000;
+        TokenInfo newToken = AccessToken.createNewAccessTokenV2(process.getProcess(), "sessionHandle", "userId",
                 "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken", lmrt, expiryTime);
         AccessTokenInfo info = AccessToken.getInfoFromAccessToken(process.getProcess(), newToken.token, true);
         assertEquals("sessionHandle", info.sessionHandle);
@@ -221,6 +291,7 @@ public class AccessTokenTest {
         assertEquals("refreshTokenHash1", info.refreshTokenHash1);
         assertEquals("parentRefreshTokenHash1", info.parentRefreshTokenHash1);
         assertEquals("value", info.userData.get("key").getAsString());
+        assertEquals(null, info.grants);
         assertEquals("antiCsrfToken", info.antiCsrfToken);
         assertNull(info.lmrt);
         process.kill();
@@ -258,8 +329,8 @@ public class AccessTokenTest {
         jsonObj.addProperty("key", "value");
 
         TokenInfo tokenInfo = AccessToken.createNewAccessToken(process.getProcess(), "sessionHandle", "userId",
-                "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken", System.currentTimeMillis(),
-                null);
+                "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, jsonObj, "antiCsrfToken",
+                System.currentTimeMillis(), null);
         Thread.sleep(1500);
 
         try {
@@ -286,8 +357,8 @@ public class AccessTokenTest {
         jsonObj.addProperty("key", "value");
 
         TokenInfo tokenInfo = AccessToken.createNewAccessToken(process.getProcess(), "sessionHandle", "userId",
-                "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken", System.currentTimeMillis(),
-                null);
+                "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, jsonObj, "antiCsrfToken",
+                System.currentTimeMillis(), null);
         Thread.sleep(1500);
 
         try {
@@ -332,8 +403,8 @@ public class AccessTokenTest {
         jsonObj.addProperty("key", "value");
 
         TokenInfo tokenInfo = AccessToken.createNewAccessToken(process.getProcess(), "sessionHandle", "userId",
-                "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, "antiCsrfToken", System.currentTimeMillis(),
-                null);
+                "refreshTokenHash1", "parentRefreshTokenHash1", jsonObj, jsonObj, "antiCsrfToken",
+                System.currentTimeMillis(), null);
 
         Thread.sleep(3500);
 

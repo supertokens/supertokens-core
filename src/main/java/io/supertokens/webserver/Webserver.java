@@ -154,6 +154,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new VerifySessionAPI(main));
         addAPI(new RefreshSessionAPI(main));
         addAPI(new SessionUserAPI(main));
+        addAPI(new SessionGrantAPI(main));
         addAPI(new SessionDataAPI(main));
         addAPI(new ConfigAPI(main));
         addAPI(new HandshakeAPI(main));

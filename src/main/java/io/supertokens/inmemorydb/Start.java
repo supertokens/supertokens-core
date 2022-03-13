@@ -270,11 +270,11 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
 
     @Override
     public void createNewSession(String sessionHandle, String userId, String refreshTokenHash2,
-            JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT, long createdAtTime)
-            throws StorageQueryException {
+            JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT, JsonObject grantPayload,
+            long createdAtTime) throws StorageQueryException {
         try {
             SessionQueries.createNewSession(this, sessionHandle, userId, refreshTokenHash2, userDataInDatabase, expiry,
-                    userDataInJWT, createdAtTime);
+                    userDataInJWT, grantPayload, createdAtTime);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -358,10 +358,10 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public int updateSession(String sessionHandle, @Nullable JsonObject sessionData, @Nullable JsonObject jwtPayload)
-            throws StorageQueryException {
+    public int updateSession(String sessionHandle, @Nullable JsonObject sessionData, @Nullable JsonObject jwtPayload,
+            @Nullable JsonObject grantPayload) throws StorageQueryException {
         try {
-            return SessionQueries.updateSession(this, sessionHandle, sessionData, jwtPayload);
+            return SessionQueries.updateSession(this, sessionHandle, sessionData, jwtPayload, grantPayload);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -398,6 +398,17 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return SessionQueries.getSessionInfo_Transaction(this, sqlCon, sessionHandle);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void updateSessionGrantPayload_Transaction(TransactionConnection con, String sessionHandle,
+            String grantPayload) throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            SessionQueries.updateSessionGrantPayload_Transaction(this, sqlCon, sessionHandle, grantPayload);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

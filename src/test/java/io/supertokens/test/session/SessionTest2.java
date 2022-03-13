@@ -81,9 +81,10 @@ public class SessionTest2 {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
-        SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT, userDataInDatabase,
-                false);
+        SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT, grantPayload,
+                userDataInDatabase, false);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
 
@@ -126,9 +127,10 @@ public class SessionTest2 {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
-        SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT, userDataInDatabase,
-                false);
+        SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT, grantPayload,
+                userDataInDatabase, false);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
 
@@ -169,9 +171,10 @@ public class SessionTest2 {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
 
         JsonObject sessionDataBeforeUpdate = Session.getSessionData(process.getProcess(), sessionInfo.session.handle);
         assertEquals(userDataInDatabase.toString(), sessionDataBeforeUpdate.toString());
@@ -182,7 +185,7 @@ public class SessionTest2 {
         JsonArray arr = new JsonArray();
         userDataInDatabase2.add("key3", arr);
 
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase2, null, null);
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase2, null, null, null);
 
         JsonObject sessionDataAfterUpdate = Session.getSessionData(process.getProcess(), sessionInfo.session.handle);
         assertEquals(userDataInDatabase2.toString(), sessionDataAfterUpdate.toString());
@@ -209,13 +212,14 @@ public class SessionTest2 {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
         assert sessionInfo.refreshToken != null;
         assert sessionInfo.accessToken != null;
 
-        Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
+        Session.createNewSession(process.getProcess(), userId, userDataInJWT, grantPayload, userDataInDatabase, false);
 
         assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 2);
 
@@ -234,6 +238,7 @@ public class SessionTest2 {
                 sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
         assertEquals(verifiedSession.session.userId, sessionInfo.session.userId);
         assertEquals(verifiedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
+        assertEquals(verifiedSession.session.grants, sessionInfo.session.grants);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

@@ -64,9 +64,10 @@ public class SessionGetSessionDataTest {
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
+        JsonObject grantPayload = Utils.getExampleGrantPayload();
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                grantPayload, userDataInDatabase, false);
 
         JsonObject sessionDataBeforeUpdate = Session.getSession(process.getProcess(),
                 sessionInfo.session.handle).userDataInDatabase;
@@ -78,7 +79,7 @@ public class SessionGetSessionDataTest {
         JsonArray arr = new JsonArray();
         userDataInDatabase2.add("key3", arr);
 
-        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase2, null, null);
+        Session.updateSession(process.getProcess(), sessionInfo.session.handle, userDataInDatabase2, null, null, null);
 
         JsonObject sessionDataAfterUpdate = Session.getSession(process.getProcess(),
                 sessionInfo.session.handle).userDataInDatabase;
@@ -107,7 +108,7 @@ public class SessionGetSessionDataTest {
         }
 
         try {
-            Session.updateSession(process.getProcess(), "random", new JsonObject(), null, null);
+            Session.updateSession(process.getProcess(), "random", new JsonObject(), null, null, null);
             fail();
         } catch (UnauthorisedException e) {
             assertEquals(e.getMessage(), "Session does not exist.");
