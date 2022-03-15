@@ -51,6 +51,7 @@ public class PluginTest {
 
     @AfterClass
     public static void afterTesting() {
+        StorageLayer.closeWithClearingURLClassLoader();
         Utils.afterTesting();
     }
 
