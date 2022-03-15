@@ -41,7 +41,7 @@ public class Main {
     public static int exitCode = 0;
 
     private static Thread shutdownHook;
-    private static Thread mainThread;
+    private static Thread mainThread = Thread.currentThread();;
     private static boolean doNotWaitInShutdownHook = false;
 
     public static void main(String[] args) {
@@ -72,7 +72,6 @@ public class Main {
     // args: true [--path <path location>] --> via installer is true
     // args: false <installation path> <command> <...command args>
     private static void start(String[] args) {
-        mainThread = Thread.currentThread();
         boolean viaInstaller = Boolean.parseBoolean(args[0]);
         String installationDir;
         String command;
