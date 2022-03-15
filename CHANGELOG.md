@@ -8,6 +8,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [unreleased]
 ### Changes
 
+- Fixes memory leak during testing.
 - Updated plugin interface version
 - Adds usermetadata recipe
 

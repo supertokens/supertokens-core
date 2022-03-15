@@ -19,6 +19,7 @@ package io.supertokens.test;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.webserver.WebserverAPI;
@@ -32,6 +33,8 @@ import static org.junit.Assert.assertEquals;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.Arrays;
 
 public abstract class Utils extends Mockito {
 
@@ -105,6 +108,17 @@ public abstract class Utils extends Mockito {
         String installDir = "../";
         try {
 
+            // if the default config is not the same as the current config, we must reset the storage layer
+            File ogConfig = new File("../temp/config.yaml");
+            File currentConfig = new File("../config.yaml");
+            if (currentConfig.isFile()) {
+                byte[] ogConfigContent = Files.readAllBytes(ogConfig.toPath());
+                byte[] currentConfigContent = Files.readAllBytes(currentConfig.toPath());
+                if (!Arrays.equals(ogConfigContent, currentConfigContent)) {
+                    StorageLayer.close();
+                }
+            }
+
             ProcessBuilder pb = new ProcessBuilder("cp", "temp/config.yaml", "./config.yaml");
             pb.directory(new File(installDir));
             Process process = pb.start();
@@ -123,9 +137,13 @@ public abstract class Utils extends Mockito {
         } catch (Exception e) {
             e.printStackTrace();
         }
+        System.gc();
     }
 
     static void commentConfigValue(String key) throws IOException {
+        // we close the storage layer since there might be a change in the db related config.
+        StorageLayer.close();
+
         String oldStr = "((#\\s)?)" + key + "(:|((:\\s).+))\n";
         String newStr = "# " + key + ":";
 
@@ -145,6 +163,9 @@ public abstract class Utils extends Mockito {
     }
 
     public static void setValueInConfig(String key, String value) throws IOException {
+        // we close the storage layer since there might be a change in the db related config.
+        StorageLayer.close();
+
         String oldStr = "((#\\s)?)" + key + "(:|((:\\s).+))\n";
         String newStr = key + ": " + value + "\n";
         StringBuilder originalFileContent = new StringBuilder();

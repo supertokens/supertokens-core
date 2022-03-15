@@ -83,7 +83,7 @@ public class InMemoryDBTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        ExecutorService es = Executors.newCachedThreadPool();
+        ExecutorService es = Executors.newFixedThreadPool(500);
 
         AtomicBoolean pass = new AtomicBoolean(true);
 

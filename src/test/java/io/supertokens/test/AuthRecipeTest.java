@@ -458,7 +458,7 @@ public class AuthRecipeTest {
         // we create multiple users in parallel...
         List<AuthRecipeUserInfo> usersCreated = new ArrayList<>();
 
-        ExecutorService es = Executors.newCachedThreadPool();
+        ExecutorService es = Executors.newFixedThreadPool(500);
         for (int i = 0; i < numberOfUsers; i++) {
             if (Math.random() > 0.5) {
                 while (true) {
