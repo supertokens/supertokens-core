@@ -34,6 +34,7 @@ import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -45,6 +46,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_KEY = "io.supertokens.storageLayer.StorageLayer";
     private final Storage storage;
     private static Storage static_ref_to_storage = null;
+    private static URLClassLoader ucl = null;
 
     private StorageLayer(Main main, String pluginFolderPath, String configFilePath) throws MalformedURLException {
         Logging.info(main, "Loading storage layer.");
@@ -63,7 +65,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 for (int i = 0; i < flist.length; i++) {
                     urls[i] = flist[i].toURI().toURL();
                 }
-                URLClassLoader ucl = new URLClassLoader(urls);
+                if (StorageLayer.ucl == null) {
+                    // we have this as a static variable because
+                    // in prod, this is loaded just once anyway.
+                    // During testing, we just want to load the jars
+                    // once too cause the JARs don't change across tests either.
+                    StorageLayer.ucl = new URLClassLoader(urls);
+                }
 
                 ServiceLoader<Storage> sl = ServiceLoader.load(Storage.class, ucl);
                 Iterator<Storage> it = sl.iterator();
