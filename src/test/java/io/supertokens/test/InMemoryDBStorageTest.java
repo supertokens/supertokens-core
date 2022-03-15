@@ -31,6 +31,9 @@ import org.junit.rules.TestRule;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -276,24 +279,15 @@ public class InMemoryDBStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         int numberOfThreads = 1000;
-        ArrayList<Thread> threads = new ArrayList<>();
+        ExecutorService es = Executors.newFixedThreadPool(1000);
         ArrayList<StorageTest.ParallelTransactions> runnables = new ArrayList<>();
         for (int i = 0; i < numberOfThreads; i++) {
             StorageTest.ParallelTransactions p = new StorageTest.ParallelTransactions(process);
-            Thread t = new Thread(p);
-            threads.add(t);
             runnables.add(p);
-            t.start();
+            es.execute(p);
         }
-        threads.forEach(thread -> {
-            while (true) {
-                try {
-                    thread.join();
-                    return;
-                } catch (InterruptedException e) {
-                }
-            }
-        });
+        es.shutdown();
+        es.awaitTermination(2, TimeUnit.MINUTES);
         for (int i = 0; i < numberOfThreads; i++) {
             assertTrue(runnables.get(i).success);
         }
