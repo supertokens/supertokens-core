@@ -31,6 +31,8 @@ import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.usermetadata.UserMetadata;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -600,6 +602,9 @@ public class AuthRecipeTest {
 
         for (String userType : classes) {
             AuthRecipeUserInfo user1 = signUpMap.get(userType).apply(null);
+            JsonObject testMetadata = new JsonObject();
+            testMetadata.addProperty("test", "test");
+            UserMetadata.updateUserMetadata(process.getProcess(), user1.id, testMetadata);
             Session.createNewSession(process.getProcess(), user1.id, new JsonObject(), new JsonObject());
             String emailVerificationToken = EmailVerification.generateEmailVerificationToken(process.getProcess(),
                     user1.id, "email");
@@ -616,10 +621,12 @@ public class AuthRecipeTest {
             assertEquals(0, Session.getAllSessionHandlesForUser(process.getProcess(), user1.id).length);
             assertEquals(1, Session.getAllSessionHandlesForUser(process.getProcess(), user2.id).length);
             assertFalse(EmailVerification.isEmailVerified(process.getProcess(), user1.id, "email"));
+            assertEquals(0, UserMetadata.getUserMetadata(process.getProcess(), user1.id).entrySet().size());
 
             AuthRecipe.deleteUser(process.getProcess(), user2.id);
             assertEquals(0, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { user1.getRecipeId() }));
             assertEquals(0, Session.getAllSessionHandlesForUser(process.getProcess(), user2.id).length);
+            assertEquals(0, UserMetadata.getUserMetadata(process.getProcess(), user2.id).entrySet().size());
 
             Exception error = null;
             try {

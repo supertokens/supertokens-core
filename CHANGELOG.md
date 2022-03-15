@@ -6,7 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
+### Changes
+
 - Fixes memory leak during testing.
+- Updated plugin interface version
+- Adds usermetadata recipe
+
+### Database changes
+
+- Added `user_metadata` table
 
 ## [3.10.0] - 2022-02-23
 

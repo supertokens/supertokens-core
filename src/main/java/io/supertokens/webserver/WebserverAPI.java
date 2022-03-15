@@ -44,10 +44,11 @@ public abstract class WebserverAPI extends HttpServlet {
         supportedVersions.add("2.10");
         supportedVersions.add("2.11");
         supportedVersions.add("2.12");
+        supportedVersions.add("2.13");
     }
 
     public static String getLatestCDIVersion() {
-        return "2.12";
+        return "2.13";
     }
 
     public WebserverAPI(Main main, String rid) {
