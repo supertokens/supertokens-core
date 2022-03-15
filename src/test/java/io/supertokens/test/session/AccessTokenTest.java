@@ -337,7 +337,7 @@ public class AccessTokenTest {
 
         Thread.sleep(3500);
 
-        ExecutorService es = Executors.newCachedThreadPool();
+        ExecutorService es = Executors.newFixedThreadPool(1000);
 
         AtomicBoolean hasNullPointerException = new AtomicBoolean(false);
 

@@ -153,10 +153,8 @@ public class LoggingTest {
 
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Logger comInfoLog = (Logger) LoggerFactory
-                .getLogger("io.supertokens.Info." + process.getProcess().getProcessId());
-        Logger comErrorLog = (Logger) LoggerFactory
-                .getLogger("io.supertokens.Error." + process.getProcess().getProcessId());
+        Logger comInfoLog = (Logger) LoggerFactory.getLogger("io.supertokens.Info");
+        Logger comErrorLog = (Logger) LoggerFactory.getLogger("io.supertokens.Error");
 
         java.util.logging.Logger webLogger = java.util.logging.Logger.getLogger("org.apache");
 
