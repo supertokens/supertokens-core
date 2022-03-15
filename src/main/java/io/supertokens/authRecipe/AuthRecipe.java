@@ -70,5 +70,6 @@ public class AuthRecipe {
         StorageLayer.getEmailPasswordStorage(main).deleteEmailPasswordUser(userId);
         StorageLayer.getThirdPartyStorage(main).deleteThirdPartyUser(userId);
         StorageLayer.getPasswordlessStorage(main).deletePasswordlessUser(userId);
+        StorageLayer.getUserMetadataStorage(main).deleteUserMetadata(userId);
     }
 }

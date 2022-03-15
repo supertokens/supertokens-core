@@ -30,6 +30,8 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.usermetadata.UserMetadata;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -105,6 +107,49 @@ public class InMemoryDBTest {
         es.awaitTermination(2, TimeUnit.MINUTES);
 
         assert (pass.get());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
+     * concurrently updates the metadata of a user and checks if it was merged correctly
+     *
+     * @throws Exception
+     */
+    @Test
+    public void testConcurrentMetadataUpdates() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        process.getProcess().setForceInMemoryDB();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+
+        ExecutorService es = Executors.newCachedThreadPool();
+
+        for (int i = 0; i < 3000; i++) {
+            final int ind = i;
+            es.execute(() -> {
+                JsonObject metadataUpdate = new JsonObject();
+                metadataUpdate.addProperty(String.valueOf(ind), ind);
+                try {
+                    UserMetadata.updateUserMetadata(process.getProcess(), userId, metadataUpdate);
+                } catch (Exception e) {
+                    // We ignore all exceptions here, if something failed it will show up in the asserts
+                }
+            });
+        }
+
+        es.shutdown();
+        es.awaitTermination(2, TimeUnit.MINUTES);
+
+        JsonObject newMetadata = UserMetadata.getUserMetadata(process.getProcess(), userId);
+        assertEquals(3000, newMetadata.entrySet().size());
+        for (int i = 0; i < 3000; i++) {
+            assertEquals(newMetadata.get(String.valueOf(i)).getAsInt(), i);
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
