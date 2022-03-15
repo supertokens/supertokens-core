@@ -41,7 +41,7 @@ public class Main {
     public static int exitCode = 0;
 
     private static Thread shutdownHook;
-    private static Thread mainThread = Thread.currentThread();;
+    private static Thread mainThread = Thread.currentThread();
     private static boolean doNotWaitInShutdownHook = false;
 
     public static void main(String[] args) {
