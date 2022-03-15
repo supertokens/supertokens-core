@@ -124,6 +124,24 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         StorageLayer.static_ref_to_storage = null;
     }
 
+    @TestOnly
+    public static void closeWithClearingURLClassLoader() {
+        /*
+         * This is needed for PluginTests where we want to try and load from the plugin directory
+         * again and again. If we do not close the static URLCLassLoader before, those tests will fail
+         *
+         * Also note that closing it doesn't actually remove it from memory (strange..). But we do it anyway
+         */
+        StorageLayer.close();
+        if (StorageLayer.ucl != null) {
+            try {
+                StorageLayer.ucl.close();
+            } catch (IOException ignored) {
+            }
+            StorageLayer.ucl = null;
+        }
+    }
+
     public static StorageLayer getInstance(Main main) {
         return (StorageLayer) main.getResourceDistributor().getResource(RESOURCE_KEY);
     }
