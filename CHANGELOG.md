@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+- Update CONTRIBUTING.md with instructions for gitpod setup
+
 ## [3.10.0] - 2022-02-23
 
 - Updated plugin interface version
