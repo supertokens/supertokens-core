@@ -31,7 +31,6 @@ import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.usermetadata.UserMetadata;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -121,13 +120,14 @@ public class InMemoryDBTest {
     public void testConcurrentMetadataUpdates() throws Exception {
         String[] args = { "../" };
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
+        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String userId = "userId";
 
-        ExecutorService es = Executors.newCachedThreadPool();
+        ExecutorService es = Executors.newFixedThreadPool(1000);
 
         for (int i = 0; i < 3000; i++) {
             final int ind = i;
