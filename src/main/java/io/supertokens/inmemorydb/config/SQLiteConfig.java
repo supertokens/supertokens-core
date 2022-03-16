@@ -69,4 +69,8 @@ public class SQLiteConfig {
     public String getPasswordlessCodesTable() {
         return "passwordless_codes";
     }
+
+    public String getUserMetadataTable() {
+        return "user_metadata";
+    }
 }

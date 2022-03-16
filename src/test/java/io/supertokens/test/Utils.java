@@ -29,6 +29,8 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.mockito.Mockito;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -89,6 +91,10 @@ public abstract class Utils extends Mockito {
 
     public static String getCdiVersion2_12ForTests() {
         return "2.12";
+    }
+
+    public static String getCdiVersion2_13ForTests() {
+        return "2.13";
     }
 
     public static String getCdiVersionLatestForTests() {
@@ -242,5 +248,4 @@ public abstract class Utils extends Mockito {
                 "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000, 1000, null,
                 getCdiVersion2_8ForTests(), "thirdparty");
     }
-
 }

@@ -38,6 +38,9 @@ import io.supertokens.webserver.api.passwordless.*;
 import io.supertokens.webserver.api.session.*;
 import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
 import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
+import io.supertokens.webserver.api.usermetadata.UserMetadataAPI;
+import io.supertokens.webserver.api.usermetadata.RemoveUserMetadataAPI;
+
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;
@@ -184,6 +187,8 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new UnverifyEmailAPI(main));
         addAPI(new JWTSigningAPI(main));
         addAPI(new JWKSAPI(main));
+        addAPI(new UserMetadataAPI(main));
+        addAPI(new RemoveUserMetadataAPI(main));
 
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),
