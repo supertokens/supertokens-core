@@ -31,7 +31,6 @@ import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
-import io.supertokens.pluginInterface.usermetadata.UserMetadataStorage;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import org.jetbrains.annotations.TestOnly;
 
@@ -83,8 +82,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         storageLayerTemp = plugin;
                     } else {
                         throw new QuitProgramException(
-                                "Multiple database plugins found. Please make sure that just one plugin is in the /plugin"
-                                        + " "
+                                "Multiple database plugins found. Please make sure that just one plugin is in the "
+                                        + "/plugin" + " "
                                         + "folder of the installation. Alternatively, please redownload and install "
                                         + "SuperTokens" + ".");
                     }
@@ -101,8 +100,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
         this.storage.constructor(main.getProcessId(), Main.makeConsolePrintSilent);
         this.storage.loadConfig(configFilePath);
-        if (Main.isTesting) {
-            // we save the storage layer for testing purposes so that
+        if (Main.isTesting && !(this.storage instanceof Start)) {
+            // we save the storage layer for testing (if it's not an in mem db) purposes so that
             // next time, we can just reuse this.
             // StorageLayer.static_ref_to_storage is set to null by the testing framework in case
             // something in the config or CLI args change.
