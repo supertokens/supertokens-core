@@ -56,6 +56,9 @@ public class InMemoryDBStorageTest {
         Utils.reset();
     }
 
+    @Rule
+    public Retry retry = new Retry(3);
+
     @Test
     public void transactionIsolationTesting()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
