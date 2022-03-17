@@ -16,7 +16,10 @@
 
 package io.supertokens.test.userMetadata;
 
+import com.google.gson.JsonNull;
+import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -24,21 +27,17 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.utils.MetadataUtils;
-
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import com.google.gson.JsonNull;
-import com.google.gson.JsonObject;
+import static org.junit.Assert.*;
 
 /**
  * This UT encompasses tests related to update user
@@ -183,7 +182,8 @@ public class UserMetadataTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL
+                || StorageLayer.getStorage(process.getProcess()) instanceof Start) {
             return;
         }
 
@@ -280,35 +280,21 @@ public class UserMetadataTest {
         t1.start();
         t2.start();
 
-        t1.join(1000);
-        t2.join(1000);
+        t1.join(5000);
+        t2.join(5000);
 
-        // In this case the empty row was actually locked (SQLite)
-        if (t1.isAlive() && t2.isAlive()) {
-            // There were no retries in this case
-            assertEquals(1, tryCount1.get());
-            assertEquals(1, tryCount2.get());
+        // The empty row did not lock, so we check if the system found a deadlock and that we could resolve it.
 
-            // Only one of the threads got to the "read" state blocking the other in "init"
-            assertNotEquals(t1State.get(), t2State.get());
+        // Both succeeds in the end
+        assertTrue(success1.get());
+        assertTrue(success2.get());
 
-            // Neither of the threads were successful
-            assertTrue(!success1.get());
-            assertTrue(!success2.get());
-        } else {
-            // The empty row did not lock, so we check if the system found a deadlock and that we could resolve it.
+        // One of them had to be retried (not deterministic which)
+        assertEquals(3, tryCount1.get() + tryCount2.get());
+        // assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.DEADLOCK_FOUND));
 
-            // Both succeeds in the end
-            assertTrue(success1.get());
-            assertTrue(success2.get());
-
-            // One of them had to be retried (not deterministic which)
-            assertEquals(3, tryCount1.get() + tryCount2.get());
-            // assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.DEADLOCK_FOUND));
-
-            // The end result is as expected
-            assertEquals(expected, sqlStorage.getUserMetadata(userId));
-        }
+        // The end result is as expected
+        assertEquals(expected, sqlStorage.getUserMetadata(userId));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
