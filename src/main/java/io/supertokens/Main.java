@@ -27,6 +27,7 @@ import io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPas
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.inmemorydb.Start;
 import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -317,8 +318,9 @@ public class Main {
             if (!Main.isTesting) {
                 StorageLayer.close(this);
             } else {
-                if (StorageLayer.getStorage(this).getType() == STORAGE_TYPE.NOSQL_1) {
-                    // we close mongodb storage during testing everytime as well cause it
+                if (StorageLayer.getStorage(this).getType() == STORAGE_TYPE.NOSQL_1
+                        || StorageLayer.getStorage(this) instanceof Start) {
+                    // we close mongodb storage and in mem db storage during testing everytime as well cause it
                     // doesn't take time for it to connect during each test.
                     StorageLayer.close(this);
                 } else {
