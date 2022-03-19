@@ -13,7 +13,7 @@ jobs:
         name: Check if \"Run tests\" action succeeded
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2
+            - uses: actions/checkout@v2.2.0
             - name: node install
               run: cd ./.github/helpers && npm i
             - name: Calling github API
