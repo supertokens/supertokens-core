@@ -1,3 +1,5 @@
 console.log("Hi from node!");
-console.log(process.env.REPO)
-console.log(process.env.COMMIT_HASH)
+const currentCommitHash = process.env.COMMIT_HASH;
+const githubURL = `https://api.github.com/repos/${process.env.REPO}/actions/runs?branch=${process.env.BRANCH}`
+
+console.log(githubURL);
