@@ -16,5 +16,7 @@ jobs:
             - uses: actions/checkout@v2
             - name: node install
               run: cd ./.github/helpers && npm i
+            - name: curr branch
+              run: git rev-parse --abbrev-ref HEAD
             - name: Calling github API
               run: cd ./.github/helpers && REPO=${{ github.repository }} COMMIT_HASH=$(git rev-parse HEAD) BRANCH=$(git rev-parse --abbrev-ref HEAD) node test-pass-check-pr.js
