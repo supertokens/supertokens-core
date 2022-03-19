@@ -10,7 +10,7 @@ on:
 
 jobs:
     pr-run-test-action:
-        name: Check if \"Run tests\" action succeeded
+        name: Check if "Run tests" action succeeded
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
