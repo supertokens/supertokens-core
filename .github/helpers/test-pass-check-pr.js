@@ -11,6 +11,7 @@ axios.get(githubURL).then(result => {
 
     data.workflow_runs.forEach(run => {
         if (run.id === thisJobId) {
+            console.log(run);
             currentSHA = run.head_sha;
         }
     });
