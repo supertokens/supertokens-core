@@ -1,6 +1,6 @@
 const { default: axios } = require("axios");
 
-const thisRunId = process.env.RUN_ID;
+let thisRunId = process.env.RUN_ID;
 thisRunId = thisRunId.trim();
 console.log("Hi from node!!", thisRunId);
 const githubURL = `https://api.github.com/repos/${process.env.REPO}/actions/runs?branch=${process.env.BRANCH}`
