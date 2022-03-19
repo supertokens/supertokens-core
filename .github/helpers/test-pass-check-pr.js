@@ -8,6 +8,6 @@ axios.get(githubURL).then(result => {
     let data = result.data;
 
     data.workflow_runs.forEach(run => {
-        console.log(run);
+        console.log(run.head_sha);
     })
 })
