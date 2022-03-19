@@ -100,6 +100,9 @@ labels:
 - [ ] Pushed to production
 - [ ] Post message on discord about new update
 - [ ] Updated swaggerhub FDI spec
+- [ ] Update frontend-driver-interface repo
 - [ ] Updated swaggerhub CDI spec
+- [ ] Update core-driver-interface-repo
+- [ ] Update internal contributing guide to move from previous core version to the latest one
 - [ ] Algolia search update for docs
 - [ ] robots.txt, sitemap.xml, noindex page update
