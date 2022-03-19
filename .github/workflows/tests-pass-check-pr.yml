@@ -14,7 +14,7 @@ jobs:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
-            - name: Get repo URL
-              run: echo ${{ github.repository }}
-            - name: Node version
-              run: node --version
+            - name: node install
+              run: cd ./.github/helpers && npm i
+            - name: Running node process to call github API
+              run: cd ./.github/helpers && REPO=${{ github.repository }} node test-pass-check-pr.js
