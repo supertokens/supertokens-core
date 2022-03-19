@@ -11,8 +11,9 @@ axios.get(githubURL).then(result => {
 
     data.workflow_runs.forEach(run => {
         if (run.id === thisRunId) {
-            console.log(run);
             currentSHA = run.head_sha;
+        } else {
+            console.log("not matched", run.id);
         }
     });
 
