@@ -7,6 +7,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 - Adds github action for running tests against in memory db.
+- Adds github action for checking if "Run tests" action was completed (to run in PRs)
 
 ## [3.11.0] - 2022-03-19
 ### Changes
