@@ -17,4 +17,4 @@ jobs:
             - name: node install
               run: cd ./.github/helpers && npm i
             - name: Calling github API
-              run: cd ./.github/helpers && REPO=${{ github.repository }} COMMIT_HASH=$(git rev-parse HEAD) BRANCH=${{ github.head_ref }} node test-pass-check-pr.js
+              run: cd ./.github/helpers && REPO=${{ github.repository }} COMMIT_HASH=${{ github.sha }} BRANCH=${{ github.head_ref }} node test-pass-check-pr.js
