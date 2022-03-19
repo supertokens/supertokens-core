@@ -8,18 +8,21 @@ const githubURL = `https://api.github.com/repos/${process.env.REPO}/actions/runs
 axios.get(githubURL).then(result => {
     let data = result.data;
     let passed = false;
-    let currentSHA = "";
+    let currentSHA = undefined;
 
     data.workflow_runs.forEach(run => {
         if ((run.id + "") === thisRunId) {
             currentSHA = run.head_sha;
-            console.log("MATCHED!!!", run);
-        } else {
-            console.log("not matched", run.id);
         }
     });
 
-    console.log(currentSHA);
+    if (currentSHA !== undefined) {
+        data.workflow_runs.forEach(run => {
+            if (run.head_sha === currentSHA) {
+                console.log(run.id);
+            }
+        });
+    }
 
     process.exit(passed ? 0 : 1);
 })
