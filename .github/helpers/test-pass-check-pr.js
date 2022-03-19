@@ -3,9 +3,8 @@ const { default: axios } = require("axios");
 let thisRunId = process.env.RUN_ID;
 thisRunId = thisRunId.trim();
 console.log("Hi from node!!", thisRunId);
-const githubURL = `https://api.github.com/repos/${process.env.REPO}/actions/runs?branch=${process.env.BRANCH}`
 
-axios.get(githubURL).then(result => {
+axios.get(`https://api.github.com/repos/${process.env.REPO}/actions/runs?branch=${process.env.BRANCH}`).then(async result => {
     let data = result.data;
     let passed = false;
     let currentSHA = undefined;
@@ -19,7 +18,11 @@ axios.get(githubURL).then(result => {
     if (currentSHA !== undefined) {
         data.workflow_runs.forEach(run => {
             if (run.head_sha === currentSHA) {
-                console.log(run.id);
+                // here we have all the jobs that have run on this commit.
+                let workflow_id = run.workflow_id;
+                let workflow = await axios.get(`https://api.github.com/repos/${process.env.REPO}/actions/workflows?workflow_id=${workflow_id}`);
+                let data = workflow.data;
+                console.log(data);
             }
         });
     }
