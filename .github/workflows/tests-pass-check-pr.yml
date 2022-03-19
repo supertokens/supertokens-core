@@ -13,8 +13,8 @@ jobs:
         name: Check if \"Run tests\" action succeeded
         runs-on: ubuntu-latest
         steps:
-            - uses: actions/checkout@v2.2.0
+            - uses: actions/checkout@v2
             - name: node install
               run: cd ./.github/helpers && npm i
             - name: Calling github API
-              run: cd ./.github/helpers && REPO=${{ github.repository }} COMMIT_HASH=${{ github.sha }} BRANCH=${{ github.head_ref }} node test-pass-check-pr.js
+              run: cd ./.github/helpers && REPO=${{ github.repository }} JOB_ID=${{ github.job }} node test-pass-check-pr.js
