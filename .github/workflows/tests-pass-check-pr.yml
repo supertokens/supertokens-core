@@ -1,0 +1,17 @@
+name: "Check if \"Run tests\" action succeeded"
+
+on:
+    pull_request:
+        types:
+            - opened
+            - reopened
+            - edited
+            - synchronize
+
+jobs:
+    pr-run-test-action:
+        name: Check if \"Run tests\" action succeeded
+        runs-on: ubuntu-latest
+        steps:
+            - name: Get repo URL
+              run: echo "hi"
