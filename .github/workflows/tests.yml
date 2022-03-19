@@ -1,10 +1,10 @@
 name: "Run tests"
-on: [pull_request, workflow_dispatch]:
-  types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
-  inputs:
-    pluginInterfaceBranch:
-      description: 'Plugin interface branch name'     
-      required: true
+on:
+  workflow_dispatch:
+    inputs:
+      pluginInterfaceBranch:
+        description: 'Plugin interface branch name'     
+        required: true
 
 jobs:
   test_job:
