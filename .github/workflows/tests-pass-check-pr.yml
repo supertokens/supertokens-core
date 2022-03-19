@@ -15,4 +15,4 @@ jobs:
         steps:
             - uses: actions/checkout@v2
             - name: Get repo URL
-              run: echo "$GITHUB_ACTION_REPOSITORY"
+              run: echo $GITHUB_ACTION_REPOSITORY
