@@ -16,5 +16,5 @@ jobs:
             - uses: actions/checkout@v2
             - name: node install
               run: cd ./.github/helpers && npm i
-            - name: Running node process to call github API
-              run: cd ./.github/helpers && REPO=${{ github.repository }} node test-pass-check-pr.js
+            - name: Calling github API
+              run: cd ./.github/helpers && REPO=${{ github.repository }} COMMIT_HASH=$(git rev-parse HEAD) node test-pass-check-pr.js
