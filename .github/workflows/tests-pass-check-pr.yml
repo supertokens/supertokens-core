@@ -13,5 +13,6 @@ jobs:
         name: Check if \"Run tests\" action succeeded
         runs-on: ubuntu-latest
         steps:
+            - uses: actions/checkout@v2
             - name: Get repo URL
-              run: echo "hi"
+              run: echo "${{ env.GITHUB_ACTION_REPOSITORY }}"
