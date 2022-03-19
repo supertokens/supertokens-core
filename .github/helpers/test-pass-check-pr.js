@@ -6,8 +6,13 @@ const githubURL = `https://api.github.com/repos/${process.env.REPO}/actions/runs
 
 axios.get(githubURL).then(result => {
     let data = result.data;
+    let passed = false;
 
     data.workflow_runs.forEach(run => {
-        console.log(run.head_sha);
-    })
+        if (run.head_sha === currentCommitHash) {
+            console.log(run);
+        }
+    });
+
+    process.exitCode(passed ? 0 : 1);
 })
