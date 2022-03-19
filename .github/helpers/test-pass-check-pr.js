@@ -12,7 +12,7 @@ axios.get(githubURL).then(result => {
         if (run.head_sha === currentCommitHash) {
             console.log(run);
         } else {
-            console.log("not matched", run.head_sha)
+            console.log("not matched", run.head_sha, currentCommitHash)
         }
     });
 
