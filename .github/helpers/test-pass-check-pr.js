@@ -5,5 +5,9 @@ const currentCommitHash = process.env.COMMIT_HASH;
 const githubURL = `https://api.github.com/repos/${process.env.REPO}/actions/runs?branch=${process.env.BRANCH}`
 
 axios.get(githubURL).then(result => {
-    console.log(result.data);
+    let data = result.data;
+
+    data.workflow_runs.forEach(run => {
+        console.log(run);
+    })
 })
