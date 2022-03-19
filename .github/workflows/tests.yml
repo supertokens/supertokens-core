@@ -1,0 +1,15 @@
+name: "Run tests"
+on:
+  workflow_dispatch:
+    inputs:
+      pluginInterfaceBranch:
+        description: 'Plugin interface branch name'     
+        required: true
+  pull_request:
+      types: [opened, synchronize, reopened, ready_for_review, labeled, unlabeled]
+
+jobs:
+  test_job:
+    runs-on: rishabhpoddar/supertokens_core_testing
+    steps:
+      - uses: actions/checkout@v2
