@@ -1,7 +1,8 @@
 const { default: axios } = require("axios");
 
-console.log("Hi from node!!", process.env.COMMIT_HASH);
+console.log("Hi from node!!");
 const thisJobId = process.env.JOB_ID;
+console.log(thisJobId);
 const githubURL = `https://api.github.com/repos/${process.env.REPO}/actions/runs?branch=${process.env.BRANCH}`
 
 axios.get(githubURL).then(result => {
