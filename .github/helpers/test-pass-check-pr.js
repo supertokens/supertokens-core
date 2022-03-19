@@ -4,7 +4,7 @@ let thisRunId = process.env.RUN_ID;
 thisRunId = thisRunId.trim();
 console.log("Hi from node!!", thisRunId);
 
-axios.get(`https://api.github.com/repos/${process.env.REPO}/actions/runs?branch=${process.env.BRANCH}`).then(async result => {
+axios.get(`https://api.github.com/repos/${process.env.REPO}/actions/runs?branch=${process.env.BRANCH}`).then(result => {
     let data = result.data;
     let passed = false;
     let currentSHA = undefined;
@@ -16,7 +16,7 @@ axios.get(`https://api.github.com/repos/${process.env.REPO}/actions/runs?branch=
     });
 
     if (currentSHA !== undefined) {
-        data.workflow_runs.forEach(run => {
+        data.workflow_runs.forEach(async run => {
             if (run.head_sha === currentSHA) {
                 // here we have all the jobs that have run on this commit.
                 let workflow_id = run.workflow_id;
