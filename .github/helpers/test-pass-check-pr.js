@@ -19,5 +19,5 @@ axios.get(githubURL).then(result => {
 
     console.log(currentSHA);
 
-    process.exitCode(passed ? 0 : 1);
+    process.exit(passed ? 0 : 1);
 })
