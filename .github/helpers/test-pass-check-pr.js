@@ -1,7 +1,7 @@
 const { default: axios } = require("axios");
 
-console.log("Hi from node!!", thisRunId);
 const thisRunId = process.env.RUN_ID;
+console.log("Hi from node!!", thisRunId);
 const githubURL = `https://api.github.com/repos/${process.env.REPO}/actions/runs?branch=${process.env.BRANCH}`
 
 axios.get(githubURL).then(result => {
@@ -12,6 +12,7 @@ axios.get(githubURL).then(result => {
     data.workflow_runs.forEach(run => {
         if (run.id === thisRunId) {
             currentSHA = run.head_sha;
+            console.log("MATCHED!!!", run);
         } else {
             console.log("not matched", run.id);
         }
