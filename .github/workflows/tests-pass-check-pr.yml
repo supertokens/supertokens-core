@@ -16,3 +16,5 @@ jobs:
             - uses: actions/checkout@v2
             - name: Get repo URL
               run: echo ${{ github.repository }}
+            - name: Node version
+              run: node --version
