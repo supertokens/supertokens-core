@@ -11,6 +11,8 @@ axios.get(githubURL).then(result => {
     data.workflow_runs.forEach(run => {
         if (run.head_sha === currentCommitHash) {
             console.log(run);
+        } else {
+            console.log("not matched", run.head_sha)
         }
     });
 
