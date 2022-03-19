@@ -23,7 +23,10 @@ axios.get(`https://api.github.com/repos/${process.env.REPO}/actions/runs?branch=
                 let workflow = await axios.get(`https://api.github.com/repos/${process.env.REPO}/actions/workflows/${workflow_id}`);
                 let workflowData = workflow.data;
                 if (workflowData.path === ".github/workflows/tests.yml") {
-                    console.log(workflowData);
+                    if (run.conclusion === "success") {
+                        passed = true;
+                        break;
+                    }
                 }
             }
         }
