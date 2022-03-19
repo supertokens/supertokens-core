@@ -6,7 +6,6 @@ const githubURL = `https://api.github.com/repos/${process.env.REPO}/actions/runs
 
 axios.get(githubURL).then(result => {
     let data = result.data;
-    console.log(data);
     let passed = false;
     let currentSHA = "";
 
