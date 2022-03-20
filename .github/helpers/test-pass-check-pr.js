@@ -42,6 +42,7 @@ function doJob() {
             process.exit(0);
         }
     }).catch(() => {
+        console.log("Error thrown.. waiting for 1 min and trying again.");
         setTimeout(doJob, 60000) // try again after 1 min.
     })
 }
