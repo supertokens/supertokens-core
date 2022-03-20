@@ -89,7 +89,6 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 3. Find the action named "Run tests" and navigate to it.
 4. Click on the "Run workflow" button.
 5. Set the config variables in the drop down:
-    - **supertokens-core repo owner name**: If you have forked the supertokens-core repo, then set the value of this to your github username.
     - **supertokens-plugin-interface repo owner name**: If you have forked the supertokens-plugin-interface repo, then set the value of this to your github username.
     - **supertokens-plugin-interface repos branch name**: If the core version you are working on is compatible with a plugin-interface version that is not in the master branch, then set the correct branch name in this value.
 6. Click on "Run workflow".
