@@ -2,6 +2,9 @@ const { default: axios } = require("axios");
 
 const readmeInstrsLink = "https://github.com/supertokens/supertokens-core/blob/master/CONTRIBUTING.md#using-github-actions";
 let thisRunId = process.env.RUN_ID;
+
+// this is an auto generated token for this action
+// using which the API rate limit is 5000 requests / hour
 let gitHubToken = process.env.GITHUB_TOKEN;
 console.log(gitHubToken);
 thisRunId = thisRunId.trim();
