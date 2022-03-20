@@ -61,7 +61,7 @@ public class JWT {
         initHeader();
         String payload = Utils.convertToBase64(jsonObj.toString());
         String header = version == AccessToken.VERSION.V1 ? JWT.HEADERv1
-                : version == AccessToken.VERSION.V2 ? JWT.HEADERv2 : JWT.HEADERv3;
+                : (version == AccessToken.VERSION.V2 ? JWT.HEADERv2 : JWT.HEADERv3);
         String signature = Utils.signWithPrivateKey(header + "." + payload, privateSigningKey);
         return header + "." + payload + "." + signature;
     }

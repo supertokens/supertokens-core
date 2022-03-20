@@ -16,6 +16,7 @@
 
 package io.supertokens.webserver.api.session;
 
+import com.fasterxml.jackson.core.Version;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -70,9 +71,9 @@ public class VerifySessionAPI extends WebserverAPI {
                     doAntiCsrfCheck);
 
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
-            if (!super.getVersionFromRequest(req).equals("2.13")) {
+            if (Utils.isOlderVersionThan(super.getParsedVersionFromRequest(req), Utils.VER_2_13)) {
                 result.getAsJsonObject("session").remove("grants");
-            } else if (!result.getAsJsonObject("session").has("grants")) { // This means that we are getting
+            } else if (!result.getAsJsonObject("session").has("grants")) {
                 result.getAsJsonObject("session").add("grants", new JsonObject());
             }
 

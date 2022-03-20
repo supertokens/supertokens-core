@@ -49,10 +49,6 @@ public class SessionQueries {
                 + "jwt_user_payload TEXT," + "grant_payload TEXT, " + "PRIMARY KEY(session_handle)" + " );";
     }
 
-    static String getQueryToCreateGrantPayloadColumn(Start start) {
-        return "ALTER TABLE " + Config.getConfig(start).getSessionInfoTable() + "ADD grant_payload TEXT;";
-    }
-
     static String getQueryToCreateAccessTokenSigningKeysTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getAccessTokenSigningKeysTable() + " ("
                 + "created_at_time BIGINT UNSIGNED NOT NULL," + "value TEXT," + "PRIMARY KEY(created_at_time)" + " );";
@@ -191,7 +187,7 @@ public class SessionQueries {
             JsonObject grantPayload) throws SQLException, StorageQueryException {
 
         if (sessionData == null && jwtPayload == null && grantPayload == null) {
-            throw new SQLException("sessionData and jwtPayload are null when updating session info");
+            throw new SQLException("sessionData, jwtPayload and grantPayload all null when updating session info");
         }
 
         String QUERY = "UPDATE " + Config.getConfig(start).getSessionInfoTable() + " SET";

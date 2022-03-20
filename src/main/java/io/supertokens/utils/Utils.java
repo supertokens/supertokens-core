@@ -21,6 +21,7 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import com.fasterxml.jackson.core.Version;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -43,6 +44,7 @@ import java.util.Base64.Encoder;
 import java.util.UUID;
 
 public class Utils {
+    public static final Version VER_2_13 = new Version(2, 13, 0, null, null, null);
 
     public static String normaliseEmail(String email) {
         // we assume that the email's syntax is correct here.
@@ -294,5 +296,9 @@ public class Utils {
             jwtSigningPublicKeyListJSON.add(keyJSON);
         }
         return jwtSigningPublicKeyListJSON;
+    }
+
+    public static boolean isOlderVersionThan(Version lhs, Version rhs) {
+        return lhs.compareTo(rhs) < 0;
     }
 }

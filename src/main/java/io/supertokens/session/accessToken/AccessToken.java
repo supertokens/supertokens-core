@@ -230,7 +230,7 @@ public class AccessToken {
 
         AccessTokenInfo(@Nonnull String sessionHandle, @Nonnull String userId, @Nonnull String refreshTokenHash1,
                 long expiryTime, @Nullable String parentRefreshTokenHash1, @Nonnull JsonObject userData,
-                @Nonnull JsonObject grants, @Nullable String antiCsrfToken, long timeCreated, @Nullable Long lmrt) {
+                @Nullable JsonObject grants, @Nullable String antiCsrfToken, long timeCreated, @Nullable Long lmrt) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.refreshTokenHash1 = refreshTokenHash1;

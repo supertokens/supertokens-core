@@ -16,6 +16,9 @@
 
 package io.supertokens.test;
 
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.core.util.VersionUtil;
+
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -40,5 +43,24 @@ public class UtilsTest {
     public void encodeDecodeBase64WithUTF() {
         assert (io.supertokens.utils.Utils.convertFromBase64(io.supertokens.utils.Utils.convertToBase64("łukasz 馬 / 马"))
                 .equals("łukasz 馬 / 马"));
+    }
+
+    @Test
+    public void isOlderVersionThan() {
+        assert (io.supertokens.utils.Utils.isOlderVersionThan(VersionUtil.parseVersion("2.12", null, null),
+                io.supertokens.utils.Utils.VER_2_13));
+        assert (!io.supertokens.utils.Utils.isOlderVersionThan(VersionUtil.parseVersion("3.0", null, null),
+                io.supertokens.utils.Utils.VER_2_13));
+        assert (io.supertokens.utils.Utils.isOlderVersionThan(VersionUtil.parseVersion("1.1000", null, null),
+                io.supertokens.utils.Utils.VER_2_13));
+        assert (!io.supertokens.utils.Utils.isOlderVersionThan(VersionUtil.parseVersion("2.13", null, null),
+                io.supertokens.utils.Utils.VER_2_13));
+        assert (!io.supertokens.utils.Utils.isOlderVersionThan(VersionUtil.parseVersion("2.14", null, null),
+                io.supertokens.utils.Utils.VER_2_13));
+
+        assert (io.supertokens.utils.Utils.isOlderVersionThan(VersionUtil.parseVersion("2.1", null, null),
+                VersionUtil.parseVersion("2.10", null, null)));
+        assert (!io.supertokens.utils.Utils.isOlderVersionThan(VersionUtil.parseVersion("2.100", null, null),
+                VersionUtil.parseVersion("2.10", null, null)));
     }
 }

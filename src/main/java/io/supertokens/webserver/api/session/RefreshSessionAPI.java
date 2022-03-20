@@ -16,6 +16,8 @@
 
 package io.supertokens.webserver.api.session;
 
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.core.util.VersionUtil;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -62,8 +64,7 @@ public class RefreshSessionAPI extends WebserverAPI {
             SessionInformationHolder sessionInfo = Session.refreshSession(main, refreshToken, antiCsrfToken,
                     enableAntiCsrf);
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
-
-            if (!super.getVersionFromRequest(req).equals("2.13")) {
+            if (Utils.isOlderVersionThan(super.getParsedVersionFromRequest(req), Utils.VER_2_13)) {
                 result.getAsJsonObject("session").remove("grants");
             }
 

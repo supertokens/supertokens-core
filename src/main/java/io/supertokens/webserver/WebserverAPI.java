@@ -16,6 +16,8 @@
 
 package io.supertokens.webserver;
 
+import com.fasterxml.jackson.core.Version;
+import com.fasterxml.jackson.core.util.VersionUtil;
 import com.google.gson.JsonElement;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
@@ -191,6 +193,10 @@ public abstract class WebserverAPI extends HttpServlet {
             version = getLatestCDIVersion();
         }
         return version;
+    }
+
+    protected Version getParsedVersionFromRequest(HttpServletRequest req) {
+        return VersionUtil.parseVersion(getVersionFromRequest(req), null, null);
     }
 
     protected static class BadRequestException extends Exception {

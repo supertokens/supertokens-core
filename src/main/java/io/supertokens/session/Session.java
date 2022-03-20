@@ -216,6 +216,7 @@ public class Session {
                                         sessionInfo.userDataInJWT, accessToken.antiCsrfToken);
                             } else if (AccessToken.getAccessTokenVersion(accessToken) == AccessToken.VERSION.V2) {
                                 assert accessToken.lmrt != null;
+                                assert sessionInfo.grants == null;
                                 newAccessToken = AccessToken.createNewAccessTokenV2(main, accessToken.sessionHandle,
                                         accessToken.userId, accessToken.refreshTokenHash1, null,
                                         sessionInfo.userDataInJWT, accessToken.antiCsrfToken, accessToken.lmrt, null);
@@ -288,6 +289,7 @@ public class Session {
                                     accessToken.antiCsrfToken);
                         } else if (AccessToken.getAccessTokenVersion(accessToken) == AccessToken.VERSION.V2) {
                             assert accessToken.lmrt != null;
+                            assert sessionInfo.grants == null;
                             newAccessToken = AccessToken.createNewAccessTokenV2(main, accessToken.sessionHandle,
                                     accessToken.userId, accessToken.refreshTokenHash1, null, sessionInfo.userDataInJWT,
                                     accessToken.antiCsrfToken, accessToken.lmrt, null);
@@ -365,7 +367,6 @@ public class Session {
                             // at this point, the input refresh token is the parent one.
 
                             JsonObject grantPayload = sessionInfo.grants;
-                            // TODO(mihaly): we could skip updating this in DB until a value is set
                             if (grantPayload == null) {
                                 grantPayload = new JsonObject();
                                 storage.updateSessionGrantPayload_Transaction(con, sessionHandle,
@@ -445,7 +446,6 @@ public class Session {
                     if (sessionInfo.refreshTokenHash2.equals(Utils.hashSHA256(Utils.hashSHA256(refreshToken)))) {
 
                         JsonObject grantPayload = sessionInfo.grants;
-                        // TODO(mihaly): we could skip updating this in DB until a value is set
                         if (grantPayload == null) {
                             grantPayload = new JsonObject();
                             boolean success = storage.updateSessionGrantPayload_Transaction(sessionHandle,
