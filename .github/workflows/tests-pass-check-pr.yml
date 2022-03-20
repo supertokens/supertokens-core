@@ -12,6 +12,9 @@ jobs:
     pr-run-test-action:
         name: Check if "Run tests" action succeeded
         timeout-minutes: 60
+        concurrency:
+          group: ${{ github.head_ref }}
+          cancel-in-progress: true
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v2
