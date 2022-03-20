@@ -2,10 +2,6 @@ name: "Run tests"
 on:
   workflow_dispatch:
     inputs:
-      coreRepoOwnerName:
-        description: 'supertokens-core repo owner name'
-        default: supertokens 
-        required: true
       pluginRepoOwnerName:
         description: 'supertokens-plugin-interface repo owner name'
         default: supertokens 
@@ -29,7 +25,7 @@ jobs:
       - name: Update Java 2
         run: update-alternatives --install "/usr/bin/javac" "javac" "/usr/java/jdk-15.0.1/bin/javac" 2
       - name: Modifying modules.txt in supertokens-root
-        run: cd ../supertokens-root && echo "core,master,${{ github.event.inputs.coreRepoOwnerName }}\nplugin-interface,${{ github.event.inputs.pluginInterfaceBranch }},${{ github.event.inputs.pluginRepoOwnerName }}" > modules.txt
+        run: cd ../supertokens-root && echo "core,master\nplugin-interface,${{ github.event.inputs.pluginInterfaceBranch }},${{ github.event.inputs.pluginRepoOwnerName }}" > modules.txt
       - name: Contents of modules.txt
         run: cat ../supertokens-root/modules.txt
       - name: Running loadModules in supertokens-root
