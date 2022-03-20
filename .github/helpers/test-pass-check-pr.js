@@ -1,6 +1,8 @@
 const { default: axios } = require("axios");
 
 const readmeInstrsLink = "https://github.com/supertokens/supertokens-core/blob/master/CONTRIBUTING.md#using-github-actions";
+const testJobName = "Run tests";
+
 let thisRunId = process.env.RUN_ID;
 
 // this is an auto generated token for this action
@@ -32,7 +34,7 @@ function doJob() {
             for (let i = 0; i < data.workflow_runs.length; i++) {
                 let run = data.workflow_runs[i];
                 if (run.head_sha === currentSHA) {
-                    if (run.name === "Run tests") {
+                    if (run.name === testJobName) {
                         if (run.conclusion === "success") {
                             success = true;
                         } else if (run.conclusion === "failure") {
@@ -63,7 +65,7 @@ function doJob() {
             return;
         }
 
-        console.log("You need to trigger the \"Run tests\" github action and make that succeed.\nSee " + readmeInstrsLink);
+        console.log("You need to trigger the \"" + testJobName + "\" github action and make that succeed.\nSee " + readmeInstrsLink);
         setTimeout(doJob, 30000);
     }).catch((e) => {
         console.log(e);
