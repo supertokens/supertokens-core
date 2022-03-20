@@ -51,6 +51,7 @@ import static io.supertokens.inmemorydb.queries.JWTSigningQueries.getQueryToCrea
 import static io.supertokens.inmemorydb.queries.PasswordlessQueries.*;
 import static io.supertokens.inmemorydb.queries.SessionQueries.getQueryToCreateAccessTokenSigningKeysTable;
 import static io.supertokens.inmemorydb.queries.SessionQueries.getQueryToCreateSessionInfoTable;
+import static io.supertokens.inmemorydb.queries.UserMetadataQueries.getQueryToCreateUserMetadataTable;
 
 public class GeneralQueries {
 
@@ -156,6 +157,11 @@ public class GeneralQueries {
             update(start, getQueryToCreateCodesTable(start), NO_OP_SETTER);
             // index
             update(start, getQueryToCreateCodeCreatedAtIndex(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getUserMetadataTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, getQueryToCreateUserMetadataTable(start), NO_OP_SETTER);
         }
     }
 

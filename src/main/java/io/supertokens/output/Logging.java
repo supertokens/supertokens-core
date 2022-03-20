@@ -38,13 +38,11 @@ public class Logging extends ResourceDistributor.SingletonResource {
 
     private Logging(Main main) {
         this.infoLogger = Config.getConfig(main).getInfoLogPath(main).equals("null")
-                ? createLoggerForConsole(main, "io.supertokens.Info." + main.getProcessId())
-                : createLoggerForFile(main, Config.getConfig(main).getInfoLogPath(main),
-                        "io.supertokens.Info." + main.getProcessId());
+                ? createLoggerForConsole(main, "io.supertokens.Info")
+                : createLoggerForFile(main, Config.getConfig(main).getInfoLogPath(main), "io.supertokens.Info");
         this.errorLogger = Config.getConfig(main).getErrorLogPath(main).equals("null")
-                ? createLoggerForConsole(main, "io.supertokens.Error." + main.getProcessId())
-                : createLoggerForFile(main, Config.getConfig(main).getErrorLogPath(main),
-                        "io.supertokens.Error." + main.getProcessId());
+                ? createLoggerForConsole(main, "io.supertokens.Error")
+                : createLoggerForFile(main, Config.getConfig(main).getErrorLogPath(main), "io.supertokens.Error");
         Storage storage = StorageLayer.getStorage(main);
         if (storage != null) {
             storage.initFileLogging(Config.getConfig(main).getInfoLogPath(main),
@@ -162,7 +160,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
 
     private Logger createLoggerForFile(Main main, String file, String name) {
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
-        LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main);
+        LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main.getProcessId());
         ple.setContext(lc);
         ple.start();
         FileAppender<ILoggingEvent> fileAppender = new FileAppender<>();
@@ -180,7 +178,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
 
     private Logger createLoggerForConsole(Main main, String name) {
         LoggerContext lc = (LoggerContext) LoggerFactory.getILoggerFactory();
-        LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main);
+        LayoutWrappingEncoder ple = new LayoutWrappingEncoder(main.getProcessId());
         ple.setContext(lc);
         ple.start();
         ConsoleAppender<ILoggingEvent> logConsoleAppender = new ConsoleAppender<>();

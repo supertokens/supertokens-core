@@ -19,6 +19,7 @@ package io.supertokens.test;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.supertokens.ProcessState;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.VersionFile;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -50,12 +51,14 @@ public class PluginTest {
 
     @AfterClass
     public static void afterTesting() {
+        StorageLayer.closeWithClearingURLClassLoader();
         Utils.afterTesting();
     }
 
     @Before
     public void beforeEach() {
         Utils.reset();
+        StorageLayer.closeWithClearingURLClassLoader();
     }
 
     @Test

@@ -250,7 +250,8 @@ public class StorageTest {
                 t2.join();
 
                 assertEquals(endValueOfCon1.get(), endValueOfCon2.get());
-                if (Version.getVersion(process.getProcess()).getPluginName().equals("postgresql")) {
+                if (Version.getVersion(process.getProcess()).getPluginName().equals("postgresql")
+                        || Version.getVersion(process.getProcess()).getPluginName().equals("sql")) {
                     // Becasue FOR UPDATE does not wait in Postgresql. Instead if throws an error.
                     assert (numberOfIterations.get() == 1 || numberOfIterations.get() == 0);
                 } else {

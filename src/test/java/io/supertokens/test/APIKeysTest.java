@@ -68,7 +68,6 @@ public class APIKeysTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
     }
 
     // * - don't set API key and check that config.getAPIKeys() returns null

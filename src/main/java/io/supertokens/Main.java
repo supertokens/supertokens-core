@@ -27,14 +27,17 @@ import io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPas
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.inmemorydb.Start;
 import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
+import org.jetbrains.annotations.TestOnly;
 import sun.misc.Unsafe;
 
 import java.io.BufferedWriter;
@@ -214,8 +217,11 @@ public class Main {
                 + Config.getConfig(this).getPort(this) + " with PID: " + ProcessHandle.current().pid());
     }
 
+    @TestOnly
     public void setForceInMemoryDB() {
         if (Main.isTesting) {
+            // if we had the storage layer initialised from a previous test, we close it.
+            StorageLayer.close();
             this.forceInMemoryDB = true;
         } else {
             throw new RuntimeException("Calling testing method in non-testing env");
@@ -226,8 +232,11 @@ public class Main {
         return this.forceInMemoryDB;
     }
 
+    @TestOnly
     public void waitToInitStorageModule() {
         if (Main.isTesting) {
+            // if we had the storage layer initialised from a previous test, we close it.
+            StorageLayer.close();
             synchronized (waitToInitStorageModuleLock) {
                 waitToInitStorageModule = true;
             }
@@ -236,6 +245,7 @@ public class Main {
         }
     }
 
+    @TestOnly
     public void proceedWithInitingStorageModule() {
         if (Main.isTesting) {
             synchronized (waitToInitStorageModuleLock) {
@@ -305,7 +315,28 @@ public class Main {
         try {
             Webserver.getInstance(this).stop();
             Cronjobs.shutdownAndAwaitTermination(this);
-            StorageLayer.getStorage(this).close();
+            if (!Main.isTesting) {
+                StorageLayer.close(this);
+            } else {
+                if (StorageLayer.getStorage(this).getType() == STORAGE_TYPE.NOSQL_1
+                        || StorageLayer.getStorage(this) instanceof Start) {
+                    // we close mongodb storage and in mem db storage during testing everytime as well cause it
+                    // doesn't take time for it to connect during each test.
+                    StorageLayer.close(this);
+                } else {
+                    // We don't close SQL storage layers during testing cause the same storage layer can be resued
+                    // across tests to save testing time.
+
+                    /*
+                     * Instead, during testing, we close it when:
+                     * - We are force using an in mem db
+                     * - Any config.yaml info changes across tests via setValueInConfig and commentConfigValue functions
+                     * - Between tests, if the test had modified the config file (which then got loaded). So we close
+                     * the storage layer in the reset function so that in the next test, the default configs are loaded
+                     * again.
+                     */
+                }
+            }
             if (this.shutdownHook != null) {
                 try {
                     Runtime.getRuntime().removeShutdownHook(this.shutdownHook);
