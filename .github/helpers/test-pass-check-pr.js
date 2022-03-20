@@ -7,7 +7,7 @@ console.log(gitHubToken);
 thisRunId = thisRunId.trim();
 
 function doJob() {
-    console.log("Checking job status...", gitHubToken);
+    console.log("Checking job status...");
     axios.get(`https://api.github.com/repos/${process.env.REPO}/actions/runs?branch=${process.env.BRANCH}`, {
         headers: {
             'Authorization': `token ${gitHubToken}`
