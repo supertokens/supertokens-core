@@ -8,8 +8,8 @@ let thisRunId = process.env.RUN_ID;
 // this is an auto generated token for this action
 // using which the API rate limit is 5000 requests / hour
 let gitHubToken = process.env.GITHUB_TOKEN;
-console.log(gitHubToken);
 thisRunId = thisRunId.trim();
+let startTime = Date.now();
 
 function doJob() {
     console.log("Checking job status...");
@@ -67,7 +67,12 @@ function doJob() {
 
         console.log("You need to trigger the \"" + testJobName + "\" github action and make this job succeed");
         console.log("You can find the github action here: " + linkToJob);
-        setTimeout(doJob, 30000);
+        if ((Date.now() - startTime) > (1.5 * 60 * 1000)) {
+            console.log("Test job not started after waiting for 1.5 mins... Exiting, please rerun this job manually.");
+            process.exit(1);
+        } else {
+            setTimeout(doJob, 30000);
+        }
     }).catch((e) => {
         console.log(e);
         console.log("Error thrown.. waiting for 1 min and trying again.");
