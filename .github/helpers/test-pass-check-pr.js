@@ -1,6 +1,6 @@
 const { default: axios } = require("axios");
 
-const readmeInstrsLink = "https://github.com/supertokens/supertokens-core/blob/master/CONTRIBUTING.md#using-github-actions";
+const linkToJob = "https://github.com/supertokens/supertokens-core/actions/workflows/tests.yml";
 const testJobName = "Run tests";
 
 let thisRunId = process.env.RUN_ID;
@@ -65,7 +65,8 @@ function doJob() {
             return;
         }
 
-        console.log("You need to trigger the \"" + testJobName + "\" github action and make that succeed.\nSee " + readmeInstrsLink);
+        console.log("You need to trigger the \"" + testJobName + "\" github action and make this job succeed");
+        console.log("You can find the github action here: " + linkToJob);
         setTimeout(doJob, 30000);
     }).catch((e) => {
         console.log(e);
