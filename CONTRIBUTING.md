@@ -29,7 +29,7 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 ## Development Setup
 
 ### With Gitpod
-1. Navigate to the `supertokens-root` repository
+1. Navigate to the [supertokens-root](https://github.com/supertokens/supertokens-root) repository
 2. Click on the `Open in Gitpod` button
 
 ### Local Setup Prerequisites
@@ -72,6 +72,8 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 2. After gradle has imported all the dependencies you can start modifying the code  
 
 ## Testing  
+
+### On your local machine
 1. Navigate to the `supertokens-root` repository  
 2. Run all tests   
 `./startTestingEnv`  
@@ -80,6 +82,16 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 ![core tests passing](https://github.com/supertokens/supertokens-logo/blob/master/images/core-tests-passing.png)  
 - plugin tests:  
 ![plugin tests passing](https://github.com/supertokens/supertokens-logo/blob/master/images/plugin-tests-passing.png)
+
+### Using github actions
+1. Go to the supertokens-core repo on github (or your forked version of it).
+2. Navigate to the Actions tab.
+3. Find the action named "Run tests" and navigate to it.
+4. Click on the "Run workflow" button.
+5. Set the config variables in the drop down:
+    - **supertokens-plugin-interface repo owner name**: If you have forked the supertokens-plugin-interface repo, then set the value of this to your github username.
+    - **supertokens-plugin-interface repos branch name**: If the core version you are working on is compatible with a plugin-interface version that is not in the master branch, then set the correct branch name in this value.
+6. Click on "Run workflow".
 
 ## Running the core manually
 1. Run `startTestingEnv --wait` in a terminal, and keep it running

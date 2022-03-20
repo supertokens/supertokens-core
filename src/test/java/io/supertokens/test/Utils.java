@@ -29,8 +29,6 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 import org.mockito.Mockito;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -144,8 +142,8 @@ public abstract class Utils extends Mockito {
         // we close the storage layer since there might be a change in the db related config.
         StorageLayer.close();
 
-        String oldStr = "((#\\s)?)" + key + "(:|((:\\s).+))\n";
-        String newStr = "# " + key + ":";
+        String oldStr = "\n((#\\s)?)" + key + "(:|((:\\s).+))\n";
+        String newStr = "\n# " + key + ":";
 
         StringBuilder originalFileContent = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new FileReader("../config.yaml"))) {
@@ -166,8 +164,8 @@ public abstract class Utils extends Mockito {
         // we close the storage layer since there might be a change in the db related config.
         StorageLayer.close();
 
-        String oldStr = "((#\\s)?)" + key + "(:|((:\\s).+))\n";
-        String newStr = key + ": " + value + "\n";
+        String oldStr = "\n((#\\s)?)" + key + "(:|((:\\s).+))\n";
+        String newStr = "\n" + key + ": " + value + "\n";
         StringBuilder originalFileContent = new StringBuilder();
         try (BufferedReader reader = new BufferedReader(new FileReader("../config.yaml"))) {
             String currentReadingLine = reader.readLine();

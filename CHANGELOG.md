@@ -6,18 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
-### Changes
 
-- Fixes memory leak during testing.
-- Updated plugin interface version
-- Adds usermetadata recipe
-
-### Database changes
-
-- Added `user_metadata` table
-
-- Update CONTRIBUTING.md with instructions for gitpod setup
-
+- Adds github action for running tests against in memory db.
+- Adds github action for checking if "Run tests" action was completed (to run in PRs)
+- Fixes how config values are changed during tests.
+- Adds 60 mins timeout to github action jobs
 ### Changes
 
 - Added support for session grants
@@ -32,11 +25,23 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Added `grant_payload` column to `session_info`
 
+## [3.11.0] - 2022-03-19
+
+### Changes
+
+- Fixes memory leak during testing.
+- Updated plugin interface version
+- Adds usermetadata recipe
+- Update CONTRIBUTING.md with instructions for gitpod setup
+
+### Database changes
+
+- Added `user_metadata` table
+
 ## [3.10.0] - 2022-02-23
 
 - Updated plugin interface version
 - Fixed ResultSet instances to avoid Memory Leaks
-
 
 ## [3.9.1] - 2022-02-16
 
