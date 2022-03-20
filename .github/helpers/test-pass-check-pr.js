@@ -36,6 +36,8 @@ function doJob() {
 
         if (!passed) {
             console.log("You need to trigger the \"Run tests\" github action and make that succeed.\n\nSee https://github.com/supertokens/supertokens-core/blob/master/CONTRIBUTING.md#using-github-actions\n\nOnce successful, re-run this action.")
+            console.log()
+            console.log()
 
             setTimeout(doJob, 15000) // try again after 15 seconds.
         } else {
