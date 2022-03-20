@@ -25,27 +25,21 @@ function doJob() {
             }
         });
 
-        let foundJob = false;
+        let foundActiveJob = false;
         let success = false;
         let failed = false;
         if (currentSHA !== undefined) {
             for (let i = 0; i < data.workflow_runs.length; i++) {
                 let run = data.workflow_runs[i];
                 if (run.head_sha === currentSHA) {
-                    // here we have all the jobs that have run on this commit.
-                    let workflow_id = run.workflow_id;
-                    let workflow = await axios.get(`https://api.github.com/repos/${process.env.REPO}/actions/workflows/${workflow_id}`, {
-                        headers: {
-                            'Authorization': `token ${gitHubToken}`
-                        }
-                    });
-                    let workflowData = workflow.data;
-                    if (workflowData.path === ".github/workflows/tests.yml") {
-                        foundJob = true;
+                    if (run.name === "Run tests") {
                         if (run.conclusion === "success") {
                             success = true;
                         } else if (run.conclusion === "failure") {
                             failed = true;
+                        }
+                        if (run.status === "in_progress") {
+                            foundActiveJob = true;
                         }
                     }
                 }
@@ -55,13 +49,22 @@ function doJob() {
         if (success) {
             console.log("Success!");
             process.exit(0);
-        } else if (failed) {
-            console.log("Test job failed... exiting");
-            process.exit(1);
-        } else if (!foundJob) {
-            console.log("You need to trigger the \"Run tests\" github action and make that succeed.\nSee " + readmeInstrsLink);
+            return;
         }
-        setTimeout(doJob, 30000) // try again after 30 seconds.
+
+        if (foundActiveJob) {
+            console.log("Waiting for job to finish...");
+            return setTimeout(doJob, 30000) // try again after 30 seconds.
+        }
+
+        if (failed) {
+            console.log("Test job failed. Exiting... Please rerun this job manually when you run the test job again...");
+            process.exit(1);
+            return;
+        }
+
+        console.log("You need to trigger the \"Run tests\" github action and make that succeed.\nSee " + readmeInstrsLink);
+        setTimeout(doJob, 30000);
     }).catch((e) => {
         console.log(e);
         console.log("Error thrown.. waiting for 1 min and trying again.");
