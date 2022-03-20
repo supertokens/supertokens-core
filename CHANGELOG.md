@@ -6,10 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
+
 - Adds github action for running tests against in memory db.
 - Adds github action for checking if "Run tests" action was completed (to run in PRs)
+- Fixes how config values are changed during tests.
 
 ## [3.11.0] - 2022-03-19
+
 ### Changes
 
 - Fixes memory leak during testing.
@@ -25,7 +28,6 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Updated plugin interface version
 - Fixed ResultSet instances to avoid Memory Leaks
-
 
 ## [3.9.1] - 2022-02-16
 
