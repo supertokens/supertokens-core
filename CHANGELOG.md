@@ -16,6 +16,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### New config:
 
 - `password_hashing_alg`
+- `argon2_iterations`
+- `argon2_memory_bytes`
+- `argon2_parallelism`
 
 ## [3.11.0] - 2022-03-19
 
