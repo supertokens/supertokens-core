@@ -16,36 +16,39 @@
 
 package io.supertokens.emailpassword;
 
+import de.mkammerer.argon2.Argon2;
+import de.mkammerer.argon2.Argon2Factory;
 import io.supertokens.Main;
+import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
+import org.mindrot.jbcrypt.BCrypt;
 
 public class PasswordHashing {
+
+    final static int ARGON2_SALT_LENGTH = 32;
+    final static int ARGON2_HASH_LENGTH = 64;
+    final static int ARGON2_ITERATIONS = 3; // TODO: make this into config var
+    final static int ARGON2_MEMORY_BYTES = 65536; // 64 mb // TODO: make this into config var
+    final static int ARGON2_PARALLELISM = 1; // TODO: make this into config var
+
     public static String createHashWithSalt(Main main, String password) {
-        String hashedPassword = UpdatableBCrypt.hash(password);
+        if (Config.getConfig(main).getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.BCRYPT) {
+            return BCrypt.hashpw(password, BCrypt.gensalt(11));
+        }
 
-        /*
-         * {
-         * Argon2 argon2 = Argon2Factory.create(
-         * Argon2Factory.Argon2Types.ARGON2id,
-         * 16,
-         * 32);
-         * 
-         * String hashArgon2 = argon2.hash(3, // Number of iterations
-         * 64 * 1024, // 64mb
-         * 1, // how many parallel threads to use
-         * password.toCharArray());
-         * System.out.println("Argon2: " + hashArgon2);
-         * }
-         */
-
-        return hashedPassword;
+        Argon2 argon2 = getArgon2Instance();
+        return argon2.hash(ARGON2_ITERATIONS, ARGON2_MEMORY_BYTES, ARGON2_PARALLELISM, password.toCharArray());
     }
 
     public static boolean verifyPasswordWithHash(String password, String hash) {
-//        Argon2 argon2 = Argon2Factory.create(
-//                Argon2Factory.Argon2Types.ARGON2id,
-//                16,
-//                32);
-//        return argon2.verify(hash, password.toCharArray());
-        return UpdatableBCrypt.verifyHash(password, hash);
+        if (hash.startsWith("$argon2i")) {
+            Argon2 argon2 = getArgon2Instance();
+            return argon2.verify(hash, password.toCharArray());
+        }
+        return BCrypt.checkpw(password, hash);
+    }
+
+    private static Argon2 getArgon2Instance() {
+        return Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2i, ARGON2_SALT_LENGTH, ARGON2_HASH_LENGTH);
     }
 }

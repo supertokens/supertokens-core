@@ -19,7 +19,7 @@ package io.supertokens.test.emailpassword;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.UpdatableBCrypt;
+import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.emailpassword.UserPaginationContainer;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
@@ -44,9 +44,6 @@ import static org.junit.Assert.*;
 
 /*
  * TODO:
- *  - (later) Test UpdatableBCrypt class
- *     - test time taken for hash
- *     - test hashing and verifying with short passwords and > 100 char password
  *  - (later) Test that if there are two transactions running with the same password reset token, only one of them
  *  succeed and the other throws ResetPasswordInvalidTokenException, and that there are no more tokens left for that
  *  user.
@@ -174,7 +171,7 @@ public class EmailPasswordTest {
         UserInfo userInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .getUserInfoUsingEmail(user.email);
         assertNotEquals(userInfo.passwordHash, "validPass123");
-        assertTrue(UpdatableBCrypt.verifyHash("validPass123", userInfo.passwordHash));
+        assertTrue(PasswordHashing.verifyPasswordWithHash("validPass123", userInfo.passwordHash));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -231,7 +228,7 @@ public class EmailPasswordTest {
                 .getUserInfoUsingEmail(user.email);
         assertNotEquals(userInfo.passwordHash, "newValidPass123");
 
-        assertTrue(UpdatableBCrypt.verifyHash("newValidPass123", userInfo.passwordHash));
+        assertTrue(PasswordHashing.verifyPasswordWithHash("newValidPass123", userInfo.passwordHash));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

@@ -80,6 +80,9 @@ public class CoreConfig {
     @JsonProperty
     private boolean disable_telemetry = false;
 
+    @JsonProperty
+    private String password_hashing_alg = "ARGON2";
+
     // TODO: add https in later version
 //	# (OPTIONAL) boolean value (true or false). Set to true if you want to enable https requests to SuperTokens.
 //	# If you are not running SuperTokens within a closed network along with your API process, for 
@@ -96,6 +99,14 @@ public class CoreConfig {
             return "";
         }
         return base_path;
+    }
+
+    public enum PASSWORD_HASHING_ALG {
+        ARGON2, BCRYPT
+    }
+
+    public PASSWORD_HASHING_ALG getPasswordHashingAlg() {
+        return PASSWORD_HASHING_ALG.valueOf(password_hashing_alg);
     }
 
     public int getConfigVersion() {
@@ -271,6 +282,10 @@ public class CoreConfig {
                     }
                 }
             }
+        }
+
+        if (!password_hashing_alg.equals("ARGON2") && !password_hashing_alg.equals("BCRYPT")) {
+            throw new QuitProgramException("'password_hashing_alg' must be one of 'ARGON2' or 'BCRYPT'");
         }
 
         if (base_path != null && !base_path.equals("") && !base_path.equals("/")) {
