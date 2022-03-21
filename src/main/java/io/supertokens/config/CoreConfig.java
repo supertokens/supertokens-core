@@ -83,6 +83,15 @@ public class CoreConfig {
     @JsonProperty
     private String password_hashing_alg = "ARGON2";
 
+    @JsonProperty
+    private int argon2_iterations = 3;
+
+    @JsonProperty
+    private int argon2_memory_bytes = 65536;
+
+    @JsonProperty
+    private int argon2_parallelism = 1;
+
     // TODO: add https in later version
 //	# (OPTIONAL) boolean value (true or false). Set to true if you want to enable https requests to SuperTokens.
 //	# If you are not running SuperTokens within a closed network along with your API process, for 
@@ -103,6 +112,18 @@ public class CoreConfig {
 
     public enum PASSWORD_HASHING_ALG {
         ARGON2, BCRYPT
+    }
+
+    public int getArgon2Iterations() {
+        return argon2_iterations;
+    }
+
+    public int getArgon2MemoryBytes() {
+        return argon2_memory_bytes;
+    }
+
+    public int getArgon2Parallelism() {
+        return argon2_parallelism;
     }
 
     public PASSWORD_HASHING_ALG getPasswordHashingAlg() {
@@ -286,6 +307,18 @@ public class CoreConfig {
 
         if (!password_hashing_alg.equals("ARGON2") && !password_hashing_alg.equals("BCRYPT")) {
             throw new QuitProgramException("'password_hashing_alg' must be one of 'ARGON2' or 'BCRYPT'");
+        }
+
+        if (argon2_iterations <= 0) {
+            throw new QuitProgramException("'argon2_iterations' must be >= 1");
+        }
+
+        if (argon2_parallelism <= 0) {
+            throw new QuitProgramException("'argon2_parallelism' must be >= 1");
+        }
+
+        if (argon2_memory_bytes <= 0) {
+            throw new QuitProgramException("'argon2_memory_bytes' must be >= 1");
         }
 
         if (base_path != null && !base_path.equals("") && !base_path.equals("/")) {

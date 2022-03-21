@@ -27,9 +27,6 @@ public class PasswordHashing {
 
     final static int ARGON2_SALT_LENGTH = 32;
     final static int ARGON2_HASH_LENGTH = 64;
-    final static int ARGON2_ITERATIONS = 3; // TODO: make this into config var
-    final static int ARGON2_MEMORY_BYTES = 65536; // 64 mb // TODO: make this into config var
-    final static int ARGON2_PARALLELISM = 1; // TODO: make this into config var
 
     public static String createHashWithSalt(Main main, String password) {
         if (Config.getConfig(main).getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.BCRYPT) {
@@ -37,7 +34,8 @@ public class PasswordHashing {
         }
 
         Argon2 argon2 = getArgon2Instance();
-        return argon2.hash(ARGON2_ITERATIONS, ARGON2_MEMORY_BYTES, ARGON2_PARALLELISM, password.toCharArray());
+        return argon2.hash(Config.getConfig(main).getArgon2Iterations(), Config.getConfig(main).getArgon2MemoryBytes(),
+                Config.getConfig(main).getArgon2Parallelism(), password.toCharArray());
     }
 
     public static boolean verifyPasswordWithHash(String password, String hash) {

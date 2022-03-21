@@ -87,3 +87,12 @@ disable_telemetry: true
 
 # (OPTIONAL | Default: "ARGON2"). The password hashing algorithm to use. Values are "ARGON2" | "BCRYPT"
 # password_hashing_alg:
+
+# (OPTIONAL | Default: 3). Number of iterations for argon2 password hashing
+# argon2_iterations:
+
+# (OPTIONAL | Default: 65536 (64 mb)). Amount of memory in bytes for argon2 password hashing
+# argon2_memory_bytes:
+
+# (OPTIONAL | Default: 1). Amount of parallelism for argon2 password hashing
+# argon2_parallelism:
