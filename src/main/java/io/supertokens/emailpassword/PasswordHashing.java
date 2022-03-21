@@ -39,7 +39,7 @@ public class PasswordHashing {
     }
 
     public static boolean verifyPasswordWithHash(String password, String hash) {
-        if (hash.startsWith("$argon2i")) { // argon2 hash looks like $argon2i$v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
+        if (hash.startsWith("$argon2id")) { // argon2 hash looks like $argon2id$v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
             Argon2 argon2 = getArgon2Instance();
             return argon2.verify(hash, password.toCharArray());
         }
@@ -47,6 +47,6 @@ public class PasswordHashing {
     }
 
     private static Argon2 getArgon2Instance() {
-        return Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2i, ARGON2_SALT_LENGTH, ARGON2_HASH_LENGTH);
+        return Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id, ARGON2_SALT_LENGTH, ARGON2_HASH_LENGTH);
     }
 }
