@@ -209,8 +209,8 @@ public class PasswordHashingTest {
         CoreConfig config = Config.getConfig(process.getProcess());
 
         assert (config.getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.ARGON2);
-        assert (config.getArgon2Iterations() == 2);
-        assert (config.getArgon2MemoryBytes() == 15360);
+        assert (config.getArgon2Iterations() == 3);
+        assert (config.getArgon2MemoryBytes() == 65536);
         assert (config.getArgon2Parallelism() == 1);
 
         process.kill();

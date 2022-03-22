@@ -85,10 +85,10 @@ public class CoreConfig {
     private String password_hashing_alg = "ARGON2";
 
     @JsonProperty
-    private int argon2_iterations = 2;
+    private int argon2_iterations = 3;
 
     @JsonProperty
-    private int argon2_memory_bytes = 15360; // 15 mb
+    private int argon2_memory_bytes = 65536; // 64 mb
 
     @JsonProperty
     private int argon2_parallelism = 1;
