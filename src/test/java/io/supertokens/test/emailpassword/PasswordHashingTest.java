@@ -22,7 +22,10 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
+import io.supertokens.inmemorydb.Start;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import org.junit.AfterClass;
@@ -30,6 +33,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.Assert.*;
 
@@ -55,6 +63,10 @@ public class PasswordHashingTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         EmailPassword.signUp(process.getProcess(), "test@example.com", "somePassword");
 
@@ -82,6 +94,10 @@ public class PasswordHashingTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         EmailPassword.signUp(process.getProcess(), "test@example.com", "somePassword");
 
@@ -111,6 +127,10 @@ public class PasswordHashingTest {
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
 
             hash = PasswordHashing.createHashWithSalt(process.getProcess(), "somePassword");
 
@@ -147,6 +167,10 @@ public class PasswordHashingTest {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
             hash = PasswordHashing.createHashWithSalt(process.getProcess(), "somePassword");
 
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
@@ -177,11 +201,16 @@ public class PasswordHashingTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         CoreConfig config = Config.getConfig(process.getProcess());
 
         assert (config.getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.ARGON2);
-        assert (config.getArgon2Iterations() == 3);
-        assert (config.getArgon2MemoryBytes() == 65536);
+        assert (config.getArgon2Iterations() == 2);
+        assert (config.getArgon2MemoryBytes() == 15360);
         assert (config.getArgon2Parallelism() == 1);
 
         process.kill();
@@ -258,6 +287,10 @@ public class PasswordHashingTest {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
             hash = PasswordHashing.createHashWithSalt(process.getProcess(), "somePassword");
 
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
@@ -296,6 +329,10 @@ public class PasswordHashingTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
@@ -321,6 +358,10 @@ public class PasswordHashingTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
@@ -350,6 +391,10 @@ public class PasswordHashingTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
@@ -374,6 +419,10 @@ public class PasswordHashingTest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "t@example.com", "somePass");
 
@@ -400,11 +449,54 @@ public class PasswordHashingTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         String hash = PasswordHashing.createHashWithSalt(process.getProcess(), "somePass");
         String hash2 = PasswordHashing.createHashWithSalt(process.getProcess(), "somePass");
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
 
         assert (!hash.equals(hash2));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void parallelSignUpSignIn() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL
+                || StorageLayer.getStorage(process.getProcess()) instanceof Start) {
+            // if this is in mem, we do not want to run this test as sqlite locks the entire table and throws
+            // error in the threads below.
+            return;
+        }
+
+        AtomicBoolean success = new AtomicBoolean(true);
+
+        ExecutorService ex = Executors.newFixedThreadPool(1000);
+        for (int i = 0; i < 50; i++) {
+            int y = i;
+            ex.execute(() -> {
+                try {
+                    EmailPassword.signUp(process.getProcess(), "test@example.com" + y, "somePassword" + y);
+                    EmailPassword.signIn(process.getProcess(), "test@example.com" + y, "somePassword" + y);
+                } catch (Exception e) {
+                    success.set(false);
+                }
+            });
+        }
+
+        ex.shutdown();
+
+        ex.awaitTermination(2, TimeUnit.MINUTES);
+
+        assert (success.get());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

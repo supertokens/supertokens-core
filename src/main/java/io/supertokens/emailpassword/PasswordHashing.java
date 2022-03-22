@@ -26,8 +26,8 @@ import org.mindrot.jbcrypt.BCrypt;
 
 public class PasswordHashing {
 
-    final static int ARGON2_SALT_LENGTH = 32;
-    final static int ARGON2_HASH_LENGTH = 64;
+    final static int ARGON2_SALT_LENGTH = 16;
+    final static int ARGON2_HASH_LENGTH = 32;
 
     // argon2 instances are thread safe: https://github.com/phxql/argon2-jvm/issues/35
     private static Argon2 argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id, ARGON2_SALT_LENGTH,
