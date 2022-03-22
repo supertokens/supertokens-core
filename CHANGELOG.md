@@ -19,6 +19,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `argon2_iterations`
 - `argon2_memory_bytes`
 - `argon2_parallelism`
+- `argon2_hashing_pool_size`
 
 ## [3.11.0] - 2022-03-19
 

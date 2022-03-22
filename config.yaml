@@ -94,5 +94,9 @@ core_config_version: 0
 # (OPTIONAL | Default: 65536 (64 mb)). Amount of memory in bytes for argon2 password hashing
 # argon2_memory_bytes:
 
-# (OPTIONAL | Default: 1). Amount of parallelism for argon2 password hashing
+# (OPTIONAL | Default: 4). Amount of parallelism for argon2 password hashing
 # argon2_parallelism:
+
+# (OPTIONAL | Default: 10). Number of concurrent argon2 hashes that can happen at the same time for sign up or sign
+# in requests.
+# argon2_hashing_pool_size:

@@ -91,7 +91,10 @@ public class CoreConfig {
     private int argon2_memory_bytes = 65536; // 64 mb
 
     @JsonProperty
-    private int argon2_parallelism = 1;
+    private int argon2_parallelism = 4;
+
+    @JsonProperty
+    private int argon2_hashing_pool_size = 10;
 
     // TODO: add https in later version
 //	# (OPTIONAL) boolean value (true or false). Set to true if you want to enable https requests to SuperTokens.
@@ -113,6 +116,10 @@ public class CoreConfig {
 
     public enum PASSWORD_HASHING_ALG {
         ARGON2, BCRYPT
+    }
+
+    public int getArgon2HashingPoolSize() {
+        return argon2_hashing_pool_size;
     }
 
     public int getArgon2Iterations() {
@@ -325,6 +332,10 @@ public class CoreConfig {
 
         if (argon2_memory_bytes <= 0) {
             throw new QuitProgramException("'argon2_memory_bytes' must be >= 1");
+        }
+
+        if (argon2_hashing_pool_size <= 0) {
+            throw new QuitProgramException("'argon2_hashing_pool_size' must be >= 1");
         }
 
         if (base_path != null && !base_path.equals("") && !base_path.equals("/")) {

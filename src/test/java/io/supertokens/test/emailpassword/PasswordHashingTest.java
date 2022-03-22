@@ -25,6 +25,7 @@ import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -37,7 +38,7 @@ import org.junit.rules.TestRule;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -211,7 +212,8 @@ public class PasswordHashingTest {
         assert (config.getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.ARGON2);
         assert (config.getArgon2Iterations() == 3);
         assert (config.getArgon2MemoryBytes() == 65536);
-        assert (config.getArgon2Parallelism() == 1);
+        assert (config.getArgon2Parallelism() == 4);
+        assert (config.getArgon2HashingPoolSize() == 10);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -276,6 +278,21 @@ public class PasswordHashingTest {
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
+
+        Utils.reset();
+
+        {
+            String[] args = { "../" };
+            Utils.setValueInConfig("argon2_hashing_pool_size", "-1");
+
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+            assertNotNull(e);
+            assertEquals(e.exception.getMessage(), "'argon2_hashing_pool_size' must be >= 1");
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
     }
 
     @Test
@@ -303,6 +320,7 @@ public class PasswordHashingTest {
             Utils.setValueInConfig("argon2_memory_bytes", "100");
             Utils.setValueInConfig("argon2_parallelism", "2");
             Utils.setValueInConfig("argon2_iterations", "10");
+            Utils.setValueInConfig("argon2_hashing_pool_size", "15");
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -314,6 +332,7 @@ public class PasswordHashingTest {
             assert (newHash.contains("m=100"));
             assert (newHash.contains("p=2"));
             assert (newHash.contains("t=10"));
+            assert (Config.getConfig(process.getProcess()).getArgon2HashingPoolSize() == 15);
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -477,17 +496,27 @@ public class PasswordHashingTest {
             return;
         }
 
-        AtomicBoolean success = new AtomicBoolean(true);
+        AtomicInteger counter = new AtomicInteger(0);
 
         ExecutorService ex = Executors.newFixedThreadPool(1000);
-        for (int i = 0; i < 50; i++) {
-            int y = i;
+        int numberOfThreads = 500;
+        for (int i = 0; i < numberOfThreads; i++) {
+            int finalI = i;
             ex.execute(() -> {
-                try {
-                    EmailPassword.signUp(process.getProcess(), "test@example.com" + y, "somePassword" + y);
-                    EmailPassword.signIn(process.getProcess(), "test@example.com" + y, "somePassword" + y);
-                } catch (Exception e) {
-                    success.set(false);
+                int localCounter = 0;
+                while (true) {
+                    String uniqueEmail = "test@example.com" + finalI + "" + localCounter;
+                    localCounter++;
+                    try {
+                        EmailPassword.signUp(process.getProcess(), uniqueEmail, "somePassword" + finalI);
+                        EmailPassword.signIn(process.getProcess(), uniqueEmail, "somePassword" + finalI);
+                        counter.incrementAndGet();
+                        break;
+                    } catch (StorageQueryException e) {
+                        // we try again as this may happen cause of connection timeout in db layer.
+                    } catch (Exception ignored) {
+                        break;
+                    }
                 }
             });
         }
@@ -496,7 +525,7 @@ public class PasswordHashingTest {
 
         ex.awaitTermination(2, TimeUnit.MINUTES);
 
-        assert (success.get());
+        assert (counter.get() == numberOfThreads);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

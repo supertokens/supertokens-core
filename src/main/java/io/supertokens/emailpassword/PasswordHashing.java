@@ -28,6 +28,7 @@ import org.mindrot.jbcrypt.BCrypt;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class PasswordHashing extends ResourceDistributor.SingletonResource {
 
@@ -38,8 +39,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     final Main main;
 
     private PasswordHashing(Main main) {
-        int poolSize = 10; // TODO: get pool size from main
-        executorService = Executors.newFixedThreadPool(poolSize);
+        executorService = Executors.newFixedThreadPool(Config.getConfig(main).getArgon2HashingPoolSize());
         this.main = main;
     }
 
@@ -65,14 +65,60 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         }
 
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON, null);
-        return argon2.hash(Config.getConfig(main).getArgon2Iterations(), Config.getConfig(main).getArgon2MemoryBytes(),
-                Config.getConfig(main).getArgon2Parallelism(), password.toCharArray());
+
+        final String[] hashResult = { "" };
+
+        Object lock = new Object();
+        AtomicBoolean done = new AtomicBoolean(false);
+
+        executorService.execute(() -> {
+            hashResult[0] = argon2.hash(Config.getConfig(main).getArgon2Iterations(),
+                    Config.getConfig(main).getArgon2MemoryBytes(), Config.getConfig(main).getArgon2Parallelism(),
+                    password.toCharArray());
+            synchronized (lock) {
+                done.set(true);
+                lock.notifyAll();
+            }
+        });
+
+        synchronized (lock) {
+            while (!done.get()) {
+                try {
+                    lock.wait();
+                } catch (InterruptedException ignored) {
+                }
+            }
+        }
+
+        return hashResult[0];
     }
 
     public boolean verifyPasswordWithHash(String password, String hash) {
         if (hash.startsWith("$argon2id")) { // argon2 hash looks like $argon2id$v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON, null);
-            return argon2.verify(hash, password.toCharArray());
+
+            Object lock = new Object();
+            final Boolean[] result = { false };
+            AtomicBoolean done = new AtomicBoolean(false);
+
+            executorService.execute(() -> {
+                result[0] = argon2.verify(hash, password.toCharArray());
+                synchronized (lock) {
+                    done.set(true);
+                    lock.notifyAll();
+                }
+            });
+
+            synchronized (lock) {
+                while (!done.get()) {
+                    try {
+                        lock.wait();
+                    } catch (InterruptedException ignored) {
+                    }
+                }
+            }
+
+            return result[0];
         }
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT, null);
         return BCrypt.checkpw(password, hash);
