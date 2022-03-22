@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
@@ -128,6 +129,11 @@ public class CoreConfig {
 
     public PASSWORD_HASHING_ALG getPasswordHashingAlg() {
         return PASSWORD_HASHING_ALG.valueOf(password_hashing_alg);
+    }
+
+    @TestOnly
+    public void setPasswordHashingAlg(PASSWORD_HASHING_ALG algo) {
+        this.password_hashing_alg = algo.toString();
     }
 
     public int getConfigVersion() {

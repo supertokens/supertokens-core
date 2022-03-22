@@ -171,7 +171,7 @@ public class EmailPasswordTest {
         UserInfo userInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .getUserInfoUsingEmail(user.email);
         assertNotEquals(userInfo.passwordHash, "validPass123");
-        assertTrue(PasswordHashing.verifyPasswordWithHash("validPass123", userInfo.passwordHash));
+        assertTrue(PasswordHashing.verifyPasswordWithHash(process.getProcess(), "validPass123", userInfo.passwordHash));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -228,7 +228,8 @@ public class EmailPasswordTest {
                 .getUserInfoUsingEmail(user.email);
         assertNotEquals(userInfo.passwordHash, "newValidPass123");
 
-        assertTrue(PasswordHashing.verifyPasswordWithHash("newValidPass123", userInfo.passwordHash));
+        assertTrue(
+                PasswordHashing.verifyPasswordWithHash(process.getProcess(), "newValidPass123", userInfo.passwordHash));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

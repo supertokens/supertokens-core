@@ -86,7 +86,7 @@ public class EmailPassword {
         }
 
         try {
-            if (!PasswordHashing.verifyPasswordWithHash(password, user.passwordHash)) {
+            if (!PasswordHashing.verifyPasswordWithHash(main, password, user.passwordHash)) {
                 throw new WrongCredentialsException();
             }
         } catch (WrongCredentialsException e) {
