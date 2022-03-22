@@ -57,7 +57,7 @@ public class EmailPassword {
     public static UserInfo signUp(Main main, @Nonnull String email, @Nonnull String password)
             throws DuplicateEmailException, StorageQueryException {
 
-        String hashedPassword = PasswordHashing.createHashWithSalt(main, password);
+        String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
 
         while (true) {
 
@@ -86,7 +86,7 @@ public class EmailPassword {
         }
 
         try {
-            if (!PasswordHashing.verifyPasswordWithHash(main, password, user.passwordHash)) {
+            if (!PasswordHashing.getInstance(main).verifyPasswordWithHash(password, user.passwordHash)) {
                 throw new WrongCredentialsException();
             }
         } catch (WrongCredentialsException e) {
@@ -136,7 +136,7 @@ public class EmailPassword {
             StorageTransactionLogicException {
 
         String hashedToken = Utils.hashSHA256(token);
-        String hashedPassword = PasswordHashing.createHashWithSalt(main, password);
+        String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
 
         EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
 
@@ -207,7 +207,7 @@ public class EmailPassword {
                 }
 
                 if (password != null) {
-                    String hashedPassword = PasswordHashing.createHashWithSalt(main, password);
+                    String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
                     storage.updateUsersPassword_Transaction(transaction, userId, hashedPassword);
                 }
 

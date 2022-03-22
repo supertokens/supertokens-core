@@ -26,6 +26,7 @@ import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPas
 import io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPasswordlessDevices;
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.cronjobs.telemetry.Telemetry;
+import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.jwt.JWTSigningKey;
@@ -205,6 +206,9 @@ public class Main {
             Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.getInstance(this));
         }
 
+        // creates password hashing pool
+        PasswordHashing.init(this);
+
         // start web server to accept incoming traffic
         Webserver.getInstance(this).start();
 
@@ -314,6 +318,7 @@ public class Main {
         Logging.info(this, "Stopping SuperTokens...");
         try {
             Webserver.getInstance(this).stop();
+            PasswordHashing.getInstance(this).close();
             Cronjobs.shutdownAndAwaitTermination(this);
             if (!Main.isTesting) {
                 StorageLayer.close(this);

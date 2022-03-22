@@ -132,7 +132,7 @@ public class PasswordHashingTest {
                 return;
             }
 
-            hash = PasswordHashing.createHashWithSalt(process.getProcess(), "somePassword");
+            hash = PasswordHashing.getInstance(process.getProcess()).createHashWithSalt("somePassword");
 
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
 
@@ -147,7 +147,7 @@ public class PasswordHashingTest {
             assert (Config.getConfig(process.getProcess())
                     .getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.ARGON2);
 
-            assert (PasswordHashing.verifyPasswordWithHash(process.getProcess(), "somePassword", hash));
+            assert (PasswordHashing.getInstance(process.getProcess()).verifyPasswordWithHash("somePassword", hash));
 
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT));
 
@@ -171,7 +171,7 @@ public class PasswordHashingTest {
                 return;
             }
 
-            hash = PasswordHashing.createHashWithSalt(process.getProcess(), "somePassword");
+            hash = PasswordHashing.getInstance(process.getProcess()).createHashWithSalt("somePassword");
 
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
 
@@ -186,7 +186,7 @@ public class PasswordHashingTest {
             assert (Config.getConfig(process.getProcess())
                     .getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.BCRYPT);
 
-            PasswordHashing.verifyPasswordWithHash(process.getProcess(), "somePassword", hash);
+            PasswordHashing.getInstance(process.getProcess()).verifyPasswordWithHash("somePassword", hash);
 
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON));
 
@@ -291,7 +291,7 @@ public class PasswordHashingTest {
                 return;
             }
 
-            hash = PasswordHashing.createHashWithSalt(process.getProcess(), "somePassword");
+            hash = PasswordHashing.getInstance(process.getProcess()).createHashWithSalt("somePassword");
 
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
 
@@ -306,11 +306,11 @@ public class PasswordHashingTest {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            assert (PasswordHashing.verifyPasswordWithHash(process.getProcess(), "somePassword", hash));
+            assert (PasswordHashing.getInstance(process.getProcess()).verifyPasswordWithHash("somePassword", hash));
 
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON));
 
-            String newHash = PasswordHashing.createHashWithSalt(process.getProcess(), "somePassword");
+            String newHash = PasswordHashing.getInstance(process.getProcess()).createHashWithSalt("somePassword");
             assert (newHash.contains("m=100"));
             assert (newHash.contains("p=2"));
             assert (newHash.contains("t=10"));
@@ -453,8 +453,8 @@ public class PasswordHashingTest {
             return;
         }
 
-        String hash = PasswordHashing.createHashWithSalt(process.getProcess(), "somePass");
-        String hash2 = PasswordHashing.createHashWithSalt(process.getProcess(), "somePass");
+        String hash = PasswordHashing.getInstance(process.getProcess()).createHashWithSalt("somePass");
+        String hash2 = PasswordHashing.getInstance(process.getProcess()).createHashWithSalt("somePass");
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
 
         assert (!hash.equals(hash2));
