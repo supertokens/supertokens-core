@@ -99,7 +99,7 @@ public class SessionTest3 {
 
         try {
             Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken,
-                    false);
+                    false, true);
             fail();
         } catch (UnauthorisedException e) {
 
@@ -159,7 +159,7 @@ public class SessionTest3 {
 
         try {
             Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken,
-                    false);
+                    false, true);
             fail();
         } catch (UnauthorisedException ignored) {
 

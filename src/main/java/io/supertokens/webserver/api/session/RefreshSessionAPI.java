@@ -60,11 +60,14 @@ public class RefreshSessionAPI extends WebserverAPI {
         assert enableAntiCsrf != null;
         assert refreshToken != null;
 
+        boolean supportsSessionGrants = !Utils.isOlderVersionThan(super.getParsedVersionFromRequest(req),
+                Utils.VER_2_13);
+
         try {
             SessionInformationHolder sessionInfo = Session.refreshSession(main, refreshToken, antiCsrfToken,
-                    enableAntiCsrf);
+                    enableAntiCsrf, supportsSessionGrants);
             JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
-            if (Utils.isOlderVersionThan(super.getParsedVersionFromRequest(req), Utils.VER_2_13)) {
+            if (!supportsSessionGrants) {
                 result.getAsJsonObject("session").remove("grants");
             }
 

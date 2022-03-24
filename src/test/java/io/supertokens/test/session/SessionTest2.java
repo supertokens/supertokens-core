@@ -89,7 +89,7 @@ public class SessionTest2 {
         assert sessionInfo.accessToken != null;
 
         SessionInformationHolder newRefreshedSession = Session.refreshSession(main, sessionInfo.refreshToken.token,
-                sessionInfo.antiCsrfToken, false);
+                sessionInfo.antiCsrfToken, false, true);
         assert newRefreshedSession.refreshToken != null;
         assert newRefreshedSession.accessToken != null;
 
@@ -99,7 +99,7 @@ public class SessionTest2 {
         assertNotEquals(sessionObj.accessToken.token, newRefreshedSession.accessToken.token);
 
         try {
-            Session.refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
+            Session.refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
         } catch (TokenTheftDetectedException e) {
             assertEquals(e.sessionHandle, sessionInfo.session.handle);
             assertEquals(e.userId, sessionInfo.session.userId);
@@ -135,17 +135,17 @@ public class SessionTest2 {
         assert sessionInfo.accessToken != null;
 
         SessionInformationHolder newRefreshedSession1 = Session.refreshSession(main, sessionInfo.refreshToken.token,
-                sessionInfo.antiCsrfToken, false);
+                sessionInfo.antiCsrfToken, false, true);
         assert newRefreshedSession1.refreshToken != null;
         assert newRefreshedSession1.accessToken != null;
 
         SessionInformationHolder newRefreshedSession2 = Session.refreshSession(main,
-                newRefreshedSession1.refreshToken.token, newRefreshedSession1.antiCsrfToken, false);
+                newRefreshedSession1.refreshToken.token, newRefreshedSession1.antiCsrfToken, false, true);
         assert newRefreshedSession2.refreshToken != null;
         assert newRefreshedSession2.accessToken != null;
 
         try {
-            Session.refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
+            Session.refreshSession(main, sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
         } catch (TokenTheftDetectedException e) {
             assertEquals(e.sessionHandle, sessionInfo.session.handle);
             assertEquals(e.userId, sessionInfo.session.userId);
@@ -228,7 +228,7 @@ public class SessionTest2 {
 
         try {
             Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken,
-                    false);
+                    false, true);
             fail();
         } catch (UnauthorisedException e) {
 

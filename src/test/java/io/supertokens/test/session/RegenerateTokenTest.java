@@ -80,7 +80,7 @@ public class RegenerateTokenTest {
         JsonObject newGrantPayload = Utils.getExampleGrantPayload(1);
 
         SessionInformationHolder newSessionInfo = Session.regenerateToken(process.getProcess(),
-                sessionInfo.accessToken.token, newUserDataInJWT, newGrantPayload);
+                sessionInfo.accessToken.token, newUserDataInJWT, newGrantPayload, true);
 
         // Verify
         assert newSessionInfo.accessToken != null;
@@ -137,7 +137,7 @@ public class RegenerateTokenTest {
         newUserDataInJWT.addProperty("key2", "value2");
 
         SessionInformationHolder newSessionInfo = Session.regenerateToken(process.getProcess(),
-                sessionInfo.accessToken.token, newUserDataInJWT, null);
+                sessionInfo.accessToken.token, newUserDataInJWT, null, true);
 
         // Verify
         assert newSessionInfo.accessToken != null;
@@ -146,6 +146,117 @@ public class RegenerateTokenTest {
 
         // Check that grant payload didn't change
         assertEquals(getSessionResponse.session.grants, initialGrantPayload);
+        // check userData and lmrt is different.
+        assertEquals(getSessionResponse.session.userDataInJWT, newUserDataInJWT);
+
+        AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                newSessionInfo.accessToken.token, false);
+        assertNotEquals(accessTokenInfoBefore.lmrt, accessTokenInfoAfter.lmrt);
+
+        assertNotEquals(accessTokenInfoAfter.userData, accessTokenInfoBefore.userData);
+        assertEquals(accessTokenInfoAfter.grants, accessTokenInfoBefore.grants);
+
+        process.kill();
+        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED);
+    }
+
+    // -> create V2 session -> verify userData exists
+    // -> regenerate with different userData & no grant update not allowing upgrade -> verify
+    // -> check userData and lmrt are different but grants are the same
+    @Test
+    public void testCrateV2SessionWithUserDataRegenerateWithOnlyUserDataUpdateAndCheck() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // - create session with some data
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                null, userDataInDatabase, false);
+
+        assert sessionInfo.accessToken != null;
+        AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                sessionInfo.accessToken.token, false);
+
+        assertEquals(accessTokenInfoBefore.userData, userDataInJWT);
+        assertEquals(accessTokenInfoBefore.grants, null); // Also checks that it's V2
+
+        // Check that userData payload updated
+        JsonObject newUserDataInJWT = new JsonObject();
+        newUserDataInJWT.addProperty("key2", "value2");
+
+        SessionInformationHolder newSessionInfo = Session.regenerateToken(process.getProcess(),
+                sessionInfo.accessToken.token, newUserDataInJWT, null, false);
+
+        // Verify
+        assert newSessionInfo.accessToken != null;
+        SessionInformationHolder getSessionResponse = Session.getSession(process.getProcess(),
+                newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
+
+        // Check that grant payload didn't change
+        assertEquals(accessTokenInfoBefore.grants, null); // Also checks that it's V2
+        // check userData and lmrt is different.
+        assertEquals(getSessionResponse.session.userDataInJWT, newUserDataInJWT);
+
+        AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                newSessionInfo.accessToken.token, false);
+        assertNotEquals(accessTokenInfoBefore.lmrt, accessTokenInfoAfter.lmrt);
+
+        assertNotEquals(accessTokenInfoAfter.userData, accessTokenInfoBefore.userData);
+        assertEquals(accessTokenInfoAfter.grants, accessTokenInfoBefore.grants);
+
+        process.kill();
+        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED);
+    }
+
+    // -> create V2 session -> verify userData exists
+    // -> regenerate with different userData & no grant update allowing upgrade -> verify
+    // -> check userData and lmrt are different but grants are the same
+    @Test
+    public void testCrateV2SessionWithUserDataRegenerateWithOnlyUserDataUpdateAndUpgrade() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // - create session with some data
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                null, userDataInDatabase, false);
+
+        assert sessionInfo.accessToken != null;
+        AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                sessionInfo.accessToken.token, true);
+
+        assertEquals(accessTokenInfoBefore.userData, userDataInJWT);
+        assertEquals(accessTokenInfoBefore.grants, null); // Also checks that it's V2
+
+        // Check that userData payload updated
+        JsonObject newUserDataInJWT = new JsonObject();
+        newUserDataInJWT.addProperty("key2", "value2");
+
+        SessionInformationHolder newSessionInfo = Session.regenerateToken(process.getProcess(),
+                sessionInfo.accessToken.token, newUserDataInJWT, null, false);
+
+        // Verify
+        assert newSessionInfo.accessToken != null;
+        SessionInformationHolder getSessionResponse = Session.getSession(process.getProcess(),
+                newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
+
+        // Check that grant payload didn't change
+        assertEquals(accessTokenInfoBefore.grants, new JsonObject()); // Also checks that it's V3 with empty grants
+
         // check userData and lmrt is different.
         assertEquals(getSessionResponse.session.userDataInJWT, newUserDataInJWT);
 
@@ -192,7 +303,7 @@ public class RegenerateTokenTest {
         JsonObject newGrantPayload = Utils.getExampleGrantPayload(1);
 
         SessionInformationHolder newSessionInfo = Session.regenerateToken(process.getProcess(),
-                sessionInfo.accessToken.token, null, newGrantPayload);
+                sessionInfo.accessToken.token, null, newGrantPayload, true);
 
         // Verify
         assert newSessionInfo.accessToken != null;
@@ -248,7 +359,7 @@ public class RegenerateTokenTest {
         JsonObject emptyPayload = new JsonObject();
 
         SessionInformationHolder newSessionInfo = Session.regenerateToken(process.getProcess(),
-                sessionInfo.accessToken.token, emptyPayload, emptyPayload);
+                sessionInfo.accessToken.token, emptyPayload, emptyPayload, true);
 
         // Verify
         assert newSessionInfo.accessToken != null;
@@ -298,7 +409,7 @@ public class RegenerateTokenTest {
         // regenerate with no payload
 
         SessionInformationHolder newSessionInfo = Session.regenerateToken(process.getProcess(),
-                sessionInfo.accessToken.token, null, null);
+                sessionInfo.accessToken.token, null, null, true);
 
         // Verify
 
@@ -363,13 +474,13 @@ public class RegenerateTokenTest {
         JsonObject grantPayload = Utils.getExampleGrantPayload(1);
 
         SessionInformationHolder newSessionInfo = Session.regenerateToken(process.getProcess(),
-                sessionInfo.accessToken.token, newUserDataInJWT, grantPayload);
+                sessionInfo.accessToken.token, newUserDataInJWT, grantPayload, true);
 
         assertNull(newSessionInfo.accessToken);
 
         assert sessionInfo.refreshToken != null;
         SessionInformationHolder refreshSessionInfo = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
 
         // Verify
         assert refreshSessionInfo.accessToken != null;
@@ -435,7 +546,7 @@ public class RegenerateTokenTest {
         JsonObject grantPayload = Utils.getExampleGrantPayload(1);
 
         SessionInformationHolder regenerateSessionInfo = Session.regenerateToken(process.getProcess(),
-                sessionInfo.accessToken.token, newUserDataInJWT, grantPayload);
+                sessionInfo.accessToken.token, newUserDataInJWT, grantPayload, true);
 
         assertEquals(regenerateSessionInfo.session.userDataInJWT, newUserDataInJWT);
         assertEquals(regenerateSessionInfo.session.grants, grantPayload);
@@ -443,7 +554,7 @@ public class RegenerateTokenTest {
         // refresh
         assert sessionInfo.refreshToken != null;
         SessionInformationHolder refreshSessionInfo = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
 
         // Verify
         assert refreshSessionInfo.accessToken != null;
@@ -505,7 +616,7 @@ public class RegenerateTokenTest {
         try {
             assert sessionInfo.accessToken != null;
             Session.regenerateToken(process.getProcess(), sessionInfo.accessToken.token, newUserDataInJWT,
-                    newGrantPayload);
+                    newGrantPayload, true);
             fail();
         } catch (UnauthorisedException e) {
             assertEquals(e.getMessage(), "Session does not exist.");
@@ -562,7 +673,7 @@ public class RegenerateTokenTest {
         // refresh
         assert sessionInfo.refreshToken != null;
         SessionInformationHolder refreshSessionInfo = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
 
         assert refreshSessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoAfterRefresh = AccessToken

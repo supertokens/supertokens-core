@@ -134,6 +134,7 @@ public class RefreshSessionAPITest2_13 {
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
         assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject().toString(),
                 userDataInJWT.toString());
+        System.out.println(response.get("session"));
         if (grantPayload != null) {
             assertEquals(response.get("session").getAsJsonObject().get("grants").getAsJsonObject().toString(),
                     grantPayload.toString());

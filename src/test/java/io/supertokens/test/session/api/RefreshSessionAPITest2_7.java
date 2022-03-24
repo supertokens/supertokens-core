@@ -573,12 +573,11 @@ public class RefreshSessionAPITest2_7 {
 
         String token = response.get("accessToken").getAsJsonObject().get("token").getAsString();
         String[] splittedToken = token.split("\\.");
+
         JsonObject payload = (JsonObject) new JsonParser()
                 .parse(io.supertokens.utils.Utils.convertFromBase64(splittedToken[1]));
         assertTrue(payload.has("userData"));
-        // TODO(mihaly): should this be here? Refresh upgrades to the newest token version even if the cdi version is
-        // old
-        assertTrue(payload.has("grants"));
+        assertTrue(!payload.has("grants"));
 
         assertTrue(response.get("refreshToken").getAsJsonObject().has("token"));
         assertTrue(response.get("refreshToken").getAsJsonObject().has("expiry"));

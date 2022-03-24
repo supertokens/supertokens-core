@@ -68,6 +68,7 @@ public class JWTDataTest {
 
         // verify to see payload is proper
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
+        assertEquals(sessionInfo.session.grants, grantPayload);
 
         // change JWT payload using session handle
         JsonObject newUserDataInJwt = new JsonObject();
@@ -75,7 +76,6 @@ public class JWTDataTest {
         Session.updateSession(process.getProcess(), sessionInfo.session.handle, null, newUserDataInJwt, null, null);
 
         // check that this change is reflected
-
         assertEquals(Session.getJWTData(process.getProcess(), sessionInfo.session.handle), newUserDataInJwt);
 
         process.kill();
@@ -336,7 +336,7 @@ public class JWTDataTest {
         assert sessionInfo.refreshToken != null;
 
         SessionInformationHolder refreshedSession = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
 
         assert refreshedSession.accessToken != null;
 
@@ -388,7 +388,7 @@ public class JWTDataTest {
         assert sessionInfo.refreshToken != null;
 
         SessionInformationHolder refreshedSession = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
 
         assert refreshedSession.accessToken != null;
 
@@ -441,7 +441,7 @@ public class JWTDataTest {
         JsonObject newUserDataInJWT = new JsonObject();
         newUserDataInJWT.addProperty("key", "value2");
         sessionInfo = Session.regenerateToken(process.getProcess(), sessionInfo.accessToken.token, newUserDataInJWT,
-                null);
+                null, true);
 
         assert sessionInfo.accessToken != null;
 
