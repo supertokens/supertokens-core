@@ -23,6 +23,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
+import org.jetbrains.annotations.TestOnly;
 import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.concurrent.BlockingQueue;
@@ -100,5 +101,10 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         }
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT, null);
         return BCrypt.checkpw(password, hash);
+    }
+
+    @TestOnly
+    public int getBlockedQueueSize() {
+        return this.boundedQueue.size();
     }
 }

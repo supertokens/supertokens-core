@@ -38,6 +38,7 @@ import org.junit.rules.TestRule;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
@@ -588,6 +589,9 @@ public class PasswordHashingTest {
 
         AtomicInteger counter = new AtomicInteger(0);
 
+        assert (PasswordHashing.getInstance(process.getProcess()).getBlockedQueueSize() == 0);
+        AtomicBoolean reachedQueueMaxSize = new AtomicBoolean(false);
+
         ExecutorService ex = Executors.newFixedThreadPool(1000);
         int numberOfThreads = 500;
         for (int i = 0; i < numberOfThreads; i++) {
@@ -601,6 +605,12 @@ public class PasswordHashingTest {
                         EmailPassword.signUp(process.getProcess(), uniqueEmail, "somePassword" + finalI);
                         EmailPassword.signIn(process.getProcess(), uniqueEmail, "somePassword" + finalI);
                         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
+                        int queueSize = PasswordHashing.getInstance(process.getProcess()).getBlockedQueueSize();
+                        int maxQueueSize = Config.getConfig(process.getProcess()).getArgon2HashingPoolSize();
+                        assert (queueSize <= maxQueueSize);
+                        if (queueSize == maxQueueSize || queueSize + 1 == maxQueueSize) {
+                            reachedQueueMaxSize.set(true);
+                        }
                         counter.incrementAndGet();
                         break;
                     } catch (StorageQueryException e) {
@@ -617,6 +627,7 @@ public class PasswordHashingTest {
         ex.awaitTermination(2, TimeUnit.MINUTES);
 
         assert (counter.get() == numberOfThreads);
+        assert (reachedQueueMaxSize.get());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
