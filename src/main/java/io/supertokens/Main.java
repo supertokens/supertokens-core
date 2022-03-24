@@ -318,7 +318,6 @@ public class Main {
         Logging.info(this, "Stopping SuperTokens...");
         try {
             Webserver.getInstance(this).stop();
-            PasswordHashing.getInstance(this).close();
             Cronjobs.shutdownAndAwaitTermination(this);
             if (!Main.isTesting) {
                 StorageLayer.close(this);

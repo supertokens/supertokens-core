@@ -293,6 +293,21 @@ public class PasswordHashingTest {
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
+
+        Utils.reset();
+
+        {
+            String[] args = { "../" };
+            Utils.setValueInConfig("argon2_hashing_pool_size", "100");
+
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+            assertNotNull(e);
+            assertEquals(e.exception.getMessage(), "'argon2_hashing_pool_size' must be <= 'max_server_pool_size'");
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
     }
 
     @Test

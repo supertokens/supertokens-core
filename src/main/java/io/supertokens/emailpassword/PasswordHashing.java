@@ -25,21 +25,19 @@ import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import org.mindrot.jbcrypt.BCrypt;
 
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
 public class PasswordHashing extends ResourceDistributor.SingletonResource {
 
     private static final String RESOURCE_KEY = "io.supertokens.emailpassword.PasswordHashing";
     final static int ARGON2_SALT_LENGTH = 16;
     final static int ARGON2_HASH_LENGTH = 32;
-    final ExecutorService executorService;
+    final BlockingQueue<Object> boundedQueue;
     final Main main;
 
     private PasswordHashing(Main main) {
-        executorService = Executors.newFixedThreadPool(Config.getConfig(main).getArgon2HashingPoolSize());
+        this.boundedQueue = new LinkedBlockingQueue<>(Config.getConfig(main).getArgon2HashingPoolSize());
         this.main = main;
     }
 
@@ -66,70 +64,41 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
 
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON, null);
 
-        final String[] hashResult = { "" };
+        return withConcurrencyLimited(() -> argon2.hash(Config.getConfig(main).getArgon2Iterations(),
+                Config.getConfig(main).getArgon2MemoryBytes(), Config.getConfig(main).getArgon2Parallelism(),
+                password.toCharArray()));
+    }
 
-        Object lock = new Object();
-        AtomicBoolean done = new AtomicBoolean(false);
+    public interface Func<T> {
+        T op();
+    }
 
-        executorService.execute(() -> {
-            hashResult[0] = argon2.hash(Config.getConfig(main).getArgon2Iterations(),
-                    Config.getConfig(main).getArgon2MemoryBytes(), Config.getConfig(main).getArgon2Parallelism(),
-                    password.toCharArray());
-            synchronized (lock) {
-                done.set(true);
-                lock.notifyAll();
-            }
-        });
-
-        synchronized (lock) {
-            while (!done.get()) {
+    private <T> T withConcurrencyLimited(Func<T> func) {
+        Object waiter = new Object();
+        try {
+            while (!this.boundedQueue.contains(waiter)) {
                 try {
-                    lock.wait();
+                    // put will wait for there to be an empty slot in the queue and return
+                    // only when there is a slot for waiter
+                    this.boundedQueue.put(waiter);
                 } catch (InterruptedException ignored) {
                 }
             }
-        }
 
-        return hashResult[0];
+            return func.op();
+
+        } finally {
+            this.boundedQueue.remove(waiter);
+        }
     }
 
     public boolean verifyPasswordWithHash(String password, String hash) {
         if (hash.startsWith("$argon2id")) { // argon2 hash looks like $argon2id$v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON, null);
 
-            Object lock = new Object();
-            final Boolean[] result = { false };
-            AtomicBoolean done = new AtomicBoolean(false);
-
-            executorService.execute(() -> {
-                result[0] = argon2.verify(hash, password.toCharArray());
-                synchronized (lock) {
-                    done.set(true);
-                    lock.notifyAll();
-                }
-            });
-
-            synchronized (lock) {
-                while (!done.get()) {
-                    try {
-                        lock.wait();
-                    } catch (InterruptedException ignored) {
-                    }
-                }
-            }
-
-            return result[0];
+            return withConcurrencyLimited(() -> argon2.verify(hash, password.toCharArray()));
         }
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT, null);
         return BCrypt.checkpw(password, hash);
-    }
-
-    public void close() {
-        this.executorService.shutdown();
-        // TODO: do we need to do awaitTermination at all?
-        try {
-            this.executorService.awaitTermination(1, TimeUnit.MINUTES);
-        } catch (InterruptedException ignored) {
-        }
     }
 }

@@ -298,6 +298,10 @@ public class CoreConfig {
                     + getConfigFileLocation(main));
         }
 
+        if (argon2_hashing_pool_size > max_server_pool_size) {
+            throw new QuitProgramException("'argon2_hashing_pool_size' must be <= 'max_server_pool_size'");
+        }
+
         if (api_keys != null) {
             String[] keys = api_keys.split(",");
             for (int i = 0; i < keys.length; i++) {
