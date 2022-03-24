@@ -37,7 +37,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     final Main main;
 
     private PasswordHashing(Main main) {
-        this.boundedQueue = new LinkedBlockingQueue<>(Math.max(Config.getConfig(main).getArgon2HashingPoolSize(), 1));
+        this.boundedQueue = new LinkedBlockingQueue<>(Config.getConfig(main).getArgon2HashingPoolSize());
         this.main = main;
     }
 

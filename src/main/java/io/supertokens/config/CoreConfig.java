@@ -119,7 +119,11 @@ public class CoreConfig {
     }
 
     public int getArgon2HashingPoolSize() {
-        return argon2_hashing_pool_size;
+        // the reason we do Math.max below is that if the password hashing algo is bcrypt,
+        // then we don't check the argon2 hashing pool size config at all. In this case,
+        // if the user gives a <= 0 number, it crashes the core (since it creates a blockedqueue in PaswordHashing
+        // .java with length <= 0). So we do a Math.max
+        return Math.max(1, argon2_hashing_pool_size);
     }
 
     public int getArgon2Iterations() {
@@ -135,7 +139,7 @@ public class CoreConfig {
     }
 
     public PASSWORD_HASHING_ALG getPasswordHashingAlg() {
-        return PASSWORD_HASHING_ALG.valueOf(password_hashing_alg);
+        return PASSWORD_HASHING_ALG.valueOf(password_hashing_alg.toUpperCase());
     }
 
     @TestOnly
@@ -318,11 +322,11 @@ public class CoreConfig {
             }
         }
 
-        if (!password_hashing_alg.equals("ARGON2") && !password_hashing_alg.equals("BCRYPT")) {
+        if (!password_hashing_alg.equalsIgnoreCase("ARGON2") && !password_hashing_alg.equalsIgnoreCase("BCRYPT")) {
             throw new QuitProgramException("'password_hashing_alg' must be one of 'ARGON2' or 'BCRYPT'");
         }
 
-        if (password_hashing_alg.equals("ARGON2")) {
+        if (password_hashing_alg.equalsIgnoreCase("ARGON2")) {
             if (argon2_iterations <= 0) {
                 throw new QuitProgramException("'argon2_iterations' must be >= 1");
             }

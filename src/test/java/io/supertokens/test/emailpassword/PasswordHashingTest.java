@@ -237,6 +237,37 @@ public class PasswordHashingTest {
     }
 
     @Test
+    public void lowercaseConfig() throws Exception {
+        {
+            String[] args = { "../" };
+            Utils.setValueInConfig("password_hashing_alg", "argon2");
+
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+            assert (Config.getConfig(process.getProcess())
+                    .getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.ARGON2);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        Utils.reset();
+
+        {
+            String[] args = { "../" };
+            Utils.setValueInConfig("password_hashing_alg", "bcrypt");
+
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+            assert (Config.getConfig(process.getProcess())
+                    .getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.BCRYPT);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
     public void invalidConfig() throws Exception {
         {
             String[] args = { "../" };
@@ -256,7 +287,7 @@ public class PasswordHashingTest {
         {
             String[] args = { "../" };
             Utils.setValueInConfig("argon2_iterations", "-1");
-            Utils.setValueInConfig("password_hashing_alg", "ARGON2");
+            Utils.setValueInConfig("password_hashing_alg", "argon2");
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
@@ -304,7 +335,7 @@ public class PasswordHashingTest {
         {
             String[] args = { "../" };
             Utils.setValueInConfig("argon2_hashing_pool_size", "-1");
-            Utils.setValueInConfig("password_hashing_alg", "ARGON2");
+            Utils.setValueInConfig("password_hashing_alg", "argon2");
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
