@@ -82,7 +82,7 @@ public class CoreConfig {
     private boolean disable_telemetry = false;
 
     @JsonProperty
-    private String password_hashing_alg = "ARGON2";
+    private String password_hashing_alg = "BCRYPT";
 
     @JsonProperty
     private int argon2_iterations = 3;
@@ -91,7 +91,10 @@ public class CoreConfig {
     private int argon2_memory_bytes = 65536; // 64 mb
 
     @JsonProperty
-    private int argon2_parallelism = 1;
+    private int argon2_parallelism = 4;
+
+    @JsonProperty
+    private int argon2_hashing_pool_size = 10;
 
     // TODO: add https in later version
 //	# (OPTIONAL) boolean value (true or false). Set to true if you want to enable https requests to SuperTokens.
@@ -115,6 +118,14 @@ public class CoreConfig {
         ARGON2, BCRYPT
     }
 
+    public int getArgon2HashingPoolSize() {
+        // the reason we do Math.max below is that if the password hashing algo is bcrypt,
+        // then we don't check the argon2 hashing pool size config at all. In this case,
+        // if the user gives a <= 0 number, it crashes the core (since it creates a blockedqueue in PaswordHashing
+        // .java with length <= 0). So we do a Math.max
+        return Math.max(1, argon2_hashing_pool_size);
+    }
+
     public int getArgon2Iterations() {
         return argon2_iterations;
     }
@@ -128,7 +139,7 @@ public class CoreConfig {
     }
 
     public PASSWORD_HASHING_ALG getPasswordHashingAlg() {
-        return PASSWORD_HASHING_ALG.valueOf(password_hashing_alg);
+        return PASSWORD_HASHING_ALG.valueOf(password_hashing_alg.toUpperCase());
     }
 
     @TestOnly
@@ -311,20 +322,30 @@ public class CoreConfig {
             }
         }
 
-        if (!password_hashing_alg.equals("ARGON2") && !password_hashing_alg.equals("BCRYPT")) {
+        if (!password_hashing_alg.equalsIgnoreCase("ARGON2") && !password_hashing_alg.equalsIgnoreCase("BCRYPT")) {
             throw new QuitProgramException("'password_hashing_alg' must be one of 'ARGON2' or 'BCRYPT'");
         }
 
-        if (argon2_iterations <= 0) {
-            throw new QuitProgramException("'argon2_iterations' must be >= 1");
-        }
+        if (password_hashing_alg.equalsIgnoreCase("ARGON2")) {
+            if (argon2_iterations <= 0) {
+                throw new QuitProgramException("'argon2_iterations' must be >= 1");
+            }
 
-        if (argon2_parallelism <= 0) {
-            throw new QuitProgramException("'argon2_parallelism' must be >= 1");
-        }
+            if (argon2_parallelism <= 0) {
+                throw new QuitProgramException("'argon2_parallelism' must be >= 1");
+            }
 
-        if (argon2_memory_bytes <= 0) {
-            throw new QuitProgramException("'argon2_memory_bytes' must be >= 1");
+            if (argon2_memory_bytes <= 0) {
+                throw new QuitProgramException("'argon2_memory_bytes' must be >= 1");
+            }
+
+            if (argon2_hashing_pool_size <= 0) {
+                throw new QuitProgramException("'argon2_hashing_pool_size' must be >= 1");
+            }
+
+            if (argon2_hashing_pool_size > max_server_pool_size) {
+                throw new QuitProgramException("'argon2_hashing_pool_size' must be <= 'max_server_pool_size'");
+            }
         }
 
         if (base_path != null && !base_path.equals("") && !base_path.equals("/")) {

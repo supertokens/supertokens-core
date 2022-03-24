@@ -20,36 +20,91 @@ import de.mkammerer.argon2.Argon2;
 import de.mkammerer.argon2.Argon2Factory;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
+import org.jetbrains.annotations.TestOnly;
 import org.mindrot.jbcrypt.BCrypt;
 
-public class PasswordHashing {
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 
+public class PasswordHashing extends ResourceDistributor.SingletonResource {
+
+    private static final String RESOURCE_KEY = "io.supertokens.emailpassword.PasswordHashing";
     final static int ARGON2_SALT_LENGTH = 16;
     final static int ARGON2_HASH_LENGTH = 32;
+    final BlockingQueue<Object> boundedQueue;
+    final Main main;
+
+    private PasswordHashing(Main main) {
+        this.boundedQueue = new LinkedBlockingQueue<>(Config.getConfig(main).getArgon2HashingPoolSize());
+        this.main = main;
+    }
 
     // argon2 instances are thread safe: https://github.com/phxql/argon2-jvm/issues/35
     private static Argon2 argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id, ARGON2_SALT_LENGTH,
             ARGON2_HASH_LENGTH);
 
-    public static String createHashWithSalt(Main main, String password) {
+    public static PasswordHashing getInstance(Main main) {
+        return (PasswordHashing) main.getResourceDistributor().getResource(RESOURCE_KEY);
+    }
+
+    public static void init(Main main) {
+        if (getInstance(main) != null) {
+            return;
+        }
+        main.getResourceDistributor().setResource(RESOURCE_KEY, new PasswordHashing(main));
+    }
+
+    public String createHashWithSalt(String password) {
         if (Config.getConfig(main).getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.BCRYPT) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT, null);
             return BCrypt.hashpw(password, BCrypt.gensalt(11));
         }
 
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON, null);
-        return argon2.hash(Config.getConfig(main).getArgon2Iterations(), Config.getConfig(main).getArgon2MemoryBytes(),
-                Config.getConfig(main).getArgon2Parallelism(), password.toCharArray());
+
+        return withConcurrencyLimited(() -> argon2.hash(Config.getConfig(main).getArgon2Iterations(),
+                Config.getConfig(main).getArgon2MemoryBytes(), Config.getConfig(main).getArgon2Parallelism(),
+                password.toCharArray()));
     }
 
-    public static boolean verifyPasswordWithHash(Main main, String password, String hash) {
+    public interface Func<T> {
+        T op();
+    }
+
+    private <T> T withConcurrencyLimited(Func<T> func) {
+        Object waiter = new Object();
+        try {
+            while (!this.boundedQueue.contains(waiter)) {
+                try {
+                    // put will wait for there to be an empty slot in the queue and return
+                    // only when there is a slot for waiter
+                    this.boundedQueue.put(waiter);
+                } catch (InterruptedException ignored) {
+                }
+            }
+
+            return func.op();
+
+        } finally {
+            this.boundedQueue.remove(waiter);
+        }
+    }
+
+    public boolean verifyPasswordWithHash(String password, String hash) {
         if (hash.startsWith("$argon2id")) { // argon2 hash looks like $argon2id$v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON, null);
-            return argon2.verify(hash, password.toCharArray());
+
+            return withConcurrencyLimited(() -> argon2.verify(hash, password.toCharArray()));
         }
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT, null);
         return BCrypt.checkpw(password, hash);
+    }
+
+    @TestOnly
+    public int getBlockedQueueSize() {
+        return this.boundedQueue.size();
     }
 }
