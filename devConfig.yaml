@@ -88,6 +88,9 @@ disable_telemetry: true
 # (OPTIONAL | Default: "BCRYPT"). The password hashing algorithm to use. Values are "ARGON2" | "BCRYPT"
 # password_hashing_alg:
 
+# (OPTIONAL | Default: 11). Number of rounds to set for bcrypt password hashing
+# bcrypt_rounds:
+
 # (OPTIONAL | Default: 3). Number of iterations for argon2 password hashing
 # argon2_iterations:
 

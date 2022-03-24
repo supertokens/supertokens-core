@@ -212,6 +212,7 @@ public class PasswordHashingTest {
         assert (config.getArgon2MemoryBytes() == 65536);
         assert (config.getArgon2Parallelism() == 4);
         assert (config.getArgon2HashingPoolSize() == 10);
+        assert (config.getBcryptRounds() == 11);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -362,10 +363,26 @@ public class PasswordHashingTest {
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
+
+        Utils.reset();
+
+        {
+            String[] args = { "../" };
+            Utils.setValueInConfig("bcrypt_rounds", "-1");
+            Utils.setValueInConfig("password_hashing_alg", "BCRYPT");
+
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+            assertNotNull(e);
+            assertEquals(e.exception.getMessage(), "'bcrypt_rounds' must be >= 1");
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
     }
 
     @Test
-    public void hashAndVerufyArgon2HashWithDifferentConfigs() throws Exception {
+    public void hashAndVerifyArgon2HashWithDifferentConfigs() throws Exception {
         String[] args = { "../" };
         String hash = "";
         Utils.setValueInConfig("password_hashing_alg", "ARGON2");
@@ -403,6 +420,46 @@ public class PasswordHashingTest {
             assert (newHash.contains("p=2"));
             assert (newHash.contains("t=10"));
             assert (Config.getConfig(process.getProcess()).getArgon2HashingPoolSize() == 5);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void hashAndVerifyBcryptHashWithDifferentConfigs() throws Exception {
+        String[] args = { "../" };
+        String hash = "";
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            hash = PasswordHashing.getInstance(process.getProcess()).createHashWithSalt("somePassword");
+            assert (hash.startsWith("$2a$11$"));
+
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT));
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+        }
+        {
+            Utils.setValueInConfig("bcrypt_rounds", "12");
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            assert (PasswordHashing.getInstance(process.getProcess()).verifyPasswordWithHash("somePassword", hash));
+
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT));
+
+            String newHash = PasswordHashing.getInstance(process.getProcess()).createHashWithSalt("somePassword");
+            assert (newHash.startsWith("$2a$12$"));
+            assert (Config.getConfig(process.getProcess()).getBcryptRounds() == 12);
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

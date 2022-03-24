@@ -60,7 +60,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     public String createHashWithSalt(String password) {
         if (Config.getConfig(main).getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.BCRYPT) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT, null);
-            return BCrypt.hashpw(password, BCrypt.gensalt(11));
+            return BCrypt.hashpw(password, BCrypt.gensalt(Config.getConfig(main).getBcryptRounds()));
         }
 
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON, null);
