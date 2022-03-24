@@ -85,7 +85,7 @@ core_config_version: 0
 # (OPTIONAL | Default: ""). Used to prepend a base path to all APIs when querying the core.
 # base_path:
 
-# (OPTIONAL | Default: "ARGON2"). The password hashing algorithm to use. Values are "ARGON2" | "BCRYPT"
+# (OPTIONAL | Default: "BCRYPT"). The password hashing algorithm to use. Values are "ARGON2" | "BCRYPT"
 # password_hashing_alg:
 
 # (OPTIONAL | Default: 3). Number of iterations for argon2 password hashing

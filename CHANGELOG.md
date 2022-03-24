@@ -11,7 +11,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adds github action for checking if "Run tests" action was completed (to run in PRs)
 - Fixes how config values are changed during tests.
 - Adds 60 mins timeout to github action jobs
-- Adds support for argon2 hashing and makes it the default password hashing algorithm that is used.
+- Adds support for argon2 hashing.
 
 ### New config:
 

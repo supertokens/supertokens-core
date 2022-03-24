@@ -82,7 +82,7 @@ public class CoreConfig {
     private boolean disable_telemetry = false;
 
     @JsonProperty
-    private String password_hashing_alg = "ARGON2";
+    private String password_hashing_alg = "BCRYPT";
 
     @JsonProperty
     private int argon2_iterations = 3;
@@ -298,10 +298,6 @@ public class CoreConfig {
                     + getConfigFileLocation(main));
         }
 
-        if (argon2_hashing_pool_size > max_server_pool_size) {
-            throw new QuitProgramException("'argon2_hashing_pool_size' must be <= 'max_server_pool_size'");
-        }
-
         if (api_keys != null) {
             String[] keys = api_keys.split(",");
             for (int i = 0; i < keys.length; i++) {
@@ -326,20 +322,26 @@ public class CoreConfig {
             throw new QuitProgramException("'password_hashing_alg' must be one of 'ARGON2' or 'BCRYPT'");
         }
 
-        if (argon2_iterations <= 0) {
-            throw new QuitProgramException("'argon2_iterations' must be >= 1");
-        }
+        if (password_hashing_alg.equals("ARGON2")) {
+            if (argon2_iterations <= 0) {
+                throw new QuitProgramException("'argon2_iterations' must be >= 1");
+            }
 
-        if (argon2_parallelism <= 0) {
-            throw new QuitProgramException("'argon2_parallelism' must be >= 1");
-        }
+            if (argon2_parallelism <= 0) {
+                throw new QuitProgramException("'argon2_parallelism' must be >= 1");
+            }
 
-        if (argon2_memory_bytes <= 0) {
-            throw new QuitProgramException("'argon2_memory_bytes' must be >= 1");
-        }
+            if (argon2_memory_bytes <= 0) {
+                throw new QuitProgramException("'argon2_memory_bytes' must be >= 1");
+            }
 
-        if (argon2_hashing_pool_size <= 0) {
-            throw new QuitProgramException("'argon2_hashing_pool_size' must be >= 1");
+            if (argon2_hashing_pool_size <= 0) {
+                throw new QuitProgramException("'argon2_hashing_pool_size' must be >= 1");
+            }
+
+            if (argon2_hashing_pool_size > max_server_pool_size) {
+                throw new QuitProgramException("'argon2_hashing_pool_size' must be <= 'max_server_pool_size'");
+            }
         }
 
         if (base_path != null && !base_path.equals("") && !base_path.equals("/")) {
