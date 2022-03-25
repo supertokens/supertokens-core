@@ -9,6 +9,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "axios": "^0.26.1"
+    "axios": "^0.26.1",
+    "github-workflow-helpers": "github:supertokens/github-workflow-helpers"
   }
 }
