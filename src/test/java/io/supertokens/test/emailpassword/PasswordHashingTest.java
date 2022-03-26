@@ -212,7 +212,7 @@ public class PasswordHashingTest {
         assert (config.getArgon2MemoryBytes() == 65536);
         assert (config.getArgon2Parallelism() == 4);
         assert (config.getArgon2HashingPoolSize() == 10);
-        assert (config.getBcryptRounds() == 11);
+        assert (config.getBcryptLogRounds() == 11);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -368,13 +368,13 @@ public class PasswordHashingTest {
 
         {
             String[] args = { "../" };
-            Utils.setValueInConfig("bcrypt_rounds", "-1");
+            Utils.setValueInConfig("bcrypt_log_rounds", "-1");
             Utils.setValueInConfig("password_hashing_alg", "BCRYPT");
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(), "'bcrypt_rounds' must be >= 1");
+            assertEquals(e.exception.getMessage(), "'bcrypt_log_rounds' must be >= 1");
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -449,7 +449,7 @@ public class PasswordHashingTest {
 
         }
         {
-            Utils.setValueInConfig("bcrypt_rounds", "12");
+            Utils.setValueInConfig("bcrypt_log_rounds", "12");
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -459,7 +459,7 @@ public class PasswordHashingTest {
 
             String newHash = PasswordHashing.getInstance(process.getProcess()).createHashWithSalt("somePassword");
             assert (newHash.startsWith("$2a$12$"));
-            assert (Config.getConfig(process.getProcess()).getBcryptRounds() == 12);
+            assert (Config.getConfig(process.getProcess()).getBcryptLogRounds() == 12);
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

@@ -97,7 +97,7 @@ public class CoreConfig {
     private int argon2_hashing_pool_size = 10;
 
     @JsonProperty
-    private int bcrypt_rounds = 11;
+    private int bcrypt_log_rounds = 11;
 
     // TODO: add https in later version
 //	# (OPTIONAL) boolean value (true or false). Set to true if you want to enable https requests to SuperTokens.
@@ -133,8 +133,8 @@ public class CoreConfig {
         return argon2_iterations;
     }
 
-    public int getBcryptRounds() {
-        return bcrypt_rounds;
+    public int getBcryptLogRounds() {
+        return bcrypt_log_rounds;
     }
 
     public int getArgon2MemoryBytes() {
@@ -354,8 +354,8 @@ public class CoreConfig {
                 throw new QuitProgramException("'argon2_hashing_pool_size' must be <= 'max_server_pool_size'");
             }
         } else if (password_hashing_alg.equalsIgnoreCase("BCRYPT")) {
-            if (bcrypt_rounds <= 0) {
-                throw new QuitProgramException("'bcrypt_rounds' must be >= 1");
+            if (bcrypt_log_rounds <= 0) {
+                throw new QuitProgramException("'bcrypt_log_rounds' must be >= 1");
             }
         }
 

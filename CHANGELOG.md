@@ -20,7 +20,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `argon2_memory_bytes`
 - `argon2_parallelism`
 - `argon2_hashing_pool_size`
-- `bcrypt_rounds`
+- `bcrypt_log_rounds`
 
 ## [3.11.0] - 2022-03-19
 
@@ -67,9 +67,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Database changes
 
 - Adds new tables for passwordless:
-    - `passwordless_users` that stores the users of the passwordless recipe
-    - `passwordless_devices` that stores devices/information about passwordless login attempts
-    - `passwordless_codes` that stores the codes each device can consume to finish the login process
+  - `passwordless_users` that stores the users of the passwordless recipe
+  - `passwordless_devices` that stores devices/information about passwordless login attempts
+  - `passwordless_codes` that stores the codes each device can consume to finish the login process
 
 ### Changes
 
