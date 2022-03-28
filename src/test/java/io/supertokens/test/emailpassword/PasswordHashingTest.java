@@ -16,6 +16,8 @@
 
 package io.supertokens.test.emailpassword;
 
+import de.mkammerer.argon2.Argon2;
+import de.mkammerer.argon2.Argon2Factory;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
@@ -688,5 +690,83 @@ public class PasswordHashingTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void simple() throws Exception {
+        int cores = Runtime.getRuntime().availableProcessors();
+
+        int maxMemoryBytes = 1024 * 1024 * 1024; // 1 GB -> input from user
+        int maxConcurrentHashes = 5; // input from user
+        int parallelism = cores * 2; // input from user
+        int targetTimePerHashMS = 300; // input from user TODO: determine what is a good target
+
+        int currMemoryBytes = maxMemoryBytes / maxConcurrentHashes; // equal to max memory that can be used per hash
+        int currIterations = 1;
+
+        while (true) {
+            long currentTimeTaken = getApproxTimeForHashWith(currMemoryBytes, currIterations, parallelism,
+                    maxConcurrentHashes);
+            System.out.println("Time taken: " + currentTimeTaken);
+            System.out.println();
+            System.out.println();
+
+            if (Math.abs(currentTimeTaken - targetTimePerHashMS) < 10) {
+                break;
+            }
+
+            if (currentTimeTaken > targetTimePerHashMS) {
+                System.out.println("Decreasing memory to get below target time.");
+                currMemoryBytes = currMemoryBytes - Math.max((int) (0.05 * currMemoryBytes), 1024 * 1024); // decrease
+                                                                                                           // memory by
+                                                                                                           // 5% or 1 mb
+                                                                                                           // (whichever
+                                                                                                           // is
+                                                                                                           // greater)
+            } else {
+                System.out.println("Increasing iteration count");
+                currIterations += 1;
+            }
+        }
+
+        System.out.println("----------Final values-------------");
+        System.out.println("memory: " + currMemoryBytes / (1024 * 1024) + "MB");
+        System.out.println("iterations: " + currIterations);
+        System.out.println("parallelism: " + parallelism);
+    }
+
+    private long getApproxTimeForHashWith(int memory, int iterations, int parallelism, int maxConcurrentHashes)
+            throws Exception {
+        if (memory < (15 * 1024 * 1024)) {
+            // lesser than OWASP minimum
+            throw new Exception("Memory became too low.."); // TODO: give reasons why
+        } else if (iterations > 100) {
+            throw new Exception("Iterations too high.."); // TODO: give reasons why
+        }
+        System.out.println("New values:");
+        System.out.println("memory: " + memory / (1024 * 1024) + "MB");
+        System.out.println("iterations: " + iterations);
+        ExecutorService service = Executors.newFixedThreadPool(maxConcurrentHashes);
+        AtomicInteger averageTime = new AtomicInteger();
+        for (int i = 0; i < maxConcurrentHashes; i++) {
+            service.execute(() -> {
+                int avgTimeForThisThread = 0;
+                int numberOfTries = 10;
+                for (int y = 0; y < numberOfTries; y++) {
+                    long beforeTime = System.currentTimeMillis();
+                    Argon2 argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id, 16, 32);
+                    argon2.hash(iterations, memory / 1024, parallelism, "somePassword".toCharArray());
+                    int diff = (int) (System.currentTimeMillis() - beforeTime);
+                    avgTimeForThisThread = avgTimeForThisThread + diff;
+                }
+                avgTimeForThisThread = avgTimeForThisThread / numberOfTries;
+                averageTime.addAndGet(avgTimeForThisThread);
+            });
+        }
+
+        service.shutdown();
+        service.awaitTermination(2, TimeUnit.MINUTES);
+
+        return averageTime.get() / maxConcurrentHashes;
     }
 }
