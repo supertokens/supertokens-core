@@ -16,7 +16,9 @@
 
 package io.supertokens.cli.commandHandler.hashingCalibrate;
 
+import io.supertokens.cli.cliOptionsParsers.CLIOptionsParser;
 import io.supertokens.cli.commandHandler.CommandHandler;
+import io.supertokens.cli.logging.Logging;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -24,7 +26,42 @@ import java.util.List;
 public class HashingCalibrateHandler extends CommandHandler {
     @Override
     protected void doCommand(String installationDir, boolean viaInstaller, String[] args) {
-        
+        String alg = CLIOptionsParser.parseOption("--with_alg", args);
+        if (alg != null && alg.equalsIgnoreCase("bcrypt")) {
+            String targetTimePerHashMsStr = CLIOptionsParser.parseOption("--with_time_per_hash_ms", args);
+            int targetTimePerHashMs = 300;
+            if (targetTimePerHashMsStr != null) {
+                targetTimePerHashMs = Integer.parseInt(targetTimePerHashMsStr);
+            }
+            calibrateBCrypt(targetTimePerHashMs);
+        } else if (alg != null && alg.equalsIgnoreCase("argon2")) {
+            String targetTimePerHashMsStr = CLIOptionsParser.parseOption("--with_time_per_hash_ms", args);
+            int targetTimePerHashMs = 300;
+            if (targetTimePerHashMsStr != null) {
+                targetTimePerHashMs = Integer.parseInt(targetTimePerHashMsStr);
+            }
+
+            String hashingPoolSizeStr = CLIOptionsParser.parseOption("--with_argon2_hashing_pool_size", args);
+            int hashingPoolSize = 10;
+            if (hashingPoolSizeStr != null) {
+                hashingPoolSize = Integer.parseInt(hashingPoolSizeStr);
+            }
+
+            String maxMemoryMbStr = CLIOptionsParser.parseOption("--with_argon2_max_memory_mb", args);
+            int maxMemoryMb = 1024;
+            if (maxMemoryMbStr != null) {
+                maxMemoryMb = Integer.parseInt(maxMemoryMbStr);
+            }
+
+            String parallelismStr = CLIOptionsParser.parseOption("--with_argon2_parallelism", args);
+            int parallelism = Runtime.getRuntime().availableProcessors() * 2;
+            if (parallelismStr != null) {
+                parallelism = Integer.parseInt(parallelismStr);
+            }
+            calibrateArgon2Hashing(targetTimePerHashMs, hashingPoolSize, maxMemoryMb, parallelism);
+        } else {
+            Logging.error("Please provide one of --with_alg=argon2 or --with_alg=bcrypt");
+        }
     }
 
     @Override
@@ -63,5 +100,26 @@ public class HashingCalibrateHandler extends CommandHandler {
     @Override
     public String getCommandName() {
         return "hashingCalibrate [options]";
+    }
+
+    private void calibrateBCrypt(int targetTimePerHashMs) {
+        Logging.info("");
+        Logging.info("====Input Settings====");
+        Logging.info("-> Target time per hash (--with_time_per_hash_ms): " + targetTimePerHashMs + " MS");
+        // TODO:
+    }
+
+    private void calibrateArgon2Hashing(int targetTimePerHashMs, int hashingPoolSize, int maxMemoryMb,
+                                        int parallelism) {
+        Logging.info("");
+        Logging.info("====Input Settings====");
+        Logging.info("-> Target time per hash (--with_time_per_hash_ms): " + targetTimePerHashMs + " MS");
+        Logging.info("-> Number of max concurrent hashes (--with_argon2_hashing_pool_size): " + hashingPoolSize);
+        Logging.info(
+                "-> Max amount of memory to consume across " + hashingPoolSize +
+                        " concurrent hashes (--with_argon2_max_memory_mb): " + maxMemoryMb +
+                        " MB");
+        Logging.info("-> Argon2 parallelism (--with_argon2_parallelism): " + parallelism);
+        // TODO:
     }
 }
