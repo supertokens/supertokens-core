@@ -16,12 +16,18 @@
 
 package io.supertokens.cli.commandHandler.hashingCalibrate;
 
+import de.mkammerer.argon2.Argon2;
+import de.mkammerer.argon2.Argon2Factory;
 import io.supertokens.cli.cliOptionsParsers.CLIOptionsParser;
 import io.supertokens.cli.commandHandler.CommandHandler;
 import io.supertokens.cli.logging.Logging;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class HashingCalibrateHandler extends CommandHandler {
     @Override
@@ -58,7 +64,16 @@ public class HashingCalibrateHandler extends CommandHandler {
             if (parallelismStr != null) {
                 parallelism = Integer.parseInt(parallelismStr);
             }
-            calibrateArgon2Hashing(targetTimePerHashMs, hashingPoolSize, maxMemoryMb, parallelism);
+            try {
+                calibrateArgon2Hashing(targetTimePerHashMs, hashingPoolSize, maxMemoryMb, parallelism);
+            } catch (TooLowMemoryProvidedForArgon2 ignored) {
+                Logging.error("");
+                Logging.error("====FAILED====");
+                Logging.error(
+                        "Optimal Argon2 settings could not be calculated. Try increasing the amount of memory given " +
+                                "(using --with_argon2_max_memory_mb), or reducing the amount of concurrent hashing " +
+                                "(using --with_argon2_hashing_pool_size)");
+            }
         } else {
             Logging.error("Please provide one of --with_alg=argon2 or --with_alg=bcrypt");
         }
@@ -110,7 +125,7 @@ public class HashingCalibrateHandler extends CommandHandler {
     }
 
     private void calibrateArgon2Hashing(int targetTimePerHashMs, int hashingPoolSize, int maxMemoryMb,
-                                        int parallelism) {
+                                        int parallelism) throws TooLowMemoryProvidedForArgon2 {
         Logging.info("");
         Logging.info("====Input Settings====");
         Logging.info("-> Target time per hash (--with_time_per_hash_ms): " + targetTimePerHashMs + " MS");
@@ -121,5 +136,81 @@ public class HashingCalibrateHandler extends CommandHandler {
                         " MB");
         Logging.info("-> Argon2 parallelism (--with_argon2_parallelism): " + parallelism);
         // TODO:
+
+        // --------------------------
+        // reference below..
+
+        int maxMemoryBytes = maxMemoryMb * 1024;
+        int currMemoryBytes = maxMemoryBytes / hashingPoolSize; // equal to max memory that can be used per hash
+        int currIterations = 1;
+
+        while (true) {
+            long currentTimeTaken = getApproxTimeForHashWith(currMemoryBytes, currIterations, parallelism,
+                    hashingPoolSize);
+            System.out.println("Time taken: " + currentTimeTaken);
+            System.out.println();
+            System.out.println();
+
+            if (Math.abs(currentTimeTaken - targetTimePerHashMs) < 10) {
+                break;
+            }
+
+            if (currentTimeTaken > targetTimePerHashMs) {
+                System.out.println("Decreasing memory to get below target time.");
+                currMemoryBytes = currMemoryBytes - Math.max((int) (0.05 * currMemoryBytes), 1024 * 1024); // decrease
+                // memory by
+                // 5% or 1 mb
+                // (whichever
+                // is
+                // greater)
+            } else {
+                System.out.println("Increasing iteration count");
+                currIterations += 1;
+            }
+        }
+
+        System.out.println("----------Final values-------------");
+        System.out.println("memory: " + currMemoryBytes / (1024 * 1024) + "MB");
+        System.out.println("iterations: " + currIterations);
+        System.out.println("parallelism: " + parallelism);
+    }
+
+    private long getApproxTimeForHashWith(int memory, int iterations, int parallelism, int maxConcurrentHashes)
+            throws TooLowMemoryProvidedForArgon2 {
+        if (memory < (15 * 1024 * 1024) || iterations > 100) {
+            throw new TooLowMemoryProvidedForArgon2();
+        }
+        System.out.println("New values:");
+        System.out.println("memory: " + memory / (1024 * 1024) + "MB");
+        System.out.println("iterations: " + iterations);
+        ExecutorService service = Executors.newFixedThreadPool(maxConcurrentHashes);
+        AtomicInteger averageTime = new AtomicInteger();
+        for (int i = 0; i < maxConcurrentHashes; i++) {
+            service.execute(() -> {
+                int avgTimeForThisThread = 0;
+                int numberOfTries = 50;
+                for (int y = 0; y < numberOfTries; y++) {
+                    long beforeTime = System.currentTimeMillis();
+                    Argon2 argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id, 16, 32);
+                    argon2.hash(iterations, memory / 1024, parallelism, "somePassword".toCharArray());
+                    int diff = (int) (System.currentTimeMillis() - beforeTime);
+                    avgTimeForThisThread = avgTimeForThisThread + diff;
+                }
+                avgTimeForThisThread = avgTimeForThisThread / numberOfTries;
+                averageTime.addAndGet(avgTimeForThisThread);
+            });
+        }
+
+        service.shutdown();
+        try {
+            service.awaitTermination(2, TimeUnit.MINUTES);
+        } catch (InterruptedException ignored) {
+        }
+
+        return averageTime.get() / maxConcurrentHashes;
+    }
+
+    static class TooLowMemoryProvidedForArgon2 extends Exception {
+
     }
 }
