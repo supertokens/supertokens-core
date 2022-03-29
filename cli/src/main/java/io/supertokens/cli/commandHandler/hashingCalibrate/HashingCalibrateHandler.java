@@ -128,6 +128,7 @@ public class HashingCalibrateHandler extends CommandHandler {
                                         int parallelism) throws TooLowMemoryProvidedForArgon2 {
         Logging.info("");
         Logging.info("====Input Settings====");
+        Logging.info("");
         Logging.info("-> Target time per hash (--with_time_per_hash_ms): " + targetTimePerHashMs + " MS");
         Logging.info("-> Number of max concurrent hashes (--with_argon2_hashing_pool_size): " + hashingPoolSize);
         Logging.info(
@@ -136,10 +137,15 @@ public class HashingCalibrateHandler extends CommandHandler {
                         " MB");
         Logging.info("-> Argon2 parallelism (--with_argon2_parallelism): " + parallelism);
 
-        int maxMemoryBytes = maxMemoryMb * 1024;
+        Logging.info("");
+        Logging.info("");
+        Logging.info("====Running algorithm====");
+
+        int maxMemoryBytes = maxMemoryMb * 1024 * 1024;
         int currMemoryBytes = maxMemoryBytes / hashingPoolSize; // equal to max memory that can be used per hash
         int currIterations = 1;
 
+        long finalAvgTime = 0;
         while (true) {
             long currentTimeTaken = getApproxTimeForHashWith(currMemoryBytes, currIterations, parallelism,
                     hashingPoolSize);
@@ -147,6 +153,7 @@ public class HashingCalibrateHandler extends CommandHandler {
             Logging.info("");
 
             if (Math.abs(currentTimeTaken - targetTimePerHashMs) < 10) {
+                finalAvgTime = currentTimeTaken;
                 break;
             }
 
@@ -161,12 +168,21 @@ public class HashingCalibrateHandler extends CommandHandler {
                 Logging.info("Adjusting iterations to reach target time.");
                 currIterations += 1;
             }
+            Logging.info("====================");
         }
 
-        Logging.info("----------Final values-------------");
-        Logging.info("argon2_memory_kb: " + currMemoryBytes / (1024 * 1024) + "MB");
+        Logging.info("====Final values====");
+        Logging.info("Average time per hash is: " + finalAvgTime + " MS");
+        Logging.info("");
+        Logging.info("argon2_memory_kb: " + currMemoryBytes / 1024 + " (" + (currMemoryBytes / (1024 * 1024)) + " MB)");
         Logging.info("argon2_iterations: " + currIterations);
-        Logging.info("parallelism: " + parallelism);
+        Logging.info("argon2_parallelism: " + parallelism);
+        Logging.info("argon2_hashing_pool_size: " + hashingPoolSize);
+        Logging.info("");
+        Logging.info("====================");
+        Logging.info(
+                "You should use these as docker env variables or put them in the config.yaml file in the SuperTokens " +
+                        "installation directory.");
         Logging.info("");
     }
 
@@ -175,8 +191,9 @@ public class HashingCalibrateHandler extends CommandHandler {
         if (memory < (15 * 1024 * 1024) || iterations > 100) {
             throw new TooLowMemoryProvidedForArgon2();
         }
+        Logging.info("");
         Logging.info("Current argon2 settings");
-        Logging.info("-> memory: " + memory / (1024 * 1024) + "MB");
+        Logging.info("-> memory: " + memory / (1024 * 1024) + " MB");
         Logging.info("-> iterations: " + iterations);
         Logging.info("Calculating average hashing time....");
 
