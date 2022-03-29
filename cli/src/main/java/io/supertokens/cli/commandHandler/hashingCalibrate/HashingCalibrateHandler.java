@@ -135,10 +135,6 @@ public class HashingCalibrateHandler extends CommandHandler {
                         " concurrent hashes (--with_argon2_max_memory_mb): " + maxMemoryMb +
                         " MB");
         Logging.info("-> Argon2 parallelism (--with_argon2_parallelism): " + parallelism);
-        // TODO:
-
-        // --------------------------
-        // reference below..
 
         int maxMemoryBytes = maxMemoryMb * 1024;
         int currMemoryBytes = maxMemoryBytes / hashingPoolSize; // equal to max memory that can be used per hash
@@ -147,32 +143,31 @@ public class HashingCalibrateHandler extends CommandHandler {
         while (true) {
             long currentTimeTaken = getApproxTimeForHashWith(currMemoryBytes, currIterations, parallelism,
                     hashingPoolSize);
-            System.out.println("Time taken: " + currentTimeTaken);
-            System.out.println();
-            System.out.println();
+            Logging.info("");
+            Logging.info("");
 
             if (Math.abs(currentTimeTaken - targetTimePerHashMs) < 10) {
                 break;
             }
 
+            Logging.info("Average hashing time: " + currentTimeTaken + " MS");
+
             if (currentTimeTaken > targetTimePerHashMs) {
-                System.out.println("Decreasing memory to get below target time.");
-                currMemoryBytes = currMemoryBytes - Math.max((int) (0.05 * currMemoryBytes), 1024 * 1024); // decrease
-                // memory by
-                // 5% or 1 mb
-                // (whichever
-                // is
-                // greater)
+                Logging.info("Adjusting memory to reach target time.");
+
+                // decrease memory by 5% or 1 mb (whichever is greater)
+                currMemoryBytes = currMemoryBytes - Math.max((int) (0.05 * currMemoryBytes), 1024 * 1024);
             } else {
-                System.out.println("Increasing iteration count");
+                Logging.info("Adjusting iterations to reach target time.");
                 currIterations += 1;
             }
         }
 
-        System.out.println("----------Final values-------------");
-        System.out.println("memory: " + currMemoryBytes / (1024 * 1024) + "MB");
-        System.out.println("iterations: " + currIterations);
-        System.out.println("parallelism: " + parallelism);
+        Logging.info("----------Final values-------------");
+        Logging.info("argon2_memory_kb: " + currMemoryBytes / (1024 * 1024) + "MB");
+        Logging.info("argon2_iterations: " + currIterations);
+        Logging.info("parallelism: " + parallelism);
+        Logging.info("");
     }
 
     private long getApproxTimeForHashWith(int memory, int iterations, int parallelism, int maxConcurrentHashes)
@@ -180,9 +175,11 @@ public class HashingCalibrateHandler extends CommandHandler {
         if (memory < (15 * 1024 * 1024) || iterations > 100) {
             throw new TooLowMemoryProvidedForArgon2();
         }
-        System.out.println("New values:");
-        System.out.println("memory: " + memory / (1024 * 1024) + "MB");
-        System.out.println("iterations: " + iterations);
+        Logging.info("Current argon2 settings");
+        Logging.info("-> memory: " + memory / (1024 * 1024) + "MB");
+        Logging.info("-> iterations: " + iterations);
+        Logging.info("Calculating average hashing time....");
+
         ExecutorService service = Executors.newFixedThreadPool(maxConcurrentHashes);
         AtomicInteger averageTime = new AtomicInteger();
         for (int i = 0; i < maxConcurrentHashes; i++) {
@@ -195,6 +192,7 @@ public class HashingCalibrateHandler extends CommandHandler {
                     argon2.hash(iterations, memory / 1024, parallelism, "somePassword".toCharArray());
                     int diff = (int) (System.currentTimeMillis() - beforeTime);
                     avgTimeForThisThread = avgTimeForThisThread + diff;
+                    Logging.infoNoNewLine(".");
                 }
                 avgTimeForThisThread = avgTimeForThisThread / numberOfTries;
                 averageTime.addAndGet(avgTimeForThisThread);

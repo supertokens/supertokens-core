@@ -209,7 +209,7 @@ public class PasswordHashingTest {
 
         assert (config.getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.BCRYPT);
         assert (config.getArgon2Iterations() == 3);
-        assert (config.getArgon2MemoryBytes() == 65536);
+        assert (config.getArgon2MemoryKb() == 65536);
         assert (config.getArgon2Parallelism() == 4);
         assert (config.getArgon2HashingPoolSize() == 10);
         assert (config.getBcryptLogRounds() == 11);
@@ -222,7 +222,7 @@ public class PasswordHashingTest {
     public void invalidConfigArgonButUsingBcryptShouldAllowStartingServer() throws Exception {
         {
             String[] args = { "../" };
-            Utils.setValueInConfig("argon2_memory_bytes", "-1");
+            Utils.setValueInConfig("argon2_memory_kb", "-1");
             Utils.setValueInConfig("argon2_parallelism", "-1");
             Utils.setValueInConfig("argon2_iterations", "-1");
             Utils.setValueInConfig("argon2_hashing_pool_size", "-1");
@@ -320,13 +320,13 @@ public class PasswordHashingTest {
 
         {
             String[] args = { "../" };
-            Utils.setValueInConfig("argon2_memory_bytes", "-1");
+            Utils.setValueInConfig("argon2_memory_kb", "-1");
             Utils.setValueInConfig("password_hashing_alg", "ARGON2");
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(), "'argon2_memory_bytes' must be >= 1");
+            assertEquals(e.exception.getMessage(), "'argon2_memory_kb' must be >= 1");
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -404,7 +404,7 @@ public class PasswordHashingTest {
 
         }
         {
-            Utils.setValueInConfig("argon2_memory_bytes", "100");
+            Utils.setValueInConfig("argon2_memory_kb", "100");
             Utils.setValueInConfig("argon2_parallelism", "2");
             Utils.setValueInConfig("argon2_iterations", "10");
             Utils.setValueInConfig("argon2_hashing_pool_size", "5");

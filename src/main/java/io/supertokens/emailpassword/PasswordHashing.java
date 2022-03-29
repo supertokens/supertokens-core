@@ -66,7 +66,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON, null);
 
         return withConcurrencyLimited(() -> argon2.hash(Config.getConfig(main).getArgon2Iterations(),
-                Config.getConfig(main).getArgon2MemoryBytes(), Config.getConfig(main).getArgon2Parallelism(),
+                Config.getConfig(main).getArgon2MemoryKb(), Config.getConfig(main).getArgon2Parallelism(),
                 password.toCharArray()));
     }
 

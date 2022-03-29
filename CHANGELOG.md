@@ -17,7 +17,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - `password_hashing_alg`
 - `argon2_iterations`
-- `argon2_memory_bytes`
+- `argon2_memory_kb`
 - `argon2_parallelism`
 - `argon2_hashing_pool_size`
 - `bcrypt_log_rounds`

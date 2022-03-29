@@ -94,8 +94,8 @@ core_config_version: 0
 # (OPTIONAL | Default: 3). Number of iterations for argon2 password hashing
 # argon2_iterations:
 
-# (OPTIONAL | Default: 65536 (64 mb)). Amount of memory in bytes for argon2 password hashing
-# argon2_memory_bytes:
+# (OPTIONAL | Default: 65536 (64 mb)). Amount of memory in kb for argon2 password hashing
+# argon2_memory_kb:
 
 # (OPTIONAL | Default: 4). Amount of parallelism for argon2 password hashing
 # argon2_parallelism:
