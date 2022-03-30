@@ -21,6 +21,7 @@ import de.mkammerer.argon2.Argon2Factory;
 import io.supertokens.cli.cliOptionsParsers.CLIOptionsParser;
 import io.supertokens.cli.commandHandler.CommandHandler;
 import io.supertokens.cli.logging.Logging;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -119,15 +120,81 @@ public class HashingCalibrateHandler extends CommandHandler {
 
     private void calibrateBCrypt(int targetTimePerHashMs) {
         Logging.info("");
-        Logging.info("====Input Settings====");
+        Logging.info(Logging.ANSI_CYAN + "====Input Settings====" + Logging.ANSI_RESET);
         Logging.info("-> Target time per hash (--with_time_per_hash_ms): " + targetTimePerHashMs + " MS");
-        // TODO:
+        Logging.info("");
+        Logging.info("");
+        Logging.info(Logging.ANSI_CYAN + "====Running algorithm====" + Logging.ANSI_RESET);
+
+        int currentLogRounds = 11;
+        int previousIterationLogRound = currentLogRounds;
+        long previousIterationTimeTaken = 0;
+
+        long finalAvgTime;
+        int finalLogRounds;
+        while (true) {
+            long currentTimeTaken = getApproxTimeForBcryptHashWith(currentLogRounds);
+            Logging.info("Took " + currentTimeTaken + " MS per hash");
+            Logging.info("");
+
+            if (currentTimeTaken >= targetTimePerHashMs && previousIterationTimeTaken <= targetTimePerHashMs) {
+                if (previousIterationTimeTaken == 0) {
+                    // this means that the first iteration itself took more time than the target time
+                    previousIterationTimeTaken = currentTimeTaken;
+                    previousIterationLogRound = currentLogRounds;
+                }
+                if (currentTimeTaken - targetTimePerHashMs <= targetTimePerHashMs - previousIterationTimeTaken) {
+                    finalAvgTime = currentTimeTaken;
+                    finalLogRounds = currentLogRounds;
+                } else {
+                    finalAvgTime = previousIterationTimeTaken;
+                    finalLogRounds = previousIterationLogRound;
+                }
+                break;
+            }
+
+
+            Logging.info("Incrementing log rounds and trying again...");
+
+            previousIterationTimeTaken = currentTimeTaken;
+            previousIterationLogRound = currentLogRounds;
+
+            currentLogRounds++;
+        }
+
+        Logging.info(Logging.ANSI_GREEN + "====Final values====");
+        Logging.info("Average time per hash is: " + finalAvgTime + " MS");
+        Logging.info("");
+        Logging.info("bcrypt_log_rounds: " + finalLogRounds);
+        Logging.info("");
+        Logging.info("====================" + Logging.ANSI_RESET);
+        Logging.info(
+                "You should use this as a docker env variable or put this in the config.yaml file in the SuperTokens " +
+                        "installation directory.");
+        Logging.info("");
+
+    }
+
+    private long getApproxTimeForBcryptHashWith(int logRounds) {
+        Logging.info("");
+        Logging.info("Current log rounds: " + logRounds);
+
+        long avg = 0;
+        int numberOfTries = 10;
+        for (int i = 0; i < numberOfTries; i++) {
+            long beforeTime = System.currentTimeMillis();
+            BCrypt.hashpw("somePassword", BCrypt.gensalt(logRounds));
+            avg += (System.currentTimeMillis() - beforeTime);
+            Logging.infoNoNewLine(".");
+        }
+
+        return avg / numberOfTries;
     }
 
     private void calibrateArgon2Hashing(int targetTimePerHashMs, int hashingPoolSize, int maxMemoryMb,
                                         int parallelism) throws TooLowMemoryProvidedForArgon2 {
         Logging.info("");
-        Logging.info("====Input Settings====");
+        Logging.info(Logging.ANSI_CYAN + "====Input Settings====" + Logging.ANSI_RESET);
         Logging.info("");
         Logging.info("-> Target time per hash (--with_time_per_hash_ms): " + targetTimePerHashMs + " MS");
         Logging.info("-> Number of max concurrent hashes (--with_argon2_hashing_pool_size): " + hashingPoolSize);
@@ -139,16 +206,17 @@ public class HashingCalibrateHandler extends CommandHandler {
 
         Logging.info("");
         Logging.info("");
-        Logging.info("====Running algorithm====");
+        Logging.info(Logging.ANSI_CYAN + "====Running algorithm====" + Logging.ANSI_RESET);
 
         int maxMemoryBytes = maxMemoryMb * 1024 * 1024;
         int currMemoryBytes = maxMemoryBytes / hashingPoolSize; // equal to max memory that can be used per hash
         int currIterations = 1;
 
-        long finalAvgTime = 0;
+        long finalAvgTime;
         while (true) {
-            long currentTimeTaken = getApproxTimeForHashWith(currMemoryBytes, currIterations, parallelism,
+            long currentTimeTaken = getApproxTimeForArgon2HashWith(currMemoryBytes, currIterations, parallelism,
                     hashingPoolSize);
+            Logging.info("Took " + currentTimeTaken + " MS per hash");
             Logging.info("");
             Logging.info("");
 
@@ -156,8 +224,6 @@ public class HashingCalibrateHandler extends CommandHandler {
                 finalAvgTime = currentTimeTaken;
                 break;
             }
-
-            Logging.info("Average hashing time: " + currentTimeTaken + " MS");
 
             if (currentTimeTaken > targetTimePerHashMs) {
                 Logging.info("Adjusting memory to reach target time.");
@@ -168,10 +234,9 @@ public class HashingCalibrateHandler extends CommandHandler {
                 Logging.info("Adjusting iterations to reach target time.");
                 currIterations += 1;
             }
-            Logging.info("====================");
         }
 
-        Logging.info("====Final values====");
+        Logging.info(Logging.ANSI_GREEN + "====Final values====");
         Logging.info("Average time per hash is: " + finalAvgTime + " MS");
         Logging.info("");
         Logging.info("argon2_memory_kb: " + currMemoryBytes / 1024 + " (" + (currMemoryBytes / (1024 * 1024)) + " MB)");
@@ -179,14 +244,14 @@ public class HashingCalibrateHandler extends CommandHandler {
         Logging.info("argon2_parallelism: " + parallelism);
         Logging.info("argon2_hashing_pool_size: " + hashingPoolSize);
         Logging.info("");
-        Logging.info("====================");
+        Logging.info("====================" + Logging.ANSI_RESET);
         Logging.info(
                 "You should use these as docker env variables or put them in the config.yaml file in the SuperTokens " +
                         "installation directory.");
         Logging.info("");
     }
 
-    private long getApproxTimeForHashWith(int memory, int iterations, int parallelism, int maxConcurrentHashes)
+    private long getApproxTimeForArgon2HashWith(int memory, int iterations, int parallelism, int maxConcurrentHashes)
             throws TooLowMemoryProvidedForArgon2 {
         if (memory < (15 * 1024 * 1024) || iterations > 100) {
             throw new TooLowMemoryProvidedForArgon2();
