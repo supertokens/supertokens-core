@@ -36,6 +36,16 @@ public class Logging extends ResourceDistributor.SingletonResource {
     private final Logger infoLogger;
     private final Logger errorLogger;
 
+    public static final String ANSI_RESET = "\u001B[0m";
+    public static final String ANSI_BLACK = "\u001B[30m";
+    public static final String ANSI_RED = "\u001B[31m";
+    public static final String ANSI_GREEN = "\u001B[32m";
+    public static final String ANSI_YELLOW = "\u001B[33m";
+    public static final String ANSI_BLUE = "\u001B[34m";
+    public static final String ANSI_PURPLE = "\u001B[35m";
+    public static final String ANSI_CYAN = "\u001B[36m";
+    public static final String ANSI_WHITE = "\u001B[37m";
+
     private Logging(Main main) {
         this.infoLogger = Config.getConfig(main).getInfoLogPath(main).equals("null")
                 ? createLoggerForConsole(main, "io.supertokens.Info")
@@ -142,7 +152,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
     }
 
     private static void systemErr(String err) {
-        System.err.println(err);
+        System.err.println(Logging.ANSI_RED + err + Logging.ANSI_RESET);
     }
 
     public static void stopLogging(Main main) {

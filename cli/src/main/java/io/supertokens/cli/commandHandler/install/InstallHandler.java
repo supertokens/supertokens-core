@@ -63,9 +63,6 @@ public class InstallHandler extends CommandHandler {
                 createSupertokensScript(installationDir, exeLoc);
                 Logging.info("Successfully installed SuperTokens! You can now delete this directory safely");
                 Logging.info("Run \"supertokens --help\" to see list of available commands");
-                Logging.info(
-                        "Please fill in the compulsory fields in the config file located here: " + installationDir +
-                                "config.yaml");
             }
         } catch (Exception e) {
             if (e.getMessage().toLowerCase().contains("permission denied") && !(e instanceof QuitProgramException)) {

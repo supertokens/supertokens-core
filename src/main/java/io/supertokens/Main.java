@@ -122,9 +122,8 @@ public class Main {
             } catch (Exception e) {
 
                 ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.SHUTTING_DOWN, null);
-                Logging.info(this, "Quitting SuperTokens because of an error");
-                Logging.error(this, "What caused the crash: " + e.getMessage(), true, e);
                 stopApp();
+                Logging.error(this, "What caused the crash: " + e.getMessage(), true, e);
                 exitCode = 1;
             }
             ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.STOPPED, null);
