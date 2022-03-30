@@ -88,7 +88,7 @@ public class CoreConfig {
     private int argon2_iterations = 3;
 
     @JsonProperty
-    private int argon2_memory_bytes = 65536; // 64 mb
+    private int argon2_memory_kb = 65536; // 64 mb
 
     @JsonProperty
     private int argon2_parallelism = 4;
@@ -137,8 +137,8 @@ public class CoreConfig {
         return bcrypt_log_rounds;
     }
 
-    public int getArgon2MemoryBytes() {
-        return argon2_memory_bytes;
+    public int getArgon2MemoryKb() {
+        return argon2_memory_kb;
     }
 
     public int getArgon2Parallelism() {
@@ -342,8 +342,8 @@ public class CoreConfig {
                 throw new QuitProgramException("'argon2_parallelism' must be >= 1");
             }
 
-            if (argon2_memory_bytes <= 0) {
-                throw new QuitProgramException("'argon2_memory_bytes' must be >= 1");
+            if (argon2_memory_kb <= 0) {
+                throw new QuitProgramException("'argon2_memory_kb' must be >= 1");
             }
 
             if (argon2_hashing_pool_size <= 0) {
