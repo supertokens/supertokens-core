@@ -11,6 +11,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Adds github action for checking if "Run tests" action was completed (to run in PRs)
 - Fixes how config values are changed during tests.
 - Adds 60 mins timeout to github action jobs
+- Moves deleting user metadata to happen before deleting the actual user.
 
 ## [3.11.0] - 2022-03-19
 
