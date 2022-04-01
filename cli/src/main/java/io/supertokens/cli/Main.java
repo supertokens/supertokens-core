@@ -17,6 +17,7 @@
 package io.supertokens.cli;
 
 import io.supertokens.cli.commandHandler.CommandHandler;
+import io.supertokens.cli.commandHandler.hashingCalibrate.HashingCalibrateHandler;
 import io.supertokens.cli.commandHandler.help.HelpHandler;
 import io.supertokens.cli.commandHandler.install.InstallHandler;
 import io.supertokens.cli.commandHandler.list.ListHandler;
@@ -69,8 +70,9 @@ public class Main {
         }
     }
 
-    // args: true [--path <path location>] --> via installer is true
-    // args: false <installation path> <command> <...command args>
+    // java -classpath "./cli/*" io.supertokens.cli.Main <args>
+    //  - args: true [--path <path location>] --> via installer is true
+    //  - args: false <installation path> <command> <...command args>
     private static void start(String[] args) {
         boolean viaInstaller = Boolean.parseBoolean(args[0]);
         String installationDir;
@@ -114,6 +116,7 @@ public class Main {
         commandHandler.put("start", new StartHandler());
         commandHandler.put("stop", new StopHandler());
         commandHandler.put("list", new ListHandler());
+        commandHandler.put("hashingCalibrate", new HashingCalibrateHandler());
     }
 
     public static void removeShutdownHook() {

@@ -12,6 +12,21 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Fixes how config values are changed during tests.
 - Adds 60 mins timeout to github action jobs
 - Moves deleting user metadata to happen before deleting the actual user.
+- Adds support for argon2 hashing.
+- Adds colours to CLI output (in case of errors).
+
+### New config:
+
+- `password_hashing_alg`
+- `argon2_iterations`
+- `argon2_memory_kb`
+- `argon2_parallelism`
+- `argon2_hashing_pool_size`
+- `bcrypt_log_rounds`
+
+### New CLI command:
+
+- `supertokens hashingCalibrate`: Used to calibrate argon2 and bcrypt passing hashing params.
 
 ## [3.11.0] - 2022-03-19
 
