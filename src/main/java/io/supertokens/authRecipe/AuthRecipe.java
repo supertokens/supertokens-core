@@ -65,11 +65,14 @@ public class AuthRecipe {
         // - session: the session will expire anyway
         // - email verification: email verification tokens can be created for any userId anyway
 
+        // non auth recipe deletion
+        StorageLayer.getUserMetadataStorage(main).deleteUserMetadata(userId);
         StorageLayer.getSessionStorage(main).deleteSessionsOfUser(userId);
         StorageLayer.getEmailVerificationStorage(main).deleteEmailVerificationUserInfo(userId);
+
+        // auth recipe deletions here only
         StorageLayer.getEmailPasswordStorage(main).deleteEmailPasswordUser(userId);
         StorageLayer.getThirdPartyStorage(main).deleteThirdPartyUser(userId);
         StorageLayer.getPasswordlessStorage(main).deletePasswordlessUser(userId);
-        StorageLayer.getUserMetadataStorage(main).deleteUserMetadata(userId);
     }
 }
