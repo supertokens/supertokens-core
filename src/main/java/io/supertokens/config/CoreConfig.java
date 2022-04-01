@@ -85,16 +85,16 @@ public class CoreConfig {
     private String password_hashing_alg = "BCRYPT";
 
     @JsonProperty
-    private int argon2_iterations = 3;
+    private int argon2_iterations = 1;
 
     @JsonProperty
-    private int argon2_memory_kb = 65536; // 64 mb
+    private int argon2_memory_kb = 87795; // 85 mb
 
     @JsonProperty
-    private int argon2_parallelism = 4;
+    private int argon2_parallelism = 2;
 
     @JsonProperty
-    private int argon2_hashing_pool_size = 10;
+    private int argon2_hashing_pool_size = 1;
 
     @JsonProperty
     private int bcrypt_log_rounds = 11;

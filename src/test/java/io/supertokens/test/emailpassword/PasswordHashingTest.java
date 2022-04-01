@@ -208,10 +208,10 @@ public class PasswordHashingTest {
         CoreConfig config = Config.getConfig(process.getProcess());
 
         assert (config.getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.BCRYPT);
-        assert (config.getArgon2Iterations() == 3);
-        assert (config.getArgon2MemoryKb() == 65536);
-        assert (config.getArgon2Parallelism() == 4);
-        assert (config.getArgon2HashingPoolSize() == 10);
+        assert (config.getArgon2Iterations() == 1);
+        assert (config.getArgon2MemoryKb() == 87795);
+        assert (config.getArgon2Parallelism() == 2);
+        assert (config.getArgon2HashingPoolSize() == 1);
         assert (config.getBcryptLogRounds() == 11);
 
         process.kill();
