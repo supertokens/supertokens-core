@@ -230,6 +230,10 @@ public class PasswordHashingTest {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
             EmailPassword.signUp(process.getProcess(), "t@a.com", "somePassword");
             EmailPassword.signIn(process.getProcess(), "t@a.com", "somePassword");
 
