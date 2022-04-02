@@ -17,6 +17,7 @@
 package io.supertokens.test;
 
 import com.google.gson.JsonObject;
+import io.supertokens.config.Config;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
@@ -787,6 +788,38 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void invalidBasePathTest() throws InterruptedException, IOException {
+        {
+            Utils.setValueInConfig("base_path", "somepath/");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
+            assertEquals(Config.getConfig(process.main).getBasePath(), "/somepath");
+            Utils.reset();
+        }
+        {
+            Utils.setValueInConfig("base_path", "/somepath/");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
+            assertEquals(Config.getConfig(process.main).getBasePath(), "/somepath");
+            Utils.reset();
+        }
+        {
+            Utils.setValueInConfig("base_path", "somepath");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
+            assertEquals(Config.getConfig(process.main).getBasePath(), "/somepath");
+            Utils.reset();
+        }
+        {
+            Utils.setValueInConfig("base_path", "/somepath");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
+            assertEquals(Config.getConfig(process.main).getBasePath(), "/somepath");
+            Utils.reset();
+        }
         {
             Utils.setValueInConfig("base_path", "/some path");
             String[] args = { "../" };
