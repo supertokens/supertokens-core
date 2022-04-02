@@ -797,7 +797,23 @@ public class WebserverTest extends Mockito {
             process.kill();
         }
         {
+            Utils.setValueInConfig("base_path", "somepath//");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
+            assertEquals(Config.getConfig(process.main).getBasePath(), "/somepath");
+            process.kill();
+        }
+        {
             Utils.setValueInConfig("base_path", "/somepath/");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
+            assertEquals(Config.getConfig(process.main).getBasePath(), "/somepath");
+            process.kill();
+        }
+        {
+            Utils.setValueInConfig("base_path", "//somepath//");
             String[] args = { "../" };
             TestingProcess process = TestingProcessManager.start(args);
             EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
@@ -810,6 +826,22 @@ public class WebserverTest extends Mockito {
             TestingProcess process = TestingProcessManager.start(args);
             EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
             assertEquals(Config.getConfig(process.main).getBasePath(), "/somepath");
+            process.kill();
+        }
+        {
+            Utils.setValueInConfig("base_path", "some//path");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
+            assertEquals(Config.getConfig(process.main).getBasePath(), "/some/path");
+            process.kill();
+        }
+        {
+            Utils.setValueInConfig("base_path", "some/////path");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
+            assertEquals(Config.getConfig(process.main).getBasePath(), "/some/path");
             process.kill();
         }
         {
