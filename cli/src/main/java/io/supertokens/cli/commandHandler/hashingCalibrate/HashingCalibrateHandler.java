@@ -49,7 +49,7 @@ public class HashingCalibrateHandler extends CommandHandler {
             }
 
             String hashingPoolSizeStr = CLIOptionsParser.parseOption("--with_argon2_hashing_pool_size", args);
-            int hashingPoolSize = 10;
+            int hashingPoolSize = 1;
             if (hashingPoolSizeStr != null) {
                 hashingPoolSize = Integer.parseInt(hashingPoolSizeStr);
             }
@@ -90,7 +90,7 @@ public class HashingCalibrateHandler extends CommandHandler {
                         " 300 MS."));
         options.add(new Option("--with_argon2_hashing_pool_size",
                 "If calibrating argon2 hashing, this value will affect how many maximum hashes can be computed " +
-                        "concurrently. The default value is 10"));
+                        "concurrently. The default value is 1"));
         options.add(new Option("--with_argon2_max_memory_mb",
                 "If calibrating argon2, this value determines how much maximum memory (RAM), in MB, to use for " +
                         "password " +
@@ -109,7 +109,7 @@ public class HashingCalibrateHandler extends CommandHandler {
 
     @Override
     public String getUsage() {
-        return "supertokens hashingCalibrate --with_alg=<argon2 | bcrypt> [--with_argon2_hashing_pool_size=10] " +
+        return "supertokens hashingCalibrate --with_alg=<argon2 | bcrypt> [--with_argon2_hashing_pool_size=1] " +
                 "[--with_argon2_max_memory_mb=1024] [--with_argon2_parallelism=<value>] [--with_time_per_hash_ms=300]";
     }
 

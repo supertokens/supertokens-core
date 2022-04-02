@@ -7,6 +7,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [3.12.1] - 2022-04-02
+
+### Changes
+
+- Changed default `--with_argon2_hashing_pool_size` in `hashingCalibrate` CLI command to 1.
+
 ## [3.12.0] - 2022-04-01
 
 - Adds github action for running tests against in memory db.
