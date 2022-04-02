@@ -33,19 +33,21 @@ public class Processes {
         public final String hostName;
         public final String port;
         public final String pid;
+        public final String basePath;
         public String configFilePath;  // set via an API call
 
-        RunningProcess(String hostName, String port, String pid) {
+        RunningProcess(String hostName, String port, String pid, String basePath) {
             this.hostName = hostName;
             this.port = port;
             this.pid = pid;
+            this.basePath = basePath;
         }
 
         public void fetchConfigFilePath() throws IOException, HTTPResponseException {
             Map<String, String> params = new HashMap<>();
             params.put("pid", this.pid);
             JsonObject result = HTTPRequest
-                    .sendGETRequest("http://" + this.hostName + ":" + this.port + "/config", params, null);
+                    .sendGETRequest("http://" + this.hostName + ":" + this.port + this.basePath + "/config", params, null);
             this.configFilePath = result.get("path").getAsString();
         }
     }
@@ -61,7 +63,9 @@ public class Processes {
             return result;
         }
         for (File process : processes) {
-            String currPid = Files.readString(process.toPath());
+            String[] dotStartedContent = Files.readString(process.toPath()).split("\n");
+            String currPid = dotStartedContent[0];
+            String basePath = dotStartedContent.length > 1 ? dotStartedContent[1] : "";
             String[] splitted = process.getName().split("-");
             StringBuilder hostName = new StringBuilder();
             for (int i = 0; i < splitted.length - 1; i++) {
@@ -71,7 +75,7 @@ public class Processes {
                 }
             }
             String port = splitted[splitted.length - 1];
-            result.add(new RunningProcess(hostName.toString(), port, currPid));
+            result.add(new RunningProcess(hostName.toString(), port, currPid, basePath));
         }
         return result;
     }

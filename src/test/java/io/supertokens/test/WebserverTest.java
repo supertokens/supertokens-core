@@ -788,26 +788,6 @@ public class WebserverTest extends Mockito {
     @Test
     public void invalidBasePathTest() throws InterruptedException, IOException {
         {
-            Utils.setValueInConfig("base_path", "somepath/");
-            String[] args = { "../" };
-            TestingProcess process = TestingProcessManager.start(args);
-            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
-            assertTrue(e != null && e.exception instanceof QuitProgramException
-                    && e.exception.getMessage().equals("base_path must start with a '/'"));
-            Utils.reset();
-        }
-
-        {
-            Utils.setValueInConfig("base_path", "/somepath/");
-            String[] args = { "../" };
-            TestingProcess process = TestingProcessManager.start(args);
-            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
-            assertTrue(e != null && e.exception instanceof QuitProgramException
-                    && e.exception.getMessage().equals("base_path cannot end with '/'"));
-            Utils.reset();
-        }
-
-        {
             Utils.setValueInConfig("base_path", "/some path");
             String[] args = { "../" };
             TestingProcess process = TestingProcessManager.start(args);

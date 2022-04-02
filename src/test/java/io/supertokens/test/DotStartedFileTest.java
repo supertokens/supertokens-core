@@ -17,6 +17,7 @@
 package io.supertokens.test;
 
 import io.supertokens.ProcessState;
+import io.supertokens.config.Config;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -24,6 +25,8 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import static org.junit.Assert.*;
 
@@ -120,6 +123,7 @@ public class DotStartedFileTest {
         String host = "localhost";
         String port = "8081";
         String hostPortNameCheck = host + "-" + port;
+        String basePathCheck = "/test";
 
         Utils.setValueInConfig("port", port);
 
@@ -133,17 +137,36 @@ public class DotStartedFileTest {
         assertEquals(1, dotStartedNameAndContent.length);
         assertEquals(dotStartedNameAndContent[0].getName(), hostPortNameCheck);
 
-        try (InputStream is = new FileInputStream(dotStartedNameAndContent[0].getPath());
-                BufferedReader buf = new BufferedReader(new InputStreamReader(is))) {
-
-            String line = buf.readLine();
-            assertEquals(line, Long.toString(ProcessHandle.current().pid()));
-
-        }
+        String[] dotStartedContent = Files.readString(Paths.get(dotStartedNameAndContent[0].getPath())).split("\n");
+        String line = dotStartedContent[0];
+        assertEquals(line, Long.toString(ProcessHandle.current().pid()));
+        line = dotStartedContent.length > 1 ? dotStartedContent[1] : "";
+        assertEquals(line, Config.getConfig(process.main).getBasePath());
+        assertEquals(line, "");
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
+        // Ensure that base_path is set in .started file
+        Utils.setValueInConfig("base_path", basePathCheck);
+
+        process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        dotStartedNameAndContent = loc.listFiles();
+        assert dotStartedNameAndContent != null;
+        assertEquals(1, dotStartedNameAndContent.length);
+        assertEquals(dotStartedNameAndContent[0].getName(), hostPortNameCheck);
+
+        dotStartedContent = Files.readString(Paths.get(dotStartedNameAndContent[0].getPath())).split("\n");
+        line = dotStartedContent[0];
+        assertEquals(line, Long.toString(ProcessHandle.current().pid()));
+        line = dotStartedContent.length > 1 ? dotStartedContent[1] : "";
+        assertEquals(line, Config.getConfig(process.main).getBasePath());
+        assertEquals(line, basePathCheck);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
