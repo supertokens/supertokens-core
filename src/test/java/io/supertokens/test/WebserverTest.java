@@ -801,14 +801,16 @@ public class WebserverTest extends Mockito {
         
         TestingProcess process;
         EventAndException e;
-        tests.forEach((base_path, result) -> {
+        for(String base_path : tests.keySet())
+        {
+            String result = tests.get(base_path);
             Utils.setValueInConfig("base_path", base_path);
             process = TestingProcessManager.start(args);
             e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
             assertEquals(Config.getConfig(process.main).getBasePath(), result);
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-        });
+        }
     
         Utils.setValueInConfig("base_path", "/some path");
         process = TestingProcessManager.start(args);
