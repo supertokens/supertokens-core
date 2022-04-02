@@ -796,6 +796,11 @@ public class WebserverTest extends Mockito {
         tests.put("//somepath//",  "/somepath");
         tests.put("somepath",      "/somepath");
         tests.put("/somepath",     "/somepath");
+        tests.put("some/path",     "/some/path");
+        tests.put("some/path/",    "/some/path");
+        tests.put("some/path//",   "/some/path");
+        tests.put("/some/path",    "/some/path");
+        tests.put("//some/path",   "/some/path");
         tests.put("some//path",    "/some/path");
         tests.put("some/////path", "/some/path");
         
@@ -807,7 +812,7 @@ public class WebserverTest extends Mockito {
             Utils.setValueInConfig("base_path", base_path);
             process = TestingProcessManager.start(args);
             e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
-            assertEquals(Config.getConfig(process.main).getBasePath(), result);
+            assertEquals(result, Config.getConfig(process.main).getBasePath());
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
