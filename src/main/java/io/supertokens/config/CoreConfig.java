@@ -121,6 +121,9 @@ public class CoreConfig {
         if (base_path.endsWith("/")) { // Remove trailing '/'
             base_path = base_path.substring(0, base_path.length() - 1);
         }
+        while (base_path.contains("//")) { // Catch corner case where there are multiple '/' together
+            base_path = base_path.replace("//", "/");
+        }
         return base_path;
     }
 

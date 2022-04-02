@@ -827,7 +827,7 @@ public class WebserverTest extends Mockito {
             EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
             assertTrue(e != null && e.exception instanceof QuitProgramException
                     && e.exception.getMessage().equals("Invalid characters in base_path config"));
-            process.kill();
+            Utils.reset();
         }
 
     }
