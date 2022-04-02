@@ -794,7 +794,7 @@ public class WebserverTest extends Mockito {
             TestingProcess process = TestingProcessManager.start(args);
             EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
             assertEquals(Config.getConfig(process.main).getBasePath(), "/somepath");
-            Utils.reset();
+            process.kill();
         }
         {
             Utils.setValueInConfig("base_path", "/somepath/");
@@ -802,7 +802,7 @@ public class WebserverTest extends Mockito {
             TestingProcess process = TestingProcessManager.start(args);
             EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
             assertEquals(Config.getConfig(process.main).getBasePath(), "/somepath");
-            Utils.reset();
+            process.kill();
         }
         {
             Utils.setValueInConfig("base_path", "somepath");
@@ -810,7 +810,7 @@ public class WebserverTest extends Mockito {
             TestingProcess process = TestingProcessManager.start(args);
             EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
             assertEquals(Config.getConfig(process.main).getBasePath(), "/somepath");
-            Utils.reset();
+            process.kill();
         }
         {
             Utils.setValueInConfig("base_path", "/somepath");
@@ -818,7 +818,7 @@ public class WebserverTest extends Mockito {
             TestingProcess process = TestingProcessManager.start(args);
             EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
             assertEquals(Config.getConfig(process.main).getBasePath(), "/somepath");
-            Utils.reset();
+            process.kill();
         }
         {
             Utils.setValueInConfig("base_path", "/some path");
@@ -827,7 +827,7 @@ public class WebserverTest extends Mockito {
             EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
             assertTrue(e != null && e.exception instanceof QuitProgramException
                     && e.exception.getMessage().equals("Invalid characters in base_path config"));
-            Utils.reset();
+            process.kill();
         }
 
     }
