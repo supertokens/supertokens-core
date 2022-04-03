@@ -158,6 +158,9 @@ Mihály Lengyel</b></sub></a></td>
 <td align="center"><a href="https://github.com/rtpa25"><img src="https://avatars.githubusercontent.com/u/72537293?v=4" width="100px;" alt=""/><br /><sub><b>Ronit Panda</b></sub></a></td>
 <td align="center"><a href="https://github.com/anugrahsinghal"><img src="https://avatars.githubusercontent.com/u/18058884?v=4" width="100px;" alt=""/><br /><sub><b>Anugrah Singhal</b></sub></a></td>
   </tr>
+  <tr>
+<td align="center"><a href="https://github.com/JeremyEastham"><img src="https://avatars.githubusercontent.com/u/34139712?v=4" width="100px;" alt=""/><br /><sub><b>Jeremy Eastham</b></sub></a></td>
+  </tr>
 </table>
 
 ## 👩‍💻 Contributing
