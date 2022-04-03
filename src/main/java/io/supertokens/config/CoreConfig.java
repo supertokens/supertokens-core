@@ -111,8 +111,18 @@ public class CoreConfig {
     private String base_path = "";
 
     public String getBasePath() {
-        if (base_path == null || base_path.equals("/")) {
+        String base_path = this.base_path; // Don't modify the original value from the config
+        if (base_path == null || base_path.equals("/") || base_path.isEmpty()) {
             return "";
+        }
+        while (base_path.contains("//")) { // Catch corner case where there are multiple '/' together
+            base_path = base_path.replace("//", "/");
+        }
+        if (!base_path.startsWith("/")) { // Add leading '/'
+            base_path = "/" + base_path;
+        }
+        if (base_path.endsWith("/")) { // Remove trailing '/'
+            base_path = base_path.substring(0, base_path.length() - 1);
         }
         return base_path;
     }
@@ -362,12 +372,6 @@ public class CoreConfig {
         if (base_path != null && !base_path.equals("") && !base_path.equals("/")) {
             if (base_path.contains(" ")) {
                 throw new QuitProgramException("Invalid characters in base_path config");
-            }
-            if (!base_path.startsWith("/")) {
-                throw new QuitProgramException("base_path must start with a '/'");
-            }
-            if (base_path.endsWith("/")) {
-                throw new QuitProgramException("base_path cannot end with '/'");
             }
         }
 

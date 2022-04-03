@@ -7,6 +7,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+- Fixes base_path config option not being observed when running `supertokens list`
+- Adds base_path normalization logic
+
 ## [3.12.1] - 2022-04-02
 
 ### Changes

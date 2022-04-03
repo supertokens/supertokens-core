@@ -17,6 +17,7 @@
 package io.supertokens.test;
 
 import com.google.gson.JsonObject;
+import io.supertokens.config.Config;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
@@ -787,36 +788,41 @@ public class WebserverTest extends Mockito {
 
     @Test
     public void invalidBasePathTest() throws InterruptedException, IOException {
+        String[] args = { "../" };
+        HashMap<String, String> tests = new HashMap<>();
+        tests.put("somepath/",     "/somepath");
+        tests.put("somepath//",    "/somepath");
+        tests.put("/somepath/",    "/somepath");
+        tests.put("//somepath//",  "/somepath");
+        tests.put("somepath",      "/somepath");
+        tests.put("/somepath",     "/somepath");
+        tests.put("some/path",     "/some/path");
+        tests.put("some/path/",    "/some/path");
+        tests.put("some/path//",   "/some/path");
+        tests.put("/some/path",    "/some/path");
+        tests.put("//some/path",   "/some/path");
+        tests.put("some//path",    "/some/path");
+        tests.put("some/////path", "/some/path");
+        
+        TestingProcess process;
+        EventAndException e;
+        for(String base_path : tests.keySet())
         {
-            Utils.setValueInConfig("base_path", "somepath/");
-            String[] args = { "../" };
-            TestingProcess process = TestingProcessManager.start(args);
-            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
-            assertTrue(e != null && e.exception instanceof QuitProgramException
-                    && e.exception.getMessage().equals("base_path must start with a '/'"));
-            Utils.reset();
+            String result = tests.get(base_path);
+            Utils.setValueInConfig("base_path", base_path);
+            process = TestingProcessManager.start(args);
+            e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
+            assertEquals(result, Config.getConfig(process.main).getBasePath());
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
-
-        {
-            Utils.setValueInConfig("base_path", "/somepath/");
-            String[] args = { "../" };
-            TestingProcess process = TestingProcessManager.start(args);
-            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
-            assertTrue(e != null && e.exception instanceof QuitProgramException
-                    && e.exception.getMessage().equals("base_path cannot end with '/'"));
-            Utils.reset();
-        }
-
-        {
-            Utils.setValueInConfig("base_path", "/some path");
-            String[] args = { "../" };
-            TestingProcess process = TestingProcessManager.start(args);
-            EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
-            assertTrue(e != null && e.exception instanceof QuitProgramException
-                    && e.exception.getMessage().equals("Invalid characters in base_path config"));
-            Utils.reset();
-        }
-
+    
+        Utils.setValueInConfig("base_path", "/some path");
+        process = TestingProcessManager.start(args);
+        e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
+        assertTrue(e != null && e.exception instanceof QuitProgramException
+                           && e.exception.getMessage().equals("Invalid characters in base_path config"));
+        Utils.reset();
     }
 
     @Test
