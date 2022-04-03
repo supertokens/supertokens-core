@@ -790,24 +790,23 @@ public class WebserverTest extends Mockito {
     public void invalidBasePathTest() throws InterruptedException, IOException {
         String[] args = { "../" };
         HashMap<String, String> tests = new HashMap<>();
-        tests.put("somepath/",     "/somepath");
-        tests.put("somepath//",    "/somepath");
-        tests.put("/somepath/",    "/somepath");
-        tests.put("//somepath//",  "/somepath");
-        tests.put("somepath",      "/somepath");
-        tests.put("/somepath",     "/somepath");
-        tests.put("some/path",     "/some/path");
-        tests.put("some/path/",    "/some/path");
-        tests.put("some/path//",   "/some/path");
-        tests.put("/some/path",    "/some/path");
-        tests.put("//some/path",   "/some/path");
-        tests.put("some//path",    "/some/path");
+        tests.put("somepath/", "/somepath");
+        tests.put("somepath//", "/somepath");
+        tests.put("/somepath/", "/somepath");
+        tests.put("//somepath//", "/somepath");
+        tests.put("somepath", "/somepath");
+        tests.put("/somepath", "/somepath");
+        tests.put("some/path", "/some/path");
+        tests.put("some/path/", "/some/path");
+        tests.put("some/path//", "/some/path");
+        tests.put("/some/path", "/some/path");
+        tests.put("//some/path", "/some/path");
+        tests.put("some//path", "/some/path");
         tests.put("some/////path", "/some/path");
-        
+
         TestingProcess process;
         EventAndException e;
-        for(String base_path : tests.keySet())
-        {
+        for (String base_path : tests.keySet()) {
             String result = tests.get(base_path);
             Utils.setValueInConfig("base_path", base_path);
             process = TestingProcessManager.start(args);
@@ -816,12 +815,12 @@ public class WebserverTest extends Mockito {
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
-    
+
         Utils.setValueInConfig("base_path", "/some path");
         process = TestingProcessManager.start(args);
         e = process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE);
         assertTrue(e != null && e.exception instanceof QuitProgramException
-                           && e.exception.getMessage().equals("Invalid characters in base_path config"));
+                && e.exception.getMessage().equals("Invalid characters in base_path config"));
         Utils.reset();
     }
 
