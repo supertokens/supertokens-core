@@ -84,3 +84,22 @@ core_config_version: 0
 
 # (OPTIONAL | Default: ""). Used to prepend a base path to all APIs when querying the core.
 # base_path:
+
+# (OPTIONAL | Default: "BCRYPT"). The password hashing algorithm to use. Values are "ARGON2" | "BCRYPT"
+# password_hashing_alg:
+
+# (OPTIONAL | Default: 11). Number of rounds to set for bcrypt password hashing
+# bcrypt_log_rounds:
+
+# (OPTIONAL | Default: 1). Number of iterations for argon2 password hashing
+# argon2_iterations:
+
+# (OPTIONAL | Default: 87795 (85 mb)). Amount of memory in kb for argon2 password hashing
+# argon2_memory_kb:
+
+# (OPTIONAL | Default: 2). Amount of parallelism for argon2 password hashing
+# argon2_parallelism:
+
+# (OPTIONAL | Default: 1). Number of concurrent argon2 hashes that can happen at the same time for sign up or sign
+# in requests.
+# argon2_hashing_pool_size:

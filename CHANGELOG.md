@@ -7,11 +7,37 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+- Fixes base_path config option not being observed when running `supertokens list`
+- Adds base_path normalization logic
+
+## [3.12.1] - 2022-04-02
+
+### Changes
+
+- Changed default `--with_argon2_hashing_pool_size` in `hashingCalibrate` CLI command to 1.
+
+## [3.12.0] - 2022-04-01
+
 - Adds github action for running tests against in memory db.
 - Adds github action for checking if "Run tests" action was completed (to run in PRs)
 - Fixes how config values are changed during tests.
 - Adds 60 mins timeout to github action jobs
 - Moves deleting user metadata to happen before deleting the actual user.
+- Adds support for argon2 hashing.
+- Adds colours to CLI output (in case of errors).
+
+### New config:
+
+- `password_hashing_alg`
+- `argon2_iterations`
+- `argon2_memory_kb`
+- `argon2_parallelism`
+- `argon2_hashing_pool_size`
+- `bcrypt_log_rounds`
+
+### New CLI command:
+
+- `supertokens hashingCalibrate`: Used to calibrate argon2 and bcrypt passing hashing params.
 
 ## [3.11.0] - 2022-03-19
 

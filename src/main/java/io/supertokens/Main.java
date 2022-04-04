@@ -26,6 +26,7 @@ import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPas
 import io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPasswordlessDevices;
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.cronjobs.telemetry.Telemetry;
+import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.jwt.JWTSigningKey;
@@ -121,9 +122,8 @@ public class Main {
             } catch (Exception e) {
 
                 ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.SHUTTING_DOWN, null);
-                Logging.info(this, "Quitting SuperTokens because of an error");
-                Logging.error(this, "What caused the crash: " + e.getMessage(), true, e);
                 stopApp();
+                Logging.error(this, "What caused the crash: " + e.getMessage(), true, e);
                 exitCode = 1;
             }
             ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.STOPPED, null);
@@ -205,6 +205,9 @@ public class Main {
             Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.getInstance(this));
         }
 
+        // creates password hashing pool
+        PasswordHashing.init(this);
+
         // start web server to accept incoming traffic
         Webserver.getInstance(this).start();
 
@@ -275,7 +278,7 @@ public class Main {
         boolean ignored = dotStarted.setWritable(true, false);
         this.startedFileName = fileName;
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(dotStarted))) { // overwrite mode
-            writer.write(ProcessHandle.current().pid() + "");
+            writer.write(ProcessHandle.current().pid() + "\n" + Config.getConfig(this).getBasePath());
         }
     }
 

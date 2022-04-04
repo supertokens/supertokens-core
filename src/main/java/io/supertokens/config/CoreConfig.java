@@ -21,6 +21,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
@@ -80,6 +81,24 @@ public class CoreConfig {
     @JsonProperty
     private boolean disable_telemetry = false;
 
+    @JsonProperty
+    private String password_hashing_alg = "BCRYPT";
+
+    @JsonProperty
+    private int argon2_iterations = 1;
+
+    @JsonProperty
+    private int argon2_memory_kb = 87795; // 85 mb
+
+    @JsonProperty
+    private int argon2_parallelism = 2;
+
+    @JsonProperty
+    private int argon2_hashing_pool_size = 1;
+
+    @JsonProperty
+    private int bcrypt_log_rounds = 11;
+
     // TODO: add https in later version
 //	# (OPTIONAL) boolean value (true or false). Set to true if you want to enable https requests to SuperTokens.
 //	# If you are not running SuperTokens within a closed network along with your API process, for 
@@ -92,10 +111,57 @@ public class CoreConfig {
     private String base_path = "";
 
     public String getBasePath() {
-        if (base_path == null || base_path.equals("/")) {
+        String base_path = this.base_path; // Don't modify the original value from the config
+        if (base_path == null || base_path.equals("/") || base_path.isEmpty()) {
             return "";
         }
+        while (base_path.contains("//")) { // Catch corner case where there are multiple '/' together
+            base_path = base_path.replace("//", "/");
+        }
+        if (!base_path.startsWith("/")) { // Add leading '/'
+            base_path = "/" + base_path;
+        }
+        if (base_path.endsWith("/")) { // Remove trailing '/'
+            base_path = base_path.substring(0, base_path.length() - 1);
+        }
         return base_path;
+    }
+
+    public enum PASSWORD_HASHING_ALG {
+        ARGON2, BCRYPT
+    }
+
+    public int getArgon2HashingPoolSize() {
+        // the reason we do Math.max below is that if the password hashing algo is bcrypt,
+        // then we don't check the argon2 hashing pool size config at all. In this case,
+        // if the user gives a <= 0 number, it crashes the core (since it creates a blockedqueue in PaswordHashing
+        // .java with length <= 0). So we do a Math.max
+        return Math.max(1, argon2_hashing_pool_size);
+    }
+
+    public int getArgon2Iterations() {
+        return argon2_iterations;
+    }
+
+    public int getBcryptLogRounds() {
+        return bcrypt_log_rounds;
+    }
+
+    public int getArgon2MemoryKb() {
+        return argon2_memory_kb;
+    }
+
+    public int getArgon2Parallelism() {
+        return argon2_parallelism;
+    }
+
+    public PASSWORD_HASHING_ALG getPasswordHashingAlg() {
+        return PASSWORD_HASHING_ALG.valueOf(password_hashing_alg.toUpperCase());
+    }
+
+    @TestOnly
+    public void setPasswordHashingAlg(PASSWORD_HASHING_ALG algo) {
+        this.password_hashing_alg = algo.toString();
     }
 
     public int getConfigVersion() {
@@ -273,15 +339,39 @@ public class CoreConfig {
             }
         }
 
+        if (!password_hashing_alg.equalsIgnoreCase("ARGON2") && !password_hashing_alg.equalsIgnoreCase("BCRYPT")) {
+            throw new QuitProgramException("'password_hashing_alg' must be one of 'ARGON2' or 'BCRYPT'");
+        }
+
+        if (password_hashing_alg.equalsIgnoreCase("ARGON2")) {
+            if (argon2_iterations <= 0) {
+                throw new QuitProgramException("'argon2_iterations' must be >= 1");
+            }
+
+            if (argon2_parallelism <= 0) {
+                throw new QuitProgramException("'argon2_parallelism' must be >= 1");
+            }
+
+            if (argon2_memory_kb <= 0) {
+                throw new QuitProgramException("'argon2_memory_kb' must be >= 1");
+            }
+
+            if (argon2_hashing_pool_size <= 0) {
+                throw new QuitProgramException("'argon2_hashing_pool_size' must be >= 1");
+            }
+
+            if (argon2_hashing_pool_size > max_server_pool_size) {
+                throw new QuitProgramException("'argon2_hashing_pool_size' must be <= 'max_server_pool_size'");
+            }
+        } else if (password_hashing_alg.equalsIgnoreCase("BCRYPT")) {
+            if (bcrypt_log_rounds <= 0) {
+                throw new QuitProgramException("'bcrypt_log_rounds' must be >= 1");
+            }
+        }
+
         if (base_path != null && !base_path.equals("") && !base_path.equals("/")) {
             if (base_path.contains(" ")) {
                 throw new QuitProgramException("Invalid characters in base_path config");
-            }
-            if (!base_path.startsWith("/")) {
-                throw new QuitProgramException("base_path must start with a '/'");
-            }
-            if (base_path.endsWith("/")) {
-                throw new QuitProgramException("base_path cannot end with '/'");
             }
         }
 
