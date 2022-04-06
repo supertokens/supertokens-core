@@ -55,9 +55,9 @@ public class UserRoleQueries {
         // @formatter:on
     }
 
-    static String getQueryToCreateRolePermissionsRoleIndex(Start start) {
-        return "CREATE INDEX role_permissions_role_index ON " + Config.getConfig(start).getUserRolesPermissionsTable()
-                + "(permission);";
+    static String getQueryToCreateRolePermissionsPermissionIndex(Start start) {
+        return "CREATE INDEX role_permissions_permission_index ON "
+                + Config.getConfig(start).getUserRolesPermissionsTable() + "(permission);";
     }
 
     public static String getQueryToCreateUserRolesTable(Start start) {
