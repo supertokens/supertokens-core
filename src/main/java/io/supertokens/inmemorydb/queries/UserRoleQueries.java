@@ -54,6 +54,11 @@ public class UserRoleQueries {
         // @formatter:on
     }
 
+    static String getQueryToCreateRolePermissionsRoleIndex(Start start) {
+        return "CREATE INDEX role_permissions_role_index ON " + Config.getConfig(start).getUserRolesPermissionsTable()
+                + "(permission);";
+    }
+
     public static String getQueryToCreateUserRolesTable(Start start) {
         String tableName = Config.getConfig(start).getUserRolesTable();
         // @formatter:off
@@ -65,6 +70,10 @@ public class UserRoleQueries {
                 + "(role) ON DELETE CASCADE );";
 
         // @formatter:on
+    }
+
+    static String getQueryToCreateUserRolesRoleIndex(Start start) {
+        return "CREATE INDEX user_roles_role_index ON " + Config.getConfig(start).getUserRolesTable() + "(role);";
     }
 
     public static int addRoleToUser(Start start, String userId, String role)
@@ -199,12 +208,7 @@ public class UserRoleQueries {
             pst.setString(2, role);
         });
 
-        // check if any rows were updated
-        if (rowUpdatedCount > 0) {
-            return true;
-        }
-
-        return false;
+        return rowUpdatedCount > 0;
     }
 
 }

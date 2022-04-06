@@ -162,6 +162,25 @@ public class GeneralQueries {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, getQueryToCreateUserMetadataTable(start), NO_OP_SETTER);
         }
+        if (!doesTableExists(start, Config.getConfig(start).getRolesTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, UserRoleQueries.getQueryToCreateRolesTable(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getUserRolesPermissionsTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, UserRoleQueries.getQueryToCreateRolePermissionsTable(start), NO_OP_SETTER);
+            // index
+            update(start, UserRoleQueries.getQueryToCreateRolePermissionsRoleIndex(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getUserRolesTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, UserRoleQueries.getQueryToCreateUserRolesTable(start), NO_OP_SETTER);
+            // index
+            update(start, UserRoleQueries.getQueryToCreateUserRolesRoleIndex(start), NO_OP_SETTER);
+        }
+
     }
 
     public static void setKeyValue_Transaction(Start start, Connection con, String key, KeyValueInfo info)
