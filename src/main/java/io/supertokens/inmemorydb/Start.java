@@ -1360,7 +1360,17 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     @Override
     public void createNewRole_Transaction(TransactionConnection con, String role)
             throws StorageQueryException, DuplicateRoleException {
-
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            UserRoleQueries.createNewRole_Transaction(this, sqlCon, role);
+        } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getRolesTable() + ".role )")) {
+                throw new DuplicateRoleException();
+            }
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override

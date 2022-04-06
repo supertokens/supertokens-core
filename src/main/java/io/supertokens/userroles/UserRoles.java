@@ -40,6 +40,36 @@ public class UserRoles {
         }
     }
 
+    // create a new role if it doesn't exist and add permissions to the role
+    public static void setRole(Main main, String role, String[] permissions)
+            throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(main);
+        try {
+            storage.startTransaction(con -> {
+                try {
+                    storage.createNewRole_Transaction(con, role);
+                } catch (DuplicateRoleException e) {
+                    // ignore exception
+                }
+                for (int i = 0; i < permissions.length; i++) {
+                    try {
+                        storage.addPermissionToRole_Transaction(con, role, permissions[i]);
+                    } catch (DuplicateRolePermissionMappingException e) {
+                        // ignore exception
+                    } catch (UnknownRoleException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                }
+                return null;
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof UnknownRoleException) {
+                throw (UnknownRoleException) e.actualException;
+            }
+            throw e;
+        }
+    }
+
     // remove a role mapped to a user, if the role doesn't exist throw a UNKNOWN_ROLE_EXCEPTION error
 //    public static void deleteUserRole(Main main, String userId, String role)
 //            throws StorageQueryException, StorageTransactionLogicException {
@@ -76,26 +106,6 @@ public class UserRoles {
 //        }
 //    }
 //
-//    // create a new role if it doesn't exist and add permissions to the role
-//    public static void setRole(Main main, String role, String[] permissions)
-//            throws StorageQueryException, StorageTransactionLogicException {
-//        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(main);
-//        storage.startTransaction(con -> {
-//            try {
-//                storage.createNewRole_Transaction(con, role);
-//            } catch (DuplicateRoleException e) {
-//                // ignore exception
-//            }
-//            for (int i = 0; i < permissions.length; i++) {
-//                try {
-//                    storage.addPermissionToRole_Transaction(con, role, permissions[i]);
-//                } catch (DuplicateRolePermissionMappingException e) {
-//                    // ignore exception
-//                }
-//            }
-//            return null;
-//        });
-//    }
 //
 //    // retrieve all permissions associated with the role
 //    public static String[] getPermissionsForRole(Main main, String role)
