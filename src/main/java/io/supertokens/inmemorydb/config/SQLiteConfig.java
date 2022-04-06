@@ -73,4 +73,16 @@ public class SQLiteConfig {
     public String getUserMetadataTable() {
         return "user_metadata";
     }
+
+    public String getUserRolesRolesTable() {
+        return "role";
+    }
+
+    public String getUserRolesRolePermissionsTable() {
+        return "role_permissions";
+    }
+
+    public String getUserRolesTable() {
+        return "user_roles";
+    }
 }

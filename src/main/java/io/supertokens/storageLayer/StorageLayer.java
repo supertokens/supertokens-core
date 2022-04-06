@@ -32,6 +32,8 @@ import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLSto
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
+import io.supertokens.pluginInterface.userroles.UserRolesStorage;
+import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
@@ -239,6 +241,18 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
 
         return (UserMetadataSQLStorage) getInstance(main).storage;
+    }
+
+    public static UserRolesSQLStorage getUserRolesStorage(Main main) {
+        if (getInstance(main) == null) {
+            throw new QuitProgramException("please call init() before calling getStorageLayer");
+        }
+
+        if (getInstance(main).storage.getType() != STORAGE_TYPE.SQL) {
+            // we only support SQL for now
+            throw new UnsupportedOperationException("");
+        }
+        return (UserRolesSQLStorage) getInstance(main).storage;
     }
 
     public boolean isInMemDb() {
