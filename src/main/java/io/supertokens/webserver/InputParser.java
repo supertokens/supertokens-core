@@ -115,18 +115,6 @@ public class InputParser {
         }
     }
 
-    public static String parseAndSanitizeStringOrThrowError(JsonObject element, String fieldName, boolean nullable)
-            throws ServletException {
-        String parsedInputString = parseStringOrThrowError(element, fieldName, nullable);
-        String trimmedAndParsedInputString = parsedInputString.trim();
-
-        if (trimmedAndParsedInputString.length() == 0) {
-            throw new ServletException(
-                    new WebserverAPI.BadRequestException("Field name '" + fieldName + "' is invalid in JSON input"));
-        }
-        return trimmedAndParsedInputString;
-    }
-
     public static String parseStringFromElementOrThrowError(JsonElement element, String parentFieldName,
             boolean nullable) throws ServletException {
         try {

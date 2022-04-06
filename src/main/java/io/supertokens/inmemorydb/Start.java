@@ -1311,7 +1311,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public int deleteRole(String role) throws StorageQueryException {
+    public boolean deleteRole(String role) throws StorageQueryException {
         try {
             return UserRoleQueries.deleteRole(this, role);
         } catch (StorageTransactionLogicException e) {

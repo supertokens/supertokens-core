@@ -49,8 +49,13 @@ public class AddUserRoleAPI extends WebserverAPI {
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String userId = InputParser.parseAndSanitizeStringOrThrowError(input, "userId", false);
-        String role = InputParser.parseAndSanitizeStringOrThrowError(input, "role", false);
+
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+
+        String role = InputParser.parseStringFromElementOrThrowError(input, "role", false);
+
+        // normalize and sanitize role
+        role = normalizeAndSanitizeString(role, "role");
 
         try {
             UserRoles.addRoleToUser(main, userId, role);
@@ -64,5 +69,15 @@ public class AddUserRoleAPI extends WebserverAPI {
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
+    }
+
+    private static String normalizeAndSanitizeString(String field, String fieldName) throws ServletException {
+        String trimmedString = field.trim();
+
+        if (trimmedString.length() == 0) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("Field name '" + fieldName + "' is invalid in JSON input"));
+        }
+        return trimmedString;
     }
 }

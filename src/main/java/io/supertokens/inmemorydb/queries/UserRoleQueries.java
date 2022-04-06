@@ -133,20 +133,20 @@ public class UserRoleQueries {
         });
     }
 
-    public static int deleteRole(Start start, String role)
+    public static boolean deleteRole(Start start, String role)
             throws StorageQueryException, StorageTransactionLogicException {
 
         // SQLite is not compiled with foreign key constraint and so we must implement
         // cascading deletes here
         return start.startTransaction(con -> {
-            int response;
+            boolean response;
             Connection sqlCon = (Connection) con.getConnection();
             try {
                 {
                     String QUERY = "DELETE FROM " + getConfig(start).getRolesTable() + " WHERE role = ? ;";
                     response = update(sqlCon, QUERY, pst -> {
                         pst.setString(1, role);
-                    });
+                    }) == 1;
                 }
 
                 {
