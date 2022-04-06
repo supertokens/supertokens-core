@@ -32,7 +32,7 @@ import static io.supertokens.inmemorydb.config.Config.getConfig;
 
 public class UserRoleQueries {
     public static String getQueryToCreateRolesTable(Start start) {
-        String tableName = Config.getConfig(start).getUserRolesRolesTable();
+        String tableName = Config.getConfig(start).getRolesTable();
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
                 + "role VARCHAR(255) NOT NULL,"
@@ -42,13 +42,13 @@ public class UserRoleQueries {
     }
 
     public static String getQueryToCreateRolePermissionsTable(Start start) {
-        String tableName = Config.getConfig(start).getUserRolesRolePermissionsTable();
+        String tableName = Config.getConfig(start).getUserRolesPermissionsTable();
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
                 + "role VARCHAR(255) NOT NULL,"
                 + "permission VARCHAR(255) NOT NULL,"
                 + "PRIMARY KEY(role, permission),"
-                + "FOREIGN KEY(role) REFERENCES " + Config.getConfig(start).getUserRolesRolesTable()
+                + "FOREIGN KEY(role) REFERENCES " + Config.getConfig(start).getRolesTable()
                 +"(role) ON DELETE CASCADE );";
 
         // @formatter:on
@@ -61,7 +61,7 @@ public class UserRoleQueries {
                 + "user_id VARCHAR(128) NOT NULL,"
                 + "role VARCHAR(255) NOT NULL,"
                 + "PRIMARY KEY(user_id, role),"
-                + "FOREIGN KEY(role) REFERENCES " + Config.getConfig(start).getUserRolesRolesTable()
+                + "FOREIGN KEY(role) REFERENCES " + Config.getConfig(start).getRolesTable()
                 + "(role) ON DELETE CASCADE );";
 
         // @formatter:on
@@ -100,8 +100,7 @@ public class UserRoleQueries {
     }
 
     public static String[] getPermissionsForRole(Start start, String role) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT permission FROM " + getConfig(start).getUserRolesRolePermissionsTable()
-                + "WHERE role = ? ;";
+        String QUERY = "SELECT permission FROM " + getConfig(start).getUserRolesPermissionsTable() + "WHERE role = ? ;";
 
         return execute(start, QUERY, pst -> pst.setString(1, role), result -> {
             ArrayList<String> permissions = new ArrayList<>();
@@ -114,8 +113,7 @@ public class UserRoleQueries {
 
     public static String[] getRolesThatHavePermission(Start start, String permission)
             throws SQLException, StorageQueryException {
-        String QUERY = "SELECT role FROM " + getConfig(start).getUserRolesRolePermissionsTable()
-                + "WHERE permission = ? ;";
+        String QUERY = "SELECT role FROM " + getConfig(start).getUserRolesPermissionsTable() + "WHERE permission = ? ;";
         return execute(start, QUERY, pst -> pst.setString(1, permission), result -> {
             ArrayList<String> roles = new ArrayList<>();
             while (result.next()) {
@@ -134,15 +132,14 @@ public class UserRoleQueries {
             int response;
             Connection sqlCon = (Connection) con.getConnection();
             {
-                String QUERY = "DELETE FROM " + getConfig(start).getUserRolesRolesTable() + " WHERE role = ? ;";
+                String QUERY = "DELETE FROM " + getConfig(start).getRolesTable() + " WHERE role = ? ;";
                 response = update(sqlCon, QUERY, pst -> {
                     pst.setString(1, role);
                 });
             }
 
             {
-                String QUERY = "DELETE FROM " + getConfig(start).getUserRolesRolePermissionsTable()
-                        + " WHERE role = ? ;";
+                String QUERY = "DELETE FROM " + getConfig(start).getUserRolesPermissionsTable() + " WHERE role = ? ;";
                 update(sqlCon, QUERY, pst -> {
                     pst.setString(1, role);
                 });
@@ -160,7 +157,7 @@ public class UserRoleQueries {
     }
 
     public static String[] getRoles(Start start) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT role FROM " + getConfig(start).getUserRolesRolesTable();
+        String QUERY = "SELECT role FROM " + getConfig(start).getRolesTable();
 
         return execute(start, QUERY, PreparedStatementValueSetter.NO_OP_SETTER, result -> {
             ArrayList<String> roles = new ArrayList<>();
@@ -172,7 +169,7 @@ public class UserRoleQueries {
     }
 
     public static boolean doesRoleExist(Start start, String role) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT 1 FROM " + getConfig(start).getUserRolesRolesTable() + " WHERE role = ? LIMIT 1";
+        String QUERY = "SELECT 1 FROM " + getConfig(start).getRolesTable() + " WHERE role = ? LIMIT 1";
 
         return execute(start, QUERY, pst -> pst.setString(1, role), result -> {
             if (result.next()) {
