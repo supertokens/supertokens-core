@@ -44,7 +44,7 @@ public class CreateRoleAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/recipe/user/role";
+        return "/recipe/role";
     }
 
     @Override

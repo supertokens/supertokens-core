@@ -51,15 +51,18 @@ public class UserRoles {
                 } catch (DuplicateRoleException e) {
                     // ignore exception
                 }
-                for (int i = 0; i < permissions.length; i++) {
-                    try {
-                        storage.addPermissionToRole_Transaction(con, role, permissions[i]);
-                    } catch (DuplicateRolePermissionMappingException e) {
-                        // ignore exception
-                    } catch (UnknownRoleException e) {
-                        throw new StorageTransactionLogicException(e);
+                if (permissions != null) {
+                    for (int i = 0; i < permissions.length; i++) {
+                        try {
+                            storage.addPermissionToRole_Transaction(con, role, permissions[i]);
+                        } catch (DuplicateRolePermissionMappingException e) {
+                            // ignore exception
+                        } catch (UnknownRoleException e) {
+                            throw new StorageTransactionLogicException(e);
+                        }
                     }
                 }
+
                 return null;
             });
         } catch (StorageTransactionLogicException e) {
