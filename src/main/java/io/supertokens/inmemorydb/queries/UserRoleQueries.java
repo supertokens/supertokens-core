@@ -131,28 +131,33 @@ public class UserRoleQueries {
         return start.startTransaction(con -> {
             int response;
             Connection sqlCon = (Connection) con.getConnection();
-            {
-                String QUERY = "DELETE FROM " + getConfig(start).getRolesTable() + " WHERE role = ? ;";
-                response = update(sqlCon, QUERY, pst -> {
-                    pst.setString(1, role);
-                });
-            }
+            try {
+                {
+                    String QUERY = "DELETE FROM " + getConfig(start).getRolesTable() + " WHERE role = ? ;";
+                    response = update(sqlCon, QUERY, pst -> {
+                        pst.setString(1, role);
+                    });
+                }
 
-            {
-                String QUERY = "DELETE FROM " + getConfig(start).getUserRolesPermissionsTable() + " WHERE role = ? ;";
-                update(sqlCon, QUERY, pst -> {
-                    pst.setString(1, role);
-                });
-            }
-            {
-                String QUERY = "DELETE FROM " + getConfig(start).getUserRolesTable() + " WHERE role = ?";
-                update(sqlCon, QUERY, pst -> {
-                    pst.setString(1, role);
-                });
-            }
+                {
+                    String QUERY = "DELETE FROM " + getConfig(start).getUserRolesPermissionsTable()
+                            + " WHERE role = ? ;";
+                    update(sqlCon, QUERY, pst -> {
+                        pst.setString(1, role);
+                    });
+                }
+                {
+                    String QUERY = "DELETE FROM " + getConfig(start).getUserRolesTable() + " WHERE role = ?";
+                    update(sqlCon, QUERY, pst -> {
+                        pst.setString(1, role);
+                    });
+                }
 
-            sqlCon.commit();
-            return response;
+                sqlCon.commit();
+                return response;
+            } catch (SQLException e) {
+                throw new StorageTransactionLogicException(e);
+            }
         });
     }
 
@@ -184,7 +189,7 @@ public class UserRoleQueries {
         return update(start, QUERY, pst -> pst.setString(1, userId));
     }
 
-    public static boolean deleteRoleForUser_Transaction(Start start, Connection con, String role, String userId)
+    public static boolean deleteRoleForUser_Transaction(Start start, Connection con, String userId, String role)
             throws SQLException, StorageQueryException {
         String QUERY = "DELETE FROM " + getConfig(start).getUserRolesTable() + "WHERE user_id = ? AND role = ? ;";
 

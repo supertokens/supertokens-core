@@ -1283,11 +1283,8 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public String[] getUsersForRole(String role) throws StorageQueryException, UnknownRoleException {
+    public String[] getUsersForRole(String role) throws StorageQueryException {
         try {
-            if (!this.doesRoleExist(role)) {
-                throw new UnknownRoleException();
-            }
             return UserRoleQueries.getUsersForRole(this, role);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
@@ -1296,11 +1293,8 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public String[] getPermissionsForRole(String role) throws StorageQueryException, UnknownRoleException {
+    public String[] getPermissionsForRole(String role) throws StorageQueryException {
         try {
-            if (!this.doesRoleExist(role)) {
-                throw new UnknownRoleException();
-            }
             return UserRoleQueries.getPermissionsForRole(this, role);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
@@ -1357,7 +1351,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return UserRoleQueries.deleteRoleForUser_Transaction(this, sqlCon, role, userId);
+            return UserRoleQueries.deleteRoleForUser_Transaction(this, sqlCon, userId, role);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1377,7 +1371,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
 
     @Override
     public boolean deletePermissionForRole_Transaction(TransactionConnection con, String role, String permission)
-            throws StorageQueryException, UnknownRoleException {
+            throws StorageQueryException {
         return false;
     }
 
