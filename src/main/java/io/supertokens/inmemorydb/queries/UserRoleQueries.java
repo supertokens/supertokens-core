@@ -23,6 +23,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 
 import java.sql.Connection;
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 
@@ -183,14 +184,9 @@ public class UserRoleQueries {
     }
 
     public static boolean doesRoleExist(Start start, String role) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT 1 FROM " + getConfig(start).getRolesTable() + " WHERE role = ? LIMIT 1";
+        String QUERY = "SELECT 1 FROM " + getConfig(start).getRolesTable() + " WHERE role = ?";
 
-        return execute(start, QUERY, pst -> pst.setString(1, role), result -> {
-            if (result.next()) {
-                return true;
-            }
-            return false;
-        });
+        return execute(start, QUERY, pst -> pst.setString(1, role), ResultSet::next);
     }
 
     public static int deleteAllRolesForUser(Start start, String userId) throws SQLException, StorageQueryException {
@@ -210,5 +206,4 @@ public class UserRoleQueries {
 
         return rowUpdatedCount > 0;
     }
-
 }

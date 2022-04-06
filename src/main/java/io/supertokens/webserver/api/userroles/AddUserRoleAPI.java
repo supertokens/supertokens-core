@@ -37,7 +37,7 @@ public class AddUserRoleAPI extends WebserverAPI {
     @Serial
     private static final long serialVersionUID = -1244515701412497039L;
 
-    public AddUserRoleAPI(Main main, String rid) {
+    public AddUserRoleAPI(Main main) {
         super(main, RECIPE_ID.USER_ROLES.toString());
     }
 
@@ -49,8 +49,8 @@ public class AddUserRoleAPI extends WebserverAPI {
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
-        String role = InputParser.parseStringOrThrowError(input, "role", false);
+        String userId = InputParser.parseAndSanitizeStringOrThrowError(input, "userId", false);
+        String role = InputParser.parseAndSanitizeStringOrThrowError(input, "role", false);
 
         try {
             UserRoles.addRoleToUser(main, userId, role);
