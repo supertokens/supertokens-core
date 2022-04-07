@@ -16,8 +16,8 @@
 
 package io.supertokens.test.userRoles.api;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
@@ -31,10 +31,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.util.ArrayList;
-
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class CreateRoleAPITest {
     @Rule
@@ -73,6 +71,38 @@ public class CreateRoleAPITest {
             }
         }
 
+        {
+            // role is missing in request
+            String permissions = "{ permissions : [ testPermission1 ] }";
+
+            JsonObject requestBody = new JsonParser().parse(permissions).getAsJsonObject();
+
+            try {
+                HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/role",
+                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_13ForTests(), "userroles");
+                throw new Exception("should not come here");
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'role' is invalid in JSON input"));
+            }
+        }
+
+        {
+            // invalid permission in permission array
+            String permissions = "{ permissions: [ testPermission1, \" \" , testPermissions2 ]}";
+            JsonObject requestBody = new JsonParser().parse(permissions).getAsJsonObject();
+            requestBody.addProperty("role", "testRole");
+
+            try {
+                HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/role",
+                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_13ForTests(), "userroles");
+                throw new Exception("should not come here");
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
+                        + " Field name 'permissions' is invalid in JSON input"));
+            }
+        }
+
     }
 
     @Test
@@ -91,7 +121,8 @@ public class CreateRoleAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null, Utils.getCdiVersion2_13ForTests(),
                 "userroles");
-        System.out.println(response);
+        assertEquals(1, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
 
     }
 }
