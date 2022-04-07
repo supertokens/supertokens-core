@@ -76,8 +76,11 @@ Please find an [architecture diagram here](https://supertokens.io/docs/community
 - ✅ Java has a very mature ecosystem. This implies that third party libraries have been battle tested.
 - ✅ Java's strong type system ensures fewer bugs and easier maintainability. This is especially important when many people are expected to work on the same project.
 - ✅ Our team is most comfortable with Java and hiring for great Java developers is relatively easy as well.
-- ✅ One of the biggest criticisms of Java is memory usage. However, we have worked towards reducing memory consumption by carefully choosing our dependencies. For example, we directly use an embedded tomcat server instead of using a higher level web framework. We also plan on using [GraalVM](https://www.graalvm.org/) which can further reduce the memory footprint. In terms of load, the most frequent auth related operation is session verification - this happens within the backend SDK, without contacting the core. Therefore, a single instance of the core can handle several 10s of thousands of users fairly easily.
-- ✅ If you require any modifications to the auth APIs, those would need to be done on the backend SDK level (for example Node, Golang, Python..). So you never have to directly modify / work with with the Java code in this repo.
+- ✅ One of the biggest criticisms of Java is memory usage. We have three solutions to this: 
+   - The most frequent auth related operation is session verification - this happens within the backend SDK (node, python, Go) without contacting the Java core. Therefore, a single instance of the core can handle several 10s of thousands of users fairly easily.
+   - We have carefully chosen our dependencies. For eg: we use an embedded tomcat server instead of a higher level web framework.
+   - We also plan on using [GraalVM](https://www.graalvm.org/) in the future and this can reduce memory usage down by 95%! 
+- ✅ If you require any modifications to the auth APIs, those would need to be done on the backend SDK level (for example Node, Golang, Python..). So you’d rarely need to directly modify / work  with the Java code in this repo.
 
 ## 🔥 SuperTokens vs others
 Please find a detailed comparison chart [on our website](https://supertokens.io/pricing#comparison-chart)
