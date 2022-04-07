@@ -101,7 +101,6 @@ public class CreateRoleAPITest {
                         requestBody, 1000, 1000, null, Utils.getCdiVersion2_14ForTests(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
-                System.out.println(e.getMessage());
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
                         + " Field name 'permissions' cannot contain an empty string"));
             }
