@@ -214,4 +214,23 @@ public class UserRoleQueries {
             pst.setString(1, role);
         });
     }
+
+    public static void addPermissionToRole_Transaction(Start start, Connection con, String role, String permission)
+            throws SQLException, StorageQueryException {
+
+        String QUERY = "INSERT INTO " + getConfig(start).getUserRolesPermissionsTable()
+                + " (role, permission) VALUES(?, ?)";
+        update(con, QUERY, pst -> {
+            pst.setString(1, role);
+            pst.setString(2, permission);
+        });
+    }
+
+    public static boolean doesRoleExist_transaction(Start start, Connection con, String role)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT 1 FROM " + getConfig(start).getRolesTable() + " WHERE role = ? ";
+
+        return execute(con, QUERY, pst -> pst.setString(1, role), ResultSet::next);
+    }
+
 }

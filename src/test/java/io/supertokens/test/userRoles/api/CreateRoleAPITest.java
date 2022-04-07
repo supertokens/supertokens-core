@@ -25,6 +25,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.userroles.UserRoles;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -106,7 +107,7 @@ public class CreateRoleAPITest {
     }
 
     @Test
-    public void goodInputTest() throws Exception {
+    public void createANewRoleWithoutPermissionsTest() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -116,6 +117,8 @@ public class CreateRoleAPITest {
             return;
         }
 
+        // create a new role without permissions
+
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("role", "testRole");
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
@@ -124,5 +127,125 @@ public class CreateRoleAPITest {
         assertEquals(1, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
 
+        // TODO: check if you retrieve all roles, the newly created role is returned
+
+    }
+
+    @Test
+    public void createANewRoleWithPermissionsTest() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a new role with permissions
+        String permissions = "{ permissions: [ testPermission1, testPermissions2 ]}";
+        JsonObject requestBody = new JsonParser().parse(permissions).getAsJsonObject();
+        requestBody.addProperty("role", "testRole");
+
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null, Utils.getCdiVersion2_13ForTests(),
+                "userroles");
+
+        assertEquals(1, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+
+        // TODO: check if you retrieve all roles, the newly created role is returned
+        // TODO: retrieve all permissions for the role and check if the correct permissions are returned
+
+    }
+
+    @Test
+    public void creatingADuplicateRoleShouldNotThrowExceptionTest() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        {
+            // create a new role with permissions
+            String permissions = "{ permissions: [ testPermission1, testPermissions2 ]}";
+            JsonObject requestBody = new JsonParser().parse(permissions).getAsJsonObject();
+            requestBody.addProperty("role", "testRole");
+
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_13ForTests(), "userroles");
+
+            assertEquals(1, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+
+            // TODO: check if you retrieve all roles, the newly created role is returned
+            // TODO: retrieve all permissions for the role and check if the correct permissions are returned
+        }
+
+        {
+            // create duplicate role
+            String permissions = "{ permissions: [ testPermission1, testPermissions2 ]}";
+            JsonObject requestBody = new JsonParser().parse(permissions).getAsJsonObject();
+            requestBody.addProperty("role", "testRole");
+
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_13ForTests(), "userroles");
+
+            assertEquals(1, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+
+            // TODO: check that role still exists and permissions are same
+        }
+    }
+
+    @Test
+    public void createARoleAndUpdateThePermissionsTest() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        {
+            // create a new role with permissions
+            String permissions = "{ permissions: [ testPermission1, testPermissions2 ]}";
+            JsonObject requestBody = new JsonParser().parse(permissions).getAsJsonObject();
+            requestBody.addProperty("role", "testRole");
+
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_13ForTests(), "userroles");
+
+            assertEquals(1, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+
+            // TODO: check if you retrieve all roles, the newly created role is returned
+            // TODO: retrieve all permissions for the role and check if the correct permissions are returned
+        }
+
+        {
+            // update the role permissions
+            String permissions = "{ permissions: [ testPermissions3 ]}";
+            JsonObject requestBody = new JsonParser().parse(permissions).getAsJsonObject();
+            requestBody.addProperty("role", "testRole");
+
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_13ForTests(), "userroles");
+
+            assertEquals(1, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+
+            // TODO: check that role still exists and the new permissions are added
+        }
     }
 }

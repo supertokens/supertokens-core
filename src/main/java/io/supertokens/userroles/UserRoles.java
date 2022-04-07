@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 
 public class UserRoles {
     // add a role to a user, if the role is already mapped to the user ignore the exception but if
@@ -71,6 +72,11 @@ public class UserRoles {
             }
             throw e;
         }
+    }
+
+    public static boolean doesRoleExist(Main main, String role) throws StorageQueryException {
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(main);
+        return storage.doesRoleExist(role);
     }
 
     // remove a role mapped to a user, if the role doesn't exist throw a UNKNOWN_ROLE_EXCEPTION error
