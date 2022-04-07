@@ -22,7 +22,6 @@ import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -52,30 +51,37 @@ public class CreateRoleAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String role = InputParser.parseStringOrThrowError(input, "role", false);
-        role = normalizeAndSanitizeString(role, "role");
+
+        // normalize role
+        role = role.trim();
+        if (role.length() == 0) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("Field name 'role' cannot be an empty String"));
+        }
 
         JsonArray arr = InputParser.parseArrayOrThrowError(input, "permissions", true);
         String[] permissions = null;
         if (arr != null) {
             permissions = new String[arr.size()];
             for (int i = 0; i < permissions.length; i++) {
+
                 String permission = InputParser.parseStringFromElementOrThrowError(arr.get(i), "permissions", false);
-                permission = normalizeAndSanitizeString(permission, "permissions");
+
+                // normalize permission
+                permission = permission.trim();
+                if (permission.length() == 0) {
+                    throw new ServletException(new WebserverAPI.BadRequestException(
+                            "Field name 'permissions' cannot contain an empty string"));
+                }
                 permissions[i] = permission;
             }
         }
 
         try {
-            UserRoles.setRole(main, role, permissions);
+            UserRoles.createNewRoleOrModifyItsPermissions(main, role, permissions);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
-            super.sendJsonResponse(200, response, resp);
-
-        } catch (UnknownRoleException e) {
-
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "UNKNOWN_ROLE_ERROR");
             super.sendJsonResponse(200, response, resp);
 
         } catch (StorageQueryException | StorageTransactionLogicException e) {
@@ -83,13 +89,4 @@ public class CreateRoleAPI extends WebserverAPI {
         }
     }
 
-    private static String normalizeAndSanitizeString(String field, String fieldName) throws ServletException {
-        String trimmedString = field.trim();
-
-        if (trimmedString.length() == 0) {
-            throw new ServletException(
-                    new WebserverAPI.BadRequestException("Field name '" + fieldName + "' is invalid in JSON input"));
-        }
-        return trimmedString;
-    }
 }

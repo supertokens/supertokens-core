@@ -110,7 +110,8 @@ public class UserRoleQueries {
     }
 
     public static String[] getPermissionsForRole(Start start, String role) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT permission FROM " + getConfig(start).getUserRolesPermissionsTable() + "WHERE role = ? ;";
+        String QUERY = "SELECT permission FROM " + getConfig(start).getUserRolesPermissionsTable()
+                + " WHERE role = ? ;";
 
         return execute(start, QUERY, pst -> pst.setString(1, role), result -> {
             ArrayList<String> permissions = new ArrayList<>();

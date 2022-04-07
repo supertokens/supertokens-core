@@ -42,36 +42,29 @@ public class UserRoles {
     }
 
     // create a new role if it doesn't exist and add permissions to the role
-    public static void setRole(Main main, String role, String[] permissions)
-            throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
+    public static void createNewRoleOrModifyItsPermissions(Main main, String role, String[] permissions)
+            throws StorageQueryException, StorageTransactionLogicException {
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(main);
-        try {
-            storage.startTransaction(con -> {
-                try {
-                    storage.createNewRole_Transaction(con, role);
-                } catch (DuplicateRoleException e) {
-                    // ignore exception
-                }
-                if (permissions != null) {
-                    for (int i = 0; i < permissions.length; i++) {
-                        try {
-                            storage.addPermissionToRole_Transaction(con, role, permissions[i]);
-                        } catch (DuplicateRolePermissionMappingException e) {
-                            // ignore exception
-                        } catch (UnknownRoleException e) {
-                            throw new StorageTransactionLogicException(e);
-                        }
+        storage.startTransaction(con -> {
+            try {
+                storage.createNewRole_Transaction(con, role);
+            } catch (DuplicateRoleException e) {
+                // ignore exception
+            }
+
+            if (permissions != null) {
+                for (int i = 0; i < permissions.length; i++) {
+                    try {
+                        storage.addPermissionToRole_Transaction(con, role, permissions[i]);
+                    } catch (DuplicateRolePermissionMappingException e) {
+                        // ignore exception
+                    } catch (UnknownRoleException e) {
+                        // ignore exception, should not come here since role should always exist in this transaction
                     }
                 }
-
-                return null;
-            });
-        } catch (StorageTransactionLogicException e) {
-            if (e.actualException instanceof UnknownRoleException) {
-                throw (UnknownRoleException) e.actualException;
             }
-            throw e;
-        }
+            return null;
+        });
     }
 
     public static boolean doesRoleExist(Main main, String role) throws StorageQueryException {
