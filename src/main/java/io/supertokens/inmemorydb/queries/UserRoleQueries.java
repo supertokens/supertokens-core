@@ -16,6 +16,7 @@
 
 package io.supertokens.inmemorydb.queries;
 
+import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.PreparedStatementValueSetter;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
@@ -229,6 +230,9 @@ public class UserRoleQueries {
 
     public static boolean doesRoleExist_transaction(Start start, Connection con, String role)
             throws SQLException, StorageQueryException {
+
+        ((ConnectionWithLocks) con).lock(role + getConfig(start).getUserRolesTable());
+
         String QUERY = "SELECT 1 FROM " + getConfig(start).getRolesTable() + " WHERE role = ? ";
 
         return execute(con, QUERY, pst -> pst.setString(1, role), ResultSet::next);
