@@ -63,6 +63,7 @@ public class UserRoles {
                     }
                 }
             }
+            storage.commitTransaction(con);
             return null;
         });
     }
