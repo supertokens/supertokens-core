@@ -32,6 +32,7 @@ import org.junit.rules.TestRule;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 
+import static io.supertokens.test.Utils.checkThatArraysAreEqual;
 import static org.junit.Assert.*;
 
 public class UserRolesTest {
@@ -229,12 +230,6 @@ public class UserRolesTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    public static void checkThatArraysAreEqual(String[] arr1, String[] arr2) {
-        Arrays.sort(arr1);
-        Arrays.sort(arr2);
-        assertArrayEquals(arr1, arr2);
     }
 
 }

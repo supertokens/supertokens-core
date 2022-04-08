@@ -105,6 +105,25 @@ public class CreateRoleAPITest {
                         + " Field name 'permissions' cannot contain an empty string"));
             }
         }
+
+        {
+            // set role as a number
+
+            String[] permissions = new String[] { "testPermission" };
+            String permissionsString = "{ permissions : " + Arrays.toString(permissions) + " }";
+
+            JsonObject requestBody = new JsonParser().parse(permissionsString).getAsJsonObject();
+            requestBody.addProperty("role", 1);
+            try {
+                HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/role",
+                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_14ForTests(), "userroles");
+                throw new Exception("should not come here");
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'role' is invalid in JSON input"));
+            }
+        }
+
         {
             // set permissions as a number
             int permissions = 1;
@@ -192,11 +211,7 @@ public class CreateRoleAPITest {
         // check if permissions have been added
         String[] rolePermissions = storage.getPermissionsForRole(role);
 
-        // sort arrays so position of elements are the same
-        Arrays.sort(rolePermissions);
-        Arrays.sort(permissions);
-
-        assertArrayEquals(permissions, rolePermissions);
+        Utils.checkThatArraysAreEqual(permissions, rolePermissions);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
