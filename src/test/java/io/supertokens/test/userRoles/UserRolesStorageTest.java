@@ -348,6 +348,4 @@ public class UserRolesStorageTest {
 
     }
 
-    // add a role to a user where the role already exists
-    public void testAsso
 }
