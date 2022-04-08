@@ -24,13 +24,22 @@ import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Config extends ResourceDistributor.SingletonResource {
 
     private static final String RESOURCE_KEY = "io.supertokens.config.Config";
     private final Main main;
     private final CoreConfig core;
+
+    private static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+    private static final Pattern envPattern = Pattern.compile("(?:^|[^\\\\])\\$\\{([^}]*)}"); // (?:^|[^\\])\$\{([^}]*)}
+    private static final Pattern escEnvPattern = Pattern.compile("\\\\\\$\\{([^}]*)}"); // \\\$\{([^}]*)}
 
     private Config(Main main, String configFilePath) {
         this.main = main;
@@ -59,10 +68,34 @@ public class Config extends ResourceDistributor.SingletonResource {
         return getInstance(main).core;
     }
 
+    private String preprocessConfig(String configFilePath) throws IOException
+    {
+        List<String> content = Files.readAllLines(new File(configFilePath).toPath());
+        StringBuilder processed = new StringBuilder();
+        for(int i = 0; i < content.size(); i++ ) {
+            String line = content.get(i);
+            Matcher matcher = envPattern.matcher(line);
+            final int lineNum = i + 1; // Make final for use in lambda
+            String processedLine = matcher.replaceAll(match -> {
+                String envVarName = match.group(1).trim();
+                String envVar = System.getenv(envVarName);
+                if(envVar == null)
+                    throw new QuitProgramException("Environment variable \"" + envVarName + "\" does not exist." +
+                            " (Line " + lineNum + " of \"" + configFilePath + "\")" +
+                            "\nUse \"\\${" + envVarName + "}\" if you are not inserting an environment variable here.");
+                return envVar;
+            });
+            matcher = escEnvPattern.matcher(processedLine);
+            processedLine = matcher.replaceAll(match -> match.group().substring(1));
+            processed.append(processedLine);
+        }
+        return processed.toString();
+    }
+
     private CoreConfig loadCoreConfig(String configFilePath) throws IOException {
         Logging.info(main, "Loading supertokens config.");
-        final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        CoreConfig config = mapper.readValue(new File(configFilePath), CoreConfig.class);
+        String configFileContent = preprocessConfig(configFilePath);
+        CoreConfig config = mapper.readValue(configFileContent, CoreConfig.class);
         config.validateAndInitialise(main);
         return config;
     }
