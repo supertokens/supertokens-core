@@ -1360,29 +1360,66 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     @Override
     public void createNewRole_Transaction(TransactionConnection con, String role)
             throws StorageQueryException, DuplicateRoleException {
-
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            UserRoleQueries.createNewRole_Transaction(this, sqlCon, role);
+        } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getRolesTable() + ".role)")) {
+                throw new DuplicateRoleException();
+            }
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public void addPermissionToRole_Transaction(TransactionConnection con, String role, String permission)
             throws StorageQueryException, UnknownRoleException, DuplicateRolePermissionMappingException {
+        Connection sqlCon = (Connection) con.getConnection();
 
+        try {
+            // SQLite is not compiled with foreign key constraint and so we must check for
+            // role manually
+
+            if (!this.doesRoleExist_Transaction(con, role)) {
+                throw new UnknownRoleException();
+            }
+
+            UserRoleQueries.addPermissionToRole_Transaction(this, sqlCon, role, permission);
+        } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getUserRolesPermissionsTable() + ".role, "
+                            + Config.getConfig(this).getUserRolesPermissionsTable() + ".permission" + ")")) {
+                throw new DuplicateRolePermissionMappingException();
+            }
+
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public boolean deletePermissionForRole_Transaction(TransactionConnection con, String role, String permission)
             throws StorageQueryException {
+        // TODO:
         return false;
     }
 
     @Override
     public int deleteAllPermissionsForRole_Transaction(TransactionConnection con, String role)
             throws StorageQueryException {
+        // TODO
         return 0;
     }
 
     @Override
     public boolean doesRoleExist_Transaction(TransactionConnection con, String role) throws StorageQueryException {
-        return false;
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return UserRoleQueries.doesRoleExist_transaction(this, sqlCon, role);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }

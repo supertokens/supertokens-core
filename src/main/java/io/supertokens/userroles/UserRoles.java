@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 
 import javax.annotation.Nullable;
+import java.util.Arrays;
 
 public class UserRoles {
     // add a role to a user, if the role is already mapped to the user ignore the exception but if
@@ -38,6 +39,38 @@ public class UserRoles {
         } catch (DuplicateUserRoleMappingException e) {
             // ignore DuplicateUserRoleMappingException
         }
+    }
+
+    // create a new role if it doesn't exist and add permissions to the role
+    public static void createNewRoleOrModifyItsPermissions(Main main, String role, String[] permissions)
+            throws StorageQueryException, StorageTransactionLogicException {
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(main);
+        storage.startTransaction(con -> {
+            try {
+                storage.createNewRole_Transaction(con, role);
+            } catch (DuplicateRoleException e) {
+                // ignore exception
+            }
+
+            if (permissions != null) {
+                for (int i = 0; i < permissions.length; i++) {
+                    try {
+                        storage.addPermissionToRole_Transaction(con, role, permissions[i]);
+                    } catch (DuplicateRolePermissionMappingException e) {
+                        // ignore exception
+                    } catch (UnknownRoleException e) {
+                        // ignore exception, should not come here since role should always exist in this transaction
+                    }
+                }
+            }
+            storage.commitTransaction(con);
+            return null;
+        });
+    }
+
+    public static boolean doesRoleExist(Main main, String role) throws StorageQueryException {
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(main);
+        return storage.doesRoleExist(role);
     }
 
     // remove a role mapped to a user, if the role doesn't exist throw a UNKNOWN_ROLE_EXCEPTION error
@@ -76,26 +109,6 @@ public class UserRoles {
 //        }
 //    }
 //
-//    // create a new role if it doesn't exist and add permissions to the role
-//    public static void setRole(Main main, String role, String[] permissions)
-//            throws StorageQueryException, StorageTransactionLogicException {
-//        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(main);
-//        storage.startTransaction(con -> {
-//            try {
-//                storage.createNewRole_Transaction(con, role);
-//            } catch (DuplicateRoleException e) {
-//                // ignore exception
-//            }
-//            for (int i = 0; i < permissions.length; i++) {
-//                try {
-//                    storage.addPermissionToRole_Transaction(con, role, permissions[i]);
-//                } catch (DuplicateRolePermissionMappingException e) {
-//                    // ignore exception
-//                }
-//            }
-//            return null;
-//        });
-//    }
 //
 //    // retrieve all permissions associated with the role
 //    public static String[] getPermissionsForRole(Main main, String role)

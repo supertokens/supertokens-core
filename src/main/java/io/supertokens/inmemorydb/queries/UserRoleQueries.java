@@ -16,6 +16,7 @@
 
 package io.supertokens.inmemorydb.queries;
 
+import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.inmemorydb.PreparedStatementValueSetter;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
@@ -110,7 +111,8 @@ public class UserRoleQueries {
     }
 
     public static String[] getPermissionsForRole(Start start, String role) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT permission FROM " + getConfig(start).getUserRolesPermissionsTable() + "WHERE role = ? ;";
+        String QUERY = "SELECT permission FROM " + getConfig(start).getUserRolesPermissionsTable()
+                + " WHERE role = ? ;";
 
         return execute(start, QUERY, pst -> pst.setString(1, role), result -> {
             ArrayList<String> permissions = new ArrayList<>();
@@ -206,4 +208,34 @@ public class UserRoleQueries {
 
         return rowUpdatedCount > 0;
     }
+
+    public static void createNewRole_Transaction(Start start, Connection con, String role)
+            throws SQLException, StorageQueryException {
+        String QUERY = "INSERT INTO " + getConfig(start).getRolesTable() + " VALUES(?);";
+        update(con, QUERY, pst -> {
+            pst.setString(1, role);
+        });
+    }
+
+    public static void addPermissionToRole_Transaction(Start start, Connection con, String role, String permission)
+            throws SQLException, StorageQueryException {
+
+        String QUERY = "INSERT INTO " + getConfig(start).getUserRolesPermissionsTable()
+                + " (role, permission) VALUES(?, ?)";
+        update(con, QUERY, pst -> {
+            pst.setString(1, role);
+            pst.setString(2, permission);
+        });
+    }
+
+    public static boolean doesRoleExist_transaction(Start start, Connection con, String role)
+            throws SQLException, StorageQueryException {
+
+        ((ConnectionWithLocks) con).lock(role + getConfig(start).getUserRolesTable());
+
+        String QUERY = "SELECT 1 FROM " + getConfig(start).getRolesTable() + " WHERE role = ? ";
+
+        return execute(con, QUERY, pst -> pst.setString(1, role), ResultSet::next);
+    }
+
 }
