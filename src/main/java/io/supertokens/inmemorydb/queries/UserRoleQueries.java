@@ -88,7 +88,7 @@ public class UserRoleQueries {
     }
 
     public static String[] getRolesForUser(Start start, String userId) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT role FROM " + getConfig(start).getUserRolesTable() + "WHERE user_id = ? ;";
+        String QUERY = "SELECT role FROM " + getConfig(start).getUserRolesTable() + " WHERE user_id = ? ;";
         return execute(start, QUERY, pst -> pst.setString(1, userId), result -> {
             ArrayList<String> roles = new ArrayList<>();
             while (result.next()) {

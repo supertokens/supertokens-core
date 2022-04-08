@@ -284,5 +284,70 @@ public class UserRolesStorageTest {
             // check that the role is created
             assertTrue(storage.doesRoleExist(role));
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    // add a role to a user where the role does not exist
+    @Test
+    public void testAssociatingAUserWithARoleThatDoesNotExist() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // associate a user with a role that does not exist
+        Exception error = null;
+        try {
+            storage.addRoleToUser("userId", "unknown_role");
+        } catch (Exception e) {
+            error = e;
+        }
+        assertNotNull(error);
+        assertTrue(error instanceof UnknownRoleException);
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // add a role to a user
+    @Test
+    public void testAssociatingARoleWithAUser() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        {
+            String role = "role";
+            String userId = "userId";
+            // create a role
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+
+            // associate the role with a user
+            storage.addRoleToUser(userId, role);
+
+            // check that the role is added to the user
+            String[] userRoles = storage.getRolesForUser(userId);
+            assertEquals(1, userRoles.length);
+            assertEquals(role, userRoles[0]);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+    }
+
+    // add a role to a user where the role already exists
+    public void testAsso
 }
