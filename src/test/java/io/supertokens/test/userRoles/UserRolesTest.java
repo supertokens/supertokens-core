@@ -29,8 +29,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import java.lang.reflect.Array;
+import java.util.Arrays;
+
+import static org.junit.Assert.*;
 
 public class UserRolesTest {
     @Rule
@@ -45,15 +47,194 @@ public class UserRolesTest {
     public void beforeEach() {
         Utils.reset();
     }
-    /*
-     * TODO:
-     * Call setRole with only role and check it works. Call it again the same role and check it returns OK
-     * Call setRole with a role + permissions and check it works. Call it again with existing set of permissions, but
-     * one added, and check it returns OK + that the new permission was added.
-     * Call setRole with a role and null (or empty array) permissions, it should work as expected.
-     * Call setRole with a role + permissions and check it works. Then call it again with just one new permission
-     * (permissions array is just one item), and check that new permission was added.
-     */
 
-    // test that createNewRole_Transaction throws DuplicateRoleException when a role already exists
+    // createNewRoleOrModifyItsPermissions tests
+    // Call setRole with only role and check it works. Call it again the same role and check it returns OK
+    @Test
+    public void testCreatingTheSameRoleTwice() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        String role = "role";
+        String[] permissions = new String[] { "permission" };
+        // create a new role
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+
+        // check if role is created
+        assertTrue(storage.doesRoleExist(role));
+        // check if permissions are created
+        assertArrayEquals(storage.getPermissionsForRole(role), permissions);
+
+        // create the same role again, should not throw an exception
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+
+        // check that roles and permissions still exist
+        assertTrue(storage.doesRoleExist(role));
+        checkThatArraysAreEqual(permissions, storage.getPermissionsForRole(role));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Call setRole with a role + permissions and check it works. Call it again with existing set of permissions, but
+    // one added, and check it returns OK + that the new permission was added.
+    @Test
+    public void testAddingPermissionsToARoleWithExistingPermissions() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        String[] oldPermissions = new String[] { "permission1", "permission2" };
+        String role = "role";
+
+        {
+            // create a new role
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, oldPermissions);
+
+            // check that role and permissions were created
+
+            // check if role is created
+            assertTrue(storage.doesRoleExist(role));
+
+            // check if permissions are created
+            String[] createdPermissions_1 = storage.getPermissionsForRole(role);
+            checkThatArraysAreEqual(oldPermissions, createdPermissions_1);
+        }
+
+        {
+            // modify role with a new permission
+            String[] newPermissions = new String[] { "permission1", "permission2", "permission3" };
+
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, newPermissions);
+
+            String[] createdPermissions_2 = storage.getPermissionsForRole(role);
+            Arrays.sort(newPermissions);
+            Arrays.sort(createdPermissions_2);
+
+            // check if the new permission is added, sort arrays so positions of elements are the same
+            assertArrayEquals(newPermissions, createdPermissions_2);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Call setRole with a role and null (or empty array) permissions, it should work as expected.
+    @Test
+    public void createRoleWithNullOrEmptyPermissions() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        {
+            // create a role with null permissions
+            String role = "role";
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+
+            // check that role and permissions were created
+
+            // check if role is created
+            assertTrue(storage.doesRoleExist(role));
+            // check that no permissions exist for the role
+            assertEquals(0, storage.getPermissionsForRole(role).length);
+        }
+
+        {
+            // create role with empty array permissions
+            String role = "role2";
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, new String[] {});
+            // check if role is created
+            assertTrue(storage.doesRoleExist(role));
+            // check that no permissions exist for the role
+            assertEquals(0, storage.getPermissionsForRole(role).length);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // Call setRole with a role + permissions and check it works. Then call it again with just one new permission
+    // (permissions array is just one item), and check that new permission was added.
+
+    @Test
+    public void testCreatingARoleWithPermissionsAndAddingOneMorePermission() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        String role = "role";
+
+        {
+            // create a new role
+            String[] oldPermissions = new String[] { "permission1", "permission2" };
+
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, oldPermissions);
+            // check that role and permissions were created
+
+            // check if role is created
+            assertTrue(storage.doesRoleExist(role));
+
+            // retrieve permissions for role
+            String[] createdPermissions = storage.getPermissionsForRole(role);
+
+            // check that permissions are the same
+            checkThatArraysAreEqual(oldPermissions, createdPermissions);
+        }
+
+        {
+            // add a new permission to the role
+            String[] newPermission = new String[] { "permission3" };
+
+            // add additional permission to role
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, newPermission);
+
+            // check that the role still exists
+            assertTrue(storage.doesRoleExist(role));
+
+            // retrieve permissions for role
+            String[] createdPermissions = storage.getPermissionsForRole(role);
+
+            // check that newly added permission is added
+            String[] allPermissions = new String[] { "permission1", "permission2", "permission3" };
+            checkThatArraysAreEqual(allPermissions, createdPermissions);
+
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    public static void checkThatArraysAreEqual(String[] arr1, String[] arr2) {
+        Arrays.sort(arr1);
+        Arrays.sort(arr2);
+        assertArrayEquals(arr1, arr2);
+    }
+
 }

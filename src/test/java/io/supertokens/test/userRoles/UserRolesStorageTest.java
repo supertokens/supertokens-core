@@ -52,7 +52,6 @@ public class UserRolesStorageTest {
     public void beforeEach() {
         Utils.reset();
     }
-
     /*
      * In thread 1: Start a transaction -> call createNewRole_Transaction -> wait.... -> call
      * addPermissionToRole_Transaction -> commit (should cause a retry of the transaction). In thread 2: Wait for thread
@@ -254,4 +253,36 @@ public class UserRolesStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testDoesRoleExistResponses() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // call doesRoleExist on a role which doesn't exist
+        String role = "role";
+        assertFalse(storage.doesRoleExist(role));
+
+        // crate a role and call doesRoleExist
+        {
+            storage.startTransaction(con -> {
+                try {
+                    storage.createNewRole_Transaction(con, role);
+                } catch (DuplicateRoleException e) {
+                    // should not come here
+                    fail();
+                }
+                return null;
+            });
+
+            // check that the role is created
+            assertTrue(storage.doesRoleExist(role));
+        }
+    }
 }
