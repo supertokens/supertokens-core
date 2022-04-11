@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateRoleException;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateRolePermissionMappingException;
+import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -346,6 +347,43 @@ public class UserRolesStorageTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
+    }
+
+    // add a role to a user where the user already has the role
+    @Test
+    public void testAssociatingARoleWithAUserTwice() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        String role = "role";
+        String userId = "userId";
+
+        {
+            // create a role and add it to a user
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+            storage.addRoleToUser(userId, role);
+        }
+
+        {
+            // add the role to the user again
+
+            try {
+                storage.addRoleToUser(userId, role);
+                throw new Exception("should not come here");
+            } catch (DuplicateUserRoleMappingException e) {
+                // should come here
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
 }
