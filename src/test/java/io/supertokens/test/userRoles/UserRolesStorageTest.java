@@ -28,6 +28,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.userroles.UserRoles;
+import io.supertokens.version.Version;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -35,6 +36,8 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -54,7 +57,7 @@ public class UserRolesStorageTest {
     }
     /*
      * In thread 1: Start a transaction -> call createNewRole_Transaction -> wait.... -> call
-     * addPermissionToRole_Transaction -> commit (should cause a retry of the transaction). In thread 2: Wait for thread
+     * addPermissionToRole_Transaction -> commit. In thread 2: Wait for thread
      * 1 to start waiting, then delete the role it created. At the end we want to make sure that the role was created.
      */
 
@@ -69,17 +72,26 @@ public class UserRolesStorageTest {
             return;
         }
 
+        // !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")
+        // we only want to run this test for MySQL and Postgres since the behaviour for SQLite is different
+        if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+            return;
+        }
+
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
 
         // thread 1: start transaction -> call createNewRole_Transaction -> wait... ->
         // call addPermissionToRole_Transaction -> commit
         String role = "role";
         String[] permissions = new String[] { "permission" };
+        AtomicInteger numberOfIterations = new AtomicInteger(0);
+        AtomicBoolean r1_success = new AtomicBoolean(true);
+        AtomicBoolean r2_success = new AtomicBoolean(true);
         Runnable r1 = () -> {
 
             try {
                 storage.startTransaction(con -> {
-
+                    numberOfIterations.incrementAndGet();
                     // create a new Role
                     try {
                         storage.createNewRole_Transaction(con, role);
@@ -92,7 +104,6 @@ public class UserRolesStorageTest {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
                         // should not come here
-                        fail();
                     }
 
                     // add permissions
@@ -100,7 +111,7 @@ public class UserRolesStorageTest {
                         storage.addPermissionToRole_Transaction(con, role, permissions[0]);
                     } catch (UnknownRoleException | DuplicateRolePermissionMappingException e) {
                         // should not come here
-                        fail();
+                        r1_success.set(false);
                     }
 
                     storage.commitTransaction(con);
@@ -108,28 +119,23 @@ public class UserRolesStorageTest {
                 });
             } catch (StorageQueryException | StorageTransactionLogicException e) {
                 // should not come here
-                fail();
             }
         };
 
         Runnable r2 = () -> {
-            Exception error = null;
             // wait for some time so createNewRoleTransaction is run
             try {
                 Thread.sleep(700);
             } catch (InterruptedException e) {
                 // Ignore
             }
-
             // delete the newly created role
             try {
                 storage.deleteRole(role);
             } catch (StorageQueryException e) {
-                error = e;
+                // should not come here
+                r2_success.set(false);
             }
-            assertNotNull(error);
-            assertTrue(error.getMessage()
-                    .contains("[SQLITE_LOCKED]  A table in the database is locked (database table is locked)"));
         };
 
         Thread thread1 = new Thread(r1);
@@ -140,6 +146,13 @@ public class UserRolesStorageTest {
 
         thread1.join();
         thread2.join();
+
+        // check that the addPermissionToRole_transaction and deleteRole correctly ran
+        assertTrue(r1_success.get());
+        assertTrue(r2_success.get());
+
+        // check that the transaction in r1 runs once
+        assertEquals(1, numberOfIterations.get());
 
         // check that the role is created and the permission still exists
         assertTrue(storage.doesRoleExist(role));
