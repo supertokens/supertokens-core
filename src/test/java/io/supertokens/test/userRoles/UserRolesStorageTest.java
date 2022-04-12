@@ -237,31 +237,31 @@ public class UserRolesStorageTest {
             assert (error instanceof UnknownRoleException);
         }
 
-        {
-
-            // crate a role with permissions
-            String role = "role";
-            String permission = "permission";
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, new String[] { permission });
-
-            // add duplicate permissions
-
-            Exception error = null;
-            try {
-                storage.startTransaction(con -> {
-                    try {
-                        storage.addPermissionToRole_Transaction(con, role, permission);
-                    } catch (DuplicateRolePermissionMappingException | UnknownRoleException e) {
-                        throw new StorageTransactionLogicException(e);
-                    }
-                    return null;
-                });
-            } catch (StorageTransactionLogicException e) {
-                error = e.actualException;
-            }
-            assertNotNull(error);
-            assert (error instanceof DuplicateRolePermissionMappingException);
-        }
+//        {
+//
+//            // crate a role with permissions
+//            String role = "role";
+//            String permission = "permission";
+//            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, new String[] { permission });
+//
+//            // add duplicate permissions
+//
+//            Exception error = null;
+//            try {
+//                storage.startTransaction(con -> {
+//                    try {
+//                        storage.addPermissionToRole_Transaction(con, role, permission);
+//                    } catch (DuplicateRolePermissionMappingException | UnknownRoleException e) {
+//                        throw new StorageTransactionLogicException(e);
+//                    }
+//                    return null;
+//                });
+//            } catch (StorageTransactionLogicException e) {
+//                error = e.actualException;
+//            }
+//            assertNotNull(error);
+//            assert (error instanceof DuplicateRolePermissionMappingException);
+//        }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
