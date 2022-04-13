@@ -33,6 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -273,5 +274,41 @@ public class UserRolesStorageTest {
             // check that the role is created
             assertTrue(storage.doesRoleExist(role));
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testGetRolesResponses() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // call getRoles when no roles exist
+        String[] emptyRoles = storage.getRoles();
+
+        assertEquals(0, emptyRoles.length);
+
+        // create multiple roles and check if they are properly returned
+        String[] createdRoles = new String[] { "role1", "role2" };
+        storage.startTransaction(con -> {
+            for (int i = 0; i < createdRoles.length; i++) {
+                storage.createNewRoleOrDoNothingIfExists_Transaction(con, createdRoles[i]);
+            }
+            return null;
+        });
+
+        // check that the getRoles retrieved the correct roles
+        String[] retrievedRoles = storage.getRoles();
+        Utils.checkThatArraysAreEqual(createdRoles, retrievedRoles);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
