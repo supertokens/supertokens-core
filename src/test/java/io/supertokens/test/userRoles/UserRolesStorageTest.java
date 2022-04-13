@@ -20,15 +20,13 @@ import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.userroles.exception.DuplicateRoleException;
-import io.supertokens.pluginInterface.userroles.exception.DuplicateRolePermissionMappingException;
-import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.userroles.UserRoles;
+import io.supertokens.version.Version;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,6 +34,8 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.Assert.*;
 
@@ -55,7 +55,7 @@ public class UserRolesStorageTest {
     }
     /*
      * In thread 1: Start a transaction -> call createNewRole_Transaction -> wait.... -> call
-     * addPermissionToRole_Transaction -> commit (should cause a retry of the transaction). In thread 2: Wait for thread
+     * addPermissionToRole_Transaction -> commit. In thread 2: Wait for thread
      * 1 to start waiting, then delete the role it created. At the end we want to make sure that the role was created.
      */
 
@@ -70,38 +70,42 @@ public class UserRolesStorageTest {
             return;
         }
 
+        // !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")
+        // we only want to run this test for MySQL and Postgres since the behaviour for SQLite is different
+        if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+            return;
+        }
+
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
 
         // thread 1: start transaction -> call createNewRole_Transaction -> wait... ->
         // call addPermissionToRole_Transaction -> commit
         String role = "role";
         String[] permissions = new String[] { "permission" };
+        AtomicInteger numberOfIterations = new AtomicInteger(0);
+        AtomicBoolean r1_success = new AtomicBoolean(true);
+        AtomicBoolean r2_success = new AtomicBoolean(true);
         Runnable r1 = () -> {
 
             try {
                 storage.startTransaction(con -> {
-
+                    numberOfIterations.incrementAndGet();
                     // create a new Role
-                    try {
-                        storage.createNewRole_Transaction(con, role);
-                    } catch (DuplicateRoleException e) {
-                        // ignore exception, should not come here
-                    }
+                    storage.createNewRoleOrDoNothingIfExists_Transaction(con, role);
 
                     // wait for some time
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
                         // should not come here
-                        fail();
                     }
 
                     // add permissions
                     try {
                         storage.addPermissionToRole_Transaction(con, role, permissions[0]);
-                    } catch (UnknownRoleException | DuplicateRolePermissionMappingException e) {
+                    } catch (UnknownRoleException e) {
                         // should not come here
-                        fail();
+                        r1_success.set(false);
                     }
 
                     storage.commitTransaction(con);
@@ -109,28 +113,23 @@ public class UserRolesStorageTest {
                 });
             } catch (StorageQueryException | StorageTransactionLogicException e) {
                 // should not come here
-                fail();
             }
         };
 
         Runnable r2 = () -> {
-            Exception error = null;
             // wait for some time so createNewRoleTransaction is run
             try {
                 Thread.sleep(700);
             } catch (InterruptedException e) {
                 // Ignore
             }
-
             // delete the newly created role
             try {
                 storage.deleteRole(role);
             } catch (StorageQueryException e) {
-                error = e;
+                // should not come here
+                r2_success.set(false);
             }
-            assertNotNull(error);
-            assertTrue(error.getMessage()
-                    .contains("[SQLITE_LOCKED]  A table in the database is locked (database table is locked)"));
         };
 
         Thread thread1 = new Thread(r1);
@@ -142,6 +141,13 @@ public class UserRolesStorageTest {
         thread1.join();
         thread2.join();
 
+        // check that the addPermissionToRole_transaction and deleteRole correctly ran
+        assertTrue(r1_success.get());
+        assertTrue(r2_success.get());
+
+        // check that the transaction in r1 runs once
+        assertEquals(1, numberOfIterations.get());
+
         // check that the role is created and the permission still exists
         assertTrue(storage.doesRoleExist(role));
         assertArrayEquals(storage.getPermissionsForRole(role), permissions);
@@ -151,9 +157,9 @@ public class UserRolesStorageTest {
 
     }
 
-    // test that createNewRole_Transaction throws DuplicateRoleException when a role already exists
+    // test that createNewRole_Transaction throws no error when role already exists
     @Test
-    public void testThatCreateNewRole_TransactionResponses() throws Exception {
+    public void testCreateNewRole_TransactionResponses() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -171,23 +177,12 @@ public class UserRolesStorageTest {
         // check that the role exists
         assertTrue(UserRoles.doesRoleExist(process.main, role));
 
-        // check that createNewRole_transaction throws DuplicateRoleException with the same role
+        // check that createNewRole_transaction doesn't throw error
         {
-            Exception error = null;
-            try {
-                storage.startTransaction(con -> {
-                    try {
-                        storage.createNewRole_Transaction(con, role);
-                    } catch (DuplicateRoleException e) {
-                        throw new StorageTransactionLogicException(e);
-                    }
-                    return null;
-                });
-            } catch (StorageTransactionLogicException e) {
-                error = e.actualException;
-            }
-            assertNotNull(error);
-            assert (error instanceof DuplicateRoleException);
+            storage.startTransaction(con -> {
+                storage.createNewRoleOrDoNothingIfExists_Transaction(con, role);
+                return null;
+            });
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -213,7 +208,7 @@ public class UserRolesStorageTest {
                 storage.startTransaction(con -> {
                     try {
                         storage.addPermissionToRole_Transaction(con, "unknown_role", "testPermission");
-                    } catch (DuplicateRolePermissionMappingException | UnknownRoleException e) {
+                    } catch (UnknownRoleException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     return null;
@@ -239,7 +234,7 @@ public class UserRolesStorageTest {
                 storage.startTransaction(con -> {
                     try {
                         storage.addPermissionToRole_Transaction(con, role, permission);
-                    } catch (DuplicateRolePermissionMappingException | UnknownRoleException e) {
+                    } catch (UnknownRoleException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     return null;
@@ -247,8 +242,7 @@ public class UserRolesStorageTest {
             } catch (StorageTransactionLogicException e) {
                 error = e.actualException;
             }
-            assertNotNull(error);
-            assert (error instanceof DuplicateRolePermissionMappingException);
+            assertNull(error);
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -273,12 +267,7 @@ public class UserRolesStorageTest {
         // crate a role and call doesRoleExist
         {
             storage.startTransaction(con -> {
-                try {
-                    storage.createNewRole_Transaction(con, role);
-                } catch (DuplicateRoleException e) {
-                    // should not come here
-                    fail();
-                }
+                storage.createNewRoleOrDoNothingIfExists_Transaction(con, role);
                 return null;
             });
 
@@ -290,9 +279,8 @@ public class UserRolesStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // add a role to a user where the role does not exist
     @Test
-    public void testAssociatingAUserWithARoleThatDoesNotExist() throws Exception {
+    public void testGetRolesResponses() throws Exception {
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -300,90 +288,27 @@ public class UserRolesStorageTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
 
-        // associate a user with a role that does not exist
-        Exception error = null;
-        try {
-            storage.addRoleToUser("userId", "unknown_role");
-        } catch (Exception e) {
-            error = e;
-        }
-        assertNotNull(error);
-        assertTrue(error instanceof UnknownRoleException);
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
+        // call getRoles when no roles exist
+        String[] emptyRoles = storage.getRoles();
 
-    // add a role to a user
-    @Test
-    public void testAssociatingARoleWithAUser() throws Exception {
-        String[] args = { "../" };
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        assertEquals(0, emptyRoles.length);
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
-
-        {
-            String role = "role";
-            String userId = "userId";
-            // create a role
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
-
-            // associate the role with a user
-            storage.addRoleToUser(userId, role);
-
-            // check that the role is added to the user
-            String[] userRoles = storage.getRolesForUser(userId);
-            assertEquals(1, userRoles.length);
-            assertEquals(role, userRoles[0]);
-        }
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
-    }
-
-    // add a role to a user where the user already has the role
-    @Test
-    public void testAssociatingARoleWithAUserTwice() throws Exception {
-        String[] args = { "../" };
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
-
-        String role = "role";
-        String userId = "userId";
-
-        {
-            // create a role and add it to a user
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
-            storage.addRoleToUser(userId, role);
-        }
-
-        {
-            // add the role to the user again
-
-            try {
-                storage.addRoleToUser(userId, role);
-                throw new Exception("should not come here");
-            } catch (DuplicateUserRoleMappingException e) {
-                // should come here
+        // create multiple roles and check if they are properly returned
+        String[] createdRoles = new String[] { "role1", "role2" };
+        storage.startTransaction(con -> {
+            for (int i = 0; i < createdRoles.length; i++) {
+                storage.createNewRoleOrDoNothingIfExists_Transaction(con, createdRoles[i]);
             }
-        }
+            return null;
+        });
+
+        // check that the getRoles retrieved the correct roles
+        String[] retrievedRoles = storage.getRoles();
+        Utils.checkThatArraysAreEqual(createdRoles, retrievedRoles);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
-
 }

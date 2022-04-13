@@ -29,7 +29,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.lang.reflect.Array;
 import java.util.Arrays;
 
 import static io.supertokens.test.Utils.checkThatArraysAreEqual;
