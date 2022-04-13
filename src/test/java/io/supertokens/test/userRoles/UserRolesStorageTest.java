@@ -20,6 +20,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -311,4 +312,94 @@ public class UserRolesStorageTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testAssociatingRolesWithUser() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // associate multiple roles with a user and check that the user actually has those roles
+
+        // create multiple roles
+        String[] roles = new String[] { "role1", "role2", "role3" };
+        String userId = "userId";
+        storage.startTransaction(con -> {
+            for (String role : roles) {
+                storage.createNewRoleOrDoNothingIfExists_Transaction(con, role);
+            }
+            storage.commitTransaction(con);
+            return null;
+        });
+
+        // associate user with roles
+        for (String role : roles) {
+            storage.addRoleToUser(userId, role);
+        }
+
+        // check if user actually has the roles
+        String[] userRoles = storage.getRolesForUser(userId);
+        Utils.checkThatArraysAreEqual(roles, userRoles);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testAssociatingTheSameRoleWithUserTwice() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // associate multiple roles with a user and check that the user actually has those roles
+
+        // create multiple roles
+        String role = "role";
+        String userId = "userId";
+        storage.startTransaction(con -> {
+
+            storage.createNewRoleOrDoNothingIfExists_Transaction(con, role);
+
+            storage.commitTransaction(con);
+            return null;
+        });
+
+        // associate user with roles
+        storage.addRoleToUser(userId, role);
+
+        // check if user actually has the role
+        String[] userRoles = storage.getRolesForUser(userId);
+        assertEquals(1, userRoles.length);
+        assertEquals(role, userRoles[0]);
+
+        // associate the role with the user again, should throw DuplicateUserRoleMappingException
+        Exception error = null;
+        try {
+            storage.addRoleToUser(userId, role);
+        } catch (Exception e) {
+            error = e;
+        }
+
+        assertNotNull(error);
+        assertTrue(error instanceof DuplicateUserRoleMappingException);
+
+        // check that the user still has only one role
+        String[] userRoles_2 = storage.getRolesForUser(userId);
+        assertEquals(1, userRoles_2.length);
+        assertEquals(role, userRoles_2[0]);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
