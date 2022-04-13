@@ -53,8 +53,6 @@ import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUs
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 
-import io.supertokens.pluginInterface.userroles.exception.DuplicateRoleException;
-import io.supertokens.pluginInterface.userroles.exception.DuplicateRolePermissionMappingException;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
@@ -1358,24 +1356,19 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void createNewRole_Transaction(TransactionConnection con, String role)
-            throws StorageQueryException, DuplicateRoleException {
+    public void createNewRoleOrDoNothingIfExists_Transaction(TransactionConnection con, String role)
+            throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             UserRoleQueries.createNewRole_Transaction(this, sqlCon, role);
         } catch (SQLException e) {
-            if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                            + Config.getConfig(this).getRolesTable() + ".role)")) {
-                throw new DuplicateRoleException();
-            }
             throw new StorageQueryException(e);
         }
     }
 
     @Override
     public void addPermissionToRole_Transaction(TransactionConnection con, String role, String permission)
-            throws StorageQueryException, UnknownRoleException, DuplicateRolePermissionMappingException {
+            throws StorageQueryException, UnknownRoleException {
         Connection sqlCon = (Connection) con.getConnection();
 
         try {
@@ -1388,12 +1381,6 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
 
             UserRoleQueries.addPermissionToRole_Transaction(this, sqlCon, role, permission);
         } catch (SQLException e) {
-            if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                            + Config.getConfig(this).getUserRolesPermissionsTable() + ".role, "
-                            + Config.getConfig(this).getUserRolesPermissionsTable() + ".permission" + ")")) {
-                throw new DuplicateRolePermissionMappingException();
-            }
 
             throw new StorageQueryException(e);
         }

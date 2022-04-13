@@ -19,15 +19,10 @@ package io.supertokens.userroles;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.userroles.exception.DuplicateRoleException;
-import io.supertokens.pluginInterface.userroles.exception.DuplicateRolePermissionMappingException;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
-
-import javax.annotation.Nullable;
-import java.util.Arrays;
 
 public class UserRoles {
     // add a role to a user, if the role is already mapped to the user ignore the exception but if
@@ -46,18 +41,12 @@ public class UserRoles {
             throws StorageQueryException, StorageTransactionLogicException {
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(main);
         storage.startTransaction(con -> {
-            try {
-                storage.createNewRole_Transaction(con, role);
-            } catch (DuplicateRoleException e) {
-                // ignore exception
-            }
+            storage.createNewRoleOrDoNothingIfExists_Transaction(con, role);
 
             if (permissions != null) {
                 for (int i = 0; i < permissions.length; i++) {
                     try {
                         storage.addPermissionToRole_Transaction(con, role, permissions[i]);
-                    } catch (DuplicateRolePermissionMappingException e) {
-                        // ignore exception
                     } catch (UnknownRoleException e) {
                         // ignore exception, should not come here since role should always exist in this transaction
                     }

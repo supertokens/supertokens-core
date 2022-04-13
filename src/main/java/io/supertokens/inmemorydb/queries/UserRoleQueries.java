@@ -211,7 +211,7 @@ public class UserRoleQueries {
 
     public static void createNewRole_Transaction(Start start, Connection con, String role)
             throws SQLException, StorageQueryException {
-        String QUERY = "INSERT INTO " + getConfig(start).getRolesTable() + " VALUES(?);";
+        String QUERY = "INSERT INTO " + getConfig(start).getRolesTable() + " VALUES(?) ON CONFLICT(role) DO NOTHING;";
         update(con, QUERY, pst -> {
             pst.setString(1, role);
         });
@@ -221,7 +221,7 @@ public class UserRoleQueries {
             throws SQLException, StorageQueryException {
 
         String QUERY = "INSERT INTO " + getConfig(start).getUserRolesPermissionsTable()
-                + " (role, permission) VALUES(?, ?)";
+                + " (role, permission) VALUES(?, ?) ON CONFLICT(role, permission) DO NOTHING";
         update(con, QUERY, pst -> {
             pst.setString(1, role);
             pst.setString(2, permission);
