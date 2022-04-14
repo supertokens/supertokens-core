@@ -1360,7 +1360,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            UserRoleQueries.createNewRole_Transaction(this, sqlCon, role);
+            UserRoleQueries.createNewRoleOrDoNothingIfExists_Transaction(this, sqlCon, role);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

@@ -209,7 +209,7 @@ public class UserRoleQueries {
         return rowUpdatedCount > 0;
     }
 
-    public static void createNewRole_Transaction(Start start, Connection con, String role)
+    public static void createNewRoleOrDoNothingIfExists_Transaction(Start start, Connection con, String role)
             throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + getConfig(start).getRolesTable() + " VALUES(?) ON CONFLICT(role) DO NOTHING;";
         update(con, QUERY, pst -> {
