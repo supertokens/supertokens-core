@@ -18,20 +18,22 @@ package io.supertokens.test.userRoles.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.emailverification.User;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.userroles.UserRoles;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class AddUserRoleAPITest {
     @Rule
@@ -146,6 +148,71 @@ public class AddUserRoleAPITest {
                         "Http error. Status Code: 400. Message:" + " Field name 'role' cannot be an empty String"));
             }
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testAddingARoleToAUserByCallingAddUserRoleAPI() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // create a role
+        String[] role = new String[] { "role" };
+        String userId = "userId";
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role[0], null);
+
+        // add the role to a user
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("role", role[0]);
+        requestBody.addProperty("userId", userId);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_14ForTests(), "userroles");
+
+        assertEquals("OK", response.get("status").getAsString());
+        assertEquals(1, response.entrySet().size());
+
+        // check that the user actually has only that role
+        String[] userRoles = storage.getRolesForUser(userId);
+        Utils.checkThatArraysAreEqual(role, userRoles);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testAddingAnUnknownRoleToAUser() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // add an unknown role to a user
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("role", "unknown_role");
+        requestBody.addProperty("userId", "test_user");
+
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_14ForTests(), "userroles");
+
+        assertEquals("UNKNOWN_ROLE_ERROR", response.get("status").getAsString());
+        assertEquals(1, response.entrySet().size());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
