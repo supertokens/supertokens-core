@@ -315,6 +315,32 @@ public class UserRolesStorageTest {
     }
 
     @Test
+    public void testAssociatingAnUnknownRoleWithUser() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        Exception error = null;
+        try {
+
+            storage.addRoleToUser("userId", "unknownRole");
+        } catch (Exception e) {
+            error = e;
+        }
+
+        assertNotNull(error);
+        assertTrue(error instanceof UnknownRoleException);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testAssociatingRolesWithUser() throws Exception {
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
