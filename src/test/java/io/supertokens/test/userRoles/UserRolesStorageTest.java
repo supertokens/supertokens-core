@@ -368,9 +368,7 @@ public class UserRolesStorageTest {
         String role = "role";
         String userId = "userId";
         storage.startTransaction(con -> {
-
             storage.createNewRoleOrDoNothingIfExists_Transaction(con, role);
-
             storage.commitTransaction(con);
             return null;
         });
