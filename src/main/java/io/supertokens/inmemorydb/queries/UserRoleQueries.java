@@ -217,8 +217,8 @@ public class UserRoleQueries {
         });
     }
 
-    public static void addPermissionToRole_Transaction(Start start, Connection con, String role, String permission)
-            throws SQLException, StorageQueryException {
+    public static void addPermissionToRoleOrDoNothingIfExists_Transaction(Start start, Connection con, String role,
+            String permission) throws SQLException, StorageQueryException {
 
         String QUERY = "INSERT INTO " + getConfig(start).getUserRolesPermissionsTable()
                 + " (role, permission) VALUES(?, ?) ON CONFLICT(role, permission) DO NOTHING";
