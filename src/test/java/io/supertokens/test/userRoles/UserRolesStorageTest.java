@@ -70,7 +70,6 @@ public class UserRolesStorageTest {
             return;
         }
 
-        // !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")
         // we only want to run this test for MySQL and Postgres since the behaviour for SQLite is different
         if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
             return;
@@ -83,8 +82,8 @@ public class UserRolesStorageTest {
         String role = "role";
         String[] permissions = new String[] { "permission" };
         AtomicInteger numberOfIterations = new AtomicInteger(0);
-        AtomicBoolean r1_success = new AtomicBoolean(true);
-        AtomicBoolean r2_success = new AtomicBoolean(true);
+        AtomicBoolean r1_success = new AtomicBoolean(false);
+        AtomicBoolean r2_success = new AtomicBoolean(false);
         Runnable r1 = () -> {
 
             try {
@@ -97,18 +96,17 @@ public class UserRolesStorageTest {
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
-                        // should not come here
+                        // Ignored
                     }
 
                     // add permissions
                     try {
                         storage.addPermissionToRole_Transaction(con, role, permissions[0]);
                     } catch (UnknownRoleException e) {
-                        // should not come here
-                        r1_success.set(false);
+                        throw new StorageQueryException(e);
                     }
-
                     storage.commitTransaction(con);
+                    r1_success.set(true);
                     return null;
                 });
             } catch (StorageQueryException | StorageTransactionLogicException e) {
@@ -126,9 +124,9 @@ public class UserRolesStorageTest {
             // delete the newly created role
             try {
                 storage.deleteRole(role);
+                r2_success.set(true);
             } catch (StorageQueryException e) {
                 // should not come here
-                r2_success.set(false);
             }
         };
 
@@ -145,7 +143,9 @@ public class UserRolesStorageTest {
         assertTrue(r1_success.get());
         assertTrue(r2_success.get());
 
-        // check that the transaction in r1 runs once
+        // check that the transaction in r1 runs once. This happens cause it's
+        // running in serializable transaction isolation level. If we run it in
+        // repeatable read, it will happen twice.
         assertEquals(1, numberOfIterations.get());
 
         // check that the role is created and the permission still exists
