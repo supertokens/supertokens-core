@@ -46,7 +46,7 @@ public class UserRoles {
             if (permissions != null) {
                 for (int i = 0; i < permissions.length; i++) {
                     try {
-                        storage.addPermissionToRole_Transaction(con, role, permissions[i]);
+                        storage.addPermissionToRoleOrDoNothingIfExists_Transaction(con, role, permissions[i]);
                     } catch (UnknownRoleException e) {
                         // ignore exception, should not come here since role should always exist in this transaction
                     }

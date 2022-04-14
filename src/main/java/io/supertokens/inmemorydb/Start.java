@@ -1367,8 +1367,8 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     }
 
     @Override
-    public void addPermissionToRole_Transaction(TransactionConnection con, String role, String permission)
-            throws StorageQueryException, UnknownRoleException {
+    public void addPermissionToRoleOrDoNothingIfExists_Transaction(TransactionConnection con, String role,
+            String permission) throws StorageQueryException, UnknownRoleException {
         Connection sqlCon = (Connection) con.getConnection();
 
         try {
@@ -1379,7 +1379,7 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
                 throw new UnknownRoleException();
             }
 
-            UserRoleQueries.addPermissionToRole_Transaction(this, sqlCon, role, permission);
+            UserRoleQueries.addPermissionToRoleOrDoNothingIfExists_Transaction(this, sqlCon, role, permission);
         } catch (SQLException e) {
 
             throw new StorageQueryException(e);

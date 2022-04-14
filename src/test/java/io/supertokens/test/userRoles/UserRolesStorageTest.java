@@ -101,7 +101,7 @@ public class UserRolesStorageTest {
 
                     // add permissions
                     try {
-                        storage.addPermissionToRole_Transaction(con, role, permissions[0]);
+                        storage.addPermissionToRoleOrDoNothingIfExists_Transaction(con, role, permissions[0]);
                     } catch (UnknownRoleException e) {
                         throw new StorageQueryException(e);
                     }
@@ -207,7 +207,8 @@ public class UserRolesStorageTest {
             try {
                 storage.startTransaction(con -> {
                     try {
-                        storage.addPermissionToRole_Transaction(con, "unknown_role", "testPermission");
+                        storage.addPermissionToRoleOrDoNothingIfExists_Transaction(con, "unknown_role",
+                                "testPermission");
                     } catch (UnknownRoleException e) {
                         throw new StorageTransactionLogicException(e);
                     }
@@ -233,7 +234,7 @@ public class UserRolesStorageTest {
             try {
                 storage.startTransaction(con -> {
                     try {
-                        storage.addPermissionToRole_Transaction(con, role, permission);
+                        storage.addPermissionToRoleOrDoNothingIfExists_Transaction(con, role, permission);
                     } catch (UnknownRoleException e) {
                         throw new StorageTransactionLogicException(e);
                     }
