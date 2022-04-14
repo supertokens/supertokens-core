@@ -49,11 +49,8 @@ public class AddUserRoleAPI extends WebserverAPI {
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
-
-        String role = InputParser.parseStringFromElementOrThrowError(input, "role", false);
-
+        String role = InputParser.parseStringOrThrowError(input, "role", false);
         // normalize and sanitize role
         role = role.trim();
         if (role.length() == 0) {

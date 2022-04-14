@@ -16,12 +16,22 @@
 
 package io.supertokens.test.userRoles.api;
 
+import com.google.gson.JsonObject;
+import io.supertokens.ProcessState;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class AddUserRoleAPITest {
     @Rule
@@ -38,7 +48,106 @@ public class AddUserRoleAPITest {
     }
 
     @Test
-    public void badInputTest() {
+    public void badInputTest() throws Exception {
 
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // dont pass either roles or userId
+        {
+            try {
+                HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/role", new JsonObject(), 1000, 1000, null,
+                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                throw new Exception("should not come here");
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'userId' is invalid in JSON input"));
+            }
+        }
+
+        // dont pass userId
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("role", "role");
+            try {
+                HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                throw new Exception("should not come here");
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'userId' is invalid in JSON input"));
+            }
+
+        }
+        // userId as a number
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("userId", 1);
+            requestBody.addProperty("role", "role");
+            try {
+                HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                throw new Exception("should not come here");
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'userId' is invalid in JSON input"));
+            }
+        }
+        // dont pass role
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("userId", "userId");
+            try {
+                HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                throw new Exception("should not come here");
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'role' is invalid in JSON input"));
+            }
+        }
+        // role as a number
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("userId", "userId");
+            requestBody.addProperty("role", 1);
+            try {
+                HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                throw new Exception("should not come here");
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'role' is invalid in JSON input"));
+            }
+        }
+        // role as an empty string
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("userId", "userId");
+            requestBody.addProperty("role", "  ");
+            try {
+                HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                throw new Exception("should not come here");
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'role' cannot be an empty String"));
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
