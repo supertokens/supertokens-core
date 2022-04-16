@@ -254,11 +254,10 @@ public class LoggingTest {
             assertFalse(logFile.isDirectory());
 
         } finally {
-
-            FileUtils.deleteDirectory(new File("../temp/a"));
-
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+
+            FileUtils.deleteDirectory(new File("../temp/a"));
         }
 
     }
