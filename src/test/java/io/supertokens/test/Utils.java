@@ -151,7 +151,7 @@ public abstract class Utils extends Mockito {
 
     public static void setValueInConfig(String key, String value) throws IOException {
         String find = "\r?\n#?\\s*" + Pattern.quote(key) + ":.*\r?\n";
-        String replace = newLine + "# " + key + ": " + value + newLine;
+        String replace = newLine + key + ": " + value + newLine;
         replaceConfigValue(find, replace);
     }
 
