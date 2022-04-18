@@ -427,4 +427,66 @@ public class UserRolesStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testRemovingAnUnUnknownRoleFromAUser() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        boolean response = storage
+                .startTransaction(con -> storage.deleteRoleForUser_Transaction(con, "userId", "unknown_role"));
+
+        assertFalse(response);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRemovingARoleFromAUser() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        String[] roles = new String[] { "role" };
+        String userId = "userId";
+
+        // create a role
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
+
+        // add role to user
+        UserRoles.addRoleToUser(process.main, userId, roles[0]);
+
+        {
+            // check that user has the roles
+            String[] userRoles = storage.getRolesForUser(userId);
+            Utils.checkThatArraysAreEqual(roles, userRoles);
+        }
+
+        {
+            // remove the role from the user
+            boolean response = storage
+                    .startTransaction(con -> storage.deleteRoleForUser_Transaction(con, userId, roles[0]));
+            assertTrue(response);
+
+            // check that user does not have any roles
+            String[] userRoles = storage.getRolesForUser(userId);
+            assertEquals(0, userRoles.length);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }

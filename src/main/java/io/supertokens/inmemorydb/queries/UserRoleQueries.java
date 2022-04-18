@@ -198,7 +198,7 @@ public class UserRoleQueries {
 
     public static boolean deleteRoleForUser_Transaction(Start start, Connection con, String userId, String role)
             throws SQLException, StorageQueryException {
-        String QUERY = "DELETE FROM " + getConfig(start).getUserRolesTable() + "WHERE user_id = ? AND role = ? ;";
+        String QUERY = "DELETE FROM " + getConfig(start).getUserRolesTable() + " WHERE user_id = ? AND role = ? ;";
 
         // store the number of rows updated
         int rowUpdatedCount = update(con, QUERY, pst -> {

@@ -87,7 +87,7 @@ public class UserRoles {
             throw e;
         }
     }
-//
+
 //    // retrieve all roles associated with the user
 //    public static String[] getRolesForUser(Main main, String userId) throws StorageQueryException {
 //        return StorageLayer.getUserRolesStorage(main).getRolesForUser(userId);
