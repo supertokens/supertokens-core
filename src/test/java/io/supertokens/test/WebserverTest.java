@@ -42,9 +42,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.net.ConnectException;
-import java.net.InetAddress;
-import java.net.SocketTimeoutException;
+import java.net.*;
 import java.util.HashMap;
 
 import static org.junit.Assert.*;
@@ -597,26 +595,12 @@ public class WebserverTest extends Mockito {
         Utils.setValueInConfig("host", "\"localhost\"");
         hello("localhost", "3567");
         hello("127.0.0.1", "3567");
-        try {
-            hello(inetAddress.getHostAddress(), "3567");
-            if (!inetAddress.getHostAddress().equals("127.0.0.1")) {
-                fail();
-            }
-        } catch (ConnectException ignored) {
-        }
 
         Utils.reset();
 
         Utils.setValueInConfig("host", "\"127.0.0.1\"");
         hello("localhost", "3567");
         hello("127.0.0.1", "3567");
-        try {
-            hello(inetAddress.getHostAddress(), "3567");
-            if (!inetAddress.getHostAddress().equals("127.0.0.1")) {
-                fail();
-            }
-        } catch (ConnectException ignored) {
-        }
 
         Utils.reset();
 
