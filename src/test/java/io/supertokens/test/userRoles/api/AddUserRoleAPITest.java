@@ -203,9 +203,10 @@ public class AddUserRoleAPITest {
         }
 
         // add an unknown role to a user
+        String userId = "test_user";
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("role", "unknown_role");
-        requestBody.addProperty("userId", "test_user");
+        requestBody.addProperty("userId", userId);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
@@ -213,6 +214,11 @@ public class AddUserRoleAPITest {
 
         assertEquals("UNKNOWN_ROLE_ERROR", response.get("status").getAsString());
         assertEquals(1, response.entrySet().size());
+
+        // check that user has no role associated with them
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        String[] userRoles = storage.getRolesForUser(userId);
+        assertEquals(0, userRoles.length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

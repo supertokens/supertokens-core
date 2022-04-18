@@ -284,6 +284,19 @@ public class UserRolesTest {
 
         }
 
+        // assign another role to the user, and check that the user has 2 roles
+        {
+            String[] newRoles = new String[] { "role", "role2" };
+
+            // create another role
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, newRoles[1], null);
+            // assign role to user
+            UserRoles.addRoleToUser(process.main, userId, newRoles[1]);
+            // check that user has two roles
+            String[] userRoles = storage.getRolesForUser(userId);
+            Utils.checkThatArraysAreEqual(newRoles, userRoles);
+        }
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
