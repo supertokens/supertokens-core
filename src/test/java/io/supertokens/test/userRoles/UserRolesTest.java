@@ -17,6 +17,7 @@
 package io.supertokens.test.userRoles;
 
 import io.supertokens.ProcessState;
+import io.supertokens.emailverification.User;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
@@ -301,4 +302,107 @@ public class UserRolesTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testRemovingAnUnknownRoleFromAUser() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Exception error = null;
+        try {
+            UserRoles.removeUserRole(process.main, "userId", "unknown_role");
+        } catch (Exception e) {
+            error = e;
+        }
+        assertNotNull(error);
+        assertTrue(error instanceof UnknownRoleException);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRemovingARoleFromAUser() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String userId = "userId";
+        String[] roles = new String[] { "role" };
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // create a role and assign the role to a user
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
+        UserRoles.addRoleToUser(process.main, userId, roles[0]);
+
+        {
+            // check that the user has roles
+            String[] userRoles = storage.getRolesForUser(userId);
+            Utils.checkThatArraysAreEqual(roles, userRoles);
+        }
+
+        {
+            // remove the roles from the user
+            UserRoles.removeUserRole(process.main, userId, roles[0]);
+            // check that the user has no roles
+            storage.getRolesForUser(userId);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRemovingARoleFromAUserWhoHasMultipleRoles() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        String[] roles = new String[] { "role1", "role2", "role3" };
+        String userId = "userId";
+
+        // create multiple roles and assign them to a user
+        for (String role : roles) {
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+            UserRoles.addRoleToUser(process.main, userId, role);
+        }
+
+        {
+            // check that the user actually has the roles
+            String[] userRoles = storage.getRolesForUser(userId);
+            Utils.checkThatArraysAreEqual(roles, userRoles);
+        }
+
+        // remove a role from the user
+        UserRoles.removeUserRole(process.main, userId, "role1");
+
+        {
+            String[] currentUserRoles = new String[] { "role2", "role3" };
+            String[] retrievedUserRoles = storage.getRolesForUser(userId);
+
+            // check that the user has the correct roles
+            Utils.checkThatArraysAreEqual(currentUserRoles, retrievedUserRoles);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+    }
 }
