@@ -41,6 +41,7 @@ import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
 import io.supertokens.webserver.api.usermetadata.UserMetadataAPI;
 import io.supertokens.webserver.api.usermetadata.RemoveUserMetadataAPI;
 
+import io.supertokens.webserver.api.userroles.AddUserRoleAPI;
 import io.supertokens.webserver.api.userroles.CreateRoleAPI;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
@@ -191,6 +192,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new UserMetadataAPI(main));
         addAPI(new RemoveUserMetadataAPI(main));
         addAPI(new CreateRoleAPI(main));
+        addAPI(new AddUserRoleAPI(main));
 
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),

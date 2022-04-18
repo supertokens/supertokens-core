@@ -18,11 +18,13 @@ package io.supertokens.test.userRoles;
 
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.userroles.UserRoles;
+import jdk.jshell.execution.Util;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -225,6 +227,74 @@ public class UserRolesTest {
             String[] allPermissions = new String[] { "permission1", "permission2", "permission3" };
             checkThatArraysAreEqual(allPermissions, createdPermissions);
 
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testAddRoleToUserResponses() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        String[] roles = new String[] { "role" };
+        String userId = "userId";
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // assign an unknown role to a user, it should throw UNKNOWN_ROLE_EXCEPTION
+        {
+            Exception error = null;
+            try {
+
+                UserRoles.addRoleToUser(process.main, userId, "unknown_role");
+            } catch (Exception e) {
+                error = e;
+            }
+
+            assertNotNull(error);
+            assertTrue(error instanceof UnknownRoleException);
+        }
+
+        // create a role and assign the role to a user, check that the user has the role
+        {
+            // create role
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
+            // assign role to user
+            UserRoles.addRoleToUser(process.main, userId, roles[0]);
+
+            // check that user actually has the role
+            String[] userRoles = storage.getRolesForUser(userId);
+            Utils.checkThatArraysAreEqual(roles, userRoles);
+        }
+
+        // assign the same role to the user again, it should not throw an exception
+        {
+            // assign the role to the user again
+            UserRoles.addRoleToUser(process.main, userId, roles[0]);
+
+            // check that the user still has the same role/ no additional role has been added
+            String[] userRoles = storage.getRolesForUser(userId);
+            Utils.checkThatArraysAreEqual(roles, userRoles);
+
+        }
+
+        // assign another role to the user, and check that the user has 2 roles
+        {
+            String[] newRoles = new String[] { "role", "role2" };
+
+            // create another role
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, newRoles[1], null);
+            // assign role to user
+            UserRoles.addRoleToUser(process.main, userId, newRoles[1]);
+            // check that user has two roles
+            String[] userRoles = storage.getRolesForUser(userId);
+            Utils.checkThatArraysAreEqual(newRoles, userRoles);
         }
 
         process.kill();

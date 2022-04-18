@@ -1264,9 +1264,10 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getUserRolesTable() + ".user_id, "
-                            + Config.getConfig(this).getUserRolesTable() + ".role" + " )")) {
+                            + Config.getConfig(this).getUserRolesTable() + ".role" + ")")) {
                 throw new DuplicateUserRoleMappingException();
             }
+
             throw new StorageQueryException(e);
         }
     }
