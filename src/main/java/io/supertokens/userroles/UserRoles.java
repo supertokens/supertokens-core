@@ -37,11 +37,11 @@ public class UserRoles {
     }
 
     // create a new role if it doesn't exist and add permissions to the role
-    public static void createNewRoleOrModifyItsPermissions(Main main, String role, String[] permissions)
+    public static boolean createNewRoleOrModifyItsPermissions(Main main, String role, String[] permissions)
             throws StorageQueryException, StorageTransactionLogicException {
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(main);
-        storage.startTransaction(con -> {
-            storage.createNewRoleOrDoNothingIfExists_Transaction(con, role);
+        return storage.startTransaction(con -> {
+            boolean wasANewRoleCreated = storage.createNewRoleOrDoNothingIfExists_Transaction(con, role);
 
             if (permissions != null) {
                 for (int i = 0; i < permissions.length; i++) {
@@ -53,7 +53,7 @@ public class UserRoles {
                 }
             }
             storage.commitTransaction(con);
-            return null;
+            return wasANewRoleCreated;
         });
     }
 
