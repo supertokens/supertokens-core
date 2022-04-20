@@ -18,6 +18,7 @@ package io.supertokens.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -103,6 +104,9 @@ public abstract class Utils extends Mockito {
         PluginInterfaceTesting.isTesting = true;
         Main.makeConsolePrintSilent = true;
         String installDir = "../";
+        if (!new File(installDir + ".testEnvRunning").exists())
+            throw new QuitProgramException(
+                    "Testing environment is not running! Run the startTestingEnv script to start it.");
         try {
             // if the default config is not the same as the current config, we must reset the storage layer
             Path ogConfig = new File(installDir + "temp/config.yaml").toPath();
