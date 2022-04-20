@@ -25,14 +25,16 @@ import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 
 public class UserRoles {
-    // add a role to a user, if the role is already mapped to the user ignore the exception but if
+    // add a role to a user and return true, if the role is already mapped to the user return false, but if
     // the role does not exist, throw an UNKNOWN_ROLE_EXCEPTION error
-    public static void addRoleToUser(Main main, String userId, String role)
+    public static boolean addRoleToUser(Main main, String userId, String role)
             throws StorageQueryException, UnknownRoleException {
         try {
             StorageLayer.getUserRolesStorage(main).addRoleToUser(userId, role);
+            return true;
         } catch (DuplicateUserRoleMappingException e) {
-            // ignore DuplicateUserRoleMappingException
+            // user already has role
+            return false;
         }
     }
 

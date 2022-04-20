@@ -274,18 +274,20 @@ public class UserRolesTest {
         {
             // create role
             UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
-            // assign role to user
-            UserRoles.addRoleToUser(process.main, userId, roles[0]);
-
+            // assign role to user, and the user didnt have the role previously
+            boolean didUserHaveRole = UserRoles.addRoleToUser(process.main, userId, roles[0]);
+            assertFalse(didUserHaveRole);
             // check that user actually has the role
             String[] userRoles = storage.getRolesForUser(userId);
             Utils.checkThatArraysAreEqual(roles, userRoles);
         }
 
-        // assign the same role to the user again, it should not throw an exception
+        // assign the same role to the user again, it should not throw an exception and check that the user already had
+        // the role
         {
             // assign the role to the user again
-            UserRoles.addRoleToUser(process.main, userId, roles[0]);
+            boolean didUserHaveRole = UserRoles.addRoleToUser(process.main, userId, roles[0]);
+            assertTrue(didUserHaveRole);
 
             // check that the user still has the same role/ no additional role has been added
             String[] userRoles = storage.getRolesForUser(userId);
@@ -300,7 +302,9 @@ public class UserRolesTest {
             // create another role
             UserRoles.createNewRoleOrModifyItsPermissions(process.main, newRoles[1], null);
             // assign role to user
-            UserRoles.addRoleToUser(process.main, userId, newRoles[1]);
+            boolean didUserHaveRole = UserRoles.addRoleToUser(process.main, userId, newRoles[1]);
+            assertFalse(didUserHaveRole);
+
             // check that user has two roles
             String[] userRoles = storage.getRolesForUser(userId);
             Utils.checkThatArraysAreEqual(newRoles, userRoles);

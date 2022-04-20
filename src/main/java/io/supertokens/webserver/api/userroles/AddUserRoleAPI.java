@@ -59,9 +59,10 @@ public class AddUserRoleAPI extends WebserverAPI {
         }
 
         try {
-            UserRoles.addRoleToUser(main, userId, role);
+            boolean didUserHaveRole = !UserRoles.addRoleToUser(main, userId, role);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
+            response.addProperty("didUserHaveRole", didUserHaveRole);
             super.sendJsonResponse(200, response, resp);
         } catch (UnknownRoleException e) {
             JsonObject response = new JsonObject();
