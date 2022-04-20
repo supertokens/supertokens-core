@@ -51,7 +51,7 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 5. Run `git config --global core.autocrlf false`
     - This ensures that line endings are not converted to Windows (CRLF) line endings on checkout
     - Scripts will fail if line endings are CRLF
-6. Follow the Project Setup below (using Git Bash)
+6. Follow the instructions for [Project Setup](#project-setup) below (using Git Bash)
 7. If using IntelliJ IDEA:
     - Go to `File > Project Structure... > Project Settings > Project` and set `Project SDK` to the correct OpenJDK version
     - Go to `File > Settings... > Tools > Terminal` and set `Application Settings > Shell Path` to the location of Git Bash
@@ -69,7 +69,7 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 2. Open Command Prompt, PowerShell, or the Ubuntu Profile in Windows Terminal
 3. If not using Ubuntu Profile in Windows Terminal, run `wsl` to open bash
 4. Follow Linux setup instructions for [installing OpenJDK][wiki-openjdk-install-instructions-mac-linux]
-5. Follow the Project Setup below
+5. Follow the instructions for [Project Setup](#project-setup) below (using WSL Bash)
     - Note: If using IntelliJ IDEA Community, checkout into the WSL filesystem, not Windows
         - Running Windows files in WSL is only supported in IntelliJ IDEA Ultimate
 6. If using IntelliJ IDEA:
