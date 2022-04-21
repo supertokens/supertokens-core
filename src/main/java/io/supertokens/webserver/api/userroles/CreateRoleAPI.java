@@ -78,11 +78,11 @@ public class CreateRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(main, role, permissions);
+            boolean createdNewRole = UserRoles.createNewRoleOrModifyItsPermissions(main, role, permissions);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
-            response.addProperty("createdNewRole", wasRoleCreated);
+            response.addProperty("createdNewRole", createdNewRole);
             super.sendJsonResponse(200, response, resp);
 
         } catch (StorageQueryException | StorageTransactionLogicException e) {
