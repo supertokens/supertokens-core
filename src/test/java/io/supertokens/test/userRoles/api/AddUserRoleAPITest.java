@@ -154,7 +154,7 @@ public class AddUserRoleAPITest {
     }
 
     @Test
-    public void testAddingARoleToAUserTwiceT() throws Exception {
+    public void testAddingARoleToAUserTwice() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
