@@ -183,7 +183,7 @@ public class AddUserRoleAPITest {
 
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
-            assertFalse(response.get("didUserHaveRole").getAsBoolean());
+            assertFalse(response.get("didUserAlreadyHaveRole").getAsBoolean());
 
             // check that the user actually has only that role
             String[] userRoles = storage.getRolesForUser(userId);
@@ -203,7 +203,7 @@ public class AddUserRoleAPITest {
 
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
-            assertTrue(response.get("didUserHaveRole").getAsBoolean());
+            assertTrue(response.get("didUserAlreadyHaveRole").getAsBoolean());
 
             // check the users roles havent changed
             String[] userRoles = storage.getRolesForUser(userId);
@@ -243,7 +243,7 @@ public class AddUserRoleAPITest {
 
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
-        assertFalse(response.get("didUserHaveRole").getAsBoolean());
+        assertFalse(response.get("didUserAlreadyHaveRole").getAsBoolean());
 
         // check that the user actually has only that role
         String[] userRoles = storage.getRolesForUser(userId);
