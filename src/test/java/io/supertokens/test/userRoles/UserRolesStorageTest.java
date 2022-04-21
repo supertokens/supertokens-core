@@ -269,14 +269,13 @@ public class UserRolesStorageTest {
         String role = "role";
         assertFalse(storage.doesRoleExist(role));
 
-        // crate a role and call doesRoleExist
+        // create a role and call doesRoleExist
         {
-            storage.startTransaction(con -> {
-                storage.createNewRoleOrDoNothingIfExists_Transaction(con, role);
-                return null;
-            });
+            boolean wasRoleCreated = storage
+                    .startTransaction(con -> storage.createNewRoleOrDoNothingIfExists_Transaction(con, role));
 
             // check that the role is created
+            assertTrue(wasRoleCreated);
             assertTrue(storage.doesRoleExist(role));
         }
 

@@ -113,7 +113,8 @@ public class UserRolesTest {
 
         {
             // create a new role
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, oldPermissions);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, oldPermissions);
+            assertTrue(wasRoleCreated);
 
             // check that role and permissions were created
 
@@ -129,7 +130,9 @@ public class UserRolesTest {
             // modify role with a new permission
             String[] newPermissions = new String[] { "permission1", "permission2", "permission3" };
 
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, newPermissions);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, newPermissions);
+            // since only permissions were modified and no role was created, this should be false
+            assertFalse(wasRoleCreated);
 
             String[] createdPermissions_2 = storage.getPermissionsForRole(role);
             Arrays.sort(newPermissions);
@@ -206,10 +209,11 @@ public class UserRolesTest {
             // create a new role
             String[] oldPermissions = new String[] { "permission1", "permission2" };
 
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, oldPermissions);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, oldPermissions);
             // check that role and permissions were created
 
             // check if role is created
+            assertTrue(wasRoleCreated);
             assertTrue(storage.doesRoleExist(role));
 
             // retrieve permissions for role
@@ -224,7 +228,8 @@ public class UserRolesTest {
             String[] newPermission = new String[] { "permission3" };
 
             // add additional permission to role
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, newPermission);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, newPermission);
+            assertFalse(wasRoleCreated);
 
             // check that the role still exists
             assertTrue(storage.doesRoleExist(role));
