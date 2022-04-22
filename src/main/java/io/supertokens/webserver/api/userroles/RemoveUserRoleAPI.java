@@ -30,8 +30,12 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.io.Serial;
 
 public class RemoveUserRoleAPI extends WebserverAPI {
+    @Serial
+    private static final long serialVersionUID = 1838125068105185263L;
+
     public RemoveUserRoleAPI(Main main) {
         super(main, RECIPE_ID.USER_ROLES.toString());
     }
