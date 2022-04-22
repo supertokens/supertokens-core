@@ -371,9 +371,16 @@ public class UserRolesTest {
 
         {
             // remove the roles from the user
-            UserRoles.removeUserRole(process.main, userId, roles[0]);
+            boolean didUserHaveRole = UserRoles.removeUserRole(process.main, userId, roles[0]);
+            assertTrue(didUserHaveRole);
+
             // check that the user has no roles
             storage.getRolesForUser(userId);
+        }
+        {
+            // remove a role from a user where the user does not have the role
+            boolean didUserHaveRole = UserRoles.removeUserRole(process.main, userId, roles[0]);
+            assertFalse(didUserHaveRole);
         }
 
         process.kill();
@@ -409,7 +416,8 @@ public class UserRolesTest {
         }
 
         // remove a role from the user
-        UserRoles.removeUserRole(process.main, userId, "role1");
+        boolean didUserHaveRole = UserRoles.removeUserRole(process.main, userId, "role1");
+        assertTrue(didUserHaveRole);
 
         {
             String[] currentUserRoles = new String[] { "role2", "role3" };

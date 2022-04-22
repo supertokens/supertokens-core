@@ -54,6 +54,10 @@ public class UserRolesStorageTest {
     public void beforeEach() {
         Utils.reset();
     }
+
+    // Deleting a role whilst it's being removed from a user -> if the delete
+    // succeeds then deleting role from user should throw unknown role error.
+
     /*
      * In thread 1: Start a transaction -> call createNewRole_Transaction -> wait.... -> call
      * addPermissionToRole_Transaction -> commit. In thread 2: Wait for thread
