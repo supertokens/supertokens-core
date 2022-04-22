@@ -54,9 +54,11 @@ public class RemoveUserRoleAPI extends WebserverAPI {
         }
 
         try {
-            UserRoles.removeUserRole(main, userId, role);
+            boolean didUserHaveRole = UserRoles.removeUserRole(main, userId, role);
+
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
+            response.addProperty("didUserHaveRole", didUserHaveRole);
             super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             throw new ServletException(e);

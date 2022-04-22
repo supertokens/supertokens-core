@@ -65,22 +65,21 @@ public class UserRoles {
     }
 
     // remove a role mapped to a user, if the role doesn't exist throw a UNKNOWN_ROLE_EXCEPTION error
-    public static void removeUserRole(Main main, String userId, String role)
+    public static boolean removeUserRole(Main main, String userId, String role)
             throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
 
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(main);
 
         try {
-            storage.startTransaction(con -> {
+            return storage.startTransaction(con -> {
 
                 boolean doesRoleExist = storage.doesRoleExist_Transaction(con, role);
 
                 if (doesRoleExist) {
-                    storage.deleteRoleForUser_Transaction(con, userId, role);
+                    return storage.deleteRoleForUser_Transaction(con, userId, role);
                 } else {
                     throw new StorageTransactionLogicException(new UnknownRoleException());
                 }
-                return null;
             });
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof UnknownRoleException) {
