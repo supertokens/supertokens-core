@@ -209,12 +209,47 @@ public class RemoveUserRoleAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/role/remove", request, 1000, 1000, null,
                 Utils.getCdiVersion2_14ForTests(), "userroles");
-        assertEquals(1, response.entrySet().size());
+        assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
+        assertTrue(response.get("didUserHaveRole").getAsBoolean());
 
         // check that user doesnt have any role
         String[] userRoles = storage.getRolesForUser(userId);
         assertEquals(0, userRoles.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRemovingARoleFromAUserWhereTheUserDoesNotHaveTheRole() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String[] roles = new String[] { "role1" };
+        String userId = "userId";
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // create a role
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
+
+        // remove the role from the user
+        JsonObject request = new JsonObject();
+        request.addProperty("userId", userId);
+        request.addProperty("role", roles[0]);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/role/remove", request, 1000, 1000, null,
+                Utils.getCdiVersion2_14ForTests(), "userroles");
+        assertEquals(2, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+        assertFalse(response.get("didUserHaveRole").getAsBoolean());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
