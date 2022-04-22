@@ -158,9 +158,9 @@ public class UserRolesStorageTest {
 
     }
 
-    // test that createNewRole_Transaction throws no error when role already exists
+    // test that createNewRoleOrDoNothingIfExists_Transaction throws no error when role already exists
     @Test
-    public void testCreateNewRole_TransactionResponses() throws Exception {
+    public void testCreateNewRoleOrDoNothingIfExists_TransactionResponses() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -173,17 +173,20 @@ public class UserRolesStorageTest {
 
         // create a new role
         String role = "testRole";
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+        {
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+            // check that a role was created
+            assertTrue(wasRoleCreated);
 
+        }
         // check that the role exists
         assertTrue(UserRoles.doesRoleExist(process.main, role));
 
-        // check that createNewRole_transaction doesn't throw error
+        // check that createNewRole_transaction doesn't throw error, and no role was created
         {
-            storage.startTransaction(con -> {
-                storage.createNewRoleOrDoNothingIfExists_Transaction(con, role);
-                return null;
-            });
+            boolean wasRoleCreated = storage
+                    .startTransaction(con -> storage.createNewRoleOrDoNothingIfExists_Transaction(con, role));
+            assertFalse(wasRoleCreated);
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -266,14 +269,13 @@ public class UserRolesStorageTest {
         String role = "role";
         assertFalse(storage.doesRoleExist(role));
 
-        // crate a role and call doesRoleExist
+        // create a role and call doesRoleExist
         {
-            storage.startTransaction(con -> {
-                storage.createNewRoleOrDoNothingIfExists_Transaction(con, role);
-                return null;
-            });
+            boolean wasRoleCreated = storage
+                    .startTransaction(con -> storage.createNewRoleOrDoNothingIfExists_Transaction(con, role));
 
             // check that the role is created
+            assertTrue(wasRoleCreated);
             assertTrue(storage.doesRoleExist(role));
         }
 

@@ -146,6 +146,59 @@ public class CreateRoleAPITest {
     }
 
     @Test
+    public void createTheSameRoleTwiceTest() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        {
+            JsonObject requestBody = new JsonObject();
+            String role = "testRole";
+            requestBody.addProperty("role", role);
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_14ForTests(), "userroles");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertTrue(response.get("createdNewRole").getAsBoolean());
+
+            // retrieve all roles and check that the newly created role is returned
+            UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+            String[] roles = storage.getRoles();
+            assertEquals(1, roles.length);
+            assertEquals(roles[0], role);
+        }
+
+        // create the same role again and check that a new role is not created
+
+        {
+            JsonObject requestBody = new JsonObject();
+            String role = "testRole";
+            requestBody.addProperty("role", role);
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_14ForTests(), "userroles");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertFalse(response.get("createdNewRole").getAsBoolean());
+
+            // retrieve all roles and check that no new role has been created
+            UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+            String[] roles = storage.getRoles();
+            assertEquals(1, roles.length);
+            assertEquals(roles[0], role);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void createANewRoleWithoutPermissionsTest() throws Exception {
         String[] args = { "../" };
 
@@ -164,8 +217,9 @@ public class CreateRoleAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null, Utils.getCdiVersion2_14ForTests(),
                 "userroles");
-        assertEquals(1, response.entrySet().size());
+        assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
+        assertTrue(response.get("createdNewRole").getAsBoolean());
 
         // retrieve all roles and check that the newly created role is returned
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
@@ -199,8 +253,9 @@ public class CreateRoleAPITest {
                 "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null, Utils.getCdiVersion2_14ForTests(),
                 "userroles");
 
-        assertEquals(1, response.entrySet().size());
+        assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
+        assertTrue(response.get("createdNewRole").getAsBoolean());
 
         // check if role is created
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
