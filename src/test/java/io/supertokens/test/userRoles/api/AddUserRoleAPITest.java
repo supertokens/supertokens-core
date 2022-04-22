@@ -154,6 +154,67 @@ public class AddUserRoleAPITest {
     }
 
     @Test
+    public void testAddingARoleToAUserTwice() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // create a role
+        String[] role = new String[] { "role" };
+        String userId = "userId";
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role[0], null);
+
+        {
+            // add the role to a user
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("role", role[0]);
+            requestBody.addProperty("userId", userId);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_14ForTests(), "userroles");
+
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertFalse(response.get("didUserAlreadyHaveRole").getAsBoolean());
+
+            // check that the user actually has only that role
+            String[] userRoles = storage.getRolesForUser(userId);
+            Utils.checkThatArraysAreEqual(role, userRoles);
+        }
+
+        {
+            // add the role to the user again and check that the user already had the role
+            // add the role to a user
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("role", role[0]);
+            requestBody.addProperty("userId", userId);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_14ForTests(), "userroles");
+
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertTrue(response.get("didUserAlreadyHaveRole").getAsBoolean());
+
+            // check the users roles havent changed
+            String[] userRoles = storage.getRolesForUser(userId);
+            Utils.checkThatArraysAreEqual(role, userRoles);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testAddingARoleToAUserByCallingAddUserRoleAPI() throws Exception {
         String[] args = { "../" };
 
@@ -180,8 +241,9 @@ public class AddUserRoleAPITest {
                 "http://localhost:3567/recipe/user/role", requestBody, 1000, 1000, null,
                 Utils.getCdiVersion2_14ForTests(), "userroles");
 
+        assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
-        assertEquals(1, response.entrySet().size());
+        assertFalse(response.get("didUserAlreadyHaveRole").getAsBoolean());
 
         // check that the user actually has only that role
         String[] userRoles = storage.getRolesForUser(userId);

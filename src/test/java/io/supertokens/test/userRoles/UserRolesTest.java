@@ -67,20 +67,28 @@ public class UserRolesTest {
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
         String role = "role";
         String[] permissions = new String[] { "permission" };
-        // create a new role
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
 
-        // check if role is created
-        assertTrue(storage.doesRoleExist(role));
-        // check if permissions are created
-        assertArrayEquals(storage.getPermissionsForRole(role), permissions);
+        {
+            // create a new role
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
 
-        // create the same role again, should not throw an exception
-        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+            // check if role is created
+            assertTrue(wasRoleCreated);
+            assertTrue(storage.doesRoleExist(role));
 
-        // check that roles and permissions still exist
-        assertTrue(storage.doesRoleExist(role));
-        checkThatArraysAreEqual(permissions, storage.getPermissionsForRole(role));
+            // check if permissions are created
+            assertArrayEquals(storage.getPermissionsForRole(role), permissions);
+
+        }
+
+        {
+            // create the same role again, should not throw an exception and no new role should be created
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+            assertFalse(wasRoleCreated);
+            // check that roles and permissions still exist
+            assertTrue(storage.doesRoleExist(role));
+            checkThatArraysAreEqual(permissions, storage.getPermissionsForRole(role));
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -106,7 +114,8 @@ public class UserRolesTest {
 
         {
             // create a new role
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, oldPermissions);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, oldPermissions);
+            assertTrue(wasRoleCreated);
 
             // check that role and permissions were created
 
@@ -122,7 +131,9 @@ public class UserRolesTest {
             // modify role with a new permission
             String[] newPermissions = new String[] { "permission1", "permission2", "permission3" };
 
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, newPermissions);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, newPermissions);
+            // since only permissions were modified and no role was created, this should be false
+            assertFalse(wasRoleCreated);
 
             String[] createdPermissions_2 = storage.getPermissionsForRole(role);
             Arrays.sort(newPermissions);
@@ -153,11 +164,12 @@ public class UserRolesTest {
         {
             // create a role with null permissions
             String role = "role";
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
 
             // check that role and permissions were created
 
             // check if role is created
+            assertTrue(wasRoleCreated);
             assertTrue(storage.doesRoleExist(role));
             // check that no permissions exist for the role
             assertEquals(0, storage.getPermissionsForRole(role).length);
@@ -198,10 +210,11 @@ public class UserRolesTest {
             // create a new role
             String[] oldPermissions = new String[] { "permission1", "permission2" };
 
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, oldPermissions);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, oldPermissions);
             // check that role and permissions were created
 
             // check if role is created
+            assertTrue(wasRoleCreated);
             assertTrue(storage.doesRoleExist(role));
 
             // retrieve permissions for role
@@ -216,7 +229,8 @@ public class UserRolesTest {
             String[] newPermission = new String[] { "permission3" };
 
             // add additional permission to role
-            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, newPermission);
+            boolean wasRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, newPermission);
+            assertFalse(wasRoleCreated);
 
             // check that the role still exists
             assertTrue(storage.doesRoleExist(role));
@@ -267,17 +281,19 @@ public class UserRolesTest {
             // create role
             UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
             // assign role to user
-            UserRoles.addRoleToUser(process.main, userId, roles[0]);
+            boolean wasRoleAddedToUser = UserRoles.addRoleToUser(process.main, userId, roles[0]);
+            assertTrue(wasRoleAddedToUser);
 
-            // check that user actually has the role
+            // check that the user actually has the role
             String[] userRoles = storage.getRolesForUser(userId);
             Utils.checkThatArraysAreEqual(roles, userRoles);
         }
 
-        // assign the same role to the user again, it should not throw an exception
+        // assign the same role to the user again, it should not be added and not throw an exception
         {
             // assign the role to the user again
-            UserRoles.addRoleToUser(process.main, userId, roles[0]);
+            boolean wasRoleAddedToUser = UserRoles.addRoleToUser(process.main, userId, roles[0]);
+            assertFalse(wasRoleAddedToUser);
 
             // check that the user still has the same role/ no additional role has been added
             String[] userRoles = storage.getRolesForUser(userId);
@@ -291,8 +307,10 @@ public class UserRolesTest {
 
             // create another role
             UserRoles.createNewRoleOrModifyItsPermissions(process.main, newRoles[1], null);
-            // assign role to user
-            UserRoles.addRoleToUser(process.main, userId, newRoles[1]);
+            // assign role to user and check that the role was added
+            boolean wasRoleAddedToUser = UserRoles.addRoleToUser(process.main, userId, newRoles[1]);
+            assertTrue(wasRoleAddedToUser);
+
             // check that user has two roles
             String[] userRoles = storage.getRolesForUser(userId);
             Utils.checkThatArraysAreEqual(newRoles, userRoles);
