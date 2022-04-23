@@ -95,31 +95,53 @@ Please ask as many questions as you need, either directly in the issue or on [Di
         - Check the repository branches by clicking on the links listed above, click the branch tab to view all the available versions
     - Add your GitHub `username` separated by a ',' after `core,master` in  `modules.txt`
     - If, for example, your GitHub `username` is `helloworld` then modules.txt should look like:
-      ```
-      // put module name like module name,branch name,github username(if contributing with a forked repository) and then call ./loadModules script        
-      core,master,helloworld
-      plugin-interface,master
-      sqlite-plugin,master
-      ```
+        ```
+        // put module name like module name,branch name,github username(if contributing with a forked repository) and then call ./loadModules script        
+        core,master,helloworld
+        plugin-interface,master
+        sqlite-plugin,master
+        ```
 5. Run `./loadModules` to clone the required repositories
 6. Open `supertokens-root` in your IDE ([IntelliJ IDEA][intellij] is recommended)
 7. After gradle has imported all the dependencies you can start modifying the code
 
-## Testing
+## Developing With IntelliJ IDEA
 
-### Running All Tests ([IntelliJ IDEA][intellij])
-1. Make sure that the `Start Testing Environment` run configuration and `./startTestingEnv` are not running
+### Run Configurations
+![run configurations menu][image-run-configurations]
+- Several Run Configurations are available to run `supertokens-root` scripts
+    - **Lint:** `./gradlew spotlessApply`
+        - Run this configuration before committing
+    - **Run Core:** `./runCore`
+    - **Run All Tests:** `./startTestEnv`
+    - **Start Testing Environment:** `./startTestEnv --wait`
+        - Run this configuration when running individual tests
+    - **Load Modules:** `./loadModules`
+
+### Running All Tests
+1. Make sure that none of these are running:
+    - The `Start Testing Environment` run configuration
+    - The `Run All Tests` run configuration
+    - The `./startTestEnv` script
 2. Run the `Run All Tests` run configuration
 
-### Running Single Tests ([IntelliJ IDEA][intellij])
+### Running Single Tests
 1. Run the `Start Testing Environment` run configuration
 2. Wait for it to print `Test environment running...`
 3. Leave this script running in the terminal
 4. Click the Play button next to the test(s) that you want to run
+5. Tests can be debugged with breakpoints
+
+### Running the Core
+1. Edit `supertokens-root/supertokens-core/devConfig.yaml`
+2. Run the `Run Core` run configuration
+3. Breakpoints are **not supported** at this time
+
+## Developing Without IntelliJ IDEA
 
 ### Running All Tests (Manually)
 1. Navigate to the `supertokens-root` repository
-2. Run `./startTestingEnv`
+2. Run `./startTestEnv`
 3. If all tests pass the terminal should display
    - Core Tests:  
      ![core tests passing][image-core-tests-passing]
@@ -127,7 +149,7 @@ Please ask as many questions as you need, either directly in the issue or on [Di
      ![plugin tests passing][image-plugin-tests-passing]
 
 ### Running All Tests (GitHub Actions)
-1. Go to the supertokens-core repo on GitHub (or your forked version of it)
+1. Go to the `supertokens-core` repo on GitHub (or your forked version of it)
 2. Navigate to the Actions tab
 3. Find the action named "Run tests" and navigate to it
 4. Click on the "Run workflow" button
@@ -207,3 +229,5 @@ SuperTokens is made possible by a passionate team and a strong community of deve
 [image-core-tests-passing]: https://github.com/supertokens/supertokens-logo/blob/master/images/core-tests-passing.png
 
 [image-plugin-tests-passing]: https://github.com/supertokens/supertokens-logo/blob/master/images/plugin-tests-passing.png
+
+[image-run-configurations]: https://github.com/supertokens/supertokens-logo/blob/master/images/supertokens-run-configurations.png

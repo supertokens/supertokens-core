@@ -106,7 +106,7 @@ public abstract class Utils extends Mockito {
         String installDir = "../";
         if (!new File(installDir + ".testEnvRunning").exists())
             throw new QuitProgramException(
-                    "Testing environment is not running! Run the startTestingEnv script to start it.");
+                    "Testing environment is not running! Run the startTestEnv script to start it.");
         try {
             // if the default config is not the same as the current config, we must reset the storage layer
             Path ogConfig = new File(installDir + "temp/config.yaml").toPath();
