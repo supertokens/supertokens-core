@@ -109,14 +109,15 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 
 ### Run Configurations
 ![run configurations menu][image-run-configurations]
-- Several Run Configurations are available to run `supertokens-root` scripts
-    - **Lint:** `./gradlew spotlessApply`
-        - Run this configuration before committing
-    - **Run Core:** `./runCore`
-    - **Run All Tests:** `./startTestEnv`
-    - **Start Testing Environment:** `./startTestEnv --wait`
-        - Run this configuration when running individual tests
-    - **Load Modules:** `./loadModules`
+
+Several Run Configurations are available to run `supertokens-root` scripts:
+- **Lint:** `./gradlew spotlessApply`
+    - Run this configuration before committing
+- **Run Core:** `./runCore`
+- **Run All Tests:** `./startTestEnv`
+- **Start Testing Environment:** `./startTestEnv --wait`
+    - Run this configuration when running individual tests
+- **Load Modules:** `./loadModules`
 
 ### Running All Tests
 1. Make sure that none of these are running:
@@ -127,7 +128,7 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 
 ### Running Single Tests
 1. Run the `Start Testing Environment` run configuration
-2. Wait for it to print `Test environment running...`
+2. Wait for it to print `Test environment started!`
 3. Leave this script running in the terminal
 4. Click the Play button next to the test(s) that you want to run
 5. Tests can be debugged with breakpoints
