@@ -131,8 +131,13 @@ public class UserRolesStorageTest {
         thread1.join();
         thread2.join();
 
+        // check that role was removed from the user
         assertTrue(r1_success.get());
+        // check that role was deleted
         assertTrue(r2_success.get());
+
+        // check that role was actuall removed from user
+        assertEquals(0, storage.getRolesForUser(userId).length);
 
         // check that role was actually deleted
         assertFalse(storage.doesRoleExist(role));

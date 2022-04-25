@@ -142,7 +142,9 @@ public class UserRoleQueries {
         // cascading deletes here
         return start.startTransaction(con -> {
             boolean response;
+
             Connection sqlCon = (Connection) con.getConnection();
+            ((ConnectionWithLocks) sqlCon).lock(role + getConfig(start).getRolesTable());
             try {
                 {
                     String QUERY = "DELETE FROM " + getConfig(start).getRolesTable() + " WHERE role = ? ;";
@@ -235,9 +237,9 @@ public class UserRoleQueries {
     public static boolean doesRoleExist_transaction(Start start, Connection con, String role)
             throws SQLException, StorageQueryException {
 
-        ((ConnectionWithLocks) con).lock(role + getConfig(start).getUserRolesTable());
+        ((ConnectionWithLocks) con).lock(role + getConfig(start).getRolesTable());
 
-        String QUERY = "SELECT 1 FROM " + getConfig(start).getRolesTable() + " WHERE role = ? FOR UPDATE";
+        String QUERY = "SELECT 1 FROM " + getConfig(start).getRolesTable() + " WHERE role = ?";
 
         return execute(con, QUERY, pst -> pst.setString(1, role), ResultSet::next);
     }
