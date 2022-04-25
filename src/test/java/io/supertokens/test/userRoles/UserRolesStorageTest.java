@@ -55,8 +55,7 @@ public class UserRolesStorageTest {
         Utils.reset();
     }
 
-    // Deleting a role whilst it's being removed from a user -> if the delete
-    // succeeds then deleting role from user should throw unknown role error.
+    // Deleting a role whilst it's being removed from a user
     @Test
     public void testDeletingARoleWhileItIsBeingRemovedFromAUser() throws Exception {
         String[] args = { "../" };
@@ -132,8 +131,11 @@ public class UserRolesStorageTest {
         thread1.join();
         thread2.join();
 
-        System.out.println(r1_success);
-        System.out.println(r2_success);
+        assertTrue(r1_success.get());
+        assertTrue(r2_success.get());
+
+        // check that role was actually deleted
+        assertFalse(storage.doesRoleExist(role));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
