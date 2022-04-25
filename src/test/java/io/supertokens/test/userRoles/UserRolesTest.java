@@ -432,4 +432,57 @@ public class UserRolesTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
     }
+
+    @Test
+    public void testRetrievingRolesForUser() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // create multiple roles and add them to a user
+        String[] roles = new String[] { "role1", "role2", "role3" };
+        String userId = "userId";
+
+        for (String role : roles) {
+            // create role
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+            // add role to user
+            UserRoles.addRoleToUser(process.main, userId, role);
+        }
+
+        // retrieve roles and check that user has roles
+        String[] userRoles = UserRoles.getRolesForUser(process.main, userId);
+        Utils.checkThatArraysAreEqual(roles, userRoles);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRetrievingRolesForUserWithNoRoles() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String userId = "userId";
+
+        // retrieve roles and check that user has no roles
+        String[] userRoles = UserRoles.getRolesForUser(process.main, userId);
+        assertEquals(0, userRoles.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

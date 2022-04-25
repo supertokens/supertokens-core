@@ -16,6 +16,7 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
@@ -32,6 +33,7 @@ import org.mockito.Mockito;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -257,5 +259,14 @@ public abstract class Utils extends Mockito {
         Arrays.sort(arr1);
         Arrays.sort(arr2);
         assertArrayEquals(arr1, arr2);
+    }
+
+    public static String[] parseJsonArrayToStringArray(JsonArray arr) {
+        ArrayList<String> list = new ArrayList<>();
+        arr.forEach(element -> {
+            list.add(element.getAsString());
+        });
+
+        return list.toArray(String[]::new);
     }
 }

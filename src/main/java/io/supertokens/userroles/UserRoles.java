@@ -89,10 +89,11 @@ public class UserRoles {
         }
     }
 
-//    // retrieve all roles associated with the user
-//    public static String[] getRolesForUser(Main main, String userId) throws StorageQueryException {
-//        return StorageLayer.getUserRolesStorage(main).getRolesForUser(userId);
-//    }
+    // retrieve all roles associated with the user
+    public static String[] getRolesForUser(Main main, String userId) throws StorageQueryException {
+        return StorageLayer.getUserRolesStorage(main).getRolesForUser(userId);
+    }
+
 //
 //    // retrieve all users who have the input role, if role does not exist then throw UNKNOWN_ROLE_EXCEPTION
 //    public static String[] getUsersForRole(Main main, String role) throws StorageQueryException, UnknownRoleException {
