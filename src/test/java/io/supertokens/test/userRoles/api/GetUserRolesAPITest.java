@@ -83,36 +83,6 @@ public class GetUserRolesAPITest {
     }
 
     @Test
-    public void testGettingRolesForAUserWhoHasNoRoles() throws Exception {
-        String[] args = { "../" };
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        // get roles for a user who has no roles
-        {
-            String userId = "userId";
-            HashMap<String, String> QUERY_PARAMS = new HashMap<>();
-            QUERY_PARAMS.put("userId", userId);
-
-            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user/roles", QUERY_PARAMS, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "userroles");
-
-            assertEquals(2, response.entrySet().size());
-            assertEquals("OK", response.get("status").getAsString());
-            assertEquals(0, response.getAsJsonArray("roles").size());
-        }
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
     public void testGettingRolesForAUser() throws Exception {
         String[] args = { "../" };
 
