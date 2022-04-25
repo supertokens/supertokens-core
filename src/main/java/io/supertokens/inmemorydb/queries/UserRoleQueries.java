@@ -237,7 +237,7 @@ public class UserRoleQueries {
 
         ((ConnectionWithLocks) con).lock(role + getConfig(start).getUserRolesTable());
 
-        String QUERY = "SELECT 1 FROM " + getConfig(start).getRolesTable() + " WHERE role = ? ";
+        String QUERY = "SELECT 1 FROM " + getConfig(start).getRolesTable() + " WHERE role = ? FOR UPDATE";
 
         return execute(con, QUERY, pst -> pst.setString(1, role), ResultSet::next);
     }
