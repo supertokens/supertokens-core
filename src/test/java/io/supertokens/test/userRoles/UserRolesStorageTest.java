@@ -54,6 +54,98 @@ public class UserRolesStorageTest {
     public void beforeEach() {
         Utils.reset();
     }
+
+    // Deleting a role whilst it's being removed from a user
+    @Test
+    public void testDeletingARoleWhileItIsBeingRemovedFromAUser() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String role = "role";
+        String userId = "userId";
+        // create a role
+        boolean newRoleCreated = UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+        assertTrue(newRoleCreated);
+
+        // assign role to user
+        boolean didUserAlreadyHaveRole = UserRoles.addRoleToUser(process.main, userId, role);
+        assertTrue(didUserAlreadyHaveRole);
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        AtomicBoolean r1_success = new AtomicBoolean(false);
+        AtomicBoolean r2_success = new AtomicBoolean(false);
+
+        Runnable r1 = () -> {
+
+            try {
+                storage.startTransaction(con -> {
+                    // wait for some time
+                    storage.doesRoleExist_Transaction(con, role);
+
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        // Ignored
+                    }
+
+                    // add permissions
+                    boolean wasRoleRemovedFromUser = storage.deleteRoleForUser_Transaction(con, userId, role);
+
+                    storage.commitTransaction(con);
+                    r1_success.set(wasRoleRemovedFromUser);
+                    return null;
+                });
+            } catch (StorageQueryException | StorageTransactionLogicException e) {
+                // should not come here
+            }
+        };
+
+        Runnable r2 = () -> {
+            // wait for some time so doesRoleExist runs
+            try {
+                Thread.sleep(700);
+            } catch (InterruptedException e) {
+                // Ignore
+            }
+            // delete the role
+            try {
+                boolean wasRoleDeleted = storage.deleteRole(role);
+                r2_success.set(wasRoleDeleted);
+            } catch (StorageQueryException e) {
+                // should not come here
+            }
+        };
+
+        Thread thread1 = new Thread(r1);
+        Thread thread2 = new Thread(r2);
+
+        thread1.start();
+        thread2.start();
+
+        thread1.join();
+        thread2.join();
+
+        // check that role was removed from the user
+        assertTrue(r1_success.get());
+        // check that role was deleted
+        assertTrue(r2_success.get());
+
+        // check that role was actuall removed from user
+        assertEquals(0, storage.getRolesForUser(userId).length);
+
+        // check that role was actually deleted
+        assertFalse(storage.doesRoleExist(role));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     /*
      * In thread 1: Start a transaction -> call createNewRole_Transaction -> wait.... -> call
      * addPermissionToRole_Transaction -> commit. In thread 2: Wait for thread
@@ -424,6 +516,68 @@ public class UserRolesStorageTest {
         String[] userRoles_2 = storage.getRolesForUser(userId);
         assertEquals(1, userRoles_2.length);
         assertEquals(role, userRoles_2[0]);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRemovingAnUnUnknownRoleFromAUser() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        boolean response = storage
+                .startTransaction(con -> storage.deleteRoleForUser_Transaction(con, "userId", "unknown_role"));
+
+        assertFalse(response);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRemovingARoleFromAUser() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        String[] roles = new String[] { "role" };
+        String userId = "userId";
+
+        // create a role
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
+
+        // add role to user
+        UserRoles.addRoleToUser(process.main, userId, roles[0]);
+
+        {
+            // check that user has the roles
+            String[] userRoles = storage.getRolesForUser(userId);
+            Utils.checkThatArraysAreEqual(roles, userRoles);
+        }
+
+        {
+            // remove the role from the user
+            boolean response = storage
+                    .startTransaction(con -> storage.deleteRoleForUser_Transaction(con, userId, roles[0]));
+            assertTrue(response);
+
+            // check that user does not have any roles
+            String[] userRoles = storage.getRolesForUser(userId);
+            assertEquals(0, userRoles.length);
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
