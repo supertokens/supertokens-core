@@ -33,6 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -130,11 +131,9 @@ public class GetUserRolesAPITest {
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
 
-            JsonArray userRoles = response.getAsJsonArray("roles");
-            assertEquals(roles.length, userRoles.size());
-            userRoles.forEach(role -> {
-                assertTrue(Arrays.asList(roles).contains(role.getAsString()));
-            });
+            JsonArray userRolesArr = response.getAsJsonArray("roles");
+            String[] userRoles = Utils.parseJsonArrayToStringArray(userRolesArr);
+            Utils.checkThatArraysAreEqual(roles, userRoles);
         }
 
         // get roles for a user who has no roles

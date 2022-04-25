@@ -466,7 +466,7 @@ public class UserRolesTest {
     }
 
     @Test
-    public void testRetrievingRolesForUserWithNoROles() throws Exception {
+    public void testRetrievingRolesForUserWithNoRoles() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
