@@ -375,7 +375,8 @@ public class UserRolesTest {
             assertTrue(didUserHaveRole);
 
             // check that the user has no roles
-            storage.getRolesForUser(userId);
+            String[] userRoles = storage.getRolesForUser(userId);
+            assertEquals(0, userRoles.length);
         }
         {
             // remove a role from a user where the user does not have the role
