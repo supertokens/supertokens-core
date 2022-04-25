@@ -105,8 +105,6 @@ public class UserRoles {
         }
     }
 
-//
-//
 //    // retrieve all permissions associated with the role
 //    public static String[] getPermissionsForRole(Main main, String role)
 //            throws StorageQueryException, UnknownRoleException {
