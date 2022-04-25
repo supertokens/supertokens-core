@@ -45,6 +45,7 @@ import io.supertokens.webserver.api.userroles.AddUserRoleAPI;
 import io.supertokens.webserver.api.userroles.CreateRoleAPI;
 import io.supertokens.webserver.api.userroles.GetRolesForUserAPI;
 import io.supertokens.webserver.api.userroles.RemoveUserRoleAPI;
+import io.supertokens.webserver.api.userroles.RemoveUserRoleAPI;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;
