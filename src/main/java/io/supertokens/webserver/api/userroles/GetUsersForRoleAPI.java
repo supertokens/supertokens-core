@@ -43,12 +43,19 @@ public class GetUsersForRoleAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/recipe/user/roles";
+        return "/recipe/role/users";
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         String role = InputParser.getQueryParamOrThrowError(req, "role", false);
+
+        // normalize roles
+        role = role.trim();
+        if (role.length() == 0) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("Field name 'role' cannot be an empty String"));
+        }
 
         try {
 
