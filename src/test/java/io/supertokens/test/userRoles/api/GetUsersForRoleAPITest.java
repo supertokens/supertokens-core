@@ -94,43 +94,39 @@ public class GetUsersForRoleAPITest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-//    @Test
-//    public void testRetrievingUsersWhoHaveRole()throws Exception{
-//        String[] args = { "../" };
-//
-//        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-//
-//        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-//            return;
-//        }
-//
-//        String role ="role";
-//        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
-//
-//        // add role to users
-//        String[] userIds = new String[] { "user1", "user2", "user3" };
-//        for (String userId : userIds) {
-//            UserRoles.addRoleToUser(process.main, userId, role);
-//        }
-//
-//        // retrieve users for role
-//        HashMap<String, String> QUERY_PARAM = new HashMap<>();
-//        QUERY_PARAM.put("role", role);
-//        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-//                "http://localhost:3567/recipe/role/users", QUERY_PARAM, 1000, 1000, null,
-//                Utils.getCdiVersion2_14ForTests(), "userroles");
-//        assertEquals(2, response.entrySet().size());
-//        assertEquals("OK", response.get("status").getAsString());
-//
-//        JsonArray userIdsWithSameRole = response.get("users").getAsJsonArray();
-//        assertEquals(user);
-//        for (String userId: userIds
-//             ) {
-//            assertTrue(Arrays.asList(userIdsWithSameRole).contains(userId));
-//        }
-//
-//        process.kill();
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-//    }
+    @Test
+    public void testRetrievingUsersWhoHaveRole() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String role = "role";
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+
+        // add role to users
+        String[] userIds = new String[] { "user1", "user2", "user3" };
+        for (String userId : userIds) {
+            UserRoles.addRoleToUser(process.main, userId, role);
+        }
+
+        // retrieve users for role
+        HashMap<String, String> QUERY_PARAM = new HashMap<>();
+        QUERY_PARAM.put("role", role);
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/role/users", QUERY_PARAM, 1000, 1000, null,
+                Utils.getCdiVersion2_14ForTests(), "userroles");
+        assertEquals(2, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+
+        JsonArray userIdsWithSameRole = response.get("users").getAsJsonArray();
+        // TODO: needs to be checked
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
