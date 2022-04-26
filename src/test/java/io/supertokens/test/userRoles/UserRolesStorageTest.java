@@ -606,7 +606,7 @@ public class UserRolesStorageTest {
 
         String[] userIdsWithSameRole = storage.getUsersForRole(role);
 
-        // check that the users you have the role is correct
+        // check that the users you have retrieved is correct
         Utils.checkThatArraysAreEqual(userIds, userIdsWithSameRole);
 
         process.kill();
