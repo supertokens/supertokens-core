@@ -105,20 +105,12 @@ public class UserRoles {
         }
     }
 
-    // retrieve all permissions associated with the role
-    public static String[] getPermissionsForRole(Main main, String role)
-            throws StorageQueryException, UnknownRoleException {
-
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(main);
-        boolean doesRoleExist = storage.doesRoleExist(role);
-
-        if (doesRoleExist) {
-            return StorageLayer.getUserRolesStorage(main).getPermissionsForRole(role);
-        } else {
-            throw new UnknownRoleException();
-        }
-    }
-
+//    // retrieve all permissions associated with the role
+//    public static String[] getPermissionsForRole(Main main, String role)
+//            throws StorageQueryException, UnknownRoleException {
+//        return StorageLayer.getUserRolesStorage(main).getPermissionsForRole(role);
+//    }
+//
 //    // delete permissions from a role, if the role doesn't exist throw an UNKNOWN_ROLE_EXCEPTION
 //    public static void deletePermissionsFromRole(Main main, String role, @Nullable String[] permissions)
 //            throws StorageQueryException, StorageTransactionLogicException {
