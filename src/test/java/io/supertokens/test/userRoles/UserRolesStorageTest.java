@@ -613,4 +613,28 @@ public class UserRolesStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testRetrievingPermissionsForARole() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // create a role with permissions
+        String role = "role";
+        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+
+        // retrieve permissions and check that the permissions retrieved are the same as those set
+        String[] retrievedPermissions = storage.getPermissionsForRole(role);
+        Utils.checkThatArraysAreEqual(permissions, retrievedPermissions);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
