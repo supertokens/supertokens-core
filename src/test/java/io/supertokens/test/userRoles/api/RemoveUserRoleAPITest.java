@@ -137,23 +137,6 @@ public class RemoveUserRoleAPITest {
                         "Http error. Status Code: 400. Message:" + " Field name 'role' is invalid in JSON input"));
             }
         }
-
-        {
-            // role is a number
-            JsonObject request = new JsonObject();
-            request.addProperty("userId", "userId");
-            request.addProperty("role", 1);
-            try {
-                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/user/role/remove", request, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
-                throw new Exception("should not come here");
-            } catch (HttpResponseException e) {
-                System.out.println(e.getMessage());
-                assertTrue(e.statusCode == 400 && e.getMessage().equals(
-                        "Http error. Status Code: 400. Message:" + " Field name 'role' is invalid in JSON input"));
-            }
-        }
         {
             // role is an empty string
             JsonObject requestBody = new JsonObject();

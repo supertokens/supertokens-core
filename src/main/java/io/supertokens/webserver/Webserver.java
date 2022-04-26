@@ -42,6 +42,7 @@ import io.supertokens.webserver.api.usermetadata.UserMetadataAPI;
 import io.supertokens.webserver.api.usermetadata.RemoveUserMetadataAPI;
 
 import io.supertokens.webserver.api.userroles.*;
+import io.supertokens.webserver.api.userroles.RemoveUserRoleAPI;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;

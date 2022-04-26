@@ -33,6 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -77,39 +78,25 @@ public class GetUserRolesAPITest {
             }
         }
 
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
-    }
-
-    @Test
-    public void testGettingRolesForAUserWhoHasNoRoles() throws Exception {
-        String[] args = { "../" };
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        // get roles for a user who has no roles
         {
-            String userId = "userId";
-            HashMap<String, String> QUERY_PARAMS = new HashMap<>();
-            QUERY_PARAMS.put("userId", userId);
-
-            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user/roles", QUERY_PARAMS, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "userroles");
-
-            assertEquals(2, response.entrySet().size());
-            assertEquals("OK", response.get("status").getAsString());
-            assertEquals(0, response.getAsJsonArray("roles").size());
+            // userId is missing
+            HashMap<String, String> QUERY_PARAM = new HashMap<>();
+            QUERY_PARAM.put("invalid", "invalid");
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user/roles", QUERY_PARAM, 1000, 1000, null,
+                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                throw new Exception("should not come here");
+            } catch (HttpResponseException e) {
+                System.out.println(e.getMessage());
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'userId' is missing in GET request"));
+            }
         }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
     }
 
     @Test
@@ -144,11 +131,9 @@ public class GetUserRolesAPITest {
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
 
-            JsonArray userRoles = response.getAsJsonArray("roles");
-            assertEquals(roles.length, userRoles.size());
-            userRoles.forEach(role -> {
-                assertTrue(Arrays.asList(roles).contains(role.getAsString()));
-            });
+            JsonArray userRolesArr = response.getAsJsonArray("roles");
+            String[] userRoles = Utils.parseJsonArrayToStringArray(userRolesArr);
+            Utils.checkThatArraysAreEqual(roles, userRoles);
         }
 
         // get roles for a user who has no roles
