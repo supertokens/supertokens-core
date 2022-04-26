@@ -124,7 +124,32 @@ public class GetUsersForRoleAPITest {
         assertEquals("OK", response.get("status").getAsString());
 
         JsonArray userIdsWithSameRole = response.get("users").getAsJsonArray();
-        // TODO: needs to be checked
+        String[] retrievedUserIds = Utils.parseJsonArrayToStringArray(userIdsWithSameRole);
+        Utils.checkThatArraysAreEqual(userIds, retrievedUserIds);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRetrievingUsersWithUnknownRole() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // retrieve users for role
+        HashMap<String, String> QUERY_PARAM = new HashMap<>();
+        QUERY_PARAM.put("role", "unknownRole");
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/role/users", QUERY_PARAM, 1000, 1000, null,
+                Utils.getCdiVersion2_14ForTests(), "userroles");
+        assertEquals(1, response.entrySet().size());
+        assertEquals("UNKNOWN_ROLE_EXCEPTION", response.get("status").getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
