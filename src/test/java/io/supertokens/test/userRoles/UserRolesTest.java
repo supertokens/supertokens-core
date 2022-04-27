@@ -686,6 +686,33 @@ public class UserRolesTest {
     }
 
     @Test
+    public void testDeletingAPermissionWhichDoesNotExistFromARole() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a role with permissions
+        String role = "role";
+        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+
+        // remove all permissions from role
+        String[] permissionToRemove = new String[] { "permission4" };
+        UserRoles.deletePermissionsFromRole(process.main, role, permissionToRemove);
+
+        // check that no permissions have been removed
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        Utils.checkThatArraysAreEqual(permissions, retrievedPermissions);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testDeletingPermissionsFromAnUnknownRole() throws Exception {
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
