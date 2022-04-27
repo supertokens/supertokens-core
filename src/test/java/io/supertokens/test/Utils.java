@@ -148,13 +148,13 @@ public abstract class Utils extends Mockito {
     }
 
     public static void commentConfigValue(String key) throws IOException {
-        String find = "\r?\n#?\\s*" + Pattern.quote(key) + ":.*\r?\n";
+        String find = "\r?\n\\s*#?\\s*" + Pattern.quote(key) + ":.*\r?\n";
         String replace = newLine + "# " + key + ":" + newLine;
         replaceConfigValue(find, replace);
     }
 
     public static void setValueInConfig(String key, String value) throws IOException {
-        String find = "\r?\n#?\\s*" + Pattern.quote(key) + ":.*\r?\n";
+        String find = "\r?\n\\s*#?\\s*" + Pattern.quote(key) + ":.*\r?\n";
         String replace = newLine + key + ": " + value + newLine;
         replaceConfigValue(find, replace);
     }
