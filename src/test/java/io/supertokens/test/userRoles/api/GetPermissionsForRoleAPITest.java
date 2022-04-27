@@ -16,6 +16,8 @@
 
 package io.supertokens.test.userRoles.api;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
@@ -23,6 +25,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.userroles.UserRoles;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -31,8 +34,7 @@ import org.junit.rules.TestRule;
 
 import java.util.HashMap;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class GetPermissionsForRoleAPITest {
     @Rule
@@ -78,7 +80,7 @@ public class GetPermissionsForRoleAPITest {
             QUERY_PARAM.put("invalid", "invalid");
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/user/roles", QUERY_PARAM, 1000, 1000, null,
+                        "http://localhost:3567/recipe/role/permissions", QUERY_PARAM, 1000, 1000, null,
                         Utils.getCdiVersion2_14ForTests(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
@@ -90,20 +92,81 @@ public class GetPermissionsForRoleAPITest {
         {
             // role is an empty string
             HashMap<String, String> QUERY_PARAM = new HashMap<>();
-            QUERY_PARAM.put("role", "");
+            QUERY_PARAM.put("role", " ");
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/user/roles", QUERY_PARAM, 1000, 1000, null,
+                        "http://localhost:3567/recipe/role/permissions", QUERY_PARAM, 1000, 1000, null,
                         Utils.getCdiVersion2_14ForTests(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
-                        "Http error. Status Code: 400. Message:" + " Field name 'role' is missing in GET request"));
+                        "Http error. Status Code: 400. Message:" + " Field name 'role' cannot be an empty String"));
             }
         }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
+    }
+
+    @Test
+    public void testRetrievingThePermissionsForARole() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a role with permissions
+        String role = "role";
+        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+
+        HashMap<String, String> QUERY_PARAM = new HashMap<>();
+        QUERY_PARAM.put("role", role);
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/role/permissions", QUERY_PARAM, 1000, 1000, null,
+                Utils.getCdiVersion2_14ForTests(), "userroles");
+
+        assertEquals(2, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+
+        JsonArray arr = response.get("permissions").getAsJsonArray();
+        String[] retrievedPermissions = Utils.parseJsonArrayToStringArray(arr);
+
+        // check that retrieved permissions are the same as the ones set
+        Utils.checkThatArraysAreEqual(permissions, retrievedPermissions);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRetrievingThePermissionsForAnUnknownRole() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        HashMap<String, String> QUERY_PARAM = new HashMap<>();
+        QUERY_PARAM.put("role", "unknownRole");
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/role/permissions", QUERY_PARAM, 1000, 1000, null,
+                Utils.getCdiVersion2_14ForTests(), "userroles");
+
+        assertEquals(1, response.entrySet().size());
+        assertEquals("UNKNOWN_ROLE_ERROR", response.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
