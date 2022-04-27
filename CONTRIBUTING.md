@@ -140,7 +140,7 @@ Several Run Configurations are available to run `supertokens-root` scripts:
 
 ## Developing Without IntelliJ IDEA
 
-### Running All Tests (Manually)
+### Running All Tests (With Console)
 1. Navigate to the `supertokens-root` repository
 2. Run `./startTestEnv`
 3. If all tests pass the terminal should display
@@ -149,7 +149,7 @@ Several Run Configurations are available to run `supertokens-root` scripts:
    - Plugin Tests:  
      ![plugin tests passing][image-plugin-tests-passing]
 
-### Running All Tests (GitHub Actions)
+### Running All Tests (With GitHub Actions)
 1. Go to the `supertokens-core` repo on GitHub (or your forked version of it)
 2. Navigate to the Actions tab
 3. Find the action named "Run tests" and navigate to it
@@ -159,10 +159,8 @@ Several Run Configurations are available to run `supertokens-root` scripts:
     - **supertokens-plugin-interface repos branch name**: If the core version you are working on is compatible with a plugin-interface version that is not in the master branch, then set the correct branch name in this value
 6. Click on "Run workflow"
 
-## Running the Core (Manually)
-1. Run `startTestingEnv --wait` in a terminal, and keep it running
-2. Then open `supertokens-root` in another terminal and run `cp ./temp/config.yaml .`
-3. Then run `java -classpath "./supertokens-core/*:./supertokens-plugin-interface/*" io.supertokens.Main ./ DEV`. This will start the core to listen on `http://localhost:3567`
+## Running the Core (With Console)
+1. Run `runCore` in a terminal, and keep it running. This will start the core to listen on `http://localhost:3567`
 
 ## Pull Requests
 1. Before submitting a pull request make sure all tests have passed
