@@ -107,12 +107,21 @@ public class UserRoles {
         }
     }
 
-//    // retrieve all permissions associated with the role
-//    public static String[] getPermissionsForRole(Main main, String role)
-//            throws StorageQueryException, UnknownRoleException {
-//        return StorageLayer.getUserRolesStorage(main).getPermissionsForRole(role);
-//    }
-//
+    // retrieve all permissions associated with the role
+    public static String[] getPermissionsForRole(Main main, String role)
+            throws StorageQueryException, UnknownRoleException {
+        // Since getPermissionsForRole does not change any data we do not use a transaction since it would not solve any
+        // problem
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(main);
+        boolean doesRoleExist = storage.doesRoleExist(role);
+
+        if (doesRoleExist) {
+            return StorageLayer.getUserRolesStorage(main).getPermissionsForRole(role);
+        } else {
+            throw new UnknownRoleException();
+        }
+    }
+
 //    // delete permissions from a role, if the role doesn't exist throw an UNKNOWN_ROLE_EXCEPTION
 //    public static void deletePermissionsFromRole(Main main, String role, @Nullable String[] permissions)
 //            throws StorageQueryException, StorageTransactionLogicException {
