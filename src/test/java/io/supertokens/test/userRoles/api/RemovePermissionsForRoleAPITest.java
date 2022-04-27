@@ -163,7 +163,7 @@ public class RemovePermissionsForRoleAPITest {
     }
 
     @Test
-    public void createANewRoleWithPermissionsTest() throws Exception {
+    public void deletePermissionsFromRoleTest() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -197,6 +197,43 @@ public class RemovePermissionsForRoleAPITest {
         String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
         assertEquals(1, retrievedPermissions.length);
         assertEquals("permission3", retrievedPermissions[0]);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void deleteAllPermissionsFromRoleTest() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a role with permissions
+        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        String role = "role";
+
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+
+        // call api to remove all permissions
+        JsonObject requestBody = new JsonObject();
+
+        requestBody.addProperty("role", role);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/role/permissions/remove", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_14ForTests(), "userroles");
+
+        assertEquals(1, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+
+        // check that there are no permissions for the role
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        assertEquals(0, retrievedPermissions.length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
