@@ -149,7 +149,7 @@ public class GetUsersForRoleAPITest {
                 "http://localhost:3567/recipe/role/users", QUERY_PARAM, 1000, 1000, null,
                 Utils.getCdiVersion2_14ForTests(), "userroles");
         assertEquals(1, response.entrySet().size());
-        assertEquals("UNKNOWN_ROLE_EXCEPTION", response.get("status").getAsString());
+        assertEquals("UNKNOWN_ROLE_ERROR", response.get("status").getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

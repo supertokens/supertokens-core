@@ -68,7 +68,7 @@ public class RemoveUserRoleAPI extends WebserverAPI {
             throw new ServletException(e);
         } catch (UnknownRoleException e) {
             JsonObject response = new JsonObject();
-            response.addProperty("status", "UNKNOWN_ROLE_EXCEPTION");
+            response.addProperty("status", "UNKNOWN_ROLE_ERROR");
             super.sendJsonResponse(200, response, resp);
         }
     }
