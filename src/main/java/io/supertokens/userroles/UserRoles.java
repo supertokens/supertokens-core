@@ -110,7 +110,8 @@ public class UserRoles {
     // retrieve all permissions associated with the role
     public static String[] getPermissionsForRole(Main main, String role)
             throws StorageQueryException, UnknownRoleException {
-
+        // Since getPermissionsForRole does not change any data we do not use a transaction since it would not solve any
+        // problem
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(main);
         boolean doesRoleExist = storage.doesRoleExist(role);
 

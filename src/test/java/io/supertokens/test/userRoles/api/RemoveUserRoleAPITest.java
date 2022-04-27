@@ -115,7 +115,6 @@ public class RemoveUserRoleAPITest {
                         Utils.getCdiVersion2_14ForTests(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
-                System.out.println(e.getMessage());
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
                         "Http error. Status Code: 400. Message:" + " Field name 'role' is invalid in JSON input"));
             }
@@ -132,7 +131,6 @@ public class RemoveUserRoleAPITest {
                         Utils.getCdiVersion2_14ForTests(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
-                System.out.println(e.getMessage());
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
                         "Http error. Status Code: 400. Message:" + " Field name 'role' is invalid in JSON input"));
             }
