@@ -56,7 +56,6 @@ import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLSto
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
-import io.supertokens.userroles.UserRoles;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
