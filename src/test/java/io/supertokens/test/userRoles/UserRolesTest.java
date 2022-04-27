@@ -17,7 +17,6 @@
 package io.supertokens.test.userRoles;
 
 import io.supertokens.ProcessState;
-import io.supertokens.emailverification.User;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
