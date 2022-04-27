@@ -583,4 +583,34 @@ public class UserRolesStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testRetrievingUsersForRoles() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // create a role
+        String role = "role";
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+
+        // add role to multiple users
+        String[] userIds = new String[] { "user1", "user2", "user3" };
+        for (String userId : userIds) {
+            UserRoles.addRoleToUser(process.main, userId, role);
+        }
+
+        String[] userIdsWithSameRole = storage.getUsersForRole(role);
+
+        // check that the users you have retrieved is correct
+        Utils.checkThatArraysAreEqual(userIds, userIdsWithSameRole);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }

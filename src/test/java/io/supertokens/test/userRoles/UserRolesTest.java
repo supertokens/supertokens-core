@@ -17,7 +17,6 @@
 package io.supertokens.test.userRoles;
 
 import io.supertokens.ProcessState;
-import io.supertokens.emailverification.User;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
@@ -485,4 +484,82 @@ public class UserRolesTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testRetrievingUsersForRole() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a role
+        String role = "role";
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+
+        // add role to users
+        String[] userIds = new String[] { "user1", "user2", "user3" };
+        for (String userId : userIds) {
+            UserRoles.addRoleToUser(process.main, userId, role);
+        }
+
+        // retrieve users with the input role and check that it is correct
+        String[] usersWithTheSameRole = UserRoles.getUsersForRole(process.main, role);
+        Utils.checkThatArraysAreEqual(userIds, usersWithTheSameRole);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRetrievingUsersForAnUnknownRole() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // retrieve users with an unknown role
+        Exception error = null;
+        try {
+            UserRoles.getUsersForRole(process.main, "unknownRole");
+        } catch (Exception e) {
+            error = e;
+        }
+
+        assertNotNull(error);
+        assertTrue(error instanceof UnknownRoleException);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRetrievingUserIdsForRoleWhichHasNoUsers() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a role
+        String role = "role";
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+
+        String[] userIdsWithRole = UserRoles.getUsersForRole(process.main, role);
+
+        assertEquals(0, userIdsWithRole.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }

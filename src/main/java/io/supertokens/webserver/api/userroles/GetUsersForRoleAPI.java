@@ -16,11 +16,12 @@
 
 package io.supertokens.webserver.api.userroles;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.webserver.InputParser;
@@ -32,25 +33,24 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.Serial;
 
-public class RemoveUserRoleAPI extends WebserverAPI {
+public class GetUsersForRoleAPI extends WebserverAPI {
     @Serial
-    private static final long serialVersionUID = 1838125068105185263L;
+    private static final long serialVersionUID = 4502898200826266625L;
 
-    public RemoveUserRoleAPI(Main main) {
+    public GetUsersForRoleAPI(Main main) {
         super(main, RECIPE_ID.USER_ROLES.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/user/role/remove";
+        return "/recipe/role/users";
     }
 
     @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
-        String role = InputParser.parseStringOrThrowError(input, "role", false);
-        // normalize and sanitize role
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        String role = InputParser.getQueryParamOrThrowError(req, "role", false);
+
+        // normalize roles
         role = role.trim();
         if (role.length() == 0) {
             throw new ServletException(
@@ -58,18 +58,27 @@ public class RemoveUserRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean didUserHaveRole = UserRoles.removeUserRole(main, userId, role);
+
+            String[] roleUsers = UserRoles.getUsersForRole(main, role);
+            JsonArray arr = new JsonArray();
+
+            for (String s : roleUsers) {
+                arr.add(new JsonPrimitive(s));
+            }
 
             JsonObject response = new JsonObject();
+            response.add("users", arr);
             response.addProperty("status", "OK");
-            response.addProperty("didUserHaveRole", didUserHaveRole);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
-            throw new ServletException(e);
+
         } catch (UnknownRoleException e) {
+
             JsonObject response = new JsonObject();
             response.addProperty("status", "UNKNOWN_ROLE_ERROR");
             super.sendJsonResponse(200, response, resp);
+
+        } catch (StorageQueryException e) {
+            throw new ServletException(e);
         }
     }
 }
