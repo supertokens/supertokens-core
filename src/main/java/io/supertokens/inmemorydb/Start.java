@@ -56,6 +56,7 @@ import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLSto
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
+import io.supertokens.userroles.UserRoles;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
@@ -1390,15 +1391,24 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     @Override
     public boolean deletePermissionForRole_Transaction(TransactionConnection con, String role, String permission)
             throws StorageQueryException {
-        // TODO:
-        return false;
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return UserRoleQueries.deletePermissionForRole_Transaction(this, sqlCon, role, permission);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+
     }
 
     @Override
     public int deleteAllPermissionsForRole_Transaction(TransactionConnection con, String role)
             throws StorageQueryException {
-        // TODO
-        return 0;
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return UserRoleQueries.deleteAllPermissionsForRole_Transaction(this, sqlCon, role);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
