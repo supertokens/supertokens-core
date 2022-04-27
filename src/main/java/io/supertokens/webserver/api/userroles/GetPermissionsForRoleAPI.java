@@ -68,7 +68,7 @@ public class GetPermissionsForRoleAPI extends WebserverAPI {
             super.sendJsonResponse(200, response, resp);
         } catch (UnknownRoleException e) {
             JsonObject response = new JsonObject();
-            response.addProperty("status", "UNKNOWN_ROLE_EXCEPTION");
+            response.addProperty("status", "UNKNOWN_ROLE_ERROR");
             super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
