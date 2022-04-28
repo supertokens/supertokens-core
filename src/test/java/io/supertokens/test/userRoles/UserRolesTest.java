@@ -17,6 +17,7 @@
 package io.supertokens.test.userRoles;
 
 import io.supertokens.ProcessState;
+import io.supertokens.emailverification.User;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
@@ -810,6 +811,67 @@ public class UserRolesTest {
         // check that no roles are returned
         String[] retrievedRoles = UserRoles.getRolesThatHavePermission(process.main, "unknownPermission");
         assertEquals(0, retrievedRoles.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDeletingARole() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a role with permissions and assign it to a user
+        String role = "role";
+        String userId = "userId";
+        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+        UserRoles.addRoleToUser(process.main, userId, role);
+
+        // delete role
+
+        boolean didRoleExist = UserRoles.deleteRole(process.main, role);
+        assertTrue(didRoleExist);
+
+        // retrieving permission should throw unknownRoleException
+        Exception error = null;
+        try {
+            UserRoles.getPermissionsForRole(process.main, role);
+        } catch (Exception e) {
+            error = e;
+        }
+        assertNotNull(error);
+        assertTrue(error instanceof UnknownRoleException);
+
+        // check that user has no roles
+        String[] retrievedRoles = UserRoles.getRolesForUser(process.main, userId);
+        assertEquals(0, retrievedRoles.length);
+
+        // check that role doesnt exist
+        assertFalse(UserRoles.doesRoleExist(process.main, role));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDeletingAnUnknownRole() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        boolean didRoleExist = UserRoles.deleteRole(process.main, "unknownRole");
+        assertFalse(didRoleExist);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
