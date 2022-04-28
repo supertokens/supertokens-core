@@ -19,19 +19,22 @@ package io.supertokens.test.userRoles.api;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
+import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.userroles.UserRoles;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class RemoveRoleAPITest {
     @Rule
@@ -117,6 +120,86 @@ public class RemoveRoleAPITest {
                         "Http error. Status Code: 400. Message:" + " Field name 'role' cannot be an empty String"));
             }
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRemovingARole() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String role = "role";
+        String userId = "userId";
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // create a role
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, new String[] { "permission" });
+
+        // assign the role to a user
+        UserRoles.addRoleToUser(process.main, userId, role);
+
+        // remove the role
+        JsonObject request = new JsonObject();
+        request.addProperty("role", role);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/role/remove", request, 1000, 1000, null,
+                Utils.getCdiVersion2_14ForTests(), "userroles");
+        assertEquals(2, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+        assertTrue(response.get("didRoleExist").getAsBoolean());
+
+        // check that user doesnt have any role
+        String[] userRoles = storage.getRolesForUser(userId);
+        assertEquals(0, userRoles.length);
+
+        // check that unknownRoleException is thrown when retrieving the permissions
+        Exception error = null;
+        try {
+            UserRoles.getPermissionsForRole(process.main, role);
+        } catch (Exception e) {
+            error = e;
+        }
+        assertNotNull(error);
+        assertTrue(error instanceof UnknownRoleException);
+
+        // check that role doesnt exist
+        assertFalse(UserRoles.doesRoleExist(process.main, role));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRemovingARoleWhichDoesNotExist() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // remove the role
+        JsonObject request = new JsonObject();
+        request.addProperty("role", "unknownRole");
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/role/remove", request, 1000, 1000, null,
+                Utils.getCdiVersion2_14ForTests(), "userroles");
+
+        assertEquals(2, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+        assertFalse(response.get("didRoleExist").getAsBoolean());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
