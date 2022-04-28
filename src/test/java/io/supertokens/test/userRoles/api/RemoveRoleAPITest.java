@@ -170,6 +170,9 @@ public class RemoveRoleAPITest {
         }
         assertNotNull(error);
         assertTrue(error instanceof UnknownRoleException);
+        // check that there are no permissions mapped to the role
+        String[] retrievedPermissions = storage.getPermissionsForRole(role);
+        assertEquals(0, retrievedPermissions.length);
 
         // check that role doesnt exist
         assertFalse(UserRoles.doesRoleExist(process.main, role));
