@@ -701,4 +701,43 @@ public class UserRolesStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testRetrievingRolesForAPermission() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // create two roles, assign [permission1] to role1 and [permission1, permission2] to role2
+        String[] roles = new String[] { "role1", "role2" };
+        String permission1 = "permission1";
+        String permission2 = "permission2";
+
+        // create role1 with permission [permission1]
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], new String[] { permission1 });
+        // create role2 with permissions [permission1, permission2]
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[1],
+                new String[] { permission1, permission2 });
+
+        {
+            // check that role1 and role2 have permission1
+            String[] retrievedRoles = storage.getRolesThatHavePermission(permission1);
+            assertEquals(2, retrievedRoles.length);
+            Utils.checkThatArraysAreEqual(roles, retrievedRoles);
+        }
+        {
+            // check that role2 has permission2
+            String[] retrievedRoles = storage.getRolesThatHavePermission(permission2);
+            assertEquals(1, retrievedRoles.length);
+            assertEquals(roles[1], retrievedRoles[0]);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
