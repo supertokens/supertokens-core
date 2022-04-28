@@ -825,6 +825,8 @@ public class UserRolesTest {
             return;
         }
 
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
         // create a role with permissions and assign it to a user
         String role = "role";
         String userId = "userId";
@@ -848,9 +850,17 @@ public class UserRolesTest {
         assertNotNull(error);
         assertTrue(error instanceof UnknownRoleException);
 
+        // check that the role-permission mapping doesnt exist in the db
+        String[] retrievedPermissions = storage.getPermissionsForRole(role);
+        assertEquals(0, retrievedPermissions.length);
+
         // check that user has no roles
         String[] retrievedRoles = UserRoles.getRolesForUser(process.main, userId);
         assertEquals(0, retrievedRoles.length);
+
+        // check that the user-role mapping doesnt exist in the db
+        String[] retrievedRolesFromDb = storage.getRolesForUser(userId);
+        assertEquals(0, retrievedRolesFromDb.length);
 
         // check that role doesnt exist
         assertFalse(UserRoles.doesRoleExist(process.main, role));
