@@ -637,4 +637,68 @@ public class UserRolesStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testDeletingAPermissionFromARole() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // create a role with permissions
+        String role = "role";
+        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+
+        // delete a permission from the role
+
+        boolean wasPermissionDeleted = storage
+                .startTransaction(con -> storage.deletePermissionForRole_Transaction(con, role, "permission2"));
+
+        assertTrue(wasPermissionDeleted);
+
+        String[] newPermissions = new String[] { "permission1", "permission3" };
+
+        // retrieve permissions for a role and check that the correct permissions are retrieved
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        Utils.checkThatArraysAreEqual(newPermissions, retrievedPermissions);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDeletingAllPermissionFromARole() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // create a role with permissions
+        String role = "role";
+        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+
+        // delete all permissions from the role
+
+        int numberOfPermissionsDeleted = storage
+                .startTransaction(con -> storage.deleteAllPermissionsForRole_Transaction(con, role));
+
+        assertEquals(permissions.length, numberOfPermissionsDeleted);
+
+        // retrieve permissions for a role and check that no permissions are returned
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        assertEquals(0, retrievedPermissions.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }

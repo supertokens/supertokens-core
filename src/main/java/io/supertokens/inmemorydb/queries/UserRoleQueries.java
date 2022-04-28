@@ -244,4 +244,28 @@ public class UserRoleQueries {
         return execute(con, QUERY, pst -> pst.setString(1, role), ResultSet::next);
     }
 
+    public static boolean deletePermissionForRole_Transaction(Start start, Connection con, String role,
+            String permission) throws SQLException, StorageQueryException {
+
+        String QUERY = "DELETE FROM " + getConfig(start).getUserRolesPermissionsTable()
+                + " WHERE role = ? AND permission = ? ";
+        // store the number of rows updated
+        int rowUpdatedCount = update(con, QUERY, pst -> {
+            pst.setString(1, role);
+            pst.setString(2, permission);
+        });
+
+        return rowUpdatedCount > 0;
+    }
+
+    public static int deleteAllPermissionsForRole_Transaction(Start start, Connection con, String role)
+            throws SQLException, StorageQueryException {
+
+        String QUERY = "DELETE FROM " + getConfig(start).getUserRolesPermissionsTable() + " WHERE role = ? ";
+        // return the number of rows updated
+        return update(con, QUERY, pst -> {
+            pst.setString(1, role);
+        });
+    }
+
 }

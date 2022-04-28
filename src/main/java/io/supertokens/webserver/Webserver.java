@@ -197,6 +197,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new GetRolesForUserAPI(main));
         addAPI(new GetUsersForRoleAPI(main));
         addAPI(new GetPermissionsForRoleAPI(main));
+        addAPI(new RemovePermissionsForRoleAPI(main));
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),
                 new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));

@@ -1390,15 +1390,24 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
     @Override
     public boolean deletePermissionForRole_Transaction(TransactionConnection con, String role, String permission)
             throws StorageQueryException {
-        // TODO:
-        return false;
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return UserRoleQueries.deletePermissionForRole_Transaction(this, sqlCon, role, permission);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+
     }
 
     @Override
     public int deleteAllPermissionsForRole_Transaction(TransactionConnection con, String role)
             throws StorageQueryException {
-        // TODO
-        return 0;
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return UserRoleQueries.deleteAllPermissionsForRole_Transaction(this, sqlCon, role);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override

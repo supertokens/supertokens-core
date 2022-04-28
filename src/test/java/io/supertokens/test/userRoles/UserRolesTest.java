@@ -630,4 +630,134 @@ public class UserRolesTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testDeletingPermissionsFromARole() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a role with permissions
+        String role = "role";
+        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+
+        // remove permissions from role
+        String[] permissionsToRemove = new String[] { "permission1", "permission2" };
+        UserRoles.deletePermissionsFromRole(process.main, role, permissionsToRemove);
+
+        // check that permissions have been removed
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        assertEquals(1, retrievedPermissions.length);
+        assertEquals("permission3", retrievedPermissions[0]);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDeletingAllPermissionsFromARole() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a role with permissions
+        String role = "role";
+        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+
+        // remove all permissions from role
+        UserRoles.deletePermissionsFromRole(process.main, role, null);
+
+        // check that permissions have been removed
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        assertEquals(0, retrievedPermissions.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDeletingAPermissionWhichDoesNotExistFromARole() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a role with permissions
+        String role = "role";
+        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+
+        // remove all permissions from role
+        String[] permissionToRemove = new String[] { "permission4" };
+        UserRoles.deletePermissionsFromRole(process.main, role, permissionToRemove);
+
+        // check that no permissions have been removed
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        Utils.checkThatArraysAreEqual(permissions, retrievedPermissions);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDeletingPermissionsFromAnUnknownRole() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // remove permissions from an unknown role
+        Exception error = null;
+        try {
+            UserRoles.deletePermissionsFromRole(process.main, "unknownRole", null);
+        } catch (Exception e) {
+            error = e;
+        }
+        assertNotNull(error);
+        assertTrue(error instanceof UnknownRoleException);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDeletingAPermissionsFromARoleWithAnEmptyArray() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a role with permissions
+        String role = "role";
+        String[] permissions = new String[] { "permission1", "permission2", "permission3" };
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, permissions);
+
+        // remove all permissions from role
+        UserRoles.deletePermissionsFromRole(process.main, role, new String[] {});
+
+        // check that no permissions have been removed
+        String[] retrievedPermissions = UserRoles.getPermissionsForRole(process.main, role);
+        Utils.checkThatArraysAreEqual(permissions, retrievedPermissions);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
