@@ -760,4 +760,59 @@ public class UserRolesTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testRetrievingRolesForPermissions() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create two roles, assign [permission1] to role1 and [permission1, permission2] to role2
+        String[] roles = new String[] { "role1", "role2" };
+        String permission1 = "permission1";
+        String permission2 = "permission2";
+
+        // create role1 with permission [permission1]
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], new String[] { permission1 });
+        // create role2 with permissions [permission1, permission2]
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[1],
+                new String[] { permission1, permission2 });
+
+        {
+            String[] retrievedRoles = UserRoles.getRolesThatHavePermission(process.main, permission1);
+            Utils.checkThatArraysAreEqual(roles, retrievedRoles);
+        }
+
+        {
+            String[] retrievedRoles = UserRoles.getRolesThatHavePermission(process.main, permission2);
+            assertEquals(1, retrievedRoles.length);
+            assertEquals(roles[1], retrievedRoles[0]);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRetrievingRolesForAnUnknownPermission() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // check that no roles are returned
+        String[] retrievedRoles = UserRoles.getRolesThatHavePermission(process.main, "unknownPermission");
+        assertEquals(0, retrievedRoles.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
