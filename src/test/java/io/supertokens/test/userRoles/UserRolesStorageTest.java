@@ -28,7 +28,6 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.version.Version;
-import jdk.jshell.execution.Util;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
