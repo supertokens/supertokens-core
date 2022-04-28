@@ -153,10 +153,10 @@ public class UserRoles {
 
     }
 
-//    // retrieve roles that have the input permission
-//    public static String[] getRolesThatHavePermission(Main main, String permission) throws StorageQueryException {
-//        return StorageLayer.getUserRolesStorage(main).getRolesThatHavePermission(permission);
-//    }
+    // retrieve roles that have the input permission
+    public static String[] getRolesThatHavePermission(Main main, String permission) throws StorageQueryException {
+        return StorageLayer.getUserRolesStorage(main).getRolesThatHavePermission(permission);
+    }
 //
 //    // delete a role
 //    public static int deleteRole(Main main, String role) throws StorageQueryException {
