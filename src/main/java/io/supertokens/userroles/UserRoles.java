@@ -163,11 +163,11 @@ public class UserRoles {
     public static boolean deleteRole(Main main, String role) throws StorageQueryException {
         return StorageLayer.getUserRolesStorage(main).deleteRole(role);
     }
-//
-//    // retrieve all roles that have been created
-//    public static String[] getRoles(Main main) throws StorageQueryException {
-//        return StorageLayer.getUserRolesStorage(main).getRoles();
-//    }
+
+    // retrieve all roles that have been created
+    public static String[] getRoles(Main main) throws StorageQueryException {
+        return StorageLayer.getUserRolesStorage(main).getRoles();
+    }
 //
 //    // delete all roles associated with a user
 //    public static int deleteAllRolesForUser(Main main, String userId) throws StorageQueryException {
