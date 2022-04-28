@@ -142,6 +142,7 @@ public class UserRoles {
                 } else {
                     throw new StorageTransactionLogicException(new UnknownRoleException());
                 }
+                storage.commitTransaction(con);
                 return null;
             });
         } catch (StorageTransactionLogicException e) {
