@@ -740,4 +740,41 @@ public class UserRolesStorageTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testDeletingRoleResponses() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        String role = "role";
+
+        {
+            // delete a role which exists
+
+            // create a role
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+
+            // delete role
+            boolean didRoleExist = storage.deleteRole(role);
+            assertTrue(didRoleExist);
+
+            // check that role doesnt exist
+            assertFalse(UserRoles.doesRoleExist(process.main, role));
+        }
+        {
+            // delete a role which doesnt exist
+
+            boolean didRoleExist = storage.deleteRole(role);
+            assertFalse(didRoleExist);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
