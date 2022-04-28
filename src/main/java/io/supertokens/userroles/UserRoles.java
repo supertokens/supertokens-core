@@ -158,11 +158,11 @@ public class UserRoles {
     public static String[] getRolesThatHavePermission(Main main, String permission) throws StorageQueryException {
         return StorageLayer.getUserRolesStorage(main).getRolesThatHavePermission(permission);
     }
-//
-//    // delete a role
-//    public static int deleteRole(Main main, String role) throws StorageQueryException {
-//        return StorageLayer.getUserRolesStorage(main).deleteRole(role);
-//    }
+
+    // delete a role
+    public static boolean deleteRole(Main main, String role) throws StorageQueryException {
+        return StorageLayer.getUserRolesStorage(main).deleteRole(role);
+    }
 //
 //    // retrieve all roles that have been created
 //    public static String[] getRoles(Main main) throws StorageQueryException {
