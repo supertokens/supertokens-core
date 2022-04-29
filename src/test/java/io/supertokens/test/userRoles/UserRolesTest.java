@@ -17,7 +17,10 @@
 package io.supertokens.test.userRoles;
 
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -978,6 +981,55 @@ public class UserRolesTest {
         {
             String[] retrievedRoles = UserRoles.getRoles(process.main);
             Utils.checkThatArraysAreEqual(roles, retrievedRoles);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void createAnAuthUserAssignRolesAndDeleteUser() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+
+        // create a role
+        String role = "role";
+        UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+
+        // Create an Auth User
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
+
+        // assign role to user
+        UserRoles.addRoleToUser(process.main, userInfo.id, role);
+
+        {
+            // check that user has role
+            String[] retrievedRoles = UserRoles.getRolesForUser(process.main, userInfo.id);
+            assertEquals(1, retrievedRoles.length);
+            assertEquals(role, retrievedRoles[0]);
+        }
+
+        // delete User
+        AuthRecipe.deleteUser(process.main, userInfo.id);
+
+        {
+            // check that user has no roles
+            String[] retrievedRoles = UserRoles.getRolesForUser(process.main, userInfo.id);
+            assertEquals(0, retrievedRoles.length);
+
+            // check that the mapping for user role doesnt exist
+            String[] roleUserMapping = storage.getRolesForUser(userInfo.id);
+            assertEquals(0, roleUserMapping.length);
+        }
+
+        {
+            // check that role still exists
+            String[] retrievedRoles = UserRoles.getRoles(process.main);
+            assertEquals(1, retrievedRoles.length);
+            assertEquals(role, retrievedRoles[0]);
         }
 
         process.kill();
