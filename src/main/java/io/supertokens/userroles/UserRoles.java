@@ -168,10 +168,10 @@ public class UserRoles {
     public static String[] getRoles(Main main) throws StorageQueryException {
         return StorageLayer.getUserRolesStorage(main).getRoles();
     }
-//
-//    // delete all roles associated with a user
-//    public static int deleteAllRolesForUser(Main main, String userId) throws StorageQueryException {
-//        return StorageLayer.getUserRolesStorage(main).deleteAllRolesForUser(userId);
-//    }
+
+    // delete all roles associated with a user
+    public static int deleteAllRolesForUser(Main main, String userId) throws StorageQueryException {
+        return StorageLayer.getUserRolesStorage(main).deleteAllRolesForUser(userId);
+    }
 
 }
