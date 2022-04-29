@@ -886,4 +886,36 @@ public class UserRolesTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testGettingAllCreatedRoles() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        {
+            // call getRoles when no roles exist
+            String[] retrievedRoles = UserRoles.getRoles(process.main);
+            assertEquals(0, retrievedRoles.length);
+        }
+
+        // create roles
+        String[] roles = new String[] { "role1", "role2", "role3" };
+        for (String role : roles) {
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+        }
+
+        // retrieve all role and check for correct output
+        {
+            String[] retrievedRoles = UserRoles.getRoles(process.main);
+            Utils.checkThatArraysAreEqual(roles, retrievedRoles);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
