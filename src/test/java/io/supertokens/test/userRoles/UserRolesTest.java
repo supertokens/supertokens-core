@@ -918,4 +918,70 @@ public class UserRolesTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testDeletingRolesFromAUserWhenMappingDoesExist() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create roles
+        String[] roles = new String[] { "role1", "role2", "role3" };
+        for (String role : roles) {
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+        }
+
+        // delete all roles for a user
+        int numberOfRolesDeleted = UserRoles.deleteAllRolesForUser(process.main, "userId");
+        assertEquals(0, numberOfRolesDeleted);
+
+        // check that no roles have been deleted
+        String[] retrievedRoles = UserRoles.getRoles(process.main);
+        Utils.checkThatArraysAreEqual(roles, retrievedRoles);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDeletingAllRolesForAUser() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create roles and assign them to a user
+        String[] roles = new String[] { "role1", "role2", "role3" };
+        String userId = "user";
+        for (String role : roles) {
+            UserRoles.createNewRoleOrModifyItsPermissions(process.main, role, null);
+            UserRoles.addRoleToUser(process.main, userId, role);
+        }
+
+        // delete all roles for the user
+        int numberOfRolesDeleted = UserRoles.deleteAllRolesForUser(process.main, userId);
+        assertEquals(roles.length, numberOfRolesDeleted);
+
+        // check that roles were removed from the user
+        {
+            String[] retrievedRoles = UserRoles.getRolesForUser(process.main, userId);
+            assertEquals(0, retrievedRoles.length);
+        }
+
+        // check that no roles were removed
+        {
+            String[] retrievedRoles = UserRoles.getRoles(process.main);
+            Utils.checkThatArraysAreEqual(roles, retrievedRoles);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
