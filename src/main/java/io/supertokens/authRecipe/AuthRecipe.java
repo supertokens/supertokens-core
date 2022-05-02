@@ -69,6 +69,7 @@ public class AuthRecipe {
         StorageLayer.getUserMetadataStorage(main).deleteUserMetadata(userId);
         StorageLayer.getSessionStorage(main).deleteSessionsOfUser(userId);
         StorageLayer.getEmailVerificationStorage(main).deleteEmailVerificationUserInfo(userId);
+        StorageLayer.getUserRolesStorage(main).deleteAllRolesForUser(userId);
 
         // auth recipe deletions here only
         StorageLayer.getEmailPasswordStorage(main).deleteEmailPasswordUser(userId);
