@@ -241,9 +241,26 @@ public class UserRolesStorageTest {
         // repeatable read, it will happen twice.
         assertEquals(1, numberOfIterations.get());
 
-        // check that the role is created and the permission still exists
-        assertTrue(storage.doesRoleExist(role));
-        assertArrayEquals(storage.getPermissionsForRole(role), permissions);
+        // check that either case passes:
+        boolean useCase1;
+        boolean useCase2;
+
+        {
+            // 1: The role and permissions still exist
+            // check that the role is created and the permission still exists
+            String[] retrievedPermissions = storage.getPermissionsForRole(role);
+            useCase1 = (storage.doesRoleExist(role) && retrievedPermissions[0].equals(permissions[0])
+                    && retrievedPermissions.length == 1);
+        }
+
+        {
+            // 2. The role and permissions have been deleted, no mappings for the role-permission exist
+            String[] retrievedPermissions = storage.getPermissionsForRole(role);
+            useCase2 = (!storage.doesRoleExist(role) && retrievedPermissions.length == 0);
+
+        }
+
+        assertTrue(useCase1 || useCase2);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
