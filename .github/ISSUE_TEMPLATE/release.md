@@ -48,6 +48,7 @@ labels:
  - [ ] [next.js:canary](https://github.com/supertokens/next.js/tree/canary/examples/with-supertokens)
  - [ ] RedwoodJS and playground-auth
  - [ ] Run on netlify (and hence AWS lambda) to check if it works fine there
+ - [ ] SuperTokens Jackson SAML example update
 
 ### 📚 Documentation (test site)
 
