@@ -13,6 +13,12 @@ Add **secure login and session management** to your apps. [SDKs available](https
 Supertokens architecture is optimized to add secure authentication for your users without compromising on user and developer experience
 
 
+**Three building blocks of SuperTokens architecture**
+
+1. Frontend SDK: Manages session tokens and renders login UI widgets
+2. Backend SDK: Provides APIs for sign-up, sign-in, signout, session refreshing etc. Your Frontend will talk to these APIs
+3. SuperTokens Core: The HTTP service for the core auth logic and database operations. This service is used by the Backend SDK
+
 ## Table of Contents
 - [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#-what-is-supertokens)
     - [Philosophy](https://github.com/supertokens/supertokens-core#philosophy)
@@ -70,6 +76,11 @@ Please find an [architecture diagram here](https://supertokens.io/docs/community
 - ✅ Java has a very mature ecosystem. This implies that third party libraries have been battle tested.
 - ✅ Java's strong type system ensures fewer bugs and easier maintainability. This is especially important when many people are expected to work on the same project.
 - ✅ Our team is most comfortable with Java and hiring for great Java developers is relatively easy as well.
+- ✅ One of the biggest criticisms of Java is memory usage. We have three solutions to this: 
+   - The most frequent auth related operation is session verification - this happens within the backend SDK (node, python, Go) without contacting the Java core. Therefore, a single instance of the core can handle several 10s of thousands of users fairly easily.
+   - We have carefully chosen our dependencies. For eg: we use an embedded tomcat server instead of a higher level web framework.
+   - We also plan on using [GraalVM](https://www.graalvm.org/) in the future and this can reduce memory usage down by 95%! 
+- ✅ If you require any modifications to the auth APIs, those would need to be done on the backend SDK level (for example Node, Golang, Python..). So you’d rarely need to directly modify / work  with the Java code in this repo.
 
 ## 🔥 SuperTokens vs others
 Please find a detailed comparison chart [on our website](https://supertokens.io/pricing#comparison-chart)
@@ -160,6 +171,7 @@ Mihály Lengyel</b></sub></a></td>
   </tr>
   <tr>
 <td align="center"><a href="https://github.com/JeremyEastham"><img src="https://avatars.githubusercontent.com/u/34139712?v=4" width="100px;" alt=""/><br /><sub><b>Jeremy Eastham</b></sub></a></td>
+<td align="center"><a href="https://github.com/assafushy"><img src="https://avatars.githubusercontent.com/u/7502687?v=4" width="100px;" alt=""/><br /><sub><b>Assaf Yacobi</b></sub></a></td>
   </tr>
 </table>
 
