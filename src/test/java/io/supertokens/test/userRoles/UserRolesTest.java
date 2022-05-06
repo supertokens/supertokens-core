@@ -993,6 +993,10 @@ public class UserRolesTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
 
         // create a role
