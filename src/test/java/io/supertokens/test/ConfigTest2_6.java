@@ -29,6 +29,8 @@ import org.junit.*;
 import org.junit.rules.TestRule;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.nio.file.Files;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertFalse;
@@ -165,16 +167,12 @@ public class ConfigTest2_6 {
     public void testThatMissingConfigFileThrowsError() throws Exception {
         String[] args = { "../" };
 
-        ProcessBuilder pb = new ProcessBuilder("rm", "config.yaml");
-        pb.directory(new File(args[0]));
-        Process process1 = pb.start();
-        process1.waitFor();
+        Files.delete(new File(args[0] + "config.yaml").toPath());
 
         TestingProcess process = TestingProcessManager.start(args);
         ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
-        assertEquals(e.exception.getMessage(),
-                "java.io.FileNotFoundException: ../config.yaml (No such file or directory)");
+        assertTrue(e.exception.getCause() instanceof FileNotFoundException);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));

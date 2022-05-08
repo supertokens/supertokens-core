@@ -205,8 +205,11 @@ public class AuthRecipeTest {
         }
 
         UserInfo user1 = EmailPassword.signUp(process.getProcess(), "test0@example.com", "password0");
+        Thread.sleep(1); // Sleep to remove race condition
         UserInfo user2 = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password1");
+        Thread.sleep(1);
         UserInfo user3 = EmailPassword.signUp(process.getProcess(), "test20@example.com", "password2");
+        Thread.sleep(1);
         UserInfo user4 = EmailPassword.signUp(process.getProcess(), "test3@example.com", "password3");
 
         {

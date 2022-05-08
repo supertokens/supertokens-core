@@ -34,4 +34,4 @@ jobs:
       - name: Copying current supertokens-core branch into supertokens-root
         run: cd ../supertokens-root && rm -rf ./supertokens-core && cp -r ../supertokens-core ./
       - name: Building and running tests
-        run: cd ../supertokens-root && ./startTestingEnv
+        run: cd ../supertokens-root && ./startTestEnv --cicd

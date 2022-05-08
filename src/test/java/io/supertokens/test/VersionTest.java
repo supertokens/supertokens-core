@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -90,8 +91,7 @@ public class VersionTest {
 
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(),
-                    "java.io.FileNotFoundException: ../version.yaml (No such file or directory)");
+            assertTrue(e.exception.getCause() instanceof FileNotFoundException);
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
