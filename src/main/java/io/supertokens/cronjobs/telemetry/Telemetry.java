@@ -39,6 +39,9 @@ public class Telemetry extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.telemetry.Telemetry";
 
+    // Related to issue: https://github.com/supertokens/supertokens-core/issues/444
+    private boolean isFirstIterationOfCronjob = true;
+
     private Telemetry(Main main) {
         super("Telemetry", main);
     }
@@ -53,42 +56,73 @@ public class Telemetry extends CronTask {
 
     @Override
     protected void doTask() throws Exception {
-        String plugin = Version.getVersion(main).getPluginName();
-
         if (StorageLayer.getInstance(main).isInMemDb() || Config.getConfig(main).isTelemetryDisabled()) {
             // we do not send any info in this case since it's not under development / production env or the user has
             // disabled Telemetry
             return;
         }
 
-        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENDING_TELEMETRY, null);
+        try {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENDING_TELEMETRY, null);
 
-        Storage storage = StorageLayer.getStorage(main);
+            Storage storage = StorageLayer.getStorage(main);
 
-        KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
+            KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
 
-        if (telemetryId == null) {
-            telemetryId = new KeyValueInfo(Utils.getUUID());
-            storage.setKeyValue(TELEMETRY_ID_DB_KEY, telemetryId);
+            boolean generatedNewTelemetryID = false;
+            if (telemetryId == null) {
+                telemetryId = new KeyValueInfo(Utils.getUUID());
+                /*
+                 * There is a race condition here in which multiple cores are started at the same time and they all
+                 * try to set the telemetry ID yielding the cores to have different ID for their first iteration. But
+                 * that is OK since it's a relatively rare scenario and those incorrect IDs won't be sent to out APIs
+                 * anyway (cause of delay in calling API: https://github.com/supertokens/supertokens-core/issues/444)
+                 */
+                storage.setKeyValue(TELEMETRY_ID_DB_KEY, telemetryId);
+                generatedNewTelemetryID = true;
+            }
+
+            boolean shouldSendTelemetryBasedOnIDGeneration = false;
+            if (!generatedNewTelemetryID) {
+                // This check is based on issue: https://github.com/supertokens/supertokens-core/issues/444
+
+                // This means that it's at least the second iteration of this cronjob since it previously created the
+                // telemetry ID, or it's a core restart and the telemetry ID was saved in the db.
+                if (isFirstIterationOfCronjob) {
+                    // This means that the core was restarted and telemetry ID was saved before
+                    shouldSendTelemetryBasedOnIDGeneration = true;
+                } else {
+                    // This means that it's at least the second run of this cronjob and so we must check if enough time
+                    // has passed (since process start) before we can send a telemetry ID
+                    if (((System.currentTimeMillis() - main.getProcessStartTime())
+                            / 1000) >= getTelemetryWaitTimeInSecondsInCaseOfNoCoreRestart()) {
+                        shouldSendTelemetryBasedOnIDGeneration = true;
+                    }
+                }
+            }
+
+            String url = "https://api.supertokens.io/0/st/telemetry";
+            if (shouldSendTelemetryBasedOnIDGeneration
+                    && (!Main.isTesting || HttpRequestMocking.getInstance(main).getMockURL(REQUEST_ID, url) != null)) {
+                String coreVersion = Version.getVersion(main).getCoreVersion();
+
+                // following the API spec mentioned here:
+                // https://github.com/supertokens/supertokens-core/issues/116#issuecomment-725465665
+
+                JsonObject json = new JsonObject();
+                json.addProperty("telemetryId", telemetryId.value);
+                json.addProperty("superTokensVersion", coreVersion);
+
+                HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 0);
+                ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENT_TELEMETRY, null);
+            }
+        } finally {
+            isFirstIterationOfCronjob = false;
         }
+    }
 
-        String coreVersion = Version.getVersion(main).getCoreVersion();
-
-        // following the API spec mentioned here:
-        // https://github.com/supertokens/supertokens-core/issues/116#issuecomment-725465665
-
-        JsonObject json = new JsonObject();
-        json.addProperty("telemetryId", telemetryId.value);
-        json.addProperty("superTokensVersion", coreVersion);
-
-        String url = "https://api.supertokens.io/0/st/telemetry";
-
-        // we call the API only if we are not testing the core, of if the request can be mocked (in case a test wants
-        // to use this)
-        if (!Main.isTesting || HttpRequestMocking.getInstance(main).getMockURL(REQUEST_ID, url) != null) {
-            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 0);
-            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENT_TELEMETRY, null);
-        }
+    private int getTelemetryWaitTimeInSecondsInCaseOfNoCoreRestart() {
+        return (24 * 3600); // one day
     }
 
     @Override

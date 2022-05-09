@@ -7,11 +7,18 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [3.13.1] - 2022-05-09
+
+- Delay in sending telemetry ping to solve issue: https://github.com/supertokens/supertokens-core/issues/444
+
 ## [3.13.0] - 2022-05-05
+
 - Adds UserRoles recipe
 - Fixes base_path config option not being observed when running `supertokens list`
 - Adds base_path normalization logic
+
 ### Database changes
+
 - Adds `roles`, `role_permissions` and `user_roles` table
 
 ## [3.12.1] - 2022-04-02
