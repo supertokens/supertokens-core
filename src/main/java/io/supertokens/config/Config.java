@@ -23,7 +23,6 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
 
-import java.io.File;
 import java.io.IOException;
 
 public class Config extends ResourceDistributor.SingletonResource {
@@ -31,6 +30,8 @@ public class Config extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_KEY = "io.supertokens.config.Config";
     private final Main main;
     private final CoreConfig core;
+
+    private static final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
     private Config(Main main, String configFilePath) {
         this.main = main;
@@ -61,8 +62,8 @@ public class Config extends ResourceDistributor.SingletonResource {
 
     private CoreConfig loadCoreConfig(String configFilePath) throws IOException {
         Logging.info(main, "Loading supertokens config.");
-        final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        CoreConfig config = mapper.readValue(new File(configFilePath), CoreConfig.class);
+        String configFileContent = ConfigPreprocessor.loadFromFile(configFilePath).getProcessedConfig();
+        CoreConfig config = mapper.readValue(configFileContent, CoreConfig.class);
         config.validateAndInitialise(main);
         return config;
     }
