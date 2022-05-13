@@ -37,6 +37,8 @@ labels:
     - [ ] Make sure frontend login UI shows even if backend is not working.
  - [ ] [supertokens-react-native:X.Y](https://github.com/supertokens/supertokens-react-native/X.Y)
     - [ ] check FDI list
+ - [ ] [supertokens-android:X.Y](https://github.com/supertokens/supertokens-android/X.Y)
+    - [ ] check FDI list 
 
 ### Others
 
@@ -45,6 +47,7 @@ labels:
  - [ ] Examples apps in supertokens-golang
  - [ ] Examples apps in supertokens-python
  - [ ] Examples apps in supertokens-node
+ - [ ] Examples apps in android
  - [ ] [next.js:canary](https://github.com/supertokens/next.js/tree/canary/examples/with-supertokens)
  - [ ] RedwoodJS and playground-auth
  - [ ] Run on netlify (and hence AWS lambda) to check if it works fine there
@@ -94,6 +97,7 @@ labels:
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
  - [ ] [supertokens-python:X.Y](https://github.com/supertokens/supertokens-python/tree/X.Y)
  - [ ] [supertokens-react-native:X.Y](https://github.com/supertokens/supertokens-react-native/X.Y)
+ - [ ] [supertokens-android:X.Y](https://github.com/supertokens/supertokens-android/X.Y)
 
 
 ### 📚 Documentation
