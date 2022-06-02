@@ -28,9 +28,14 @@ labels:
    - [ ] check CDI, FDI list
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/X.Y)
    - [ ] check FDI list
+ - [ ] [supertokens-web-js:X.Y](https://github.com/supertokens/supertokens-web-js/X.Y)
+   - [ ] check FDI list
+   - [ ] check web-js interface version
+   - [ ] Update dependency version of supertokens-website in package.json  from npm registry
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
     - [ ] check FDI list
-    - [ ] Updated dependencies to use supertokens-website from npm registry
+    - [ ] check web-js interface version
+    - [ ] Updated dependencies to use supertokens-web-js in package.json from npm registry
     - [ ] Various browsers - Safari, Firefox, Chrome, Edge
     - [ ] Mobile responsiveness
     - [ ] Make sure using with-typescript example that types are correct for every new configs exposed to users
@@ -43,6 +48,7 @@ labels:
 ### Others
 
  - [ ] Examples apps in supertokens-auth-react
+ - [ ] Examples apps in supertokens-web-js
  - [ ] Examples apps in supertokens-react-native
  - [ ] Examples apps in supertokens-golang
  - [ ] Examples apps in supertokens-python
@@ -95,6 +101,7 @@ labels:
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
  - [ ] [supertokens-golang:X.Y](https://github.com/supertokens/supertokens-golang/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/tree/X.Y)
+ - [ ] [supertokens-web-js:X.Y](https://github.com/supertokens/supertokens-web-js/tree/X.Y)
  - [ ] [supertokens-auth-react:X.Y](https://github.com/supertokens/supertokens-auth-react/tree/X.Y)
  - [ ] [supertokens-python:X.Y](https://github.com/supertokens/supertokens-python/tree/X.Y)
  - [ ] [supertokens-react-native:X.Y](https://github.com/supertokens/supertokens-react-native/X.Y)
