@@ -16,6 +16,7 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
@@ -32,7 +33,10 @@ import org.mockito.Mockito;
 import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.Arrays;
+
+import static org.junit.Assert.assertArrayEquals;
 
 public abstract class Utils extends Mockito {
 
@@ -93,6 +97,10 @@ public abstract class Utils extends Mockito {
 
     public static String getCdiVersion2_13ForTests() {
         return "2.13";
+    }
+
+    public static String getCdiVersion2_14ForTests() {
+        return "2.14";
     }
 
     public static String getCdiVersionLatestForTests() {
@@ -245,5 +253,20 @@ public abstract class Utils extends Mockito {
         return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000, 1000, null,
                 getCdiVersion2_8ForTests(), "thirdparty");
+    }
+
+    public static void checkThatArraysAreEqual(String[] arr1, String[] arr2) {
+        Arrays.sort(arr1);
+        Arrays.sort(arr2);
+        assertArrayEquals(arr1, arr2);
+    }
+
+    public static String[] parseJsonArrayToStringArray(JsonArray arr) {
+        ArrayList<String> list = new ArrayList<>();
+        arr.forEach(element -> {
+            list.add(element.getAsString());
+        });
+
+        return list.toArray(String[]::new);
     }
 }
