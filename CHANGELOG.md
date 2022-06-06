@@ -7,11 +7,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [3.14.0] - 2022-06-07
+
+- Fixes `/recipe/session/user GET` to return only session handles that have not expired.
+- Support for new plugin interface version (v2.15)
+- Checks for if the session has expired in `updateSession` before calling the update function.
+
 ## [3.13.0] - 2022-05-05
+
 - Adds UserRoles recipe
 - Fixes base_path config option not being observed when running `supertokens list`
 - Adds base_path normalization logic
+
 ### Database changes
+
 - Adds `roles`, `role_permissions` and `user_roles` table
 
 ## [3.12.1] - 2022-04-02

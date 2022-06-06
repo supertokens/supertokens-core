@@ -16,14 +16,15 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.passwordless.Passwordless;
-import io.supertokens.passwordless.Passwordless.CreateCodeResponse;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
+import io.supertokens.passwordless.Passwordless;
+import io.supertokens.passwordless.Passwordless.CreateCodeResponse;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -32,7 +33,6 @@ import io.supertokens.session.Session;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.usermetadata.UserMetadata;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,12 +48,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import com.google.gson.JsonObject;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class AuthRecipeTest {
     @Rule
@@ -618,14 +613,14 @@ public class AuthRecipeTest {
             assertEquals(2, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { user1.getRecipeId() }));
             AuthRecipe.deleteUser(process.getProcess(), user1.id);
             assertEquals(1, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { user1.getRecipeId() }));
-            assertEquals(0, Session.getAllSessionHandlesForUser(process.getProcess(), user1.id).length);
-            assertEquals(1, Session.getAllSessionHandlesForUser(process.getProcess(), user2.id).length);
+            assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user1.id).length);
+            assertEquals(1, Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user2.id).length);
             assertFalse(EmailVerification.isEmailVerified(process.getProcess(), user1.id, "email"));
             assertEquals(0, UserMetadata.getUserMetadata(process.getProcess(), user1.id).entrySet().size());
 
             AuthRecipe.deleteUser(process.getProcess(), user2.id);
             assertEquals(0, AuthRecipe.getUsersCount(process.getProcess(), new RECIPE_ID[] { user1.getRecipeId() }));
-            assertEquals(0, Session.getAllSessionHandlesForUser(process.getProcess(), user2.id).length);
+            assertEquals(0, Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), user2.id).length);
             assertEquals(0, UserMetadata.getUserMetadata(process.getProcess(), user2.id).entrySet().size());
 
             Exception error = null;

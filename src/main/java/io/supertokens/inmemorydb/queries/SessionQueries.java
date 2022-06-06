@@ -140,11 +140,15 @@ public class SessionQueries {
         update(start, QUERY.toString(), pst -> pst.setString(1, userId));
     }
 
-    public static String[] getAllSessionHandlesForUser(Start start, String userId)
+    public static String[] getAllNonExpiredSessionHandlesForUser(Start start, String userId)
             throws SQLException, StorageQueryException {
-        String QUERY = "SELECT session_handle FROM " + getConfig(start).getSessionInfoTable() + " WHERE user_id = ?";
+        String QUERY = "SELECT session_handle FROM " + getConfig(start).getSessionInfoTable()
+                + " WHERE user_id = ? AND expires_at >= ?";
 
-        return execute(start, QUERY, pst -> pst.setString(1, userId), result -> {
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, userId);
+            pst.setLong(2, currentTimeMillis());
+        }, result -> {
             List<String> temp = new ArrayList<>();
             while (result.next()) {
                 temp.add(result.getString("session_handle"));

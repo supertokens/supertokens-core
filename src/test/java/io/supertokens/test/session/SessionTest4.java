@@ -322,4 +322,47 @@ public class SessionTest4 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void checkThatExpiredSessionIsNotReturnedForUserNorCanItBeUpdated() throws Exception {
+
+        Utils.setValueInConfig("access_token_validity", "3");
+        Utils.setValueInConfig("refresh_token_validity", "0.08"); // 5 seconds
+
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        SessionInformationHolder expiredSession = Session.createNewSession(process.getProcess(), "user",
+                new JsonObject(), new JsonObject());
+        Session.createNewSession(process.getProcess(), "user", new JsonObject(), new JsonObject());
+        Session.createNewSession(process.getProcess(), "user", new JsonObject(), new JsonObject());
+
+        Thread.sleep(6000);
+
+        SessionInformationHolder nonExpiredSession = Session.createNewSession(process.getProcess(), "user",
+                new JsonObject(), new JsonObject());
+        Session.createNewSession(process.getProcess(), "user", new JsonObject(), new JsonObject());
+        String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), "user");
+
+        assert sessions.length == 2;
+
+        try {
+            Session.getSession(process.getProcess(), expiredSession.session.handle);
+            throw new Exception("Test failed");
+        } catch (UnauthorisedException ignored) {
+        }
+
+        try {
+            Session.updateSession(process.getProcess(), expiredSession.session.handle, new JsonObject(), null, null);
+            throw new Exception("Test failed");
+        } catch (UnauthorisedException ignored) {
+        }
+
+        Session.getSession(process.getProcess(), nonExpiredSession.session.handle);
+        Session.updateSession(process.getProcess(), nonExpiredSession.session.handle, new JsonObject(), null, null);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
