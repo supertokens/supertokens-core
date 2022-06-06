@@ -50,7 +50,7 @@ public class SessionUserAPI extends WebserverAPI {
         assert userId != null;
 
         try {
-            String[] sessionHandles = Session.getAllSessionHandlesForUser(main, userId);
+            String[] sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(main, userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
