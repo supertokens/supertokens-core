@@ -337,12 +337,14 @@ public class SessionTest4 {
                 new JsonObject(), new JsonObject());
         Session.createNewSession(process.getProcess(), "user", new JsonObject(), new JsonObject());
         Session.createNewSession(process.getProcess(), "user", new JsonObject(), new JsonObject());
+        Session.createNewSession(process.getProcess(), "user1", new JsonObject(), new JsonObject());
 
         Thread.sleep(6000);
 
         SessionInformationHolder nonExpiredSession = Session.createNewSession(process.getProcess(), "user",
                 new JsonObject(), new JsonObject());
         Session.createNewSession(process.getProcess(), "user", new JsonObject(), new JsonObject());
+        Session.createNewSession(process.getProcess(), "user1", new JsonObject(), new JsonObject());
         String[] sessions = Session.getAllNonExpiredSessionHandlesForUser(process.getProcess(), "user");
 
         assert sessions.length == 2;
