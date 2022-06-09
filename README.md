@@ -12,7 +12,6 @@ Add **secure login and session management** to your apps. [SDKs available](https
 ![Architecture Diagram](https://supertokens.com/img/architecture/self_hosted_generic.png)
 Supertokens architecture is optimized to add secure authentication for your users without compromising on user and developer experience
 
-
 **Three building blocks of SuperTokens architecture**
 
 1. Frontend SDK: Manages session tokens and renders login UI widgets
@@ -33,7 +32,7 @@ Supertokens architecture is optimized to add secure authentication for your user
 - [👩‍💻 Contributing](https://github.com/supertokens/supertokens-core#-contributing)
 - [📝 License](https://github.com/supertokens/supertokens-core#-license)
 
-If you like our project, please :star2: this repository! For feedback, feel free to join our [Discord](https://supertokens.io/discord), or create an issue on this repo
+### If you like our project, please :star2: this repository! For feedback, feel free to join our [Discord](https://supertokens.io/discord), or create an issue on this repo
 
 ## 🚀 What is SuperTokens?
 SuperTokens is an open core alternative to proprietary login providers like Auth0 or AWS Cognito. We are
