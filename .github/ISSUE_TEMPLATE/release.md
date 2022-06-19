@@ -59,6 +59,7 @@ labels:
  - [ ] Run on netlify (and hence AWS lambda) to check if it works fine there
  - [ ] Test on vercel (with-emailpassword-vercel app) 
  - [ ] SuperTokens Jackson SAML example update
+ - [ ] Supabase example app
 
 ### 📚 Documentation (test site)
 
