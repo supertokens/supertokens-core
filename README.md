@@ -174,6 +174,9 @@ Mihály Lengyel</b></sub></a></td>
 <td align="center"><a href="https://github.com/sattvikc"><img src="https://avatars.githubusercontent.com/u/650429?v=4" width="100px;" alt=""/><br /><sub><b>Sattvik Chakravarthy</b></sub></a></td>
 <td align="center"><a href="https://github.com/opichon"><img src="https://avatars.githubusercontent.com/u/203745?v=4" width="100px;" alt=""/><br /><sub><b>Olivier Pichon</b></sub></a></td>
   </tr>
+  <tr>
+<td align="center"><a href="https://github.com/FuzzySid"><img src="https://avatars.githubusercontent.com/u/40206571?v=4" width="100px;" alt=""/><br /><sub><b>Siddhant Varma</b></sub></a></td>
+  </tr>
 </table>
 
 ## 👩‍💻 Contributing
