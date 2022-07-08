@@ -1431,9 +1431,9 @@ public class Start
     }
 
     @Override
-    public void createUserIdMapping(String superTokensUserId, String externalUserId)
+    public void createUserIdMapping(String superTokensUserId, String externalUserId,
+            @Nullable String externalUserIdInfo)
             throws StorageQueryException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException {
-        // TODO
 
     }
 
