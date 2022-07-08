@@ -51,6 +51,10 @@ import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
+import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
+import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
@@ -64,8 +68,9 @@ import java.sql.SQLException;
 import java.sql.SQLTransactionRollbackException;
 import java.util.List;
 
-public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage,
-        ThirdPartySQLStorage, JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage {
+public class Start
+        implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
+        JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -394,6 +399,12 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public boolean doesUserIdExist(String userId) throws StorageQueryException {
+        // TODO
+        return false;
     }
 
     @Override
@@ -1417,5 +1428,37 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public void createUserIdMapping(String superTokensUserId, String externalUserId)
+            throws StorageQueryException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException {
+        // TODO
+
+    }
+
+    @Override
+    public boolean deleteUserIdMapping(String userId, boolean isSuperTokensUserId) throws StorageQueryException {
+        // TODO
+        return false;
+    }
+
+    @Override
+    public UserIdMapping getUserIdMapping(String userId, boolean isSuperTokensUserId) throws StorageQueryException {
+        // TODO
+        return null;
+    }
+
+    @Override
+    public UserIdMapping[] getUserIdMapping(String userId) throws StorageQueryException {
+        // TODO
+        return new UserIdMapping[0];
+    }
+
+    @Override
+    public boolean updateOrDeleteExternalUserIdInfo(String userId, boolean isSuperTokensUserId,
+            @Nullable String externalUserIdInfo) throws StorageQueryException {
+        // TODO
+        return false;
     }
 }
