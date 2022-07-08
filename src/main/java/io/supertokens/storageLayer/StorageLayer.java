@@ -31,7 +31,7 @@ import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.pluginInterface.userroles.UserRolesStorage;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
@@ -256,12 +256,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return (UserRolesSQLStorage) getInstance(main).storage;
     }
 
-    public static UserIdMapping getUserIdMappingStorage(Main main) {
+    public static UserIdMappingStorage getUserIdMappingStorage(Main main) {
         if (getInstance(main) == null) {
             throw new QuitProgramException("please call init() before calling getStorageLayer");
         }
 
-        return (UserIdMapping) getInstance(main).storage;
+        return (UserIdMappingStorage) getInstance(main).storage;
     }
 
     public boolean isInMemDb() {
