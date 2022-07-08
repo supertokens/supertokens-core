@@ -394,6 +394,13 @@ public class GeneralQueries {
         return finalResult;
     }
 
+    public static boolean doesUserIdExist(Start start, String userId) throws SQLException, StorageQueryException {
+
+        String QUERY = "SELECT 1 FROM " + getConfig(start).getUsersTable() + " WHERE user_id = ?";
+        return execute(start, QUERY, pst -> pst.setString(1, userId), ResultSet::next);
+
+    }
+
     private static List<? extends AuthRecipeUserInfo> getUserInfoForRecipeIdFromUserIds(Start start, RECIPE_ID recipeId,
             List<String> userIds) throws StorageQueryException, SQLException {
         if (recipeId == RECIPE_ID.EMAIL_PASSWORD) {

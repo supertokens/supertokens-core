@@ -17,7 +17,17 @@
 package io.supertokens.useridmapping;
 
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
+import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
+import io.supertokens.storageLayer.StorageLayer;
 
 public class UserIdMapping {
-    // TODO
+
+    public static void createUserIdMapping(Main main, String superTokensUserId, String externalUserId,
+            String externalUserIdInfo)
+            throws UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException, StorageQueryException {
+        StorageLayer.getUserIdMappingStorage(main).createUserIdMapping(superTokensUserId, externalUserId,
+                externalUserIdInfo);
+    }
 }
