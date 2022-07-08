@@ -85,4 +85,8 @@ public class SQLiteConfig {
     public String getUserRolesTable() {
         return "user_roles";
     }
+
+    public String getUserIdMappingTable() {
+        return "userid_mapping";
+    }
 }

@@ -16,6 +16,22 @@
 
 package io.supertokens.inmemorydb.queries;
 
+import io.supertokens.inmemorydb.Start;
+import io.supertokens.inmemorydb.config.Config;
+
 public class UserIdMappingQueries {
-    // TODO
+
+    public static String getQueryToCreateUserIdMappingTable(Start start) {
+        String tableName = Config.getConfig(start).getUserIdMappingTable();
+        // @formatter:off
+        return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
+                + "supertokens_user_id CHAR(36) NOT NULL UNIQUE,"
+                + "external_user_id VARCHAR(128) NOT NULL UNIQUE,"
+                + "external_user_id_info TEXT"
+                + "PRIMARY KEY(supertokens_user_id, external_user_id),"
+                + "FOREIGN KEY(supertokens_user_id) REFERENCES " + Config.getConfig(start).getUsersTable()
+                +"(user_id) ON DELETE CASCADE );";
+
+        // @formatter:on
+    }
 }
