@@ -17,6 +17,7 @@
 package io.supertokens.test.userIdMapping.api;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -70,7 +71,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", new JsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -85,7 +86,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -102,7 +103,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -117,7 +118,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -132,7 +133,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -149,7 +150,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -165,7 +166,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -181,7 +182,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -199,7 +200,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -238,7 +239,7 @@ public class CreateUserIdMappingAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                Utils.getCdiVersion2_15ForTests(), "useridmapping");
 
         assertEquals(1, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
@@ -276,7 +277,7 @@ public class CreateUserIdMappingAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_14ForTests(), "useridmapping");
+                Utils.getCdiVersion2_15ForTests(), "useridmapping");
 
         assertEquals(1, response.entrySet().size());
         assertEquals("UNKNOWN_SUPERTOKENS_USER_ID_ERROR", response.get("status").getAsString());
@@ -305,20 +306,60 @@ public class CreateUserIdMappingAPITest {
         io.supertokens.useridmapping.UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId,
                 null);
 
-        // create a duplicate mapping
-        JsonObject requestBody = new JsonObject();
+        {
+            // create a duplicate mapping
+            JsonObject requestBody = new JsonObject();
 
-        requestBody.addProperty("superTokensUserId", superTokensUserId);
-        requestBody.addProperty("externalUserId", externalUserId);
+            requestBody.addProperty("superTokensUserId", superTokensUserId);
+            requestBody.addProperty("externalUserId", externalUserId);
 
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_14ForTests(), "useridmapping");
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
 
-        assertEquals(3, response.entrySet().size());
-        assertEquals("USER_ID_MAPPING_ALREADY_EXISTS", response.get("status").getAsString());
-        assertTrue(response.get("doesSuperTokensUserIdExist").getAsBoolean());
-        assertTrue(response.get("doesExternalUserIdExist").getAsBoolean());
+            assertEquals(3, response.entrySet().size());
+            assertEquals("USER_ID_MAPPING_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
+            assertTrue(response.get("doesSuperTokensUserIdExist").getAsBoolean());
+            assertTrue(response.get("doesExternalUserIdExist").getAsBoolean());
+        }
+
+        {
+            // create a duplicate mapping with superTokensUserId
+            JsonObject requestBody = new JsonObject();
+
+            requestBody.addProperty("superTokensUserId", superTokensUserId);
+            requestBody.addProperty("externalUserId", "newExternalId");
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+
+            assertEquals(3, response.entrySet().size());
+            assertEquals("USER_ID_MAPPING_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
+            assertTrue(response.get("doesSuperTokensUserIdExist").getAsBoolean());
+            assertFalse(response.get("doesExternalUserIdExist").getAsBoolean());
+
+        }
+
+        {
+            // create a duplicate mapping with externalUserId
+            UserInfo newUserInfo = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+
+            JsonObject requestBody = new JsonObject();
+
+            requestBody.addProperty("superTokensUserId", newUserInfo.id);
+            requestBody.addProperty("externalUserId", externalUserId);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+
+            assertEquals(3, response.entrySet().size());
+            assertEquals("USER_ID_MAPPING_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
+            assertFalse(response.get("doesSuperTokensUserIdExist").getAsBoolean());
+            assertTrue(response.get("doesExternalUserIdExist").getAsBoolean());
+
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

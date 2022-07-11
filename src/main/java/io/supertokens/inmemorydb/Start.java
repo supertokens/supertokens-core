@@ -1439,6 +1439,8 @@ public class Start
             @Nullable String externalUserIdInfo)
             throws StorageQueryException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException {
 
+        // SQLite is not compiled with foreign key constraint, so we need an explicit check superTokensUserId is a valid
+        // userId.
         if (!doesUserIdExist(superTokensUserId)) {
             throw new UnknownSuperTokensUserIdException();
         }

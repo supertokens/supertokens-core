@@ -99,7 +99,7 @@ public class CreateUserIdMappingAPI extends WebserverAPI {
         } catch (UserIdMappingAlreadyExistsException e) {
 
             JsonObject response = new JsonObject();
-            response.addProperty("status", "USER_ID_MAPPING_ALREADY_EXISTS");
+            response.addProperty("status", "USER_ID_MAPPING_ALREADY_EXISTS_ERROR");
             response.addProperty("doesSuperTokensUserIdExist", e.doesSuperTokensUserIdExist);
             response.addProperty("doesExternalUserIdExist", e.doesExternalUserIdExist);
             super.sendJsonResponse(200, response, resp);
