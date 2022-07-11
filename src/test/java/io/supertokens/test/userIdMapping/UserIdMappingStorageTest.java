@@ -92,12 +92,16 @@ public class UserIdMappingStorageTest {
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
 
         String externalUserId = "external-test";
+        String externalUserIdInfo = "external-info";
 
         // create a userId mapping
-        storage.createUserIdMapping(userInfo.id, externalUserId, null);
+        storage.createUserIdMapping(userInfo.id, externalUserId, externalUserIdInfo);
 
         // check that the mapping exists
-        storage.getUserIdMapping(userInfo.id, true);
+        UserIdMapping userIdMapping = storage.getUserIdMapping(userInfo.id, true);
+        assertEquals(userInfo.id, userIdMapping.superTokensUserId);
+        assertEquals(externalUserId, userIdMapping.externalUserId);
+        assertEquals(externalUserIdInfo, userIdMapping.externalUserIdInfo);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
