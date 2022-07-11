@@ -38,6 +38,7 @@ import io.supertokens.webserver.api.passwordless.*;
 import io.supertokens.webserver.api.session.*;
 import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
 import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
+import io.supertokens.webserver.api.useridmapping.CreateUserIdMappingAPI;
 import io.supertokens.webserver.api.usermetadata.UserMetadataAPI;
 import io.supertokens.webserver.api.usermetadata.RemoveUserMetadataAPI;
 
@@ -201,6 +202,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new GetRolesForPermissionAPI(main));
         addAPI(new RemoveRoleAPI(main));
         addAPI(new GetRolesAPI(main));
+        addAPI(new CreateUserIdMappingAPI(main));
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),
                 new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));
