@@ -50,33 +50,6 @@ public class UserIdMappingStorageTest {
     }
 
     @Test
-    public void testCreatingUserIdMappingWithUnknownSuperTokensUserId() throws Exception {
-        String[] args = { "../" };
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
-
-        // create a userId mapping with unknown SuperTokens UserId
-        Exception error = null;
-        try {
-            storage.createUserIdMapping("unknownUserId", "externalUserid", null);
-        } catch (Exception e) {
-            error = e;
-        }
-
-        assertNotNull(error);
-        assertTrue(error instanceof UnknownSuperTokensUserIdException);
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
     public void testCreatingUserIdMapping() throws Exception {
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -102,86 +75,6 @@ public class UserIdMappingStorageTest {
         assertEquals(userInfo.id, userIdMapping.superTokensUserId);
         assertEquals(externalUserId, userIdMapping.externalUserId);
         assertEquals(externalUserIdInfo, userIdMapping.externalUserIdInfo);
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void testDuplicateUserIdMapping() throws Exception {
-        String[] args = { "../" };
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
-
-        // create a user
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
-
-        String externalUserId = "external-test";
-
-        storage.createUserIdMapping(userInfo.id, externalUserId, null);
-
-        {
-            // duplicate exception with both supertokensUserId and externalUserId
-            Exception error = null;
-            try {
-                storage.createUserIdMapping(userInfo.id, externalUserId, null);
-            } catch (Exception e) {
-                error = e;
-            }
-
-            assertNotNull(error);
-            assertTrue(error instanceof UserIdMappingAlreadyExistsException);
-
-            UserIdMappingAlreadyExistsException usersIdMappingExistsError = (UserIdMappingAlreadyExistsException) error;
-            assertTrue(usersIdMappingExistsError.doesExternalUserIdExist);
-            assertTrue(usersIdMappingExistsError.doesSuperTokensUserIdExist);
-        }
-
-        {
-            // duplicate exception with superTokensUserId
-            Exception error = null;
-            try {
-                storage.createUserIdMapping(userInfo.id, "newExternalUserId", null);
-            } catch (Exception e) {
-                error = e;
-            }
-
-            assertNotNull(error);
-            assertTrue(error instanceof UserIdMappingAlreadyExistsException);
-
-            UserIdMappingAlreadyExistsException usersIdMappingExistsError = (UserIdMappingAlreadyExistsException) error;
-            assertFalse(usersIdMappingExistsError.doesExternalUserIdExist);
-            assertTrue(usersIdMappingExistsError.doesSuperTokensUserIdExist);
-
-        }
-
-        {
-            // duplicate exception with externalUserId
-
-            // create a new user
-
-            UserInfo newUser = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
-            Exception error = null;
-            try {
-                storage.createUserIdMapping(newUser.id, externalUserId, null);
-            } catch (Exception e) {
-                error = e;
-            }
-
-            assertNotNull(error);
-            assertTrue(error instanceof UserIdMappingAlreadyExistsException);
-
-            UserIdMappingAlreadyExistsException usersIdMappingExistsError = (UserIdMappingAlreadyExistsException) error;
-            assertTrue(usersIdMappingExistsError.doesExternalUserIdExist);
-            assertFalse(usersIdMappingExistsError.doesSuperTokensUserIdExist);
-
-        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

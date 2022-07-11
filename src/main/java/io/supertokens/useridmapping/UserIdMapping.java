@@ -27,6 +27,7 @@ public class UserIdMapping {
     public static void createUserIdMapping(Main main, String superTokensUserId, String externalUserId,
             String externalUserIdInfo)
             throws UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException, StorageQueryException {
+
         StorageLayer.getUserIdMappingStorage(main).createUserIdMapping(superTokensUserId, externalUserId,
                 externalUserIdInfo);
     }
