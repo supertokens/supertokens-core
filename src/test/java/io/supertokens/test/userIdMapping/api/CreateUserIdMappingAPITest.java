@@ -234,6 +234,7 @@ public class CreateUserIdMappingAPITest {
 
         requestBody.addProperty("superTokensUserId", superTokensUserId);
         requestBody.addProperty("externalUserId", externalUserId);
+        requestBody.addProperty("externalUserIdInfo", externalUserIdInfo);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
@@ -248,9 +249,79 @@ public class CreateUserIdMappingAPITest {
 
         assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
         assertEquals(externalUserId, userIdMapping.externalUserId);
-        assertEquals(externalUserIdInfo, externalUserIdInfo);
+        assertEquals(externalUserIdInfo, userIdMapping.externalUserIdInfo);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testCreatingAUserIdMappingWithAnUnknownSuperTokensUserId() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String superTokensUserId = "unknownUser";
+        String externalUserId = "userId";
+
+        JsonObject requestBody = new JsonObject();
+
+        requestBody.addProperty("superTokensUserId", superTokensUserId);
+        requestBody.addProperty("externalUserId", externalUserId);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_14ForTests(), "useridmapping");
+
+        assertEquals(1, response.entrySet().size());
+        assertEquals("UNKNOWN_SUPERTOKENS_USER_ID_ERROR", response.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCreatingDuplicateUserIdMapping() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+
+        String superTokensUserId = userInfo.id;
+        String externalUserId = "externalUserId";
+
+        // create UserId mapping
+        io.supertokens.useridmapping.UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId,
+                null);
+
+        // create a duplicate mapping
+        JsonObject requestBody = new JsonObject();
+
+        requestBody.addProperty("superTokensUserId", superTokensUserId);
+        requestBody.addProperty("externalUserId", externalUserId);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_14ForTests(), "useridmapping");
+
+        assertEquals(3, response.entrySet().size());
+        assertEquals("USER_ID_MAPPING_ALREADY_EXISTS", response.get("status").getAsString());
+        assertTrue(response.get("doesSuperTokensUserIdExist").getAsBoolean());
+        assertTrue(response.get("doesExternalUserIdExist").getAsBoolean());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
