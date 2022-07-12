@@ -1473,8 +1473,15 @@ public class Start
 
     @Override
     public boolean deleteUserIdMapping(String userId, boolean isSuperTokensUserId) throws StorageQueryException {
-        // TODO
-        return false;
+        try {
+            if (isSuperTokensUserId) {
+                return UserIdMappingQueries.deleteUserIdMappingWithSuperTokensUserId(this, userId);
+            } else {
+                return UserIdMappingQueries.deleteUserIdMappingWithExternalUserId(this, userId);
+            }
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override

@@ -28,6 +28,7 @@ import java.util.ArrayList;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
+import static io.supertokens.inmemorydb.config.Config.getConfig;
 
 public class UserIdMappingQueries {
 
@@ -99,6 +100,26 @@ public class UserIdMappingQueries {
             return userIdMappingArray.toArray(UserIdMapping[]::new);
         });
 
+    }
+
+    public static boolean deleteUserIdMappingWithSuperTokensUserId(Start start, String userId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + getConfig(start).getUserIdMappingTable() + " WHERE supertokens_user_id = ?";
+
+        // store the number of rows updated
+        int rowUpdatedCount = update(start, QUERY, pst -> pst.setString(1, userId));
+
+        return rowUpdatedCount > 0;
+    }
+
+    public static boolean deleteUserIdMappingWithExternalUserId(Start start, String userId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + getConfig(start).getUserIdMappingTable() + " WHERE external_user_id = ?";
+
+        // store the number of rows updated
+        int rowUpdatedCount = update(start, QUERY, pst -> pst.setString(1, userId));
+
+        return rowUpdatedCount > 0;
     }
 
     private static class UserIdMappingRowMapper implements RowMapper<UserIdMapping, ResultSet> {
