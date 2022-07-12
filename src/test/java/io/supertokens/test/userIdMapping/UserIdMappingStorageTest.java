@@ -342,7 +342,7 @@ public class UserIdMappingStorageTest {
     }
 
     @Test
-    public void testDeletingUserWithAnUnknownId() throws Exception {
+    public void testDeletingUserIdMappingWithAnUnknownId() throws Exception {
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -474,7 +474,7 @@ public class UserIdMappingStorageTest {
 
         // update externalUserIdInfo
         String newExternalUserIdInfo = "newExternalUserIdInfo";
-        storage.updateOrDeleteExternalUserIdInfo(superTokensUserId, true, newExternalUserIdInfo);
+        assertTrue(storage.updateOrDeleteExternalUserIdInfo(superTokensUserId, true, newExternalUserIdInfo));
 
         // retrieve mapping and validate with the new externalUserIdInfo
         {
@@ -486,7 +486,7 @@ public class UserIdMappingStorageTest {
         }
 
         // delete externalUserIdInfo by passing null
-        storage.updateOrDeleteExternalUserIdInfo(externalUserId, false, null);
+        assertTrue(storage.updateOrDeleteExternalUserIdInfo(externalUserId, false, null));
 
         // retrieve mapping and check that externalUserIdInfo is null
         {
