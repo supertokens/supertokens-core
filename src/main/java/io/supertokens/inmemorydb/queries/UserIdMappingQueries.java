@@ -18,6 +18,16 @@ package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.pluginInterface.RowMapper;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 
 public class UserIdMappingQueries {
 
@@ -27,11 +37,84 @@ public class UserIdMappingQueries {
         return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
                 + "supertokens_user_id CHAR(36) NOT NULL UNIQUE,"
                 + "external_user_id VARCHAR(128) NOT NULL UNIQUE,"
-                + "external_user_id_info TEXT"
+                + "external_user_id_info TEXT,"
                 + "PRIMARY KEY(supertokens_user_id, external_user_id),"
                 + "FOREIGN KEY(supertokens_user_id) REFERENCES " + Config.getConfig(start).getUsersTable()
-                +"(user_id) ON DELETE CASCADE );";
+                + "(user_id) ON DELETE CASCADE );";
 
         // @formatter:on
+    }
+
+    public static void createUserIdMapping(Start start, String superTokensUserId, String externalUserId,
+            String externalUserIdInfo) throws SQLException, StorageQueryException {
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getUserIdMappingTable()
+                + " (supertokens_user_id, external_user_id, external_user_id_info)" + " VALUES(?, ?, ?)";
+
+        update(start, QUERY, pst -> {
+            pst.setString(1, superTokensUserId);
+            pst.setString(2, externalUserId);
+            pst.setString(3, externalUserIdInfo);
+        });
+    }
+
+    public static UserIdMapping getUserIdMappingWithSuperTokensUserId(Start start, String userId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable()
+                + " WHERE supertokens_user_id = ?";
+
+        return execute(start, QUERY, pst -> pst.setString(1, userId), result -> {
+            if (result.next()) {
+                return UserIdMappingRowMapper.getInstance().mapOrThrow(result);
+            }
+            return null;
+        });
+    }
+
+    public static UserIdMapping getUserIdMappingWithExternalUserId(Start start, String userId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable()
+                + " WHERE external_user_id = ?";
+
+        return execute(start, QUERY, pst -> pst.setString(1, userId), result -> {
+            if (result.next()) {
+                return UserIdMappingRowMapper.getInstance().mapOrThrow(result);
+            }
+            return null;
+        });
+    }
+
+    public static UserIdMapping[] getUserIdMappingWithEitherSuperTokensUserIdOrExternalUserId(Start start,
+            String userId) throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable()
+                + " WHERE supertokens_user_id = ? OR external_user_id = ? ";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, userId);
+            pst.setString(2, userId);
+        }, result -> {
+            ArrayList<UserIdMapping> userIdMappingArray = new ArrayList<>();
+            while (result.next()) {
+                userIdMappingArray.add(UserIdMappingRowMapper.getInstance().mapOrThrow(result));
+            }
+            return userIdMappingArray.toArray(UserIdMapping[]::new);
+        });
+
+    }
+
+    private static class UserIdMappingRowMapper implements RowMapper<UserIdMapping, ResultSet> {
+        private static final UserIdMappingRowMapper INSTANCE = new UserIdMappingRowMapper();
+
+        private UserIdMappingRowMapper() {
+        }
+
+        private static UserIdMappingRowMapper getInstance() {
+            return INSTANCE;
+        }
+
+        @Override
+        public UserIdMapping map(ResultSet rs) throws Exception {
+            return new UserIdMapping(rs.getString("supertokens_user_id"), rs.getString("external_user_id"),
+                    rs.getString("external_user_id_info"));
+        }
     }
 }

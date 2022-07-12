@@ -25,6 +25,7 @@ import io.supertokens.inmemorydb.queries.*;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -403,8 +404,11 @@ public class Start
 
     @Override
     public boolean doesUserIdExist(String userId) throws StorageQueryException {
-        // TODO
-        return false;
+        try {
+            return GeneralQueries.doesUserIdExist(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -1435,6 +1439,36 @@ public class Start
             @Nullable String externalUserIdInfo)
             throws StorageQueryException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException {
 
+        // SQLite is not compiled with foreign key constraint, so we need an explicit check to see if superTokensUserId
+        // is a valid
+        // userId.
+        if (!doesUserIdExist(superTokensUserId)) {
+            throw new UnknownSuperTokensUserIdException();
+        }
+
+        try {
+            UserIdMappingQueries.createUserIdMapping(this, superTokensUserId, externalUserId, externalUserIdInfo);
+        } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getUserIdMappingTable() + ".supertokens_user_id, "
+                            + Config.getConfig(this).getUserIdMappingTable() + ".external_user_id" + ")")) {
+                throw new UserIdMappingAlreadyExistsException(true, true);
+            }
+
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getUserIdMappingTable() + ".supertokens_user_id" + ")")) {
+                throw new UserIdMappingAlreadyExistsException(true, false);
+            }
+
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getUserIdMappingTable() + ".external_user_id" + ")")) {
+                throw new UserIdMappingAlreadyExistsException(false, true);
+            }
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -1445,14 +1479,26 @@ public class Start
 
     @Override
     public UserIdMapping getUserIdMapping(String userId, boolean isSuperTokensUserId) throws StorageQueryException {
-        // TODO
-        return null;
+        try {
+            if (isSuperTokensUserId) {
+                return UserIdMappingQueries.getUserIdMappingWithSuperTokensUserId(this, userId);
+            } else {
+                return UserIdMappingQueries.getUserIdMappingWithExternalUserId(this, userId);
+            }
+
+        } catch (SQLException e) {
+
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public UserIdMapping[] getUserIdMapping(String userId) throws StorageQueryException {
-        // TODO
-        return new UserIdMapping[0];
+        try {
+            return UserIdMappingQueries.getUserIdMappingWithEitherSuperTokensUserIdOrExternalUserId(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
