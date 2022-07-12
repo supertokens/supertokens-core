@@ -235,6 +235,11 @@ public class UserIdMappingStorageTest {
         }
 
         {
+            UserIdMapping userIdMapping = storage.getUserIdMapping("unknownId", false);
+            assertNull(userIdMapping);
+        }
+
+        {
             UserIdMapping[] userIdMappings = storage.getUserIdMapping("unknownUd");
             assertEquals(0, userIdMappings.length);
         }
@@ -286,6 +291,13 @@ public class UserIdMappingStorageTest {
 
         // check that the mapping exists with either
         {
+            UserIdMapping[] userIdMappings = storage.getUserIdMapping(userInfo.id);
+            assertEquals(1, userIdMappings.length);
+            assertEquals(userInfo.id, userIdMappings[0].superTokensUserId);
+            assertEquals(externalUserId, userIdMappings[0].externalUserId);
+            assertEquals(externalUserIdInfo, userIdMappings[0].externalUserIdInfo);
+        }
+        {
             UserIdMapping[] userIdMappings = storage.getUserIdMapping(externalUserId);
             assertEquals(1, userIdMappings.length);
             assertEquals(userInfo.id, userIdMappings[0].superTokensUserId);
@@ -306,17 +318,23 @@ public class UserIdMappingStorageTest {
             UserIdMapping[] userIdMappings = storage.getUserIdMapping(externalUserId2);
             assertEquals(2, userIdMappings.length);
 
+            boolean checkThatUser1MappingIsReturned = false;
+            boolean checkThatUser2MappingIsReturned = false;
+
             for (UserIdMapping userIdMapping : userIdMappings) {
                 if (userIdMapping.superTokensUserId.equals(userInfo.id)) {
                     assertEquals(userInfo.id, userIdMapping.superTokensUserId);
                     assertEquals(externalUserId, userIdMapping.externalUserId);
                     assertEquals(externalUserIdInfo, userIdMapping.externalUserIdInfo);
+                    checkThatUser1MappingIsReturned = true;
                 } else {
                     assertEquals(newUserInfo.id, userIdMapping.superTokensUserId);
                     assertEquals(externalUserId2, userIdMapping.externalUserId);
                     assertNull(userIdMapping.externalUserIdInfo);
+                    checkThatUser2MappingIsReturned = true;
                 }
             }
+            assertTrue(checkThatUser1MappingIsReturned && checkThatUser2MappingIsReturned);
         }
 
         process.kill();

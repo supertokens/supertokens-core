@@ -98,7 +98,7 @@ public class InputParser {
         }
     }
 
-    public static String parseStringOrThrowError(JsonObject element, String fieldName, boolean nullable,
+    public static String parseStringOrJSONNullOrThrowError(JsonObject element, String fieldName, boolean nullable,
             boolean isJsonNullable) throws ServletException {
         try {
             if ((nullable && element.get(fieldName) == null)
@@ -118,7 +118,19 @@ public class InputParser {
 
     public static String parseStringOrThrowError(JsonObject element, String fieldName, boolean nullable)
             throws ServletException {
-        return parseStringOrThrowError(element, fieldName, nullable, false);
+        try {
+            if (nullable && element.get(fieldName) == null) {
+                return null;
+            }
+            String stringified = element.get(fieldName).toString();
+            if (!stringified.contains("\"")) {
+                throw new Exception();
+            }
+            return ((JsonObject) element).get(fieldName).getAsString();
+        } catch (Exception e) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("Field name '" + fieldName + "' is invalid in JSON input"));
+        }
     }
 
     public static String parseStringFromElementOrThrowError(JsonElement element, String parentFieldName,
