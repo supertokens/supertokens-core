@@ -101,18 +101,14 @@ public class InputParser {
     public static String parseStringOrJSONNullOrThrowError(JsonObject element, String fieldName, boolean nullable)
             throws ServletException {
         try {
-            if ((nullable && element.get(fieldName) == null) || (element.get(fieldName).isJsonNull())) {
+            if (element.get(fieldName) != null && element.get(fieldName).isJsonNull()) {
                 return null;
             }
-            String stringified = element.get(fieldName).toString();
-            if (!stringified.contains("\"")) {
-                throw new Exception();
-            }
-            return ((JsonObject) element).get(fieldName).getAsString();
         } catch (Exception e) {
             throw new ServletException(
                     new WebserverAPI.BadRequestException("Field name '" + fieldName + "' is invalid in JSON input"));
         }
+        return parseStringOrThrowError(element, fieldName, nullable);
     }
 
     public static String parseStringOrThrowError(JsonObject element, String fieldName, boolean nullable)
