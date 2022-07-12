@@ -431,18 +431,26 @@ public class UserIdMappingStorageTest {
 
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
 
+        String userId = "unknownId";
+
         // update with unknown supertokensUserId
-        assertFalse(storage.updateOrDeleteExternalUserIdInfo("unknownId", true, null));
+        assertFalse(storage.updateOrDeleteExternalUserIdInfo(userId, true, null));
 
         // update with unknown externalUserId
-        assertFalse(storage.updateOrDeleteExternalUserIdInfo("unknownId", false, null));
+        assertFalse(storage.updateOrDeleteExternalUserIdInfo(userId, false, null));
+
+        // check that there are no mappings with the userId
+
+        UserIdMapping[] userIdMappings = storage.getUserIdMapping(userId);
+
+        assertEquals(0, userIdMappings.length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
-    public void testUpdatingExternalUserId() throws Exception {
+    public void testUpdatingExternalUserIdInfo() throws Exception {
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -461,7 +469,17 @@ public class UserIdMappingStorageTest {
         String externalUserIdInfo = "externalUserIdInfo";
 
         // create a userId mapping
-        storage.createUserIdMapping(superTokensUserId, externalUserId, externalUserIdInfo);
+        storage.createUserIdMapping(superTokensUserId, externalUserId, null);
+        {
+            UserIdMapping userIdMapping = storage.getUserIdMapping(superTokensUserId, true);
+            assertNotNull(userIdMapping);
+            assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
+            assertEquals(externalUserId, userIdMapping.externalUserId);
+            assertNull(userIdMapping.externalUserIdInfo);
+        }
+
+        // update from null to externalUserIdInfo
+        assertTrue(storage.updateOrDeleteExternalUserIdInfo(superTokensUserId, true, externalUserIdInfo));
 
         // retrieve mapping and validate
         {
