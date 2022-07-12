@@ -70,8 +70,7 @@ public class CreateUserIdMappingAPI extends WebserverAPI {
                     new WebserverAPI.BadRequestException("Field name 'externalUserId' cannot be an empty String"));
         }
 
-        String externalUserIdInfo = InputParser.parseStringOrJSONNullOrThrowError(input, "externalUserIdInfo", true,
-                true);
+        String externalUserIdInfo = InputParser.parseStringOrJSONNullOrThrowError(input, "externalUserIdInfo", true);
 
         if (externalUserIdInfo != null) {
             // normalize externalUserIdInfo

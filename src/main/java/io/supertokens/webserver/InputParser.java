@@ -98,11 +98,10 @@ public class InputParser {
         }
     }
 
-    public static String parseStringOrJSONNullOrThrowError(JsonObject element, String fieldName, boolean nullable,
-            boolean isJsonNullable) throws ServletException {
+    public static String parseStringOrJSONNullOrThrowError(JsonObject element, String fieldName, boolean nullable)
+            throws ServletException {
         try {
-            if ((nullable && element.get(fieldName) == null)
-                    || (isJsonNullable && element.get(fieldName).isJsonNull())) {
+            if ((nullable && element.get(fieldName) == null) || (element.get(fieldName).isJsonNull())) {
                 return null;
             }
             String stringified = element.get(fieldName).toString();
