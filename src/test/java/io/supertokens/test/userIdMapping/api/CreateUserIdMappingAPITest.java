@@ -287,6 +287,42 @@ public class CreateUserIdMappingAPITest {
     }
 
     @Test
+    public void testCreatingUserIdMappingWithExternalUserIdInfoAsNull() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String externalUserId = "externalUserId";
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("superTokensUserId", userInfo.id);
+        requestBody.addProperty("externalUserId", externalUserId);
+        requestBody.add("externalUserIdInfo", null);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_15ForTests(), "useridmapping");
+
+        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+
+        UserIdMapping userIdMapping = storage.getUserIdMapping(userInfo.id, true);
+
+        assertNotNull(userIdMapping);
+        assertEquals(userInfo.id, userIdMapping.superTokensUserId);
+        assertEquals(externalUserId, userIdMapping.externalUserId);
+        assertNull(userIdMapping.externalUserIdInfo);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+    }
+
+    @Test
     public void testCreatingDuplicateUserIdMapping() throws Exception {
         String[] args = { "../" };
 

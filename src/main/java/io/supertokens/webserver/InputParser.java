@@ -98,10 +98,11 @@ public class InputParser {
         }
     }
 
-    public static String parseStringOrThrowError(JsonObject element, String fieldName, boolean nullable)
-            throws ServletException {
+    public static String parseStringOrThrowError(JsonObject element, String fieldName, boolean nullable,
+            boolean isJsonNullable) throws ServletException {
         try {
-            if (nullable && element.get(fieldName) == null) {
+            if ((nullable && element.get(fieldName) == null)
+                    || (isJsonNullable && element.get(fieldName).isJsonNull())) {
                 return null;
             }
             String stringified = element.get(fieldName).toString();
@@ -113,6 +114,11 @@ public class InputParser {
             throw new ServletException(
                     new WebserverAPI.BadRequestException("Field name '" + fieldName + "' is invalid in JSON input"));
         }
+    }
+
+    public static String parseStringOrThrowError(JsonObject element, String fieldName, boolean nullable)
+            throws ServletException {
+        return parseStringOrThrowError(element, fieldName, nullable, false);
     }
 
     public static String parseStringFromElementOrThrowError(JsonElement element, String parentFieldName,
