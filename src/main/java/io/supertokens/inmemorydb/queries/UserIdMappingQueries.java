@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 
+import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -120,6 +121,32 @@ public class UserIdMappingQueries {
         int rowUpdatedCount = update(start, QUERY, pst -> pst.setString(1, userId));
 
         return rowUpdatedCount > 0;
+    }
+
+    public static boolean updateOrDeleteExternalUserIdInfoWithSuperTokensUserId(Start start, String userId,
+            @Nullable String externalUserIdInfo) throws SQLException, StorageQueryException {
+        String QUERY = "UPDATE " + getConfig(start).getUserIdMappingTable()
+                + " SET external_user_id_info = ? WHERE supertokens_user_id = ?";
+
+        int rowUpdated = update(start, QUERY, pst -> {
+            pst.setString(1, externalUserIdInfo);
+            pst.setString(2, userId);
+        });
+
+        return rowUpdated > 0;
+    }
+
+    public static boolean updateOrDeleteExternalUserIdInfoWithExternalUserId(Start start, String userId,
+            @Nullable String externalUserIdInfo) throws SQLException, StorageQueryException {
+        String QUERY = "UPDATE " + getConfig(start).getUserIdMappingTable()
+                + " SET external_user_id_info = ? WHERE external_user_id = ?";
+
+        int rowUpdated = update(start, QUERY, pst -> {
+            pst.setString(1, externalUserIdInfo);
+            pst.setString(2, userId);
+        });
+
+        return rowUpdated > 0;
     }
 
     private static class UserIdMappingRowMapper implements RowMapper<UserIdMapping, ResultSet> {
