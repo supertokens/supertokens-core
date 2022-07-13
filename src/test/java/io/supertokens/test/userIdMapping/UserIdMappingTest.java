@@ -20,6 +20,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
@@ -492,6 +493,212 @@ public class UserIdMappingTest {
                     UserIdMapping.getUserIdMapping(process.main, newExternalUserId, UserIdMapping.UserIdType.EXTERNAL));
 
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUpdatingExternalUserIdInfoWithUnknownUserId() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String userId = "unknownId";
+
+        // update with unknown supertokensUserId
+        assertFalse(UserIdMapping.updateOrDeleteExternalUserIdInfo(process.main, userId,
+                UserIdMapping.UserIdType.SUPERTOKENS, null));
+
+        // update with unknown externalUserId
+        assertFalse(UserIdMapping.updateOrDeleteExternalUserIdInfo(process.main, userId,
+                UserIdMapping.UserIdType.EXTERNAL, null));
+
+        // update with unknown userId
+        assertFalse(UserIdMapping.updateOrDeleteExternalUserIdInfo(process.main, userId, UserIdMapping.UserIdType.ANY,
+                null));
+
+        // check that there are no mappings with the userId
+
+        assertNull(UserIdMapping.getUserIdMapping(process.main, userId, UserIdMapping.UserIdType.ANY));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUpdatingExternalUserIdInfo() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create User
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+
+        String superTokensUserId = userInfo.id;
+        String externalUserId = "externalId";
+
+        // create a userId mapping
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                    .getUserIdMapping(process.main, superTokensUserId, UserIdMapping.UserIdType.SUPERTOKENS);
+            assertNotNull(userIdMapping);
+            assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
+            assertEquals(externalUserId, userIdMapping.externalUserId);
+            assertNull(userIdMapping.externalUserIdInfo);
+        }
+
+        // update from null to externalUserIdInfo using userIdType SUPERTOKENS
+        String externalUserIdInfo = "externalUserIdInfo";
+        assertTrue(UserIdMapping.updateOrDeleteExternalUserIdInfo(process.main, superTokensUserId,
+                UserIdMapping.UserIdType.SUPERTOKENS, externalUserIdInfo));
+
+        // retrieve mapping and validate
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                    .getUserIdMapping(process.main, superTokensUserId, UserIdMapping.UserIdType.SUPERTOKENS);
+            assertNotNull(userIdMapping);
+            assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
+            assertEquals(externalUserId, userIdMapping.externalUserId);
+            assertEquals(externalUserIdInfo, userIdMapping.externalUserIdInfo);
+        }
+
+        // update externalUserIdInfo using userIdType EXTERNAL
+        String newExternalUserIdInfo = "newExternalUserIdInfo";
+        assertTrue(UserIdMapping.updateOrDeleteExternalUserIdInfo(process.main, superTokensUserId,
+                UserIdMapping.UserIdType.SUPERTOKENS, newExternalUserIdInfo));
+
+        // retrieve mapping and validate with the new externalUserIdInfo
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                    .getUserIdMapping(process.main, superTokensUserId, UserIdMapping.UserIdType.SUPERTOKENS);
+            assertNotNull(userIdMapping);
+            assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
+            assertEquals(externalUserId, userIdMapping.externalUserId);
+            assertEquals(newExternalUserIdInfo, userIdMapping.externalUserIdInfo);
+        }
+
+        // delete externalUserIdInfo by passing null with superTokensUserId with ANY
+        assertTrue(UserIdMapping.updateOrDeleteExternalUserIdInfo(process.main, superTokensUserId,
+                UserIdMapping.UserIdType.ANY, null));
+
+        // retrieve mapping and check that externalUserIdInfo is null
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                    .getUserIdMapping(process.main, superTokensUserId, UserIdMapping.UserIdType.SUPERTOKENS);
+            assertNotNull(userIdMapping);
+            assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
+            assertEquals(externalUserId, userIdMapping.externalUserId);
+            assertNull(userIdMapping.externalUserIdInfo);
+        }
+
+        // update the externalUserIdInfo with externalUserId with ANY
+        {
+            assertTrue(UserIdMapping.updateOrDeleteExternalUserIdInfo(process.main, externalUserId,
+                    UserIdMapping.UserIdType.ANY, externalUserIdInfo));
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                    .getUserIdMapping(process.main, superTokensUserId, UserIdMapping.UserIdType.SUPERTOKENS);
+            assertNotNull(userIdMapping);
+            assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
+            assertEquals(externalUserId, userIdMapping.externalUserId);
+            assertEquals(externalUserIdInfo, userIdMapping.externalUserIdInfo);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUpdatingExternalUserIdInfoWithSharedUserIds() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create two UserMappings where superTokensUserId in Mapping 1 = externalUserId in Mapping 2
+
+        // Create mapping 1
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+
+        String superTokensUserId = userInfo.id;
+        String externalUserId = "externalId";
+        String externalUserIdInfo = "externalUserIdInfo";
+
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo);
+
+        // check that mapping exists
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                    .getUserIdMapping(process.main, superTokensUserId, UserIdMapping.UserIdType.SUPERTOKENS);
+            assertNotNull(userIdMapping);
+            assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
+            assertEquals(externalUserId, userIdMapping.externalUserId);
+            assertEquals(externalUserIdInfo, userIdMapping.externalUserIdInfo);
+        }
+
+        // Create mapping 2
+        UserInfo userInfo2 = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+        String superTokensUserId2 = userInfo2.id;
+        String externalUserId2 = userInfo.id;
+        String externalUserIdInfo2 = "newExternalUserIdInfo";
+
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId2, externalUserId2, externalUserIdInfo2);
+
+        // check that the mapping exists
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                    .getUserIdMapping(process.main, superTokensUserId2, UserIdMapping.UserIdType.SUPERTOKENS);
+            assertNotNull(userIdMapping);
+            assertEquals(superTokensUserId2, userIdMapping.superTokensUserId);
+            assertEquals(externalUserId2, userIdMapping.externalUserId);
+            assertEquals(externalUserIdInfo2, userIdMapping.externalUserIdInfo);
+        }
+
+        // update a mapping with externalUserId2 with userIdType ANY, userIdMapping should be updated
+        assertTrue(UserIdMapping.updateOrDeleteExternalUserIdInfo(process.main, externalUserId2,
+                UserIdMapping.UserIdType.ANY, null));
+
+        // check that userId mapping 1 got updated and userId mapping 2 is the same
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping_1 = UserIdMapping
+                    .getUserIdMapping(process.main, superTokensUserId, UserIdMapping.UserIdType.SUPERTOKENS);
+            assertNotNull(userIdMapping_1);
+            assertEquals(superTokensUserId, userIdMapping_1.superTokensUserId);
+            assertEquals(externalUserId, userIdMapping_1.externalUserId);
+            assertNull(userIdMapping_1.externalUserIdInfo);
+
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping_2 = UserIdMapping
+                    .getUserIdMapping(process.main, superTokensUserId2, UserIdMapping.UserIdType.SUPERTOKENS);
+
+            assertNotNull(userIdMapping_2);
+            assertEquals(superTokensUserId2, userIdMapping_2.superTokensUserId);
+            assertEquals(externalUserId2, userIdMapping_2.externalUserId);
+            assertEquals(externalUserIdInfo2, userIdMapping_2.externalUserIdInfo);
+        }
+
+        // delete externalUserIdInfo with EXTERNAL from userIdMapping 2 and check that it gets updated
+        assertTrue(UserIdMapping.updateOrDeleteExternalUserIdInfo(process.main, externalUserId2,
+                UserIdMapping.UserIdType.EXTERNAL, null));
+
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                .getUserIdMapping(process.main, superTokensUserId2, UserIdMapping.UserIdType.SUPERTOKENS);
+
+        assertNotNull(userIdMapping);
+        assertEquals(superTokensUserId2, userIdMapping.superTokensUserId);
+        assertEquals(externalUserId2, userIdMapping.externalUserId);
+        assertNull(userIdMapping.externalUserIdInfo);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

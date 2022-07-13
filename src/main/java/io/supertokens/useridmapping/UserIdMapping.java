@@ -24,7 +24,7 @@ import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokens
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
 import io.supertokens.storageLayer.StorageLayer;
 
-import java.util.Objects;
+import javax.annotation.Nullable;
 
 public class UserIdMapping {
 
@@ -84,6 +84,29 @@ public class UserIdMapping {
             }
 
             return storage.deleteUserIdMapping(userId, false);
+
+        }
+        throw new IllegalArgumentException("userIdType should be one of SUPERTOKENS, EXTERNAL or ANY");
+    }
+
+    public static boolean updateOrDeleteExternalUserIdInfo(Main main, String userId, UserIdType userIdType,
+            @Nullable String externalUserIdInfo) throws StorageQueryException {
+        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
+
+        if (userIdType == UserIdType.SUPERTOKENS) {
+            return storage.updateOrDeleteExternalUserIdInfo(userId, true, externalUserIdInfo);
+        }
+        if (userIdType == UserIdType.EXTERNAL) {
+            return storage.updateOrDeleteExternalUserIdInfo(userId, false, externalUserIdInfo);
+        }
+
+        if (userIdType == UserIdType.ANY) {
+            AuthRecipeStorage authRecipeStorage = StorageLayer.getAuthRecipeStorage(main);
+            if (authRecipeStorage.doesUserIdExist(userId)) {
+                return storage.updateOrDeleteExternalUserIdInfo(userId, true, externalUserIdInfo);
+            }
+
+            return storage.updateOrDeleteExternalUserIdInfo(userId, false, externalUserIdInfo);
 
         }
         throw new IllegalArgumentException("userIdType should be one of SUPERTOKENS, EXTERNAL or ANY");
