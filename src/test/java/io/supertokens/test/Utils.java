@@ -20,7 +20,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.PluginInterfaceTesting;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
@@ -37,7 +36,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertArrayEquals;
 
 public abstract class Utils extends Mockito {
 
@@ -274,5 +273,4 @@ public abstract class Utils extends Mockito {
 
         return list.toArray(String[]::new);
     }
-
 }
