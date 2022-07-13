@@ -18,9 +18,12 @@ package io.supertokens.useridmapping;
 
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
 import io.supertokens.storageLayer.StorageLayer;
+
+import java.util.Objects;
 
 public class UserIdMapping {
 
@@ -30,5 +33,38 @@ public class UserIdMapping {
 
         StorageLayer.getUserIdMappingStorage(main).createUserIdMapping(superTokensUserId, externalUserId,
                 externalUserIdInfo);
+    }
+
+    public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(Main main, String userId,
+            UserIdType userIdType) throws StorageQueryException {
+        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
+
+        if (userIdType == UserIdType.SUPERTOKENS) {
+            return storage.getUserIdMapping(userId, true);
+        }
+        if (userIdType == UserIdType.EXTERNAL) {
+            return storage.getUserIdMapping(userId, false);
+        }
+
+        if (userIdType == UserIdType.ANY) {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping[] userIdMappings = storage
+                    .getUserIdMapping(userId);
+
+            if (userIdMappings.length == 0) {
+                return null;
+            }
+
+            for (io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping : userIdMappings) {
+                if (userIdMapping.superTokensUserId.equals(userId)) {
+                    return userIdMapping;
+                }
+            }
+            return userIdMappings[0];
+        }
+        throw new IllegalArgumentException("userIdType should be one of SUPERTOKENS, EXTERNAL or ANY");
+    }
+
+    public enum UserIdType {
+        SUPERTOKENS, EXTERNAL, ANY
     }
 }

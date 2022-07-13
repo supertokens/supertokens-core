@@ -182,4 +182,128 @@ public class UserIdMappingTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testRetrievingUseridMappingWithUnknownId() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // get mapping with unknown userId with userIdType SUPERTOKENS
+        assertNull(UserIdMapping.getUserIdMapping(process.main, "unknownUserId", UserIdMapping.UserIdType.SUPERTOKENS));
+
+        // get mapping with unknown userId with userIdType EXTERNAL
+        assertNull(UserIdMapping.getUserIdMapping(process.main, "unknownUserId", UserIdMapping.UserIdType.EXTERNAL));
+
+        // get mapping with unknown userId with userIdTYPE ANY
+        assertNull(UserIdMapping.getUserIdMapping(process.main, "unknownUserId", UserIdMapping.UserIdType.ANY));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRetrievingUserIdMapping() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a User and then a UserId mapping
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = userInfo.id;
+        String externalUserId = "externalId";
+        String externalUserIdInfo = "externalIdInfo";
+
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo);
+
+        // retrieve mapping with supertokensUserId and validate response
+
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                    .getUserIdMapping(process.main, superTokensUserId, UserIdMapping.UserIdType.SUPERTOKENS);
+
+            assertNotNull(response);
+            assertEquals(superTokensUserId, response.superTokensUserId);
+            assertEquals(externalUserId, response.externalUserId);
+            assertEquals(externalUserIdInfo, response.externalUserIdInfo);
+        }
+
+        // retrieve mapping externalUserId and validate response
+
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                    .getUserIdMapping(process.main, externalUserId, UserIdMapping.UserIdType.EXTERNAL);
+
+            assertNotNull(response);
+            assertEquals(superTokensUserId, response.superTokensUserId);
+            assertEquals(externalUserId, response.externalUserId);
+            assertEquals(externalUserIdInfo, response.externalUserIdInfo);
+        }
+
+        // retrieve mapping with using ANY
+        {
+            {
+                // with supertokensUserId
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                        .getUserIdMapping(process.main, superTokensUserId, UserIdMapping.UserIdType.ANY);
+
+                assertNotNull(response);
+                assertEquals(superTokensUserId, response.superTokensUserId);
+                assertEquals(externalUserId, response.externalUserId);
+                assertEquals(externalUserIdInfo, response.externalUserIdInfo);
+            }
+
+            {
+                // with externalUserId
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                        .getUserIdMapping(process.main, externalUserId, UserIdMapping.UserIdType.ANY);
+
+                assertNotNull(response);
+                assertEquals(superTokensUserId, response.superTokensUserId);
+                assertEquals(externalUserId, response.externalUserId);
+                assertEquals(externalUserIdInfo, response.externalUserIdInfo);
+            }
+        }
+
+        // create a new mapping where the superTokensUserId of Mapping1 = externalUserId of Mapping2
+        UserInfo userInfo2 = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+        String newSuperTokensUserId = userInfo2.id;
+        String newExternalUserId = userInfo.id;
+        String newExternalUserIdInfo = "newExternalUserIdInfo";
+
+        UserIdMapping.createUserIdMapping(process.main, newSuperTokensUserId, newExternalUserId, newExternalUserIdInfo);
+
+        // retrieve the mapping with newExternalUserId using ANY, it should return Mapping 1
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                    .getUserIdMapping(process.main, newExternalUserId, UserIdMapping.UserIdType.ANY);
+
+            assertNotNull(response);
+            assertEquals(superTokensUserId, response.superTokensUserId);
+            assertEquals(externalUserId, response.externalUserId);
+            assertEquals(externalUserIdInfo, response.externalUserIdInfo);
+        }
+
+        // retrieve the mapping with newExternalUserId using EXTERNAL, it should return Mapping 2
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                    .getUserIdMapping(process.main, newExternalUserId, UserIdMapping.UserIdType.EXTERNAL);
+
+            assertNotNull(response);
+            assertEquals(newSuperTokensUserId, response.superTokensUserId);
+            assertEquals(newExternalUserId, response.externalUserId);
+            assertEquals(newExternalUserIdInfo, response.externalUserIdInfo);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
