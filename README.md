@@ -25,6 +25,16 @@ Supertokens architecture is optimized to add secure authentication for your user
 
 ![auth recipes](.github/auth_strategies.png)
 
+Guides to setup different recipes
+
+* [Passwordless](https://supertokens.com/docs/passwordless/introduction)
+* [Social Login](https://supertokens.com/docs/thirdparty/introduction)
+* [Email Password Login](https://supertokens.com/docs/emailpassword/introduction)
+* [Phone Password Login](https://supertokens.com/docs/phonepassword/introduction)
+* [Passwordless + Social Login](https://supertokens.com/docs/thirdpartypasswordless/introduction)
+* [Email Password + Social Login](https://supertokens.com/docs/thirdpartyemailpassword/introduction)
+* [Session Management](https://supertokens.com/docs/session/introduction)
+
 ## Learn more
 - [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#-what-is-supertokens)
     - [Philosophy](https://github.com/supertokens/supertokens-core#philosophy)
