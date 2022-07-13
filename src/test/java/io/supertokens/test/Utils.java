@@ -275,10 +275,4 @@ public abstract class Utils extends Mockito {
         return list.toArray(String[]::new);
     }
 
-    public static void checkThatUserIdMappingsAreEqual(
-            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping_1, UserIdMapping userIdMapping_2) {
-        assertEquals(userIdMapping_1.superTokensUserId, userIdMapping_2.superTokensUserId);
-        assertEquals(userIdMapping_1.externalUserId, userIdMapping_2.externalUserId);
-        assertEquals(userIdMapping_1.externalUserId, userIdMapping_2.externalUserId);
-    }
 }
