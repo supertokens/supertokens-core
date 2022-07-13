@@ -306,4 +306,194 @@ public class UserIdMappingTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testDeletingUserIdMappingWithUnknownId() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // deleting a mapping with an unknown UserId with userIdType as SUPERTOKENS
+
+        assertFalse(
+                UserIdMapping.deleteUserIdMapping(process.main, "unknownUserId", UserIdMapping.UserIdType.SUPERTOKENS));
+
+        // deleting a mapping with an unknown UserId with userIdType as EXTERNAL
+
+        assertFalse(
+                UserIdMapping.deleteUserIdMapping(process.main, "unknownUserId", UserIdMapping.UserIdType.EXTERNAL));
+
+        // deleting a mapping with an unknown UserId with userIdType as ANY
+
+        assertFalse(UserIdMapping.deleteUserIdMapping(process.main, "unknownUserId", UserIdMapping.UserIdType.ANY));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDeletingUserIdMapping() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create mapping and check that it exists
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = userInfo.id;
+        String externalUserId = "externalId";
+        String externalUserIdInfo = "externalIdInfo";
+
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping_1 = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(
+                superTokensUserId, externalUserId, externalUserIdInfo);
+
+        {
+            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo);
+
+            // retrieve mapping and validate response
+
+            {
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                        .getUserIdMapping(process.main, superTokensUserId, UserIdMapping.UserIdType.SUPERTOKENS);
+
+                assertNotNull(response);
+                Utils.checkThatUserIdMappingsAreEqual(userIdMapping_1, response);
+            }
+
+            // Delete mapping with userIdType SUPERTOKENS and check that it is deleted
+            assertTrue(UserIdMapping.deleteUserIdMapping(process.main, superTokensUserId,
+                    UserIdMapping.UserIdType.SUPERTOKENS));
+
+            // check that mapping does not exist
+            assertNull(UserIdMapping.getUserIdMapping(process.main, superTokensUserId,
+                    UserIdMapping.UserIdType.SUPERTOKENS));
+        }
+
+        {
+            // create mapping and check that it exists
+            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo);
+
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                    .getUserIdMapping(process.main, externalUserId, UserIdMapping.UserIdType.EXTERNAL);
+
+            assertNotNull(response);
+            Utils.checkThatUserIdMappingsAreEqual(userIdMapping_1, response);
+
+            // delete mapping with userIdType EXTERNAL and check that it is deleted
+            assertTrue(
+                    UserIdMapping.deleteUserIdMapping(process.main, externalUserId, UserIdMapping.UserIdType.EXTERNAL));
+
+            // check that mapping does not exist
+            assertNull(UserIdMapping.getUserIdMapping(process.main, externalUserId, UserIdMapping.UserIdType.EXTERNAL));
+
+        }
+
+        {
+            {
+                // create mapping and check that it exists
+                UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo);
+
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                        .getUserIdMapping(process.main, superTokensUserId, UserIdMapping.UserIdType.SUPERTOKENS);
+
+                assertNotNull(response);
+                Utils.checkThatUserIdMappingsAreEqual(userIdMapping_1, response);
+
+                // delete mapping with superTokensUserId with userIdType ANY and check that it is deleted
+                assertTrue(UserIdMapping.deleteUserIdMapping(process.main, superTokensUserId,
+                        UserIdMapping.UserIdType.ANY));
+
+                // check that mapping does not exist
+                assertNull(UserIdMapping.getUserIdMapping(process.main, superTokensUserId,
+                        UserIdMapping.UserIdType.SUPERTOKENS));
+            }
+
+            {
+                // create mapping and check that it exists
+                UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo);
+
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                        .getUserIdMapping(process.main, externalUserId, UserIdMapping.UserIdType.EXTERNAL);
+
+                assertNotNull(response);
+                Utils.checkThatUserIdMappingsAreEqual(userIdMapping_1, response);
+
+                // delete mapping with externalUserId with userIdType ANY and check that it is deleted
+                assertTrue(
+                        UserIdMapping.deleteUserIdMapping(process.main, externalUserId, UserIdMapping.UserIdType.ANY));
+
+                // check that mapping does not exist
+                assertNull(UserIdMapping.getUserIdMapping(process.main, externalUserId,
+                        UserIdMapping.UserIdType.EXTERNAL));
+            }
+        }
+
+        {
+            // create another userId mapping where superTokensUserId of Mapping 1 = externalUserId of Mapping 2
+
+            // create Mapping 1 and check that it exists
+            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo);
+
+            {
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                        .getUserIdMapping(process.main, superTokensUserId, UserIdMapping.UserIdType.SUPERTOKENS);
+
+                assertNotNull(response);
+                Utils.checkThatUserIdMappingsAreEqual(userIdMapping_1, response);
+            }
+
+            // create Mapping 2 and check that it exists
+            UserInfo userInfo2 = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+            String newSuperTokensUserId = userInfo2.id;
+            String newExternalUserId = userInfo.id;
+            String newExternalUserIdInfo = "newExternalUserIdInfo";
+
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping_2 = new io.supertokens.pluginInterface.useridmapping.UserIdMapping(
+                    newSuperTokensUserId, newExternalUserId, newExternalUserIdInfo);
+
+            UserIdMapping.createUserIdMapping(process.main, newSuperTokensUserId, newExternalUserId,
+                    newExternalUserIdInfo);
+            {
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                        .getUserIdMapping(process.main, newSuperTokensUserId, UserIdMapping.UserIdType.SUPERTOKENS);
+
+                assertNotNull(response);
+                Utils.checkThatUserIdMappingsAreEqual(userIdMapping_2, response);
+            }
+
+            // delete userIdMapping with newExternalUserId with userIdType ANY, userIdMapping_1 should be deleted
+
+            assertTrue(
+                    UserIdMapping.deleteUserIdMapping(process.main, newExternalUserId, UserIdMapping.UserIdType.ANY));
+            {
+                // userIdMapping 1 should be deleted and userIdMapping 2 should still exist
+
+                assertNull(UserIdMapping.getUserIdMapping(process.main, superTokensUserId,
+                        UserIdMapping.UserIdType.SUPERTOKENS));
+
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                        .getUserIdMapping(process.main, newSuperTokensUserId, UserIdMapping.UserIdType.SUPERTOKENS);
+
+                assertNotNull(response);
+                Utils.checkThatUserIdMappingsAreEqual(userIdMapping_2, response);
+            }
+
+            // delete userIdMapping with newExternalUserId with userIdType EXTERNAL, userIdMapping 2 should be deleted
+            assertTrue(UserIdMapping.deleteUserIdMapping(process.main, newExternalUserId,
+                    UserIdMapping.UserIdType.EXTERNAL));
+            assertNull(
+                    UserIdMapping.getUserIdMapping(process.main, newExternalUserId, UserIdMapping.UserIdType.EXTERNAL));
+
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

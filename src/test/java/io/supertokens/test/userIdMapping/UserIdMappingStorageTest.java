@@ -420,7 +420,7 @@ public class UserIdMappingStorageTest {
     }
 
     @Test
-    public void testUpdatingExternalUserIdWithUnknownUserId() throws Exception {
+    public void testUpdatingExternalUserIdInfoWithUnknownUserId() throws Exception {
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
