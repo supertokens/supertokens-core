@@ -23,6 +23,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -32,12 +33,12 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.Serial;
 
-public class CreateUserIdMappingAPI extends WebserverAPI {
+public class UserIdMappingAPI extends WebserverAPI {
 
     @Serial
     private static final long serialVersionUID = -7940412104607165068L;
 
-    public CreateUserIdMappingAPI(Main main) {
+    public UserIdMappingAPI(Main main) {
         super(main, RECIPE_ID.USER_ID_MAPPING.toString());
     }
 
@@ -104,6 +105,59 @@ public class CreateUserIdMappingAPI extends WebserverAPI {
             response.addProperty("doesExternalUserIdExist", e.doesExternalUserIdExist);
             super.sendJsonResponse(200, response, resp);
 
+        } catch (StorageQueryException e) {
+            throw new ServletException(e);
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+
+        String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
+
+        // normalize userId
+        userId = userId.trim();
+        if (userId.length() == 0) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("Field name 'userId' cannot be an empty String"));
+        }
+
+        String userIdTypeString = InputParser.getQueryParamOrThrowError(req, "userIdType", true);
+
+        UserIdType userIdType = UserIdType.ANY;
+
+        if (userIdTypeString != null) {
+            // normalize userIdTypeString
+            userIdTypeString = userIdTypeString.trim();
+
+            if (userIdTypeString.equals("SUPERTOKENS")) {
+                userIdType = UserIdType.SUPERTOKENS;
+            } else if (userIdTypeString.equals("EXTERNAL")) {
+                userIdType = UserIdType.EXTERNAL;
+            } else if (!userIdTypeString.equals("ANY")) {
+                throw new ServletException(new WebserverAPI.BadRequestException(
+                        "Field name 'userIdType' should be one of 'SUPERTOKENS', 'EXTERNAL' or 'ANY'"));
+            }
+        }
+
+        try {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                    .getUserIdMapping(main, userId, userIdType);
+            if (userIdMapping == null) {
+                JsonObject response = new JsonObject();
+                response.addProperty("status", "UNKNOWN_MAPPING_ERROR");
+                super.sendJsonResponse(200, response, resp);
+                return;
+            }
+
+            JsonObject response = new JsonObject();
+            response.addProperty("status", "OK");
+            response.addProperty("superTokensUserId", userIdMapping.superTokensUserId);
+            response.addProperty("externalUserId", userIdMapping.externalUserId);
+            if (userIdMapping.externalUserIdInfo != null) {
+                response.addProperty("externalUserIdInfo", userIdMapping.externalUserIdInfo);
+            }
+            super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }

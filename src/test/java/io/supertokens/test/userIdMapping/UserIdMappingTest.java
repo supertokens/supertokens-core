@@ -711,4 +711,46 @@ public class UserIdMappingTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testUpdatingTheExternalUserIdInfoOfAMappingWithTheSameValue() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a userIdMapping with externalUserIdInfo as null and update it to null
+        {
+            UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+            String superTokensUserId = userInfo.id;
+            String externalUserId = "externalUserId";
+
+            // create mapping
+            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+
+            // update the externalUserIdInfo to the same value
+            assertTrue(UserIdMapping.updateOrDeleteExternalUserIdInfo(process.main, superTokensUserId,
+                    UserIdType.SUPERTOKENS, null));
+        }
+
+        {
+            UserInfo userInfo = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
+            String superTokensUserId = userInfo.id;
+            String externalUserId = "externalUserid";
+            String externalUserIdInfo = "externalUserIdInfo";
+
+            // create mapping
+            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo);
+
+            // update the externalUserIdInfo to the same value
+            assertTrue(UserIdMapping.updateOrDeleteExternalUserIdInfo(process.main, superTokensUserId,
+                    UserIdType.SUPERTOKENS, externalUserIdInfo));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
