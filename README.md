@@ -1,3 +1,6 @@
+<p align="center" style=>
+ 🔥 <b>New: Just launched Passwordless recipe. Checkout <a href="https://passwordless.demo.supertokens.com">Demo</a> | <a href="https://supertokens.com/docs/passwordless/introduction">Guide</a></b>
+</p>
 
 [![SuperTokens banner](https://raw.githubusercontent.com/supertokens/supertokens-logo/master/images/Artboard%20%E2%80%93%2027%402x.png)](https://supertokens.com/)
 
@@ -12,14 +15,27 @@ Add **secure login and session management** to your apps. [SDKs available](https
 ![Architecture Diagram](https://supertokens.com/img/architecture/self_hosted_generic.png)
 Supertokens architecture is optimized to add secure authentication for your users without compromising on user and developer experience
 
-
 **Three building blocks of SuperTokens architecture**
 
 1. Frontend SDK: Manages session tokens and renders login UI widgets
 2. Backend SDK: Provides APIs for sign-up, sign-in, signout, session refreshing etc. Your Frontend will talk to these APIs
 3. SuperTokens Core: The HTTP service for the core auth logic and database operations. This service is used by the Backend SDK
 
-## Table of Contents
+## Supports multiple auth strategies
+
+![auth recipes](.github/auth_strategies.png)
+
+Guides to setup different recipes
+
+* [Passwordless](https://supertokens.com/docs/passwordless/introduction)
+* [Social Login](https://supertokens.com/docs/thirdparty/introduction)
+* [Email Password Login](https://supertokens.com/docs/emailpassword/introduction)
+* [Phone Password Login](https://supertokens.com/docs/phonepassword/introduction)
+* [Passwordless + Social Login](https://supertokens.com/docs/thirdpartypasswordless/introduction)
+* [Email Password + Social Login](https://supertokens.com/docs/thirdpartyemailpassword/introduction)
+* [Session Management](https://supertokens.com/docs/session/introduction)
+
+## Learn more
 - [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#-what-is-supertokens)
     - [Philosophy](https://github.com/supertokens/supertokens-core#philosophy)
     - [Features + Demo app](https://github.com/supertokens/supertokens-core#features---click-here-to-see-the-demo-app)
@@ -33,7 +49,7 @@ Supertokens architecture is optimized to add secure authentication for your user
 - [👩‍💻 Contributing](https://github.com/supertokens/supertokens-core#-contributing)
 - [📝 License](https://github.com/supertokens/supertokens-core#-license)
 
-If you like our project, please :star2: this repository! For feedback, feel free to join our [Discord](https://supertokens.io/discord), or create an issue on this repo
+### If you like our project, please :star2: this repository! For feedback, feel free to join our [Discord](https://supertokens.io/discord), or create an issue on this repo
 
 ## 🚀 What is SuperTokens?
 SuperTokens is an open core alternative to proprietary login providers like Auth0 or AWS Cognito. We are
@@ -173,6 +189,11 @@ Mihály Lengyel</b></sub></a></td>
 <td align="center"><a href="https://github.com/JeremyEastham"><img src="https://avatars.githubusercontent.com/u/34139712?v=4" width="100px;" alt=""/><br /><sub><b>Jeremy Eastham</b></sub></a></td>
 <td align="center"><a href="https://github.com/assafushy"><img src="https://avatars.githubusercontent.com/u/7502687?v=4" width="100px;" alt=""/><br /><sub><b>Assaf Yacobi</b></sub></a></td>
 <td align="center"><a href="https://github.com/sattvikc"><img src="https://avatars.githubusercontent.com/u/650429?v=4" width="100px;" alt=""/><br /><sub><b>Sattvik Chakravarthy</b></sub></a></td>
+<td align="center"><a href="https://github.com/opichon"><img src="https://avatars.githubusercontent.com/u/203745?v=4" width="100px;" alt=""/><br /><sub><b>Olivier Pichon</b></sub></a></td>
+  </tr>
+  <tr>
+<td align="center"><a href="https://github.com/FuzzySid"><img src="https://avatars.githubusercontent.com/u/40206571?v=4" width="100px;" alt=""/><br /><sub><b>Siddhant Varma</b></sub></a></td>
+<td align="center"><a href="https://github.com/renyijiu"><img src="https://avatars.githubusercontent.com/u/8318266?v=4" width="100px;" alt=""/><br /><sub><b>renyijiu</b></sub></a></td>
   </tr>
 </table>
 
