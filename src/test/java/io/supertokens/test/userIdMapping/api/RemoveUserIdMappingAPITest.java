@@ -22,10 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
-import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -38,6 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import static io.supertokens.test.Utils.createUserIdMappingAndCheckThatItExists;
 import static org.junit.Assert.*;
 
 public class RemoveUserIdMappingAPITest {
@@ -320,13 +318,58 @@ public class RemoveUserIdMappingAPITest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    public static void createUserIdMappingAndCheckThatItExists(Main main, UserIdMapping userIdMapping)
-            throws Exception {
-        io.supertokens.useridmapping.UserIdMapping.createUserIdMapping(main, userIdMapping.superTokensUserId,
-                userIdMapping.externalUserId, userIdMapping.externalUserIdInfo);
-        // retrieve mapping and validate
-        UserIdMapping retrievedMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
-                userIdMapping.superTokensUserId, UserIdType.SUPERTOKENS);
-        assertEquals(userIdMapping, retrievedMapping);
+    @Test
+    public void testDeletingAUserIdMappingWithSendingUserIdType() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // create a userId mapping
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        UserIdMapping userIdMapping = new UserIdMapping(userInfo.id, "externalUserId", "externalUserIdInfo");
+        createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
+
+        {
+            // delete mapping with superTokensUserId
+            JsonObject request = new JsonObject();
+            request.addProperty("userId", userIdMapping.superTokensUserId);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertTrue(response.get("didMappingExist").getAsBoolean());
+
+            // retrieve mapping and check that it does not exist
+            assertNull(io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.main,
+                    userIdMapping.superTokensUserId, UserIdType.ANY));
+
+        }
+
+        // create mapping
+        createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
+
+        {
+            // delete mapping with externalUserId
+            JsonObject request = new JsonObject();
+            request.addProperty("userId", userIdMapping.externalUserId);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertTrue(response.get("didMappingExist").getAsBoolean());
+
+            // retrieve mapping and check that it does not exist
+            assertNull(io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.main,
+                    userIdMapping.superTokensUserId, UserIdType.ANY));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
 }

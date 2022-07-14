@@ -174,7 +174,7 @@ public class GetUserIdMappingAPITest {
     }
 
     @Test
-    public void testRetrieveUserIdMappingWithSuperTokensAsUserIdType() throws Exception {
+    public void testRetrieveUserIdMapping() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -257,6 +257,57 @@ public class GetUserIdMappingAPITest {
                 assertEquals(externalUserId, response.get("externalUserId").getAsString());
                 assertEquals(externalUserIdInfo, response.get("externalUserIdInfo").getAsString());
             }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRetrievingUserIdMappingWithoutSendingUserIdType() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // create a user and map their userId to an external userId
+        UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = user.id;
+        String externalUserId = "externalUserId";
+        String externalUserIdInfo = "externalUserIdInfo";
+
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo);
+
+        {
+            // retrieving with superTokensUserId
+            HashMap<String, String> QUERY_PARAM = new HashMap<>();
+            QUERY_PARAM.put("userId", superTokensUserId);
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/userid/map", QUERY_PARAM, 1000, 1000, null,
+                    Utils.getCdiVersion2_14ForTests(), "useridmapping");
+
+            assertEquals(4, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(superTokensUserId, response.get("superTokensUserId").getAsString());
+            assertEquals(externalUserId, response.get("externalUserId").getAsString());
+            assertEquals(externalUserIdInfo, response.get("externalUserIdInfo").getAsString());
+        }
+
+        {
+            // retrieving with externalUserId
+            HashMap<String, String> QUERY_PARAM = new HashMap<>();
+            QUERY_PARAM.put("userId", externalUserId);
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/userid/map", QUERY_PARAM, 1000, 1000, null,
+                    Utils.getCdiVersion2_14ForTests(), "useridmapping");
+
+            assertEquals(4, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(superTokensUserId, response.get("superTokensUserId").getAsString());
+            assertEquals(externalUserId, response.get("externalUserId").getAsString());
+            assertEquals(externalUserIdInfo, response.get("externalUserIdInfo").getAsString());
         }
 
         process.kill();
