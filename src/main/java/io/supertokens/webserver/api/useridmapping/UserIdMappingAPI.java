@@ -136,7 +136,7 @@ public class UserIdMappingAPI extends WebserverAPI {
                 userIdType = UserIdType.EXTERNAL;
             } else if (!userIdTypeString.equals("ANY")) {
                 throw new ServletException(new WebserverAPI.BadRequestException(
-                        "Field name 'userIdType' should be one of SUPERTOKENS, EXTERNAL or ANY"));
+                        "Field name 'userIdType' should be one of 'SUPERTOKENS', 'EXTERNAL' or 'ANY'"));
             }
         }
 
@@ -154,7 +154,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             response.addProperty("status", "OK");
             response.addProperty("superTokensUserId", userIdMapping.superTokensUserId);
             response.addProperty("externalUserId", userIdMapping.externalUserId);
-            if (userIdMapping.externalUserId != null) {
+            if (userIdMapping.externalUserIdInfo != null) {
                 response.addProperty("externalUserIdInfo", userIdMapping.externalUserIdInfo);
             }
             super.sendJsonResponse(200, response, resp);
