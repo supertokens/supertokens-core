@@ -16,8 +16,6 @@
 
 package io.supertokens.useridmapping;
 
-public class UserIdType {
-    public enum TYPE {
-        SUPERTOKENS, EXTERNAL, ANY
-    }
+public enum UserIdType {
+    SUPERTOKENS, EXTERNAL, ANY
 }

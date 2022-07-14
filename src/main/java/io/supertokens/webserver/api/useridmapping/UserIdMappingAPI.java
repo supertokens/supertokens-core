@@ -124,16 +124,16 @@ public class UserIdMappingAPI extends WebserverAPI {
 
         String userIdTypeString = InputParser.getQueryParamOrThrowError(req, "userIdType", true);
 
-        UserIdType.TYPE userIdType = UserIdType.TYPE.ANY;
+        UserIdType userIdType = UserIdType.ANY;
 
         if (userIdTypeString != null) {
             // normalize userIdTypeString
             userIdTypeString = userIdTypeString.trim();
 
             if (userIdTypeString.equals("SUPERTOKENS")) {
-                userIdType = UserIdType.TYPE.SUPERTOKENS;
+                userIdType = UserIdType.SUPERTOKENS;
             } else if (userIdTypeString.equals("EXTERNAL")) {
-                userIdType = UserIdType.TYPE.EXTERNAL;
+                userIdType = UserIdType.EXTERNAL;
             } else if (!userIdTypeString.equals("ANY")) {
                 throw new ServletException(new WebserverAPI.BadRequestException(
                         "Field name 'userIdType' should be one of SUPERTOKENS, EXTERNAL or ANY"));
