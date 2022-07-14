@@ -77,6 +77,7 @@ public class UpdateExternalUserIdInfoAPI extends WebserverAPI {
 
         String externalUserIdInfo = InputParser.parseStringOrJSONNullOrThrowError(input, "externalUserIdInfo", false);
 
+        // We do this check because it's possible that the function returns null when the user have given a JSON Null
         if (externalUserIdInfo != null) {
             // normalize externalUserIdInfo
             externalUserIdInfo = externalUserIdInfo.trim();
