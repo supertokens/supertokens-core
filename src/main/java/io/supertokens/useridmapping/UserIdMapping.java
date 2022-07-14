@@ -22,7 +22,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
-import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingException;
 import io.supertokens.storageLayer.StorageLayer;
 
 import javax.annotation.Nullable;
@@ -38,13 +37,13 @@ public class UserIdMapping {
     }
 
     public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(Main main, String userId,
-            UserIdType.TYPE userIdType) throws StorageQueryException {
+            UserIdType userIdType) throws StorageQueryException {
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
 
-        if (userIdType == UserIdType.TYPE.SUPERTOKENS) {
+        if (userIdType == UserIdType.SUPERTOKENS) {
             return storage.getUserIdMapping(userId, true);
         }
-        if (userIdType == UserIdType.TYPE.EXTERNAL) {
+        if (userIdType == UserIdType.EXTERNAL) {
             return storage.getUserIdMapping(userId, false);
         }
 
@@ -69,15 +68,15 @@ public class UserIdMapping {
         throw new IllegalStateException("Retrieved more than 2 UserId Mapping entries for a single userId.");
     }
 
-    public static boolean deleteUserIdMapping(Main main, String userId, UserIdType.TYPE userIdType)
+    public static boolean deleteUserIdMapping(Main main, String userId, UserIdType userIdType)
             throws StorageQueryException {
 
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
 
-        if (userIdType == UserIdType.TYPE.SUPERTOKENS) {
+        if (userIdType == UserIdType.SUPERTOKENS) {
             return storage.deleteUserIdMapping(userId, true);
         }
-        if (userIdType == UserIdType.TYPE.EXTERNAL) {
+        if (userIdType == UserIdType.EXTERNAL) {
             return storage.deleteUserIdMapping(userId, false);
         }
 
@@ -89,14 +88,14 @@ public class UserIdMapping {
         return storage.deleteUserIdMapping(userId, false);
     }
 
-    public static boolean updateOrDeleteExternalUserIdInfo(Main main, String userId, UserIdType.TYPE userIdType,
+    public static boolean updateOrDeleteExternalUserIdInfo(Main main, String userId, UserIdType userIdType,
             @Nullable String externalUserIdInfo) throws StorageQueryException {
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
 
-        if (userIdType == UserIdType.TYPE.SUPERTOKENS) {
+        if (userIdType == UserIdType.SUPERTOKENS) {
             return storage.updateOrDeleteExternalUserIdInfo(userId, true, externalUserIdInfo);
         }
-        if (userIdType == UserIdType.TYPE.EXTERNAL) {
+        if (userIdType == UserIdType.EXTERNAL) {
             return storage.updateOrDeleteExternalUserIdInfo(userId, false, externalUserIdInfo);
         }
 
