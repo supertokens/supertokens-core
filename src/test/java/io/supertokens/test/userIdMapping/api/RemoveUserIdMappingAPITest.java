@@ -107,7 +107,7 @@ public class RemoveUserIdMappingAPITest {
             }
         }
 
-        // pass userIdType as an e number
+        // pass userIdType as a number
         {
             JsonObject request = new JsonObject();
             request.addProperty("userId", "testUserId");
@@ -251,11 +251,12 @@ public class RemoveUserIdMappingAPITest {
                     userIdMapping.superTokensUserId, UserIdType.SUPERTOKENS));
         }
 
-        // create userId mapping
-        createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
-
-        // delete userId mapping with userIdType as EXTERNAL
         {
+            // create userId mapping
+            createUserIdMappingAndCheckThatItExists(process.main, userIdMapping);
+
+            // delete userId mapping with userIdType as EXTERNAL
+
             JsonObject request = new JsonObject();
             request.addProperty("userId", userIdMapping.externalUserId);
             request.addProperty("userIdType", "EXTERNAL");
@@ -319,7 +320,7 @@ public class RemoveUserIdMappingAPITest {
     }
 
     @Test
-    public void testDeletingAUserIdMappingWithSendingUserIdType() throws Exception {
+    public void testDeletingAUserIdMappingWithoutSendingUserIdType() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
