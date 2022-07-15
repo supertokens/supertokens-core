@@ -76,7 +76,7 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 ### On your local machine
 1. Navigate to the `supertokens-root` repository  
 2. Run all tests   
-`./startTestingEnv`  
+`./startTestEnv`  
 3. If all tests pass the terminal should display  
 - core tests:  
 ![core tests passing](https://github.com/supertokens/supertokens-logo/blob/master/images/core-tests-passing.png)  
@@ -94,7 +94,7 @@ Please ask as many questions as you need, either directly in the issue or on [Di
 6. Click on "Run workflow".
 
 ## Running the core manually
-1. Run `startTestingEnv --wait` in a terminal, and keep it running
+1. Run `startTestEnv --wait` in a terminal, and keep it running
 2. Then open `supertokens-root` in another terminal and run `cp ./temp/config.yaml .`
 3. Then run `java -classpath "./core/*:./plugin-interface/*" io.supertokens.Main ./ DEV`. This will start the core to listen on `http://localhost:3567`
 
