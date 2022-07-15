@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+- Support for collecting and displaying failing tests 
+
 ## [3.14.0] - 2022-06-07
 
 - Fixes `/recipe/session/user GET` to return only session handles that have not expired.
