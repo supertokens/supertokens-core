@@ -194,6 +194,7 @@ Mihály Lengyel</b></sub></a></td>
   <tr>
 <td align="center"><a href="https://github.com/FuzzySid"><img src="https://avatars.githubusercontent.com/u/40206571?v=4" width="100px;" alt=""/><br /><sub><b>Siddhant Varma</b></sub></a></td>
 <td align="center"><a href="https://github.com/renyijiu"><img src="https://avatars.githubusercontent.com/u/8318266?v=4" width="100px;" alt=""/><br /><sub><b>renyijiu</b></sub></a></td>
+<td align="center"><a href="https://github.com/ITenthusiasm"><img src="https://avatars.githubusercontent.com/u/47364027?v=4" width="100px;" alt=""/><br /><sub><b>Isaiah Thomason</b></sub></a></td>
   </tr>
 </table>
 
