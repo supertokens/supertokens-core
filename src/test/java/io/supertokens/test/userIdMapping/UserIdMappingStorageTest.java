@@ -187,37 +187,6 @@ public class UserIdMappingStorageTest {
     }
 
     @Test
-    public void testCreatingAMappingWithAnUnknownStUserIdAndAPreexistingExternalUserId() throws Exception {
-        String[] args = { "../" };
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
-
-        // create a User
-        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
-        String externalUserId = "externalUserId";
-
-        // create a userId mapping
-        storage.createUserIdMapping(userInfo.id, externalUserId, null);
-
-        // create a new mapping with unknown superTokensUserId and existing externalUserId
-        Exception error = null;
-        try {
-            storage.createUserIdMapping("unknownUserId", externalUserId, null);
-        } catch (Exception e) {
-            error = e;
-        }
-
-        assertNotNull(error);
-        assertTrue(error instanceof UnknownSuperTokensUserIdException);
-    }
-
-    @Test
     public void testRetrievingUserIdMappingWithUnknownSuperTokensUserId() throws Exception {
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
