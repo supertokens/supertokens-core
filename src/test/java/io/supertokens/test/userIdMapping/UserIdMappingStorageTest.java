@@ -214,8 +214,8 @@ public class UserIdMappingStorageTest {
         }
 
         assertNotNull(error);
-        
-        if (error instanceof UserIdMappingAlreadyExistsException){
+
+        if (error instanceof UserIdMappingAlreadyExistsException) {
             UserIdMappingAlreadyExistsException userIdMappingAlreadyExistsException = (UserIdMappingAlreadyExistsException) error;
             assertFalse(userIdMappingAlreadyExistsException.doesSuperTokensUserIdExist);
             assertTrue(userIdMappingAlreadyExistsException.doesExternalUserIdExist);
