@@ -25,6 +25,7 @@ import io.supertokens.inmemorydb.queries.*;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -51,6 +52,10 @@ import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
+import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
+import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
@@ -64,8 +69,9 @@ import java.sql.SQLException;
 import java.sql.SQLTransactionRollbackException;
 import java.util.List;
 
-public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage,
-        ThirdPartySQLStorage, JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage {
+public class Start
+        implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
+        JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -391,6 +397,15 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
             throws StorageQueryException {
         try {
             return GeneralQueries.getUsers(this, limit, timeJoinedOrder, includeRecipeIds, userId, timeJoined);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean doesUserIdExist(String userId) throws StorageQueryException {
+        try {
+            return GeneralQueries.doesUserIdExist(this, userId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1417,5 +1432,96 @@ public class Start implements SessionSQLStorage, EmailPasswordSQLStorage, EmailV
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public void createUserIdMapping(String superTokensUserId, String externalUserId,
+            @Nullable String externalUserIdInfo)
+            throws StorageQueryException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException {
+
+        // SQLite is not compiled with foreign key constraint, so we need an explicit check to see if superTokensUserId
+        // is a valid
+        // userId.
+        if (!doesUserIdExist(superTokensUserId)) {
+            throw new UnknownSuperTokensUserIdException();
+        }
+
+        try {
+            UserIdMappingQueries.createUserIdMapping(this, superTokensUserId, externalUserId, externalUserIdInfo);
+        } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getUserIdMappingTable() + ".supertokens_user_id, "
+                            + Config.getConfig(this).getUserIdMappingTable() + ".external_user_id" + ")")) {
+                throw new UserIdMappingAlreadyExistsException(true, true);
+            }
+
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getUserIdMappingTable() + ".supertokens_user_id" + ")")) {
+                throw new UserIdMappingAlreadyExistsException(true, false);
+            }
+
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getUserIdMappingTable() + ".external_user_id" + ")")) {
+                throw new UserIdMappingAlreadyExistsException(false, true);
+            }
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean deleteUserIdMapping(String userId, boolean isSuperTokensUserId) throws StorageQueryException {
+        try {
+            if (isSuperTokensUserId) {
+                return UserIdMappingQueries.deleteUserIdMappingWithSuperTokensUserId(this, userId);
+            } else {
+                return UserIdMappingQueries.deleteUserIdMappingWithExternalUserId(this, userId);
+            }
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public UserIdMapping getUserIdMapping(String userId, boolean isSuperTokensUserId) throws StorageQueryException {
+        try {
+            if (isSuperTokensUserId) {
+                return UserIdMappingQueries.getUserIdMappingWithSuperTokensUserId(this, userId);
+            } else {
+                return UserIdMappingQueries.getUserIdMappingWithExternalUserId(this, userId);
+            }
+
+        } catch (SQLException e) {
+
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public UserIdMapping[] getUserIdMapping(String userId) throws StorageQueryException {
+        try {
+            return UserIdMappingQueries.getUserIdMappingWithEitherSuperTokensUserIdOrExternalUserId(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean updateOrDeleteExternalUserIdInfo(String userId, boolean isSuperTokensUserId,
+            @Nullable String externalUserIdInfo) throws StorageQueryException {
+        try {
+            if (isSuperTokensUserId) {
+                return UserIdMappingQueries.updateOrDeleteExternalUserIdInfoWithSuperTokensUserId(this, userId,
+                        externalUserIdInfo);
+            } else {
+                return UserIdMappingQueries.updateOrDeleteExternalUserIdInfoWithExternalUserId(this, userId,
+                        externalUserIdInfo);
+            }
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+
     }
 }
