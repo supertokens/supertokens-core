@@ -127,12 +127,30 @@ tasks.withType(Test) {
         info.events = debug.events
         info.exceptionFormat = debug.exceptionFormat
 
+
+        // collect failing test names
+        ext.failedTests = []
+        afterTest { descriptor, result ->
+            if (result.resultType == TestResult.ResultType.FAILURE) {
+                String failedTest = "${descriptor.className}::${descriptor.name}"
+                logger.debug("Adding " + failedTest + " to failedTests...")
+                failedTests << [failedTest]
+            }
+        }
+
         afterSuite { desc, result ->
             if (!desc.parent) { // will match the outermost suite
                 def output = "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
                 def startItem = '|  ', endItem = '  |'
                 def repeatLength = startItem.length() + output.length() + endItem.length()
                 println('\n' + ('-' * repeatLength) + '\n' + startItem + output + endItem + '\n' + ('-' * repeatLength))
+                // print failing tests
+                if (!failedTests.empty) {
+                    println("\nFailed tests:")
+                    failedTests.each { failedTest ->
+                        logger.lifecycle("${failedTest}")
+                    }
+                }
             }
         }
     }

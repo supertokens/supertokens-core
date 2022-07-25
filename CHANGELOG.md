@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [3.15.0] - 2022-07-25
 
 - Adds UserIdMapping recipe
+- Support for collecting and displaying failing tests 
 
 ### Database changes
 

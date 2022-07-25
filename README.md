@@ -1,3 +1,6 @@
+<p align="center" style=>
+ 🔥 <b>New: Just launched Passwordless recipe. Checkout <a href="https://passwordless.demo.supertokens.com">Demo</a> | <a href="https://supertokens.com/docs/passwordless/introduction">Guide</a></b>
+</p>
 
 [![SuperTokens banner](https://raw.githubusercontent.com/supertokens/supertokens-logo/master/images/Artboard%20%E2%80%93%2027%402x.png)](https://supertokens.com/)
 
@@ -18,7 +21,21 @@ Supertokens architecture is optimized to add secure authentication for your user
 2. Backend SDK: Provides APIs for sign-up, sign-in, signout, session refreshing etc. Your Frontend will talk to these APIs
 3. SuperTokens Core: The HTTP service for the core auth logic and database operations. This service is used by the Backend SDK
 
-## Table of Contents
+## Supports multiple auth strategies
+
+![auth recipes](.github/auth_strategies.png)
+
+Guides to setup different recipes
+
+* [Passwordless](https://supertokens.com/docs/passwordless/introduction)
+* [Social Login](https://supertokens.com/docs/thirdparty/introduction)
+* [Email Password Login](https://supertokens.com/docs/emailpassword/introduction)
+* [Phone Password Login](https://supertokens.com/docs/phonepassword/introduction)
+* [Passwordless + Social Login](https://supertokens.com/docs/thirdpartypasswordless/introduction)
+* [Email Password + Social Login](https://supertokens.com/docs/thirdpartyemailpassword/introduction)
+* [Session Management](https://supertokens.com/docs/session/introduction)
+
+## Learn more
 - [🚀 What is SuperTokens?](https://github.com/supertokens/supertokens-core#-what-is-supertokens)
     - [Philosophy](https://github.com/supertokens/supertokens-core#philosophy)
     - [Features + Demo app](https://github.com/supertokens/supertokens-core#features---click-here-to-see-the-demo-app)
@@ -177,6 +194,7 @@ Mihály Lengyel</b></sub></a></td>
   <tr>
 <td align="center"><a href="https://github.com/FuzzySid"><img src="https://avatars.githubusercontent.com/u/40206571?v=4" width="100px;" alt=""/><br /><sub><b>Siddhant Varma</b></sub></a></td>
 <td align="center"><a href="https://github.com/renyijiu"><img src="https://avatars.githubusercontent.com/u/8318266?v=4" width="100px;" alt=""/><br /><sub><b>renyijiu</b></sub></a></td>
+<td align="center"><a href="https://github.com/ITenthusiasm"><img src="https://avatars.githubusercontent.com/u/47364027?v=4" width="100px;" alt=""/><br /><sub><b>Isaiah Thomason</b></sub></a></td>
   </tr>
 </table>
 
