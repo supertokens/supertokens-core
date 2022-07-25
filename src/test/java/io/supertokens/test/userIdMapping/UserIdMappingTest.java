@@ -739,7 +739,7 @@ public class UserIdMappingTest {
         {
             UserInfo userInfo = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
             String superTokensUserId = userInfo.id;
-            String externalUserId = "externalUserid";
+            String externalUserId = "newExternalUserIdInfo";
             String externalUserIdInfo = "externalUserIdInfo";
 
             // create mapping
