@@ -176,7 +176,6 @@ public class UpdateExternalUserIdInfoTest {
                         Utils.getCdiVersion2_15ForTests(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
-                System.out.println(e.getMessage());
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
                         + " Field name 'externalUserIdInfo' cannot be an empty String"));
             }
