@@ -326,6 +326,10 @@ public class RemoveUserIdMappingAPITest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         // create a userId mapping
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
         UserIdMapping userIdMapping = new UserIdMapping(userInfo.id, "externalUserId", "externalUserIdInfo");

@@ -19,7 +19,9 @@ package io.supertokens.test.userIdMapping.api;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -55,6 +57,10 @@ public class GetUserIdMappingAPITest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         {
             // do not pass userId
@@ -130,6 +136,10 @@ public class GetUserIdMappingAPITest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         {
             // retrieve userId mapping with unknown userId with SUPERTOKENS as the userIdType
             HashMap<String, String> QUERY_PARAM = new HashMap<>();
@@ -179,6 +189,10 @@ public class GetUserIdMappingAPITest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         // create a user and map their userId to an external userId
         UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
@@ -270,6 +284,10 @@ public class GetUserIdMappingAPITest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         // create a user and map their userId to an external userId
         UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
         String superTokensUserId = user.id;
@@ -320,6 +338,10 @@ public class GetUserIdMappingAPITest {
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
 
         // create a user and map their userId to an external userId
         UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
