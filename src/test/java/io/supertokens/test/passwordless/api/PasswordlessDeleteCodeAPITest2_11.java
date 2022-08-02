@@ -63,7 +63,7 @@ public class PasswordlessDeleteCodeAPITest2_11 {
         PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
 
         String phoneNumber = "+442071838750";
-        String codeId = "codeId";
+        String codeId = io.supertokens.utils.Utils.getUUID();
 
         String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
         String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
