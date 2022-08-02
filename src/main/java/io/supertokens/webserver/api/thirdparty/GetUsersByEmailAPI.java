@@ -25,6 +25,8 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -51,6 +53,15 @@ public class GetUsersByEmailAPI extends WebserverAPI {
             String email = InputParser.getQueryParamOrThrowError(req, "email", false);
 
             UserInfo[] users = ThirdParty.getUsersByEmail(super.main, email);
+
+            // return the externalUserId if a mapping exists for a user
+            for (int i = 0; i < users.length; i++) {
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                        .getUserIdMapping(super.main, users[i].id, UserIdType.SUPERTOKENS);
+                if (userIdMapping != null) {
+                    users[i].id = userIdMapping.externalUserId;
+                }
+            }
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

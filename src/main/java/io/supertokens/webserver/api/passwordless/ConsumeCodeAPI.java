@@ -39,6 +39,8 @@ import io.supertokens.passwordless.exceptions.RestartFlowException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -83,6 +85,12 @@ public class ConsumeCodeAPI extends WebserverAPI {
         try {
             ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(main, deviceId, deviceIdHash,
                     userInputCode, linkCode);
+
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
+                    consumeCodeResponse.user.id, UserIdType.SUPERTOKENS);
+            if (userIdMapping != null) {
+                consumeCodeResponse.user.id = userIdMapping.externalUserId;
+            }
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
