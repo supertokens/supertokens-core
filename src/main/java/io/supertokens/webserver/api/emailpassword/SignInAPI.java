@@ -26,6 +26,8 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -62,6 +64,13 @@ public class SignInAPI extends WebserverAPI {
 
         try {
             UserInfo user = EmailPassword.signIn(super.main, normalisedEmail, password);
+
+            // if a userIdMapping exists, pass the externalUserId to the response
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main,
+                    user.id, UserIdType.SUPERTOKENS);
+            if (userIdMapping != null) {
+                user.id = userIdMapping.externalUserId;
+            }
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

@@ -28,6 +28,8 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailExc
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -67,7 +69,13 @@ public class UserAPI extends WebserverAPI {
 
         try {
             UserInfo user = null;
+            // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = null;
             if (userId != null) {
+                userIdMapping = UserIdMapping.getUserIdMapping(main, userId, UserIdType.ANY);
+                if (userIdMapping != null) {
+                    userId = userIdMapping.superTokensUserId;
+                }
                 user = EmailPassword.getUserUsingId(main, userId);
             } else {
                 String normalisedEmail = Utils.normaliseEmail(email);
@@ -79,6 +87,10 @@ public class UserAPI extends WebserverAPI {
                 result.addProperty("status", userId != null ? "UNKNOWN_USER_ID_ERROR" : "UNKNOWN_EMAIL_ERROR");
                 super.sendJsonResponse(200, result, resp);
             } else {
+                // if a userIdMapping exists, pass the externalUserId to the response
+                if (userIdMapping != null) {
+                    user.id = userIdMapping.externalUserId;
+                }
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
@@ -109,6 +121,12 @@ public class UserAPI extends WebserverAPI {
         }
 
         try {
+            // if a userIdMapping exists, pass the superTokensUserId to the updateUsersEmailOrPassword
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                    .getUserIdMapping(main, userId, UserIdType.ANY);
+            if (userIdMapping != null) {
+                userId = userIdMapping.superTokensUserId;
+            }
             EmailPassword.updateUsersEmailOrPassword(main, userId, email, password);
 
             JsonObject result = new JsonObject();

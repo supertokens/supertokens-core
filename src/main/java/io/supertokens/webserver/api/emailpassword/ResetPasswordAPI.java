@@ -24,6 +24,8 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -68,6 +70,13 @@ public class ResetPasswordAPI extends WebserverAPI {
 
         try {
             String userId = EmailPassword.resetPassword(super.main, token, newPassword);
+
+            // if userIdMapping exists, pass the externalUserId to the response
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                    .getUserIdMapping(main, userId, UserIdType.SUPERTOKENS);
+            if (userIdMapping != null) {
+                userId = userIdMapping.externalUserId;
+            }
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
