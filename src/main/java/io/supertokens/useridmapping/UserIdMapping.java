@@ -25,6 +25,8 @@ import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlrea
 import io.supertokens.storageLayer.StorageLayer;
 
 import javax.annotation.Nullable;
+import java.util.ArrayList;
+import java.util.HashMap;
 
 public class UserIdMapping {
 
@@ -105,6 +107,11 @@ public class UserIdMapping {
         }
 
         return storage.updateOrDeleteExternalUserIdInfo(userId, false, externalUserIdInfo);
+    }
+
+    public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(Main main, ArrayList<String> userIds)
+            throws StorageQueryException {
+        return StorageLayer.getUserIdMappingStorage(main).getUserIdMappingForSuperTokenIds(userIds);
     }
 
 }

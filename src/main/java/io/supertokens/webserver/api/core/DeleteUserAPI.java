@@ -28,6 +28,8 @@ import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -49,7 +51,16 @@ public class DeleteUserAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         try {
-            AuthRecipe.deleteUser(super.main, userId);
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main,
+                    userId, UserIdType.ANY);
+            if (userIdMapping != null) {
+                AuthRecipe.deleteUser(main, userIdMapping.superTokensUserId);
+
+                AuthRecipe.deleteUser(main, userIdMapping.externalUserId);
+            } else {
+                AuthRecipe.deleteUser(super.main, userId);
+            }
+
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);

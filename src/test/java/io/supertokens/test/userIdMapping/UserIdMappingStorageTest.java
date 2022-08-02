@@ -34,6 +34,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+
 import static org.junit.Assert.*;
 
 public class UserIdMappingStorageTest {
@@ -524,6 +527,39 @@ public class UserIdMappingStorageTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void create500UsersMapTheirIdsCheckRetrieveUseIdMappingsWithListOfUserIds() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        ArrayList<String> superTokensUserIdList = new ArrayList<>();
+        ArrayList<String> externalUserIdList = new ArrayList<>();
+
+        for (int i = 1; i <= 500; i++) {
+            // create User
+            UserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
+            superTokensUserIdList.add(userInfo.id);
+            String superTokensUserId = userInfo.id;
+            String externalUserId = "externalId" + i;
+            externalUserIdList.add(externalUserId);
+
+            // create a userId mapping
+            storage.createUserIdMapping(superTokensUserId, externalUserId, null);
+        }
+        HashMap<String, String> response = storage.getUserIdMappingForSuperTokenIds(superTokensUserIdList);
+        assertEquals(500, response.size());
+        for (int i = 0; i < response.size(); i++) {
+            assertEquals(externalUserIdList.get(i), response.get(superTokensUserIdList.get(i)));
+        }
+
     }
 
 }

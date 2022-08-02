@@ -67,6 +67,8 @@ import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransactionRollbackException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 public class Start
@@ -1523,5 +1525,15 @@ public class Start
             throw new StorageQueryException(e);
         }
 
+    }
+
+    @Override
+    public HashMap<String, String> getUserIdMappingForSuperTokenIds(ArrayList<String> userIds)
+            throws StorageQueryException {
+        try {
+            return UserIdMappingQueries.getUserIdMappingWithUserIds(this, userIds);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }
