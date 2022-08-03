@@ -88,4 +88,63 @@ public class EmailPasswordAPITest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testResetPasswordFlowWithUserIdMapping() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a User
+        String email = "test@example.com";
+        String password = "testPass123";
+        UserInfo userInfo = EmailPassword.signUp(process.main, email, password);
+        String superTokensUserId = userInfo.id;
+        String externalUserId = "externalId";
+
+        // create the mapping
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+
+        // call GeneratePasswordResetTokenAPI api with externalId
+        String passwordResetToken = null;
+
+        {
+            JsonObject passwordResetTokenBody = new JsonObject();
+            passwordResetTokenBody.addProperty("userId", externalUserId);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user/password/reset/token", passwordResetTokenBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+            assertEquals("OK", response.get("status").getAsString());
+
+            passwordResetToken = response.get("token").getAsString();
+        }
+
+        // reset the users' password by calling the ResetPasswordAPI
+        String newPassword = "newTestPassword123";
+        {
+            JsonObject resetPasswordBody = new JsonObject();
+            resetPasswordBody.addProperty("method", "token");
+            resetPasswordBody.addProperty("token", passwordResetToken);
+            resetPasswordBody.addProperty("newPassword", newPassword);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(externalUserId, response.get("userId").getAsString());
+        }
+
+        // sign in with the new password and check that it works
+        UserInfo userInfo1 = EmailPassword.signIn(process.main, email, newPassword);
+        assertNotNull(userInfo1);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
