@@ -67,16 +67,23 @@ public class UserAPI extends WebserverAPI {
 
         try {
             UserInfo user = null;
-            // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
-            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = null;
             if (userId != null) {
-                userIdMapping = UserIdMapping.getUserIdMapping(main, userId, UserIdType.ANY);
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                        .getUserIdMapping(main, userId, UserIdType.ANY);
                 if (userIdMapping != null) {
                     userId = userIdMapping.superTokensUserId;
                 }
                 user = ThirdParty.getUser(main, userId);
+                if (userIdMapping != null) {
+                    user.id = userIdMapping.externalUserId;
+                }
             } else {
                 user = ThirdParty.getUser(main, thirdPartyId, thirdPartyUserId);
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                        .getUserIdMapping(main, user.id, UserIdType.ANY);
+                if (userIdMapping != null) {
+                    user.id = userIdMapping.externalUserId;
+                }
             }
 
             if (user == null) {
@@ -85,16 +92,6 @@ public class UserAPI extends WebserverAPI {
                         userId != null ? "UNKNOWN_USER_ID_ERROR" : "UNKNOWN_THIRD_PARTY_USER_ERROR");
                 super.sendJsonResponse(200, result, resp);
             } else {
-                // if userIdMapping exists set externalUserId in the response
-                if (userIdMapping != null) {
-                    user.id = userIdMapping.externalUserId;
-                } else if (userId == null) {
-                    // if userId was not passed check again if mapping exists
-                    userIdMapping = UserIdMapping.getUserIdMapping(super.main, user.id, UserIdType.ANY);
-                    if (userIdMapping != null) {
-                        user.id = userIdMapping.externalUserId;
-                    }
-                }
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();

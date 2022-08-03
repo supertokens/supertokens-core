@@ -69,18 +69,30 @@ public class UserAPI extends WebserverAPI {
 
         try {
             UserInfo user;
-            UserIdMapping userIdMapping = null;
             if (userId != null) {
-                userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, userId,
+                UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, userId,
                         UserIdType.ANY);
                 if (userIdMapping != null) {
                     userId = userIdMapping.superTokensUserId;
                 }
                 user = Passwordless.getUserById(main, userId);
+                if (userIdMapping != null) {
+                    user.id = userIdMapping.externalUserId;
+                }
             } else if (email != null) {
                 user = Passwordless.getUserByEmail(main, Utils.normaliseEmail(email));
+                UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, user.id,
+                        UserIdType.ANY);
+                if (userIdMapping != null) {
+                    user.id = userIdMapping.externalUserId;
+                }
             } else {
                 user = Passwordless.getUserByPhoneNumber(main, phoneNumber);
+                UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, user.id,
+                        UserIdType.ANY);
+                if (userIdMapping != null) {
+                    user.id = userIdMapping.externalUserId;
+                }
             }
 
             if (user == null) {
@@ -89,13 +101,6 @@ public class UserAPI extends WebserverAPI {
                         : (email != null ? "UNKNOWN_EMAIL_ERROR" : "UNKNOWN_PHONE_NUMBER_ERROR"));
                 super.sendJsonResponse(200, result, resp);
             } else {
-                if (userIdMapping != null) {
-                    user.id = userIdMapping.externalUserId;
-                } else if (userId == null) {
-                    userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, user.id,
-                            UserIdType.ANY);
-                    user.id = userIdMapping.externalUserId;
-                }
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
 

@@ -100,13 +100,11 @@ public class SignInUpAPI extends WebserverAPI {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(super.main, thirdPartyId, thirdPartyUserId,
                         normalisedEmail);
 
-                // when a user signs in set externalUserId in the response
-                if (!response.createdNewUser) {
-                    io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                            .getUserIdMapping(main, response.user.id, UserIdType.ANY);
-                    if (userIdMapping != null) {
-                        response.user.id = userIdMapping.superTokensUserId;
-                    }
+                //
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                        .getUserIdMapping(main, response.user.id, UserIdType.ANY);
+                if (userIdMapping != null) {
+                    response.user.id = userIdMapping.externalUserId;
                 }
 
                 JsonObject result = new JsonObject();
