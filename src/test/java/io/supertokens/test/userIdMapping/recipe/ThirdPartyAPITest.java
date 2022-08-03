@@ -16,6 +16,7 @@
 
 package io.supertokens.test.userIdMapping.recipe;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
@@ -32,6 +33,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.util.HashMap;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -87,6 +90,48 @@ public class ThirdPartyAPITest {
                     Utils.getCdiVersion2_15ForTests(), "thirdparty");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalUserId, response.get("user").getAsJsonObject().get("id").getAsString());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testGetUsersByEmailAPI() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a User
+        String thirdPartyId = "google";
+        String thirdPartyUserId = "test-google";
+        String email = "test@example.com";
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, thirdPartyId, thirdPartyUserId,
+                email);
+        String superTokensUserId = signInUpResponse.user.id;
+        String externalUserId = "externalId";
+
+        // create the mapping
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+
+        // call getUsersByEmail
+        {
+            HashMap<String, String> query = new HashMap<>();
+            query.put("email", email);
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/users/by-email", query, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "thirdparty");
+            assertEquals("OK", response.get("status").getAsString());
+
+            JsonArray users = response.get("users").getAsJsonArray();
+            assertEquals(1, users.size());
+            assertEquals(externalUserId, users.get(0).getAsJsonObject().get("id").getAsString());
         }
 
         process.kill();
