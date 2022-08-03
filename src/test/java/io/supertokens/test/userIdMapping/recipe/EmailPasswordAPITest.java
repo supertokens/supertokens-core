@@ -34,6 +34,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import java.util.HashMap;
+
 import static org.junit.Assert.*;
 
 public class EmailPasswordAPITest {
@@ -141,6 +143,94 @@ public class EmailPasswordAPITest {
 
         // sign in with the new password and check that it works
         UserInfo userInfo1 = EmailPassword.signIn(process.main, email, newPassword);
+        assertNotNull(userInfo1);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRetrievingUser() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a User
+        String email = "test@example.com";
+        String password = "testPass123";
+        UserInfo userInfo = EmailPassword.signUp(process.main, email, password);
+        String superTokensUserId = userInfo.id;
+        String externalUserId = "externalId";
+
+        // create the mapping
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+
+        // retrieving UserInfo with userId
+        {
+            HashMap<String, String> queryParam = new HashMap<>();
+            queryParam.put("userId", externalUserId);
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", queryParam, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(externalUserId, response.get("user").getAsJsonObject().get("id").getAsString());
+        }
+
+        // retrieving UserInfo with email
+        {
+            HashMap<String, String> queryParam = new HashMap<>();
+            queryParam.put("email", email);
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", queryParam, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(externalUserId, response.get("user").getAsJsonObject().get("id").getAsString());
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUpdatingUsersEmail() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a User
+        String email = "test@example.com";
+        String password = "testPass123";
+        UserInfo userInfo = EmailPassword.signUp(process.main, email, password);
+        String superTokensUserId = userInfo.id;
+        String externalUserId = "externalId";
+
+        // create the mapping
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+
+        // update the users email
+        String newEmail = "testnew123@example.com";
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", newEmail);
+            requestBody.addProperty("userId", externalUserId);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+            assertEquals("OK", response.get("status").getAsString());
+        }
+
+        // check that you can now sign in with the new email
+        UserInfo userInfo1 = EmailPassword.signIn(process.main, newEmail, password);
         assertNotNull(userInfo1);
 
         process.kill();
