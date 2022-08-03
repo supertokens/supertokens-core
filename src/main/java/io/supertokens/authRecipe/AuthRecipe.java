@@ -28,6 +28,8 @@ import javax.annotation.Nullable;
 
 public class AuthRecipe {
 
+    public static final int USER_PAGINATION_LIMIT = 500;
+
     public static long getUsersCount(Main main, RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
         return StorageLayer.getAuthRecipeStorage(main).getUsersCount(includeRecipeIds);
     }

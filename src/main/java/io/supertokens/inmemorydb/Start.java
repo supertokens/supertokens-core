@@ -1528,7 +1528,7 @@ public class Start
     }
 
     @Override
-    public HashMap<String, String> getUserIdMappingForSuperTokenIds(ArrayList<String> userIds)
+    public HashMap<String, String> getUserIdMappingForSuperTokensIds(ArrayList<String> userIds)
             throws StorageQueryException {
         try {
             return UserIdMappingQueries.getUserIdMappingWithUserIds(this, userIds);

@@ -111,7 +111,7 @@ public class UserIdMapping {
 
     public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(Main main, ArrayList<String> userIds)
             throws StorageQueryException {
-        return StorageLayer.getUserIdMappingStorage(main).getUserIdMappingForSuperTokenIds(userIds);
+        return StorageLayer.getUserIdMappingStorage(main).getUserIdMappingForSuperTokensIds(userIds);
     }
 
 }

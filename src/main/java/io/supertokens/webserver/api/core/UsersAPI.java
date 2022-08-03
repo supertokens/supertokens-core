@@ -99,8 +99,9 @@ public class UsersAPI extends WebserverAPI {
         }
 
         if (limit != null) {
-            if (limit > 500) {
-                throw new ServletException(new BadRequestException("max limit allowed is 500"));
+            if (limit > AuthRecipe.USER_PAGINATION_LIMIT) {
+                throw new ServletException(
+                        new BadRequestException("max limit allowed is " + AuthRecipe.USER_PAGINATION_LIMIT));
             } else if (limit < 1) {
                 throw new ServletException(new BadRequestException("limit must a positive integer with min value 1"));
             }
