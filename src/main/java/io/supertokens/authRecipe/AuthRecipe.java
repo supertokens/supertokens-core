@@ -20,7 +20,9 @@ import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.UserIdType;
 
 import javax.annotation.Nullable;
 
@@ -67,12 +69,32 @@ public class AuthRecipe {
         // - session: the session will expire anyway
         // - email verification: email verification tokens can be created for any userId anyway
 
+        // If userId mapping exists then delete entries with superTokensUserId from auth related tables and
+        // externalUserid from non-auth tables
+        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, userId,
+                UserIdType.ANY);
+        if (userIdMapping != null) {
+            // delete user from non-auth tables with externalUserId
+            deleteNonAuthRecipeUser(main, userIdMapping.externalUserId);
+
+            // delete user from auth tables with superTokensUserId
+            deleteAuthRecipeUser(main, userIdMapping.superTokensUserId);
+        } else {
+            deleteNonAuthRecipeUser(main, userId);
+            deleteNonAuthRecipeUser(main, userId);
+        }
+
+    }
+
+    private static void deleteNonAuthRecipeUser(Main main, String userId) throws StorageQueryException {
         // non auth recipe deletion
         StorageLayer.getUserMetadataStorage(main).deleteUserMetadata(userId);
         StorageLayer.getSessionStorage(main).deleteSessionsOfUser(userId);
         StorageLayer.getEmailVerificationStorage(main).deleteEmailVerificationUserInfo(userId);
         StorageLayer.getUserRolesStorage(main).deleteAllRolesForUser(userId);
+    }
 
+    private static void deleteAuthRecipeUser(Main main, String userId) throws StorageQueryException {
         // auth recipe deletions here only
         StorageLayer.getEmailPasswordStorage(main).deleteEmailPasswordUser(userId);
         StorageLayer.getThirdPartyStorage(main).deleteThirdPartyUser(userId);
