@@ -91,4 +91,67 @@ public class GetUsersAPIWithUserIdMappingTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void createMultipleUsersAndMapTheirIdsRetrieveUsersUsingPaginationTokenAndCheckThatExternalIdIsReturned()
+            throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        ArrayList<String> externalUserIdList = new ArrayList<>();
+
+        for (int i = 1; i <= 20; i++) {
+            // create User
+            UserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
+            String superTokensUserId = userInfo.id;
+            String externalUserId = "externalId" + i;
+            externalUserIdList.add(externalUserId);
+
+            // create a userId mapping
+            storage.createUserIdMapping(superTokensUserId, externalUserId, null);
+        }
+
+        HashMap<String, String> queryParams = new HashMap<>();
+        queryParams.put("limit", "10");
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users", queryParams, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(), null);
+
+        assertEquals("OK", response.get("status").getAsString());
+        JsonArray users = response.getAsJsonArray("users");
+        assertEquals(10, users.size());
+
+        for (int i = 0; i < users.size(); i++) {
+            JsonObject user = users.get(i).getAsJsonObject().get("user").getAsJsonObject();
+            assertEquals(externalUserIdList.get(i), user.get("id").getAsString());
+        }
+
+        // use the pagination token to query the remaining users
+        String paginationToken = response.get("nextPaginationToken").getAsString();
+        HashMap<String, String> queryParams_2 = new HashMap<>();
+        queryParams_2.put("limit", "10");
+        queryParams_2.put("paginationToken", paginationToken);
+
+        JsonObject response_2 = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users", queryParams_2, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                null);
+
+        assertEquals("OK", response_2.get("status").getAsString());
+        JsonArray users_2 = response_2.getAsJsonArray("users");
+        assertEquals(10, users_2.size());
+
+        for (int i = 0; i < users_2.size(); i++) {
+            JsonObject user = users_2.get(i).getAsJsonObject().get("user").getAsJsonObject();
+            assertEquals(externalUserIdList.get(i + 10), user.get("id").getAsString());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
