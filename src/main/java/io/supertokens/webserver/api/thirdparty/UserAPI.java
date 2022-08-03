@@ -90,7 +90,7 @@ public class UserAPI extends WebserverAPI {
                     user.id = userIdMapping.externalUserId;
                 } else if (userId == null) {
                     // if userId was not passed check again if mapping exists
-                    userIdMapping = UserIdMapping.getUserIdMapping(super.main, user.id, UserIdType.SUPERTOKENS);
+                    userIdMapping = UserIdMapping.getUserIdMapping(super.main, user.id, UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
                     }

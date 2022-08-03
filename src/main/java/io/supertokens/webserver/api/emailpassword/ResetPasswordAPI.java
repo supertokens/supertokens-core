@@ -73,7 +73,7 @@ public class ResetPasswordAPI extends WebserverAPI {
 
             // if userIdMapping exists, pass the externalUserId to the response
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(main, userId, UserIdType.SUPERTOKENS);
+                    .getUserIdMapping(main, userId, UserIdType.ANY);
             if (userIdMapping != null) {
                 userId = userIdMapping.externalUserId;
             }

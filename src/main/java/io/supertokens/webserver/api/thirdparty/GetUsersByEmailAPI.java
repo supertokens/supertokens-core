@@ -57,7 +57,7 @@ public class GetUsersByEmailAPI extends WebserverAPI {
             // return the externalUserId if a mapping exists for a user
             for (int i = 0; i < users.length; i++) {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(super.main, users[i].id, UserIdType.SUPERTOKENS);
+                        .getUserIdMapping(super.main, users[i].id, UserIdType.ANY);
                 if (userIdMapping != null) {
                     users[i].id = userIdMapping.externalUserId;
                 }

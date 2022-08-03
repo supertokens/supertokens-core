@@ -54,8 +54,10 @@ public class DeleteUserAPI extends WebserverAPI {
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main,
                     userId, UserIdType.ANY);
             if (userIdMapping != null) {
+                // if a userId mapping exists we will need call the deleteUser function with both the superTokensUserId
+                // and the externalId. This will ensure that if the externalId is used in a non-auth recipe, then even
+                // that entry will be deleted.
                 AuthRecipe.deleteUser(main, userIdMapping.superTokensUserId);
-
                 AuthRecipe.deleteUser(main, userIdMapping.externalUserId);
             } else {
                 AuthRecipe.deleteUser(super.main, userId);

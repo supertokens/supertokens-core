@@ -67,7 +67,7 @@ public class SignInAPI extends WebserverAPI {
 
             // if a userIdMapping exists, pass the externalUserId to the response
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main,
-                    user.id, UserIdType.SUPERTOKENS);
+                    user.id, UserIdType.ANY);
             if (userIdMapping != null) {
                 user.id = userIdMapping.externalUserId;
             }

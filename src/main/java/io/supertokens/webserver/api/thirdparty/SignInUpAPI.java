@@ -103,7 +103,7 @@ public class SignInUpAPI extends WebserverAPI {
                 // when a user signs in set externalUserId in the response
                 if (!response.createdNewUser) {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                            .getUserIdMapping(main, response.user.id, UserIdType.SUPERTOKENS);
+                            .getUserIdMapping(main, response.user.id, UserIdType.ANY);
                     if (userIdMapping != null) {
                         response.user.id = userIdMapping.superTokensUserId;
                     }

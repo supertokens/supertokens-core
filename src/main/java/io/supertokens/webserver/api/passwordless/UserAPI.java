@@ -93,7 +93,7 @@ public class UserAPI extends WebserverAPI {
                     user.id = userIdMapping.externalUserId;
                 } else if (userId == null) {
                     userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, user.id,
-                            UserIdType.SUPERTOKENS);
+                            UserIdType.ANY);
                     user.id = userIdMapping.externalUserId;
                 }
                 JsonObject result = new JsonObject();
