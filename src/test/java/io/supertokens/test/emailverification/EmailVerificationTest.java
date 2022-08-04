@@ -24,6 +24,7 @@ import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -60,6 +61,30 @@ public class EmailVerificationTest {
     @Before
     public void beforeEach() {
         Utils.reset();
+    }
+
+    @Test
+    public void testGeneratingEmailVerificationTokenAndCallIsUserIdIsUserIdBeingUsedForEmailVerification()
+            throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String userId = "testUser";
+        EmailVerificationStorage storage = StorageLayer.getEmailVerificationStorage(process.main);
+        assertFalse(storage.isUserIdBeingUsedForEmailVerification(userId));
+
+        // call isUserIdBeingUsedForEmailVerification
+        EmailVerification.generateEmailVerificationToken(process.main, userId, "test@example.com");
+        assertTrue(storage.isUserIdBeingUsedForEmailVerification(userId));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     // Create an email verification token two times, and check that there are two entries in the db for that user with

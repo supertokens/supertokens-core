@@ -776,8 +776,6 @@ public class UserIdMappingTest {
 //        SessionStorage testingStorage = StorageLayer.getSessionStorage(process.main);
 //        Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
 //        classes.iterator().forEachRemaining(aClass -> {
-//            System.out.println(aClass.getName());
-//            System.out.println(aClass.);
 //        });
 //
 //        process.kill();
