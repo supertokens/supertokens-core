@@ -20,7 +20,8 @@ import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
+import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
@@ -34,6 +35,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+import org.reflections.Reflections;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.Set;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertFalse;
@@ -753,4 +759,28 @@ public class UserIdMappingTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+//    @Test
+//    public void checkThat() throws Exception {
+//        String[] args = { "../" };
+//        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+//
+//        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+//            return;
+//        }
+//
+//        NonAuthRecipeStorage storage = StorageLayer.getNonAuthRecipeStorage(process.main);
+//        String userId = "testUserId";
+//        Reflections reflections = new Reflections("io.supertokens.pluginInterface");
+//        SessionStorage testingStorage = StorageLayer.getSessionStorage(process.main);
+//        Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
+//        classes.iterator().forEachRemaining(aClass -> {
+//            System.out.println(aClass.getName());
+//            System.out.println(aClass.);
+//        });
+//
+//        process.kill();
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+//    }
 }

@@ -76,7 +76,6 @@ public class AuthRecipe {
         if (userIdMapping != null) {
             // delete user from non-auth tables with externalUserId
             deleteNonAuthRecipeUser(main, userIdMapping.externalUserId);
-
             // delete user from auth tables with superTokensUserId
             deleteAuthRecipeUser(main, userIdMapping.superTokensUserId);
         } else {

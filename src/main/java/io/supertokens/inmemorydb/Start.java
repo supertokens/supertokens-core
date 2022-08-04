@@ -20,6 +20,9 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailverification.EmailVerification;
+import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.inmemorydb.queries.*;
 import io.supertokens.pluginInterface.KeyValueInfo;
@@ -34,6 +37,7 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePassword
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
+import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
@@ -43,11 +47,13 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
+import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.exception.*;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.session.SessionInfo;
+import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
@@ -56,18 +62,27 @@ import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
+import io.supertokens.pluginInterface.usermetadata.UserMetadataStorage;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
+import io.supertokens.pluginInterface.userroles.UserRolesStorage;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
+import io.supertokens.session.Session;
+import io.supertokens.usermetadata.UserMetadata;
+import io.supertokens.userroles.UserRoles;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.security.NoSuchAlgorithmException;
+import java.security.spec.InvalidKeySpecException;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.SQLTransactionRollbackException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
@@ -766,6 +781,15 @@ public class Start
     public boolean isEmailVerified(String userId, String email) throws StorageQueryException {
         try {
             return EmailVerificationQueries.isEmailVerified(this, userId, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean isUserIdBeingUsedForEmailVerification(String userId) throws StorageQueryException {
+        try {
+            return EmailVerificationQueries.isUserIdBeingUsedForEmailVerification(this, userId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1534,6 +1558,94 @@ public class Start
             return UserIdMappingQueries.getUserIdMappingWithUserIds(this, userIds);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean isUserIdBeingUsedInNonAuthRecipe(NonAuthRecipeStorage storage, String userId)
+            throws StorageQueryException {
+
+        // check if userId is used in session table
+        if (storage instanceof SessionStorage) {
+            {
+                String[] sessionHandlesForUser = getAllNonExpiredSessionHandlesForUser(userId);
+                if (sessionHandlesForUser.length > 0) {
+                    return true;
+                }
+            }
+        }
+
+        // check if userId is used in roles table
+        if (storage instanceof UserRolesStorage) {
+            String[] roles = getRolesForUser(userId);
+            if (roles.length > 0) {
+                return true;
+            }
+        }
+
+        // check if userId is used in userMetadata table
+        if (storage instanceof UserMetadataStorage) {
+            JsonObject userMetadata = getUserMetadata(userId);
+            if (userMetadata.entrySet().size() > 0) {
+                return true;
+            }
+        }
+
+        // check if userId is used in emailVerification
+        if (storage instanceof EmailVerificationStorage) {
+            if (isUserIdBeingUsedForEmailVerification(userId)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    @TestOnly
+    @Override
+    public void addInfoToNonAuthRecipesBasedOnUserId(NonAuthRecipeStorage storage, String userId)
+            throws StorageQueryException {
+
+        // create test session data
+        if (storage instanceof SessionStorage) {
+            try {
+                Session.createNewSession(this.main, userId, new JsonObject(), new JsonObject());
+            } catch (Exception e) {
+                // ignore
+            }
+        }
+
+        // create user roles data
+        if (storage instanceof UserRolesStorage) {
+            try {
+                String role = "testRole";
+                UserRoles.createNewRoleOrModifyItsPermissions(this.main, role, null);
+                UserRoles.addRoleToUser(this.main, userId, role);
+            } catch (StorageTransactionLogicException e) {
+                throw new StorageQueryException(e.actualException);
+            } catch (UnknownRoleException e) {
+                throw new StorageQueryException(e);
+            }
+        }
+
+        // create emailVerification data
+        if (storage instanceof EmailVerificationStorage) {
+            try {
+                EmailVerification.generateEmailVerificationToken(this.main, userId, "test123@example.com");
+            } catch (InvalidKeySpecException | NoSuchAlgorithmException | EmailAlreadyVerifiedException e) {
+                throw new StorageQueryException(e);
+            }
+        }
+
+        // create userMetadata
+        if (storage instanceof UserMetadataStorage) {
+            JsonObject data = new JsonObject();
+            data.addProperty("test", "testData");
+            try {
+                UserMetadata.updateUserMetadata(this.main, userId, data);
+            } catch (StorageTransactionLogicException e) {
+                throw new StorageQueryException(e);
+            }
         }
     }
 }
