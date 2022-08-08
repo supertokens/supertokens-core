@@ -74,8 +74,13 @@ public class RemoveUserIdMappingAPI extends WebserverAPI {
             }
         }
 
+        Boolean force = InputParser.parseBooleanOrThrowError(input, "force", true);
+        if (force == null) {
+            force = false;
+        }
+
         try {
-            boolean didMappingExist = UserIdMapping.deleteUserIdMapping(main, userId, userIdType);
+            boolean didMappingExist = UserIdMapping.deleteUserIdMapping(main, userId, userIdType, force);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("didMappingExist", didMappingExist);

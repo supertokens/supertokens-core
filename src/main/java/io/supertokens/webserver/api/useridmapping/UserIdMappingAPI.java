@@ -83,9 +83,14 @@ public class UserIdMappingAPI extends WebserverAPI {
             }
         }
 
+        Boolean force = InputParser.parseBooleanOrThrowError(input, "force", true);
+        if (force == null) {
+            force = false;
+        }
+
         try {
 
-            UserIdMapping.createUserIdMapping(main, superTokensUserId, externalUserId, externalUserIdInfo);
+            UserIdMapping.createUserIdMapping(main, superTokensUserId, externalUserId, externalUserIdInfo, force);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

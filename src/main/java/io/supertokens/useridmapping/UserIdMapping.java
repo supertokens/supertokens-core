@@ -37,31 +37,41 @@ public class UserIdMapping {
     public static void createUserIdMapping(Main main, String superTokensUserId, String externalUserId,
             String externalUserIdInfo)
             throws UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException, StorageQueryException {
-        // check that none of the non-auth recipes are using the superTokensUserId
-        {
-            SessionStorage storage = StorageLayer.getSessionStorage(main);
-            if (storage.isUserIdBeingUsedInNonAuthRecipe(storage, superTokensUserId)) {
-                throw new IllegalStateException("SuperTokens Id is already in use in Session recipe");
-            }
-        }
+        createUserIdMapping(main, superTokensUserId, externalUserId, externalUserIdInfo, false);
+    }
 
-        {
-            UserMetadataStorage storage = StorageLayer.getUserMetadataStorage(main);
-            if (storage.isUserIdBeingUsedInNonAuthRecipe(storage, superTokensUserId)) {
-                throw new IllegalStateException("SuperTokens Id is already in use in UserMetadata recipe");
+    public static void createUserIdMapping(Main main, String superTokensUserId, String externalUserId,
+            String externalUserIdInfo, boolean force)
+            throws UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException, StorageQueryException {
+        // if a userIdMapping is created with force, then we skip the checks to see if the superTokensUserId is being
+        // used in non auth recipes.
+        if (!force) {
+            // check that none of the non-auth recipes are using the superTokensUserId
+            {
+                SessionStorage storage = StorageLayer.getSessionStorage(main);
+                if (storage.isUserIdBeingUsedInNonAuthRecipe(storage, superTokensUserId)) {
+                    throw new IllegalStateException("SuperTokens Id is already in use in Session recipe");
+                }
             }
-        }
 
-        {
-            UserRolesStorage storage = StorageLayer.getUserRolesStorage(main);
-            if (storage.isUserIdBeingUsedInNonAuthRecipe(storage, superTokensUserId)) {
-                throw new IllegalStateException("SuperTokens Id is already in use in UserRoles recipe");
+            {
+                UserMetadataStorage storage = StorageLayer.getUserMetadataStorage(main);
+                if (storage.isUserIdBeingUsedInNonAuthRecipe(storage, superTokensUserId)) {
+                    throw new IllegalStateException("SuperTokens Id is already in use in UserMetadata recipe");
+                }
             }
-        }
-        {
-            EmailVerificationStorage storage = StorageLayer.getEmailVerificationStorage(main);
-            if (storage.isUserIdBeingUsedInNonAuthRecipe(storage, superTokensUserId)) {
-                throw new IllegalStateException("SuperTokens Id is already in use in EmailVerification recipe");
+
+            {
+                UserRolesStorage storage = StorageLayer.getUserRolesStorage(main);
+                if (storage.isUserIdBeingUsedInNonAuthRecipe(storage, superTokensUserId)) {
+                    throw new IllegalStateException("SuperTokens Id is already in use in UserRoles recipe");
+                }
+            }
+            {
+                EmailVerificationStorage storage = StorageLayer.getEmailVerificationStorage(main);
+                if (storage.isUserIdBeingUsedInNonAuthRecipe(storage, superTokensUserId)) {
+                    throw new IllegalStateException("SuperTokens Id is already in use in EmailVerification recipe");
+                }
             }
         }
 
@@ -103,8 +113,14 @@ public class UserIdMapping {
 
     public static boolean deleteUserIdMapping(Main main, String userId, UserIdType userIdType)
             throws StorageQueryException {
+        return deleteUserIdMapping(main, userId, userIdType, false);
+    }
 
-        {
+    public static boolean deleteUserIdMapping(Main main, String userId, UserIdType userIdType, boolean force)
+            throws StorageQueryException {
+        // if a userIdMapping is deleted with force, then we skip the checks to see if the externalUserId is being
+        // used in non auth recipes.
+        if (!force) {
             String externalId;
             if (userIdType == UserIdType.EXTERNAL) {
                 externalId = userId;
