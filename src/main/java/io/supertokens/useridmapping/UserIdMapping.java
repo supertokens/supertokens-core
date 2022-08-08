@@ -75,6 +75,28 @@ public class UserIdMapping {
                     throw new IllegalStateException("SuperTokens Id is already in use in EmailVerification recipe");
                 }
             }
+
+            // UserId Mapping cases we do not allow,
+            {
+                // Case 1:
+                // User_1: superTokensUserId_1 <-> externalUserId
+                // User_2: superTokensUserId_2 <-> superTokensUserId_1
+
+                // Case 2:
+                // User_1: superTokensUserId_1 <-> superTokensUserId_2
+                // User_2: superTokensUserId_2 <-> superTokensUserId_1
+
+                // check if a mapping exists with superTokensUserId
+                {
+                    // check if the externalId is the superTokensUserId for another user who already has a mapping
+                    io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                            .getUserIdMapping(main, externalUserId, UserIdType.SUPERTOKENS);
+
+                    if (response != null && response.externalUserId.equals(superTokensUserId)) {
+                        throw new IllegalStateException("Invalid Mapping State");
+                    }
+                }
+            }
         }
 
         StorageLayer.getUserIdMappingStorage(main).createUserIdMapping(superTokensUserId, externalUserId,
