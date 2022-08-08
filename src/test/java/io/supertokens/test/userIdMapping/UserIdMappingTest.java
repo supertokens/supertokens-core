@@ -772,8 +772,6 @@ public class UserIdMappingTest {
             return;
         }
 
-        NonAuthRecipeStorage nonAuthRecipeStorage = StorageLayer.getNonAuthRecipeStorage(process.main);
-
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
         Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
         List<String> names = classes.stream().map(Class::getCanonicalName).collect(Collectors.toList());
@@ -788,7 +786,7 @@ public class UserIdMappingTest {
         String userId = "testUserId";
         for (String className : classNames) {
             // create entry in nonAuth table
-            nonAuthRecipeStorage.addInfoToNonAuthRecipesBasedOnUserId(className, userId);
+            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(className, userId);
 
             // try to create the mapping with superTokensId
             Exception error = null;
@@ -819,8 +817,6 @@ public class UserIdMappingTest {
             return;
         }
 
-        NonAuthRecipeStorage nonAuthRecipeStorage = StorageLayer.getNonAuthRecipeStorage(process.main);
-
         Reflections reflections = new Reflections("io.supertokens.pluginInterface");
         Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
         List<String> names = classes.stream().map(Class::getCanonicalName).collect(Collectors.toList());
@@ -840,7 +836,7 @@ public class UserIdMappingTest {
             UserIdMapping.createUserIdMapping(process.main, user.id, externalId, null);
 
             // create entry in nonAuth table with externalId
-            nonAuthRecipeStorage.addInfoToNonAuthRecipesBasedOnUserId(className, externalId);
+            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(className, externalId);
 
             // try to delete UserIdMapping
             Exception error = null;

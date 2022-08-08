@@ -49,29 +49,29 @@ public class UserIdMapping {
         if (!force) {
             // check that none of the non-auth recipes are using the superTokensUserId
             {
-                SessionStorage storage = StorageLayer.getSessionStorage(main);
-                if (storage.isUserIdBeingUsedInNonAuthRecipe(SessionStorage.class.getName(), superTokensUserId)) {
+
+                if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(SessionStorage.class.getName(),
+                        superTokensUserId)) {
                     throw new IllegalStateException("SuperTokens Id is already in use in Session recipe");
                 }
             }
 
             {
-                UserMetadataStorage storage = StorageLayer.getUserMetadataStorage(main);
-                if (storage.isUserIdBeingUsedInNonAuthRecipe(UserMetadataStorage.class.getName(), superTokensUserId)) {
+                if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(UserMetadataStorage.class.getName(),
+                        superTokensUserId)) {
                     throw new IllegalStateException("SuperTokens Id is already in use in UserMetadata recipe");
                 }
             }
 
             {
-                UserRolesStorage storage = StorageLayer.getUserRolesStorage(main);
-                if (storage.isUserIdBeingUsedInNonAuthRecipe(UserRolesStorage.class.getName(), superTokensUserId)) {
+                if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(UserRolesStorage.class.getName(),
+                        superTokensUserId)) {
                     throw new IllegalStateException("SuperTokens Id is already in use in UserRoles recipe");
                 }
             }
             {
-                EmailVerificationStorage storage = StorageLayer.getEmailVerificationStorage(main);
-                if (storage.isUserIdBeingUsedInNonAuthRecipe(EmailVerificationStorage.class.getName(),
-                        superTokensUserId)) {
+                if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(
+                        EmailVerificationStorage.class.getName(), superTokensUserId)) {
                     throw new IllegalStateException("SuperTokens Id is already in use in EmailVerification recipe");
                 }
             }
@@ -159,28 +159,28 @@ public class UserIdMapping {
             }
             // check if externalId is used in any non-auth recipes
             {
-                SessionStorage storage = StorageLayer.getSessionStorage(main);
-                if (storage.isUserIdBeingUsedInNonAuthRecipe(SessionStorage.class.getName(), externalId)) {
+                if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(SessionStorage.class.getName(),
+                        externalId)) {
                     throw new IllegalStateException("External Id is already in use in Session recipe");
                 }
             }
 
             {
-                UserMetadataStorage storage = StorageLayer.getUserMetadataStorage(main);
-                if (storage.isUserIdBeingUsedInNonAuthRecipe(UserMetadataStorage.class.getName(), externalId)) {
+                if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(UserMetadataStorage.class.getName(),
+                        externalId)) {
                     throw new IllegalStateException("External Id is already in use in UserMetadata recipe");
                 }
             }
 
             {
-                UserRolesStorage storage = StorageLayer.getUserRolesStorage(main);
-                if (storage.isUserIdBeingUsedInNonAuthRecipe(UserRolesStorage.class.getName(), externalId)) {
+                if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(UserRolesStorage.class.getName(),
+                        externalId)) {
                     throw new IllegalStateException("External Id is already in use in UserRoles recipe");
                 }
             }
             {
-                EmailVerificationStorage storage = StorageLayer.getEmailVerificationStorage(main);
-                if (storage.isUserIdBeingUsedInNonAuthRecipe(EmailVerificationStorage.class.getName(), externalId)) {
+                if (StorageLayer.getStorage(main)
+                        .isUserIdBeingUsedInNonAuthRecipe(EmailVerificationStorage.class.getName(), externalId)) {
                     throw new IllegalStateException("External Id is already in use in EmailVerification recipe");
                 }
             }

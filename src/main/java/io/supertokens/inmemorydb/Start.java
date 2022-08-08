@@ -786,7 +786,6 @@ public class Start
         }
     }
 
-    @Override
     public boolean isUserIdBeingUsedForEmailVerification(String userId) throws StorageQueryException {
         try {
             return EmailVerificationQueries.isUserIdBeingUsedForEmailVerification(this, userId);
