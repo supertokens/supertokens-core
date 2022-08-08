@@ -137,4 +137,87 @@ public class ThirdPartyAPITest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testGetUserById() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a User
+        String thirdPartyId = "google";
+        String thirdPartyUserId = "test-google";
+        String email = "test@example.com";
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, thirdPartyId, thirdPartyUserId,
+                email);
+        String superTokensUserId = signInUpResponse.user.id;
+        String externalUserId = "externalId";
+
+        // create the mapping
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+
+        // get User with Id
+        {
+            HashMap<String, String> query = new HashMap<>();
+            query.put("userId", superTokensUserId);
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", query, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                    "thirdparty");
+
+            assertEquals("OK", response.get("status").getAsString());
+            String responseId = response.get("user").getAsJsonObject().get("id").getAsString();
+            assertEquals(externalUserId, responseId);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testGetUserByThirdPartyId() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a User
+        String thirdPartyId = "google";
+        String thirdPartyUserId = "test-google";
+        String email = "test@example.com";
+        ThirdParty.SignInUpResponse signInUpResponse = ThirdParty.signInUp(process.main, thirdPartyId, thirdPartyUserId,
+                email);
+        String superTokensUserId = signInUpResponse.user.id;
+        String externalUserId = "externalId";
+
+        // create the mapping
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+
+        // get User with Id
+        {
+            HashMap<String, String> query = new HashMap<>();
+            query.put("thirdPartyId", thirdPartyId);
+            query.put("thirdPartyUserId", thirdPartyUserId);
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", query, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                    "thirdparty");
+
+            assertEquals("OK", response.get("status").getAsString());
+            String responseId = response.get("user").getAsJsonObject().get("id").getAsString();
+            assertEquals(externalUserId, responseId);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
