@@ -203,6 +203,15 @@ public class EmailPasswordQueries {
                 }
 
                 {
+                    String QUERY = "DELETE FROM " + getConfig(start).getUserIdMappingTable()
+                            + " WHERE supertokens_user_id = ?";
+
+                    update(sqlCon, QUERY, pst -> {
+                        pst.setString(1, userId);
+                    });
+                }
+
+                {
                     String QUERY = "DELETE FROM " + getConfig(start).getEmailPasswordUsersTable()
                             + " WHERE user_id = ?";
 

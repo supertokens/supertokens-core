@@ -21,7 +21,6 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
@@ -39,9 +38,10 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.reflections.Reflections;
 
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 import static org.junit.Assert.assertFalse;
@@ -762,34 +762,101 @@ public class UserIdMappingTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-//    @Test
-//    public void checkThatCreateUserIdMappingHasAllNonAuthRecipeChecks() throws Exception {
-//        String[] args = { "../" };
-//        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-//
-//        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-//            return;
-//        }
-//
-//        NonAuthRecipeStorage nonAuthRecipeStorage = StorageLayer.getNonAuthRecipeStorage(process.main);
-//        String userId = "testUserId";
-//        Reflections reflections = new Reflections("io.supertokens.pluginInterface");
-//        Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
-//        classes.iterator().forEachRemaining(aClass -> {
-//            // add table data for class
-//            try {
-//                nonAuthRecipeStorage.addInfoToNonAuthRecipesBasedOnUserId((NonAuthRecipeStorage) aClass, userId);
-//
-//                UserIdMapping.createUserIdMapping(process.main, userId, "testExternalId", null);
-//                // delete all userData
-//                AuthRecipe.deleteUser(process.main, userId);
-//            } catch (StorageQueryException | UnknownSuperTokensUserIdException | UserIdMappingAlreadyExistsException e) {
-//                // ignore, should not come here
-//            }
-//        });
-//
-//        process.kill();
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-//    }
+    @Test
+    public void checkThatCreateUserIdMappingHasAllNonAuthRecipeChecks() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        NonAuthRecipeStorage nonAuthRecipeStorage = StorageLayer.getNonAuthRecipeStorage(process.main);
+
+        Reflections reflections = new Reflections("io.supertokens.pluginInterface");
+        Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
+        List<String> names = classes.stream().map(Class::getCanonicalName).collect(Collectors.toList());
+        List<String> classNames = new ArrayList<>();
+        for (String name : names) {
+            if (!name.contains("SQLStorage")) {
+                classNames.add(name);
+            }
+        }
+        assertEquals(4, classNames.size());
+
+        String userId = "testUserId";
+        for (String className : classNames) {
+            // create entry in nonAuth table
+            nonAuthRecipeStorage.addInfoToNonAuthRecipesBasedOnUserId(className, userId);
+
+            // try to create the mapping with superTokensId
+            Exception error = null;
+            try {
+                UserIdMapping.createUserIdMapping(process.main, userId, "externalId", null);
+            } catch (IllegalStateException e) {
+                error = e;
+            }
+
+            assertNotNull(error);
+            assertTrue(error.getMessage().startsWith("SuperTokens Id is already in use"));
+
+            // delete user data
+            AuthRecipe.deleteUser(process.main, userId);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void checkThatDeleteUserIdMappingHasAllNonAuthRecipeChecks() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        NonAuthRecipeStorage nonAuthRecipeStorage = StorageLayer.getNonAuthRecipeStorage(process.main);
+
+        Reflections reflections = new Reflections("io.supertokens.pluginInterface");
+        Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
+        List<String> names = classes.stream().map(Class::getCanonicalName).collect(Collectors.toList());
+        List<String> classNames = new ArrayList<>();
+        for (String name : names) {
+            if (!name.contains("SQLStorage")) {
+                classNames.add(name);
+            }
+        }
+        assertEquals(4, classNames.size());
+        String externalId = "externalId";
+        for (String className : classNames) {
+            // Create a User
+            UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+
+            // create a mapping with the user
+            UserIdMapping.createUserIdMapping(process.main, user.id, externalId, null);
+
+            // create entry in nonAuth table with externalId
+            nonAuthRecipeStorage.addInfoToNonAuthRecipesBasedOnUserId(className, externalId);
+
+            // try to delete UserIdMapping
+            Exception error = null;
+            try {
+                UserIdMapping.deleteUserIdMapping(process.main, user.id, UserIdType.SUPERTOKENS);
+            } catch (IllegalStateException e) {
+                error = e;
+            }
+            assertNotNull(error);
+            assertTrue(error.getMessage().startsWith("External Id is already in use"));
+
+            // delete user data
+            AuthRecipe.deleteUser(process.main, user.id);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

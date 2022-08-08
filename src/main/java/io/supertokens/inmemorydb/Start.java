@@ -1562,11 +1562,9 @@ public class Start
     }
 
     @Override
-    public boolean isUserIdBeingUsedInNonAuthRecipe(NonAuthRecipeStorage storage, String userId)
-            throws StorageQueryException {
-
+    public boolean isUserIdBeingUsedInNonAuthRecipe(String className, String userId) throws StorageQueryException {
         // check if userId is used in session table
-        if (storage instanceof SessionStorage) {
+        if (className.equals(SessionStorage.class.getName())) {
             {
                 String[] sessionHandlesForUser = getAllNonExpiredSessionHandlesForUser(userId);
                 if (sessionHandlesForUser.length > 0) {
@@ -1576,7 +1574,7 @@ public class Start
         }
 
         // check if userId is used in roles table
-        if (storage instanceof UserRolesStorage) {
+        if (className.equals(UserRolesStorage.class.getName())) {
             String[] roles = getRolesForUser(userId);
             if (roles.length > 0) {
                 return true;
@@ -1584,7 +1582,7 @@ public class Start
         }
 
         // check if userId is used in userMetadata table
-        if (storage instanceof UserMetadataStorage) {
+        if (className.equals(UserMetadataStorage.class.getName())) {
             JsonObject userMetadata = getUserMetadata(userId);
             if (userMetadata != null && userMetadata.entrySet().size() > 0) {
                 return true;
@@ -1592,7 +1590,7 @@ public class Start
         }
 
         // check if userId is used in emailVerification
-        if (storage instanceof EmailVerificationStorage) {
+        if (className.equals(EmailVerificationStorage.class.getName())) {
             if (isUserIdBeingUsedForEmailVerification(userId)) {
                 return true;
             }
@@ -1603,11 +1601,10 @@ public class Start
 
     @TestOnly
     @Override
-    public void addInfoToNonAuthRecipesBasedOnUserId(NonAuthRecipeStorage storage, String userId)
-            throws StorageQueryException {
+    public void addInfoToNonAuthRecipesBasedOnUserId(String className, String userId) throws StorageQueryException {
 
         // create test session data
-        if (storage instanceof SessionStorage) {
+        if (className.equals(SessionStorage.class.getName())) {
             try {
                 Session.createNewSession(this.main, userId, new JsonObject(), new JsonObject());
             } catch (Exception e) {
@@ -1616,7 +1613,7 @@ public class Start
         }
 
         // create user roles data
-        if (storage instanceof UserRolesStorage) {
+        if (className.equals(UserRolesStorage.class.getName())) {
             try {
                 String role = "testRole";
                 UserRoles.createNewRoleOrModifyItsPermissions(this.main, role, null);
@@ -1629,7 +1626,7 @@ public class Start
         }
 
         // create emailVerification data
-        if (storage instanceof EmailVerificationStorage) {
+        if (className.equals(EmailVerificationStorage.class.getName())) {
             try {
                 EmailVerification.generateEmailVerificationToken(this.main, userId, "test123@example.com");
             } catch (InvalidKeySpecException | NoSuchAlgorithmException | EmailAlreadyVerifiedException e) {
@@ -1638,7 +1635,7 @@ public class Start
         }
 
         // create userMetadata
-        if (storage instanceof UserMetadataStorage) {
+        if (className.equals(UserMetadataStorage.class.getName())) {
             JsonObject data = new JsonObject();
             data.addProperty("test", "testData");
             try {

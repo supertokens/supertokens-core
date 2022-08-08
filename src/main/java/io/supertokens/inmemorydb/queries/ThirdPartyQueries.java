@@ -98,6 +98,14 @@ public class ThirdPartyQueries {
                         pst.setString(2, THIRD_PARTY.toString());
                     });
                 }
+                {
+                    String QUERY = "DELETE FROM " + getConfig(start).getUserIdMappingTable()
+                            + " WHERE supertokens_user_id = ?";
+
+                    update(sqlCon, QUERY, pst -> {
+                        pst.setString(1, userId);
+                    });
+                }
 
                 {
                     String QUERY = "DELETE FROM " + getConfig(start).getThirdPartyUsersTable() + " WHERE user_id = ? ";
