@@ -17,9 +17,11 @@
 package io.supertokens.test.userIdMapping;
 
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
@@ -761,7 +763,7 @@ public class UserIdMappingTest {
     }
 
 //    @Test
-//    public void checkThat() throws Exception {
+//    public void checkThatCreateUserIdMappingHasAllNonAuthRecipeChecks() throws Exception {
 //        String[] args = { "../" };
 //        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
 //        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -770,12 +772,21 @@ public class UserIdMappingTest {
 //            return;
 //        }
 //
-//        NonAuthRecipeStorage storage = StorageLayer.getNonAuthRecipeStorage(process.main);
+//        NonAuthRecipeStorage nonAuthRecipeStorage = StorageLayer.getNonAuthRecipeStorage(process.main);
 //        String userId = "testUserId";
 //        Reflections reflections = new Reflections("io.supertokens.pluginInterface");
-//        SessionStorage testingStorage = StorageLayer.getSessionStorage(process.main);
 //        Set<Class<? extends NonAuthRecipeStorage>> classes = reflections.getSubTypesOf(NonAuthRecipeStorage.class);
 //        classes.iterator().forEachRemaining(aClass -> {
+//            // add table data for class
+//            try {
+//                nonAuthRecipeStorage.addInfoToNonAuthRecipesBasedOnUserId((NonAuthRecipeStorage) aClass, userId);
+//
+//                UserIdMapping.createUserIdMapping(process.main, userId, "testExternalId", null);
+//                // delete all userData
+//                AuthRecipe.deleteUser(process.main, userId);
+//            } catch (StorageQueryException | UnknownSuperTokensUserIdException | UserIdMappingAlreadyExistsException e) {
+//                // ignore, should not come here
+//            }
 //        });
 //
 //        process.kill();

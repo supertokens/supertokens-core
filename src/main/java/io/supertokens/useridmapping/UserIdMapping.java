@@ -104,6 +104,49 @@ public class UserIdMapping {
     public static boolean deleteUserIdMapping(Main main, String userId, UserIdType userIdType)
             throws StorageQueryException {
 
+        {
+            String externalId;
+            if (userIdType == UserIdType.EXTERNAL) {
+                externalId = userId;
+            } else {
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = getUserIdMapping(main,
+                        userId, UserIdType.ANY);
+                if (userIdMapping != null) {
+                    externalId = userIdMapping.externalUserId;
+                } else {
+                    return false;
+                }
+            }
+
+            // check if externalId is used in any non-auth recipes
+            {
+                SessionStorage storage = StorageLayer.getSessionStorage(main);
+                if (storage.isUserIdBeingUsedInNonAuthRecipe(storage, externalId)) {
+                    throw new IllegalStateException("External Id is already in use in Session recipe");
+                }
+            }
+
+            {
+                UserMetadataStorage storage = StorageLayer.getUserMetadataStorage(main);
+                if (storage.isUserIdBeingUsedInNonAuthRecipe(storage, externalId)) {
+                    throw new IllegalStateException("External Id is already in use in UserMetadata recipe");
+                }
+            }
+
+            {
+                UserRolesStorage storage = StorageLayer.getUserRolesStorage(main);
+                if (storage.isUserIdBeingUsedInNonAuthRecipe(storage, externalId)) {
+                    throw new IllegalStateException("External Id is already in use in UserRoles recipe");
+                }
+            }
+            {
+                EmailVerificationStorage storage = StorageLayer.getEmailVerificationStorage(main);
+                if (storage.isUserIdBeingUsedInNonAuthRecipe(storage, externalId)) {
+                    throw new IllegalStateException("External Id is already in use in EmailVerification recipe");
+                }
+            }
+        }
+
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
 
         if (userIdType == UserIdType.SUPERTOKENS) {

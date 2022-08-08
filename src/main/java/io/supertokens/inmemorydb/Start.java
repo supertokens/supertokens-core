@@ -1586,7 +1586,7 @@ public class Start
         // check if userId is used in userMetadata table
         if (storage instanceof UserMetadataStorage) {
             JsonObject userMetadata = getUserMetadata(userId);
-            if (userMetadata.entrySet().size() > 0) {
+            if (userMetadata != null && userMetadata.entrySet().size() > 0) {
                 return true;
             }
         }
