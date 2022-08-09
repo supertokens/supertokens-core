@@ -43,7 +43,7 @@ public class UserIdMapping {
         // if a userIdMapping is created with force, then we skip the following checks
         if (!force) {
             // check that none of the non-auth recipes are using the superTokensUserId
-            isUserIdBeingUsedInNonAuthRecipes(main, superTokensUserId);
+            assertThatUserIdIsNotBeingUsedInNonAuthRecipes(main, superTokensUserId);
 
             // We do not allow for a UserIdMapping to be created when the externalUserId is a SuperTokens userId.
             // There could be a case where User_1 has a userId mapping and a new SuperTokens User, User_2 is created
@@ -99,23 +99,6 @@ public class UserIdMapping {
             throws StorageQueryException, ServletException {
 
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
-        // if a userIdMapping is deleted with force, then we skip the following checks
-        if (!force) {
-            String externalId;
-            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping;
-            if (userIdType == UserIdType.EXTERNAL) {
-                userIdMapping = getUserIdMapping(main, userId, UserIdType.EXTERNAL);
-            } else {
-                userIdMapping = getUserIdMapping(main, userId, UserIdType.ANY);
-            }
-            if (userIdMapping == null) {
-                return false;
-            }
-            externalId = userIdMapping.externalUserId;
-
-            // check if externalId is used in any non-auth recipes
-            isUserIdBeingUsedInNonAuthRecipes(main, externalId);
-        }
 
         // referring to
         // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
@@ -129,6 +112,14 @@ public class UserIdMapping {
             }
         } else {
             return false;
+        }
+
+        // if a userIdMapping is deleted with force, then we skip the following checks
+        if (!force) {
+            String externalId = mapping.externalUserId;
+
+            // check if externalId is used in any non-auth recipes
+            assertThatUserIdIsNotBeingUsedInNonAuthRecipes(main, externalId);
         }
 
         // db is in state A3
@@ -171,7 +162,7 @@ public class UserIdMapping {
         return StorageLayer.getUserIdMappingStorage(main).getUserIdMappingForSuperTokensIds(userIds);
     }
 
-    private static void isUserIdBeingUsedInNonAuthRecipes(Main main, String userId)
+    private static void assertThatUserIdIsNotBeingUsedInNonAuthRecipes(Main main, String userId)
             throws StorageQueryException, ServletException {
         {
             if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(SessionStorage.class.getName(),
@@ -204,8 +195,7 @@ public class UserIdMapping {
         {
             if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(JWTRecipeStorage.class.getName(),
                     userId)) {
-                throw new ServletException(
-                        new WebserverAPI.BadRequestException("UserId is already in use in JWT recipe"));
+                throw new ServletException(new WebserverAPI.BadRequestException("Should never come here"));
             }
         }
     }
