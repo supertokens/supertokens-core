@@ -74,7 +74,6 @@ public class AuthRecipe {
         UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, userId,
                 UserIdType.ANY);
         if (userIdMapping != null) {
-
             // We check if the mapped externalId is another SuperTokens UserId, this could come up when migrating
             // recipes.
             if (StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(userIdMapping.externalUserId)) {
@@ -83,10 +82,9 @@ public class AuthRecipe {
             } else {
                 // delete user from non-auth tables with externalUserId
                 deleteNonAuthRecipeUser(main, userIdMapping.externalUserId);
-                // delete user from auth and non-auth tables with superTokensUserId
+                // delete user from auth tables with superTokensUserId
                 deleteAuthRecipeUser(main, userIdMapping.superTokensUserId);
             }
-
         } else {
             deleteNonAuthRecipeUser(main, userId);
             deleteNonAuthRecipeUser(main, userId);

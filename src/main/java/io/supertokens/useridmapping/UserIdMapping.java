@@ -132,8 +132,7 @@ public class UserIdMapping {
 
     public static boolean deleteUserIdMapping(Main main, String userId, UserIdType userIdType, boolean force)
             throws StorageQueryException {
-        // if a userIdMapping is deleted with force, then we skip the checks to see if the externalUserId is being
-        // used in non auth recipes.
+        // if a userIdMapping is deleted with force, then we skip the following checks
         if (!force) {
             String externalId;
             if (userIdType == UserIdType.EXTERNAL) {
