@@ -17,7 +17,6 @@
 package io.supertokens.useridmapping;
 
 import io.supertokens.Main;
-import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -29,7 +28,6 @@ import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlrea
 import io.supertokens.pluginInterface.usermetadata.UserMetadataStorage;
 import io.supertokens.pluginInterface.userroles.UserRolesStorage;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.userroles.UserRoles;
 import io.supertokens.webserver.WebserverAPI;
 
 import javax.annotation.Nullable;
@@ -45,7 +43,7 @@ public class UserIdMapping {
         // if a userIdMapping is created with force, then we skip the following checks
         if (!force) {
             // check that none of the non-auth recipes are using the superTokensUserId
-            isUserIdBeingUserIdAuthRecipes(main, superTokensUserId);
+            isUserIdBeingUsedInNonAuthRecipes(main, superTokensUserId);
 
             // We do not allow for a UserIdMapping to be created when the externalUserId is a SuperTokens userId.
             // There could be a case where User_1 has a userId mapping and a new SuperTokens User, User_2 is created
@@ -116,7 +114,7 @@ public class UserIdMapping {
             externalId = userIdMapping.externalUserId;
 
             // check if externalId is used in any non-auth recipes
-            isUserIdBeingUserIdAuthRecipes(main, externalId);
+            isUserIdBeingUsedInNonAuthRecipes(main, externalId);
         }
 
         // referring to
@@ -173,7 +171,7 @@ public class UserIdMapping {
         return StorageLayer.getUserIdMappingStorage(main).getUserIdMappingForSuperTokensIds(userIds);
     }
 
-    private static void isUserIdBeingUserIdAuthRecipes(Main main, String userId)
+    private static void isUserIdBeingUsedInNonAuthRecipes(Main main, String userId)
             throws StorageQueryException, ServletException {
         {
             if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(SessionStorage.class.getName(),
