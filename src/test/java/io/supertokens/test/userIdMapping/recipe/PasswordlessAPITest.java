@@ -17,6 +17,7 @@
 package io.supertokens.test.userIdMapping.recipe;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
@@ -242,7 +243,52 @@ public class PasswordlessAPITest {
                     "passwordless");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalId, response.get("user").getAsJsonObject().get("id").getAsString());
+        }
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUpdatingPasswordlessUserWithTheirExternalId() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String externalId = "externalId";
+        String superTokensUserId;
+
+        // create a passwordless user
+        Passwordless.CreateCodeResponse response = Passwordless.createCode(process.main, "test@example.com", null, null,
+                null);
+        Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.main, response.deviceId,
+                response.deviceIdHash, response.userInputCode, null);
+        superTokensUserId = consumeCodeResponse.user.id;
+
+        // map their userId
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
+
+        // call the update API and update email
+        String newEmail = "testnew@example.com";
+        {
+            JsonObject updateUserRequestBody = new JsonObject();
+            updateUserRequestBody.addProperty("userId", externalId);
+            updateUserRequestBody.addProperty("email", newEmail);
+
+            JsonObject updateUserResponse = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "passwordless");
+            assertEquals(updateUserResponse.get("status").getAsString(), "OK");
+
+            // check that user got updated
+            UserInfo userInfo = Passwordless.getUserByEmail(process.main, newEmail);
+            assertNotNull(userInfo);
+            assertEquals(userInfo.id, superTokensUserId);
         }
 
         process.kill();

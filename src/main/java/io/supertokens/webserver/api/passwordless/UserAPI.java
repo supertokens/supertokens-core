@@ -132,7 +132,7 @@ public class UserAPI extends WebserverAPI {
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, userId,
                     UserIdType.ANY);
             if (userIdMapping != null) {
-                userId = userIdMapping.externalUserId;
+                userId = userIdMapping.superTokensUserId;
             }
 
             Passwordless.updateUser(main, userId, emailUpdate, phoneNumberUpdate);
