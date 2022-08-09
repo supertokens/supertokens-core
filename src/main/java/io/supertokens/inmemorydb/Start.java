@@ -786,14 +786,6 @@ public class Start
         }
     }
 
-    public boolean isUserIdBeingUsedForEmailVerification(String userId) throws StorageQueryException {
-        try {
-            return EmailVerificationQueries.isUserIdBeingUsedForEmailVerification(this, userId);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
     @Override
     public io.supertokens.pluginInterface.thirdparty.UserInfo getUserInfoUsingId_Transaction(TransactionConnection con,
             String thirdPartyId, String thirdPartyUserId) throws StorageQueryException {
@@ -1562,57 +1554,39 @@ public class Start
 
     @Override
     public boolean isUserIdBeingUsedInNonAuthRecipe(String className, String userId) throws StorageQueryException {
-        // check if userId is used in session table
+
+        // check if the input userId is being used in nonAuthRecipes.
         if (className.equals(SessionStorage.class.getName())) {
-            {
-                String[] sessionHandlesForUser = getAllNonExpiredSessionHandlesForUser(userId);
-                if (sessionHandlesForUser.length > 0) {
-                    return true;
-                }
-            }
-        }
-
-        // check if userId is used in roles table
-        if (className.equals(UserRolesStorage.class.getName())) {
+            String[] sessionHandlesForUser = getAllNonExpiredSessionHandlesForUser(userId);
+            return sessionHandlesForUser.length > 0;
+        } else if (className.equals(UserRolesStorage.class.getName())) {
             String[] roles = getRolesForUser(userId);
-            if (roles.length > 0) {
-                return true;
-            }
-        }
-
-        // check if userId is used in userMetadata table
-        if (className.equals(UserMetadataStorage.class.getName())) {
+            return roles.length > 0;
+        } else if (className.equals(UserMetadataStorage.class.getName())) {
             JsonObject userMetadata = getUserMetadata(userId);
-            if (userMetadata != null && userMetadata.entrySet().size() > 0) {
-                return true;
+            return userMetadata != null;
+        } else if (className.equals(EmailVerificationStorage.class.getName())) {
+            try {
+                return EmailVerificationQueries.isUserIdBeingUsedForEmailVerification(this, userId);
+            } catch (SQLException e) {
+                throw new StorageQueryException(e);
             }
+        } else {
+            throw new IllegalStateException("ClassName: " + className + " is not part of NonAuthRecipeStorage");
         }
-
-        // check if userId is used in emailVerification
-        if (className.equals(EmailVerificationStorage.class.getName())) {
-            if (isUserIdBeingUsedForEmailVerification(userId)) {
-                return true;
-            }
-        }
-
-        return false;
     }
 
     @TestOnly
     @Override
     public void addInfoToNonAuthRecipesBasedOnUserId(String className, String userId) throws StorageQueryException {
-
-        // create test session data
+        // add entries to nonAuthRecipe tables with input userId
         if (className.equals(SessionStorage.class.getName())) {
             try {
                 Session.createNewSession(this.main, userId, new JsonObject(), new JsonObject());
             } catch (Exception e) {
-                // ignore
+                throw new StorageQueryException(e);
             }
-        }
-
-        // create user roles data
-        if (className.equals(UserRolesStorage.class.getName())) {
+        } else if (className.equals(UserRolesStorage.class.getName())) {
             try {
                 String role = "testRole";
                 UserRoles.createNewRoleOrModifyItsPermissions(this.main, role, null);
@@ -1622,19 +1596,15 @@ public class Start
             } catch (UnknownRoleException e) {
                 throw new StorageQueryException(e);
             }
-        }
-
-        // create emailVerification data
-        if (className.equals(EmailVerificationStorage.class.getName())) {
+        } else if (className.equals(EmailVerificationStorage.class.getName())) {
             try {
                 EmailVerification.generateEmailVerificationToken(this.main, userId, "test123@example.com");
-            } catch (InvalidKeySpecException | NoSuchAlgorithmException | EmailAlreadyVerifiedException e) {
+            } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
                 throw new StorageQueryException(e);
+            } catch (EmailAlreadyVerifiedException e) {
+                /* do nothing cause the userId already exists in the table */
             }
-        }
-
-        // create userMetadata
-        if (className.equals(UserMetadataStorage.class.getName())) {
+        } else if (className.equals(UserMetadataStorage.class.getName())) {
             JsonObject data = new JsonObject();
             data.addProperty("test", "testData");
             try {
@@ -1642,6 +1612,8 @@ public class Start
             } catch (StorageTransactionLogicException e) {
                 throw new StorageQueryException(e);
             }
+        } else {
+            throw new IllegalStateException("ClassName: " + className + " is not part of NonAuthRecipeStorage");
         }
     }
 }

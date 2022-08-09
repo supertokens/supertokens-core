@@ -28,8 +28,6 @@ import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 

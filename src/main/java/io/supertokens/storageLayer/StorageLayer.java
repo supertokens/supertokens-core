@@ -265,14 +265,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return (UserIdMappingStorage) getInstance(main).storage;
     }
 
-    public static NonAuthRecipeStorage getNonAuthRecipeStorage(Main main) {
-        if (getInstance(main) == null) {
-            throw new QuitProgramException("please call init() before calling getStorageLayer");
-        }
-
-        return (NonAuthRecipeStorage) getInstance(main).storage;
-    }
-
     public boolean isInMemDb() {
         return this.storage instanceof Start;
     }
