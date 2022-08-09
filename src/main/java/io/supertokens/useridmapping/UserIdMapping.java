@@ -121,12 +121,14 @@ public class UserIdMapping {
         // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
         // we need to check if db is in A3 or A4.
         io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = getUserIdMapping(main, userId,
-                UserIdType.EXTERNAL);
+                UserIdType.ANY);
         if (mapping != null) {
             if (StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(mapping.externalUserId)) {
                 // this means that the db is in state A4
                 return storage.deleteUserIdMapping(mapping.superTokensUserId, true);
             }
+        } else {
+            return false;
         }
 
         // db is in state A3
