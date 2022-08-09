@@ -30,6 +30,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,6 +38,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.reflections.Reflections;
 
+import javax.servlet.ServletException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -800,11 +802,11 @@ public class UserIdMappingTest {
             // create entry in nonAuth table
             StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(className, userId);
             // try to create the mapping with superTokensId
-            Exception error = null;
+            String errorMessage = null;
             try {
                 UserIdMapping.createUserIdMapping(process.main, userId, "externalId", null, false);
-            } catch (IllegalStateException e) {
-                error = e;
+            } catch (ServletException e) {
+                errorMessage = e.getRootCause().getMessage();
             } catch (UnknownSuperTokensUserIdException e) {
                 if (nonAuthRecipesWhichDontNeedUserIdMapping.contains(className)) {
                     // ignore the error
@@ -814,8 +816,8 @@ public class UserIdMappingTest {
             }
             // we ignore results when using a class name from the nonAuthRecipesWhichDontNeedUserIdMapping list
             if (!nonAuthRecipesWhichDontNeedUserIdMapping.contains(className)) {
-                assertNotNull(error);
-                assertTrue(error.getMessage().startsWith("UserId is already in use"));
+                assertNotNull(errorMessage);
+                assertTrue(errorMessage.contains("UserId is already in use"));
             }
 
             // delete user data
@@ -859,15 +861,15 @@ public class UserIdMappingTest {
             StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(className, externalId);
 
             // try to delete UserIdMapping
-            Exception error = null;
+            String errorMessage = null;
             try {
                 UserIdMapping.deleteUserIdMapping(process.main, user.id, UserIdType.SUPERTOKENS, false);
-            } catch (IllegalStateException e) {
-                error = e;
+            } catch (ServletException e) {
+                errorMessage = e.getRootCause().getMessage();
             }
             if (!nonAuthRecipesWhichDontNeedUserIdMapping.contains(className)) {
-                assertNotNull(error);
-                assertTrue(error.getMessage().startsWith("UserId is already in use"));
+                assertNotNull(errorMessage);
+                assertTrue(errorMessage.contains("UserId is already in use"));
             }
             // delete user data
             AuthRecipe.deleteUser(process.main, user.id);
