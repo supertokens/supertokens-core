@@ -18,6 +18,7 @@ package io.supertokens.test.userIdMapping.recipe;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -28,6 +29,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -73,6 +75,15 @@ public class EmailPasswordAPITest {
         // create the mapping
         UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
 
+        {
+            // check that mapping exists
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                    .getUserIdMapping(process.main, superTokensUserId, UserIdType.SUPERTOKENS);
+            assertNotNull(response);
+            assertEquals(response.superTokensUserId, superTokensUserId);
+            assertEquals(response.externalUserId, externalUserId);
+        }
+
         // call signIn api and check that the externalId is returned to the response
         {
             JsonObject signUpRequestBody = new JsonObject();
@@ -84,6 +95,14 @@ public class EmailPasswordAPITest {
                     Utils.getCdiVersion2_15ForTests(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalUserId, response.get("user").getAsJsonObject().get("id").getAsString());
+        }
+
+        // delete User and check that the mapping no longer exists
+        {
+            AuthRecipe.deleteUser(process.main, superTokensUserId);
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                    .getUserIdMapping(process.main, superTokensUserId, UserIdType.SUPERTOKENS);
+            assertNull(response);
         }
 
         process.kill();

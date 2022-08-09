@@ -19,6 +19,7 @@ package io.supertokens.test.userIdMapping.recipe;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
@@ -28,6 +29,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -36,8 +38,7 @@ import org.junit.rules.TestRule;
 
 import java.util.HashMap;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class ThirdPartyAPITest {
     @Rule
@@ -76,6 +77,15 @@ public class ThirdPartyAPITest {
         // create the mapping
         UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
 
+        // check that mapping exists
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                    .getUserIdMapping(process.main, superTokensUserId, UserIdType.SUPERTOKENS);
+            assertNotNull(response);
+            assertEquals(response.superTokensUserId, superTokensUserId);
+            assertEquals(response.externalUserId, externalUserId);
+        }
+
         // call signIn api and check that the externalId is returned to the response
         {
             JsonObject signInRequestBody = new JsonObject();
@@ -90,6 +100,14 @@ public class ThirdPartyAPITest {
                     Utils.getCdiVersion2_15ForTests(), "thirdparty");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalUserId, response.get("user").getAsJsonObject().get("id").getAsString());
+        }
+
+        // delete User and check that the mapping no longer exists
+        {
+            AuthRecipe.deleteUser(process.main, superTokensUserId);
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                    .getUserIdMapping(process.main, superTokensUserId, UserIdType.SUPERTOKENS);
+            assertNull(response);
         }
 
         process.kill();
