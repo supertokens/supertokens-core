@@ -37,6 +37,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import javax.servlet.ServletException;
+
 import static io.supertokens.test.Utils.createUserIdMappingAndCheckThatItExists;
 import static org.junit.Assert.*;
 
@@ -399,8 +401,39 @@ public class RemoveUserIdMappingAPITest {
         JsonObject data = new JsonObject();
         data.addProperty("test", "testData");
         UserMetadata.updateUserMetadata(process.main, externalId, data);
+        UserMetadata.getUserMetadata(process.main, externalId);
 
-        JsonObject response = UserMetadata.getUserMetadata(process.main, externalId);
+        // delete mapping without force
+        {
+            JsonObject request = new JsonObject();
+            request.addProperty("userId", externalId);
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
+                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                throw new Exception("Should not come here");
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 400);
+                assertEquals(e.getMessage(),
+                        "Http error. Status Code: 400. Message:" + " UserId is already in use in UserMetadata recipe");
+            }
+        }
+
+        // delete mapping with force
+        {
+            JsonObject request = new JsonObject();
+            request.addProperty("userId", externalId);
+            request.addProperty("force", true);
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+            assertEquals(response.get("status").getAsString(), "OK");
+        }
+
+        // check that mapping does not exist
+        UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.main,
+                superTokensUserId, UserIdType.SUPERTOKENS);
+        assertNull(mapping);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
