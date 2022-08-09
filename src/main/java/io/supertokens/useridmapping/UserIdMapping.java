@@ -78,13 +78,9 @@ public class UserIdMapping {
 
             // Do not allow a mapping when the externalId is the superTokensUserId for another User
             {
-                // check if a mapping exists with superTokensUserId
-                {
-                    // check if the externalId is the superTokensUserId for another user who already has a mapping
-                    if (StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(externalUserId)) {
-                        throw new IllegalStateException(
-                                "Cannot create a userId mapping where the externalId is the superTokensUserId for another User");
-                    }
+                if (StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(externalUserId)) {
+                    throw new IllegalStateException(
+                            "Cannot create a userId mapping where the externalId is the superTokensUserId for another User");
                 }
             }
         }
