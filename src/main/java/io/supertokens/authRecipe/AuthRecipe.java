@@ -87,7 +87,7 @@ public class AuthRecipe {
             }
         } else {
             deleteNonAuthRecipeUser(main, userId);
-            deleteNonAuthRecipeUser(main, userId);
+            deleteAuthRecipeUser(main, userId);
         }
 
     }
