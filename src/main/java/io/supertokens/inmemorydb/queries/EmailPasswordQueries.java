@@ -201,7 +201,8 @@ public class EmailPasswordQueries {
                         pst.setString(2, EMAIL_PASSWORD.toString());
                     });
                 }
-
+                // Since SQLite does not enforce foreign key constraints we have to manually delete the mapping for the
+                // user.
                 {
                     String QUERY = "DELETE FROM " + getConfig(start).getUserIdMappingTable()
                             + " WHERE supertokens_user_id = ?";
