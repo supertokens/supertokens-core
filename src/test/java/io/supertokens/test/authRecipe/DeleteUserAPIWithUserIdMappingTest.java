@@ -28,6 +28,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.usermetadata.UserMetadata;
 import junit.framework.TestCase;
 import org.junit.AfterClass;
@@ -97,6 +98,13 @@ public class DeleteUserAPIWithUserIdMappingTest {
             {
                 JsonObject response = UserMetadata.getUserMetadata(process.main, externalId);
                 assertEquals(0, response.entrySet().size());
+            }
+
+            // check that mapping does not exist
+            {
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                        .getUserIdMapping(process.main, superTokensUserId, UserIdType.SUPERTOKENS);
+                assertNull(response);
             }
         }
 
