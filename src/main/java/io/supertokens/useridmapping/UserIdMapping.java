@@ -46,7 +46,7 @@ public class UserIdMapping {
             isUserIdBeingUserIdAuthRecipes(main, superTokensUserId);
 
             // We do not allow for a UserIdMapping to be created when the externalUserId is a SuperTokens userId.
-            // There could be a case where a User_1 has a userId mapping and a new SuperTokens User, User_2 is created
+            // There could be a case where User_1 has a userId mapping and a new SuperTokens User, User_2 is created
             // whose userId is equal to the User_1's externalUserId.
             // Theoretically this could happen but the likelihood of generating a non-unique UUID is low enough that we
             // ignore it.
