@@ -79,13 +79,12 @@ public class AuthRecipe {
             // recipes.
             if (StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(userIdMapping.externalUserId)) {
                 // delete only from auth tables
-                deleteAuthRecipeUser(main, userIdMapping.externalUserId);
+                deleteAuthRecipeUser(main, userId);
             } else {
                 // delete user from non-auth tables with externalUserId
                 deleteNonAuthRecipeUser(main, userIdMapping.externalUserId);
                 // delete user from auth and non-auth tables with superTokensUserId
                 deleteAuthRecipeUser(main, userIdMapping.superTokensUserId);
-                deleteNonAuthRecipeUser(main, userIdMapping.externalUserId);
             }
 
         } else {

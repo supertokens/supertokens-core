@@ -17,6 +17,7 @@
 package io.supertokens.useridmapping;
 
 import io.supertokens.Main;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -44,8 +45,7 @@ public class UserIdMapping {
     public static void createUserIdMapping(Main main, String superTokensUserId, String externalUserId,
             String externalUserIdInfo, boolean force)
             throws UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException, StorageQueryException {
-        // if a userIdMapping is created with force, then we skip the checks to see if the superTokensUserId is being
-        // used in non auth recipes.
+        // if a userIdMapping is created with force, then we skip the following checks
         if (!force) {
             // check that none of the non-auth recipes are using the superTokensUserId
             {
@@ -76,24 +76,14 @@ public class UserIdMapping {
                 }
             }
 
-            // UserId Mapping cases we do not allow,
+            // Do not allow a mapping when the externalId is the superTokensUserId for another User
             {
-                // Case 1:
-                // User_1: superTokensUserId_1 <-> externalUserId
-                // User_2: superTokensUserId_2 <-> superTokensUserId_1
-
-                // Case 2:
-                // User_1: superTokensUserId_1 <-> superTokensUserId_2
-                // User_2: superTokensUserId_2 <-> superTokensUserId_1
-
                 // check if a mapping exists with superTokensUserId
                 {
                     // check if the externalId is the superTokensUserId for another user who already has a mapping
-                    io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
-                            .getUserIdMapping(main, externalUserId, UserIdType.SUPERTOKENS);
-
-                    if (response != null && response.externalUserId.equals(superTokensUserId)) {
-                        throw new IllegalStateException("Invalid Mapping State");
+                    if (StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(externalUserId)) {
+                        throw new IllegalStateException(
+                                "Cannot create a userId mapping where the externalId is the superTokensUserId for another User");
                     }
                 }
             }
