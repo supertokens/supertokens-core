@@ -73,7 +73,7 @@ public class EmailPasswordAPITest {
         String externalUserId = "externalId";
 
         // create the mapping
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
 
         {
             // check that mapping exists
@@ -128,7 +128,7 @@ public class EmailPasswordAPITest {
         String externalUserId = "externalId";
 
         // create the mapping
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
 
         // call GeneratePasswordResetTokenAPI api with externalId
         String passwordResetToken = null;
@@ -187,7 +187,7 @@ public class EmailPasswordAPITest {
         String externalUserId = "externalId";
 
         // create the mapping
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
 
         // retrieving UserInfo with userId
         {
@@ -233,7 +233,7 @@ public class EmailPasswordAPITest {
         String externalUserId = "externalId";
 
         // create the mapping
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
 
         // update the users email
         String newEmail = "testnew123@example.com";

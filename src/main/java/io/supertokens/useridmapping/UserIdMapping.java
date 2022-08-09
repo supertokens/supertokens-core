@@ -21,6 +21,7 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
@@ -42,33 +43,7 @@ public class UserIdMapping {
         // if a userIdMapping is created with force, then we skip the following checks
         if (!force) {
             // check that none of the non-auth recipes are using the superTokensUserId
-            {
-
-                if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(SessionStorage.class.getName(),
-                        superTokensUserId)) {
-                    throw new IllegalStateException("SuperTokens Id is already in use in Session recipe");
-                }
-            }
-
-            {
-                if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(UserMetadataStorage.class.getName(),
-                        superTokensUserId)) {
-                    throw new IllegalStateException("SuperTokens Id is already in use in UserMetadata recipe");
-                }
-            }
-
-            {
-                if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(UserRolesStorage.class.getName(),
-                        superTokensUserId)) {
-                    throw new IllegalStateException("SuperTokens Id is already in use in UserRoles recipe");
-                }
-            }
-            {
-                if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(
-                        EmailVerificationStorage.class.getName(), superTokensUserId)) {
-                    throw new IllegalStateException("SuperTokens Id is already in use in EmailVerification recipe");
-                }
-            }
+            isUserIdBeingUserIdAuthRecipes(main, superTokensUserId);
 
             // Do not allow a mapping when the externalId is the superTokensUserId for another User
             {
@@ -132,32 +107,7 @@ public class UserIdMapping {
                 }
             }
             // check if externalId is used in any non-auth recipes
-            {
-                if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(SessionStorage.class.getName(),
-                        externalId)) {
-                    throw new IllegalStateException("External Id is already in use in Session recipe");
-                }
-            }
-
-            {
-                if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(UserMetadataStorage.class.getName(),
-                        externalId)) {
-                    throw new IllegalStateException("External Id is already in use in UserMetadata recipe");
-                }
-            }
-
-            {
-                if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(UserRolesStorage.class.getName(),
-                        externalId)) {
-                    throw new IllegalStateException("External Id is already in use in UserRoles recipe");
-                }
-            }
-            {
-                if (StorageLayer.getStorage(main)
-                        .isUserIdBeingUsedInNonAuthRecipe(EmailVerificationStorage.class.getName(), externalId)) {
-                    throw new IllegalStateException("External Id is already in use in EmailVerification recipe");
-                }
-            }
+            isUserIdBeingUserIdAuthRecipes(main, externalId);
         }
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
 
@@ -198,6 +148,39 @@ public class UserIdMapping {
     public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(Main main, ArrayList<String> userIds)
             throws StorageQueryException {
         return StorageLayer.getUserIdMappingStorage(main).getUserIdMappingForSuperTokensIds(userIds);
+    }
+
+    private static void isUserIdBeingUserIdAuthRecipes(Main main, String userId) throws StorageQueryException {
+        {
+            if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(SessionStorage.class.getName(),
+                    userId)) {
+                throw new IllegalStateException("UserId is already in use in Session recipe");
+            }
+        }
+        {
+            if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(UserMetadataStorage.class.getName(),
+                    userId)) {
+                throw new IllegalStateException("UserId is already in use in UserMetadata recipe");
+            }
+        }
+        {
+            if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(UserRolesStorage.class.getName(),
+                    userId)) {
+                throw new IllegalStateException("UserId is already in use in UserRoles recipe");
+            }
+        }
+        {
+            if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(EmailVerificationStorage.class.getName(),
+                    userId)) {
+                throw new IllegalStateException("UserId is already in use in EmailVerification recipe");
+            }
+        }
+        {
+            if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(JWTRecipeStorage.class.getName(),
+                    userId)) {
+                throw new IllegalStateException("UserId is already in use in JWT recipe");
+            }
+        }
     }
 
 }

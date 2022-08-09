@@ -44,6 +44,7 @@ import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerifica
 import io.supertokens.pluginInterface.exceptions.QuitProgramFromPluginException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
@@ -1571,6 +1572,8 @@ public class Start
             } catch (SQLException e) {
                 throw new StorageQueryException(e);
             }
+        } else if (className.equals(JWTRecipeStorage.class.getName())) {
+            return false;
         } else {
             throw new IllegalStateException("ClassName: " + className + " is not part of NonAuthRecipeStorage");
         }
@@ -1612,6 +1615,8 @@ public class Start
             } catch (StorageTransactionLogicException e) {
                 throw new StorageQueryException(e);
             }
+        } else if (className.equals(JWTRecipeStorage.class.getName())) {
+            /* Since JWT recipe tables do not store userId we do not add any data to them */
         } else {
             throw new IllegalStateException("ClassName: " + className + " is not part of NonAuthRecipeStorage");
         }

@@ -77,7 +77,7 @@ public class PasswordlessAPITest {
             superTokensUserId = consumeCodeResponse.user.id;
 
             // create mapping
-            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null);
+            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
 
             // check that mapping exists
             io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
@@ -145,7 +145,7 @@ public class PasswordlessAPITest {
             superTokensUserId = consumeCodeResponse.user.id;
 
             // create mapping
-            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null);
+            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
 
             // check that mapping exists
             io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping

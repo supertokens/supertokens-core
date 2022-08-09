@@ -72,7 +72,7 @@ public class DeleteUserAPIWithUserIdMappingTest {
             String externalId = "externalId";
 
             // map their id
-            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null);
+            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
 
             // create UserMetadata with the externalId
             JsonObject testData = new JsonObject();

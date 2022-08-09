@@ -75,7 +75,7 @@ public class ThirdPartyAPITest {
         String externalUserId = "externalId";
 
         // create the mapping
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
 
         // check that mapping exists
         {
@@ -135,7 +135,7 @@ public class ThirdPartyAPITest {
         String externalUserId = "externalId";
 
         // create the mapping
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
 
         // call getUsersByEmail
         {
@@ -177,7 +177,7 @@ public class ThirdPartyAPITest {
         String externalUserId = "externalId";
 
         // create the mapping
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
 
         // get User with Id
         {
@@ -218,7 +218,7 @@ public class ThirdPartyAPITest {
         String externalUserId = "externalId";
 
         // create the mapping
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
 
         // get User with Id
         {
