@@ -292,7 +292,7 @@ public class UserIdMappingTest {
         String newExternalUserIdInfo = "newExternalUserIdInfo";
 
         UserIdMapping.createUserIdMapping(process.main, newSuperTokensUserId, newExternalUserId, newExternalUserIdInfo,
-                false);
+                true);
 
         // retrieve the mapping with newExternalUserId using ANY, it should return Mapping 1
         {
@@ -490,7 +490,7 @@ public class UserIdMappingTest {
         // create the mapping and check that it exists
         {
             UserIdMapping.createUserIdMapping(process.main, userIdMapping_2.superTokensUserId,
-                    userIdMapping_2.externalUserId, userIdMapping_2.externalUserIdInfo, false);
+                    userIdMapping_2.externalUserId, userIdMapping_2.externalUserIdInfo, true);
             io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
                     .getUserIdMapping(process.main, userIdMapping_2.superTokensUserId, UserIdType.SUPERTOKENS);
             assertEquals(userIdMapping_2, response);
@@ -680,8 +680,7 @@ public class UserIdMappingTest {
         String externalUserId2 = userInfo.id;
         String externalUserIdInfo2 = "newExternalUserIdInfo";
 
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId2, externalUserId2, externalUserIdInfo2,
-                false);
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId2, externalUserId2, externalUserIdInfo2, true);
 
         // check that the mapping exists
         {
