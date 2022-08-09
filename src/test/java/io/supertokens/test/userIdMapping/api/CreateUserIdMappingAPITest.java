@@ -340,7 +340,7 @@ public class CreateUserIdMappingAPITest {
 
         // create UserId mapping
         io.supertokens.useridmapping.UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId,
-                null);
+                null, false);
 
         {
             // create a duplicate mapping

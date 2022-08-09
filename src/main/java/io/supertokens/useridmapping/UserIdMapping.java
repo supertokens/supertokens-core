@@ -37,12 +37,6 @@ import java.util.HashMap;
 public class UserIdMapping {
 
     public static void createUserIdMapping(Main main, String superTokensUserId, String externalUserId,
-            String externalUserIdInfo)
-            throws UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException, StorageQueryException {
-        createUserIdMapping(main, superTokensUserId, externalUserId, externalUserIdInfo, false);
-    }
-
-    public static void createUserIdMapping(Main main, String superTokensUserId, String externalUserId,
             String externalUserIdInfo, boolean force)
             throws UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException, StorageQueryException {
         // if a userIdMapping is created with force, then we skip the following checks
@@ -119,11 +113,6 @@ public class UserIdMapping {
         }
 
         throw new IllegalStateException("Retrieved more than 2 UserId Mapping entries for a single userId.");
-    }
-
-    public static boolean deleteUserIdMapping(Main main, String userId, UserIdType userIdType)
-            throws StorageQueryException {
-        return deleteUserIdMapping(main, userId, userIdType, false);
     }
 
     public static boolean deleteUserIdMapping(Main main, String userId, UserIdType userIdType, boolean force)

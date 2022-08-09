@@ -280,7 +280,7 @@ public abstract class Utils extends Mockito {
     public static void createUserIdMappingAndCheckThatItExists(Main main, UserIdMapping userIdMapping)
             throws Exception {
         io.supertokens.useridmapping.UserIdMapping.createUserIdMapping(main, userIdMapping.superTokensUserId,
-                userIdMapping.externalUserId, userIdMapping.externalUserIdInfo);
+                userIdMapping.externalUserId, userIdMapping.externalUserIdInfo, false);
         // retrieve mapping and validate
         UserIdMapping retrievedMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                 userIdMapping.superTokensUserId, UserIdType.SUPERTOKENS);
