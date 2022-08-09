@@ -119,9 +119,8 @@ public class PasswordlessAPITest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // getUserAPI tests
     @Test
-    public void testCreatingAPasswordlessUserAndRetrievingInfo() throws Exception {
+    public void testCreatingAPasswordlessUserAndRetrieveInfo() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -168,8 +167,85 @@ public class PasswordlessAPITest {
 
         }
 
+        {
+            // retrieving UserInfo with superTokensUserId
+            {
+                HashMap<String, String> query = new HashMap<>();
+                query.put("userId", superTokensUserId);
+
+                JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user", query, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                        "passwordless");
+                assertEquals("OK", response.get("status").getAsString());
+                assertEquals(externalId, response.get("user").getAsJsonObject().get("id").getAsString());
+            }
+
+            // retrieving UserInfo with externalId
+            {
+                HashMap<String, String> query = new HashMap<>();
+                query.put("userId", externalId);
+
+                JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/user", query, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                        "passwordless");
+                assertEquals("OK", response.get("status").getAsString());
+                assertEquals(externalId, response.get("user").getAsJsonObject().get("id").getAsString());
+            }
+        }
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
+    public void testCreatingPasswordlessUserWithPhoneNumberAndRetrieveInfo() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String externalId = "externalId";
+        String superTokensUserId;
+        String phoneNumber = "+911234567890";
+        // create a passwordless User
+        {
+            Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.main, null,
+                    phoneNumber, null, null);
+            Passwordless.ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(process.main,
+                    createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode,
+                    null);
+            assertTrue(consumeCodeResponse.createdNewUser);
+            superTokensUserId = consumeCodeResponse.user.id;
+
+            // create mapping
+            UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId, null, false);
+
+            // check that mapping exists
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping response = UserIdMapping
+                    .getUserIdMapping(process.main, superTokensUserId, UserIdType.SUPERTOKENS);
+            assertNotNull(response);
+            assertEquals(response.superTokensUserId, superTokensUserId);
+            assertEquals(response.externalUserId, externalId);
+        }
+
+        {
+            // retrieving UserInfo with phoneNumber
+            HashMap<String, String> query = new HashMap<>();
+            query.put("phoneNumber", phoneNumber);
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", query, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                    "passwordless");
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(externalId, response.get("user").getAsJsonObject().get("id").getAsString());
+
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
