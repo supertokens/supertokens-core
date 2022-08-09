@@ -76,10 +76,15 @@ public class AuthRecipe {
         if (userIdMapping != null) {
             // We check if the mapped externalId is another SuperTokens UserId, this could come up when migrating
             // recipes.
+            // in reference to
+            // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
+            // we want to check which state the db is in
             if (StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(userIdMapping.externalUserId)) {
+                // db is in state A4
                 // delete only from auth tables
                 deleteAuthRecipeUser(main, userId);
             } else {
+                // db is in state A3
                 // delete user from non-auth tables with externalUserId
                 deleteNonAuthRecipeUser(main, userIdMapping.externalUserId);
                 // delete user from auth tables with superTokensUserId
