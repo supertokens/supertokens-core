@@ -45,11 +45,16 @@ public class UserIdMapping {
             // check that none of the non-auth recipes are using the superTokensUserId
             isUserIdBeingUserIdAuthRecipes(main, superTokensUserId);
 
-            // Do not allow a mapping when the externalId is the superTokensUserId for another User
+            // We do not allow for a UserIdMapping to be created when the externalUserId is a SuperTokens userId.
+            // There could be a case where a User_1 has a userId mapping and a new SuperTokens User, User_2 is created
+            // whose userId is equal to the User_1's externalUserId.
+            // Theoretically this could happen but the likelihood of generating a non-unique UUID is low enough that we
+            // ignore it.
+
             {
                 if (StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(externalUserId)) {
                     throw new IllegalStateException(
-                            "Cannot create a userId mapping where the externalId is the superTokensUserId for another User");
+                            "Cannot create a userId mapping where the externalId is also a SuperTokens userID");
                 }
             }
         }
@@ -92,25 +97,39 @@ public class UserIdMapping {
 
     public static boolean deleteUserIdMapping(Main main, String userId, UserIdType userIdType, boolean force)
             throws StorageQueryException {
+
+        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
         // if a userIdMapping is deleted with force, then we skip the following checks
         if (!force) {
             String externalId;
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping;
             if (userIdType == UserIdType.EXTERNAL) {
-                externalId = userId;
+                userIdMapping = getUserIdMapping(main, userId, UserIdType.EXTERNAL);
             } else {
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = getUserIdMapping(main,
-                        userId, UserIdType.ANY);
-                if (userIdMapping != null) {
-                    externalId = userIdMapping.externalUserId;
-                } else {
-                    return false;
-                }
+                userIdMapping = getUserIdMapping(main, userId, UserIdType.ANY);
             }
+            if (userIdMapping == null) {
+                return false;
+            }
+            externalId = userIdMapping.externalUserId;
+
             // check if externalId is used in any non-auth recipes
             isUserIdBeingUserIdAuthRecipes(main, externalId);
         }
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
 
+        // referring to
+        // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
+        // we need to check if db is in A3 or A4.
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = getUserIdMapping(main, userId,
+                UserIdType.EXTERNAL);
+        if (mapping != null) {
+            if (StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(mapping.externalUserId)) {
+                // this means that the db is in state A4
+                return storage.deleteUserIdMapping(mapping.superTokensUserId, true);
+            }
+        }
+
+        // db is in state A3
         if (userIdType == UserIdType.SUPERTOKENS) {
             return storage.deleteUserIdMapping(userId, true);
         }
