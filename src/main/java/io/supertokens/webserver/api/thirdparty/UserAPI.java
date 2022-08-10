@@ -74,15 +74,17 @@ public class UserAPI extends WebserverAPI {
                     userId = userIdMapping.superTokensUserId;
                 }
                 user = ThirdParty.getUser(main, userId);
-                if (userIdMapping != null) {
+                if (user != null && userIdMapping != null) {
                     user.id = userIdMapping.externalUserId;
                 }
             } else {
                 user = ThirdParty.getUser(main, thirdPartyId, thirdPartyUserId);
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(main, user.id, UserIdType.ANY);
-                if (userIdMapping != null) {
-                    user.id = userIdMapping.externalUserId;
+                if (user != null) {
+                    io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                            .getUserIdMapping(main, user.id, UserIdType.ANY);
+                    if (userIdMapping != null) {
+                        user.id = userIdMapping.externalUserId;
+                    }
                 }
             }
 

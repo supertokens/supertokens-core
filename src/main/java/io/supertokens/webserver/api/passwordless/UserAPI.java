@@ -76,22 +76,26 @@ public class UserAPI extends WebserverAPI {
                     userId = userIdMapping.superTokensUserId;
                 }
                 user = Passwordless.getUserById(main, userId);
-                if (userIdMapping != null) {
+                if (user != null && userIdMapping != null) {
                     user.id = userIdMapping.externalUserId;
                 }
             } else if (email != null) {
                 user = Passwordless.getUserByEmail(main, Utils.normaliseEmail(email));
-                UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, user.id,
-                        UserIdType.ANY);
-                if (userIdMapping != null) {
-                    user.id = userIdMapping.externalUserId;
+                if (user != null) {
+                    UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
+                            user.id, UserIdType.ANY);
+                    if (userIdMapping != null) {
+                        user.id = userIdMapping.externalUserId;
+                    }
                 }
             } else {
                 user = Passwordless.getUserByPhoneNumber(main, phoneNumber);
-                UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, user.id,
-                        UserIdType.ANY);
-                if (userIdMapping != null) {
-                    user.id = userIdMapping.externalUserId;
+                if (user != null) {
+                    UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
+                            user.id, UserIdType.ANY);
+                    if (userIdMapping != null) {
+                        user.id = userIdMapping.externalUserId;
+                    }
                 }
             }
 

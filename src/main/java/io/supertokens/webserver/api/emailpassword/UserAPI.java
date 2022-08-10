@@ -66,7 +66,6 @@ public class UserAPI extends WebserverAPI {
         if (userId == null && email == null) {
             throw new ServletException(new BadRequestException("Please provide one of userId or email"));
         }
-
         try {
             UserInfo user = null;
             if (userId != null) {
@@ -79,19 +78,20 @@ public class UserAPI extends WebserverAPI {
                 user = EmailPassword.getUserUsingId(main, userId);
 
                 // if the userIdMapping exists set the userId in the response to the externalUserId
-                if (userIdMapping != null) {
+                if (user != null && userIdMapping != null) {
                     user.id = userIdMapping.externalUserId;
                 }
 
             } else {
                 String normalisedEmail = Utils.normaliseEmail(email);
                 user = EmailPassword.getUserUsingEmail(main, normalisedEmail);
-
                 // if a userIdMapping exists, set the userId in the response to the externalUserId
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(main, user.id, UserIdType.ANY);
-                if (userIdMapping != null) {
-                    user.id = userIdMapping.externalUserId;
+                if (user != null) {
+                    io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                            .getUserIdMapping(main, user.id, UserIdType.ANY);
+                    if (userIdMapping != null) {
+                        user.id = userIdMapping.externalUserId;
+                    }
                 }
             }
 
