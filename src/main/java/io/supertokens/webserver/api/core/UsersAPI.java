@@ -26,7 +26,10 @@ import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -35,6 +38,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.stream.Stream;
 
 public class UsersAPI extends WebserverAPI {
@@ -94,8 +99,9 @@ public class UsersAPI extends WebserverAPI {
         }
 
         if (limit != null) {
-            if (limit > 500) {
-                throw new ServletException(new BadRequestException("max limit allowed is 500"));
+            if (limit > AuthRecipe.USER_PAGINATION_LIMIT) {
+                throw new ServletException(
+                        new BadRequestException("max limit allowed is " + AuthRecipe.USER_PAGINATION_LIMIT));
             } else if (limit < 1) {
                 throw new ServletException(new BadRequestException("limit must a positive integer with min value 1"));
             }
@@ -106,6 +112,22 @@ public class UsersAPI extends WebserverAPI {
         try {
             UserPaginationContainer users = AuthRecipe.getUsers(super.main, limit, timeJoinedOrder, paginationToken,
                     recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
+
+            ArrayList<String> userIds = new ArrayList<>();
+            for (int i = 0; i < users.users.length; i++) {
+                userIds.add(users.users[i].user.id);
+            }
+            HashMap<String, String> userIdMapping = UserIdMapping.getUserIdMappingForSuperTokensUserIds(super.main,
+                    userIds);
+            if (!userIdMapping.isEmpty()) {
+                for (int i = 0; i < users.users.length; i++) {
+                    String externalId = userIdMapping.get(userIds.get(i));
+                    if (externalId != null) {
+                        users.users[i].user.id = externalId;
+                    }
+                }
+            }
+
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 

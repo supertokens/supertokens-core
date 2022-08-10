@@ -23,6 +23,8 @@ import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -97,6 +99,13 @@ public class SignInUpAPI extends WebserverAPI {
             try {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(super.main, thirdPartyId, thirdPartyUserId,
                         normalisedEmail);
+
+                //
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                        .getUserIdMapping(main, response.user.id, UserIdType.ANY);
+                if (userIdMapping != null) {
+                    response.user.id = userIdMapping.externalUserId;
+                }
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");

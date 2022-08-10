@@ -28,6 +28,8 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailExc
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -64,14 +66,33 @@ public class UserAPI extends WebserverAPI {
         if (userId == null && email == null) {
             throw new ServletException(new BadRequestException("Please provide one of userId or email"));
         }
-
         try {
             UserInfo user = null;
             if (userId != null) {
+                // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                        .getUserIdMapping(main, userId, UserIdType.ANY);
+                if (userIdMapping != null) {
+                    userId = userIdMapping.superTokensUserId;
+                }
                 user = EmailPassword.getUserUsingId(main, userId);
+
+                // if the userIdMapping exists set the userId in the response to the externalUserId
+                if (user != null && userIdMapping != null) {
+                    user.id = userIdMapping.externalUserId;
+                }
+
             } else {
                 String normalisedEmail = Utils.normaliseEmail(email);
                 user = EmailPassword.getUserUsingEmail(main, normalisedEmail);
+                // if a userIdMapping exists, set the userId in the response to the externalUserId
+                if (user != null) {
+                    io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                            .getUserIdMapping(main, user.id, UserIdType.ANY);
+                    if (userIdMapping != null) {
+                        user.id = userIdMapping.externalUserId;
+                    }
+                }
             }
 
             if (user == null) {
@@ -109,6 +130,12 @@ public class UserAPI extends WebserverAPI {
         }
 
         try {
+            // if a userIdMapping exists, pass the superTokensUserId to the updateUsersEmailOrPassword
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                    .getUserIdMapping(main, userId, UserIdType.ANY);
+            if (userIdMapping != null) {
+                userId = userIdMapping.superTokensUserId;
+            }
             EmailPassword.updateUsersEmailOrPassword(main, userId, email, password);
 
             JsonObject result = new JsonObject();

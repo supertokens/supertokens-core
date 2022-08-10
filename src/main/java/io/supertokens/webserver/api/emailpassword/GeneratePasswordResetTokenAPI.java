@@ -23,6 +23,8 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -56,6 +58,12 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
         // logic according to https://github.com/supertokens/supertokens-core/issues/106
 
         try {
+            // if a userIdMapping exists, pass the superTokensUserId to the generatePasswordResetToken
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                    .getUserIdMapping(main, userId, UserIdType.ANY);
+            if (userIdMapping != null) {
+                userId = userIdMapping.superTokensUserId;
+            }
             String token = EmailPassword.generatePasswordResetToken(super.main, userId);
 
             JsonObject result = new JsonObject();

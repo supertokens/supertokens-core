@@ -24,6 +24,8 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -66,9 +68,24 @@ public class UserAPI extends WebserverAPI {
         try {
             UserInfo user = null;
             if (userId != null) {
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                        .getUserIdMapping(main, userId, UserIdType.ANY);
+                if (userIdMapping != null) {
+                    userId = userIdMapping.superTokensUserId;
+                }
                 user = ThirdParty.getUser(main, userId);
+                if (user != null && userIdMapping != null) {
+                    user.id = userIdMapping.externalUserId;
+                }
             } else {
                 user = ThirdParty.getUser(main, thirdPartyId, thirdPartyUserId);
+                if (user != null) {
+                    io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
+                            .getUserIdMapping(main, user.id, UserIdType.ANY);
+                    if (userIdMapping != null) {
+                        user.id = userIdMapping.externalUserId;
+                    }
+                }
             }
 
             if (user == null) {

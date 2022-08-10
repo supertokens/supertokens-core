@@ -200,7 +200,7 @@ public class GetUserIdMappingAPITest {
         String externalUserId = "externalUserId";
         String externalUserIdInfo = "externalUserIdInfo";
 
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo);
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo, false);
 
         // retrieve the userId mapping using the superTokensUserId with SUPERTOKENS as the userIdType
         {
@@ -294,7 +294,7 @@ public class GetUserIdMappingAPITest {
         String externalUserId = "externalUserId";
         String externalUserIdInfo = "externalUserIdInfo";
 
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo);
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, externalUserIdInfo, false);
 
         {
             // retrieving with superTokensUserId
@@ -348,7 +348,7 @@ public class GetUserIdMappingAPITest {
         String superTokensUserId = user.id;
         String externalUserId = "externalUserId";
 
-        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null);
+        UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId, null, false);
 
         HashMap<String, String> QUERY_PARAM = new HashMap<>();
         QUERY_PARAM.put("userId", superTokensUserId);

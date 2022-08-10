@@ -172,6 +172,15 @@ public class EmailVerificationQueries {
         }, ResultSet::next);
     }
 
+    public static boolean isUserIdBeingUsedForEmailVerification(Start start, String userId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM " + getConfig(start).getEmailVerificationTokensTable() + " WHERE user_id = ?";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, userId);
+        }, ResultSet::next);
+    }
+
     public static void unverifyEmail(Start start, String userId, String email)
             throws SQLException, StorageQueryException {
         String QUERY = "DELETE FROM " + getConfig(start).getEmailVerificationTable()

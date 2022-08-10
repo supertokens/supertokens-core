@@ -29,6 +29,8 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdExce
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -68,11 +70,33 @@ public class UserAPI extends WebserverAPI {
         try {
             UserInfo user;
             if (userId != null) {
+                UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, userId,
+                        UserIdType.ANY);
+                if (userIdMapping != null) {
+                    userId = userIdMapping.superTokensUserId;
+                }
                 user = Passwordless.getUserById(main, userId);
+                if (user != null && userIdMapping != null) {
+                    user.id = userIdMapping.externalUserId;
+                }
             } else if (email != null) {
                 user = Passwordless.getUserByEmail(main, Utils.normaliseEmail(email));
+                if (user != null) {
+                    UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
+                            user.id, UserIdType.ANY);
+                    if (userIdMapping != null) {
+                        user.id = userIdMapping.externalUserId;
+                    }
+                }
             } else {
                 user = Passwordless.getUserByPhoneNumber(main, phoneNumber);
+                if (user != null) {
+                    UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
+                            user.id, UserIdType.ANY);
+                    if (userIdMapping != null) {
+                        user.id = userIdMapping.externalUserId;
+                    }
+                }
             }
 
             if (user == null) {
@@ -108,6 +132,13 @@ public class UserAPI extends WebserverAPI {
                         : InputParser.parseStringOrThrowError(input, "phoneNumber", false));
 
         try {
+            // if userIdMapping exists, set the externalUserId in the response
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, userId,
+                    UserIdType.ANY);
+            if (userIdMapping != null) {
+                userId = userIdMapping.superTokensUserId;
+            }
+
             Passwordless.updateUser(main, userId, emailUpdate, phoneNumberUpdate);
 
             JsonObject result = new JsonObject();

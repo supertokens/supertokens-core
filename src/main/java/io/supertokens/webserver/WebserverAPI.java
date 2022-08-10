@@ -195,7 +195,7 @@ public abstract class WebserverAPI extends HttpServlet {
         return version;
     }
 
-    protected static class BadRequestException extends Exception {
+    public static class BadRequestException extends Exception {
         private static final long serialVersionUID = -5014892660208978125L;
 
         public BadRequestException(String msg) {
