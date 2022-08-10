@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [3.15.1] - 2022-08-10
+
+- Updates UserIdMapping recipe to resolve UserId Mappings for Auth recipes in the core itself
+
 ## [3.15.0] - 2022-07-25
 
 - Adds UserIdMapping recipe
