@@ -27,6 +27,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.usermetadata.UserMetadata;
@@ -106,6 +107,126 @@ public class DeleteUserAPIWithUserIdMappingTest {
                         .getUserIdMapping(process.main, superTokensUserId, UserIdType.SUPERTOKENS);
                 assertNull(response);
             }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // In reference to https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit#gid=0
+    // test intermediate state behavior, deleting superTokensUserId_1
+    @Test
+    public void testDeleteUserBehaviorInIntermediateStateWithUser_1sUserId() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create an EmailPassword User
+        UserInfo userInfo_1 = EmailPassword.signUp(process.main, "test@example.com", "testPassword123");
+
+        // associate some data with user
+        JsonObject data = new JsonObject();
+        data.addProperty("test", "testData");
+        UserMetadata.updateUserMetadata(process.main, userInfo_1.id, data);
+
+        // create a new User who we would like to migrate the EmailPassword user to
+        ThirdParty.SignInUpResponse userInfo_2 = ThirdParty.signInUp(process.main, "google", "test-google",
+                "test123@example.com");
+
+        // force create a mapping between the thirdParty user and EmailPassword user
+        UserIdMapping.createUserIdMapping(process.main, userInfo_2.user.id, userInfo_1.id, null, true);
+
+        // delete User with EmailPassword userId
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("userId", userInfo_1.id);
+
+            JsonObject deleteResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/user/remove", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+            assertEquals("OK", deleteResponse.get("status").getAsString());
+
+        }
+        // check that only auth tables for EmailPassword user have been deleted and the userMetadata table entries still
+        // exist
+        {
+            UserInfo epUser = EmailPassword.getUserUsingId(process.main, userInfo_1.id);
+            assertNull(epUser);
+
+            JsonObject epUserMetadata = UserMetadata.getUserMetadata(process.main, userInfo_1.id);
+            assertNotNull(epUserMetadata);
+            assertEquals(epUserMetadata.get("test").getAsString(), "testData");
+        }
+        // check that the mapping still exists
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping
+                    .getUserIdMapping(process.main, userInfo_2.user.id, UserIdType.ANY);
+            assertNotNull(mapping);
+            assertEquals(mapping.superTokensUserId, userInfo_2.user.id);
+            assertEquals(mapping.externalUserId, userInfo_1.id);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // test intermediate state behavior, deleting superTokensUserId_2
+    @Test
+    public void testDeleteUserBehaviorInIntermediateStateWithUser_2sUserId() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create an EmailPassword User
+        UserInfo userInfo_1 = EmailPassword.signUp(process.main, "test@example.com", "testPassword123");
+
+        // associate some data with user
+        JsonObject data = new JsonObject();
+        data.addProperty("test", "testData");
+        UserMetadata.updateUserMetadata(process.main, userInfo_1.id, data);
+
+        // create a new User who we would like to migrate the EmailPassword user to
+        ThirdParty.SignInUpResponse userInfo_2 = ThirdParty.signInUp(process.main, "google", "test-google",
+                "test123@example.com");
+
+        // force create a mapping between the thirdParty user and EmailPassword user
+        UserIdMapping.createUserIdMapping(process.main, userInfo_2.user.id, userInfo_1.id, null, true);
+
+        // delete User with ThirdParty users id
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("userId", userInfo_2.user.id);
+
+            JsonObject deleteResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/user/remove", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "thirdparty");
+            assertEquals("OK", deleteResponse.get("status").getAsString());
+
+        }
+        // check that only auth tables for thirdParty user have been deleted and the userMetadata table entries still
+        // exist
+        {
+            io.supertokens.pluginInterface.thirdparty.UserInfo tpUserInfo = ThirdParty.getUser(process.main,
+                    userInfo_2.user.id);
+            assertNull(tpUserInfo);
+
+            JsonObject epUserMetadata = UserMetadata.getUserMetadata(process.main, userInfo_1.id);
+            assertNotNull(epUserMetadata);
+            assertEquals(epUserMetadata.get("test").getAsString(), "testData");
+        }
+        // check that the mapping is also deleted
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping
+                    .getUserIdMapping(process.main, userInfo_2.user.id, UserIdType.ANY);
+            assertNull(mapping);
         }
 
         process.kill();
