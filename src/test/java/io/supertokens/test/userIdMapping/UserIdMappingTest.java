@@ -16,6 +16,7 @@
 
 package io.supertokens.test.userIdMapping;
 
+import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
@@ -30,6 +31,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -877,4 +879,77 @@ public class UserIdMappingTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    // in https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit#gid=0
+    // check that we dont allow state A5 to be created when force is false
+    @Test
+    public void checkThatWeDontAllowDBStateA5FromBeingCreatedWhenForceIsFalse() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create an EmailPassword User
+        UserInfo user_1 = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        // create a mapping for the EmailPassword User
+        UserIdMapping.createUserIdMapping(process.main, user_1.id, "externalId", null, false);
+
+        // create some metadata for the user
+        JsonObject data = new JsonObject();
+        data.addProperty("test", "testData");
+        UserMetadata.updateUserMetadata(process.main, "externalId", data);
+
+        // Create another User
+        UserInfo user_2 = EmailPassword.signUp(process.main, "test123@example.com", "testPass123");
+
+        // try and map user_2 to user_1s superTokensUserId
+        String errorMessage = null;
+        try {
+            UserIdMapping.createUserIdMapping(process.main, user_2.id, user_1.id, null, false);
+        } catch (ServletException e) {
+            errorMessage = e.getRootCause().getMessage();
+        }
+        assertNotNull(errorMessage);
+        assertEquals("Cannot create a userId mapping where the externalId is also a SuperTokens userID", errorMessage);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatWeDontAllowDBStateA6WithoutForce() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create user 1
+        UserInfo user_1 = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+
+        // create user 2
+        UserInfo user_2 = EmailPassword.signUp(process.main, "test123@example.com", "testPass123");
+
+        // create a mapping between User_1 and User_2 with force
+        UserIdMapping.createUserIdMapping(process.main, user_1.id, user_2.id, null, true);
+
+        // try and create a mapping between User_2 and User_1 without force
+        String errorMessage = null;
+        try {
+            UserIdMapping.createUserIdMapping(process.main, user_2.id, user_1.id, null, false);
+        } catch (ServletException e) {
+            errorMessage = e.getRootCause().getMessage();
+        }
+        assertNotNull(errorMessage);
+        assertEquals("Cannot create a userId mapping where the externalId is also a SuperTokens userID", errorMessage);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
