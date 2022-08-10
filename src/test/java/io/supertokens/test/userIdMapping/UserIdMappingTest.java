@@ -952,4 +952,93 @@ public class UserIdMappingTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    // create User_1 and User_2
+    // Map User_2 to User_1 with force
+    // try deleting mapping with User_1s id set as ANY(does not require force)
+    // should delete the mapping
+
+    @Test
+    public void testDeleteMappingWithUser_1AndUserIdTypeAsAny() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create User_1 and User_2
+        UserInfo user_1 = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        UserInfo user_2 = EmailPassword.signUp(process.main, "test123@exmaple.com", "testPass123");
+
+        // create a mapping between User_2 and User_1 with force
+        UserIdMapping.createUserIdMapping(process.main, user_2.id, user_1.id, null, true);
+
+        // check that mapping exists
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping
+                    .getUserIdMapping(process.main, user_2.id, UserIdType.SUPERTOKENS);
+            assertNotNull(mapping);
+            assertEquals(mapping.superTokensUserId, user_2.id);
+            assertEquals(mapping.externalUserId, user_1.id);
+        }
+
+        // delete mapping with User_1s Id and UserIdType set to ANY, it should delete the mapping
+        assertTrue(UserIdMapping.deleteUserIdMapping(process.main, user_1.id, UserIdType.ANY, false));
+
+        // check that mapping is deleted
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping
+                    .getUserIdMapping(process.main, user_2.id, UserIdType.SUPERTOKENS);
+            assertNull(mapping);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // create User_1 and User_2
+    // Map User_2 to User_1 with force
+    // try deleting mapping with User_1s id set as SUPERTOKENS(does not require force)
+    // should delete the mapping
+    @Test
+    public void testDeleteMappingWithUser_1AndUserIdTypeAsSUPERTOKENS() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create User_1 and User_2
+        UserInfo user_1 = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        UserInfo user_2 = EmailPassword.signUp(process.main, "test123@exmaple.com", "testPass123");
+
+        // create a mapping between User_2 and User_1 with force
+        UserIdMapping.createUserIdMapping(process.main, user_2.id, user_1.id, null, true);
+
+        // check that mapping exists
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping
+                    .getUserIdMapping(process.main, user_2.id, UserIdType.SUPERTOKENS);
+            assertNotNull(mapping);
+            assertEquals(mapping.superTokensUserId, user_2.id);
+            assertEquals(mapping.externalUserId, user_1.id);
+        }
+
+        // delete mapping with User_1s Id and UserIdType set to ANY, it should delete the mapping
+        assertTrue(UserIdMapping.deleteUserIdMapping(process.main, user_1.id, UserIdType.SUPERTOKENS, false));
+
+        // check that mapping is deleted
+        {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = UserIdMapping
+                    .getUserIdMapping(process.main, user_2.id, UserIdType.SUPERTOKENS);
+            assertNull(mapping);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
