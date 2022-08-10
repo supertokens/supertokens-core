@@ -796,7 +796,6 @@ public class UserIdMappingTest {
                 classNames.add(name);
             }
         }
-        assertEquals(5, classNames.size());
 
         String userId = "testUserId";
         for (String className : classNames) {
@@ -873,7 +872,6 @@ public class UserIdMappingTest {
                 classNames.add(name);
             }
         }
-        assertEquals(5, classNames.size());
         String externalId = "externalId";
         for (String className : classNames) {
             // Create a User
