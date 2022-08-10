@@ -829,6 +829,30 @@ public class UserIdMappingTest {
     }
 
     @Test
+    public void checkThatAddInfoToNonAuthRecipesBasedOnUserIdThrowsAnErrorWithUnknownRecipe() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        Exception error = null;
+        try {
+            StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId("unknownRecipe", "testUserId");
+        } catch (IllegalStateException e) {
+            error = e;
+        }
+
+        assertNotNull(error);
+        assertEquals("ClassName: unknownRecipe is not part of NonAuthRecipeStorage", error.getMessage());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void checkThatDeleteUserIdMappingHasAllNonAuthRecipeChecks() throws Exception {
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
