@@ -24,7 +24,6 @@ import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
-import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
 import io.supertokens.storageLayer.StorageLayer;
