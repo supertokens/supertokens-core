@@ -120,3 +120,17 @@ labels:
 - [ ] Update internal contributing guide to move from previous core version to the latest one
 - [ ] Algolia search update for docs
 - [ ] robots.txt, sitemap.xml, noindex page update
+- Auto generate release note on github:
+   - [ ] supertokens-core
+   - [ ] supertokens-plugin-interface
+   - [ ] supertokens-mysql-plugin
+   - [ ] supertokens-postgresql-plugin
+   - [ ] supertokens-mongodb-plugin
+   - [ ] supertokens-node
+   - [ ] supertokens-golang
+   - [ ] supertokens-python
+   - [ ] supertokens-website
+   - [ ] supertokens-web-js
+   - [ ] supertokens-auth-react
+   - [ ] supertokens-react-native
+   - [ ] supertokens-android

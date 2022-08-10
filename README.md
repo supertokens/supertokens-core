@@ -1,7 +1,3 @@
-<p align="center" style=>
- 🔥 <b>New: Just launched Passwordless recipe. Checkout <a href="https://passwordless.demo.supertokens.com">Demo</a> | <a href="https://supertokens.com/docs/passwordless/introduction">Guide</a></b>
-</p>
-
 [![SuperTokens banner](https://raw.githubusercontent.com/supertokens/supertokens-logo/master/images/Artboard%20%E2%80%93%2027%402x.png)](https://supertokens.com/)
 
 # Open-Source auth provider
