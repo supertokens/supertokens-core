@@ -19,6 +19,7 @@ package io.supertokens.cliOptions;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.pluginInterface.LOG_LEVEL;
 
 import java.io.File;
 
@@ -28,12 +29,14 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
     private static final String CONFIG_FILE_KEY = "configFile=";
     private static final String PORT_FILE_KEY = "port=";
     private static final String HOST_FILE_KEY = "host=";
+    private static final String LOG_LEVEL_KEY = "log_level=";
     private static final String TEST_MODE = "test_mode";
     private static final String FORCE_NO_IN_MEM_DB = "forceNoInMemDB=true";
     private final String installationPath;
     private final String configFilePath;
     private final Integer port;
     private final String host;
+    private final LOG_LEVEL logLevel;
 
     // if this is true, then even in DEV mode, we will not use in memory db, even if there is an error in the plugin
     private final boolean forceNoInMemoryDB;
@@ -44,6 +47,7 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
         String configFilePathTemp = null;
         Integer portTemp = null;
         String hostTemp = null;
+        LOG_LEVEL logLevelTemp = null;
         boolean forceNoInMemoryDBTemp = false;
         for (int i = 1; i < args.length; i++) {
             String curr = args[i];
@@ -60,6 +64,8 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
                 forceNoInMemoryDBTemp = true;
             } else if (curr.equals(TEST_MODE)) {
                 Main.isTesting = true;
+            } else if (curr.equals(LOG_LEVEL_KEY)) {
+                logLevelTemp = LOG_LEVEL.valueOf(curr.split(LOG_LEVEL_KEY)[1].toUpperCase());
             }
         }
         this.configFilePath = configFilePathTemp;
@@ -67,6 +73,7 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
         this.port = portTemp;
         this.host = hostTemp;
         this.forceNoInMemoryDB = forceNoInMemoryDBTemp;
+        this.logLevel = logLevelTemp;
     }
 
     private static CLIOptions getInstance(Main main) {
@@ -116,5 +123,9 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
 
     public boolean isForceNoInMemoryDB() {
         return this.forceNoInMemoryDB;
+    }
+
+    public LOG_LEVEL getLogLevel() {
+        return this.logLevel;
     }
 }

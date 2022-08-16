@@ -40,7 +40,7 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
     @Override
     public void run() {
         try {
-            Logging.debug(main, "Cronjob started: " + jobName);
+            Logging.info(main, "Cronjob started: " + jobName);
             doTask();
         } catch (Exception e) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
@@ -49,7 +49,7 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                 main.wakeUpMainThreadToShutdown();
             }
         }
-        Logging.debug(main, "Cronjob finished: " + jobName);
+        Logging.info(main, "Cronjob finished: " + jobName);
     }
 
     protected abstract void doTask() throws Exception;

@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+- Changes logging level of API start / finished & Cronjob start / finished to be `INFO` level instead of `DEBUG` level.
+- Added new config `log_level` to set logging level. Possible values are `DEBUG` | `INFO` | `WARN` | `ERROR` |
+  `NONE`. As an example, setting the log level to `WARN` would make the core print out `WARN` and `ERROR` level logs.
+
 ## [3.15.1] - 2022-08-10
 
 - Updates UserIdMapping recipe to resolve UserId Mappings for Auth recipes in the core itself
@@ -14,7 +18,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [3.15.0] - 2022-07-25
 
 - Adds UserIdMapping recipe
-- Support for collecting and displaying failing tests 
+- Support for collecting and displaying failing tests
 
 ### Database changes
 

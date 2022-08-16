@@ -21,10 +21,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.pluginInterface.LOG_LEVEL;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CoreConfig {
@@ -109,6 +112,34 @@ public class CoreConfig {
 
     @JsonProperty
     private String base_path = "";
+
+    @JsonProperty
+    private String log_level = "INFO";
+
+    public Set<LOG_LEVEL> getLogLevels(Main main) {
+        LOG_LEVEL logLevel = CLIOptions.get(main).getLogLevel();
+        if (logLevel == null) {
+            logLevel = LOG_LEVEL.valueOf(this.log_level.toUpperCase());
+        }
+        Set<LOG_LEVEL> result = new HashSet<>();
+        if (logLevel == LOG_LEVEL.NONE) {
+            return result;
+        }
+        result.add(LOG_LEVEL.ERROR);
+        if (logLevel == LOG_LEVEL.ERROR) {
+            return result;
+        }
+        result.add(LOG_LEVEL.WARN);
+        if (logLevel == LOG_LEVEL.WARN) {
+            return result;
+        }
+        result.add(LOG_LEVEL.INFO);
+        if (logLevel == LOG_LEVEL.INFO) {
+            return result;
+        }
+        result.add(LOG_LEVEL.DEBUG);
+        return result;
+    }
 
     public String getBasePath() {
         String base_path = this.base_path; // Don't modify the original value from the config
@@ -373,6 +404,13 @@ public class CoreConfig {
             if (base_path.contains(" ")) {
                 throw new QuitProgramException("Invalid characters in base_path config");
             }
+        }
+
+        if (!log_level.equalsIgnoreCase("info") && !log_level.equalsIgnoreCase("none")
+                && !log_level.equalsIgnoreCase("error") && !log_level.equalsIgnoreCase("warn")
+                && !log_level.equalsIgnoreCase("debug")) {
+            throw new QuitProgramException(
+                    "'log_level' config must be one of \"NONE\",\"DEBUG\", \"INFO\", \"WARN\" or \"ERROR\".");
         }
 
         if (!getInfoLogPath(main).equals("null")) {
