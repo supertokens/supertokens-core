@@ -188,10 +188,10 @@ public class LoggingTest {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             Logging.debug(process.getProcess(), "outTest-dfkn3knsakn");
-            Logging.error(process.getProcess(), "errTest-sdvjovnoasid", false);
+            Logging.error(process.getProcess(), "errTest-sdvjovnoasid", true);
 
             assertTrue(fileContainsString(stdOutput, "outTest-dfkn3knsakn"));
-            assertTrue(fileContainsString(stdOutput, "errTest-sdvjovnoasid"));
+            assertTrue(fileContainsString(errorOutput, "errTest-sdvjovnoasid"));
 
         } finally {
             process.kill();
