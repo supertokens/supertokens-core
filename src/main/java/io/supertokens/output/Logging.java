@@ -98,11 +98,11 @@ public class Logging extends ResourceDistributor.SingletonResource {
         }
         try {
             msg = msg.trim();
-            if (toConsoleAsWell) {
-                systemOut(msg);
-            }
             if (getInstance(main) != null) {
                 getInstance(main).infoLogger.info(msg);
+            }
+            if (toConsoleAsWell) {
+                systemOut(msg);
             }
         } catch (NullPointerException ignored) {
         }
