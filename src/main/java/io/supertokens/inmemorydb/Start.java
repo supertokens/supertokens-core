@@ -124,12 +124,12 @@ public class Start
     }
 
     @Override
-    public void loadConfig(String ignored) {
+    public void loadConfig(String ignored, Set<LOG_LEVEL> logLevel) {
         Config.loadConfig(this);
     }
 
     @Override
-    public void initFileLogging(String infoLogPath, String errorLogPath, Set<LOG_LEVEL> logLevel) {
+    public void initFileLogging(String infoLogPath, String errorLogPath) {
         // no op
     }
 

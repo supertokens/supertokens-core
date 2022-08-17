@@ -19,6 +19,7 @@ package io.supertokens.storageLayer;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
+import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.output.Logging;
@@ -101,7 +102,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             }
         }
         this.storage.constructor(main.getProcessId(), Main.makeConsolePrintSilent);
-        this.storage.loadConfig(configFilePath);
+        this.storage.loadConfig(configFilePath, Config.getConfig(main).getLogLevels(main));
         if (Main.isTesting && !(this.storage instanceof Start)) {
             // we save the storage layer for testing (if it's not an in mem db) purposes so that
             // next time, we can just reuse this.

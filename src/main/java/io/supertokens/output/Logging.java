@@ -57,7 +57,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
         Storage storage = StorageLayer.getStorage(main);
         if (storage != null) {
             storage.initFileLogging(Config.getConfig(main).getInfoLogPath(main),
-                    Config.getConfig(main).getErrorLogPath(main), Config.getConfig(main).getLogLevels(main));
+                    Config.getConfig(main).getErrorLogPath(main));
         }
         try {
             // we wait here for a bit so that the loggers can be properly initialised..
