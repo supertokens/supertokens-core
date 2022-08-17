@@ -16,6 +16,7 @@
 
 package io.supertokens.test;
 
+import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.config.Config;
 import io.supertokens.output.Logging;
@@ -32,6 +33,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Scanner;
 import java.util.Set;
 
+import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
 
 public class LogLevelTest {
@@ -436,6 +438,109 @@ public class LogLevelTest {
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
         }
+    }
+
+    @Test
+    public void testLogLevelsUpperLowerCase() throws Exception {
+        {
+            Utils.setValueInConfig("log_level", "NonE");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            Set<LOG_LEVEL> logLevels = Config.getConfig(process.getProcess()).getLogLevels(process.getProcess());
+            // default log level should be info
+            assertEquals(0, logLevels.size());
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+        {
+            Utils.setValueInConfig("log_level", "error");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            Set<LOG_LEVEL> logLevels = Config.getConfig(process.getProcess()).getLogLevels(process.getProcess());
+            // default log level should be info
+            assertEquals(1, logLevels.size());
+            assertTrue(logLevels.contains(LOG_LEVEL.ERROR));
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+        {
+            Utils.setValueInConfig("log_level", "wArN");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            Set<LOG_LEVEL> logLevels = Config.getConfig(process.getProcess()).getLogLevels(process.getProcess());
+            // default log level should be info
+            assertEquals(2, logLevels.size());
+            assertTrue(logLevels.contains(LOG_LEVEL.ERROR));
+            assertTrue(logLevels.contains(LOG_LEVEL.WARN));
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+        {
+            Utils.setValueInConfig("log_level", "info");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            Set<LOG_LEVEL> logLevels = Config.getConfig(process.getProcess()).getLogLevels(process.getProcess());
+            // default log level should be info
+            assertEquals(3, logLevels.size());
+            assertTrue(logLevels.contains(LOG_LEVEL.ERROR));
+            assertTrue(logLevels.contains(LOG_LEVEL.WARN));
+            assertTrue(logLevels.contains(LOG_LEVEL.INFO));
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+        {
+            Utils.setValueInConfig("log_level", "debug");
+            String[] args = { "../" };
+            TestingProcess process = TestingProcessManager.start(args);
+
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            Set<LOG_LEVEL> logLevels = Config.getConfig(process.getProcess()).getLogLevels(process.getProcess());
+            // default log level should be info
+            assertEquals(4, logLevels.size());
+            assertTrue(logLevels.contains(LOG_LEVEL.ERROR));
+            assertTrue(logLevels.contains(LOG_LEVEL.WARN));
+            assertTrue(logLevels.contains(LOG_LEVEL.INFO));
+            assertTrue(logLevels.contains(LOG_LEVEL.DEBUG));
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void testIncorrectLogLevel() throws Exception {
+        Utils.setValueInConfig("log_level", "random");
+        String[] args = { "../" };
+        TestingProcess process = TestingProcessManager.start(args);
+
+        ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(e);
+        assertEquals(e.exception.getMessage(),
+                "'log_level' config must be one of \"NONE\",\"DEBUG\", \"INFO\", \"WARN\" or \"ERROR\".");
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
     private static boolean fileContainsString(ByteArrayOutputStream log, String value) throws IOException {
