@@ -116,29 +116,31 @@ public class CoreConfig {
     @JsonProperty
     private String log_level = "INFO";
 
+    private Set<LOG_LEVEL> allowedLogLevels = null;
+
     public Set<LOG_LEVEL> getLogLevels(Main main) {
-        LOG_LEVEL logLevel = CLIOptions.get(main).getLogLevel();
-        if (logLevel == null) {
-            logLevel = LOG_LEVEL.valueOf(this.log_level.toUpperCase());
+        if (allowedLogLevels != null) {
+            return allowedLogLevels;
         }
-        Set<LOG_LEVEL> result = new HashSet<>();
+        LOG_LEVEL logLevel = LOG_LEVEL.valueOf(this.log_level.toUpperCase());
+        allowedLogLevels = new HashSet<>();
         if (logLevel == LOG_LEVEL.NONE) {
-            return result;
+            return allowedLogLevels;
         }
-        result.add(LOG_LEVEL.ERROR);
+        allowedLogLevels.add(LOG_LEVEL.ERROR);
         if (logLevel == LOG_LEVEL.ERROR) {
-            return result;
+            return allowedLogLevels;
         }
-        result.add(LOG_LEVEL.WARN);
+        allowedLogLevels.add(LOG_LEVEL.WARN);
         if (logLevel == LOG_LEVEL.WARN) {
-            return result;
+            return allowedLogLevels;
         }
-        result.add(LOG_LEVEL.INFO);
+        allowedLogLevels.add(LOG_LEVEL.INFO);
         if (logLevel == LOG_LEVEL.INFO) {
-            return result;
+            return allowedLogLevels;
         }
-        result.add(LOG_LEVEL.DEBUG);
-        return result;
+        allowedLogLevels.add(LOG_LEVEL.DEBUG);
+        return allowedLogLevels;
     }
 
     public String getBasePath() {
