@@ -171,7 +171,7 @@ public class LogLevelTest {
             boolean didOutput = false;
             Logging.error(process.getProcess(), "some message", false);
             Logging.warn(process.getProcess(), "some message");
-            Logging.info(process.getProcess(), "some message");
+            Logging.info(process.getProcess(), "some message", true);
             Logging.debug(process.getProcess(), "some message");
 
             try (Scanner scanner = new Scanner(infoLog, StandardCharsets.UTF_8)) {
@@ -219,7 +219,7 @@ public class LogLevelTest {
 
             Logging.error(process.getProcess(), "some error", false);
             Logging.warn(process.getProcess(), "some warn");
-            Logging.info(process.getProcess(), "some info");
+            Logging.info(process.getProcess(), "some info", true);
             Logging.debug(process.getProcess(), "some debug");
 
             try (Scanner scanner = new Scanner(infoLog, StandardCharsets.UTF_8)) {
@@ -273,7 +273,7 @@ public class LogLevelTest {
 
             Logging.error(process.getProcess(), "some error", false);
             Logging.warn(process.getProcess(), "some warn");
-            Logging.info(process.getProcess(), "some info");
+            Logging.info(process.getProcess(), "some info", true);
             Logging.debug(process.getProcess(), "some debug");
 
             try (Scanner scanner = new Scanner(infoLog, StandardCharsets.UTF_8)) {
@@ -327,7 +327,7 @@ public class LogLevelTest {
 
             Logging.error(process.getProcess(), "some error", false);
             Logging.warn(process.getProcess(), "some warn");
-            Logging.info(process.getProcess(), "some info");
+            Logging.info(process.getProcess(), "some info", true);
             Logging.debug(process.getProcess(), "some debug");
 
             try (Scanner scanner = new Scanner(infoLog, StandardCharsets.UTF_8)) {
@@ -381,7 +381,7 @@ public class LogLevelTest {
 
             Logging.error(process.getProcess(), "some error", false);
             Logging.warn(process.getProcess(), "some warn");
-            Logging.info(process.getProcess(), "some info");
+            Logging.info(process.getProcess(), "some info", true);
             Logging.debug(process.getProcess(), "some debug");
 
             try (Scanner scanner = new Scanner(infoLog, StandardCharsets.UTF_8)) {
