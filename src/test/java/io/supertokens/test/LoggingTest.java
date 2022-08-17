@@ -105,7 +105,7 @@ public class LoggingTest {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
             Logging.error(process.getProcess(), "From Test", false);
-            Logging.info(process.getProcess(), "From Test");
+            Logging.info(process.getProcess(), "From Test", true);
 
             boolean infoFlag = false;
             boolean errorFlag = false;

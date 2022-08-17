@@ -92,13 +92,15 @@ public class Logging extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void info(Main main, String msg) {
+    public static void info(Main main, String msg, boolean toConsoleAsWell) {
         if (!Config.getConfig(main).getLogLevels(main).contains(LOG_LEVEL.INFO)) {
             return;
         }
         try {
             msg = msg.trim();
-            systemOut(msg);
+            if (toConsoleAsWell) {
+                systemOut(msg);
+            }
             if (getInstance(main) != null) {
                 getInstance(main).infoLogger.info(msg);
             }

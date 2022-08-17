@@ -50,7 +50,7 @@ public class Config extends ResourceDistributor.SingletonResource {
             return;
         }
         main.getResourceDistributor().setResource(RESOURCE_KEY, new Config(main, configFilePath));
-        Logging.info(main, "Loading supertokens config.");
+        Logging.info(main, "Loading supertokens config.", true);
     }
 
     public static CoreConfig getConfig(Main main) {

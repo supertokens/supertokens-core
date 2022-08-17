@@ -118,7 +118,7 @@ public class Main {
                 ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.SHUTTING_DOWN, null);
                 stopApp();
 
-                Logging.info(this, "Goodbye");
+                Logging.info(this, "Goodbye", true);
             } catch (Exception e) {
 
                 ProcessState.getInstance(this).addState(ProcessState.PROCESS_STATE.SHUTTING_DOWN, null);
@@ -149,6 +149,8 @@ public class Main {
                         ? CLIOptions.get(this).getInstallationPath() + "config.yaml"
                         : CLIOptions.get(this).getConfigFilePath());
 
+        Logging.info(this, "Completed config.yaml loading.", true);
+
         // loading storage layer
         StorageLayer.init(this, CLIOptions.get(this).getInstallationPath() + "plugin/",
                 CLIOptions.get(this).getConfigFilePath() == null
@@ -160,8 +162,6 @@ public class Main {
 
         // init file logging
         Logging.initFileLogging(this);
-
-        Logging.info(this, "Completed config.yaml loading.");
 
         // initialise cron job handler
         Cronjobs.init(this);
@@ -217,7 +217,7 @@ public class Main {
         // NOTE: If the message below is changed, make sure to also change the corresponding check in the CLI program
         // for start command
         Logging.info(this, "Started SuperTokens on " + Config.getConfig(this).getHost(this) + ":"
-                + Config.getConfig(this).getPort(this) + " with PID: " + ProcessHandle.current().pid());
+                + Config.getConfig(this).getPort(this) + " with PID: " + ProcessHandle.current().pid(), true);
     }
 
     @TestOnly
@@ -331,7 +331,7 @@ public class Main {
             // since we load config before loading anything else
             // below this, and this whole block is surrounded in a
             // try / catch.
-            Logging.info(this, "Stopping SuperTokens...");
+            Logging.info(this, "Stopping SuperTokens...", true);
             Webserver.getInstance(this).stop();
             Cronjobs.shutdownAndAwaitTermination(this);
             if (!Main.isTesting) {

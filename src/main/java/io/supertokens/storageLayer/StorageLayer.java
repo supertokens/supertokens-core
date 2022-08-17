@@ -33,7 +33,6 @@ import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
-import io.supertokens.pluginInterface.userroles.UserRolesStorage;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import org.jetbrains.annotations.TestOnly;
 
@@ -53,7 +52,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     private static URLClassLoader ucl = null;
 
     private StorageLayer(Main main, String pluginFolderPath, String configFilePath) throws MalformedURLException {
-        Logging.info(main, "Loading storage layer.");
+        Logging.info(main, "Loading storage layer.", true);
         if (static_ref_to_storage != null && Main.isTesting) {
             // we reuse the storage layer during testing so that we do not waste
             // time reconnecting to the db.
@@ -97,7 +96,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     && (storageLayerTemp.canBeUsed(configFilePath) || CLIOptions.get(main).isForceNoInMemoryDB())) {
                 this.storage = storageLayerTemp;
             } else {
-                Logging.info(main, "Using in memory storage.");
+                Logging.info(main, "Using in memory storage.", true);
                 this.storage = new Start(main);
             }
         }
