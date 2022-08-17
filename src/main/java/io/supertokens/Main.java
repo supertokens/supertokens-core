@@ -143,14 +143,14 @@ public class Main {
         // Handle kill signal gracefully
         handleKillSignalForWhenItHappens();
 
-        // loading storage layer
-        StorageLayer.init(this, CLIOptions.get(this).getInstallationPath() + "plugin/",
+        // loading configs for core.
+        Config.loadConfig(this,
                 CLIOptions.get(this).getConfigFilePath() == null
                         ? CLIOptions.get(this).getInstallationPath() + "config.yaml"
                         : CLIOptions.get(this).getConfigFilePath());
 
-        // loading configs for core.
-        Config.loadConfig(this,
+        // loading storage layer
+        StorageLayer.init(this, CLIOptions.get(this).getInstallationPath() + "plugin/",
                 CLIOptions.get(this).getConfigFilePath() == null
                         ? CLIOptions.get(this).getInstallationPath() + "config.yaml"
                         : CLIOptions.get(this).getConfigFilePath());

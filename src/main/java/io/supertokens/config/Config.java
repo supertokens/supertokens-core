@@ -50,6 +50,7 @@ public class Config extends ResourceDistributor.SingletonResource {
             return;
         }
         main.getResourceDistributor().setResource(RESOURCE_KEY, new Config(main, configFilePath));
+        Logging.info(main, "Loading supertokens config.");
     }
 
     public static CoreConfig getConfig(Main main) {
@@ -60,7 +61,6 @@ public class Config extends ResourceDistributor.SingletonResource {
     }
 
     private CoreConfig loadCoreConfig(String configFilePath) throws IOException {
-        Logging.info(main, "Loading supertokens config.");
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         CoreConfig config = mapper.readValue(new File(configFilePath), CoreConfig.class);
         config.validateAndInitialise(main);
