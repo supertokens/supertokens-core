@@ -103,3 +103,6 @@ core_config_version: 0
 # (OPTIONAL | Default: 1). Number of concurrent argon2 hashes that can happen at the same time for sign up or sign
 # in requests.
 # argon2_hashing_pool_size:
+
+# (OPTIONAL | Default: "INFO"). Logging level for the core. Values are "DEBUG" | "INFO" | "WARN" | "ERROR" | "NONE"
+# log_level:

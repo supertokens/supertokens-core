@@ -41,11 +41,9 @@ import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
 import io.supertokens.webserver.api.useridmapping.RemoveUserIdMappingAPI;
 import io.supertokens.webserver.api.useridmapping.UpdateExternalUserIdInfoAPI;
 import io.supertokens.webserver.api.useridmapping.UserIdMappingAPI;
-import io.supertokens.webserver.api.usermetadata.UserMetadataAPI;
 import io.supertokens.webserver.api.usermetadata.RemoveUserMetadataAPI;
-
+import io.supertokens.webserver.api.usermetadata.UserMetadataAPI;
 import io.supertokens.webserver.api.userroles.*;
-import io.supertokens.webserver.api.userroles.RemoveUserRoleAPI;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;
@@ -228,7 +226,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
             if (tomcat.getServer() == null) {
                 return;
             }
-            Logging.info(main, "Stopping webserver...");
+            Logging.info(main, "Stopping webserver...", true);
             if (tomcat.getServer().getState() != LifecycleState.DESTROYED) {
                 if (tomcat.getServer().getState() != LifecycleState.STOPPED) {
                     try {

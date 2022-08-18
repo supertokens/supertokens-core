@@ -155,10 +155,11 @@ public abstract class WebserverAPI extends HttpServlet {
             if (this.versionNeeded(req)) {
                 String version = getVersionFromRequest(req);
                 assertThatVersionIsCompatible(version);
-                Logging.debug(main,
-                        "API called: " + this.getPath() + ". Method: " + req.getMethod() + ". Version: " + version);
+                Logging.info(main,
+                        "API called: " + this.getPath() + ". Method: " + req.getMethod() + ". Version: " + version,
+                        false);
             } else {
-                Logging.debug(main, "API called: " + this.getPath() + ". Method: " + req.getMethod());
+                Logging.info(main, "API called: " + this.getPath() + ". Method: " + req.getMethod(), false);
             }
             super.service(req, resp);
         } catch (Exception e) {
@@ -180,7 +181,7 @@ public abstract class WebserverAPI extends HttpServlet {
                 sendTextResponse(500, "Internal Error", resp);
             }
         }
-        Logging.debug(main, "API ended: " + this.getPath() + ". Method: " + req.getMethod());
+        Logging.info(main, "API ended: " + this.getPath() + ". Method: " + req.getMethod(), false);
     }
 
     protected String getRIDFromRequest(HttpServletRequest req) {
