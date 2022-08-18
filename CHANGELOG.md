@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [3.16.0] - 2022-08-18
+
 - Changes logging level of API start / finished & Cronjob start / finished to be `INFO` level instead of `DEBUG` level.
 - Added new config `log_level` to set logging level. Possible values are `DEBUG` | `INFO` | `WARN` | `ERROR` |
   `NONE`. As an example, setting the log level to `WARN` would make the core print out `WARN` and `ERROR` level logs.
