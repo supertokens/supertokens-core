@@ -21,7 +21,9 @@ import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.PBEKeySpec;
 import javax.crypto.spec.SecretKeySpec;
 
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
@@ -294,5 +296,9 @@ public class Utils {
             jwtSigningPublicKeyListJSON.add(keyJSON);
         }
         return jwtSigningPublicKeyListJSON;
+    }
+
+    public static JsonElement toJsonTreeWithNulls(Object src) {
+        return new GsonBuilder().serializeNulls().create().toJsonTree(src);
     }
 }

@@ -69,7 +69,7 @@ public class VerifySessionAPI extends WebserverAPI {
             SessionInformationHolder sessionInfo = Session.getSession(main, accessToken, antiCsrfToken, enableAntiCsrf,
                     doAntiCsrfCheck);
 
-            JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
+            JsonObject result = sessionInfo.toJsonObject();
             result.addProperty("status", "OK");
 
             result.addProperty("jwtSigningPublicKey",

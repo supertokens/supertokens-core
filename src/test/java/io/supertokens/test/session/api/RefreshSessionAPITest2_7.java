@@ -16,6 +16,7 @@
 
 package io.supertokens.test.session.api;
 
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
@@ -363,6 +364,7 @@ public class RefreshSessionAPITest2_7 {
 
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.add("nullProp", JsonNull.INSTANCE);
         userDataInJWT.addProperty("key", "value");
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");

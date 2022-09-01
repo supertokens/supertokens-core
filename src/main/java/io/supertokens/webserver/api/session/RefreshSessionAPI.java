@@ -61,7 +61,7 @@ public class RefreshSessionAPI extends WebserverAPI {
         try {
             SessionInformationHolder sessionInfo = Session.refreshSession(main, refreshToken, antiCsrfToken,
                     enableAntiCsrf);
-            JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
+            JsonObject result = sessionInfo.toJsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException e) {
