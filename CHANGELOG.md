@@ -10,6 +10,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Bug fixes
 
 - Fixed handling of `null` in access token payloads
+- Updated java-jwt to handle `null` claims in JWTs
 
 ## [3.16.0] - 2022-08-18
 
