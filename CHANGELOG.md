@@ -7,6 +7,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [3.16.2] - 2022-09-02
+
+### Bug fixes
+
+- Updated java-jwt to handle `null` claims in JWTs
+
 ## [3.16.1] - 2022-09-02
 
 ### Bug fixes

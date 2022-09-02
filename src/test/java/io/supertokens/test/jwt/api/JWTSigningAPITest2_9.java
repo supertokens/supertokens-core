@@ -20,6 +20,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -330,6 +331,7 @@ public class JWTSigningAPITest2_9 {
         requestBody.addProperty("jwksDomain", "http://localhost");
 
         JsonObject customPayload = new JsonObject();
+        customPayload.add("customNullClaim", JsonNull.INSTANCE);
         customPayload.addProperty("customClaim", "customValue");
         requestBody.add("payload", customPayload);
 
@@ -342,7 +344,9 @@ public class JWTSigningAPITest2_9 {
         String jwt = response.get("jwt").getAsString();
         DecodedJWT decodedJWT = JWT.decode(jwt);
         Claim customClaim = decodedJWT.getClaim("customClaim");
-        assertTrue(!customClaim.isNull() && customClaim.asString().equals("customValue"));
+        assertTrue(!customClaim.isMissing() && customClaim.asString().equals("customValue"));
+        Claim nullClaim = decodedJWT.getClaim("customNullClaim");
+        assertTrue(nullClaim.isNull());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
