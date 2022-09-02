@@ -7,9 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [3.16.1] - 2022-09-02
+
 ### Bug fixes
 
-- Fixed handling of `null` in access token payloads
+- Fixed handling of `null` in access token payloads: https://github.com/supertokens/supertokens-core/issues/499
 
 ## [3.16.0] - 2022-08-18
 
