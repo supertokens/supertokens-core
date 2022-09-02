@@ -19,6 +19,11 @@ package io.supertokens.session.info;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
+
+import io.supertokens.utils.Utils;
+
 public class SessionInformationHolder {
 
     @Nonnull
@@ -43,5 +48,12 @@ public class SessionInformationHolder {
         this.refreshToken = refreshToken;
         this.idRefreshToken = idRefreshToken;
         this.antiCsrfToken = antiCsrfToken;
+    }
+
+    public JsonObject toJsonObject() {
+        JsonObject json = new Gson().toJsonTree(this).getAsJsonObject();
+        json.add("session", Utils.toJsonTreeWithNulls(session));
+
+        return json;
     }
 }

@@ -77,7 +77,7 @@ public class SessionAPI extends WebserverAPI {
             SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf);
 
-            JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
+            JsonObject result = sessionInfo.toJsonObject();
 
             result.addProperty("status", "OK");
 
@@ -108,7 +108,10 @@ public class SessionAPI extends WebserverAPI {
         try {
             SessionInfo sessionInfo = Session.getSession(main, sessionHandle);
 
-            JsonObject result = new JsonParser().parse(new Gson().toJson(sessionInfo)).getAsJsonObject();
+            JsonObject result = new Gson().toJsonTree(sessionInfo).getAsJsonObject();
+            result.add("userDataInJWT", Utils.toJsonTreeWithNulls(sessionInfo.userDataInJWT));
+            result.add("userDataInDatabase", Utils.toJsonTreeWithNulls(sessionInfo.userDataInDatabase));
+
             result.addProperty("status", "OK");
 
             super.sendJsonResponse(200, result, resp);
