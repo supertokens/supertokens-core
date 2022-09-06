@@ -98,14 +98,39 @@ public class EmailPassword {
             String userId = Utils.getUUID();
             long timeJoined = System.currentTimeMillis();
 
+            EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
             try {
-                UserInfo user = new UserInfo(userId, email, passwordHash, timeJoined);
+                ImportUserResponse response = storage.startTransaction(con -> {
 
-                UserInfo response = StorageLayer.getEmailPasswordStorage(main)
-                        .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(user);
-                return new ImportUserResponse(Objects.equals(user.id, response.id), response);
-            } catch (DuplicateUserIdException e) {
-                // we retry with a new userId (while loop)
+                    // check if the user already exists
+                    if (storage.doesUserExist_Transaction(con, email)) {
+                        // retrieve user
+                        UserInfo userInfo = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingEmail(email);
+
+                        // update the user's password hash
+                        storage.updateUsersPassword_Transaction(con, userInfo.id, passwordHash);
+
+                        return new ImportUserResponse(true, userInfo);
+                    }
+
+                    UserInfo userInfo = new UserInfo(userId, email, passwordHash, timeJoined);
+
+                    try {
+                        storage.signUp(userInfo);
+                        return new ImportUserResponse(false, userInfo);
+                    } catch (DuplicateUserIdException e) {
+                        // we return null, the check for response will fail, and we will retry with a new userId
+                        return null;
+                    } catch (DuplicateEmailException e) {
+                        throw new IllegalStateException("should not come here");
+                    }
+                });
+
+                if (response != null) {
+                    return response;
+                }
+            } catch (StorageTransactionLogicException e) {
+                throw new StorageQueryException(e);
             }
         }
     }
