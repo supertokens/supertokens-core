@@ -242,42 +242,6 @@ public class EmailPasswordQueries {
         });
     }
 
-    public static void importUserWithPasswordHash(Start start, UserInfo userInfo)
-            throws StorageQueryException, StorageTransactionLogicException {
-        start.startTransaction(con -> {
-            Connection sqlCon = (Connection) con.getConnection();
-            try {
-                {
-                    String QUERY = "INSERT INTO " + getConfig(start).getUsersTable()
-                            + "(user_id, recipe_id, time_joined)" + " VALUES(?, ?, ?)";
-                    update(sqlCon, QUERY, pst -> {
-                        pst.setString(1, userInfo.id);
-                        pst.setString(2, EMAIL_PASSWORD.toString());
-                        pst.setLong(3, userInfo.timeJoined);
-                    });
-                }
-
-                ((ConnectionWithLocks) sqlCon).lock(userInfo.id + getConfig(start).getEmailPasswordUsersTable());
-
-                {
-                    String QUERY = "INSERT INTO " + getConfig(start).getEmailPasswordUsersTable()
-                            + "(user_id, email, password_hash, time_joined)" + " VALUES(?, ?, ?, ?)";
-                    update(sqlCon, QUERY, pst -> {
-                        pst.setString(1, userInfo.id);
-                        pst.setString(2, userInfo.email);
-                        pst.setString(3, userInfo.passwordHash);
-                        pst.setLong(4, userInfo.timeJoined);
-                    });
-                }
-
-                sqlCon.commit();
-            } catch (SQLException throwables) {
-                throw new StorageTransactionLogicException(throwables);
-            }
-            return null;
-        });
-    }
-
     public static UserInfo getUserInfoUsingId(Start start, String id) throws SQLException, StorageQueryException {
         List<String> input = new ArrayList<>();
         input.add(id);
