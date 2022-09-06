@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import jdk.jshell.execution.Util;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
@@ -39,8 +40,20 @@ import javax.annotation.Nullable;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Objects;
 
 public class EmailPassword {
+
+    public static class ImportUserResponse {
+        public boolean didUserAlreadyExist;
+        public UserInfo user;
+
+        public ImportUserResponse(boolean didUserAlreadyExist, UserInfo user) {
+            this.didUserAlreadyExist = didUserAlreadyExist;
+            this.user = user;
+
+        }
+    }
 
     @TestOnly
     public static long getPasswordResetTokenLifetimeForTests(Main main) {
@@ -71,6 +84,27 @@ public class EmailPassword {
                 return user;
 
             } catch (DuplicateUserIdException ignored) {
+                // we retry with a new userId (while loop)
+            }
+        }
+    }
+
+    public static ImportUserResponse importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(Main main,
+            @Nonnull String email, @Nonnull String passwordHash) throws StorageQueryException {
+
+        // TODO: check if password hash is valid bcrypt or argon2 hash
+
+        while (true) {
+            String userId = Utils.getUUID();
+            long timeJoined = System.currentTimeMillis();
+
+            try {
+                UserInfo user = new UserInfo(userId, email, passwordHash, timeJoined);
+
+                UserInfo response = StorageLayer.getEmailPasswordStorage(main)
+                        .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(user);
+                return new ImportUserResponse(Objects.equals(user.id, response.id), response);
+            } catch (DuplicateUserIdException e) {
                 // we retry with a new userId (while loop)
             }
         }
