@@ -494,40 +494,6 @@ public class Start
         }
     }
 
-//    @Override
-//    public UserInfo importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(UserInfo userInfo)
-//            throws StorageQueryException, DuplicateUserIdException {
-//        try {
-//            EmailPasswordQueries.importUserWithPasswordHash(this, userInfo);
-//            return userInfo;
-//        } catch (StorageTransactionLogicException eTemp) {
-//            Exception e = eTemp.actualException;
-//            if (e.getMessage()
-//                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-//                            + Config.getConfig(this).getEmailPasswordUsersTable() + ".email)")) {
-//                // user already exists, so we just update the password hash
-//                try {
-//                    this.startTransaction(con -> {
-//                        updateUsersPassword_Transaction(con, userInfo.id, userInfo.passwordHash);
-//                        return null;
-//                    });
-//                } catch (StorageTransactionLogicException ex) {
-//                    throw new StorageQueryException(e);
-//                }
-//                return getUserInfoUsingEmail(userInfo.email);
-//            }
-//            if (e.getMessage()
-//                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-//                            + Config.getConfig(this).getEmailPasswordUsersTable() + ".user_id)")
-//                    || e.getMessage()
-//                            .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-//                                    + Config.getConfig(this).getUsersTable() + ".user_id)")) {
-//                throw new DuplicateUserIdException();
-//            }
-//            throw new StorageQueryException(e);
-//        }
-//    }
-
     @Override
     public void deleteEmailPasswordUser(String userId) throws StorageQueryException {
         try {
