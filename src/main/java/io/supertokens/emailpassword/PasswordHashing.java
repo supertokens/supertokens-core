@@ -114,8 +114,10 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     }
 
     private String replaceUnsupportedIdentifierForBcryptPasswordHashVerification(String hash) {
-        // Identifiers $2b, $2x and $2y are not recognized JBcrypt which only recognizes $2a, but, the actual hashed
-        // password can be verified using JBcrypt, so we replace the identifier for verification
+        // JbCrypt only supports $2a as the identifier. Identifiers like $2b, $2x and $2y will not work with JBcrypt
+        // even though the actual password hash can be verified.
+        // We can simply replace the identifier with $2a and BCrypt will also be able to verify password hashes with the
+        // other identifiers.
         if (hash.startsWith("$2b") || hash.startsWith("$2x") || hash.startsWith("$2y")) {
             // we replace the unsupported identifier with $2a
             return "$2a" + hash.substring(3);
@@ -126,7 +128,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     public boolean doesSuperTokensSupportInputPasswordHashFormat(String hash) {
         // argon2 hash looks like $argon2id$v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
         // bcrypt hash starts with the algorithm identifier which can be $2a$, $2y$, $2b$ or $2x$,
-        // the number of rounds, the salt and finally the hashed password.
+        // the number of rounds, the salt and finally the hashed password value.
         return (hash.startsWith("$argon2id") || hash.startsWith("$2a") || hash.startsWith("$2x")
                 || hash.startsWith("$2y") || hash.startsWith("$2b"));
     }
