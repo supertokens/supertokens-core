@@ -94,11 +94,8 @@ public class EmailPassword {
     public static ImportUserResponse importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(Main main,
             @Nonnull String email, @Nonnull String passwordHash)
             throws StorageQueryException, StorageTransactionLogicException, ServletException {
-        // argon2 hash looks like $argon2id$v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
-        // bcrypt hash starts with the algorithm identifier which can be $2a$, $2y$ or $2x$,
-        // the number of rounds, the salt and finally the hashed password.
-        if (!(passwordHash.startsWith("$argon2id") || passwordHash.startsWith("$2a$") || passwordHash.startsWith("$2b$")
-                || passwordHash.startsWith("$2x$") || passwordHash.startsWith("$2y$"))) {
+
+        if (!PasswordHashing.getInstance(main).isInputAValidPasswordHash(passwordHash)) {
             throw new ServletException(
                     new WebserverAPI.BadRequestException("Password Hash is not in Bcrypt or Argon2 format"));
         }
