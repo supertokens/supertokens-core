@@ -53,7 +53,6 @@ public class EmailPassword {
         public ImportUserResponse(boolean didUserAlreadyExist, UserInfo user) {
             this.didUserAlreadyExist = didUserAlreadyExist;
             this.user = user;
-
         }
     }
 
