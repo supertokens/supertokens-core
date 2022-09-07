@@ -18,7 +18,9 @@ package io.supertokens.test.emailpassword.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.HttpRequestTest;
 import io.supertokens.test.TestingProcessManager;
@@ -30,8 +32,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 
 public class ImportUserWithPasswordHashAPITest {
     @Rule
@@ -147,6 +148,91 @@ public class ImportUserWithPasswordHashAPITest {
             assertTrue(e.statusCode == 400 && e.getMessage()
                     .equals("Http error. Status Code: 400. Message: Password Hash is not in Bcrypt or Argon2 format"));
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // migrate a user with email and password hash sign in and check that the user is created and the password works
+    @Test
+    public void testGoodInput() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String email = "test@example.com";
+        String plainTextPassword = "testPass123";
+        String passwordHash = "$2a$10$S6bOFset3wCUcgNGSBgFxOHBIopaiPEK53YFNalvmiPcOodCK2Ehq";
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email", email);
+        requestBody.addProperty("passwordHash", passwordHash);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_16ForTests(), "emailpassword");
+
+        assertEquals("OK", response.get("status").getAsString());
+        assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
+
+        // try signing in with the new user
+        JsonObject signInRequestBody = new JsonObject();
+        signInRequestBody.addProperty("email", email);
+        signInRequestBody.addProperty("password", plainTextPassword);
+
+        JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signin", signInRequestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_16ForTests(), "emailpassword");
+        assertEquals("OK", signInResponse.get("status").getAsString());
+        assertEquals(signInResponse.get("user").getAsJsonObject(), response.get("user").getAsJsonObject());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUpdatingAUsersPasswordHash() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // sign up a user
+        String email = "test@example.com";
+        String password = "testPass123";
+
+        UserInfo initialUserInfo = EmailPassword.signUp(process.main, email, password);
+
+        // update a user's passwordHash
+
+        String newPassword = "newTestPass123";
+        String passwordHash = "$2a$10$X2oX3mWh8JfgPTKtkKmc9OQwUVQAulwkGgIjcsK8h3rojHVQTebV6";
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email", email);
+        requestBody.addProperty("passwordHash", passwordHash);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_16ForTests(), "emailpassword");
+        assertEquals("OK", response.get("status").getAsString());
+        assertTrue(response.get("didUserAlreadyExist").getAsBoolean());
+
+        // check that a new user was not created by comparing userIds
+        assertEquals(initialUserInfo.id, response.get("user").getAsJsonObject().get("id").getAsString());
+
+        // sign in with the new password to check if the password hash got updated
+        UserInfo updatedUserInfo = EmailPassword.signIn(process.main, email, newPassword);
+        assertEquals(updatedUserInfo.passwordHash, passwordHash);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
