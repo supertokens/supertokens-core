@@ -103,14 +103,6 @@ public class EmailPasswordQueries {
         return execute(start, QUERY, pst -> pst.setString(1, userId), EmailPasswordQueries::getPasswordResetTokenInfos);
     }
 
-    public static boolean doesUserExist_Transaction(Start start, Connection con, String email)
-            throws SQLException, StorageQueryException {
-        ((ConnectionWithLocks) con).lock(email + getConfig(start).getEmailPasswordUsersTable());
-
-        String QUERY = "SELECT 1 FROM " + getConfig(start).getEmailPasswordUsersTable() + " WHERE email = ?";
-        return execute(con, QUERY, pst -> pst.setString(1, email), ResultSet::next);
-    }
-
     @NotNull
     private static PasswordResetTokenInfo[] getPasswordResetTokenInfos(ResultSet result)
             throws SQLException, StorageQueryException {

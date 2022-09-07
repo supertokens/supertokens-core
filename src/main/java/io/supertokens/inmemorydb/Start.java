@@ -624,17 +624,6 @@ public class Start
     }
 
     @Override
-    public boolean doesUserExist_Transaction(TransactionConnection con, String email) throws StorageQueryException {
-        Connection sqlCon = (Connection) con.getConnection();
-
-        try {
-            return EmailPasswordQueries.doesUserExist_Transaction(this, sqlCon, email);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     @Deprecated
     public UserInfo[] getUsers(@NotNull String userId, @NotNull Long timeJoined, @NotNull Integer limit,
             @NotNull String timeJoinedOrder) throws StorageQueryException {

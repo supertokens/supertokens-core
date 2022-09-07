@@ -32,11 +32,13 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import io.supertokens.webserver.WebserverAPI;
 import jdk.jshell.execution.Util;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.servlet.ServletException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
@@ -90,47 +92,37 @@ public class EmailPassword {
     }
 
     public static ImportUserResponse importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(Main main,
-            @Nonnull String email, @Nonnull String passwordHash) throws StorageQueryException {
+            @Nonnull String email, @Nonnull String passwordHash)
+            throws StorageQueryException, StorageTransactionLogicException, ServletException {
 
-        // TODO: check if password hash is valid bcrypt or argon2 hash
+        if (!(passwordHash.startsWith("$argon2id") || passwordHash.startsWith("$2b$")
+                || passwordHash.startsWith("$2a$"))) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("Password Hash is not in Bcrypt or Argon2 format"));
+        }
 
         while (true) {
             String userId = Utils.getUUID();
             long timeJoined = System.currentTimeMillis();
 
+            UserInfo userInfo = new UserInfo(userId, email, passwordHash, timeJoined);
             EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
+
             try {
-                ImportUserResponse response = storage.startTransaction(con -> {
-
-                    // check if the user already exists
-                    if (storage.doesUserExist_Transaction(con, email)) {
-                        // retrieve user
-                        UserInfo userInfo = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingEmail(email);
-
-                        // update the user's password hash
-                        storage.updateUsersPassword_Transaction(con, userInfo.id, passwordHash);
-
-                        return new ImportUserResponse(true, userInfo);
-                    }
-
-                    UserInfo userInfo = new UserInfo(userId, email, passwordHash, timeJoined);
-
-                    try {
-                        storage.signUp(userInfo);
-                        return new ImportUserResponse(false, userInfo);
-                    } catch (DuplicateUserIdException e) {
-                        // we return null, the check for response will fail, and we will retry with a new userId
+                StorageLayer.getEmailPasswordStorage(main).signUp(userInfo);
+                return new ImportUserResponse(false, userInfo);
+            } catch (DuplicateUserIdException e) {
+                // we retry with a new userId
+            } catch (DuplicateEmailException e) {
+                UserInfo userInfoToBeUpdated = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingEmail(email);
+                // if user does not exist we retry signup
+                if (userInfoToBeUpdated != null) {
+                    storage.startTransaction(con -> {
+                        storage.updateUsersPassword_Transaction(con, userInfoToBeUpdated.id, passwordHash);
                         return null;
-                    } catch (DuplicateEmailException e) {
-                        throw new IllegalStateException("should not come here");
-                    }
-                });
-
-                if (response != null) {
-                    return response;
+                    });
+                    return new ImportUserResponse(true, userInfoToBeUpdated);
                 }
-            } catch (StorageTransactionLogicException e) {
-                throw new StorageQueryException(e);
             }
         }
     }
