@@ -101,11 +101,11 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         }
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT, null);
 
-        String bCryptPasswordHash = replaceUnsupportedIdentifierForPasswordHash(hash);
+        String bCryptPasswordHash = replaceUnsupportedIdentifierForBcryptPasswordHashVerification(hash);
         return BCrypt.checkpw(password, bCryptPasswordHash);
     }
 
-    private String replaceUnsupportedIdentifierForPasswordHash(String hash) {
+    private String replaceUnsupportedIdentifierForBcryptPasswordHashVerification(String hash) {
         // Identifiers $2b, $2x and $2y are not recognized JBcrypt which only recognizes $2a, but, the actual hashed
         // password can be verified using JBcrypt, so we replace the identifier for verification
         if (hash.startsWith("$2b") || hash.startsWith("$2x") || hash.startsWith("$2y")) {
