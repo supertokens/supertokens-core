@@ -63,6 +63,9 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
             throw new ServletException(new WebserverAPI.BadRequestException("Password hash cannot be an empty string"));
         }
 
+        // normalise password hash
+        passwordHash = passwordHash.trim();
+
         try {
             EmailPassword.ImportUserResponse importUserResponse = EmailPassword
                     .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(main, normalisedEmail, passwordHash);

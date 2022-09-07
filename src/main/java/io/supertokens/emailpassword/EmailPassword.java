@@ -33,7 +33,6 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
-import jdk.jshell.execution.Util;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
@@ -42,7 +41,6 @@ import javax.servlet.ServletException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Objects;
 
 public class EmailPassword {
 
@@ -94,9 +92,8 @@ public class EmailPassword {
             @Nonnull String email, @Nonnull String passwordHash)
             throws StorageQueryException, StorageTransactionLogicException, ServletException {
 
-        if (!PasswordHashing.getInstance(main).isInputAValidPasswordHash(passwordHash)) {
-            throw new ServletException(
-                    new WebserverAPI.BadRequestException("Password Hash is not in Bcrypt or Argon2 format"));
+        if (!PasswordHashing.getInstance(main).doesSuperTokensSupportInputPasswordHashFormat(passwordHash)) {
+            throw new ServletException(new WebserverAPI.BadRequestException("Unsupported password hashing format"));
         }
 
         while (true) {

@@ -58,16 +58,24 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     }
 
     public String createHashWithSalt(String password) {
+
+        String passwordHash;
+
         if (Config.getConfig(main).getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.BCRYPT) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT, null);
-            return BCrypt.hashpw(password, BCrypt.gensalt(Config.getConfig(main).getBcryptLogRounds()));
+            passwordHash = BCrypt.hashpw(password, BCrypt.gensalt(Config.getConfig(main).getBcryptLogRounds()));
+        } else {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON, null);
+
+            passwordHash = withConcurrencyLimited(() -> argon2.hash(Config.getConfig(main).getArgon2Iterations(),
+                    Config.getConfig(main).getArgon2MemoryKb(), Config.getConfig(main).getArgon2Parallelism(),
+                    password.toCharArray()));
         }
 
-        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON, null);
-
-        return withConcurrencyLimited(() -> argon2.hash(Config.getConfig(main).getArgon2Iterations(),
-                Config.getConfig(main).getArgon2MemoryKb(), Config.getConfig(main).getArgon2Parallelism(),
-                password.toCharArray()));
+        if (!doesSuperTokensSupportInputPasswordHashFormat(passwordHash)) {
+            throw new IllegalStateException("Unsupported password hashing format");
+        }
+        return passwordHash;
     }
 
     public interface Func<T> {
@@ -115,7 +123,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         return hash;
     }
 
-    public boolean isInputAValidPasswordHash(String hash) {
+    public boolean doesSuperTokensSupportInputPasswordHashFormat(String hash) {
         // argon2 hash looks like $argon2id$v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
         // bcrypt hash starts with the algorithm identifier which can be $2a$, $2y$, $2b$ or $2x$,
         // the number of rounds, the salt and finally the hashed password.

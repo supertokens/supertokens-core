@@ -146,7 +146,7 @@ public class ImportUserWithPasswordHashAPITest {
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
-                    .equals("Http error. Status Code: 400. Message: Password Hash is not in Bcrypt or Argon2 format"));
+                    .equals("Http error. Status Code: 400. Message: Unsupported password hashing format"));
         }
 
         process.kill();
