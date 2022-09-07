@@ -114,7 +114,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     }
 
     private String replaceUnsupportedIdentifierForBcryptPasswordHashVerification(String hash) {
-        // JbCrypt only supports $2a as the identifier. Identifiers like $2b, $2x and $2y will not work with JBcrypt
+        // JbCrypt only supports $2a as the identifier. Identifiers like $2b, $2x and $2y are not recognized by JBcrypt
         // even though the actual password hash can be verified.
         // We can simply replace the identifier with $2a and BCrypt will also be able to verify password hashes with the
         // other identifiers.
