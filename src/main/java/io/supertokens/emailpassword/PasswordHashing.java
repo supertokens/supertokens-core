@@ -117,7 +117,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
 
     public boolean isInputAValidPasswordHash(String hash) {
         // argon2 hash looks like $argon2id$v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
-        // bcrypt hash starts with the algorithm identifier which can be $2a$, $2y$ or $2x$,
+        // bcrypt hash starts with the algorithm identifier which can be $2a$, $2y$, $2b$ or $2x$,
         // the number of rounds, the salt and finally the hashed password.
         return (hash.startsWith("$argon2id") || hash.startsWith("$2a") || hash.startsWith("$2x")
                 || hash.startsWith("$2y") || hash.startsWith("$2b"));
