@@ -19,7 +19,7 @@ compileTestJava { options.encoding = "UTF-8" }
 //    }
 //}
 
-version = "3.16.0"
+version = "3.16.2"
 
 
 repositories {
@@ -59,7 +59,7 @@ dependencies {
     implementation group: 'de.mkammerer', name: 'argon2-jvm', version: '2.11'
 
     // https://mvnrepository.com/artifact/com.auth0/java-jwt
-    implementation 'com.auth0:java-jwt:3.18.1'
+    implementation 'com.auth0:java-jwt:4.0.0'
 
     compileOnly project(":supertokens-plugin-interface")
     testImplementation project(":supertokens-plugin-interface")

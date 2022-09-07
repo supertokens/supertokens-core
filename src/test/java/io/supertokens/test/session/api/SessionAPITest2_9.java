@@ -17,6 +17,7 @@
 package io.supertokens.test.session.api;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
@@ -136,6 +137,37 @@ public class SessionAPITest2_9 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
+    }
+
+    @Test
+    public void successOutputCheckWithNullsInPayload() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+
+        JsonObject innerObj = new JsonObject();
+        innerObj.add("nullProp", JsonNull.INSTANCE);
+        innerObj.addProperty("stringProp", "value");
+
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("stringProp", "value");
+        userDataInJWT.add("nullProp", JsonNull.INSTANCE);
+
+        JsonObject request = new JsonObject();
+        request.addProperty("userId", userId);
+        request.add("userDataInJWT", userDataInJWT);
+        request.add("userDataInDatabase", new JsonObject());
+        request.addProperty("enableAntiCsrf", false);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "session");
+        checkSessionResponse(response, process, userId, userDataInJWT);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
