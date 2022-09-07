@@ -100,7 +100,19 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
             return withConcurrencyLimited(() -> argon2.verify(hash, password.toCharArray()));
         }
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT, null);
-        return BCrypt.checkpw(password, hash);
+
+        String bCryptPasswordHash = replaceUnsupportedIdentifierForPasswordHash(hash);
+        return BCrypt.checkpw(password, bCryptPasswordHash);
+    }
+
+    private String replaceUnsupportedIdentifierForPasswordHash(String hash) {
+        // Identifiers $2b, $2x and $2y are not recognized JBcrypt which only recognizes $2a, but, the actual hashed
+        // password can be verified using JBcrypt, so we replace the identifier for verification
+        if (hash.startsWith("$2b") || hash.startsWith("$2x") || hash.startsWith("$2y")) {
+            // we replace the unsupported identifier with $2a
+            return "$2a" + hash.substring(3);
+        }
+        return hash;
     }
 
     @TestOnly

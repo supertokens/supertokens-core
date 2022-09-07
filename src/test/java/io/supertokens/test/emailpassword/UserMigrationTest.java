@@ -143,4 +143,116 @@ public class UserMigrationTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    // test bcrypt with different salt rounds
+    @Test
+    public void testAddingBcryptHashesWithDifferentSaltRounds() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // adding a user with a bcrypt passwordHash with 5 rounds
+
+        String email = "test@example.com";
+        String password = "testPass123";
+        String passwordHash = "$2a$05$vTNtOWhKVVLxCQDePmmsa.Loz9RuwwWajZtkchIVLIu4/.ncSTwfq";
+
+        EmailPassword.ImportUserResponse response = EmailPassword
+                .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(process.main, email, passwordHash);
+        assertFalse(response.didUserAlreadyExist);
+
+        // test that sign in works
+        UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+        assertEquals(userInfo.email, email);
+        assertEquals(userInfo.passwordHash, passwordHash);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // test bcrypt with different salt rounds
+    @Test
+    public void testAddingBcryptHashesWithDifferentVersions() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // using $2a$
+
+        {
+            String email = "test@example.com";
+            String password = "testPass123";
+            String passwordHash = "$2a$05$vTNtOWhKVVLxCQDePmmsa.Loz9RuwwWajZtkchIVLIu4/.ncSTwfq";
+
+            EmailPassword.ImportUserResponse response = EmailPassword
+                    .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(process.main, email, passwordHash);
+            assertFalse(response.didUserAlreadyExist);
+
+            // test that sign in works
+            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(userInfo.email, email);
+            assertEquals(userInfo.passwordHash, passwordHash);
+        }
+
+        // using $2b$
+        {
+            String email = "test2@example.com";
+            String password = "testPass123";
+            String passwordHash = "$2b$10$Tix3Vpu93kiaZRLPPzD6QOIm62x0l5gRdvlyark5S.MLn/NY6t4gS";
+
+            EmailPassword.ImportUserResponse response = EmailPassword
+                    .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(process.main, email, passwordHash);
+            assertFalse(response.didUserAlreadyExist);
+
+            // test that sign in works
+            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(userInfo.email, email);
+            assertEquals(userInfo.passwordHash, passwordHash);
+        }
+
+        // using $2x$
+        {
+            String email = "test3@example.com";
+            String password = "testPass123";
+            String passwordHash = "$2x$05$vTNtOWhKVVLxCQDePmmsa.Loz9RuwwWajZtkchIVLIu4/.ncSTwfq";
+
+            EmailPassword.ImportUserResponse response = EmailPassword
+                    .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(process.main, email, passwordHash);
+            assertFalse(response.didUserAlreadyExist);
+
+            // test that sign in works
+            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(userInfo.email, email);
+            assertEquals(userInfo.passwordHash, passwordHash);
+        }
+
+        // using $2y$
+        {
+            String email = "test4@example.com";
+            String password = "testPass123";
+            String passwordHash = "$2y$10$lib5x4nbosKuK31FI8gG1OPVi/EuVHRVM7qmg1EiGADYYcIxTMJfa";
+
+            EmailPassword.ImportUserResponse response = EmailPassword
+                    .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(process.main, email, passwordHash);
+            assertFalse(response.didUserAlreadyExist);
+
+            // test that sign in works
+            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(userInfo.email, email);
+            assertEquals(userInfo.passwordHash, passwordHash);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
