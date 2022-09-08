@@ -64,8 +64,8 @@ public class UserMigrationTest {
             String passwordHash = "$2a$10$GzEm3vKoAqnJCTWesRARCe/ovjt/07qjvcH9jbLUg44Fn77gMZkmm";
 
             // migrate user with passwordHash
-            EmailPassword.ImportUserResponse importUserResponse = EmailPassword
-                    .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(process.main, email, passwordHash);
+            EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(process.main,
+                    email, passwordHash);
             // check that the user was created
             assertFalse(importUserResponse.didUserAlreadyExist);
             // try and sign in with plainTextPassword
@@ -83,8 +83,8 @@ public class UserMigrationTest {
             String passwordHash = "$argon2id$v=19$m=16,t=2,p=1$VG1Oa1lMbzZLbzk5azQ2Qg$kjcNNtZ/b0t/8HgXUiQ76A";
 
             // migrate user with passwordHash
-            EmailPassword.ImportUserResponse importUserResponse = EmailPassword
-                    .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(process.main, email, passwordHash);
+            EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(process.main,
+                    email, passwordHash);
             // check that the user was created
             assertFalse(importUserResponse.didUserAlreadyExist);
             // try and sign in with plainTextPassword
@@ -119,8 +119,8 @@ public class UserMigrationTest {
         String newPassword = "newTestPass123";
         String newPasswordHash = "$2a$10$uV17z2rVB3W5Rp4MeJeB4OdRX/Z7oFMLpUbdzyX9bDrk6kvZiOT1G";
 
-        EmailPassword.ImportUserResponse response = EmailPassword
-                .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(process.main, email, newPasswordHash);
+        EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+                newPasswordHash);
         // check that the user already exists
         assertTrue(response.didUserAlreadyExist);
 
@@ -162,8 +162,8 @@ public class UserMigrationTest {
         String password = "testPass123";
         String passwordHash = "$2a$05$vTNtOWhKVVLxCQDePmmsa.Loz9RuwwWajZtkchIVLIu4/.ncSTwfq";
 
-        EmailPassword.ImportUserResponse response = EmailPassword
-                .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(process.main, email, passwordHash);
+        EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+                passwordHash);
         assertFalse(response.didUserAlreadyExist);
 
         // test that sign in works
@@ -175,7 +175,83 @@ public class UserMigrationTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // test bcrypt with different salt rounds
+    @Test
+    public void testUsingArgon2HashesWithDifferentConfigValues() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String email = "test@example.com";
+        String password = "testing123";
+        // using password hash generated with argon2id parallelism factor = 1, memory cost = 16 iterations = 2 hash
+        // length =16
+        String passwordHash = "$argon2id$v=19$m=16,t=2,p=1$alJQU1VpOG9VWXlqV0dlYw$Z/a978a9nPSlmwIFb5Mrjw";
+
+        EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+                passwordHash);
+        assertFalse(response.didUserAlreadyExist);
+
+        // test that sign in works
+        UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+        assertEquals(userInfo.email, email);
+        assertEquals(userInfo.passwordHash, passwordHash);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testAddingArgon2WithDifferentVersions() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // using argon2i
+        {
+            String email = "test@example.com";
+            String password = "testing123";
+            String passwordHash = "$argon2i$v=19$m=16,t=2,p=1$alJQU1VpOG9VWXlqV0dlYw$mThT4E5LULSyn/XhCZc9Hw";
+
+            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+                    passwordHash);
+            assertFalse(response.didUserAlreadyExist);
+
+            // test that sign in works
+            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(userInfo.email, email);
+            assertEquals(userInfo.passwordHash, passwordHash);
+        }
+
+        // $argon2d
+        {
+            String email = "test2@example.com";
+            String password = "testing123";
+            String passwordHash = "$argon2d$v=19$m=16,t=2,p=1$alJQU1VpOG9VWXlqV0dlYw$Ktlqf9xi1Toyx1XcbCwVUQ";
+
+            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+                    passwordHash);
+            assertFalse(response.didUserAlreadyExist);
+
+            // test that sign in works
+            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(userInfo.email, email);
+            assertEquals(userInfo.passwordHash, passwordHash);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     @Test
     public void testAddingBcryptHashesWithDifferentVersions() throws Exception {
         String[] args = { "../" };
@@ -194,8 +270,8 @@ public class UserMigrationTest {
             String password = "testPass123";
             String passwordHash = "$2a$05$vTNtOWhKVVLxCQDePmmsa.Loz9RuwwWajZtkchIVLIu4/.ncSTwfq";
 
-            EmailPassword.ImportUserResponse response = EmailPassword
-                    .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(process.main, email, passwordHash);
+            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+                    passwordHash);
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works
@@ -210,8 +286,8 @@ public class UserMigrationTest {
             String password = "testPass123";
             String passwordHash = "$2b$10$Tix3Vpu93kiaZRLPPzD6QOIm62x0l5gRdvlyark5S.MLn/NY6t4gS";
 
-            EmailPassword.ImportUserResponse response = EmailPassword
-                    .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(process.main, email, passwordHash);
+            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+                    passwordHash);
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works
@@ -226,8 +302,8 @@ public class UserMigrationTest {
             String password = "testPass123";
             String passwordHash = "$2x$05$vTNtOWhKVVLxCQDePmmsa.Loz9RuwwWajZtkchIVLIu4/.ncSTwfq";
 
-            EmailPassword.ImportUserResponse response = EmailPassword
-                    .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(process.main, email, passwordHash);
+            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+                    passwordHash);
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works
@@ -242,8 +318,8 @@ public class UserMigrationTest {
             String password = "testPass123";
             String passwordHash = "$2y$10$lib5x4nbosKuK31FI8gG1OPVi/EuVHRVM7qmg1EiGADYYcIxTMJfa";
 
-            EmailPassword.ImportUserResponse response = EmailPassword
-                    .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(process.main, email, passwordHash);
+            EmailPassword.ImportUserResponse response = EmailPassword.importUserWithPasswordHash(process.main, email,
+                    passwordHash);
             assertFalse(response.didUserAlreadyExist);
 
             // test that sign in works

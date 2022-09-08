@@ -43,7 +43,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     }
 
     // argon2 instances are thread safe: https://github.com/phxql/argon2-jvm/issues/35
-    private static Argon2 argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id, ARGON2_SALT_LENGTH,
+    private static Argon2 argon2id = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id, ARGON2_SALT_LENGTH,
             ARGON2_HASH_LENGTH);
 
     public static PasswordHashing getInstance(Main main) {
@@ -67,7 +67,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         } else {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON, null);
 
-            passwordHash = withConcurrencyLimited(() -> argon2.hash(Config.getConfig(main).getArgon2Iterations(),
+            passwordHash = withConcurrencyLimited(() -> argon2id.hash(Config.getConfig(main).getArgon2Iterations(),
                     Config.getConfig(main).getArgon2MemoryKb(), Config.getConfig(main).getArgon2Parallelism(),
                     password.toCharArray()));
         }
@@ -102,11 +102,26 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     }
 
     public boolean verifyPasswordWithHash(String password, String hash) {
-        if (hash.startsWith("$argon2id")) { // argon2 hash looks like $argon2id$v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
-            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON, null);
 
-            return withConcurrencyLimited(() -> argon2.verify(hash, password.toCharArray()));
+        if (hash.startsWith("$argon2id")) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON, null);
+            return withConcurrencyLimited(() -> argon2id.verify(hash, password.toCharArray()));
         }
+
+        if (hash.startsWith("$argon2i")) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON, null);
+            Argon2 argon2i = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2i, ARGON2_SALT_LENGTH,
+                    ARGON2_HASH_LENGTH);
+            return withConcurrencyLimited(() -> argon2i.verify(hash, password.toCharArray()));
+        }
+
+        if (hash.startsWith("$argon2d")) { // argon2 hash looks like $argon2id$v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON, null);
+            Argon2 argon2d = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2d, ARGON2_SALT_LENGTH,
+                    ARGON2_HASH_LENGTH);
+            return withConcurrencyLimited(() -> argon2d.verify(hash, password.toCharArray()));
+        }
+
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT, null);
 
         String bCryptPasswordHash = replaceUnsupportedIdentifierForBcryptPasswordHashVerification(hash);
@@ -126,11 +141,12 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     }
 
     public boolean doesSuperTokensSupportInputPasswordHashFormat(String hash) {
-        // argon2 hash looks like $argon2id$v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
+        // argon2 hash looks like $argon2id or $argon2d or $argon2i $v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
         // bcrypt hash starts with the algorithm identifier which can be $2a$, $2y$, $2b$ or $2x$,
         // the number of rounds, the salt and finally the hashed password value.
-        return (hash.startsWith("$argon2id") || hash.startsWith("$2a") || hash.startsWith("$2x")
-                || hash.startsWith("$2y") || hash.startsWith("$2b"));
+        return (hash.startsWith("$argon2id") || hash.startsWith("$argon2i") || hash.startsWith("$argon2d")
+                || hash.startsWith("$2a") || hash.startsWith("$2x") || hash.startsWith("$2y")
+                || hash.startsWith("$2b"));
     }
 
     @TestOnly

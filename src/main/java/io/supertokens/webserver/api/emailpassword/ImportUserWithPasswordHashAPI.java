@@ -67,8 +67,8 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
         passwordHash = passwordHash.trim();
 
         try {
-            EmailPassword.ImportUserResponse importUserResponse = EmailPassword
-                    .importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(main, normalisedEmail, passwordHash);
+            EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(main,
+                    normalisedEmail, passwordHash);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             JsonObject userJson = new JsonParser().parse(new Gson().toJson(importUserResponse.user)).getAsJsonObject();

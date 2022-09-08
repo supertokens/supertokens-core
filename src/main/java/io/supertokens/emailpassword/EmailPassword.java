@@ -88,8 +88,8 @@ public class EmailPassword {
         }
     }
 
-    public static ImportUserResponse importUserWithPasswordHashOrUpdatePasswordHashIfUserExists(Main main,
-            @Nonnull String email, @Nonnull String passwordHash)
+    public static ImportUserResponse importUserWithPasswordHash(Main main, @Nonnull String email,
+            @Nonnull String passwordHash)
             throws StorageQueryException, StorageTransactionLogicException, ServletException {
 
         if (!PasswordHashing.getInstance(main).doesSuperTokensSupportInputPasswordHashFormat(passwordHash)) {
