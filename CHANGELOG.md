@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [3.17.0] - 2022-09-08
+
 - Adds an EmailPassword User migration API which allows you to import users with their email and password hashes.
 
 ## [3.16.2] - 2022-09-02
