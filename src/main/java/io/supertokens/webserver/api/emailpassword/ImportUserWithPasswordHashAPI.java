@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -52,6 +53,8 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
         String passwordHash = InputParser.parseStringOrThrowError(input, "passwordHash", false);
+        String hashingAlgorithm = InputParser.parseStringOrThrowError(input, "hashingAlgorithm", true);
+
         assert passwordHash != null;
         assert email != null;
 
@@ -65,6 +68,18 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
 
         // normalise password hash
         passwordHash = passwordHash.trim();
+
+        if (hashingAlgorithm != null) {
+            if (hashingAlgorithm.equals("")) {
+                throw new ServletException(
+                        new WebserverAPI.BadRequestException("Hashing Algorithm cannot be an empty string"));
+            }
+            // normalise hashing algorithm string
+            String normalisedHashingAlgorithm = hashingAlgorithm.trim();
+
+            PasswordHashing.getInstance(main).checkIfHashingAlgorithmIsSupported(normalisedHashingAlgorithm,
+                    passwordHash);
+        }
 
         try {
             EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(main,

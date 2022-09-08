@@ -23,9 +23,11 @@ import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
+import io.supertokens.webserver.WebserverAPI;
 import org.jetbrains.annotations.TestOnly;
 import org.mindrot.jbcrypt.BCrypt;
 
+import javax.servlet.ServletException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -141,12 +143,37 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     }
 
     public boolean doesSuperTokensSupportInputPasswordHashFormat(String hash) {
-        // argon2 hash looks like $argon2id or $argon2d or $argon2i $v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
+        return (isInputHashInBcryptFormat(hash) || isInputHashInArgon2Format(hash));
+    }
+
+    private static boolean isInputHashInBcryptFormat(String hash) {
         // bcrypt hash starts with the algorithm identifier which can be $2a$, $2y$, $2b$ or $2x$,
         // the number of rounds, the salt and finally the hashed password value.
-        return (hash.startsWith("$argon2id") || hash.startsWith("$argon2i") || hash.startsWith("$argon2d")
-                || hash.startsWith("$2a") || hash.startsWith("$2x") || hash.startsWith("$2y")
-                || hash.startsWith("$2b"));
+        return (hash.startsWith("$2a") || hash.startsWith("$2x") || hash.startsWith("$2y") || hash.startsWith("$2b"));
+    }
+
+    private static boolean isInputHashInArgon2Format(String hash) {
+        // argon2 hash looks like $argon2id or $argon2d or $argon2i $v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
+        return (hash.startsWith("$argon2id") || hash.startsWith("$argon2i") || hash.startsWith("$argon2d"));
+    }
+
+    public void checkIfHashingAlgorithmIsSupported(String hashingAlgorithm, String passwordHash)
+            throws ServletException {
+        if (hashingAlgorithm.equals("argon2")) {
+            if (!isInputHashInArgon2Format(passwordHash)) {
+                throw new ServletException(
+                        new WebserverAPI.BadRequestException("Password hash is in invalid Argon2 format"));
+            }
+            return;
+        }
+        if (hashingAlgorithm.equals("bcrypt")) {
+            if (!isInputHashInBcryptFormat(passwordHash)) {
+                throw new ServletException(
+                        new WebserverAPI.BadRequestException("Password hash is in invalid BCrypt format"));
+            }
+            return;
+        }
+        throw new ServletException(new WebserverAPI.BadRequestException("Unsupported password hashing algorithm"));
     }
 
     @TestOnly

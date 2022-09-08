@@ -149,6 +149,51 @@ public class ImportUserWithPasswordHashAPITest {
                     .equals("Http error. Status Code: 400. Message: Unsupported password hashing format"));
         }
 
+        // passing a random string as hashingAlgorithm
+        try {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", "test@example.com");
+            requestBody.addProperty("passwordHash", "somePasswordHash");
+            requestBody.addProperty("hashingAlgorithm", "random");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+            throw new Exception("Should not come here");
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertTrue(e.statusCode == 400 && e.getMessage()
+                    .equals("Http error. Status Code: 400. Message: Unsupported password hashing algorithm"));
+        }
+
+        // passing hashingAlgorithm as bcrypt with random password hash
+        try {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", "test@example.com");
+            requestBody.addProperty("passwordHash", "invalidHash");
+            requestBody.addProperty("hashingAlgorithm", "bcrypt");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+            throw new Exception("Should not come here");
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertTrue(e.statusCode == 400 && e.getMessage()
+                    .equals("Http error. Status Code: 400. Message: Password hash is in invalid BCrypt format"));
+        }
+
+        // passing hashingAlgorithm as argon2 with random password hash
+        try {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", "test@example.com");
+            requestBody.addProperty("passwordHash", "invalidHash");
+            requestBody.addProperty("hashingAlgorithm", "argon2");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+            throw new Exception("Should not come here");
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertTrue(e.statusCode == 400 && e.getMessage()
+                    .equals("Http error. Status Code: 400. Message: Password hash is in invalid Argon2 format"));
+        }
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -237,4 +282,66 @@ public class ImportUserWithPasswordHashAPITest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testImportingUsersWithHashingAlgorithmField() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        {
+            String email = "test@example.com";
+            String password = "newTestPass123";
+            String passwordHash = "$2a$10$X2oX3mWh8JfgPTKtkKmc9OQwUVQAulwkGgIjcsK8h3rojHVQTebV6";
+            String hashingAlgorithm = "bcrypt";
+
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", email);
+            requestBody.addProperty("passwordHash", passwordHash);
+            requestBody.addProperty("hashingAlgorithm", hashingAlgorithm);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+            assertEquals("OK", response.get("status").getAsString());
+            assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
+
+            // check that the user is created by signing in
+            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(email, userInfo.email);
+            assertEquals(userInfo.passwordHash, passwordHash);
+
+        }
+
+        {
+            String email = "test2@example.com";
+            String password = "newTestPass123";
+            String passwordHash = "$argon2id$v=19$m=16,t=2,p=1$V2hkNUdjQnAxTXZScGRjOQ$UxJn6d+dRB0hOe7FX/Qv+Q";
+            String hashingAlgorithm = "argon2";
+
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", email);
+            requestBody.addProperty("passwordHash", passwordHash);
+            requestBody.addProperty("hashingAlgorithm", hashingAlgorithm);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+            assertEquals("OK", response.get("status").getAsString());
+            assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
+
+            // check that the user is created by signing in
+            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(email, userInfo.email);
+            assertEquals(userInfo.passwordHash, passwordHash);
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 }
