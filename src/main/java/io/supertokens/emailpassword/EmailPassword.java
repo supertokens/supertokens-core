@@ -122,6 +122,7 @@ public class EmailPassword {
         }
     }
 
+    @TestOnly
     public static ImportUserResponse importUserWithPasswordHash(Main main, @Nonnull String email,
             @Nonnull String passwordHash)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
