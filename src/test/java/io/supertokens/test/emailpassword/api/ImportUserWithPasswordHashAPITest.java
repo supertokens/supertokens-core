@@ -284,6 +284,67 @@ public class ImportUserWithPasswordHashAPITest {
     }
 
     @Test
+    public void testImportingUsersWithHashingAlgorithmFieldWithMixedLowerAndUpperCase() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        {
+            String email = "test@example.com";
+            String password = "newTestPass123";
+            String passwordHash = "$2a$10$X2oX3mWh8JfgPTKtkKmc9OQwUVQAulwkGgIjcsK8h3rojHVQTebV6";
+            String hashingAlgorithm = "BcRyPt";
+
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", email);
+            requestBody.addProperty("passwordHash", passwordHash);
+            requestBody.addProperty("hashingAlgorithm", hashingAlgorithm);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+            assertEquals("OK", response.get("status").getAsString());
+            assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
+
+            // check that the user is created by signing in
+            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(email, userInfo.email);
+            assertEquals(userInfo.passwordHash, passwordHash);
+
+        }
+
+        {
+            String email = "test2@example.com";
+            String password = "newTestPass123";
+            String passwordHash = "$argon2id$v=19$m=16,t=2,p=1$V2hkNUdjQnAxTXZScGRjOQ$UxJn6d+dRB0hOe7FX/Qv+Q";
+            String hashingAlgorithm = "ArGoN2";
+
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", email);
+            requestBody.addProperty("passwordHash", passwordHash);
+            requestBody.addProperty("hashingAlgorithm", hashingAlgorithm);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+            assertEquals("OK", response.get("status").getAsString());
+            assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
+
+            // check that the user is created by signing in
+            UserInfo userInfo = EmailPassword.signIn(process.main, email, password);
+            assertEquals(email, userInfo.email);
+            assertEquals(userInfo.passwordHash, passwordHash);
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testImportingUsersWithHashingAlgorithmField() throws Exception {
         String[] args = { "../" };
 
