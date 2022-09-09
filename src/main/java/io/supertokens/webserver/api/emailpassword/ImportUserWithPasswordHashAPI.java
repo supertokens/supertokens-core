@@ -22,6 +22,8 @@ import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.PasswordHashing;
+import io.supertokens.emailpassword.PasswordHashingAlgorithm;
+import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -53,7 +55,7 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
         String passwordHash = InputParser.parseStringOrThrowError(input, "passwordHash", false);
-        String hashingAlgorithm = InputParser.parseStringOrThrowError(input, "hashingAlgorithm", true);
+        String hashingAlgorithmString = InputParser.parseStringOrThrowError(input, "hashingAlgorithm", true);
 
         assert passwordHash != null;
         assert email != null;
@@ -69,21 +71,29 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
         // normalise password hash
         passwordHash = passwordHash.trim();
 
-        if (hashingAlgorithm != null) {
-            if (hashingAlgorithm.equals("")) {
+        PasswordHashingAlgorithm passwordHashingAlgorithm = null;
+
+        if (hashingAlgorithmString != null) {
+            if (hashingAlgorithmString.equals("")) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("Hashing Algorithm cannot be an empty string"));
             }
             // normalise hashing algorithm string
-            String normalisedHashingAlgorithm = hashingAlgorithm.trim();
+            String normalisedHashingAlgorithm = hashingAlgorithmString.trim();
 
-            PasswordHashing.getInstance(main).checkIfHashingAlgorithmIsSupported(normalisedHashingAlgorithm,
-                    passwordHash);
+            if (normalisedHashingAlgorithm.equals("bcrypt")) {
+                passwordHashingAlgorithm = PasswordHashingAlgorithm.BCRYPT;
+            } else if (normalisedHashingAlgorithm.equals("argon2")) {
+                passwordHashingAlgorithm = PasswordHashingAlgorithm.ARGON2;
+            } else {
+                throw new ServletException(
+                        new WebserverAPI.BadRequestException("Unsupported password hashing algorithm"));
+            }
         }
 
         try {
             EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(main,
-                    normalisedEmail, passwordHash);
+                    normalisedEmail, passwordHash, passwordHashingAlgorithm);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             JsonObject userJson = new JsonParser().parse(new Gson().toJson(importUserResponse.user)).getAsJsonObject();
@@ -92,6 +102,8 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
             super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             throw new ServletException(e);
+        } catch (UnsupportedPasswordHashingFormatException e) {
+            throw new ServletException(new WebserverAPI.BadRequestException(e.getMessage()));
         }
 
     }

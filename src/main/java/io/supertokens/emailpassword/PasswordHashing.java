@@ -23,6 +23,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
+import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.webserver.WebserverAPI;
 import org.jetbrains.annotations.TestOnly;
 import org.mindrot.jbcrypt.BCrypt;
@@ -157,23 +158,21 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         return (hash.startsWith("$argon2id") || hash.startsWith("$argon2i") || hash.startsWith("$argon2d"));
     }
 
-    public void checkIfHashingAlgorithmIsSupported(String hashingAlgorithm, String passwordHash)
-            throws ServletException {
-        if (hashingAlgorithm.equals("argon2")) {
+    public String updatePasswordHashWithPrefixIfRequired(PasswordHashingAlgorithm hashingAlgorithm, String passwordHash)
+            throws UnsupportedPasswordHashingFormatException {
+        if (hashingAlgorithm.equals(PasswordHashingAlgorithm.ARGON2)) {
             if (!isInputHashInArgon2Format(passwordHash)) {
-                throw new ServletException(
-                        new WebserverAPI.BadRequestException("Password hash is in invalid Argon2 format"));
+                throw new UnsupportedPasswordHashingFormatException("Password hash is in invalid Argon2 format");
             }
-            return;
+            return passwordHash;
         }
-        if (hashingAlgorithm.equals("bcrypt")) {
+        if (hashingAlgorithm.equals(PasswordHashingAlgorithm.BCRYPT)) {
             if (!isInputHashInBcryptFormat(passwordHash)) {
-                throw new ServletException(
-                        new WebserverAPI.BadRequestException("Password hash is in invalid BCrypt format"));
+                throw new UnsupportedPasswordHashingFormatException("Password hash is in invalid BCrypt format");
             }
-            return;
+            return passwordHash;
         }
-        throw new ServletException(new WebserverAPI.BadRequestException("Unsupported password hashing algorithm"));
+        throw new IllegalStateException("Invalid hashing algorithm");
     }
 
     @TestOnly

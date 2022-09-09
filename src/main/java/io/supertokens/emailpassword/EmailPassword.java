@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.config.Config;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
+import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -89,11 +90,14 @@ public class EmailPassword {
     }
 
     public static ImportUserResponse importUserWithPasswordHash(Main main, @Nonnull String email,
-            @Nonnull String passwordHash)
-            throws StorageQueryException, StorageTransactionLogicException, ServletException {
+            @Nonnull String passwordHash, @Nullable PasswordHashingAlgorithm hashingAlgorithm)
+            throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
 
-        if (!PasswordHashing.getInstance(main).doesSuperTokensSupportInputPasswordHashFormat(passwordHash)) {
-            throw new ServletException(new WebserverAPI.BadRequestException("Unsupported password hashing format"));
+        if (hashingAlgorithm != null) {
+            passwordHash = PasswordHashing.getInstance(main).updatePasswordHashWithPrefixIfRequired(hashingAlgorithm,
+                    passwordHash);
+        } else if (!PasswordHashing.getInstance(main).doesSuperTokensSupportInputPasswordHashFormat(passwordHash)) {
+            throw new UnsupportedPasswordHashingFormatException("Unsupported password hashing format");
         }
 
         while (true) {
@@ -112,14 +116,21 @@ public class EmailPassword {
                 UserInfo userInfoToBeUpdated = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingEmail(email);
                 // if user does not exist we retry signup
                 if (userInfoToBeUpdated != null) {
+                    String finalPasswordHash = passwordHash;
                     storage.startTransaction(con -> {
-                        storage.updateUsersPassword_Transaction(con, userInfoToBeUpdated.id, passwordHash);
+                        storage.updateUsersPassword_Transaction(con, userInfoToBeUpdated.id, finalPasswordHash);
                         return null;
                     });
                     return new ImportUserResponse(true, userInfoToBeUpdated);
                 }
             }
         }
+    }
+
+    public static ImportUserResponse importUserWithPasswordHash(Main main, @Nonnull String email,
+            @Nonnull String passwordHash) throws StorageQueryException, StorageTransactionLogicException,
+            ServletException, UnsupportedPasswordHashingFormatException {
+        return importUserWithPasswordHash(main, email, passwordHash, null);
     }
 
     public static UserInfo signIn(Main main, @Nonnull String email, @Nonnull String password)
