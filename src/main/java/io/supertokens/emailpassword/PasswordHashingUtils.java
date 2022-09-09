@@ -41,11 +41,13 @@ public class PasswordHashingUtils {
                     || isInputHashInArgon2Format(passwordHash) /* || isInputHashInScryptFormat(passwordHash) */)) {
                 throw new UnsupportedPasswordHashingFormatException("Password hash is in invalid format");
             }
+            return;
         }
         if (hashingAlgorithm.equals(PasswordHashingAlgorithm.ARGON2)) {
             if (!isInputHashInArgon2Format(passwordHash)) {
                 throw new UnsupportedPasswordHashingFormatException("Password hash is in invalid Argon2 format");
             }
+            return;
         }
         if (hashingAlgorithm.equals(PasswordHashingAlgorithm.BCRYPT)) {
             if (!isInputHashInBcryptFormat(passwordHash)) {

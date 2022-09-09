@@ -146,7 +146,7 @@ public class ImportUserWithPasswordHashAPITest {
             throw new Exception("Should not come here");
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
-                    .equals("Http error. Status Code: 400. Message: Unsupported password hashing format"));
+                    .equals("Http error. Status Code: 400. Message: Password hash is in invalid format"));
         }
 
         // passing a random string as hashingAlgorithm
