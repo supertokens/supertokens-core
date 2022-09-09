@@ -62,38 +62,36 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
 
         // logic according to https://github.com/supertokens/supertokens-core/issues/101
 
-        String normalisedEmail = Utils.normaliseEmail(email);
+        email = Utils.normaliseEmail(email);
+
+        // normalise password hash
+        passwordHash = passwordHash.trim();
 
         if (passwordHash.equals("")) {
             throw new ServletException(new WebserverAPI.BadRequestException("Password hash cannot be an empty string"));
         }
 
-        // normalise password hash
-        passwordHash = passwordHash.trim();
-
         PasswordHashingAlgorithm passwordHashingAlgorithm = null;
 
         if (hashingAlgorithmString != null) {
+            // normalise hashing algorithm string
+            hashingAlgorithmString = hashingAlgorithmString.trim().toUpperCase();
+
             if (hashingAlgorithmString.equals("")) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("Hashing Algorithm cannot be an empty string"));
             }
-            // normalise hashing algorithm string
-            String normalisedHashingAlgorithm = hashingAlgorithmString.trim();
-
-            if (normalisedHashingAlgorithm.equals("bcrypt")) {
-                passwordHashingAlgorithm = PasswordHashingAlgorithm.BCRYPT;
-            } else if (normalisedHashingAlgorithm.equals("argon2")) {
-                passwordHashingAlgorithm = PasswordHashingAlgorithm.ARGON2;
-            } else {
+            try {
+                passwordHashingAlgorithm = PasswordHashingAlgorithm.valueOf(hashingAlgorithmString);
+            } catch (IllegalArgumentException e) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("Unsupported password hashing algorithm"));
             }
         }
 
         try {
-            EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(main,
-                    normalisedEmail, passwordHash, passwordHashingAlgorithm);
+            EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(main, email,
+                    passwordHash, passwordHashingAlgorithm);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             JsonObject userJson = new JsonParser().parse(new Gson().toJson(importUserResponse.user)).getAsJsonObject();

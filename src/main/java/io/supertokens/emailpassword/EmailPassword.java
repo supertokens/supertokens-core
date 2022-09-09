@@ -33,7 +33,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
-import io.supertokens.webserver.WebserverAPI;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
@@ -93,12 +92,8 @@ public class EmailPassword {
             @Nonnull String passwordHash, @Nullable PasswordHashingAlgorithm hashingAlgorithm)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
 
-        if (hashingAlgorithm != null) {
-            passwordHash = PasswordHashing.getInstance(main).updatePasswordHashWithPrefixIfRequired(hashingAlgorithm,
-                    passwordHash);
-        } else if (!PasswordHashing.getInstance(main).doesSuperTokensSupportInputPasswordHashFormat(passwordHash)) {
-            throw new UnsupportedPasswordHashingFormatException("Unsupported password hashing format");
-        }
+        passwordHash = PasswordHashingUtils.updatePasswordHashWithPrefixIfRequired(passwordHash, hashingAlgorithm);
+        PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(passwordHash, hashingAlgorithm);
 
         while (true) {
             String userId = Utils.getUUID();
@@ -128,8 +123,8 @@ public class EmailPassword {
     }
 
     public static ImportUserResponse importUserWithPasswordHash(Main main, @Nonnull String email,
-            @Nonnull String passwordHash) throws StorageQueryException, StorageTransactionLogicException,
-            ServletException, UnsupportedPasswordHashingFormatException {
+            @Nonnull String passwordHash)
+            throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
         return importUserWithPasswordHash(main, email, passwordHash, null);
     }
 

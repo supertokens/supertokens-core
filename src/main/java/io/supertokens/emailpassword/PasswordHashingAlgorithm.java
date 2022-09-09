@@ -17,5 +17,5 @@
 package io.supertokens.emailpassword;
 
 public enum PasswordHashingAlgorithm {
-    ARGON2, BCRYPT
+    ARGON2, BCRYPT, /* SCRYPT */
 }

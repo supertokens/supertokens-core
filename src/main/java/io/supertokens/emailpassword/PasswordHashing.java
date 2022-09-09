@@ -24,11 +24,9 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
-import io.supertokens.webserver.WebserverAPI;
 import org.jetbrains.annotations.TestOnly;
 import org.mindrot.jbcrypt.BCrypt;
 
-import javax.servlet.ServletException;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
@@ -79,8 +77,10 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
                     password.toCharArray()));
         }
 
-        if (!doesSuperTokensSupportInputPasswordHashFormat(passwordHash)) {
-            throw new IllegalStateException("Unsupported password hashing format");
+        try {
+            PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(passwordHash, null);
+        } catch (UnsupportedPasswordHashingFormatException e) {
+            throw new IllegalStateException(e);
         }
         return passwordHash;
     }
@@ -110,69 +110,31 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
 
     public boolean verifyPasswordWithHash(String password, String hash) {
 
-        if (hash.startsWith("$argon2id")) {
+        if (PasswordHashingUtils.isInputHashInArgon2Format(hash)) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON, null);
-            return withConcurrencyLimited(() -> argon2id.verify(hash, password.toCharArray()));
-        }
-
-        if (hash.startsWith("$argon2i")) {
-            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON, null);
-            return withConcurrencyLimited(() -> argon2i.verify(hash, password.toCharArray()));
-        }
-
-        if (hash.startsWith("$argon2d")) { // argon2 hash looks like $argon2id$v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
-            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON, null);
-            return withConcurrencyLimited(() -> argon2d.verify(hash, password.toCharArray()));
-        }
-
-        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT, null);
-
-        String bCryptPasswordHash = replaceUnsupportedIdentifierForBcryptPasswordHashVerification(hash);
-        return BCrypt.checkpw(password, bCryptPasswordHash);
-    }
-
-    private String replaceUnsupportedIdentifierForBcryptPasswordHashVerification(String hash) {
-        // JbCrypt only supports $2a as the identifier. Identifiers like $2b, $2x and $2y are not recognized by JBcrypt
-        // even though the actual password hash can be verified.
-        // We can simply replace the identifier with $2a and BCrypt will also be able to verify password hashes
-        // generated with other identifiers
-        if (hash.startsWith("$2b") || hash.startsWith("$2x") || hash.startsWith("$2y")) {
-            // we replace the unsupported identifier with $2a
-            return "$2a" + hash.substring(3);
-        }
-        return hash;
-    }
-
-    public boolean doesSuperTokensSupportInputPasswordHashFormat(String hash) {
-        return (isInputHashInBcryptFormat(hash) || isInputHashInArgon2Format(hash));
-    }
-
-    private static boolean isInputHashInBcryptFormat(String hash) {
-        // bcrypt hash starts with the algorithm identifier which can be $2a$, $2y$, $2b$ or $2x$,
-        // the number of rounds, the salt and finally the hashed password value.
-        return (hash.startsWith("$2a") || hash.startsWith("$2x") || hash.startsWith("$2y") || hash.startsWith("$2b"));
-    }
-
-    private static boolean isInputHashInArgon2Format(String hash) {
-        // argon2 hash looks like $argon2id or $argon2d or $argon2i $v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
-        return (hash.startsWith("$argon2id") || hash.startsWith("$argon2i") || hash.startsWith("$argon2d"));
-    }
-
-    public String updatePasswordHashWithPrefixIfRequired(PasswordHashingAlgorithm hashingAlgorithm, String passwordHash)
-            throws UnsupportedPasswordHashingFormatException {
-        if (hashingAlgorithm.equals(PasswordHashingAlgorithm.ARGON2)) {
-            if (!isInputHashInArgon2Format(passwordHash)) {
-                throw new UnsupportedPasswordHashingFormatException("Password hash is in invalid Argon2 format");
+            if (hash.startsWith("$argon2id")) {
+                return withConcurrencyLimited(() -> argon2id.verify(hash, password.toCharArray()));
             }
-            return passwordHash;
-        }
-        if (hashingAlgorithm.equals(PasswordHashingAlgorithm.BCRYPT)) {
-            if (!isInputHashInBcryptFormat(passwordHash)) {
-                throw new UnsupportedPasswordHashingFormatException("Password hash is in invalid BCrypt format");
+
+            if (hash.startsWith("$argon2i")) {
+                return withConcurrencyLimited(() -> argon2i.verify(hash, password.toCharArray()));
             }
-            return passwordHash;
+
+            if (hash.startsWith("$argon2d")) { // argon2 hash looks like
+                                               // $argon2id$v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
+                return withConcurrencyLimited(() -> argon2d.verify(hash, password.toCharArray()));
+            }
+        } else if (PasswordHashingUtils.isInputHashInBcryptFormat(hash)) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT, null);
+            String bCryptPasswordHash = PasswordHashingUtils
+                    .replaceUnsupportedIdentifierForBcryptPasswordHashVerification(hash);
+            return BCrypt.checkpw(password, bCryptPasswordHash);
         }
-        throw new IllegalStateException("Invalid hashing algorithm");
+//        else if (PasswordHashingUtils.isInputHashInScryptFormat(hash)){
+//            // TODO:
+//        }
+
+        return false;
     }
 
     @TestOnly
