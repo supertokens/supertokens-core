@@ -18,6 +18,8 @@ package io.supertokens.emailpassword;
 
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 
+import javax.annotation.Nullable;
+
 public class PasswordHashingUtils {
 
     public static String replaceUnsupportedIdentifierForBcryptPasswordHashVerification(String hash) {
@@ -33,7 +35,7 @@ public class PasswordHashingUtils {
     }
 
     public static void assertSuperTokensSupportInputPasswordHashFormat(String passwordHash,
-            PasswordHashingAlgorithm hashingAlgorithm) throws UnsupportedPasswordHashingFormatException {
+            @Nullable PasswordHashingAlgorithm hashingAlgorithm) throws UnsupportedPasswordHashingFormatException {
         if (hashingAlgorithm == null) {
             if (!(isInputHashInBcryptFormat(passwordHash)
                     || isInputHashInArgon2Format(passwordHash) /* || isInputHashInScryptFormat(passwordHash) */)) {
