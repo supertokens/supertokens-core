@@ -194,6 +194,74 @@ public class ImportUserWithPasswordHashAPITest {
                     .equals("Http error. Status Code: 400. Message: Password hash is in invalid Argon2 format"));
         }
 
+        // passing hashingAlgorithm as firebase_scrypt with random password hash
+        try {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", "test@example.com");
+            requestBody.addProperty("passwordHash", "invalidHash");
+            requestBody.addProperty("hashingAlgorithm", "firebase_scrypt");
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+            throw new Exception("Should not come here");
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                    "Http error. Status Code: 400. Message: Password hash is in invalid Firebase SCrypt format"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testImportingAUserFromFireBaseWithFirebaseSCryptPasswordHash() throws Exception {
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("firebase_signing_key",
+                "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
+        Utils.setValueInConfig("firebase_mem_cost", "14");
+        Utils.setValueInConfig("firebase_rounds", "8");
+        Utils.setValueInConfig("firebase_salt_separator", "Bw==");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String email = "test@example.com";
+        String password = "testPass123";
+        String salt = "/cj0jC1br5o4+w==";
+        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
+        String combinedPasswordHash = salt + "|" + passwordHash;
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email", email);
+        requestBody.addProperty("passwordHash", combinedPasswordHash);
+        requestBody.addProperty("hashingAlgorithm", "firebase_scrypt");
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/user/passwordhash/import", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_16ForTests(), "emailpassword");
+
+        assertEquals("OK", response.get("status").getAsString());
+        assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
+
+        // try signing in with the new user
+        JsonObject signInRequestBody = new JsonObject();
+        signInRequestBody.addProperty("email", email);
+        signInRequestBody.addProperty("password", password);
+
+        JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signin", signInRequestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_16ForTests(), "emailpassword");
+        assertEquals("OK", signInResponse.get("status").getAsString());
+        assertEquals(signInResponse.get("user").getAsJsonObject(), response.get("user").getAsJsonObject());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

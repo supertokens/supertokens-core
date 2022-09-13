@@ -129,10 +129,12 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
             String bCryptPasswordHash = PasswordHashingUtils
                     .replaceUnsupportedIdentifierForBcryptPasswordHashVerification(hash);
             return BCrypt.checkpw(password, bCryptPasswordHash);
+        } else if (PasswordHashingUtils.isInputHashInFirebaseScryptFormat(hash)) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_FIREBASE_SCRYPT, null);
+            return PasswordHashingUtils.verifyFirebaseSCryptPasswordHash(password, hash,
+                    Config.getConfig(main).getFirebaseMemCost(), Config.getConfig(main).getFirebaseRounds(),
+                    Config.getConfig(main).getFirebaseSaltSeparator(), Config.getConfig(main).getFirebasSigningKey());
         }
-//        else if (PasswordHashingUtils.isInputHashInScryptFormat(hash)){
-//            // TODO:
-//        }
 
         return false;
     }

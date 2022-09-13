@@ -106,3 +106,15 @@ disable_telemetry: true
 
 # (OPTIONAL | Default: "INFO"). Logging level for the core. Values are "DEBUG" | "INFO" | "WARN" | "ERROR" | "NONE"
 # log_level:
+
+# (OPTIONAL | Default: null). The signing key used for firebase scrypt password hashing
+# firebase_signing_key:
+
+# (OPTIONAL | Default: null). The memory cost for firebase scrypt password hashing
+# firebase_mem_cost:
+
+# (OPTIONAL | Default: null). Number of rounds to set for firebase scrypt password hashing
+# firebase_rounds:
+
+# (OPTIONAL | Default: null). The salt separator for firebase scrypt password hashing
+# firebase_salt_separator:

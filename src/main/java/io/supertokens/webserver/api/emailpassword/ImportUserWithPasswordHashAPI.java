@@ -103,6 +103,5 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
         } catch (UnsupportedPasswordHashingFormatException e) {
             throw new ServletException(new WebserverAPI.BadRequestException(e.getMessage()));
         }
-
     }
 }
