@@ -263,9 +263,6 @@ public class ImportUserWithPasswordHashAPITest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     // migrate a user with email and password hash sign in and check that the user is created and the password works
