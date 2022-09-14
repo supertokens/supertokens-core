@@ -64,12 +64,12 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
 
     public String createHashWithSalt(String password) {
 
-        String passwordHash;
+        String passwordHash = "";
 
         if (Config.getConfig(main).getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.BCRYPT) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT, null);
             passwordHash = BCrypt.hashpw(password, BCrypt.gensalt(Config.getConfig(main).getBcryptLogRounds()));
-        } else {
+        } else if (Config.getConfig(main).getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.ARGON2) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON, null);
 
             passwordHash = withConcurrencyLimited(() -> argon2id.hash(Config.getConfig(main).getArgon2Iterations(),
@@ -129,11 +129,10 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
             String bCryptPasswordHash = PasswordHashingUtils
                     .replaceUnsupportedIdentifierForBcryptPasswordHashVerification(hash);
             return BCrypt.checkpw(password, bCryptPasswordHash);
-        } else if (PasswordHashingUtils.isInputHashInFirebaseScryptFormat(hash)) {
+        } else if (PasswordHashingUtils.isInputHashInFirebaseSCryptFormat(hash)) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_FIREBASE_SCRYPT, null);
             return PasswordHashingUtils.verifyFirebaseSCryptPasswordHash(password, hash,
-                    Config.getConfig(main).getFirebaseMemCost(), Config.getConfig(main).getFirebaseRounds(),
-                    Config.getConfig(main).getFirebaseSaltSeparator(), Config.getConfig(main).getFirebasSigningKey());
+                    Config.getConfig(main).getFirebaseSigningKey());
         }
 
         return false;

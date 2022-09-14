@@ -119,15 +119,6 @@ public class CoreConfig {
     @JsonProperty
     private String firebase_signing_key = null;
 
-    @JsonProperty
-    private Integer firebase_mem_cost = null;
-
-    @JsonProperty
-    private Integer firebase_rounds = null;
-
-    @JsonProperty
-    private String firebase_salt_separator = null;
-
     private Set<LOG_LEVEL> allowedLogLevels = null;
 
     public Set<LOG_LEVEL> getLogLevels(Main main) {
@@ -200,20 +191,8 @@ public class CoreConfig {
         return argon2_parallelism;
     }
 
-    public String getFirebasSigningKey() {
+    public String getFirebaseSigningKey() {
         return firebase_signing_key;
-    }
-
-    public int getFirebaseMemCost() {
-        return firebase_mem_cost;
-    }
-
-    public int getFirebaseRounds() {
-        return firebase_rounds;
-    }
-
-    public String getFirebaseSaltSeparator() {
-        return firebase_salt_separator;
     }
 
     public PASSWORD_HASHING_ALG getPasswordHashingAlg() {

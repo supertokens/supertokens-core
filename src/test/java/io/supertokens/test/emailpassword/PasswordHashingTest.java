@@ -68,9 +68,6 @@ public class PasswordHashingTest {
 
         Utils.setValueInConfig("firebase_signing_key",
                 "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
-        Utils.setValueInConfig("firebase_mem_cost", "14");
-        Utils.setValueInConfig("firebase_rounds", "8");
-        Utils.setValueInConfig("firebase_salt_separator", "Bw==");
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -79,11 +76,16 @@ public class PasswordHashingTest {
             return;
         }
 
+        int firebaseMemCost = 14;
+        int firebaseRounds = 8;
+        String firebaseSaltSeparator = "Bw==";
+
         String email = "test@example.com";
         String password = "testPass123";
         String salt = "/cj0jC1br5o4+w==";
         String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
-        String combinedPasswordHash = salt + "|" + passwordHash;
+        String combinedPasswordHash = passwordHash + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds
+                + "$s=" + firebaseSaltSeparator;
 
         EmailPassword.importUserWithPasswordHash(process.main, email, combinedPasswordHash,
                 PasswordHashingAlgorithm.FIREBASE_SCRYPT);
@@ -91,7 +93,7 @@ public class PasswordHashingTest {
         // try signing in
         UserInfo user = EmailPassword.signIn(process.main, email, password);
         assertEquals(user.email, email);
-        assertEquals(user.passwordHash, "f_scrypt" + combinedPasswordHash);
+        assertEquals(user.passwordHash, "f_scrypt$" + combinedPasswordHash);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
