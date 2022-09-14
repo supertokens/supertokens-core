@@ -164,7 +164,7 @@ public class CoreConfig {
     }
 
     public enum PASSWORD_HASHING_ALG {
-        ARGON2, BCRYPT
+        ARGON2, BCRYPT, FIREBASE_SCRYPT
     }
 
     public int getArgon2HashingPoolSize() {

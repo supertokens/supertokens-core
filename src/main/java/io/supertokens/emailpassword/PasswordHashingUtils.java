@@ -16,6 +16,7 @@
 
 package io.supertokens.emailpassword;
 
+import io.supertokens.config.CoreConfig;
 import com.lambdaworks.crypto.SCrypt;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import org.apache.tomcat.util.codec.binary.Base64;
@@ -66,27 +67,28 @@ public class PasswordHashingUtils {
     }
 
     public static void assertSuperTokensSupportInputPasswordHashFormat(String passwordHash,
-            @Nullable PasswordHashingAlgorithm hashingAlgorithm) throws UnsupportedPasswordHashingFormatException {
+            @Nullable CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
+            throws UnsupportedPasswordHashingFormatException {
         if (hashingAlgorithm == null) {
-            if (!(isInputHashInBcryptFormat(passwordHash) || isInputHashInArgon2Format(passwordHash)
-                    || isInputHashInFirebaseSCryptFormat(passwordHash))) {
+            if (!(isInputHashInBcryptFormat(passwordHash)
+                    || isInputHashInArgon2Format(passwordHash) /* || isInputHashInScryptFormat(passwordHash) */)) {
                 throw new UnsupportedPasswordHashingFormatException("Password hash is in invalid format");
             }
             return;
         }
-        if (hashingAlgorithm.equals(PasswordHashingAlgorithm.ARGON2)) {
+        if (hashingAlgorithm.equals(CoreConfig.PASSWORD_HASHING_ALG.ARGON2)) {
             if (!isInputHashInArgon2Format(passwordHash)) {
                 throw new UnsupportedPasswordHashingFormatException("Password hash is in invalid Argon2 format");
             }
             return;
         }
-        if (hashingAlgorithm.equals(PasswordHashingAlgorithm.BCRYPT)) {
+        if (hashingAlgorithm.equals(CoreConfig.PASSWORD_HASHING_ALG.BCRYPT)) {
             if (!isInputHashInBcryptFormat(passwordHash)) {
                 throw new UnsupportedPasswordHashingFormatException("Password hash is in invalid BCrypt format");
             }
         }
 
-        if (hashingAlgorithm.equals(PasswordHashingAlgorithm.FIREBASE_SCRYPT)) {
+        if (hashingAlgorithm.equals(CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT)) {
             if (!isInputHashInFirebaseSCryptFormat(passwordHash)) {
                 throw new UnsupportedPasswordHashingFormatException(
                         "Password hash is in invalid Firebase SCrypt format");
@@ -95,12 +97,12 @@ public class PasswordHashingUtils {
     }
 
     public static String updatePasswordHashWithPrefixIfRequired(String passwordHash,
-            PasswordHashingAlgorithm hashingAlgorithm) {
+            CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm) {
         if (hashingAlgorithm == null) {
             return passwordHash;
         }
 
-        if (hashingAlgorithm == PasswordHashingAlgorithm.FIREBASE_SCRYPT) {
+        if (hashingAlgorithm == CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT) {
             if (doesPasswordHashHaveFireBaseSCryptPrefix(passwordHash)) {
                 return passwordHash;
             }

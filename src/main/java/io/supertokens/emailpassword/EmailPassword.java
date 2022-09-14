@@ -19,6 +19,7 @@ package io.supertokens.emailpassword;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
@@ -89,7 +90,7 @@ public class EmailPassword {
     }
 
     public static ImportUserResponse importUserWithPasswordHash(Main main, @Nonnull String email,
-            @Nonnull String passwordHash, @Nullable PasswordHashingAlgorithm hashingAlgorithm)
+            @Nonnull String passwordHash, @Nullable CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
 
         passwordHash = PasswordHashingUtils.updatePasswordHashWithPrefixIfRequired(passwordHash, hashingAlgorithm);
