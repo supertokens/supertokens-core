@@ -100,6 +100,9 @@ public class CoreConfig {
     private int argon2_hashing_pool_size = 1;
 
     @JsonProperty
+    private int firebase_scrypt_hashing_pool_size = 1;
+
+    @JsonProperty
     private int bcrypt_log_rounds = 11;
 
     // TODO: add https in later version
@@ -173,6 +176,10 @@ public class CoreConfig {
         // if the user gives a <= 0 number, it crashes the core (since it creates a blockedqueue in PaswordHashing
         // .java with length <= 0). So we do a Math.max
         return Math.max(1, argon2_hashing_pool_size);
+    }
+
+    public int getFirebaseSCryptHashingPoolSize() {
+        return Math.max(1, firebase_scrypt_hashing_pool_size);
     }
 
     public int getArgon2Iterations() {

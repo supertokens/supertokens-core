@@ -23,7 +23,6 @@ import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.PasswordHashing;
-import io.supertokens.emailpassword.PasswordHashingAlgorithm;
 import io.supertokens.emailpassword.PasswordHashingUtils;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.inmemorydb.Start;
@@ -88,7 +87,7 @@ public class PasswordHashingTest {
                 + "$s=" + firebaseSaltSeparator;
 
         EmailPassword.importUserWithPasswordHash(process.main, email, combinedPasswordHash,
-                PasswordHashingAlgorithm.FIREBASE_SCRYPT);
+                CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
 
         // try signing in
         UserInfo user = EmailPassword.signIn(process.main, email, password);

@@ -109,3 +109,6 @@ core_config_version: 0
 
 # (OPTIONAL | Default: null). The signing key used for firebase scrypt password hashing
 # firebase_signing_key:
+
+# (OPTIONAL | Default: 1). Number of concurrent firebase scrypt hashes that can happen at the same time for sign in requests.
+# firebase_hashing_pool_size:
