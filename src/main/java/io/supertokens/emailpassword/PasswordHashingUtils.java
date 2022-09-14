@@ -16,6 +16,7 @@
 
 package io.supertokens.emailpassword;
 
+import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 
 import javax.annotation.Nullable;
@@ -35,7 +36,8 @@ public class PasswordHashingUtils {
     }
 
     public static void assertSuperTokensSupportInputPasswordHashFormat(String passwordHash,
-            @Nullable PasswordHashingAlgorithm hashingAlgorithm) throws UnsupportedPasswordHashingFormatException {
+            @Nullable CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
+            throws UnsupportedPasswordHashingFormatException {
         if (hashingAlgorithm == null) {
             if (!(isInputHashInBcryptFormat(passwordHash)
                     || isInputHashInArgon2Format(passwordHash) /* || isInputHashInScryptFormat(passwordHash) */)) {
@@ -43,13 +45,13 @@ public class PasswordHashingUtils {
             }
             return;
         }
-        if (hashingAlgorithm.equals(PasswordHashingAlgorithm.ARGON2)) {
+        if (hashingAlgorithm.equals(CoreConfig.PASSWORD_HASHING_ALG.ARGON2)) {
             if (!isInputHashInArgon2Format(passwordHash)) {
                 throw new UnsupportedPasswordHashingFormatException("Password hash is in invalid Argon2 format");
             }
             return;
         }
-        if (hashingAlgorithm.equals(PasswordHashingAlgorithm.BCRYPT)) {
+        if (hashingAlgorithm.equals(CoreConfig.PASSWORD_HASHING_ALG.BCRYPT)) {
             if (!isInputHashInBcryptFormat(passwordHash)) {
                 throw new UnsupportedPasswordHashingFormatException("Password hash is in invalid BCrypt format");
             }
@@ -63,7 +65,7 @@ public class PasswordHashingUtils {
     }
 
     public static String updatePasswordHashWithPrefixIfRequired(String passwordHash,
-            PasswordHashingAlgorithm hashingAlgorithm) {
+            CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm) {
         if (hashingAlgorithm == null) {
             return passwordHash;
         }

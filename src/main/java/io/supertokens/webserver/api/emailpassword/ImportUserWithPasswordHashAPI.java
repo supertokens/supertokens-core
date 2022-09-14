@@ -20,9 +20,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.PasswordHashing;
-import io.supertokens.emailpassword.PasswordHashingAlgorithm;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -71,7 +70,7 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
             throw new ServletException(new WebserverAPI.BadRequestException("Password hash cannot be an empty string"));
         }
 
-        PasswordHashingAlgorithm passwordHashingAlgorithm = null;
+        CoreConfig.PASSWORD_HASHING_ALG passwordHashingAlgorithm = null;
 
         if (hashingAlgorithmString != null) {
             // normalise hashing algorithm string
@@ -82,7 +81,7 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
                         new WebserverAPI.BadRequestException("Hashing Algorithm cannot be an empty string"));
             }
             try {
-                passwordHashingAlgorithm = PasswordHashingAlgorithm.valueOf(hashingAlgorithmString);
+                passwordHashingAlgorithm = CoreConfig.PASSWORD_HASHING_ALG.valueOf(hashingAlgorithmString);
             } catch (IllegalArgumentException e) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("Unsupported password hashing algorithm"));
