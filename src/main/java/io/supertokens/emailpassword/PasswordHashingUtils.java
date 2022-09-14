@@ -108,7 +108,6 @@ public class PasswordHashingUtils {
             }
             return addFirebaseSCryptPrefixToPasswordHash(passwordHash);
         }
-
         return passwordHash;
     }
 
@@ -165,9 +164,7 @@ public class PasswordHashingUtils {
                 if (separatedHash[i].startsWith(FIREBASE_SCRYPT_SALT_SEPARATOR)) {
                     containsSaltSeparator = true;
                 }
-
             }
-
             return (containsMemCost && containsRounds && containsSaltSeparator);
         }
         return false;
