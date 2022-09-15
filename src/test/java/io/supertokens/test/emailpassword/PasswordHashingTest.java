@@ -16,14 +16,11 @@
 
 package io.supertokens.test.emailpassword;
 
-import com.lambdaworks.crypto.SCrypt;
-import com.lambdaworks.crypto.SCryptUtil;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.PasswordHashing;
-import io.supertokens.emailpassword.PasswordHashingUtils;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -38,7 +35,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -691,7 +687,7 @@ public class PasswordHashingTest {
 
         AtomicInteger counter = new AtomicInteger(0);
 
-        assert (PasswordHashing.getInstance(process.getProcess()).getBlockedQueueSize() == 0);
+        assert (PasswordHashing.getInstance(process.getProcess()).getArgon2BlockedQueueSize() == 0);
         AtomicBoolean reachedQueueMaxSize = new AtomicBoolean(false);
 
         ExecutorService ex = Executors.newFixedThreadPool(1000);
@@ -707,7 +703,7 @@ public class PasswordHashingTest {
                         EmailPassword.signUp(process.getProcess(), uniqueEmail, "somePassword" + finalI);
                         EmailPassword.signIn(process.getProcess(), uniqueEmail, "somePassword" + finalI);
                         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON));
-                        int queueSize = PasswordHashing.getInstance(process.getProcess()).getBlockedQueueSize();
+                        int queueSize = PasswordHashing.getInstance(process.getProcess()).getArgon2BlockedQueueSize();
                         int maxQueueSize = Config.getConfig(process.getProcess()).getArgon2HashingPoolSize();
                         assert (queueSize <= maxQueueSize);
                         if (queueSize == maxQueueSize || queueSize + 1 == maxQueueSize) {

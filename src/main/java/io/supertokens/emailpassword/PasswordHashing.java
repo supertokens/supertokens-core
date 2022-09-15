@@ -42,7 +42,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     private PasswordHashing(Main main) {
         this.argon2BoundedQueue = new LinkedBlockingQueue<>(Config.getConfig(main).getArgon2HashingPoolSize());
         this.firebaseSCryptBoundedQueue = new LinkedBlockingQueue<>(
-                Config.getConfig(main).getFirebaseSCryptHashingPoolSize());
+                Config.getConfig(main).getFirebaseSCryptPasswordHashingPoolSize());
         this.main = main;
     }
 
@@ -74,9 +74,9 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
             passwordHash = BCrypt.hashpw(password, BCrypt.gensalt(Config.getConfig(main).getBcryptLogRounds()));
         } else if (Config.getConfig(main).getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.ARGON2) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON, null);
-            passwordHash = withArgon2HashingConcurrencyLimited(() -> argon2id.hash(
-                    Config.getConfig(main).getArgon2Iterations(), Config.getConfig(main).getArgon2MemoryKb(),
-                    Config.getConfig(main).getArgon2Parallelism(), password.toCharArray()));
+            passwordHash = withConcurrencyLimited(() -> argon2id.hash(Config.getConfig(main).getArgon2Iterations(),
+                    Config.getConfig(main).getArgon2MemoryKb(), Config.getConfig(main).getArgon2Parallelism(),
+                    password.toCharArray()), this.argon2BoundedQueue);
         }
 
         try {
@@ -91,39 +91,21 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         T op();
     }
 
-    private <T> T withArgon2HashingConcurrencyLimited(Func<T> func) {
+    private <T> T withConcurrencyLimited(Func<T> func, BlockingQueue<Object> blockingQueue) {
         Object waiter = new Object();
         try {
-            while (!this.argon2BoundedQueue.contains(waiter)) {
+            while (!blockingQueue.contains(waiter)) {
                 try {
                     // put will wait for there to be an empty slot in the queue and return
                     // only when there is a slot for waiter
-                    this.argon2BoundedQueue.put(waiter);
+                    blockingQueue.put(waiter);
                 } catch (InterruptedException ignored) {
                 }
             }
 
             return func.op();
-
         } finally {
-            this.argon2BoundedQueue.remove(waiter);
-        }
-    }
-
-    private <T> T withFirebaseSCryptConcurrencyLimited(Func<T> func) {
-        Object waiter = new Object();
-        try {
-            while (!this.firebaseSCryptBoundedQueue.contains(waiter)) {
-                try {
-                    // put will wait for there to be an empty slot in the queue and return
-                    // only when there is a slot for waiter
-                    this.firebaseSCryptBoundedQueue.put(waiter);
-                } catch (InterruptedException ignored) {
-                }
-            }
-            return func.op();
-        } finally {
-            this.argon2BoundedQueue.remove(waiter);
+            blockingQueue.remove(waiter);
         }
     }
 
@@ -132,32 +114,37 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         if (PasswordHashingUtils.isInputHashInArgon2Format(hash)) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON, null);
             if (hash.startsWith("$argon2id")) {
-                return withArgon2HashingConcurrencyLimited(() -> argon2id.verify(hash, password.toCharArray()));
+                return withConcurrencyLimited(() -> argon2id.verify(hash, password.toCharArray()),
+                        this.argon2BoundedQueue);
             }
 
             if (hash.startsWith("$argon2i")) {
-                return withArgon2HashingConcurrencyLimited(() -> argon2i.verify(hash, password.toCharArray()));
+                return withConcurrencyLimited(() -> argon2i.verify(hash, password.toCharArray()),
+                        this.argon2BoundedQueue);
             }
 
             if (hash.startsWith("$argon2d")) {
-                return withArgon2HashingConcurrencyLimited(() -> argon2d.verify(hash, password.toCharArray()));
+                return withConcurrencyLimited(() -> argon2d.verify(hash, password.toCharArray()),
+                        this.argon2BoundedQueue);
             }
         } else if (PasswordHashingUtils.isInputHashInBcryptFormat(hash)) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT, null);
             String bCryptPasswordHash = PasswordHashingUtils
                     .replaceUnsupportedIdentifierForBcryptPasswordHashVerification(hash);
             return BCrypt.checkpw(password, bCryptPasswordHash);
-        } else if (PasswordHashingUtils.isInputHashInFirebaseSCryptFormat(hash)) {
+        } else if (ParsedFirebaseSCryptResponse.fromHashString(hash) != null) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_FIREBASE_SCRYPT, null);
-            return withFirebaseSCryptConcurrencyLimited(() -> PasswordHashingUtils
-                    .verifyFirebaseSCryptPasswordHash(password, hash, Config.getConfig(main).getFirebaseSigningKey()));
+            return withConcurrencyLimited(
+                    () -> PasswordHashingUtils.verifyFirebaseSCryptPasswordHash(password, hash,
+                            Config.getConfig(main).getFirebase_password_hashing_signer_key()),
+                    this.firebaseSCryptBoundedQueue);
         }
 
         return false;
     }
 
     @TestOnly
-    public int getBlockedQueueSize() {
+    public int getArgon2BlockedQueueSize() {
         return this.argon2BoundedQueue.size();
     }
 }

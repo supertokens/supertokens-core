@@ -100,7 +100,7 @@ public class CoreConfig {
     private int argon2_hashing_pool_size = 1;
 
     @JsonProperty
-    private int firebase_scrypt_hashing_pool_size = 1;
+    private int firebase_password_hashing_pool_size = 1;
 
     @JsonProperty
     private int bcrypt_log_rounds = 11;
@@ -120,7 +120,7 @@ public class CoreConfig {
     private String log_level = "INFO";
 
     @JsonProperty
-    private String firebase_signing_key = null;
+    private String firebase_password_hashing_signer_key = null;
 
     private Set<LOG_LEVEL> allowedLogLevels = null;
 
@@ -178,8 +178,8 @@ public class CoreConfig {
         return Math.max(1, argon2_hashing_pool_size);
     }
 
-    public int getFirebaseSCryptHashingPoolSize() {
-        return Math.max(1, firebase_scrypt_hashing_pool_size);
+    public int getFirebaseSCryptPasswordHashingPoolSize() {
+        return Math.max(1, firebase_password_hashing_pool_size);
     }
 
     public int getArgon2Iterations() {
@@ -198,8 +198,11 @@ public class CoreConfig {
         return argon2_parallelism;
     }
 
-    public String getFirebaseSigningKey() {
-        return firebase_signing_key;
+    public String getFirebase_password_hashing_signer_key() {
+        if (firebase_password_hashing_signer_key == null) {
+            throw new QuitProgramException("'firebase_signer_key' cannot be null");
+        }
+        return firebase_password_hashing_signer_key;
     }
 
     public PASSWORD_HASHING_ALG getPasswordHashingAlg() {

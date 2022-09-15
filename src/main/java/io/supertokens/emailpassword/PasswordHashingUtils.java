@@ -31,28 +31,7 @@ import java.util.Objects;
 
 public class PasswordHashingUtils {
 
-    public static class ParsedFireBaseSCryptResponse {
-        String passwordHash;
-        String salt;
-        String saltSeparator;
-        int rounds;
-        int memCost;
-
-        public ParsedFireBaseSCryptResponse(String passwordHash, String salt, String saltSeparator, int rounds,
-                int memCost) {
-            this.passwordHash = passwordHash;
-            this.salt = salt;
-            this.saltSeparator = saltSeparator;
-            this.rounds = rounds;
-            this.memCost = memCost;
-        }
-    }
-
-    private static final String FIREBASE_SCRYPT_PREFIX = "f_scrypt";
-    private static final String FIREBASE_SCRYPT_SEPARATOR = "\\$";
-    private static final String FIREBASE_SCRYPT_MEM_COST_SEPARATOR = "m=";
-    private static final String FIREBASE_SCRYPT_ROUNDS_SEPARATOR = "r=";
-    private static final String FIREBASE_SCRYPT_SALT_SEPARATOR = "s=";
+    private static final String FIREBASE_SCRYPT_PREFIX = "$f_scrypt";
 
     public static String replaceUnsupportedIdentifierForBcryptPasswordHashVerification(String hash) {
         // JbCrypt only supports $2a as the identifier. Identifiers like $2b, $2x and $2y are not recognized by JBcrypt
@@ -70,8 +49,8 @@ public class PasswordHashingUtils {
             @Nullable CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
             throws UnsupportedPasswordHashingFormatException {
         if (hashingAlgorithm == null) {
-            if (!(isInputHashInBcryptFormat(passwordHash)
-                    || isInputHashInArgon2Format(passwordHash) /* || isInputHashInScryptFormat(passwordHash) */)) {
+            if (!(isInputHashInBcryptFormat(passwordHash) || isInputHashInArgon2Format(passwordHash)
+                    || ParsedFirebaseSCryptResponse.fromHashString(passwordHash) == null)) {
                 throw new UnsupportedPasswordHashingFormatException("Password hash is in invalid format");
             }
             return;
@@ -89,7 +68,7 @@ public class PasswordHashingUtils {
         }
 
         if (hashingAlgorithm.equals(CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT)) {
-            if (!isInputHashInFirebaseSCryptFormat(passwordHash)) {
+            if (ParsedFirebaseSCryptResponse.fromHashString(passwordHash) == null) {
                 throw new UnsupportedPasswordHashingFormatException(
                         "Password hash is in invalid Firebase SCrypt format");
             }
@@ -122,54 +101,6 @@ public class PasswordHashingUtils {
         return (hash.startsWith("$argon2id") || hash.startsWith("$argon2i") || hash.startsWith("$argon2d"));
     }
 
-    public static boolean isInputHashInFirebaseSCryptFormat(String hash) {
-        // the firebase scrypt hash we store is a "$" separated string containing an algorithm identifier prefix,
-        // password hash, salt, memory cost, rounds, salt separator
-        // eg. f_scrypt$passwordHash$salt$m=memorycost$r=rounds$s=saltSeparator
-
-        if (doesPasswordHashHaveFireBaseSCryptPrefix(hash)) {
-            String[] separatedHash = hash.split(FIREBASE_SCRYPT_SEPARATOR);
-            if (separatedHash.length != 6) {
-                return false;
-            }
-
-            boolean containsMemCost = false;
-            boolean containsRounds = false;
-            boolean containsSaltSeparator = false;
-
-            for (int i = 3; i < separatedHash.length; i++) {
-                // does hash contain memory cost
-                if (separatedHash[i].startsWith(FIREBASE_SCRYPT_MEM_COST_SEPARATOR)) {
-                    // check that memory cost is a number
-                    try {
-                        Integer.parseInt(separatedHash[3].split(FIREBASE_SCRYPT_MEM_COST_SEPARATOR)[1]);
-                        containsMemCost = true;
-                    } catch (NumberFormatException e) {
-                        return false;
-                    }
-                }
-
-                // does hash contain rounds
-                if (separatedHash[i].startsWith(FIREBASE_SCRYPT_ROUNDS_SEPARATOR)) {
-                    // check that rounds is a number
-                    try {
-                        Integer.parseInt(separatedHash[4].split(FIREBASE_SCRYPT_ROUNDS_SEPARATOR)[1]);
-                        containsRounds = true;
-                    } catch (NumberFormatException e) {
-                        return false;
-                    }
-                }
-
-                // does hash contain salt separator
-                if (separatedHash[i].startsWith(FIREBASE_SCRYPT_SALT_SEPARATOR)) {
-                    containsSaltSeparator = true;
-                }
-            }
-            return (containsMemCost && containsRounds && containsSaltSeparator);
-        }
-        return false;
-    }
-
     private static boolean doesPasswordHashHaveFireBaseSCryptPrefix(String passwordHash) {
         return passwordHash.startsWith(FIREBASE_SCRYPT_PREFIX);
     }
@@ -178,53 +109,20 @@ public class PasswordHashingUtils {
         return FIREBASE_SCRYPT_PREFIX + "$" + passwordHash;
     }
 
-    private static ParsedFireBaseSCryptResponse retrieveFirebaseSCryptInfoFromStoredPasswordHash(String hash) {
-
-        // split string using the separator
-        String[] separatedPasswordHash = hash.split(FIREBASE_SCRYPT_SEPARATOR);
-        String passwordHash = separatedPasswordHash[1];
-        String salt = separatedPasswordHash[2];
-        String saltSeparator = null;
-        Integer memCost = null;
-        Integer rounds = null;
-
-        for (int i = 3; i < separatedPasswordHash.length; i++) {
-            if (separatedPasswordHash[i].startsWith(FIREBASE_SCRYPT_MEM_COST_SEPARATOR)) {
-                memCost = Integer.parseInt(separatedPasswordHash[i].split(FIREBASE_SCRYPT_MEM_COST_SEPARATOR)[1]);
-                continue;
-            }
-            if (separatedPasswordHash[i].startsWith(FIREBASE_SCRYPT_ROUNDS_SEPARATOR)) {
-                rounds = Integer.parseInt(separatedPasswordHash[i].split(FIREBASE_SCRYPT_ROUNDS_SEPARATOR)[1]);
-                continue;
-            }
-            if (separatedPasswordHash[i].startsWith(FIREBASE_SCRYPT_SALT_SEPARATOR)) {
-                saltSeparator = separatedPasswordHash[i].split(FIREBASE_SCRYPT_SALT_SEPARATOR)[1];
-            }
-        }
-
-        if (passwordHash == null || salt == null || saltSeparator == null || memCost == null || rounds == null) {
-            throw new IllegalStateException("Missing params in Firebase SCrypt password hash");
-        }
-        return new ParsedFireBaseSCryptResponse(passwordHash, salt, saltSeparator, rounds, memCost);
-    }
-
     public static boolean verifyFirebaseSCryptPasswordHash(String plainTextPassword, String passwordHash,
             String base64_signer_key) {
 
-        ParsedFireBaseSCryptResponse response = retrieveFirebaseSCryptInfoFromStoredPasswordHash(passwordHash);
+        ParsedFirebaseSCryptResponse response = ParsedFirebaseSCryptResponse.fromHashString(passwordHash);
+        if (response == null) {
+            return false;
+        }
 
-        passwordHash = response.passwordHash;
-        String salt = response.salt;
-        int memCost = response.memCost;
-        int rounds = response.rounds;
-        String saltSep = response.saltSeparator;
-
-        int N = 1 << memCost;
+        int N = 1 << response.memCost;
         int p = 1;
 
         // concatenating decoded salt + separator
-        byte[] decodedSaltBytes = Base64.decodeBase64(salt.getBytes(StandardCharsets.US_ASCII));
-        byte[] decodedSaltSepBytes = Base64.decodeBase64(saltSep.getBytes(StandardCharsets.US_ASCII));
+        byte[] decodedSaltBytes = Base64.decodeBase64(response.salt.getBytes(StandardCharsets.US_ASCII));
+        byte[] decodedSaltSepBytes = Base64.decodeBase64(response.saltSeparator.getBytes(StandardCharsets.US_ASCII));
 
         byte[] saltConcat = new byte[decodedSaltBytes.length + decodedSaltSepBytes.length];
         System.arraycopy(decodedSaltBytes, 0, saltConcat, 0, decodedSaltBytes.length);
@@ -233,28 +131,25 @@ public class PasswordHashingUtils {
         // hashing password
         byte[] hashedBytes;
         try {
-            hashedBytes = SCrypt.scrypt(plainTextPassword.getBytes(StandardCharsets.US_ASCII), saltConcat, N, rounds, p,
-                    64);
+            hashedBytes = SCrypt.scrypt(plainTextPassword.getBytes(StandardCharsets.US_ASCII), saltConcat, N,
+                    response.rounds, p, 64);
         } catch (GeneralSecurityException e) {
             return false;
         }
         // encrypting with aes
         byte[] signerBytes = Base64.decodeBase64(base64_signer_key.getBytes(StandardCharsets.US_ASCII));
-        byte[] cipherTextBytes = encrypt(signerBytes, hashedBytes);
 
-        return new String(Objects.requireNonNull(Base64.encodeBase64(cipherTextBytes))).equals(passwordHash);
-    }
-
-    private static byte[] encrypt(byte[] signer, byte[] derivedKey) {
-        String CIPHER = "AES/CTR/NoPadding";
         try {
-            Key key = new SecretKeySpec(derivedKey, 0, 32, "AES");
+            String CIPHER = "AES/CTR/NoPadding";
+            Key key = new SecretKeySpec(hashedBytes, 0, 32, "AES");
             IvParameterSpec ivSpec = new IvParameterSpec(new byte[16]);
             Cipher c = Cipher.getInstance(CIPHER);
             c.init(Cipher.ENCRYPT_MODE, key, ivSpec);
-            return c.doFinal(signer);
-        } catch (Exception ex) {
-            return null;
+            byte[] encryptedPasswordHash = c.doFinal(signerBytes);
+            return new String(Objects.requireNonNull(Base64.encodeBase64(encryptedPasswordHash)))
+                    .equals(response.passwordHash);
+        } catch (Exception e) {
+            return false;
         }
     }
 }
