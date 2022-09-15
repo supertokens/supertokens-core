@@ -61,7 +61,7 @@ public class PasswordHashingTest {
     public void importUserWithFireBaseSCrypt() throws Exception {
         String[] args = { "../" };
 
-        Utils.setValueInConfig("firebase_signing_key",
+        Utils.setValueInConfig("firebase_password_hashing_signer_key",
                 "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -88,7 +88,7 @@ public class PasswordHashingTest {
         // try signing in
         UserInfo user = EmailPassword.signIn(process.main, email, password);
         assertEquals(user.email, email);
-        assertEquals(user.passwordHash, "f_scrypt$" + combinedPasswordHash);
+        assertEquals(user.passwordHash, "$f_scrypt$" + combinedPasswordHash);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

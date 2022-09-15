@@ -40,13 +40,16 @@ public class ParsedFirebaseSCryptResponse {
     public static ParsedFirebaseSCryptResponse fromHashString(String hash) {
         try {
             String[] separatedPasswordHash = hash.split(FIREBASE_SCRYPT_SEPARATOR);
-            String passwordHash = separatedPasswordHash[1];
-            String salt = separatedPasswordHash[2];
+            if (separatedPasswordHash.length != 7) {
+                return null;
+            }
+            String passwordHash = separatedPasswordHash[2];
+            String salt = separatedPasswordHash[3];
             String saltSeparator = null;
             Integer memCost = null;
             Integer rounds = null;
 
-            for (int i = 3; i < separatedPasswordHash.length; i++) {
+            for (int i = 4; i < separatedPasswordHash.length; i++) {
                 if (separatedPasswordHash[i].startsWith(FIREBASE_SCRYPT_MEM_COST_SEPARATOR)) {
                     memCost = Integer.parseInt(separatedPasswordHash[i].split(FIREBASE_SCRYPT_MEM_COST_SEPARATOR)[1]);
                     continue;

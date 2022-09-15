@@ -108,7 +108,7 @@ disable_telemetry: true
 # log_level:
 
 # (OPTIONAL | Default: null). The signer key used for firebase scrypt password hashing
-# firebase_password_hashing_signer_key::
+# firebase_password_hashing_signer_key:
 
 # (OPTIONAL | Default: 1). Number of concurrent firebase scrypt hashes that can happen at the same time for sign in requests.
 # firebase_password_hashing_pool_size:

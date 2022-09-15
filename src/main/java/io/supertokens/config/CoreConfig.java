@@ -200,7 +200,7 @@ public class CoreConfig {
 
     public String getFirebase_password_hashing_signer_key() {
         if (firebase_password_hashing_signer_key == null) {
-            throw new QuitProgramException("'firebase_signer_key' cannot be null");
+            throw new QuitProgramException("'firebase_password_hashing_signer_key' cannot be null");
         }
         return firebase_password_hashing_signer_key;
     }
