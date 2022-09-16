@@ -147,4 +147,9 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     public int getArgon2BlockedQueueSize() {
         return this.argon2BoundedQueue.size();
     }
+
+    @TestOnly
+    public int getFirebaseSCryptBlockedQueueSize() {
+        return this.firebaseSCryptBoundedQueue.size();
+    }
 }
