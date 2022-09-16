@@ -17,7 +17,10 @@
 package io.supertokens.test.emailpassword;
 
 import io.supertokens.ProcessState;
+import io.supertokens.config.CoreConfig.PASSWORD_HASHING_ALG;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.ParsedFirebaseSCryptResponse;
+import io.supertokens.emailpassword.PasswordHashingUtils;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -44,6 +47,67 @@ public class UserMigrationTest {
     @Before
     public void beforeEach() {
         Utils.reset();
+    }
+
+    @Test
+    public void testSigningInUsersWithDifferentHashingConfigValues() throws Exception {
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("firebase_password_hashing_signer_key",
+                "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // user 1 has a password hash that was generated with 9 rounds
+        {
+            int firebaseMemCost = 14;
+            int firebaseRounds = 9;
+            String firebaseSaltSeparator = "Bw==";
+
+            String email = "test@example.com";
+            String password = "testPass123";
+            String salt = "/cj0jC1br5o4+w==";
+            String passwordHash = "9Y8ICWcqbzmI42DxV1jpyEjbrJPG8EQ6nI6oC32JYz+/dd7aEjI/R7jG9P5kYh8v9gyqFKaXMDzMg7eLCypbOA==";
+            String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
+                    + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
+            EmailPassword.importUserWithPasswordHash(process.getProcess(), email, combinedPasswordHash,
+                    PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
+
+            // try signing in and check that it works
+            UserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
+            assertEquals(userInfo.email, email);
+            assertEquals(userInfo.passwordHash, combinedPasswordHash);
+        }
+
+        // user 2 has a password hash that was generated with mem cost as 15
+        {
+            int firebaseMemCost = 15;
+            int firebaseRounds = 8;
+            String firebaseSaltSeparator = "Bw==";
+
+            String email = "test2@example.com";
+            String password = "testPass123";
+            String salt = "/cj0jC1br5o4+w==";
+            String passwordHash = "LalFtzCxLIl14+ol6e/3cjHoa2B73ULiMN+Mjm+nJJEfQqtsXPpDX1VU4s9XyiuwGrQ5RN69PWL5DrHuNUH+RA==";
+            String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
+                    + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
+
+            EmailPassword.importUserWithPasswordHash(process.getProcess(), email, combinedPasswordHash,
+                    PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
+
+            // try signing in and check that it works
+            UserInfo userInfo = EmailPassword.signIn(process.getProcess(), email, password);
+            assertEquals(userInfo.email, email);
+            assertEquals(userInfo.passwordHash, combinedPasswordHash);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
