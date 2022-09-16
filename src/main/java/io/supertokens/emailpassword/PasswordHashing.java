@@ -80,7 +80,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         }
 
         try {
-            PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(passwordHash, null);
+            PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(main, passwordHash, null);
         } catch (UnsupportedPasswordHashingFormatException e) {
             throw new IllegalStateException(e);
         }

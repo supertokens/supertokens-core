@@ -18,13 +18,12 @@ package io.supertokens.test.emailpassword.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.config.CoreConfig.PASSWORD_HASHING_ALG;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.ParsedFirebaseSCryptResponse;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.test.HttpRequestTest;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -53,6 +52,9 @@ public class ImportUserWithPasswordHashAPITest {
     @Test
     public void badInputTest() throws Exception {
         String[] args = { "../" };
+
+        Utils.setValueInConfig("firebase_password_hashing_signer_key",
+                "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -231,14 +233,59 @@ public class ImportUserWithPasswordHashAPITest {
         String firebaseSaltSeparator = "Bw==";
 
         String email = "test@example.com";
+        String salt = "/cj0jC1br5o4+w==";
+        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
+        String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
+                + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
+
+        // import user without passwordHash wihout setting the firebase scrypt password hashing signer key
+        JsonObject importUserRequestBody = new JsonObject();
+        importUserRequestBody.addProperty("email", email);
+        importUserRequestBody.addProperty("passwordHash", combinedPasswordHash);
+        importUserRequestBody.addProperty("hashingAlgorithm", "firebase_scrypt");
+
+        try {
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user/passwordhash/import", importUserRequestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+            throw new Exception("Should not come here");
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertTrue(e.statusCode == 500
+                    && e.getMessage().equals("Http error. Status Code: 500. Message: Internal Error"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testSigningInAUserWithFirebasePasswordHashWithoutSettingTheSignerKey() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        int firebaseMemCost = 14;
+        int firebaseRounds = 8;
+        String firebaseSaltSeparator = "Bw==";
+
+        String email = "test@example.com";
         String password = "testPass123";
         String salt = "/cj0jC1br5o4+w==";
         String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
         String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
                 + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
 
-        EmailPassword.importUserWithPasswordHash(process.getProcess(), email, combinedPasswordHash,
-                PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
+        long timeJoined = System.currentTimeMillis();
+
+        UserInfo userInfo = new UserInfo("userId", email, combinedPasswordHash, timeJoined);
+        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(process.getProcess());
+
+        storage.signUp(userInfo);
 
         // sign in should result in 500 error since the firebase signer key is not set
         JsonObject signInRequestBody = new JsonObject();
@@ -254,6 +301,8 @@ public class ImportUserWithPasswordHashAPITest {
                     && e.getMessage().equals("Http error. Status Code: 500. Message: Internal Error"));
         }
 
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test

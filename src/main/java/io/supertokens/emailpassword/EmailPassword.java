@@ -93,7 +93,7 @@ public class EmailPassword {
             @Nonnull String passwordHash, @Nullable CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
 
-        PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(passwordHash, hashingAlgorithm);
+        PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(main, passwordHash, hashingAlgorithm);
 
         while (true) {
             String userId = Utils.getUUID();

@@ -16,6 +16,8 @@
 
 package io.supertokens.emailpassword;
 
+import io.supertokens.Main;
+import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import com.lambdaworks.crypto.SCrypt;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
@@ -43,12 +45,18 @@ public class PasswordHashingUtils {
         return hash;
     }
 
-    public static void assertSuperTokensSupportInputPasswordHashFormat(String passwordHash,
+    public static void assertSuperTokensSupportInputPasswordHashFormat(Main main, String passwordHash,
             @Nullable CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
             throws UnsupportedPasswordHashingFormatException {
         if (hashingAlgorithm == null) {
-            if (!(isInputHashInBcryptFormat(passwordHash) || isInputHashInArgon2Format(passwordHash)
-                    || ParsedFirebaseSCryptResponse.fromHashString(passwordHash) == null)) {
+            if (ParsedFirebaseSCryptResponse.fromHashString(passwordHash) != null) {
+                // since input hash is in firebase scrypt format we check if firebase scrypt signer key is set
+                Config.getConfig(main).getFirebase_password_hashing_signer_key();
+                return;
+            }
+
+            if (!(isInputHashInBcryptFormat(passwordHash) || isInputHashInArgon2Format(passwordHash))) {
+
                 throw new UnsupportedPasswordHashingFormatException("Password hash is in invalid format");
             }
             return;
@@ -66,6 +74,8 @@ public class PasswordHashingUtils {
         }
 
         if (hashingAlgorithm.equals(CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT)) {
+            // since input hash is in firebase scrypt format we check if firebase scrypt signer key is set
+            Config.getConfig(main).getFirebase_password_hashing_signer_key();
             if (ParsedFirebaseSCryptResponse.fromHashString(passwordHash) == null) {
                 throw new UnsupportedPasswordHashingFormatException(
                         "Password hash is in invalid Firebase SCrypt format");
