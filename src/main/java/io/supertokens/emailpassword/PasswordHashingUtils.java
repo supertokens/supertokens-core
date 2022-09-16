@@ -111,7 +111,9 @@ public class PasswordHashingUtils {
 
     public static boolean verifyFirebaseSCryptPasswordHash(String plainTextPassword, String passwordHash,
             String base64_signer_key) {
-
+        
+        // follows the logic mentioned here https://github.com/SmartMoveSystems/firebase-scrypt-java/blob/master/src/main/java/com/smartmovesystems/hashcheck/FirebaseScrypt.java
+        // this is the library recommended by firebase for the java implementation https://firebaseopensource.com/projects/firebase/scrypt/
         ParsedFirebaseSCryptResponse response = ParsedFirebaseSCryptResponse.fromHashString(passwordHash);
         if (response == null) {
             return false;
