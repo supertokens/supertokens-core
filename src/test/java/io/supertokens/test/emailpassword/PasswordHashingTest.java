@@ -20,6 +20,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.ParsedFirebaseSCryptResponse;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.inmemorydb.Start;
@@ -79,8 +80,8 @@ public class PasswordHashingTest {
         String password = "testPass123";
         String salt = "/cj0jC1br5o4+w==";
         String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
-        String combinedPasswordHash = passwordHash + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds
-                + "$s=" + firebaseSaltSeparator;
+        String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
+                + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
 
         EmailPassword.importUserWithPasswordHash(process.main, email, combinedPasswordHash,
                 CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
@@ -88,7 +89,7 @@ public class PasswordHashingTest {
         // try signing in
         UserInfo user = EmailPassword.signIn(process.main, email, password);
         assertEquals(user.email, email);
-        assertEquals(user.passwordHash, "$f_scrypt$" + combinedPasswordHash);
+        assertEquals(user.passwordHash, combinedPasswordHash);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

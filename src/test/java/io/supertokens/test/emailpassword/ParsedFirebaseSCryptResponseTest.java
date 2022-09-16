@@ -28,6 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 
@@ -46,6 +47,58 @@ public class ParsedFirebaseSCryptResponseTest {
     }
 
     @Test
+    public void testGoodInputToParsedFirebaseSCryptResponse() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // format for Firebase SCrypt hashes stored in supertokens.
+        // $f_scrypt$passwordHash$salt$m=memory$r=rounds$s=saltSeparator
+
+        String passwordHash = "passwordHash";
+        String salt = "salt";
+        int memory = 14;
+        int rounds = 8;
+        String saltSeparator = "Bw==";
+
+        // when password hash is in the regular format
+        {
+            String validPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
+                    + "$" + salt + "$" + "m=" + memory + "$" + "r=" + rounds + "$" + "s=" + saltSeparator;
+
+            ParsedFirebaseSCryptResponse response = ParsedFirebaseSCryptResponse.fromHashString(validPasswordHash);
+            assertNotNull(response);
+
+            assertEquals(passwordHash, response.passwordHash);
+            assertEquals(salt, response.salt);
+            assertEquals(memory, response.memCost);
+            assertEquals(saltSeparator, response.saltSeparator);
+        }
+
+        // with memory, rounds and saltSeparator switched around
+        {
+            String validPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
+                    + "$" + salt + "$" + "s=" + saltSeparator + "$" + "m=" + memory + "$" + "r=" + rounds;
+
+            ParsedFirebaseSCryptResponse response = ParsedFirebaseSCryptResponse.fromHashString(validPasswordHash);
+            assertNotNull(response);
+
+            assertEquals(passwordHash, response.passwordHash);
+            assertEquals(salt, response.salt);
+            assertEquals(memory, response.memCost);
+            assertEquals(saltSeparator, response.saltSeparator);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testBadInputToParsedFirebaseSCryptResponse() throws Exception {
         String[] args = { "../" };
 
@@ -58,6 +111,78 @@ public class ParsedFirebaseSCryptResponseTest {
 
         // passing empty string
         assertNull(ParsedFirebaseSCryptResponse.fromHashString(""));
+
+        // passing a random string
+        assertNull(ParsedFirebaseSCryptResponse.fromHashString("randmString"));
+
+        // passing just $
+        assertNull(ParsedFirebaseSCryptResponse.fromHashString("$"));
+
+        String passwordHash = "passwordHash";
+        String salt = "salt";
+        int memory = 14;
+        int rounds = 8;
+        String saltSeparator = "Bw==";
+
+        {
+            // missing prefix
+            String invalidPasswordHash = "$" + passwordHash + "$" + salt + "$" + "s=" + saltSeparator + "$" + "m="
+                    + memory + "$" + "r=" + rounds;
+            assertNull(ParsedFirebaseSCryptResponse.fromHashString(invalidPasswordHash));
+
+            // invalid prefix
+            String invalidPasswordHash_2 = "$invalidPrefix$" + passwordHash + "$" + salt + "$" + "m=" + memory + "$"
+                    + "r=" + rounds + "$" + "s=" + saltSeparator;
+            assertNull(ParsedFirebaseSCryptResponse.fromHashString(invalidPasswordHash_2));
+
+        }
+
+        {
+            // missing password hash
+            String invalidPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + salt + "$"
+                    + "m=" + memory + "$" + "r=" + rounds + "$" + "s=" + saltSeparator;
+            assertNull(ParsedFirebaseSCryptResponse.fromHashString(invalidPasswordHash));
+        }
+
+        {
+            // missing salt
+            String invalidPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
+                    + "$" + "m=" + memory + "$" + "r=" + rounds + "$" + "s=" + saltSeparator;
+            assertNull(ParsedFirebaseSCryptResponse.fromHashString(invalidPasswordHash));
+        }
+
+        {
+            // missing memCost
+            String invalidPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
+                    + "$" + salt + "$" + "r=" + rounds + "$" + "s=" + saltSeparator;
+            assertNull(ParsedFirebaseSCryptResponse.fromHashString(invalidPasswordHash));
+
+            // memCost as invalid type(string)
+            String invalidPasswordHash_2 = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$"
+                    + passwordHash + "$" + salt + "$" + "m=" + "randomString" + "$" + "r=" + rounds + "$" + "s="
+                    + saltSeparator;
+            assertNull(ParsedFirebaseSCryptResponse.fromHashString(invalidPasswordHash_2));
+        }
+
+        {
+            // missing rounds
+            String invalidPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
+                    + "$" + salt + "$" + "m=" + memory + "$" + "s=" + saltSeparator;
+            assertNull(ParsedFirebaseSCryptResponse.fromHashString(invalidPasswordHash));
+
+            // rounds as invalid type(string)
+            String invalidPasswordHash_2 = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$"
+                    + passwordHash + "$" + salt + "$" + "m=" + memory + "$" + "r=" + "randomString" + "$" + "s="
+                    + saltSeparator;
+            assertNull(ParsedFirebaseSCryptResponse.fromHashString(invalidPasswordHash_2));
+        }
+
+        {
+            // missing saltSeparator
+            String invalidPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
+                    + "$" + salt + "$" + "m=" + memory + "$" + "r=" + rounds;
+            assertNull(ParsedFirebaseSCryptResponse.fromHashString(invalidPasswordHash));
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

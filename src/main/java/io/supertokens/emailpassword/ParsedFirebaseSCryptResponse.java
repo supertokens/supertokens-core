@@ -17,13 +17,13 @@
 package io.supertokens.emailpassword;
 
 public class ParsedFirebaseSCryptResponse {
-    String passwordHash;
-    String salt;
-    String saltSeparator;
-    int rounds;
-    int memCost;
+    public String passwordHash;
+    public String salt;
+    public String saltSeparator;
+    public int rounds;
+    public int memCost;
 
-    private static final String FIREBASE_SCRYPT_PREFIX = "f_scrypt";
+    public static final String FIREBASE_SCRYPT_PREFIX = "f_scrypt";
     private static final String FIREBASE_SCRYPT_SEPARATOR = "\\$";
     private static final String FIREBASE_SCRYPT_MEM_COST_SEPARATOR = "m=";
     private static final String FIREBASE_SCRYPT_ROUNDS_SEPARATOR = "r=";
@@ -43,7 +43,7 @@ public class ParsedFirebaseSCryptResponse {
             String[] separatedPasswordHash = hash.split(FIREBASE_SCRYPT_SEPARATOR);
 
             // check that stored password hash continas 7 fields and the first field has the firebase scrypt prefix
-            if (separatedPasswordHash.length != 7 || separatedPasswordHash[1] != FIREBASE_SCRYPT_PREFIX) {
+            if (!(separatedPasswordHash.length == 7 && separatedPasswordHash[1].equals(FIREBASE_SCRYPT_PREFIX))) {
                 return null;
             }
 

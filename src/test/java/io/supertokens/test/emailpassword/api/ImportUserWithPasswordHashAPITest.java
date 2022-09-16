@@ -19,6 +19,7 @@ package io.supertokens.test.emailpassword.api;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailpassword.ParsedFirebaseSCryptResponse;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
@@ -217,7 +218,7 @@ public class ImportUserWithPasswordHashAPITest {
     public void testImportingAUserFromFireBaseWithFirebaseSCryptPasswordHash() throws Exception {
         String[] args = { "../" };
 
-        Utils.setValueInConfig("firebase_signing_key",
+        Utils.setValueInConfig("firebase_password_hashing_signer_key",
                 "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -235,8 +236,8 @@ public class ImportUserWithPasswordHashAPITest {
         String password = "testPass123";
         String salt = "/cj0jC1br5o4+w==";
         String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
-        String combinedPasswordHash = passwordHash + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds
-                + "$s=" + firebaseSaltSeparator;
+        String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
+                + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("email", email);
