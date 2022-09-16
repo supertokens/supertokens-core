@@ -144,6 +144,12 @@ public class EmailPassword {
             }
         } catch (WrongCredentialsException e) {
             throw e;
+        } catch (IllegalStateException e) {
+            if (e.getMessage().equals("'firebase_password_hashing_signer_key' cannot be null")) {
+                throw e;
+            }
+            throw new WrongCredentialsException();
+
         } catch (Exception ignored) {
             throw new WrongCredentialsException();
         }
