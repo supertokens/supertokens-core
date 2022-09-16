@@ -89,7 +89,7 @@ public class PasswordHashingUtils {
 
         // follows the logic mentioned here
         // https://github.com/SmartMoveSystems/firebase-scrypt-java/blob/master/src/main/java/com/smartmovesystems/hashcheck/FirebaseScrypt.java
-        // this is the library recommended by firebase for the java implementation
+        // this is the library recommended by firebase for the java implementation of firebase scrypt
         // https://firebaseopensource.com/projects/firebase/scrypt/
         ParsedFirebaseSCryptResponse response = ParsedFirebaseSCryptResponse.fromHashString(passwordHash);
         if (response == null) {
