@@ -93,7 +93,6 @@ public class EmailPassword {
             @Nonnull String passwordHash, @Nullable CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
 
-        passwordHash = PasswordHashingUtils.updatePasswordHashWithPrefixIfRequired(passwordHash, hashingAlgorithm);
         PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(passwordHash, hashingAlgorithm);
 
         while (true) {

@@ -23,6 +23,7 @@ public class ParsedFirebaseSCryptResponse {
     int rounds;
     int memCost;
 
+    private static final String FIREBASE_SCRYPT_PREFIX = "f_scrypt";
     private static final String FIREBASE_SCRYPT_SEPARATOR = "\\$";
     private static final String FIREBASE_SCRYPT_MEM_COST_SEPARATOR = "m=";
     private static final String FIREBASE_SCRYPT_ROUNDS_SEPARATOR = "r=";
@@ -40,9 +41,12 @@ public class ParsedFirebaseSCryptResponse {
     public static ParsedFirebaseSCryptResponse fromHashString(String hash) {
         try {
             String[] separatedPasswordHash = hash.split(FIREBASE_SCRYPT_SEPARATOR);
-            if (separatedPasswordHash.length != 7) {
+
+            // check that stored password hash continas 7 fields and the first field has the firebase scrypt prefix
+            if (separatedPasswordHash.length != 7 || separatedPasswordHash[1] != FIREBASE_SCRYPT_PREFIX) {
                 return null;
             }
+
             String passwordHash = separatedPasswordHash[2];
             String salt = separatedPasswordHash[3];
             String saltSeparator = null;
@@ -67,7 +71,7 @@ public class ParsedFirebaseSCryptResponse {
                 return null;
             }
             return new ParsedFirebaseSCryptResponse(passwordHash, salt, saltSeparator, rounds, memCost);
-        } catch (Exception e) {
+        } catch (Throwable e) {
             return null;
         }
     }

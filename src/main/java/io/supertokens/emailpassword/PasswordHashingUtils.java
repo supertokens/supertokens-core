@@ -31,8 +31,6 @@ import java.util.Objects;
 
 public class PasswordHashingUtils {
 
-    private static final String FIREBASE_SCRYPT_PREFIX = "$f_scrypt";
-
     public static String replaceUnsupportedIdentifierForBcryptPasswordHashVerification(String hash) {
         // JbCrypt only supports $2a as the identifier. Identifiers like $2b, $2x and $2y are not recognized by JBcrypt
         // even though the actual password hash can be verified.
@@ -75,21 +73,6 @@ public class PasswordHashingUtils {
         }
     }
 
-    public static String updatePasswordHashWithPrefixIfRequired(String passwordHash,
-            CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm) {
-        if (hashingAlgorithm == null) {
-            return passwordHash;
-        }
-
-        if (hashingAlgorithm == CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT) {
-            if (doesPasswordHashHaveFireBaseSCryptPrefix(passwordHash)) {
-                return passwordHash;
-            }
-            return addFirebaseSCryptPrefixToPasswordHash(passwordHash);
-        }
-        return passwordHash;
-    }
-
     public static boolean isInputHashInBcryptFormat(String hash) {
         // bcrypt hash starts with the algorithm identifier which can be $2a$, $2y$, $2b$ or $2x$,
         // the number of rounds, the salt and finally the hashed password value.
@@ -101,19 +84,13 @@ public class PasswordHashingUtils {
         return (hash.startsWith("$argon2id") || hash.startsWith("$argon2i") || hash.startsWith("$argon2d"));
     }
 
-    private static boolean doesPasswordHashHaveFireBaseSCryptPrefix(String passwordHash) {
-        return passwordHash.startsWith(FIREBASE_SCRYPT_PREFIX);
-    }
-
-    private static String addFirebaseSCryptPrefixToPasswordHash(String passwordHash) {
-        return FIREBASE_SCRYPT_PREFIX + "$" + passwordHash;
-    }
-
     public static boolean verifyFirebaseSCryptPasswordHash(String plainTextPassword, String passwordHash,
             String base64_signer_key) {
-        
-        // follows the logic mentioned here https://github.com/SmartMoveSystems/firebase-scrypt-java/blob/master/src/main/java/com/smartmovesystems/hashcheck/FirebaseScrypt.java
-        // this is the library recommended by firebase for the java implementation https://firebaseopensource.com/projects/firebase/scrypt/
+
+        // follows the logic mentioned here
+        // https://github.com/SmartMoveSystems/firebase-scrypt-java/blob/master/src/main/java/com/smartmovesystems/hashcheck/FirebaseScrypt.java
+        // this is the library recommended by firebase for the java implementation
+        // https://firebaseopensource.com/projects/firebase/scrypt/
         ParsedFirebaseSCryptResponse response = ParsedFirebaseSCryptResponse.fromHashString(passwordHash);
         if (response == null) {
             return false;
