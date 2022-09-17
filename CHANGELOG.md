@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+### Added
+
+- Hello API on `/` route.
+
 ## [3.16.2] - 2022-09-02
 
 ### Bug fixes

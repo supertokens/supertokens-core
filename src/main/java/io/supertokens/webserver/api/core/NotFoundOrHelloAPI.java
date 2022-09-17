@@ -18,17 +18,20 @@ package io.supertokens.webserver.api.core;
 
 import io.supertokens.Main;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 
-public class NotFoundAPI extends WebserverAPI {
+public class NotFoundOrHelloAPI extends WebserverAPI {
 
     private static final long serialVersionUID = 1L;
 
-    public NotFoundAPI(Main main) {
+    public NotFoundOrHelloAPI(Main main) {
         super(main, "");
     }
 
@@ -39,9 +42,20 @@ public class NotFoundAPI extends WebserverAPI {
 
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        super.sendTextResponse(404, "Not found", resp);
+        if (req.getRequestURI().equals("/")) {
+            Storage storage = StorageLayer.getStorage(main);
+            try {
+                storage.getKeyValue("Test");
+                super.sendTextResponse(200, "Hello", resp);
+            } catch (StorageQueryException e) {
+                // we send 500 status code
+                throw new IOException(e);
+            }
+        } else {
+            super.sendTextResponse(404, "Not found", resp);
 
-        Logging.error(main, "Unknown API called: " + req.getRequestURL(), false);
+            Logging.error(main, "Unknown API called: " + req.getRequestURL(), false);
+        }
     }
 
 }
