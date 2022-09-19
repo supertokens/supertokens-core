@@ -301,6 +301,51 @@ public class ImportUserWithPasswordHashAPITest {
     }
 
     @Test
+    public void testSigningInAUserWhenStoredPasswordHashIsIncorrect() throws Exception {
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("firebase_password_hashing_signer_key",
+                "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        int firebaseMemCost = 14;
+        int firebaseRounds = 8;
+        String firebaseSaltSeparator = "Bw==";
+
+        String email = "test@example.com";
+        String password = "testPass123";
+        String salt = "/cj0jC1br5o4+w==";
+        String passwordHash = "incorrectHash";
+        String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
+                + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
+
+        long timeJoined = System.currentTimeMillis();
+
+        UserInfo userInfo = new UserInfo("userId", email, combinedPasswordHash, timeJoined);
+        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(process.getProcess());
+
+        storage.signUp(userInfo);
+
+        JsonObject signInRequestBody = new JsonObject();
+        signInRequestBody.addProperty("email", email);
+        signInRequestBody.addProperty("password", password);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/signin", signInRequestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_16ForTests(), "emailpassword");
+        assertEquals("WRONG_CREDENTIALS_ERROR", response.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testSigningInAUserWithFirebasePasswordHashWithoutSettingTheSignerKey() throws Exception {
         String[] args = { "../" };
 
@@ -384,17 +429,30 @@ public class ImportUserWithPasswordHashAPITest {
         assertEquals("OK", response.get("status").getAsString());
         assertFalse(response.get("didUserAlreadyExist").getAsBoolean());
 
-        // try signing in with the new user
-        JsonObject signInRequestBody = new JsonObject();
-        signInRequestBody.addProperty("email", email);
-        signInRequestBody.addProperty("password", password);
+        // try signing in with incorrect password
+        {
+            JsonObject signInRequestBody = new JsonObject();
+            signInRequestBody.addProperty("email", email);
+            signInRequestBody.addProperty("password", "incorrectpassword");
 
-        JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signin", signInRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_16ForTests(), "emailpassword");
-        assertEquals("OK", signInResponse.get("status").getAsString());
-        assertEquals(signInResponse.get("user").getAsJsonObject(), response.get("user").getAsJsonObject());
+            JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signin", signInRequestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+            assertEquals("WRONG_CREDENTIALS_ERROR", signInResponse.get("status").getAsString());
+        }
 
+        {
+            // try signing in with the new user
+            JsonObject signInRequestBody = new JsonObject();
+            signInRequestBody.addProperty("email", email);
+            signInRequestBody.addProperty("password", password);
+
+            JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/signin", signInRequestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+            assertEquals("OK", signInResponse.get("status").getAsString());
+            assertEquals(signInResponse.get("user").getAsJsonObject(), response.get("user").getAsJsonObject());
+        }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
