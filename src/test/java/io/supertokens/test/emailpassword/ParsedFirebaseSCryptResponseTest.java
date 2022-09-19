@@ -125,6 +125,12 @@ public class ParsedFirebaseSCryptResponseTest {
         String saltSeparator = "Bw==";
 
         {
+            // input before the prefix
+            String invalidPasswordhash = "invalidField$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$"
+                    + passwordHash + "$" + salt + "$" + "s=" + saltSeparator + "$" + "m=" + memory + "$" + "r="
+                    + rounds;
+            assertNull(ParsedFirebaseSCryptResponse.fromHashString(invalidPasswordhash));
+
             // missing prefix
             String invalidPasswordHash = "$" + passwordHash + "$" + salt + "$" + "s=" + saltSeparator + "$" + "m="
                     + memory + "$" + "r=" + rounds;
