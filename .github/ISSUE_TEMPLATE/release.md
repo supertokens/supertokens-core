@@ -47,6 +47,7 @@ labels:
 
 ### Others
 
+-  [ ] Example apps in create-supertokens-app CLI
  - [ ] Examples apps in supertokens-auth-react
  - [ ] Examples apps in supertokens-web-js
  - [ ] Examples apps in supertokens-react-native

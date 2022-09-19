@@ -9,9 +9,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [4.0.0] - 2022-09-19
 
-- Adds an EmailPassword User migration API which allows you to import users with their email and password hashes.
-- Adds support to import users with password hashes from Firebase
-- Adds support with CDI version `2.16`
+### Added
+
+- EmailPassword User migration API which allows you to import users with their email and password hashes.
+- Support to import users with password hashes from Firebase
+- Support with CDI version `2.16`
+- Hello API on `/` route.
 
 ### Database Changes
 - Updates the `password_hash` column in the `emailpassword_users` table from `VARCHAR(128)` to `VARCHAR(256)` to support more password  hash lengths.
@@ -22,6 +25,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
     `ALTER TABLE thirdparty_users MODIFY third_party_user_id VARCHAR(256); ALTER TABLE emailpassword_users MODIFY password_hash VARCHAR(256);` 
   - With PostgreSQL:
     `ALTER TABLE thirdparty_users MODIFY third_party_user_id VARCHAR(256); ALTER TABLE emailpassword_users MODIFY password_hash VARCHAR(256);`   
+    
 
 ## [3.16.2] - 2022-09-02
 
