@@ -118,6 +118,8 @@ labels:
 - [ ] Update frontend-driver-interface repo
 - [ ] Updated swaggerhub CDI spec
 - [ ] Update core-driver-interface-repo
+- [ ] Updated dashboard spec on swaggerhub
+- [ ] Update [dashboard spec](https://github.com/supertokens/dashboard/blob/master/api_spec.yaml)
 - [ ] Update internal contributing guide to move from previous core version to the latest one
 - [ ] Algolia search update for docs
 - [ ] robots.txt, sitemap.xml, noindex page update
