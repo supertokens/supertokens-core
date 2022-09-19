@@ -719,7 +719,6 @@ public class PasswordHashingTest {
                                 CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
                         // try signing in
                         UserInfo user = EmailPassword.signIn(process.main, uniqueEmail, password);
-                        assertEquals(user.email, email);
                         assertEquals(user.passwordHash, combinedPasswordHash);
                         assertNotNull(process
                                 .checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_FIREBASE_SCRYPT));
