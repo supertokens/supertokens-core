@@ -11,6 +11,9 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 - Adds an EmailPassword User migration API which allows you to import users with their email and password hashes.
 - Adds support to import users with password hashes from Firebase
+- Adds support with CDI version `2.16`
+
+### Database Changes
 - Updates the `password_hash` column in the `emailpassword_users` table from `VARCHAR(128)` to `VARCHAR(256)` to support more password  hash lengths.
 - Updates the `third_party_user_id` column in the `thirdparty_users` table from `VARCHAR(128)` to `VARCHAR(256)` to resolve https://github.com/supertokens/supertokens-core/issues/306
 
