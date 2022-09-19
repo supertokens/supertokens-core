@@ -692,7 +692,6 @@ public class PasswordHashingTest {
         int firebaseRounds = 8;
         String firebaseSaltSeparator = "Bw==";
 
-        String email = "test@example.com";
         String password = "testPass123";
         String salt = "/cj0jC1br5o4+w==";
         String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
@@ -701,7 +700,7 @@ public class PasswordHashingTest {
 
         AtomicInteger counter = new AtomicInteger(0);
 
-        assert (PasswordHashing.getInstance(process.getProcess()).getArgon2BlockedQueueSize() == 0);
+        assert (PasswordHashing.getInstance(process.getProcess()).getFirebaseSCryptBlockedQueueSize() == 0);
         AtomicBoolean reachedQueueMaxSize = new AtomicBoolean(false);
 
         ExecutorService ex = Executors.newFixedThreadPool(1000);
