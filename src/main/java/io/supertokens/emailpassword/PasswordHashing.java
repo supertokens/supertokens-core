@@ -23,6 +23,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
+import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import org.jetbrains.annotations.TestOnly;
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -34,16 +35,23 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_KEY = "io.supertokens.emailpassword.PasswordHashing";
     final static int ARGON2_SALT_LENGTH = 16;
     final static int ARGON2_HASH_LENGTH = 32;
-    final BlockingQueue<Object> boundedQueue;
+    final BlockingQueue<Object> argon2BoundedQueue;
+    final BlockingQueue<Object> firebaseSCryptBoundedQueue;
     final Main main;
 
     private PasswordHashing(Main main) {
-        this.boundedQueue = new LinkedBlockingQueue<>(Config.getConfig(main).getArgon2HashingPoolSize());
+        this.argon2BoundedQueue = new LinkedBlockingQueue<>(Config.getConfig(main).getArgon2HashingPoolSize());
+        this.firebaseSCryptBoundedQueue = new LinkedBlockingQueue<>(
+                Config.getConfig(main).getFirebaseSCryptPasswordHashingPoolSize());
         this.main = main;
     }
 
     // argon2 instances are thread safe: https://github.com/phxql/argon2-jvm/issues/35
-    private static Argon2 argon2 = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id, ARGON2_SALT_LENGTH,
+    private static Argon2 argon2id = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2id, ARGON2_SALT_LENGTH,
+            ARGON2_HASH_LENGTH);
+    private static Argon2 argon2i = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2i, ARGON2_SALT_LENGTH,
+            ARGON2_HASH_LENGTH);
+    private static Argon2 argon2d = Argon2Factory.create(Argon2Factory.Argon2Types.ARGON2d, ARGON2_SALT_LENGTH,
             ARGON2_HASH_LENGTH);
 
     public static PasswordHashing getInstance(Main main) {
@@ -58,53 +66,90 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     }
 
     public String createHashWithSalt(String password) {
+
+        String passwordHash = "";
+
         if (Config.getConfig(main).getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.BCRYPT) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT, null);
-            return BCrypt.hashpw(password, BCrypt.gensalt(Config.getConfig(main).getBcryptLogRounds()));
+            passwordHash = BCrypt.hashpw(password, BCrypt.gensalt(Config.getConfig(main).getBcryptLogRounds()));
+        } else if (Config.getConfig(main).getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.ARGON2) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON, null);
+            passwordHash = withConcurrencyLimited(() -> argon2id.hash(Config.getConfig(main).getArgon2Iterations(),
+                    Config.getConfig(main).getArgon2MemoryKb(), Config.getConfig(main).getArgon2Parallelism(),
+                    password.toCharArray()), this.argon2BoundedQueue);
         }
 
-        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON, null);
-
-        return withConcurrencyLimited(() -> argon2.hash(Config.getConfig(main).getArgon2Iterations(),
-                Config.getConfig(main).getArgon2MemoryKb(), Config.getConfig(main).getArgon2Parallelism(),
-                password.toCharArray()));
+        try {
+            PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(main, passwordHash, null);
+        } catch (UnsupportedPasswordHashingFormatException e) {
+            throw new IllegalStateException(e);
+        }
+        return passwordHash;
     }
 
     public interface Func<T> {
         T op();
     }
 
-    private <T> T withConcurrencyLimited(Func<T> func) {
+    private <T> T withConcurrencyLimited(Func<T> func, BlockingQueue<Object> blockingQueue) {
         Object waiter = new Object();
         try {
-            while (!this.boundedQueue.contains(waiter)) {
+            while (!blockingQueue.contains(waiter)) {
                 try {
                     // put will wait for there to be an empty slot in the queue and return
                     // only when there is a slot for waiter
-                    this.boundedQueue.put(waiter);
+                    blockingQueue.put(waiter);
                 } catch (InterruptedException ignored) {
                 }
             }
 
             return func.op();
-
         } finally {
-            this.boundedQueue.remove(waiter);
+            blockingQueue.remove(waiter);
         }
     }
 
     public boolean verifyPasswordWithHash(String password, String hash) {
-        if (hash.startsWith("$argon2id")) { // argon2 hash looks like $argon2id$v=..$m=..,t=..,p=..$tgSmiYOCjQ0im5U6...
-            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON, null);
 
-            return withConcurrencyLimited(() -> argon2.verify(hash, password.toCharArray()));
+        if (PasswordHashingUtils.isInputHashInArgon2Format(hash)) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON, null);
+            if (hash.startsWith("$argon2id")) {
+                return withConcurrencyLimited(() -> argon2id.verify(hash, password.toCharArray()),
+                        this.argon2BoundedQueue);
+            }
+
+            if (hash.startsWith("$argon2i")) {
+                return withConcurrencyLimited(() -> argon2i.verify(hash, password.toCharArray()),
+                        this.argon2BoundedQueue);
+            }
+
+            if (hash.startsWith("$argon2d")) {
+                return withConcurrencyLimited(() -> argon2d.verify(hash, password.toCharArray()),
+                        this.argon2BoundedQueue);
+            }
+        } else if (PasswordHashingUtils.isInputHashInBcryptFormat(hash)) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT, null);
+            String bCryptPasswordHash = PasswordHashingUtils
+                    .replaceUnsupportedIdentifierForBcryptPasswordHashVerification(hash);
+            return BCrypt.checkpw(password, bCryptPasswordHash);
+        } else if (ParsedFirebaseSCryptResponse.fromHashString(hash) != null) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_FIREBASE_SCRYPT, null);
+            return withConcurrencyLimited(
+                    () -> PasswordHashingUtils.verifyFirebaseSCryptPasswordHash(password, hash,
+                            Config.getConfig(main).getFirebase_password_hashing_signer_key()),
+                    this.firebaseSCryptBoundedQueue);
         }
-        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_BCRYPT, null);
-        return BCrypt.checkpw(password, hash);
+
+        return false;
     }
 
     @TestOnly
-    public int getBlockedQueueSize() {
-        return this.boundedQueue.size();
+    public int getArgon2BlockedQueueSize() {
+        return this.argon2BoundedQueue.size();
+    }
+
+    @TestOnly
+    public int getFirebaseSCryptBlockedQueueSize() {
+        return this.firebaseSCryptBoundedQueue.size();
     }
 }
