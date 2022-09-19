@@ -100,6 +100,9 @@ public class CoreConfig {
     private int argon2_hashing_pool_size = 1;
 
     @JsonProperty
+    private int firebase_password_hashing_pool_size = 1;
+
+    @JsonProperty
     private int bcrypt_log_rounds = 11;
 
     // TODO: add https in later version
@@ -115,6 +118,9 @@ public class CoreConfig {
 
     @JsonProperty
     private String log_level = "INFO";
+
+    @JsonProperty
+    private String firebase_password_hashing_signer_key = null;
 
     private Set<LOG_LEVEL> allowedLogLevels = null;
 
@@ -161,7 +167,7 @@ public class CoreConfig {
     }
 
     public enum PASSWORD_HASHING_ALG {
-        ARGON2, BCRYPT
+        ARGON2, BCRYPT, FIREBASE_SCRYPT
     }
 
     public int getArgon2HashingPoolSize() {
@@ -170,6 +176,10 @@ public class CoreConfig {
         // if the user gives a <= 0 number, it crashes the core (since it creates a blockedqueue in PaswordHashing
         // .java with length <= 0). So we do a Math.max
         return Math.max(1, argon2_hashing_pool_size);
+    }
+
+    public int getFirebaseSCryptPasswordHashingPoolSize() {
+        return Math.max(1, firebase_password_hashing_pool_size);
     }
 
     public int getArgon2Iterations() {
@@ -186,6 +196,13 @@ public class CoreConfig {
 
     public int getArgon2Parallelism() {
         return argon2_parallelism;
+    }
+
+    public String getFirebase_password_hashing_signer_key() {
+        if (firebase_password_hashing_signer_key == null) {
+            throw new IllegalStateException("'firebase_password_hashing_signer_key' cannot be null");
+        }
+        return firebase_password_hashing_signer_key;
     }
 
     public PASSWORD_HASHING_ALG getPasswordHashingAlg() {

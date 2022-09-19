@@ -93,8 +93,7 @@ public class EmailPassword {
             @Nonnull String passwordHash, @Nullable CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
 
-        passwordHash = PasswordHashingUtils.updatePasswordHashWithPrefixIfRequired(passwordHash, hashingAlgorithm);
-        PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(passwordHash, hashingAlgorithm);
+        PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(main, passwordHash, hashingAlgorithm);
 
         while (true) {
             String userId = Utils.getUUID();
@@ -145,6 +144,12 @@ public class EmailPassword {
             }
         } catch (WrongCredentialsException e) {
             throw e;
+        } catch (IllegalStateException e) {
+            if (e.getMessage().equals("'firebase_password_hashing_signer_key' cannot be null")) {
+                throw e;
+            }
+            throw new WrongCredentialsException();
+
         } catch (Exception ignored) {
             throw new WrongCredentialsException();
         }

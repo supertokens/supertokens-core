@@ -16,10 +16,20 @@
 
 package io.supertokens.emailpassword;
 
+import io.supertokens.Main;
+import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
+import com.lambdaworks.crypto.SCrypt;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
+import org.apache.tomcat.util.codec.binary.Base64;
 
 import javax.annotation.Nullable;
+import javax.crypto.Cipher;
+import javax.crypto.spec.IvParameterSpec;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.*;
+import java.util.Objects;
 
 public class PasswordHashingUtils {
 
@@ -35,12 +45,18 @@ public class PasswordHashingUtils {
         return hash;
     }
 
-    public static void assertSuperTokensSupportInputPasswordHashFormat(String passwordHash,
+    public static void assertSuperTokensSupportInputPasswordHashFormat(Main main, String passwordHash,
             @Nullable CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
             throws UnsupportedPasswordHashingFormatException {
         if (hashingAlgorithm == null) {
-            if (!(isInputHashInBcryptFormat(passwordHash)
-                    || isInputHashInArgon2Format(passwordHash) /* || isInputHashInScryptFormat(passwordHash) */)) {
+            if (ParsedFirebaseSCryptResponse.fromHashString(passwordHash) != null) {
+                // since input hash is in firebase scrypt format we check if firebase scrypt signer key is set
+                Config.getConfig(main).getFirebase_password_hashing_signer_key();
+                return;
+            }
+
+            if (!(isInputHashInBcryptFormat(passwordHash) || isInputHashInArgon2Format(passwordHash))) {
+
                 throw new UnsupportedPasswordHashingFormatException("Password hash is in invalid format");
             }
             return;
@@ -57,38 +73,15 @@ public class PasswordHashingUtils {
             }
         }
 
-//        if (hashingAlgorithm.equals(PasswordHashingAlgorithm.SCRYPT)) {
-//            if (!isInputHashInScryptFormat(passwordHash)) {
-//                throw new UnsupportedPasswordHashingFormatException("Password hash is in invalid SCrypt format");
-//            }
-//        }
-    }
-
-    public static String updatePasswordHashWithPrefixIfRequired(String passwordHash,
-            CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm) {
-        if (hashingAlgorithm == null) {
-            return passwordHash;
+        if (hashingAlgorithm.equals(CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT)) {
+            // since input hash is in firebase scrypt format we check if firebase scrypt signer key is set
+            Config.getConfig(main).getFirebase_password_hashing_signer_key();
+            if (ParsedFirebaseSCryptResponse.fromHashString(passwordHash) == null) {
+                throw new UnsupportedPasswordHashingFormatException(
+                        "Password hash is in invalid Firebase SCrypt format");
+            }
         }
-
-//        if (hashingAlgorithm == PasswordHashingAlgorithm.SCRYPT){
-//            if (doesPasswordHashHaveScrpytPrefix(passwordHash)){
-//                return passwordHash;
-//            }
-//            return addScryptPrefixToPasswordHash(passwordHash);
-//        }
-
-        return passwordHash;
     }
-
-//    public static boolean isInputHashInScryptFormat(String hash) {
-//        if(doesPasswordHashHaveScrpytPrefix(hash)){
-//            return true;
-//        }
-//        if (isInputHashInBcryptFormat(hash) || isInputHashInArgon2Format(hash)){
-//            return false;
-//        }
-//        return true;
-//    }
 
     public static boolean isInputHashInBcryptFormat(String hash) {
         // bcrypt hash starts with the algorithm identifier which can be $2a$, $2y$, $2b$ or $2x$,
@@ -101,13 +94,51 @@ public class PasswordHashingUtils {
         return (hash.startsWith("$argon2id") || hash.startsWith("$argon2i") || hash.startsWith("$argon2d"));
     }
 
-//    private static  boolean doesPasswordHashHaveScrpytPrefix(String passwordHash){
-//        // TODO:
-//        return false;
-//    }
+    public static boolean verifyFirebaseSCryptPasswordHash(String plainTextPassword, String passwordHash,
+            String base64_signer_key) {
 
-//    private static String addScryptPrefixToPasswordHash(String passwordHash){
-//        // TODO:
-//        return passwordHash;
-//    }
+        // follows the logic mentioned here
+        // https://github.com/SmartMoveSystems/firebase-scrypt-java/blob/master/src/main/java/com/smartmovesystems/hashcheck/FirebaseScrypt.java
+        // this is the library recommended by firebase for the java implementation of firebase scrypt
+        // https://firebaseopensource.com/projects/firebase/scrypt/
+        ParsedFirebaseSCryptResponse response = ParsedFirebaseSCryptResponse.fromHashString(passwordHash);
+        if (response == null) {
+            return false;
+        }
+
+        int N = 1 << response.memCost;
+        int p = 1;
+
+        // concatenating decoded salt + separator
+        byte[] decodedSaltBytes = Base64.decodeBase64(response.salt.getBytes(StandardCharsets.US_ASCII));
+        byte[] decodedSaltSepBytes = Base64.decodeBase64(response.saltSeparator.getBytes(StandardCharsets.US_ASCII));
+
+        byte[] saltConcat = new byte[decodedSaltBytes.length + decodedSaltSepBytes.length];
+        System.arraycopy(decodedSaltBytes, 0, saltConcat, 0, decodedSaltBytes.length);
+        System.arraycopy(decodedSaltSepBytes, 0, saltConcat, decodedSaltBytes.length, decodedSaltSepBytes.length);
+
+        // hashing password
+        byte[] hashedBytes;
+        try {
+            hashedBytes = SCrypt.scrypt(plainTextPassword.getBytes(StandardCharsets.US_ASCII), saltConcat, N,
+                    response.rounds, p, 64);
+        } catch (GeneralSecurityException e) {
+            return false;
+        }
+        // encrypting with aes
+        byte[] signerBytes = Base64.decodeBase64(base64_signer_key.getBytes(StandardCharsets.US_ASCII));
+
+        try {
+            String CIPHER = "AES/CTR/NoPadding";
+            Key key = new SecretKeySpec(hashedBytes, 0, 32, "AES");
+            IvParameterSpec ivSpec = new IvParameterSpec(new byte[16]);
+            Cipher c = Cipher.getInstance(CIPHER);
+            c.init(Cipher.ENCRYPT_MODE, key, ivSpec);
+            byte[] encryptedPasswordHash = c.doFinal(signerBytes);
+            return new String(Objects.requireNonNull(Base64.encodeBase64(encryptedPasswordHash)))
+                    .equals(response.passwordHash);
+        } catch (Exception e) {
+            return false;
+        }
+    }
 }
