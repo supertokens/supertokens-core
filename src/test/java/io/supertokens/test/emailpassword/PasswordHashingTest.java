@@ -79,7 +79,8 @@ public class PasswordHashingTest {
         String email = "test@example.com";
         String password = "testPass123";
         String salt = "/cj0jC1br5o4+w==";
-        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
+        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA"
+                + "==";
         String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
                 + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
 
@@ -694,12 +695,95 @@ public class PasswordHashingTest {
 
         String password = "testPass123";
         String salt = "/cj0jC1br5o4+w==";
-        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA==";
+        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA"
+                + "==";
         String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
                 + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
 
         AtomicInteger counter = new AtomicInteger(0);
 
+        assert (PasswordHashing.getInstance(process.getProcess()).getFirebaseSCryptBlockedQueueSize() == 0);
+        AtomicBoolean reachedQueueMaxSize = new AtomicBoolean(false);
+
+        ExecutorService ex = Executors.newFixedThreadPool(1000);
+        int numberOfThreads = 500;
+        for (int i = 0; i < numberOfThreads; i++) {
+            int finalI = i;
+            ex.execute(() -> {
+                int localCounter = 0;
+                while (true) {
+                    String uniqueEmail = "test@example.com" + finalI + "" + localCounter;
+                    localCounter++;
+                    try {
+
+                        EmailPassword.importUserWithPasswordHash(process.main, uniqueEmail, combinedPasswordHash,
+                                CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT);
+                        // try signing in
+                        UserInfo user = EmailPassword.signIn(process.main, uniqueEmail, password);
+                        assertEquals(user.passwordHash, combinedPasswordHash);
+                        assertNotNull(process
+                                .checkOrWaitForEvent(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_FIREBASE_SCRYPT));
+                        int queueSize = PasswordHashing.getInstance(process.getProcess())
+                                .getFirebaseSCryptBlockedQueueSize();
+                        int maxQueueSize = Config.getConfig(process.getProcess())
+                                .getFirebaseSCryptPasswordHashingPoolSize();
+                        assert (queueSize <= maxQueueSize);
+                        if (queueSize == maxQueueSize || queueSize + 1 == maxQueueSize) {
+                            reachedQueueMaxSize.set(true);
+                        }
+                        counter.incrementAndGet();
+                        break;
+                    } catch (StorageQueryException e) {
+                        // we try again as this may happen cause of connection timeout in db layer.
+                    } catch (Exception ignored) {
+                        break;
+                    }
+                }
+            });
+        }
+
+        ex.shutdown();
+
+        ex.awaitTermination(2, TimeUnit.MINUTES);
+
+        assert (counter.get() == numberOfThreads);
+        assert (reachedQueueMaxSize.get());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void parallelImportUserSignInFirebaseScryptWithPoolSize4() throws Exception {
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("firebase_password_hashing_signer_key",
+                "gRhC3eDeQOdyEn4bMd9c6kxguWVmcIVq/SKa0JDPFeM6TcEevkaW56sIWfx88OHbJKnCXdWscZx0l2WbCJ1wbg==");
+        Utils.setValueInConfig("firebase_password_hashing_pool_size", "4");
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL
+                || StorageLayer.getStorage(process.getProcess()) instanceof Start) {
+            // if this is in mem, we do not want to run this test as sqlite locks the entire table and throws
+            // error in the threads below.
+            return;
+        }
+
+        int firebaseMemCost = 14;
+        int firebaseRounds = 8;
+        String firebaseSaltSeparator = "Bw==";
+
+        String password = "testPass123";
+        String salt = "/cj0jC1br5o4+w==";
+        String passwordHash = "qZM035es5AXYqavsKD6/rhtxg7t5PhcyRgv5blc3doYbChX8keMfQLq1ra96O2Pf2TP/eZrR5xtPCYN6mX3ESA"
+                + "==";
+        String combinedPasswordHash = "$" + ParsedFirebaseSCryptResponse.FIREBASE_SCRYPT_PREFIX + "$" + passwordHash
+                + "$" + salt + "$m=" + firebaseMemCost + "$r=" + firebaseRounds + "$s=" + firebaseSaltSeparator;
+
+        AtomicInteger counter = new AtomicInteger(0);
+        assert (Config.getConfig(process.getProcess()).getFirebaseSCryptPasswordHashingPoolSize() == 4);
         assert (PasswordHashing.getInstance(process.getProcess()).getFirebaseSCryptBlockedQueueSize() == 0);
         AtomicBoolean reachedQueueMaxSize = new AtomicBoolean(false);
 
