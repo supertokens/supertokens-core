@@ -7,10 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
-## [3.17.0] - 2022-09-019
+## [3.17.0] - 2022-09-19
 
 - Adds an EmailPassword User migration API which allows you to import users with their email and password hashes.
 - Adds support to import users with password hashes from Firebase
+- Updates the `password_hash` column in the `emailpassword_users` table from `VARCHAR(128)` to `VARCHAR(256)`
 
 ## [3.16.2] - 2022-09-02
 
