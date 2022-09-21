@@ -122,7 +122,21 @@ public class CoreConfig {
     @JsonProperty
     private String firebase_password_hashing_signer_key = null;
 
+    @JsonProperty
+    private String ip_allow_regex = null;
+
+    @JsonProperty
+    private String ip_deny_regex = null;
+
     private Set<LOG_LEVEL> allowedLogLevels = null;
+
+    public String getIpAllowRegex() {
+        return ip_allow_regex;
+    }
+
+    public String getIpDenyRegex() {
+        return ip_deny_regex;
+    }
 
     public Set<LOG_LEVEL> getLogLevels(Main main) {
         if (allowedLogLevels != null) {

@@ -48,7 +48,10 @@ import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.core.StandardContext;
+import org.apache.catalina.filters.RemoteAddrFilter;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.tomcat.util.descriptor.web.FilterDef;
+import org.apache.tomcat.util.descriptor.web.FilterMap;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 
 import java.io.File;
@@ -128,6 +131,9 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         // calling stop
         context.setUnloadDelay(5000);
 
+        // we add remote address filter so that only certain IPs can query the core.
+        addRemoteAddressFilter(context, main);
+
         // start tomcat
         try {
             tomcat.start();
@@ -151,6 +157,32 @@ public class Webserver extends ResourceDistributor.SingletonResource {
             Logging.error(main, null, false, e);
             throw new QuitProgramException("API routes not initialised properly: " + e.getMessage());
         }
+    }
+
+    private void addRemoteAddressFilter(StandardContext context, Main main) {
+        String allow = Config.getConfig(main).getIpAllowRegex();
+        String deny = Config.getConfig(main).getIpDenyRegex();
+        if (allow == null && deny == null) {
+            return;
+        }
+        RemoteAddrFilter filter = new RemoteAddrFilter();
+        if (allow != null) {
+            filter.setAllow(allow);
+        }
+        if (deny != null) {
+            filter.setDeny(deny);
+        }
+        filter.setDenyStatus(403);
+
+        FilterDef filterDefinition = new FilterDef();
+        filterDefinition.setFilter(filter);
+        filterDefinition.setFilterName(RemoteAddrFilter.class.getSimpleName());
+        context.addFilterDef(filterDefinition);
+
+        FilterMap filterMapping = new FilterMap();
+        filterMapping.setFilterName(RemoteAddrFilter.class.getSimpleName());
+        filterMapping.addURLPattern("*");
+        context.addFilterMap(filterMapping);
     }
 
     private void setupRoutes() throws Exception {
