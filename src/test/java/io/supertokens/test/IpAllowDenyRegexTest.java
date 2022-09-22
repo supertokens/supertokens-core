@@ -215,4 +215,107 @@ public class IpAllowDenyRegexTest extends Mockito {
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
         }
     }
+
+    @Test
+    public void CheckDenyLocalhostWorks() throws Exception {
+        {
+            String[] args = { "../" };
+            Utils.setValueInConfig("ip_deny_regex", "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1");
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            try {
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                        null);
+                throw new Exception("test failed");
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 403);
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+        Utils.reset();
+
+        {
+            String[] args = { "../" };
+            Utils.setValueInConfig("ip_deny_regex", "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+");
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            try {
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                        null);
+                throw new Exception("test failed");
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 403);
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+        Utils.reset();
+
+        {
+            String[] args = { "../" };
+            Utils.setValueInConfig("ip_deny_regex", "'127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+'");
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            try {
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                        null);
+                throw new Exception("test failed");
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 403);
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+        Utils.reset();
+
+        {
+            String[] args = { "../" };
+            Utils.setValueInConfig("ip_deny_regex", "\"127\\\\\\\\.\\\\\\\\d+\\\\\\\\.\\\\\\\\d+\\\\\\\\.\\\\\\\\d+\"");
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            try {
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                        null);
+                throw new Exception("test failed");
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 403);
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void CheckAllowAndDenyLocalhostWorks() throws Exception {
+        {
+            String[] args = { "../" };
+            Utils.setValueInConfig("ip_deny_regex", "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1");
+            Utils.setValueInConfig("ip_allow_regex", "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1");
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            try {
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                        null);
+                throw new Exception("test failed");
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 403);
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+    }
 }
