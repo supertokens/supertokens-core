@@ -114,7 +114,7 @@ core_config_version: 0
 # firebase_password_hashing_pool_size:
 
 # (OPTIONAL | Default: null). Regex for allowing requests from IP addresses that match with the value.
-# For example, use the value of "127\\.\\d+\\.\\d+\\.\\d+|::1|0:0:0:0:0:0:0:1" to allow only localhost to query the
+# For example, use the value of 127\\.\\d+\\.\\d+\\.\\d+|::1|0:0:0:0:0:0:0:1 to allow only localhost to query the
 # core. Comment it out to allow requests from any IP address.
 # ip_allow_regex:
 

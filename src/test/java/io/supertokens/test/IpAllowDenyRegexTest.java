@@ -19,11 +19,10 @@ package io.supertokens.test;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.config.Config;
+import io.supertokens.httpRequest.HttpRequest;
+import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TestRule;
 import org.mockito.Mockito;
 
@@ -124,6 +123,60 @@ public class IpAllowDenyRegexTest extends Mockito {
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
             assertEquals(e.exception.getMessage(), "Provided regular expression is invalid for ip_deny_regex config");
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void CheckAllowRegexWorks() throws InterruptedException, IOException, Exception {
+        {
+            String[] args = { "../" };
+            Utils.setValueInConfig("ip_allow_regex", "192.123.3.4");
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            try {
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                        null);
+                throw new Exception("test failed");
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 403);
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void CheckAllowLocalhostWorks() throws InterruptedException, IOException, HttpResponseException {
+        {
+            String[] args = { "../" };
+            Utils.setValueInConfig("ip_allow_regex", "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1");
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
+                    1000, 1000, null);
+            Assert.assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+        Utils.reset();
+
+        {
+            String[] args = { "../" };
+            Utils.setValueInConfig("ip_allow_regex", "'127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1'");
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null,
+                    1000, 1000, null);
+            Assert.assertEquals("Hello", response);
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
