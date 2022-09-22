@@ -26,7 +26,9 @@ import org.junit.*;
 import org.junit.rules.TestRule;
 import org.mockito.Mockito;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -130,7 +132,7 @@ public class IpAllowDenyRegexTest extends Mockito {
     }
 
     @Test
-    public void CheckAllowRegexWorks() throws InterruptedException, IOException, Exception {
+    public void CheckAllowRegexWorks() throws Exception {
         {
             String[] args = { "../" };
             Utils.setValueInConfig("ip_allow_regex", "192.123.3.4");
@@ -313,6 +315,38 @@ public class IpAllowDenyRegexTest extends Mockito {
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 403);
             }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void CheckNoLoggingForNotAllowedAPIRoutes() throws Exception {
+        {
+            String[] args = { "../" };
+            ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();
+            ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
+            Utils.setValueInConfig("ip_deny_regex", "127\\\\.\\\\d+\\\\.\\\\d+\\\\.\\\\d+|::1|0:0:0:0:0:0:0:1");
+            Utils.setValueInConfig("info_log_path", "\"null\"");
+            Utils.setValueInConfig("error_log_path", "\"null\"");
+
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            System.setOut(new PrintStream(stdOutput));
+            System.setErr(new PrintStream(errorOutput));
+
+            try {
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                        null);
+                throw new Exception("test failed");
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 403);
+            }
+
+            assertEquals(stdOutput.toByteArray().length, 0);
+            assertEquals(errorOutput.toByteArray().length, 0);
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
