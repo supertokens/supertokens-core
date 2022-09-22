@@ -31,18 +31,7 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertNotNull;
 
-/**
- * TODO:
- * - Give unsupported version and make sure it fails
- * - Give all supported versions and make sure it passes
- * - Give no version and makes sure it treats it as 1.0
- * - Recipe Router tests
- * - Initialise two routes with the same path, different RID and query each and check that routing is happening
- * properly (for all HTTP methods).
- * - Use RecipeRouter in a way that the sub routes have different paths. This should throw an error
- */
-
-public class WebserverTest2 extends Mockito {
+public class IpAllowDenyRegexTest extends Mockito {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
