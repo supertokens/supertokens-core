@@ -59,6 +59,7 @@ import java.io.File;
 import java.util.UUID;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
+import java.util.regex.PatternSyntaxException;
 
 public class Webserver extends ResourceDistributor.SingletonResource {
 
@@ -169,10 +170,18 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.ADDING_REMOTE_ADDRESS_FILTER, null);
         RemoteAddrFilter filter = new RemoteAddrFilter();
         if (allow != null) {
-            filter.setAllow(allow);
+            try {
+                filter.setAllow(allow);
+            } catch (PatternSyntaxException e) {
+                throw new QuitProgramException("Provided regular expression is invalid for ip_allow_regex config");
+            }
         }
         if (deny != null) {
-            filter.setDeny(deny);
+            try {
+                filter.setDeny(deny);
+            } catch (PatternSyntaxException e) {
+                throw new QuitProgramException("Provided regular expression is invalid for ip_deny_regex config");
+            }
         }
         filter.setDenyStatus(403);
 
