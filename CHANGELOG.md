@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [4.1.0] - 2022-09-22
+
+- Adds request IP allow & deny list: https://github.com/supertokens/supertokens-core/issues/511
+
 ## [4.0.1] - 2022-09-19
 
 - Fixes bug related to implementationDependencies.json
