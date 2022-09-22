@@ -1,0 +1,112 @@
+/*
+ *    Copyright (c) 2020, VRAI Labs and/or its affiliates. All rights reserved.
+ *
+ *    This software is licensed under the Apache License, Version 2.0 (the
+ *    "License") as published by the Apache Software Foundation.
+ *
+ *    You may not use this file except in compliance with the License. You may
+ *    obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *    License for the specific language governing permissions and limitations
+ *    under the License.
+ */
+
+package io.supertokens.test;
+
+import io.supertokens.ProcessState;
+import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.config.Config;
+import io.supertokens.test.TestingProcessManager.TestingProcess;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+import org.mockito.Mockito;
+
+import java.io.IOException;
+
+import static org.junit.Assert.assertNotNull;
+
+/**
+ * TODO:
+ * - Give unsupported version and make sure it fails
+ * - Give all supported versions and make sure it passes
+ * - Give no version and makes sure it treats it as 1.0
+ * - Recipe Router tests
+ * - Initialise two routes with the same path, different RID and query each and check that routing is happening
+ * properly (for all HTTP methods).
+ * - Use RecipeRouter in a way that the sub routes have different paths. This should throw an error
+ */
+
+public class WebserverTest2 extends Mockito {
+
+    @Rule
+    public TestRule watchman = Utils.getOnFailure();
+
+    @AfterClass
+    public static void afterTesting() {
+        Utils.afterTesting();
+    }
+
+    @Before
+    public void beforeEach() {
+        Utils.reset();
+    }
+
+    @Test
+    public void defaultIpDenyAllowIsNull() throws InterruptedException {
+        String[] args = { "../" };
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        assert (Config.getConfig(process.getProcess()).getIpAllowRegex() == null);
+        assert (Config.getConfig(process.getProcess()).getIpDenyRegex() == null);
+
+        assert (process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.ADDING_REMOTE_ADDRESS_FILTER, 1000) == null);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void EmptyStringIpDenyOrAllowIsNull() throws InterruptedException, IOException {
+        {
+            String[] args = { "../" };
+            Utils.setValueInConfig("ip_allow_regex", "\"  \"");
+            Utils.setValueInConfig("ip_deny_regex", "\"\"");
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            assert (Config.getConfig(process.getProcess()).getIpAllowRegex() == null);
+            assert (Config.getConfig(process.getProcess()).getIpDenyRegex() == null);
+
+            assert (process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.ADDING_REMOTE_ADDRESS_FILTER, 1000) == null);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void EmptyConfigIpDenyOrAllowIsNull() throws InterruptedException, IOException {
+        {
+            String[] args = { "../" };
+            Utils.setValueInConfig("ip_allow_regex", "");
+            Utils.setValueInConfig("ip_deny_regex", "");
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            assert (Config.getConfig(process.getProcess()).getIpAllowRegex() == null);
+            assert (Config.getConfig(process.getProcess()).getIpDenyRegex() == null);
+
+            assert (process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.ADDING_REMOTE_ADDRESS_FILTER, 1000) == null);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+    }
+}

@@ -18,6 +18,7 @@ package io.supertokens.webserver;
 
 import io.supertokens.Main;
 import io.supertokens.OperatingSystem;
+import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
@@ -165,6 +166,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         if (allow == null && deny == null) {
             return;
         }
+        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.ADDING_REMOTE_ADDRESS_FILTER, null);
         RemoteAddrFilter filter = new RemoteAddrFilter();
         if (allow != null) {
             filter.setAllow(allow);

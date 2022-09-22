@@ -131,10 +131,16 @@ public class CoreConfig {
     private Set<LOG_LEVEL> allowedLogLevels = null;
 
     public String getIpAllowRegex() {
+        if (ip_allow_regex != null && ip_allow_regex.trim().equals("")) {
+            return null;
+        }
         return ip_allow_regex;
     }
 
     public String getIpDenyRegex() {
+        if (ip_deny_regex != null && ip_deny_regex.trim().equals("")) {
+            return null;
+        }
         return ip_deny_regex;
     }
 
