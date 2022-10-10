@@ -16,6 +16,7 @@
 
 package io.supertokens.test.userIdMapping.api;
 
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
@@ -30,7 +31,9 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
+import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -213,6 +216,61 @@ public class CreateUserIdMappingAPITest {
     }
 
     @Test
+    public void testCreatingAUserIdMappingWithAndWithoutForce() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a User and add some non auth recipe info
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+
+        // add some metadata to the user
+        JsonObject userMetadata = new JsonObject();
+        userMetadata.addProperty("test", "testExample");
+        UserMetadata.updateUserMetadata(process.main, userInfo.id, userMetadata);
+        String superTokensUserId = userInfo.id;
+        String externalUserId = "externalId";
+
+        // try and create mapping without force
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("superTokensUserId", superTokensUserId);
+            requestBody.addProperty("externalUserId", externalUserId);
+            requestBody.add("externalUserIdInfo", JsonNull.INSTANCE);
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
+                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                throw new Exception("should not come here");
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 400);
+                assertEquals(e.getMessage(),
+                        "Http error. Status Code: 400. Message:" + " UserId is already in use in UserMetadata recipe");
+            }
+        }
+
+        // create mapping with force
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("superTokensUserId", superTokensUserId);
+            requestBody.addProperty("externalUserId", externalUserId);
+            requestBody.add("externalUserIdInfo", JsonNull.INSTANCE);
+            requestBody.addProperty("force", true);
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+            assertEquals(response.get("status").getAsString(), "OK");
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void testCreatingAUserIdMapping() throws Exception {
         String[] args = { "../" };
 
@@ -340,7 +398,7 @@ public class CreateUserIdMappingAPITest {
 
         // create UserId mapping
         io.supertokens.useridmapping.UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalUserId,
-                null);
+                null, false);
 
         {
             // create a duplicate mapping

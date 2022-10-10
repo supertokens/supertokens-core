@@ -17,9 +17,9 @@
 package io.supertokens.test.userIdMapping;
 
 import io.supertokens.ProcessState;
+import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
@@ -33,6 +33,9 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import static org.junit.Assert.*;
 
@@ -520,6 +523,128 @@ public class UserIdMappingStorageTest {
             assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
             assertEquals(externalUserId, userIdMapping.externalUserId);
             assertNull(userIdMapping.externalUserIdInfo);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void createUsersMapTheirIdsCheckRetrieveUseIdMappingsWithListOfUserIds() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        ArrayList<String> superTokensUserIdList = new ArrayList<>();
+        ArrayList<String> externalUserIdList = new ArrayList<>();
+
+        // create users equal to the User Pagination limit
+        for (int i = 1; i <= AuthRecipe.USER_PAGINATION_LIMIT; i++) {
+            UserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
+            superTokensUserIdList.add(userInfo.id);
+            String superTokensUserId = userInfo.id;
+            String externalUserId = "externalId" + i;
+            externalUserIdList.add(externalUserId);
+
+            // create a userId mapping
+            storage.createUserIdMapping(superTokensUserId, externalUserId, null);
+        }
+        HashMap<String, String> response = storage.getUserIdMappingForSuperTokensIds(superTokensUserIdList);
+        assertEquals(AuthRecipe.USER_PAGINATION_LIMIT, response.size());
+        for (int i = 0; i < response.size(); i++) {
+            assertEquals(externalUserIdList.get(i), response.get(superTokensUserIdList.get(i)));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCallingGetUserIdMappingForSuperTokensIdsWithEmptyList() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        ArrayList<String> emptyList = new ArrayList<>();
+
+        HashMap<String, String> response = storage.getUserIdMappingForSuperTokensIds(emptyList);
+        assertEquals(0, response.size());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCallingGetUserIdMappingForSuperTokensIdsWhenNoMappingExists() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        ArrayList<String> superTokensUserIdList = new ArrayList<>();
+
+        for (int i = 1; i <= 10; i++) {
+            UserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
+            superTokensUserIdList.add(userInfo.id);
+        }
+
+        HashMap<String, String> userIdMapping = storage.getUserIdMappingForSuperTokensIds(superTokensUserIdList);
+        assertEquals(0, userIdMapping.size());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void create10UsersAndMap5UsersIds() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        ArrayList<String> superTokensUserIdList = new ArrayList<>();
+        ArrayList<String> userIdList = new ArrayList<>();
+
+        // create users equal to the User Pagination limit
+        for (int i = 1; i <= 10; i++) {
+            UserInfo userInfo = EmailPassword.signUp(process.main, "test" + i + "@example.com", "testPass123");
+            superTokensUserIdList.add(userInfo.id);
+
+            if (i <= 5) {
+                userIdList.add(userInfo.id);
+            } else {
+                // create userIdMapping for the last 5 users
+                String externalUserId = "externalId" + i;
+                userIdList.add(externalUserId);
+                storage.createUserIdMapping(userInfo.id, externalUserId, null);
+            }
+        }
+
+        // retrieve UserIDMapping
+        HashMap<String, String> response = storage.getUserIdMappingForSuperTokensIds(superTokensUserIdList);
+        assertEquals(5, response.size());
+
+        // check that the last 5 users have their ids mapped
+        for (int i = 5; i <= superTokensUserIdList.size() - 1; i++) {
+            assertEquals(userIdList.get(i), response.get(superTokensUserIdList.get(i)));
         }
 
         process.kill();

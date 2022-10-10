@@ -103,3 +103,21 @@ disable_telemetry: true
 # (OPTIONAL | Default: 1). Number of concurrent argon2 hashes that can happen at the same time for sign up or sign
 # in requests.
 # argon2_hashing_pool_size:
+
+# (OPTIONAL | Default: "INFO"). Logging level for the core. Values are "DEBUG" | "INFO" | "WARN" | "ERROR" | "NONE"
+# log_level:
+
+# (OPTIONAL | Default: null). The signer key used for firebase scrypt password hashing
+# firebase_password_hashing_signer_key:
+
+# (OPTIONAL | Default: 1). Number of concurrent firebase scrypt hashes that can happen at the same time for sign in requests.
+# firebase_password_hashing_pool_size:
+
+# (OPTIONAL | Default: null). Regex for allowing requests from IP addresses that match with the value.
+# For example, use the value of 127\.\d+\.\d+\.\d+|::1|0:0:0:0:0:0:0:1 to allow only localhost to query the
+# core. Comment it out to allow requests from any IP address.
+# ip_allow_regex:
+
+# (OPTIONAL | Default: null). Regex for denying requests from IP addresses that match with the value. Comment this
+# value to deny no IP address.
+# ip_deny_regex:

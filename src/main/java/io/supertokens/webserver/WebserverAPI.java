@@ -47,10 +47,11 @@ public abstract class WebserverAPI extends HttpServlet {
         supportedVersions.add("2.13");
         supportedVersions.add("2.14");
         supportedVersions.add("2.15");
+        supportedVersions.add("2.16");
     }
 
     public static String getLatestCDIVersion() {
-        return "2.15";
+        return "2.16";
     }
 
     public WebserverAPI(Main main, String rid) {
@@ -155,10 +156,11 @@ public abstract class WebserverAPI extends HttpServlet {
             if (this.versionNeeded(req)) {
                 String version = getVersionFromRequest(req);
                 assertThatVersionIsCompatible(version);
-                Logging.debug(main,
-                        "API called: " + this.getPath() + ". Method: " + req.getMethod() + ". Version: " + version);
+                Logging.info(main,
+                        "API called: " + this.getPath() + ". Method: " + req.getMethod() + ". Version: " + version,
+                        false);
             } else {
-                Logging.debug(main, "API called: " + this.getPath() + ". Method: " + req.getMethod());
+                Logging.info(main, "API called: " + this.getPath() + ". Method: " + req.getMethod(), false);
             }
             super.service(req, resp);
         } catch (Exception e) {
@@ -180,7 +182,7 @@ public abstract class WebserverAPI extends HttpServlet {
                 sendTextResponse(500, "Internal Error", resp);
             }
         }
-        Logging.debug(main, "API ended: " + this.getPath() + ". Method: " + req.getMethod());
+        Logging.info(main, "API ended: " + this.getPath() + ". Method: " + req.getMethod(), false);
     }
 
     protected String getRIDFromRequest(HttpServletRequest req) {
@@ -195,7 +197,7 @@ public abstract class WebserverAPI extends HttpServlet {
         return version;
     }
 
-    protected static class BadRequestException extends Exception {
+    public static class BadRequestException extends Exception {
         private static final long serialVersionUID = -5014892660208978125L;
 
         public BadRequestException(String msg) {

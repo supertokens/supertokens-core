@@ -16,6 +16,7 @@
 
 package io.supertokens.test.session.api;
 
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
@@ -134,7 +135,7 @@ public class SessionDataAPITest2_7 {
 
         String sessionJsonInput = "{\n" + "\t\"userId\": \"UserID\",\n" + "\t\"userDataInJWT\": {\n"
                 + "\t\t\"userData1\": \"temp1\",\n" + "\t\t\"userData2\": \"temp2\"\n" + "\t},\n"
-                + "\t\"userDataInDatabase\": {\n" + "\t\t\"userData\": \"value\"\n" + "\t},\n"
+                + "\t\"userDataInDatabase\": {\n" + "\t\t\"userData\": \"value\",\n" + "\t\t\"nullProp\": null\n\t},\n"
                 + "\t\"customSigningKey\": \"string\",\n" + "\t\"enableAntiCsrf\": false\n" + "}";
 
         JsonObject sessionBody = new JsonParser().parse(sessionJsonInput).getAsJsonObject();
@@ -195,6 +196,7 @@ public class SessionDataAPITest2_7 {
 
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("userData1", "value1");
+        userDataInDatabase.add("nullProp", JsonNull.INSTANCE);
 
         JsonObject putRequestBody = new JsonObject();
         putRequestBody.addProperty("sessionHandle", "123abc");
@@ -227,6 +229,18 @@ public class SessionDataAPITest2_7 {
 
         assertEquals(response.entrySet().size(), 1);
         assertEquals(response.get("status").getAsString(), "OK");
+
+        HashMap<String, String> map = new HashMap<>();
+        map.put("sessionHandle", session.get("session").getAsJsonObject().get("handle").getAsString());
+
+        response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/data", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "session");
+
+        assertEquals(response.get("status").getAsString(), "OK");
+        assertEquals(response.entrySet().size(), 2);
+
+        assertEquals(response.get("userDataInDatabase").getAsJsonObject(), userDataInDatabase.getAsJsonObject());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

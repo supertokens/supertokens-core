@@ -48,7 +48,7 @@ public class EmailPasswordQueries {
     static String getQueryToCreateUsersTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getEmailPasswordUsersTable() + " ("
                 + "user_id CHAR(36) NOT NULL," + "email VARCHAR(256) NOT NULL UNIQUE,"
-                + "password_hash VARCHAR(128) NOT NULL," + "time_joined BIGINT UNSIGNED NOT NULL,"
+                + "password_hash VARCHAR(256) NOT NULL," + "time_joined BIGINT UNSIGNED NOT NULL,"
                 + "PRIMARY KEY (user_id));";
     }
 
@@ -199,6 +199,16 @@ public class EmailPasswordQueries {
                     update(sqlCon, QUERY, pst -> {
                         pst.setString(1, userId);
                         pst.setString(2, EMAIL_PASSWORD.toString());
+                    });
+                }
+                // Since SQLite does not enforce foreign key constraints we have to manually delete the mapping for the
+                // user.
+                {
+                    String QUERY = "DELETE FROM " + getConfig(start).getUserIdMappingTable()
+                            + " WHERE supertokens_user_id = ?";
+
+                    update(sqlCon, QUERY, pst -> {
+                        pst.setString(1, userId);
                     });
                 }
 

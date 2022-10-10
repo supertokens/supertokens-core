@@ -26,6 +26,7 @@ import javax.annotation.Nullable;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.HashMap;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
@@ -147,6 +148,35 @@ public class UserIdMappingQueries {
         });
 
         return rowUpdated > 0;
+    }
+
+    public static HashMap<String, String> getUserIdMappingWithUserIds(Start start, ArrayList<String> userIds)
+            throws SQLException, StorageQueryException {
+
+        StringBuilder QUERY = new StringBuilder(
+                "SELECT * FROM " + Config.getConfig(start).getUserIdMappingTable() + " WHERE supertokens_user_id IN (");
+        for (int i = 0; i < userIds.size(); i++) {
+            QUERY.append("?");
+            if (i != userIds.size() - 1) {
+                // not the last element
+                QUERY.append(",");
+            }
+        }
+        QUERY.append(")");
+
+        return execute(start, QUERY.toString(), pst -> {
+            for (int i = 0; i < userIds.size(); i++) {
+                // i+1 cause this starts with 1 and not 0
+                pst.setString(i + 1, userIds.get(i));
+            }
+        }, result -> {
+            HashMap<String, String> userIdMappings = new HashMap<>();
+            while (result.next()) {
+                UserIdMapping temp = UserIdMappingRowMapper.getInstance().mapOrThrow(result);
+                userIdMappings.put(temp.superTokensUserId, temp.externalUserId);
+            }
+            return userIdMappings;
+        });
     }
 
     private static class UserIdMappingRowMapper implements RowMapper<UserIdMapping, ResultSet> {

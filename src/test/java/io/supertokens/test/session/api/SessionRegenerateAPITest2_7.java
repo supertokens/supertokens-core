@@ -16,6 +16,7 @@
 
 package io.supertokens.test.session.api;
 
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.session.accessToken.AccessToken;
@@ -75,6 +76,7 @@ public class SessionRegenerateAPITest2_7 {
 
         JsonObject newUserDataInJWT = new JsonObject();
         newUserDataInJWT.addProperty("key2", "value2");
+        newUserDataInJWT.add("nullProp", JsonNull.INSTANCE);
 
         JsonObject sessionRegenerateRequest = new JsonObject();
         sessionRegenerateRequest.addProperty("accessToken", accessToken);

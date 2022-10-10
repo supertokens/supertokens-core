@@ -21,10 +21,13 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.pluginInterface.LOG_LEVEL;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashSet;
+import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class CoreConfig {
@@ -97,6 +100,9 @@ public class CoreConfig {
     private int argon2_hashing_pool_size = 1;
 
     @JsonProperty
+    private int firebase_password_hashing_pool_size = 1;
+
+    @JsonProperty
     private int bcrypt_log_rounds = 11;
 
     // TODO: add https in later version
@@ -109,6 +115,59 @@ public class CoreConfig {
 
     @JsonProperty
     private String base_path = "";
+
+    @JsonProperty
+    private String log_level = "INFO";
+
+    @JsonProperty
+    private String firebase_password_hashing_signer_key = null;
+
+    @JsonProperty
+    private String ip_allow_regex = null;
+
+    @JsonProperty
+    private String ip_deny_regex = null;
+
+    private Set<LOG_LEVEL> allowedLogLevels = null;
+
+    public String getIpAllowRegex() {
+        if (ip_allow_regex != null && ip_allow_regex.trim().equals("")) {
+            return null;
+        }
+        return ip_allow_regex;
+    }
+
+    public String getIpDenyRegex() {
+        if (ip_deny_regex != null && ip_deny_regex.trim().equals("")) {
+            return null;
+        }
+        return ip_deny_regex;
+    }
+
+    public Set<LOG_LEVEL> getLogLevels(Main main) {
+        if (allowedLogLevels != null) {
+            return allowedLogLevels;
+        }
+        LOG_LEVEL logLevel = LOG_LEVEL.valueOf(this.log_level.toUpperCase());
+        allowedLogLevels = new HashSet<>();
+        if (logLevel == LOG_LEVEL.NONE) {
+            return allowedLogLevels;
+        }
+        allowedLogLevels.add(LOG_LEVEL.ERROR);
+        if (logLevel == LOG_LEVEL.ERROR) {
+            return allowedLogLevels;
+        }
+        allowedLogLevels.add(LOG_LEVEL.WARN);
+        if (logLevel == LOG_LEVEL.WARN) {
+            return allowedLogLevels;
+        }
+        allowedLogLevels.add(LOG_LEVEL.INFO);
+        if (logLevel == LOG_LEVEL.INFO) {
+            return allowedLogLevels;
+        }
+        allowedLogLevels.add(LOG_LEVEL.DEBUG);
+        return allowedLogLevels;
+    }
 
     public String getBasePath() {
         String base_path = this.base_path; // Don't modify the original value from the config
@@ -128,7 +187,7 @@ public class CoreConfig {
     }
 
     public enum PASSWORD_HASHING_ALG {
-        ARGON2, BCRYPT
+        ARGON2, BCRYPT, FIREBASE_SCRYPT
     }
 
     public int getArgon2HashingPoolSize() {
@@ -137,6 +196,10 @@ public class CoreConfig {
         // if the user gives a <= 0 number, it crashes the core (since it creates a blockedqueue in PaswordHashing
         // .java with length <= 0). So we do a Math.max
         return Math.max(1, argon2_hashing_pool_size);
+    }
+
+    public int getFirebaseSCryptPasswordHashingPoolSize() {
+        return Math.max(1, firebase_password_hashing_pool_size);
     }
 
     public int getArgon2Iterations() {
@@ -153,6 +216,13 @@ public class CoreConfig {
 
     public int getArgon2Parallelism() {
         return argon2_parallelism;
+    }
+
+    public String getFirebase_password_hashing_signer_key() {
+        if (firebase_password_hashing_signer_key == null) {
+            throw new IllegalStateException("'firebase_password_hashing_signer_key' cannot be null");
+        }
+        return firebase_password_hashing_signer_key;
     }
 
     public PASSWORD_HASHING_ALG getPasswordHashingAlg() {
@@ -373,6 +443,13 @@ public class CoreConfig {
             if (base_path.contains(" ")) {
                 throw new QuitProgramException("Invalid characters in base_path config");
             }
+        }
+
+        if (!log_level.equalsIgnoreCase("info") && !log_level.equalsIgnoreCase("none")
+                && !log_level.equalsIgnoreCase("error") && !log_level.equalsIgnoreCase("warn")
+                && !log_level.equalsIgnoreCase("debug")) {
+            throw new QuitProgramException(
+                    "'log_level' config must be one of \"NONE\",\"DEBUG\", \"INFO\", \"WARN\" or \"ERROR\".");
         }
 
         if (!getInfoLogPath(main).equals("null")) {

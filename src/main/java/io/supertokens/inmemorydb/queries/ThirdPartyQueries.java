@@ -44,7 +44,7 @@ public class ThirdPartyQueries {
 
     static String getQueryToCreateUsersTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getThirdPartyUsersTable() + " ("
-                + "third_party_id VARCHAR(28) NOT NULL," + "third_party_user_id VARCHAR(128) NOT NULL,"
+                + "third_party_id VARCHAR(28) NOT NULL," + "third_party_user_id VARCHAR(256) NOT NULL,"
                 + "user_id CHAR(36) NOT NULL UNIQUE," + "email VARCHAR(256) NOT NULL,"
                 + "time_joined BIGINT UNSIGNED NOT NULL," + "PRIMARY KEY (third_party_id, third_party_user_id));";
     }
@@ -96,6 +96,16 @@ public class ThirdPartyQueries {
                     update(sqlCon, QUERY, pst -> {
                         pst.setString(1, userId);
                         pst.setString(2, THIRD_PARTY.toString());
+                    });
+                }
+                // Since SQLite does not enforce foreign key constraints we have to manually delete the mapping for the
+                // user.
+                {
+                    String QUERY = "DELETE FROM " + getConfig(start).getUserIdMappingTable()
+                            + " WHERE supertokens_user_id = ?";
+
+                    update(sqlCon, QUERY, pst -> {
+                        pst.setString(1, userId);
                     });
                 }
 

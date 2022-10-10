@@ -110,6 +110,10 @@ public abstract class Utils extends Mockito {
         return "2.15";
     }
 
+    public static String getCdiVersion2_16ForTests() {
+        return "2.16";
+    }
+
     public static String getCdiVersionLatestForTests() {
         return WebserverAPI.getLatestCDIVersion();
     }
@@ -280,7 +284,7 @@ public abstract class Utils extends Mockito {
     public static void createUserIdMappingAndCheckThatItExists(Main main, UserIdMapping userIdMapping)
             throws Exception {
         io.supertokens.useridmapping.UserIdMapping.createUserIdMapping(main, userIdMapping.superTokensUserId,
-                userIdMapping.externalUserId, userIdMapping.externalUserIdInfo);
+                userIdMapping.externalUserId, userIdMapping.externalUserIdInfo, false);
         // retrieve mapping and validate
         UserIdMapping retrievedMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
                 userIdMapping.superTokensUserId, UserIdType.SUPERTOKENS);

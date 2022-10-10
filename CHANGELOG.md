@@ -8,10 +8,63 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ## [unreleased]
 - Fixes test for PasswordlessCode to supply correct length code_id
 
+## [4.1.0] - 2022-09-22
+
+- Adds request IP allow & deny list: https://github.com/supertokens/supertokens-core/issues/511
+
+## [4.0.1] - 2022-09-19
+
+- Fixes bug related to implementationDependencies.json
+
+## [4.0.0] - 2022-09-19
+
+### Added
+
+- EmailPassword User migration API which allows you to import users with their email and password hashes.
+- Support to import users with password hashes from Firebase
+- Support with CDI version `2.16`
+- Hello API on `/` route.
+
+### Database Changes
+
+- Updates the `password_hash` column in the `emailpassword_users` table from `VARCHAR(128)` to `VARCHAR(256)` to support
+  more password hash lengths.
+- Updates the `third_party_user_id` column in the `thirdparty_users` table from `VARCHAR(128)` to `VARCHAR(256)` to
+  resolve https://github.com/supertokens/supertokens-core/issues/306
+
+- For legacy users who are self hosting the SuperTokens core run the following command to update your database with the
+  changes:
+    - With MySql:
+      `ALTER TABLE thirdparty_users MODIFY third_party_user_id VARCHAR(256); ALTER TABLE emailpassword_users MODIFY password_hash VARCHAR(256);`
+    - With PostgreSQL:
+      `ALTER TABLE thirdparty_users ALTER COLUMN third_party_user_id TYPE VARCHAR(256); ALTER TABLE emailpassword_users ALTER COLUMN password_hash TYPE VARCHAR(256);`
+
+## [3.16.2] - 2022-09-02
+
+### Bug fixes
+
+- Updated java-jwt to handle `null` claims in JWTs
+
+## [3.16.1] - 2022-09-02
+
+### Bug fixes
+
+- Fixed handling of `null` in access token payloads: https://github.com/supertokens/supertokens-core/issues/499
+
+## [3.16.0] - 2022-08-18
+
+- Changes logging level of API start / finished & Cronjob start / finished to be `INFO` level instead of `DEBUG` level.
+- Added new config `log_level` to set logging level. Possible values are `DEBUG` | `INFO` | `WARN` | `ERROR` |
+  `NONE`. As an example, setting the log level to `WARN` would make the core print out `WARN` and `ERROR` level logs.
+
+## [3.15.1] - 2022-08-10
+
+- Updates UserIdMapping recipe to resolve UserId Mappings for Auth recipes in the core itself
+
 ## [3.15.0] - 2022-07-25
 
 - Adds UserIdMapping recipe
-- Support for collecting and displaying failing tests 
+- Support for collecting and displaying failing tests
 
 ### Database changes
 

@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.emailverification.User;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
@@ -29,11 +30,14 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.usermetadata.UserMetadata;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import javax.servlet.ServletException;
 
 import static io.supertokens.test.Utils.createUserIdMappingAndCheckThatItExists;
 import static org.junit.Assert.*;
@@ -326,6 +330,10 @@ public class RemoveUserIdMappingAPITest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         // create a userId mapping
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
         UserIdMapping userIdMapping = new UserIdMapping(userInfo.id, "externalUserId", "externalUserIdInfo");
@@ -368,6 +376,64 @@ public class RemoveUserIdMappingAPITest {
             assertNull(io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.main,
                     userIdMapping.superTokensUserId, UserIdType.ANY));
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void deleteUserIdMappingWithAndWithoutForce() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
+        String superTokensUserId = userInfo.id;
+        String externalId = "externalId";
+        io.supertokens.useridmapping.UserIdMapping.createUserIdMapping(process.main, superTokensUserId, externalId,
+                null, false);
+
+        JsonObject data = new JsonObject();
+        data.addProperty("test", "testData");
+        UserMetadata.updateUserMetadata(process.main, externalId, data);
+        UserMetadata.getUserMetadata(process.main, externalId);
+
+        // delete mapping without force
+        {
+            JsonObject request = new JsonObject();
+            request.addProperty("userId", externalId);
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
+                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                throw new Exception("Should not come here");
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 400);
+                assertEquals(e.getMessage(),
+                        "Http error. Status Code: 400. Message:" + " UserId is already in use in UserMetadata recipe");
+            }
+        }
+
+        // delete mapping with force
+        {
+            JsonObject request = new JsonObject();
+            request.addProperty("userId", externalId);
+            request.addProperty("force", true);
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/userid/map/remove", request, 1000, 1000, null,
+                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+            assertEquals(response.get("status").getAsString(), "OK");
+        }
+
+        // check that mapping does not exist
+        UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(process.main,
+                superTokensUserId, UserIdType.SUPERTOKENS);
+        assertNull(mapping);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

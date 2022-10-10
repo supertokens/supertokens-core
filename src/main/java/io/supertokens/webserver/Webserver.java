@@ -18,6 +18,7 @@ package io.supertokens.webserver;
 
 import io.supertokens.Main;
 import io.supertokens.OperatingSystem;
+import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
@@ -41,22 +42,24 @@ import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
 import io.supertokens.webserver.api.useridmapping.RemoveUserIdMappingAPI;
 import io.supertokens.webserver.api.useridmapping.UpdateExternalUserIdInfoAPI;
 import io.supertokens.webserver.api.useridmapping.UserIdMappingAPI;
-import io.supertokens.webserver.api.usermetadata.UserMetadataAPI;
 import io.supertokens.webserver.api.usermetadata.RemoveUserMetadataAPI;
-
+import io.supertokens.webserver.api.usermetadata.UserMetadataAPI;
 import io.supertokens.webserver.api.userroles.*;
-import io.supertokens.webserver.api.userroles.RemoveUserRoleAPI;
 import org.apache.catalina.LifecycleException;
 import org.apache.catalina.LifecycleState;
 import org.apache.catalina.connector.Connector;
 import org.apache.catalina.core.StandardContext;
+import org.apache.catalina.filters.RemoteAddrFilter;
 import org.apache.catalina.startup.Tomcat;
+import org.apache.tomcat.util.descriptor.web.FilterDef;
+import org.apache.tomcat.util.descriptor.web.FilterMap;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 
 import java.io.File;
 import java.util.UUID;
 import java.util.logging.Handler;
 import java.util.logging.Logger;
+import java.util.regex.PatternSyntaxException;
 
 public class Webserver extends ResourceDistributor.SingletonResource {
 
@@ -130,6 +133,9 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         // calling stop
         context.setUnloadDelay(5000);
 
+        // we add remote address filter so that only certain IPs can query the core.
+        addRemoteAddressFilter(context, main);
+
         // start tomcat
         try {
             tomcat.start();
@@ -155,8 +161,43 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         }
     }
 
+    private void addRemoteAddressFilter(StandardContext context, Main main) {
+        String allow = Config.getConfig(main).getIpAllowRegex();
+        String deny = Config.getConfig(main).getIpDenyRegex();
+        if (allow == null && deny == null) {
+            return;
+        }
+        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.ADDING_REMOTE_ADDRESS_FILTER, null);
+        RemoteAddrFilter filter = new RemoteAddrFilter();
+        if (allow != null) {
+            try {
+                filter.setAllow(allow);
+            } catch (PatternSyntaxException e) {
+                throw new QuitProgramException("Provided regular expression is invalid for ip_allow_regex config");
+            }
+        }
+        if (deny != null) {
+            try {
+                filter.setDeny(deny);
+            } catch (PatternSyntaxException e) {
+                throw new QuitProgramException("Provided regular expression is invalid for ip_deny_regex config");
+            }
+        }
+        filter.setDenyStatus(403);
+
+        FilterDef filterDefinition = new FilterDef();
+        filterDefinition.setFilter(filter);
+        filterDefinition.setFilterName(RemoteAddrFilter.class.getSimpleName());
+        context.addFilterDef(filterDefinition);
+
+        FilterMap filterMapping = new FilterMap();
+        filterMapping.setFilterName(RemoteAddrFilter.class.getSimpleName());
+        filterMapping.addURLPattern("*");
+        context.addFilterMap(filterMapping);
+    }
+
     private void setupRoutes() throws Exception {
-        addAPI(new NotFoundAPI(main));
+        addAPI(new NotFoundOrHelloAPI(main));
         addAPI(new HelloAPI(main));
         addAPI(new SessionAPI(main));
         addAPI(new VerifySessionAPI(main));
@@ -207,6 +248,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new UserIdMappingAPI(main));
         addAPI(new RemoveUserIdMappingAPI(main));
         addAPI(new UpdateExternalUserIdInfoAPI(main));
+        addAPI(new ImportUserWithPasswordHashAPI(main));
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),
                 new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));
@@ -228,7 +270,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
             if (tomcat.getServer() == null) {
                 return;
             }
-            Logging.info(main, "Stopping webserver...");
+            Logging.info(main, "Stopping webserver...", true);
             if (tomcat.getServer().getState() != LifecycleState.DESTROYED) {
                 if (tomcat.getServer().getState() != LifecycleState.STOPPED) {
                     try {

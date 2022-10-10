@@ -317,6 +317,17 @@ public class PasswordlessQueries {
                     });
                 }
 
+                // Since SQLite does not enforce foreign key constraints we have to manually delete the mapping for the
+                // user.
+                {
+                    String QUERY = "DELETE FROM " + getConfig(start).getUserIdMappingTable()
+                            + " WHERE supertokens_user_id = ?";
+
+                    update(sqlCon, QUERY, pst -> {
+                        pst.setString(1, userId);
+                    });
+                }
+
                 // Even if the user is changed after we read it here (which is unlikely),
                 // we'd only leave devices that will be cleaned up later automatically when they expire.
                 UserInfo user = getUserById(start, userId);

@@ -17,6 +17,7 @@
 package io.supertokens.test.session.api;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
@@ -55,6 +56,7 @@ public class VerifySessionAPITest2_9 {
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
+        userDataInJWT.add("nullProp", JsonNull.INSTANCE);
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 
@@ -109,6 +111,7 @@ public class VerifySessionAPITest2_9 {
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
+        userDataInJWT.add("nullProp", JsonNull.INSTANCE);
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 

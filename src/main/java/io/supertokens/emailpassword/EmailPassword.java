@@ -19,7 +19,9 @@ package io.supertokens.emailpassword;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
+import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -36,11 +38,22 @@ import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import javax.servlet.ServletException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
 
 public class EmailPassword {
+
+    public static class ImportUserResponse {
+        public boolean didUserAlreadyExist;
+        public UserInfo user;
+
+        public ImportUserResponse(boolean didUserAlreadyExist, UserInfo user) {
+            this.didUserAlreadyExist = didUserAlreadyExist;
+            this.user = user;
+        }
+    }
 
     @TestOnly
     public static long getPasswordResetTokenLifetimeForTests(Main main) {
@@ -76,6 +89,46 @@ public class EmailPassword {
         }
     }
 
+    public static ImportUserResponse importUserWithPasswordHash(Main main, @Nonnull String email,
+            @Nonnull String passwordHash, @Nullable CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
+            throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
+
+        PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(main, passwordHash, hashingAlgorithm);
+
+        while (true) {
+            String userId = Utils.getUUID();
+            long timeJoined = System.currentTimeMillis();
+
+            UserInfo userInfo = new UserInfo(userId, email, passwordHash, timeJoined);
+            EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
+
+            try {
+                StorageLayer.getEmailPasswordStorage(main).signUp(userInfo);
+                return new ImportUserResponse(false, userInfo);
+            } catch (DuplicateUserIdException e) {
+                // we retry with a new userId
+            } catch (DuplicateEmailException e) {
+                UserInfo userInfoToBeUpdated = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingEmail(email);
+                // if user does not exist we retry signup
+                if (userInfoToBeUpdated != null) {
+                    String finalPasswordHash = passwordHash;
+                    storage.startTransaction(con -> {
+                        storage.updateUsersPassword_Transaction(con, userInfoToBeUpdated.id, finalPasswordHash);
+                        return null;
+                    });
+                    return new ImportUserResponse(true, userInfoToBeUpdated);
+                }
+            }
+        }
+    }
+
+    @TestOnly
+    public static ImportUserResponse importUserWithPasswordHash(Main main, @Nonnull String email,
+            @Nonnull String passwordHash)
+            throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
+        return importUserWithPasswordHash(main, email, passwordHash, null);
+    }
+
     public static UserInfo signIn(Main main, @Nonnull String email, @Nonnull String password)
             throws StorageQueryException, WrongCredentialsException {
 
@@ -91,6 +144,12 @@ public class EmailPassword {
             }
         } catch (WrongCredentialsException e) {
             throw e;
+        } catch (IllegalStateException e) {
+            if (e.getMessage().equals("'firebase_password_hashing_signer_key' cannot be null")) {
+                throw e;
+            }
+            throw new WrongCredentialsException();
+
         } catch (Exception ignored) {
             throw new WrongCredentialsException();
         }

@@ -47,6 +47,7 @@ labels:
 
 ### Others
 
+-  [ ] Example apps in create-supertokens-app CLI
  - [ ] Examples apps in supertokens-auth-react
  - [ ] Examples apps in supertokens-web-js
  - [ ] Examples apps in supertokens-react-native
@@ -117,6 +118,22 @@ labels:
 - [ ] Update frontend-driver-interface repo
 - [ ] Updated swaggerhub CDI spec
 - [ ] Update core-driver-interface-repo
+- [ ] Updated dashboard spec on swaggerhub
+- [ ] Update [dashboard spec](https://github.com/supertokens/dashboard/blob/master/api_spec.yaml)
 - [ ] Update internal contributing guide to move from previous core version to the latest one
 - [ ] Algolia search update for docs
 - [ ] robots.txt, sitemap.xml, noindex page update
+- Auto generate release note on github:
+   - [ ] supertokens-core
+   - [ ] supertokens-plugin-interface
+   - [ ] supertokens-mysql-plugin
+   - [ ] supertokens-postgresql-plugin
+   - [ ] supertokens-mongodb-plugin
+   - [ ] supertokens-node
+   - [ ] supertokens-golang
+   - [ ] supertokens-python
+   - [ ] supertokens-website
+   - [ ] supertokens-web-js
+   - [ ] supertokens-auth-react
+   - [ ] supertokens-react-native
+   - [ ] supertokens-android
