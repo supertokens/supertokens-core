@@ -140,7 +140,7 @@ public class APITestsWithTrailingSlash {
             metadata.addProperty("someValue", "someData");
             requestBody.add("metadataUpdate", metadata);
             JsonObject resp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user/metadata", requestBody, 1000, 1000, null,
+                    "http://localhost:3567/recipe/user/metadata/", requestBody, 1000, 1000, null,
                     Utils.getCdiVersion2_13ForTests(), "usermetadata");
 
             assertEquals("OK", resp.get("status").getAsString());
