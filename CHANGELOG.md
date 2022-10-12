@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+- Updates core routes to now allow for trailing slashes
+
 ## [4.1.0] - 2022-09-22
 
 - Adds request IP allow & deny list: https://github.com/supertokens/supertokens-core/issues/511

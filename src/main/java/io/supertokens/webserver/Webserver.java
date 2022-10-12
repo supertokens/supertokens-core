@@ -262,6 +262,8 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         tomcat.addServlet(CONTEXT_PATH, api.getPath(), api);
         context.addServletMappingDecoded(api.getPath(), api.getPath());
+        // add an additional mapping for the same api so that trailing slashes also work
+        context.addServletMappingDecoded(api.getPath() + "/", api.getPath());
     }
 
     public void stop() {
