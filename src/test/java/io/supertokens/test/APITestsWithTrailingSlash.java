@@ -85,7 +85,6 @@ public class APITestsWithTrailingSlash {
 
         {
             // test that adding any path after the trailing slash throws 404
-            // test that sign up with trailing slash works
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("email", "test@example.com");
             requestBody.addProperty("password", "testPass123");
