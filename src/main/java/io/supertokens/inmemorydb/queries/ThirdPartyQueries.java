@@ -23,6 +23,7 @@ import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.thirdparty.ThirdPartyTenantConfig;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import org.jetbrains.annotations.NotNull;
 
@@ -245,6 +246,24 @@ public class ThirdPartyQueries {
         });
 
         return rowUpdated > 0;
+    }
+
+    public static ThirdPartyTenantConfig getThirdPartyTenantConfig(Start start, String supertokensTenantId,
+            String thirdPartyId) throws SQLException, StorageQueryException {
+
+        String QUERY = "SELECT * FROM " + getConfig(start).getThirdPartyTenantConfigTable()
+                + " WHERE supertokens_tenant_id = ? AND third_party_id = ?";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, supertokensTenantId);
+            pst.setString(2, thirdPartyId);
+        }, result -> {
+            if (result.next()) {
+                return new ThirdPartyTenantConfig(result.getString("supertokens_tenant_id"),
+                        result.getString("third_party_id"), result.getString("config"));
+            }
+            return null;
+        });
     }
 
     @Deprecated

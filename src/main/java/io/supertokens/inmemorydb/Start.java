@@ -1632,8 +1632,11 @@ public class Start
     @Override
     public ThirdPartyTenantConfig getThirdPartyTenantConfig(String supertokensTenantId, String thirdPartyId)
             throws StorageQueryException {
-        // TODO Auto-generated method stub
-        return null;
+        try {
+            return ThirdPartyQueries.getThirdPartyTenantConfig(this, supertokensTenantId, thirdPartyId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override

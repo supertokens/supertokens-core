@@ -69,4 +69,31 @@ public class CreateOrUpdateTenantMapping extends WebserverAPI {
         }
     }
 
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+
+        String supertokensTenantId = InputParser.parseStringOrThrowError(input, "supertokensTenantId", false);
+
+        // normalize supertokensTenantId
+        supertokensTenantId = supertokensTenantId.trim();
+
+        if (supertokensTenantId.length() == 0) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("Field name 'supertokensTenantId' cannot be an empty String"));
+        }
+
+        String thirdPartyId = InputParser.parseStringOrThrowError(input, "thirdPartyId", false);
+
+        // normalize thirdPartyId
+        thirdPartyId = thirdPartyId.trim();
+
+        if (thirdPartyId.length() == 0) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("Field name 'thirdPartyId' cannot be an empty String"));
+        }
+
+        super.doGet(req, resp);
+    }
+
 }

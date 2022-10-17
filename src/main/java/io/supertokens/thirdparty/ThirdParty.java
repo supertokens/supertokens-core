@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.thirdparty.ThirdPartyTenantConfig;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyTenantMappingException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
@@ -162,6 +163,11 @@ public class ThirdParty {
                     .updateThirdPartyTenantMapping(supertokensTenantId, thirdPartyId, config);
             return new CreateOrUpdateTenantMappingResponse(false, wasUpdated);
         }
+    }
+
+    public static ThirdPartyTenantConfig getThirdPartyTenantConfig(Main main, String supertokensTenantId,
+            String thirdPartyId) throws StorageQueryException {
+        return StorageLayer.getThirdPartyStorage(main).getThirdPartyTenantConfig(supertokensTenantId, thirdPartyId);
     }
 
     @Deprecated

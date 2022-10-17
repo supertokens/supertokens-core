@@ -9,6 +9,7 @@ import org.junit.rules.TestRule;
 import com.google.gson.JsonObject;
 
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.thirdparty.ThirdPartyTenantConfig;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -61,6 +62,12 @@ public class CreateOrUpdateTenantMappingAPITest {
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("created").getAsBoolean());
             assertFalse(response.get("update").getAsBoolean());
+
+            ThirdPartyTenantConfig tpTenantConfig = StorageLayer.getThirdPartyStorage(process.main)
+                    .getThirdPartyTenantConfig(supertokensTenantId, thirdPartyId);
+            assertEquals(config.toString(), tpTenantConfig.config);
+            assertEquals(supertokensTenantId, tpTenantConfig.supertokensTenantId);
+            assertEquals(thirdPartyId, tpTenantConfig.thirdPartyId);
         }
 
         // update mapping
@@ -79,6 +86,12 @@ public class CreateOrUpdateTenantMappingAPITest {
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("created").getAsBoolean());
             assertTrue(response.get("update").getAsBoolean());
+
+            ThirdPartyTenantConfig tpTenantConfig = StorageLayer.getThirdPartyStorage(process.main)
+                    .getThirdPartyTenantConfig(supertokensTenantId, thirdPartyId);
+            assertEquals(config.toString(), tpTenantConfig.config);
+            assertEquals(supertokensTenantId, tpTenantConfig.supertokensTenantId);
+            assertEquals(thirdPartyId, tpTenantConfig.thirdPartyId);
         }
 
         process.kill();
