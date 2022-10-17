@@ -266,6 +266,40 @@ public class ThirdPartyQueries {
         });
     }
 
+    public static ThirdPartyTenantConfig[] getThirdPartyTenantConfigsForSuperTokensTenantId(Start start,
+            String supertokensTenantId) throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM " + getConfig(start).getThirdPartyTenantConfigTable()
+                + " WHERE supertokens_tenant_id = ?";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, supertokensTenantId);
+        }, result -> {
+            ArrayList<ThirdPartyTenantConfig> configs = new ArrayList<>();
+            while (result.next()) {
+                configs.add(new ThirdPartyTenantConfig(result.getString("supertokens_tenant_id"),
+                        result.getString("third_party_id"), result.getString("config")));
+            }
+            return configs.toArray(ThirdPartyTenantConfig[]::new);
+        });
+    }
+
+    public static ThirdPartyTenantConfig[] getThirdPartyTenantConfigsForThirdPartyId(Start start, String thirdPartyId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM " + getConfig(start).getThirdPartyTenantConfigTable()
+                + " WHERE third_party_id = ?";
+
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, thirdPartyId);
+        }, result -> {
+            ArrayList<ThirdPartyTenantConfig> configs = new ArrayList<>();
+            while (result.next()) {
+                configs.add(new ThirdPartyTenantConfig(result.getString("supertokens_tenant_id"),
+                        result.getString("third_party_id"), result.getString("config")));
+            }
+            return configs.toArray(ThirdPartyTenantConfig[]::new);
+        });
+    }
+
     @Deprecated
     public static UserInfo[] getThirdPartyUsers(Start start, @NotNull Integer limit, @NotNull String timeJoinedOrder)
             throws SQLException, StorageQueryException {

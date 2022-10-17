@@ -170,6 +170,16 @@ public class ThirdParty {
         return StorageLayer.getThirdPartyStorage(main).getThirdPartyTenantConfig(supertokensTenantId, thirdPartyId);
     }
 
+    public static ThirdPartyTenantConfig[] listThirdPartyTenantConfigs(Main main, String supertokensTenantId,
+            String thirdPartyId) throws StorageQueryException {
+        if (supertokensTenantId != null) {
+            return StorageLayer.getThirdPartyStorage(main)
+                    .getThirdPartyTenantConfigsForSuperTokensTenantId(supertokensTenantId);
+        } else {
+            return StorageLayer.getThirdPartyStorage(main).getThirdPartyTenantConfigsForThirdPartyId(thirdPartyId);
+        }
+    }
+
     @Deprecated
     public static UserPaginationContainer getUsers(Main main, @Nullable String paginationToken, Integer limit,
             String timeJoinedOrder) throws StorageQueryException, UserPaginationToken.InvalidTokenException {

@@ -101,6 +101,7 @@ public class TenantMappingAPI extends WebserverAPI {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "CONFIG_NOT_FOUND_ERROR");
                 super.sendJsonResponse(200, response, resp);
+                return;
             }
 
             JsonObject response = new JsonObject();

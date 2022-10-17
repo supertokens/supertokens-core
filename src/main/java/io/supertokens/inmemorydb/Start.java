@@ -1671,14 +1671,20 @@ public class Start
     @Override
     public ThirdPartyTenantConfig[] getThirdPartyTenantConfigsForSuperTokensTenantId(String supertokensTenantId)
             throws StorageQueryException {
-        // TODO Auto-generated method stub
-        return null;
+        try {
+            return ThirdPartyQueries.getThirdPartyTenantConfigsForSuperTokensTenantId(this, supertokensTenantId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public ThirdPartyTenantConfig[] getThirdPartyTenantConfigsForThirdPartyId(String thirdPartyId)
             throws StorageQueryException {
-        // TODO Auto-generated method stub
-        return null;
+        try {
+            return ThirdPartyQueries.getThirdPartyTenantConfigsForThirdPartyId(this, thirdPartyId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }
