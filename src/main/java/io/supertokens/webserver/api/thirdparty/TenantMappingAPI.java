@@ -8,20 +8,22 @@ import javax.servlet.http.HttpServletResponse;
 
 import com.fasterxml.jackson.databind.util.JSONPObject;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.thirdparty.ThirdPartyTenantConfig;
 import io.supertokens.pluginInterface.thirdparty.UserInfo.ThirdParty;
 import io.supertokens.thirdparty.ThirdParty.CreateOrUpdateTenantMappingResponse;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 
-public class CreateOrUpdateTenantMapping extends WebserverAPI {
+public class TenantMappingAPI extends WebserverAPI {
 
     private static final long serialVersionUID = -2225750492558065634L;
 
-    public CreateOrUpdateTenantMapping(Main main) {
+    public TenantMappingAPI(Main main) {
         super(main, RECIPE_ID.THIRD_PARTY.toString());
     }
 
@@ -71,9 +73,8 @@ public class CreateOrUpdateTenantMapping extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String supertokensTenantId = InputParser.parseStringOrThrowError(input, "supertokensTenantId", false);
+        String supertokensTenantId = InputParser.getQueryParamOrThrowError(req, "supertokensTenantId", false);
 
         // normalize supertokensTenantId
         supertokensTenantId = supertokensTenantId.trim();
@@ -83,7 +84,7 @@ public class CreateOrUpdateTenantMapping extends WebserverAPI {
                     new WebserverAPI.BadRequestException("Field name 'supertokensTenantId' cannot be an empty String"));
         }
 
-        String thirdPartyId = InputParser.parseStringOrThrowError(input, "thirdPartyId", false);
+        String thirdPartyId = InputParser.getQueryParamOrThrowError(req, "thirdPartyId", false);
 
         // normalize thirdPartyId
         thirdPartyId = thirdPartyId.trim();
@@ -93,7 +94,22 @@ public class CreateOrUpdateTenantMapping extends WebserverAPI {
                     new WebserverAPI.BadRequestException("Field name 'thirdPartyId' cannot be an empty String"));
         }
 
-        super.doGet(req, resp);
+        try {
+            ThirdPartyTenantConfig responseConfig = io.supertokens.thirdparty.ThirdParty.getThirdPartyTenantConfig(main,
+                    supertokensTenantId, thirdPartyId);
+            if (responseConfig == null) {
+                JsonObject response = new JsonObject();
+                response.addProperty("status", "CONFIG_NOT_FOUND_ERROR");
+                super.sendJsonResponse(200, response, resp);
+            }
+
+            JsonObject response = new JsonObject();
+            response.addProperty("status", "OK");
+            response.add("config", new JsonParser().parse(responseConfig.config).getAsJsonObject());
+            super.sendJsonResponse(200, response, resp);
+        } catch (StorageQueryException e) {
+            throw new ServletException(e);
+        }
     }
 
 }
