@@ -150,7 +150,6 @@ public class ThirdParty {
         return StorageLayer.getThirdPartyStorage(main).getThirdPartyUserInfoUsingId(thirdPartyId, thirdPartyUserId);
     }
 
-    // returns true if entry is created, returns false if table is updated
     public static CreateOrUpdateTenantMappingResponse createOrUpdateThirdPartyTenantMapping(Main main,
             String supertokensTenantId, String thirdPartyId, String config) throws StorageQueryException {
 
