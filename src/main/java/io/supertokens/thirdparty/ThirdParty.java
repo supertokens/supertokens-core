@@ -21,6 +21,7 @@ import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
+import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyTenantMappingException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
@@ -39,6 +40,16 @@ public class ThirdParty {
         public SignInUpResponse(boolean createdNewUser, UserInfo user) {
             this.createdNewUser = createdNewUser;
             this.user = user;
+        }
+    }
+
+    public static class CreateOrUpdateTenantMappingResponse {
+        public boolean wasCreated;
+        public boolean wasUpdated;
+
+        public CreateOrUpdateTenantMappingResponse(boolean wasCreated, boolean wasUpdated) {
+            this.wasCreated = wasCreated;
+            this.wasUpdated = wasUpdated;
         }
     }
 
@@ -137,6 +148,21 @@ public class ThirdParty {
     public static UserInfo getUser(Main main, String thirdPartyId, String thirdPartyUserId)
             throws StorageQueryException {
         return StorageLayer.getThirdPartyStorage(main).getThirdPartyUserInfoUsingId(thirdPartyId, thirdPartyUserId);
+    }
+
+    // returns true if entry is created, returns false if table is updated
+    public static CreateOrUpdateTenantMappingResponse createOrUpdateThirdPartyTenantMapping(Main main,
+            String supertokensTenantId, String thirdPartyId, String config) throws StorageQueryException {
+
+        try {
+            StorageLayer.getThirdPartyStorage(main).createThirdPartyTenantMapping(supertokensTenantId, thirdPartyId,
+                    config);
+            return new CreateOrUpdateTenantMappingResponse(true, false);
+        } catch (DuplicateThirdPartyTenantMappingException e) {
+            boolean wasUpdated = StorageLayer.getThirdPartyStorage(main)
+                    .updateThirdPartyTenantMapping(supertokensTenantId, thirdPartyId, config);
+            return new CreateOrUpdateTenantMappingResponse(false, wasUpdated);
+        }
     }
 
     @Deprecated

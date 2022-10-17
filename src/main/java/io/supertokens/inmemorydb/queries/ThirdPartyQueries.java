@@ -49,6 +49,12 @@ public class ThirdPartyQueries {
                 + "time_joined BIGINT UNSIGNED NOT NULL," + "PRIMARY KEY (third_party_id, third_party_user_id));";
     }
 
+    static String getQueryToCreateThirdPartyTenantMappingTable(Start start) {
+        return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getThirdPartyTenantConfigTable() + " ("
+                + "supertokens_tenant_id VARCHAR(256) NOT NULL," + "third_party_id VARCHAR(28) NOT NULL,"
+                + "config TEXT," + "PRIMARY KEY (supertokens_tenant_id, third_party_id));";
+    }
+
     public static void signUp(Start start, io.supertokens.pluginInterface.thirdparty.UserInfo userInfo)
             throws StorageQueryException, StorageTransactionLogicException {
         start.startTransaction(con -> {
@@ -214,6 +220,31 @@ public class ThirdPartyQueries {
             }
             return null;
         });
+    }
+
+    public static void createThirdPartyTenantMapping(Start start, String supertokensTenantId, String thirdPartyId,
+            String config) throws SQLException, StorageQueryException {
+        String QUERY = "INSERT INTO " + getConfig(start).getThirdPartyTenantConfigTable()
+                + "(supertokens_tenant_id, third_party_id, config )" + " VALUES(?, ?, ?)";
+        update(start, QUERY, pst -> {
+            pst.setString(1, supertokensTenantId);
+            pst.setString(2, thirdPartyId);
+            pst.setString(3, config);
+        });
+    }
+
+    public static boolean updateThirdPartyTenantMapping(Start start, String supertokensTenantId, String thirdPartyId,
+            String config) throws SQLException, StorageQueryException {
+        String QUERY = "UPDATE " + getConfig(start).getThirdPartyTenantConfigTable()
+                + " SET config = ? WHERE supertokens_tenant_id = ? AND third_party_id = ?";
+
+        int rowUpdated = update(start, QUERY, pst -> {
+            pst.setString(1, config);
+            pst.setString(2, supertokensTenantId);
+            pst.setString(3, thirdPartyId);
+        });
+
+        return rowUpdated > 0;
     }
 
     @Deprecated
