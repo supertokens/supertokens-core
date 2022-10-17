@@ -54,6 +54,10 @@ public class SQLiteConfig {
         return "thirdparty_users";
     }
 
+    public String getThirdPartyTenantConfigTable() {
+        return "thirdparty_tenant_config_mapping";
+    }
+
     public String getJWTSigningKeysTable() {
         return "jwt_signing_keys";
     }

@@ -37,7 +37,10 @@ import io.supertokens.webserver.api.jwt.JWKSAPI;
 import io.supertokens.webserver.api.jwt.JWTSigningAPI;
 import io.supertokens.webserver.api.passwordless.*;
 import io.supertokens.webserver.api.session.*;
+import io.supertokens.webserver.api.thirdparty.TenantMappingAPI;
+import io.supertokens.webserver.api.thirdparty.DeleteTenantMappingAPI;
 import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
+import io.supertokens.webserver.api.thirdparty.ListTenantMappingConfigsAPI;
 import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
 import io.supertokens.webserver.api.useridmapping.RemoveUserIdMappingAPI;
 import io.supertokens.webserver.api.useridmapping.UpdateExternalUserIdInfoAPI;
@@ -249,6 +252,9 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new RemoveUserIdMappingAPI(main));
         addAPI(new UpdateExternalUserIdInfoAPI(main));
         addAPI(new ImportUserWithPasswordHashAPI(main));
+        addAPI(new TenantMappingAPI(main));
+        addAPI(new ListTenantMappingConfigsAPI(main));
+        addAPI(new DeleteTenantMappingAPI(main));
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),
                 new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));

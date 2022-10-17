@@ -55,6 +55,8 @@ import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
+import io.supertokens.pluginInterface.thirdparty.ThirdPartyTenantConfig;
+import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyTenantMappingException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
@@ -1617,6 +1619,75 @@ public class Start
             /* Since JWT recipe tables do not store userId we do not add any data to them */
         } else {
             throw new IllegalStateException("ClassName: " + className + " is not part of NonAuthRecipeStorage");
+        }
+    }
+
+    @Override
+    public boolean deleteThirdPartyTenantMapping(String supertokensTenantId, String thirdPartyId)
+            throws StorageQueryException {
+        try {
+            return ThirdPartyQueries.removeThirdPartyTenantMapping(this, supertokensTenantId, thirdPartyId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public ThirdPartyTenantConfig getThirdPartyTenantConfig(String supertokensTenantId, String thirdPartyId)
+            throws StorageQueryException {
+        try {
+            return ThirdPartyQueries.getThirdPartyTenantConfig(this, supertokensTenantId, thirdPartyId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public ThirdPartyTenantConfig createThirdPartyTenantMapping(String supertokensTenantId, String thirdPartyId,
+            String config) throws DuplicateThirdPartyTenantMappingException, StorageQueryException {
+        try {
+            ThirdPartyQueries.createThirdPartyTenantMapping(this, supertokensTenantId, thirdPartyId, config);
+        } catch (SQLException e) {
+
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getThirdPartyTenantConfigTable() + ".supertokens_tenant_id, "
+                            + Config.getConfig(this).getThirdPartyTenantConfigTable() + ".third_party_id)")) {
+                throw new DuplicateThirdPartyTenantMappingException();
+            }
+
+            throw new StorageQueryException(e);
+        }
+        return new ThirdPartyTenantConfig(supertokensTenantId, thirdPartyId, config);
+    }
+
+    @Override
+    public boolean updateThirdPartyTenantMapping(String supertokensTenantId, String thirdPartyId, String config)
+            throws StorageQueryException {
+        try {
+            return ThirdPartyQueries.updateThirdPartyTenantMapping(this, supertokensTenantId, thirdPartyId, config);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public ThirdPartyTenantConfig[] getThirdPartyTenantConfigsForSuperTokensTenantId(String supertokensTenantId)
+            throws StorageQueryException {
+        try {
+            return ThirdPartyQueries.getThirdPartyTenantConfigsForSuperTokensTenantId(this, supertokensTenantId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public ThirdPartyTenantConfig[] getThirdPartyTenantConfigsForThirdPartyId(String thirdPartyId)
+            throws StorageQueryException {
+        try {
+            return ThirdPartyQueries.getThirdPartyTenantConfigsForThirdPartyId(this, thirdPartyId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
         }
     }
 }

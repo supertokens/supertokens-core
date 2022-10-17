@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [4.1.2] - 2022-10-13
+
+- Adds APIs for Third Party tenant mapping.
+
 ## [4.1.1] - 2022-10-13
 
 - Updates core routes to now allow for trailing slashes
