@@ -46,19 +46,40 @@ public class CreateOrUpdateTenantMappingAPITest {
         JsonObject requestBody = new JsonObject();
         String supertokensTenantId = "stId";
         String thirdPartyId = "tpId";
-        JsonObject config = new JsonObject();
-        config.addProperty("someKey", "someValue");
-        requestBody.addProperty("supertokensTenantId", supertokensTenantId);
-        requestBody.addProperty("thirdPartyId", thirdPartyId);
-        requestBody.add("config", config);
 
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/thirdparty/tenant/config", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_16ForTests(), "thirdparty");
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("someKey", "someValue");
+            requestBody.addProperty("supertokensTenantId", supertokensTenantId);
+            requestBody.addProperty("thirdPartyId", thirdPartyId);
+            requestBody.add("config", config);
 
-        assertEquals("OK", response.get("status").getAsString());
-        assertTrue(response.get("created").getAsBoolean());
-        assertFalse(response.get("update").getAsBoolean());
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/thirdparty/tenant/config", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_16ForTests(), "thirdparty");
+
+            assertEquals("OK", response.get("status").getAsString());
+            assertTrue(response.get("created").getAsBoolean());
+            assertFalse(response.get("update").getAsBoolean());
+        }
+
+        // update mapping
+
+        {
+            JsonObject config = new JsonObject();
+            config.addProperty("someKey", "someNewValue");
+            requestBody.addProperty("supertokensTenantId", supertokensTenantId);
+            requestBody.addProperty("thirdPartyId", thirdPartyId);
+            requestBody.add("config", config);
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/thirdparty/tenant/config", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_16ForTests(), "thirdparty");
+
+            assertEquals("OK", response.get("status").getAsString());
+            assertFalse(response.get("created").getAsBoolean());
+            assertTrue(response.get("update").getAsBoolean());
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
