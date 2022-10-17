@@ -180,6 +180,11 @@ public class ThirdParty {
         }
     }
 
+    public static boolean deleteTenantMapping(Main main, String supertokensTenantId, String thirdPartyId)
+            throws StorageQueryException {
+        return StorageLayer.getThirdPartyStorage(main).deleteThirdPartyTenantMapping(supertokensTenantId, thirdPartyId);
+    }
+
     @Deprecated
     public static UserPaginationContainer getUsers(Main main, @Nullable String paginationToken, Integer limit,
             String timeJoinedOrder) throws StorageQueryException, UserPaginationToken.InvalidTokenException {

@@ -1625,8 +1625,11 @@ public class Start
     @Override
     public boolean deleteThirdPartyTenantMapping(String supertokensTenantId, String thirdPartyId)
             throws StorageQueryException {
-        // TODO Auto-generated method stub
-        return false;
+        try {
+            return ThirdPartyQueries.removeThirdPartyTenantMapping(this, supertokensTenantId, thirdPartyId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override

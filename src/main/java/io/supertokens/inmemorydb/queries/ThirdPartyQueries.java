@@ -300,6 +300,20 @@ public class ThirdPartyQueries {
         });
     }
 
+    public static boolean removeThirdPartyTenantMapping(Start start, String supertokensTenantId, String thirdPartyId)
+            throws SQLException, StorageQueryException {
+
+        String QUERY = "DELETE FROM " + getConfig(start).getThirdPartyTenantConfigTable()
+                + " WHERE supertokens_tenant_id = ? AND third_party_id = ?";
+
+        int rowUpdated = update(start, QUERY, pst -> {
+            pst.setString(1, supertokensTenantId);
+            pst.setString(2, thirdPartyId);
+        });
+
+        return rowUpdated > 0;
+    }
+
     @Deprecated
     public static UserInfo[] getThirdPartyUsers(Start start, @NotNull Integer limit, @NotNull String timeJoinedOrder)
             throws SQLException, StorageQueryException {
