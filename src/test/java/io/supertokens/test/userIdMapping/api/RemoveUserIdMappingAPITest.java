@@ -37,7 +37,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import javax.servlet.ServletException;
+import jakarta.servlet.ServletException;
 
 import static io.supertokens.test.Utils.createUserIdMappingAndCheckThatItExists;
 import static org.junit.Assert.*;

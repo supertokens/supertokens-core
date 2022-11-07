@@ -16,10 +16,10 @@
 
 package io.supertokens.emailpassword;
 
+import com.lambdaworks.crypto.SCrypt;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
-import com.lambdaworks.crypto.SCrypt;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import org.apache.tomcat.util.codec.binary.Base64;
 
@@ -28,7 +28,8 @@ import javax.crypto.Cipher;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
-import java.security.*;
+import java.security.GeneralSecurityException;
+import java.security.Key;
 import java.util.Objects;
 
 public class PasswordHashingUtils {
@@ -110,8 +111,10 @@ public class PasswordHashingUtils {
         int p = 1;
 
         // concatenating decoded salt + separator
-        byte[] decodedSaltBytes = Base64.decodeBase64(response.salt.getBytes(StandardCharsets.US_ASCII));
-        byte[] decodedSaltSepBytes = Base64.decodeBase64(response.saltSeparator.getBytes(StandardCharsets.US_ASCII));
+        byte[] byteArrTemp = response.salt.getBytes(StandardCharsets.US_ASCII);
+        byte[] decodedSaltBytes = Base64.decodeBase64(byteArrTemp, 0, byteArrTemp.length);
+        byteArrTemp = response.saltSeparator.getBytes(StandardCharsets.US_ASCII);
+        byte[] decodedSaltSepBytes = Base64.decodeBase64(byteArrTemp, 0, byteArrTemp.length);
 
         byte[] saltConcat = new byte[decodedSaltBytes.length + decodedSaltSepBytes.length];
         System.arraycopy(decodedSaltBytes, 0, saltConcat, 0, decodedSaltBytes.length);
@@ -126,7 +129,8 @@ public class PasswordHashingUtils {
             return false;
         }
         // encrypting with aes
-        byte[] signerBytes = Base64.decodeBase64(base64_signer_key.getBytes(StandardCharsets.US_ASCII));
+        byteArrTemp = base64_signer_key.getBytes(StandardCharsets.US_ASCII);
+        byte[] signerBytes = Base64.decodeBase64(byteArrTemp, 0, byteArrTemp.length);
 
         try {
             String CIPHER = "AES/CTR/NoPadding";
@@ -135,7 +139,7 @@ public class PasswordHashingUtils {
             Cipher c = Cipher.getInstance(CIPHER);
             c.init(Cipher.ENCRYPT_MODE, key, ivSpec);
             byte[] encryptedPasswordHash = c.doFinal(signerBytes);
-            return new String(Objects.requireNonNull(Base64.encodeBase64(encryptedPasswordHash)))
+            return Objects.requireNonNull(Base64.encodeBase64String(encryptedPasswordHash))
                     .equals(response.passwordHash);
         } catch (Exception e) {
             return false;

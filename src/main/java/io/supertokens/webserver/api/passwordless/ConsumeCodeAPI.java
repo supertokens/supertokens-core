@@ -16,26 +16,13 @@
 
 package io.supertokens.webserver.api.passwordless;
 
-import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import io.supertokens.Main;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
-import io.supertokens.passwordless.exceptions.Base64EncodingException;
-import io.supertokens.passwordless.exceptions.DeviceIdHashMismatchException;
-import io.supertokens.passwordless.exceptions.ExpiredUserInputCodeException;
-import io.supertokens.passwordless.exceptions.IncorrectUserInputCodeException;
-import io.supertokens.passwordless.exceptions.RestartFlowException;
+import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -43,6 +30,14 @@ import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.NoSuchAlgorithmException;
 
 public class ConsumeCodeAPI extends WebserverAPI {
 

@@ -29,9 +29,9 @@ import io.supertokens.pluginInterface.usermetadata.UserMetadataStorage;
 import io.supertokens.pluginInterface.userroles.UserRolesStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
 
 import javax.annotation.Nullable;
-import javax.servlet.ServletException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
