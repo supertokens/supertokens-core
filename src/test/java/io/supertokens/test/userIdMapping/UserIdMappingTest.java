@@ -40,7 +40,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.reflections.Reflections;
 
-import javax.servlet.ServletException;
+import jakarta.servlet.ServletException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;

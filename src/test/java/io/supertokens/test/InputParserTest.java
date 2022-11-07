@@ -16,27 +16,20 @@
 
 package io.supertokens.test;
 
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
-import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.userroles.UserRoles;
 import io.supertokens.webserver.InputParser;
-import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import javax.servlet.ServletException;
+import jakarta.servlet.ServletException;
 
-import static io.supertokens.test.Utils.checkThatArraysAreEqual;
 import static org.junit.Assert.*;
-import static org.junit.Assert.assertNotNull;
 
 public class InputParserTest {
     @Rule

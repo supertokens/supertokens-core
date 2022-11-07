@@ -116,9 +116,9 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         // set thread pool size and port
         Connector connector = new Connector();
-        connector.setAttribute("maxThreads", Config.getConfig(main).getMaxThreadPoolSize());
+        connector.setProperty("maxThreads", Config.getConfig(main).getMaxThreadPoolSize() + "");
         connector.setPort(Config.getConfig(main).getPort(main));
-        connector.setAttribute("address", Config.getConfig(main).getHost(main));
+        connector.setProperty("address", Config.getConfig(main).getHost(main));
 
         tomcat.setConnector(connector);
 

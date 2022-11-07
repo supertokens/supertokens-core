@@ -16,20 +16,8 @@
 
 package io.supertokens.webserver.api.passwordless;
 
-import java.io.IOException;
-import java.security.NoSuchAlgorithmException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.stream.Stream;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.passwordless.Passwordless;
@@ -42,6 +30,17 @@ import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Stream;
 
 public class GetCodesAPI extends WebserverAPI {
 

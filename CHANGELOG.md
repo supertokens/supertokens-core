@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [4.2.0] - 2022-11-07
+
+- Update dependencies for security updates: https://github.com/supertokens/supertokens-core/issues/525
+
 ## [4.1.1] - 2022-10-13
 
 - Updates core routes to now allow for trailing slashes
