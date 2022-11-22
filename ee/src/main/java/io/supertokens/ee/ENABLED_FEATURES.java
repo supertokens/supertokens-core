@@ -16,6 +16,26 @@
 
 package io.supertokens.ee;
 
-public class Main {
+public enum ENABLED_FEATURES {
+    ACCOUNT_LINKING("account_linking"), THIRD_PARTY_MULTI_TENANCY("third_party_multi_tenancy");
 
+    private final String name;
+
+    ENABLED_FEATURES(String s) {
+        name = s;
+    }
+
+    @Override
+    public String toString() {
+        return this.name;
+    }
+
+    public static ENABLED_FEATURES getEnumFromString(String s) {
+        for (ENABLED_FEATURES b : ENABLED_FEATURES.values()) {
+            if (b.toString().equalsIgnoreCase(s)) {
+                return b;
+            }
+        }
+        return null;
+    }
 }
