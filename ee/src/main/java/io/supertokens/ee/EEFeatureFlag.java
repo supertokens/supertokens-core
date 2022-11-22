@@ -57,13 +57,13 @@ public class EEFeatureFlag {
     /*
      * params:
      *   - onInit: This is true when this function is called from the constructor. We use
-     *              this boolean to set the timeout when querying SuperTokens so that
+     *              this boolean to force sync and to set the timeout when querying SuperTokens so that
      *                 during init calls it's much larger than during actual API calls
      * */
     private void syncWithSuperTokensServerIfRequired(boolean onInit) {
         try {
             long lastServerSyncTime = this.getLastServerSyncTime();
-            if (lastServerSyncTime == -1 ||
+            if (onInit || lastServerSyncTime == -1 ||
                     ((System.currentTimeMillis() - lastServerSyncTime) > INTERVAL_BETWEEN_SERVER_SYNC)) {
                 // TODO: set request's connect and read timeout to be 20 seconds if onInit is true
                 ENABLED_FEATURES[] featuresEnabledFromServer = new ENABLED_FEATURES[]{}; // TODO: read from API response
