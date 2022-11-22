@@ -24,7 +24,7 @@ public class EEFeatureFlag {
     private long lastServerSyncTime = -1;
 
     private long enabledFeaturesValueReadFromDbTime = -1;
-    private ENABLED_FEATURES[] enabledFeaturesFromDb = null;
+    private EE_FEATURES[] enabledFeaturesFromDb = null;
 
     private EEFeatureFlag() {
         this.syncWithSuperTokensServerIfRequired(true);
@@ -41,15 +41,15 @@ public class EEFeatureFlag {
         EEFeatureFlag.instance = new EEFeatureFlag();
     }
 
-    public ENABLED_FEATURES[] getEnabledFeatures() {
+    public EE_FEATURES[] getEnabledFeatures() {
         this.syncWithSuperTokensServerIfRequired(false);
         if (this.lastServerSyncTime == -1) {
             // Never synced with SuperTokens for some reason.
             // We still let the user try all the features.
             // TODO: is this a good idea?
-            return ENABLED_FEATURES.values(); // returns all ENUM values.
+            return EE_FEATURES.values(); // returns all ENUM values.
         }
-        return this.getFeatureFlagSavedInDb();
+        return this.getEnabledEEFeaturesFromDb();
     }
 
     /*
@@ -62,8 +62,8 @@ public class EEFeatureFlag {
             if (this.lastServerSyncTime == -1 ||
                     ((System.currentTimeMillis() - lastServerSyncTime) > INTERVAL_BETWEEN_SERVER_SYNC)) {
                 // TODO: set request's connect and read timeout to be 20 seconds if onInit is true
-                ENABLED_FEATURES[] featuresEnabledFromServer = new ENABLED_FEATURES[]{}; // TODO: read from API response
-                this.setFeatureFlagInDb(featuresEnabledFromServer);
+                EE_FEATURES[] featuresEnabledFromServer = new EE_FEATURES[]{}; // TODO: read from API response
+                this.setEnabledEEFeaturesInDb(featuresEnabledFromServer);
                 this.lastServerSyncTime = System.currentTimeMillis();
             }
         } catch (Throwable ignored) {
@@ -72,22 +72,22 @@ public class EEFeatureFlag {
                 // this is done cause the syncing with server failed for some reason,
                 // and if this is happening on core init, then at least
                 // we should read the list of features enabled in the db before moving on.
-                this.getFeatureFlagSavedInDb();
+                this.getEnabledEEFeaturesFromDb();
             } catch (Throwable ignored2) {
             }
         }
     }
 
-    private void setFeatureFlagInDb(ENABLED_FEATURES[] features) {
+    private void setEnabledEEFeaturesInDb(EE_FEATURES[] features) {
         // TODO: save in db
         this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
         this.enabledFeaturesFromDb = features;
     }
 
-    private ENABLED_FEATURES[] getFeatureFlagSavedInDb() {
+    private EE_FEATURES[] getEnabledEEFeaturesFromDb() {
         if (this.enabledFeaturesValueReadFromDbTime == -1 ||
                 (System.currentTimeMillis() - this.enabledFeaturesValueReadFromDbTime > INTERVAL_BETWEEN_DB_READS)) {
-            this.enabledFeaturesFromDb = new ENABLED_FEATURES[]{}; // TODO: read from db
+            this.enabledFeaturesFromDb = new EE_FEATURES[]{}; // TODO: read from db
             this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
         }
         return this.enabledFeaturesFromDb;
