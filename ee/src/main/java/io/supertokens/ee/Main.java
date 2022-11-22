@@ -17,5 +17,7 @@
 package io.supertokens.ee;
 
 public class Main {
-
+    public static void testFunction() {
+        System.out.println("Test");
+    }
 }
