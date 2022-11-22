@@ -21,8 +21,7 @@ public class EEFeatureFlag {
     private static final long INTERVAL_BETWEEN_SERVER_SYNC = (long) 1000 * 3600 * 24; // 1 day.
     private static final long INTERVAL_BETWEEN_DB_READS = (long) 1000 * 3600 * 4; // 4 hour.
 
-    private long lastServerSyncTimeValueReadFromDbTime = -1;
-    private long lastServerSyncTimeValueFromDb = -1;
+    private long lastServerSyncTime = -1;
 
     private long enabledFeaturesValueReadFromDbTime = -1;
     private ENABLED_FEATURES[] enabledFeaturesFromDb = null;
@@ -44,8 +43,7 @@ public class EEFeatureFlag {
 
     public ENABLED_FEATURES[] getEnabledFeatures() {
         this.syncWithSuperTokensServerIfRequired(false);
-        long lastServerSyncTime = this.getLastServerSyncTime();
-        if (lastServerSyncTime == -1) {
+        if (this.lastServerSyncTime == -1) {
             // Never synced with SuperTokens for some reason.
             // We still let the user try all the features.
             // TODO: is this a good idea?
@@ -57,18 +55,16 @@ public class EEFeatureFlag {
     /*
      * params:
      *   - onInit: This is true when this function is called from the constructor. We use
-     *              this boolean to force sync and to set the timeout when querying SuperTokens so that
-     *                 during init calls it's much larger than during actual API calls
+     *              this boolean to set larger timeout values when querying SuperTokens.
      * */
     private void syncWithSuperTokensServerIfRequired(boolean onInit) {
         try {
-            long lastServerSyncTime = this.getLastServerSyncTime();
-            if (onInit || lastServerSyncTime == -1 ||
+            if (this.lastServerSyncTime == -1 ||
                     ((System.currentTimeMillis() - lastServerSyncTime) > INTERVAL_BETWEEN_SERVER_SYNC)) {
                 // TODO: set request's connect and read timeout to be 20 seconds if onInit is true
                 ENABLED_FEATURES[] featuresEnabledFromServer = new ENABLED_FEATURES[]{}; // TODO: read from API response
                 this.setFeatureFlagInDb(featuresEnabledFromServer);
-                this.setLastServerSyncTimeToNow();
+                this.lastServerSyncTime = System.currentTimeMillis();
             }
         } catch (Throwable ignored) {
             // we catch all errors so that this does not affect the functioning of the core.
@@ -80,23 +76,6 @@ public class EEFeatureFlag {
             } catch (Throwable ignored2) {
             }
         }
-    }
-
-    private void setLastServerSyncTimeToNow() {
-        long now = System.currentTimeMillis();
-        // TODO: save in db
-        this.lastServerSyncTimeValueReadFromDbTime = now;
-        this.lastServerSyncTimeValueFromDb = now;
-
-    }
-
-    private long getLastServerSyncTime() {
-        if (this.lastServerSyncTimeValueReadFromDbTime == -1 ||
-                (System.currentTimeMillis() - this.lastServerSyncTimeValueReadFromDbTime > INTERVAL_BETWEEN_DB_READS)) {
-            this.lastServerSyncTimeValueFromDb = -1; // TODO: read from db
-            this.lastServerSyncTimeValueReadFromDbTime = System.currentTimeMillis();
-        }
-        return this.lastServerSyncTimeValueFromDb;
     }
 
     private void setFeatureFlagInDb(ENABLED_FEATURES[] features) {
