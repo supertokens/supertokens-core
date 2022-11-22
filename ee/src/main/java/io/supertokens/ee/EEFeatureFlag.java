@@ -23,10 +23,13 @@ public class EEFeatureFlag {
 
     private long lastServerSyncTime = -1;
 
+    private Boolean isLicenseKeyPresent = null;
+
     private long enabledFeaturesValueReadFromDbTime = -1;
     private EE_FEATURES[] enabledFeaturesFromDb = null;
 
     private EEFeatureFlag() {
+        // TODO: fail start of core if db based error is thrown. If API error is thrown, ignore it.
         this.syncWithSuperTokensServerIfRequired(true);
     }
 
@@ -42,39 +45,58 @@ public class EEFeatureFlag {
     }
 
     public EE_FEATURES[] getEnabledFeatures() {
-        this.syncWithSuperTokensServerIfRequired(false);
+        if (!this.isLicenseKeyPresent) {
+            return new EE_FEATURES[]{};
+        }
+        try {
+            this.syncWithSuperTokensServerIfRequired(false);
+        } catch (Throwable ignored) {
+            // we catch all errors so that this does not affect the functioning of the core.
+        }
         if (this.lastServerSyncTime == -1) {
             // Never synced with SuperTokens for some reason.
             // We still let the user try all the features.
             // TODO: is this a good idea?
             return EE_FEATURES.values(); // returns all ENUM values.
         }
-        return this.getEnabledEEFeaturesFromDb();
+        return this.getEnabledEEFeaturesFromDbOrCache();
     }
 
-    /*
-     * params:
-     *   - onInit: This is true when this function is called from the constructor. We use
-     *              this boolean to set larger timeout values when querying SuperTokens.
-     * */
-    private void syncWithSuperTokensServerIfRequired(boolean onInit) {
-        try {
-            if (this.lastServerSyncTime == -1 ||
-                    ((System.currentTimeMillis() - lastServerSyncTime) > INTERVAL_BETWEEN_SERVER_SYNC)) {
-                // TODO: set request's connect and read timeout to be 20 seconds if onInit is true
-                EE_FEATURES[] featuresEnabledFromServer = new EE_FEATURES[]{}; // TODO: read from API response
-                this.setEnabledEEFeaturesInDb(featuresEnabledFromServer);
-                this.lastServerSyncTime = System.currentTimeMillis();
-            }
-        } catch (Throwable ignored) {
-            // we catch all errors so that this does not affect the functioning of the core.
+    public void removeLicenseKeyAndSyncFeatures() {
+        // TODO: expose this as an API
+        this.removeLicenseKeyFromDb();
+        this.forceSyncWithServer();
+    }
+
+    public void setLicenseKeyAndSyncFeatures(String key) {
+        // TODO: expose this as an API
+        this.setLicenseKeyInDb(key);
+        this.forceSyncWithServer();
+    }
+
+    public void forceSyncWithServer() {
+        // TODO: expose this as an API from the core as well.
+        this.syncWithSuperTokensServerIfRequired(true);
+    }
+
+    private void syncWithSuperTokensServerIfRequired(boolean force) {
+        if (!force && !this.isLicenseKeyPresent) {
+            return;
+        }
+        if (force || this.lastServerSyncTime == -1 ||
+                ((System.currentTimeMillis() - lastServerSyncTime) > INTERVAL_BETWEEN_SERVER_SYNC)) {
+            String licenseKey = "";
             try {
-                // this is done cause the syncing with server failed for some reason,
-                // and if this is happening on core init, then at least
-                // we should read the list of features enabled in the db before moving on.
-                this.getEnabledEEFeaturesFromDb();
-            } catch (Throwable ignored2) {
+                licenseKey = this.getLicenseKeyFromDb();
+                this.isLicenseKeyPresent = true;
+            } catch (NoLicenseKeyFoundException ex) {
+                this.isLicenseKeyPresent = false;
+                this.setEnabledEEFeaturesInDb(new EE_FEATURES[]{});
+                return;
             }
+            EE_FEATURES[] featuresEnabledFromServer = new EE_FEATURES[]{}; // TODO: read from API response
+            this.setEnabledEEFeaturesInDb(featuresEnabledFromServer);
+            this.lastServerSyncTime = System.currentTimeMillis();
         }
     }
 
@@ -84,12 +106,30 @@ public class EEFeatureFlag {
         this.enabledFeaturesFromDb = features;
     }
 
-    private EE_FEATURES[] getEnabledEEFeaturesFromDb() {
+    private EE_FEATURES[] getEnabledEEFeaturesFromDbOrCache() {
         if (this.enabledFeaturesValueReadFromDbTime == -1 ||
                 (System.currentTimeMillis() - this.enabledFeaturesValueReadFromDbTime > INTERVAL_BETWEEN_DB_READS)) {
             this.enabledFeaturesFromDb = new EE_FEATURES[]{}; // TODO: read from db
             this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
         }
         return this.enabledFeaturesFromDb;
+    }
+
+    private void setLicenseKeyInDb(String key) {
+        // TODO: save in db
+    }
+
+    private void removeLicenseKeyFromDb() {
+        // TODO: save in db
+    }
+
+    private String getLicenseKeyFromDb() throws NoLicenseKeyFoundException {
+        return ""; // TODO: query from db
+    }
+
+    private static class NoLicenseKeyFoundException extends Exception {
+
+        public NoLicenseKeyFoundException() {
+        }
     }
 }
