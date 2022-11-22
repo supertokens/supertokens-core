@@ -22,6 +22,7 @@ if [ $# -eq 0 ]
 then
 	rm -rf ./jar/*
 	cp ./build/libs/* ./jar
+	cp ./ee/build/libs/* ./jar
 fi
 
 (cd ./cli/ && ./runBuild "$@")
