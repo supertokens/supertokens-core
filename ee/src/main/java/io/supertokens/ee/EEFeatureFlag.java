@@ -54,6 +54,11 @@ public class EEFeatureFlag {
             // we catch all errors so that this does not affect the functioning of the core.
         }
         if (this.lastServerSyncTime == -1) {
+            // TODO: optimise the flow for this where if our servers are no more,
+            //  then it tries and sync just once a day and not each time the syncWithSuperTokensServerIfRequired
+            //  function is called
+
+
             // Never synced with SuperTokens for some reason.
             // We still let the user try all the features.
             // TODO: is this a good idea?
