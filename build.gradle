@@ -29,6 +29,7 @@ repositories {
 dependencies {
 
     // https://mvnrepository.com/artifact/com.google.code.gson/gson
+    // if this changes, remember to also change in the ee folder's build.gradle
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.3.1'
 
     // https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml

@@ -71,9 +71,9 @@ public class HashingCalibrateHandler extends CommandHandler {
                 Logging.error("");
                 Logging.error("====FAILED====");
                 Logging.error(
-                        "Optimal Argon2 settings could not be calculated. Try increasing the amount of memory given " +
-                                "(using --with_argon2_max_memory_mb), or reducing the amount of concurrent hashing " +
-                                "(using --with_argon2_hashing_pool_size)");
+                        "Optimal Argon2 settings could not be calculated. Try increasing the amount of memory given "
+                                + "(using --with_argon2_max_memory_mb), or reducing the amount of concurrent hashing "
+                                + "(using --with_argon2_hashing_pool_size)");
             }
         } else {
             Logging.error("Please provide one of --with_alg=argon2 or --with_alg=bcrypt");
@@ -86,19 +86,18 @@ public class HashingCalibrateHandler extends CommandHandler {
         options.add(new Option("--with_alg",
                 "The password hashing algorithm to calibrate with. Possible values are \"argon2\" and \"bcrypt\""));
         options.add(new Option("--with_time_per_hash_ms",
-                "This value determines the desired time (in milliseconds) to calculate one hash. The default value is" +
-                        " 300 MS."));
+                "This value determines the desired time (in milliseconds) to calculate one hash. The default value is"
+                        + " 300 MS."));
         options.add(new Option("--with_argon2_hashing_pool_size",
-                "If calibrating argon2 hashing, this value will affect how many maximum hashes can be computed " +
-                        "concurrently. The default value is 1"));
+                "If calibrating argon2 hashing, this value will affect how many maximum hashes can be computed "
+                        + "concurrently. The default value is 1"));
         options.add(new Option("--with_argon2_max_memory_mb",
-                "If calibrating argon2, this value determines how much maximum memory (RAM), in MB, to use for " +
-                        "password " +
-                        "hashing. The default value is 1024 MB"));
+                "If calibrating argon2, this value determines how much maximum memory (RAM), in MB, to use for "
+                        + "password " + "hashing. The default value is 1024 MB"));
         options.add(new Option("--with_argon2_parallelism",
-                "If calibrating argon2, this value determines how many virtual cores to use for hashing. Learn more " +
-                        "about this parameter here: https://tools.ietf.org/id/draft-irtf-cfrg-argon2-05.html#rfc" +
-                        ".section.3.1. The defult value is 2*(number of cores in the system)"));
+                "If calibrating argon2, this value determines how many virtual cores to use for hashing. Learn more "
+                        + "about this parameter here: https://tools.ietf.org/id/draft-irtf-cfrg-argon2-05.html#rfc"
+                        + ".section.3.1. The defult value is 2*(number of cores in the system)"));
         return options;
     }
 
@@ -109,8 +108,8 @@ public class HashingCalibrateHandler extends CommandHandler {
 
     @Override
     public String getUsage() {
-        return "supertokens hashingCalibrate --with_alg=<argon2 | bcrypt> [--with_argon2_hashing_pool_size=1] " +
-                "[--with_argon2_max_memory_mb=1024] [--with_argon2_parallelism=<value>] [--with_time_per_hash_ms=300]";
+        return "supertokens hashingCalibrate --with_alg=<argon2 | bcrypt> [--with_argon2_hashing_pool_size=1] "
+                + "[--with_argon2_max_memory_mb=1024] [--with_argon2_parallelism=<value>] [--with_time_per_hash_ms=300]";
     }
 
     @Override
@@ -153,7 +152,6 @@ public class HashingCalibrateHandler extends CommandHandler {
                 break;
             }
 
-
             Logging.info("Incrementing log rounds and trying again...");
 
             previousIterationTimeTaken = currentTimeTaken;
@@ -169,8 +167,8 @@ public class HashingCalibrateHandler extends CommandHandler {
         Logging.info("");
         Logging.info("====================" + Logging.ANSI_RESET);
         Logging.info(
-                "You should use this as a docker env variable or put this in the config.yaml file in the SuperTokens " +
-                        "installation directory.");
+                "You should use this as a docker env variable or put this in the config.yaml file in the SuperTokens "
+                        + "installation directory.");
         Logging.info("");
 
     }
@@ -191,17 +189,15 @@ public class HashingCalibrateHandler extends CommandHandler {
         return avg / numberOfTries;
     }
 
-    private void calibrateArgon2Hashing(int targetTimePerHashMs, int hashingPoolSize, int maxMemoryMb,
-                                        int parallelism) throws TooLowMemoryProvidedForArgon2 {
+    private void calibrateArgon2Hashing(int targetTimePerHashMs, int hashingPoolSize, int maxMemoryMb, int parallelism)
+            throws TooLowMemoryProvidedForArgon2 {
         Logging.info("");
         Logging.info(Logging.ANSI_CYAN + "====Input Settings====" + Logging.ANSI_RESET);
         Logging.info("");
         Logging.info("-> Target time per hash (--with_time_per_hash_ms): " + targetTimePerHashMs + " MS");
         Logging.info("-> Number of max concurrent hashes (--with_argon2_hashing_pool_size): " + hashingPoolSize);
-        Logging.info(
-                "-> Max amount of memory to consume across " + hashingPoolSize +
-                        " concurrent hashes (--with_argon2_max_memory_mb): " + maxMemoryMb +
-                        " MB");
+        Logging.info("-> Max amount of memory to consume across " + hashingPoolSize
+                + " concurrent hashes (--with_argon2_max_memory_mb): " + maxMemoryMb + " MB");
         Logging.info("-> Argon2 parallelism (--with_argon2_parallelism): " + parallelism);
 
         Logging.info("");
@@ -246,8 +242,8 @@ public class HashingCalibrateHandler extends CommandHandler {
         Logging.info("");
         Logging.info("====================" + Logging.ANSI_RESET);
         Logging.info(
-                "You should use these as docker env variables or put them in the config.yaml file in the SuperTokens " +
-                        "installation directory.");
+                "You should use these as docker env variables or put them in the config.yaml file in the SuperTokens "
+                        + "installation directory.");
         Logging.info("");
     }
 

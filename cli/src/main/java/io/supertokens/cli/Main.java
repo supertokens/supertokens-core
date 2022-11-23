@@ -71,8 +71,8 @@ public class Main {
     }
 
     // java -classpath "./cli/*" io.supertokens.cli.Main <args>
-    //  - args: true [--path <path location>] --> via installer is true
-    //  - args: false <installation path> <command> <...command args>
+    // - args: true [--path <path location>] --> via installer is true
+    // - args: false <installation path> <command> <...command args>
     private static void start(String[] args) {
         boolean viaInstaller = Boolean.parseBoolean(args[0]);
         String installationDir;
@@ -82,18 +82,16 @@ public class Main {
         if (viaInstaller) {
             installationDir = "ignored";
             command = "install";
-            options = java.util.Arrays.stream(args, 1, args.length)
-                    .toArray(String[]::new);
+            options = java.util.Arrays.stream(args, 1, args.length).toArray(String[]::new);
         } else {
             installationDir = args[1];
 
             if (args.length == 2) {
-                args = new String[]{args[0], args[1], "--help"};
+                args = new String[] { args[0], args[1], "--help" };
             }
 
             command = args[2];
-            options = java.util.Arrays.stream(args, 3, args.length)
-                    .toArray(String[]::new);
+            options = java.util.Arrays.stream(args, 3, args.length).toArray(String[]::new);
         }
 
         initCommandHandlers();
@@ -103,8 +101,8 @@ public class Main {
                 handler.handleCommand(installationDir, viaInstaller, options);
             }
         } else {
-            throw new QuitProgramException("Unknown command '" + command +
-                    "'. Please use \"supertokens --help\" to see the list of available commands", null);
+            throw new QuitProgramException("Unknown command '" + command
+                    + "'. Please use \"supertokens --help\" to see the list of available commands", null);
         }
     }
 

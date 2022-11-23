@@ -34,7 +34,7 @@ public class Processes {
         public final String port;
         public final String pid;
         public final String basePath;
-        public String configFilePath;  // set via an API call
+        public String configFilePath; // set via an API call
 
         RunningProcess(String hostName, String port, String pid, String basePath) {
             this.hostName = hostName;
@@ -46,8 +46,8 @@ public class Processes {
         public void fetchConfigFilePath() throws IOException, HTTPResponseException {
             Map<String, String> params = new HashMap<>();
             params.put("pid", this.pid);
-            JsonObject result = HTTPRequest
-                    .sendGETRequest("http://" + this.hostName + ":" + this.port + this.basePath + "/config", params, null);
+            JsonObject result = HTTPRequest.sendGETRequest(
+                    "http://" + this.hostName + ":" + this.port + this.basePath + "/config", params, null);
             this.configFilePath = result.get("path").getAsString();
         }
     }

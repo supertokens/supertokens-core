@@ -96,7 +96,7 @@ public class StartHandler extends CommandHandler {
                 pb.redirectErrorStream(true);
                 Process process = pb.start();
                 try (InputStreamReader in = new InputStreamReader(process.getInputStream());
-                     BufferedReader reader = new BufferedReader(in)) {
+                        BufferedReader reader = new BufferedReader(in)) {
                     String line;
                     boolean success = false;
                     while ((line = reader.readLine()) != null) {
@@ -142,8 +142,8 @@ public class StartHandler extends CommandHandler {
 
     @Override
     public String getUsage() {
-        return "supertokens start [--with-space=<amount in mb>] [--with-config=<config file path>]"
-                + " " + "[--port=<value>] " + "[--host=<value>] [--foreground]";
+        return "supertokens start [--with-space=<amount in mb>] [--with-config=<config file path>]" + " "
+                + "[--port=<value>] " + "[--host=<value>] [--foreground]";
     }
 
     @Override
@@ -153,8 +153,7 @@ public class StartHandler extends CommandHandler {
 
     @Override
     public String getLongDescription() {
-        return "Start an instance of SuperTokens. By default the process will be "
-                + "started as a daemon";
+        return "Start an instance of SuperTokens. By default the process will be " + "started as a daemon";
     }
 
     @Override

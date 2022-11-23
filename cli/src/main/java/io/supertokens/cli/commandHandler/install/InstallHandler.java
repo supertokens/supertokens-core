@@ -37,8 +37,8 @@ public class InstallHandler extends CommandHandler {
         String exeLoc = CLIOptionsParser.parseOption("--exeLoc", args);
         if (!viaInstaller) {
             Logging.info(
-                    "SuperTokens is already installed! Run \"supertokens --help\" to see the list of all available " +
-                            "commands");
+                    "SuperTokens is already installed! Run \"supertokens --help\" to see the list of all available "
+                            + "commands");
             return;
         }
         try {
@@ -53,10 +53,8 @@ public class InstallHandler extends CommandHandler {
                     Logging.info("install");
                 } else {
                     Logging.info(
-                            "This version of SuperTokens is already installed! Run \"supertokens --help\" to see the " +
-                                    "list " +
-                                    "of all available " +
-                                    "commands");
+                            "This version of SuperTokens is already installed! Run \"supertokens --help\" to see the "
+                                    + "list " + "of all available " + "commands");
                 }
             } else {
                 moveContentToInstallationDir(installationDir);
@@ -66,10 +64,9 @@ public class InstallHandler extends CommandHandler {
             }
         } catch (Exception e) {
             if (e.getMessage().toLowerCase().contains("permission denied") && !(e instanceof QuitProgramException)) {
-                throw new QuitProgramException(
-                        "Installation failed. Try again with" +
-                                ((OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) ? " root permissions." :
-                                        " sudo."), null);
+                throw new QuitProgramException("Installation failed. Try again with"
+                        + ((OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) ? " root permissions." : " sudo."),
+                        null);
             } else {
                 throw new QuitProgramException("error while installing SuperTokens. Please try again", e);
             }
@@ -85,7 +82,7 @@ public class InstallHandler extends CommandHandler {
         Process process = pb.start();
         String result = "";
         try (InputStreamReader in = new InputStreamReader(process.getInputStream());
-             BufferedReader reader = new BufferedReader(in)) {
+                BufferedReader reader = new BufferedReader(in)) {
             StringBuilder builder = new StringBuilder();
             String line = null;
             while ((line = reader.readLine()) != null) {
@@ -147,10 +144,9 @@ public class InstallHandler extends CommandHandler {
         if (!f.exists()) {
             boolean success = f.createNewFile();
             if (!success) {
-                throw new QuitProgramException(
-                        "Installation failed. Try again with" +
-                                ((OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) ? " root permissions." :
-                                        " sudo."), null);
+                throw new QuitProgramException("Installation failed. Try again with"
+                        + ((OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) ? " root permissions." : " sudo."),
+                        null);
             }
         }
         f.setExecutable(true, false);
@@ -172,8 +168,7 @@ public class InstallHandler extends CommandHandler {
                 Logging.error("Failed to load resource named " + fileName);
                 return null;
             }
-            try (InputStreamReader isr = new InputStreamReader(is);
-                 BufferedReader reader = new BufferedReader(isr)) {
+            try (InputStreamReader isr = new InputStreamReader(is); BufferedReader reader = new BufferedReader(isr)) {
                 return reader.lines().collect(Collectors.joining(System.lineSeparator()));
             }
         }
@@ -226,7 +221,7 @@ public class InstallHandler extends CommandHandler {
         }
         if (OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) {
             // TODO: In windows, the convention is to edit the %PATH% variable to point to "C:\\Program
-            //  Files\\supertokens\\bin\\"
+            // Files\\supertokens\\bin\\"
             return "C:\\Windows\\System32\\supertokens.bat";
         } else if (OperatingSystem.getOS() == OperatingSystem.OS.MAC) {
             return "/usr/local/bin/supertokens";
@@ -253,8 +248,8 @@ public class InstallHandler extends CommandHandler {
 
     @Override
     public String getShortDescription() {
-        return "Install SuperTokens. Please do not use this command. Instead, call the install script provided to you" +
-                " when you download SuperTokens";
+        return "Install SuperTokens. Please do not use this command. Instead, call the install script provided to you"
+                + " when you download SuperTokens";
     }
 
     @Override
@@ -266,11 +261,11 @@ public class InstallHandler extends CommandHandler {
     protected List<Option> getOptionsAndDescription() {
         List<Option> options = new ArrayList<>();
         options.add(new Option("--path",
-                "Specify an installation directory. This path can be relative or absolute. Example: " +
-                        "\"--path=/usr/local/supertokens/\""));
+                "Specify an installation directory. This path can be relative or absolute. Example: "
+                        + "\"--path=/usr/local/supertokens/\""));
         options.add(new Option("--with-source",
-                "If this is set, then all 3rd party dependencies will be installed along with their source. This " +
-                        "option has no affect on the execution of SuperTokens."));
+                "If this is set, then all 3rd party dependencies will be installed along with their source. This "
+                        + "option has no affect on the execution of SuperTokens."));
         return options;
     }
 }
