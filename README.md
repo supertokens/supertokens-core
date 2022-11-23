@@ -193,6 +193,9 @@ Mihály Lengyel</b></sub></a></td>
 <td align="center"><a href="https://github.com/ITenthusiasm"><img src="https://avatars.githubusercontent.com/u/47364027?v=4" width="100px;" alt=""/><br /><sub><b>Isaiah Thomason</b></sub></a></td>
 <td align="center"><a href="https://github.com/utsavdotpro"><img src="https://avatars.githubusercontent.com/u/38961422?v=4" width="100px;" alt=""/><br /><sub><b>Utsav Barnwal</b></sub></a></td>
   </tr>
+  <tr>
+<td align="center"><a href="https://github.com/saurabhghatnekar"><img src="https://avatars.githubusercontent.com/u/20884782?v=4" width="100px;" alt=""/><br /><sub><b>Saurabh Ghatnekar</b></sub></a></td>
+  </tr>
 </table>
 
 ## 👩‍💻 Contributing
