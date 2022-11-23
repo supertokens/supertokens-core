@@ -70,7 +70,7 @@ import java.util.Map;
  *  - database not working case
  *      - on init -> core not started
  *      - in API ->
- *          - no API call is made since licese key fetching from db would fail
+ *          - no API call is made since license key fetching from db would fail
  *          - if last read time of features from db is more than 4 hours ago -> throw an error
  *          - else return enabled features from cache (memory)
  *      - in cronjob -> error will be thrown in cronjob -> cronjob will ignore it
@@ -121,6 +121,7 @@ public class EEFeatureFlag {
     }
 
     public EE_FEATURES[] getEnabledFeatures() {
+        // TODO: expose this in API as well
         if (!this.isLicenseKeyPresent) {
             return new EE_FEATURES[]{};
         }
@@ -135,7 +136,6 @@ public class EEFeatureFlag {
         } catch (EnabledFeaturesNotSetInDbException e) {
             // Never synced with SuperTokens for some reason.
             // We still let the user try all the features.
-            // TODO: is this a good idea?
             return EE_FEATURES.values(); // returns all ENUM values.
         }
     }
@@ -234,4 +234,15 @@ public class EEFeatureFlag {
         public EnabledFeaturesNotSetInDbException() {
         }
     }
+
+    // TODO: Add a way to know which features are enabled to the backend SDK.
 }
+
+/*
+ * TODO: Long term changes:
+ *      - For people who want an air gaped system, we can issue license keys which are JWTs and the public
+ *          key is stored in the core. The JWT payload contains the list of enabled features.
+ *      - We want to log the license key that's being used so that if there is license key sharing,
+ *          then we can see the logs and know. Users can't easily spoof this license key in logs cause
+ *          we are the only ones who can generate the licese keys in the first place.
+ * */
