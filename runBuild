@@ -22,7 +22,6 @@ if [ $# -eq 0 ]
 then
 	rm -rf ./jar/*
 	cp ./build/libs/* ./jar
-	cp ./ee/build/libs/* ./jar
 fi
 
 (cd ./cli/ && ./runBuild "$@")
@@ -32,6 +31,12 @@ then
 	exit 1
 fi
 (cd ./downloader/ && ./runBuild "$@")
+if [[ $? -ne 0 ]]
+then
+    echo "Failed to build"
+	exit 1
+fi
+(cd ./ee/ && ./runBuild "$@")
 if [[ $? -ne 0 ]]
 then
     echo "Failed to build"

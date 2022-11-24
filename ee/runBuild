@@ -1,0 +1,25 @@
+exitIfNeeded () {
+  if [ $? -ne 0 ]
+	then
+		exit 1
+	fi
+}
+
+prefix=`(cd ../../ && ./utils/project-prefix)`
+(cd ../../ && ./gradlew :$prefix-core:ee:clean < /dev/null)
+
+exitIfNeeded
+
+(cd ../../ && ./gradlew :$prefix-core:ee:build -x test < /dev/null)
+
+exitIfNeeded
+
+(cd ../../ && ./gradlew :$prefix-core:ee:copyJars < /dev/null)
+
+exitIfNeeded
+
+if [ $# -eq 0 ]
+then
+	rm -rf ./jar/*
+	cp ./build/libs/* ./jar
+fi
