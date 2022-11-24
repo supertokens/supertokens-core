@@ -31,6 +31,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
@@ -85,7 +86,14 @@ public class JWTCreateTest {
         String jwksDomain = "http://localhost";
         long validity = 63072000;
 
-        JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
+        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
+
+        DecodedJWT decodedJWT = JWT.decode(jwt);
+
+        // compares the (expiry time in seconds) - (issued at time in seconds) -1
+        // 1 is added to expiry time to make sure expiry is atleast 1 second
+        assertEquals((decodedJWT.getExpiresAt().getTime() / 1000 - decodedJWT.getIssuedAt().getTime() / 1000) - 1,
+                validity);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
