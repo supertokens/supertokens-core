@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [4.2.1] - 2022-11-24
+
+- Updates the type of `access_token_validity` in the CoreConfig from `int` to `long`
+
 ## [4.2.0] - 2022-11-07
 
 - Update dependencies for security updates: https://github.com/supertokens/supertokens-core/issues/525

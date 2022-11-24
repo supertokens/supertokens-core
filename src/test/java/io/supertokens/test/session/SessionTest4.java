@@ -17,6 +17,8 @@
 package io.supertokens.test.session;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
 import io.supertokens.ProcessState;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
@@ -25,6 +27,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.session.info.SessionInfo;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -363,6 +366,91 @@ public class SessionTest4 {
 
         Session.getSession(process.getProcess(), nonExpiredSession.session.handle);
         Session.updateSession(process.getProcess(), nonExpiredSession.session.handle, new JsonObject(), null, null);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    // session tests with long access and refresh token lifetimes
+    @Test
+    public void testCreatingSessionsWithLongAccessAndRefreshTokenLifeTimes() throws Exception {
+
+        Utils.setValueInConfig("access_token_validity", "63072000"); // 2 years in seconds
+        Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
+
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), "user", new JsonObject(),
+                new JsonObject());
+        long twoYearsInSeconds = 63072000;
+
+        assertEquals(sessionInfo.accessToken.expiry - sessionInfo.accessToken.createdTime, twoYearsInSeconds * 1000);
+        assertEquals(sessionInfo.refreshToken.expiry - sessionInfo.refreshToken.createdTime, twoYearsInSeconds * 1000);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCreatingSessionsWithLongAccessAndRefreshTokenLifeTimesAndRefreshingTokens() throws Exception {
+
+        Utils.setValueInConfig("access_token_validity", "63072000"); // 2 years in seconds
+        Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
+
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), "user", new JsonObject(),
+                new JsonObject());
+        long twoYearsInSeconds = 63072000;
+
+        assertEquals(sessionInfo.accessToken.expiry - sessionInfo.accessToken.createdTime, twoYearsInSeconds * 1000);
+        assertEquals(sessionInfo.refreshToken.expiry - sessionInfo.refreshToken.createdTime, twoYearsInSeconds * 1000);
+
+        SessionInformationHolder sessionInfo2 = Session.refreshSession(process.main, sessionInfo.refreshToken.token,
+                null, false);
+
+        assertFalse(sessionInfo.accessToken.token.equals(sessionInfo2.accessToken.token));
+        assertFalse(sessionInfo.refreshToken.token.equals(sessionInfo2.refreshToken.token));
+
+        assertEquals(sessionInfo2.accessToken.expiry - sessionInfo2.accessToken.createdTime, twoYearsInSeconds * 1000);
+        assertEquals(sessionInfo2.refreshToken.expiry - sessionInfo2.refreshToken.createdTime,
+                twoYearsInSeconds * 1000);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void createNewSessionAndUpdateSession() throws Exception {
+
+        Utils.setValueInConfig("access_token_validity", "63072000"); // 2 years in seconds
+        Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), "user", new JsonObject(),
+                new JsonObject());
+        long twoYearsInSeconds = 63072000;
+
+        assertEquals(sessionInfo.accessToken.expiry - sessionInfo.accessToken.createdTime, twoYearsInSeconds * 1000);
+        assertEquals(sessionInfo.refreshToken.expiry - sessionInfo.refreshToken.createdTime, twoYearsInSeconds * 1000);
+        JsonObject sessionData = new JsonObject();
+        sessionData.addProperty("test", "value");
+
+        JsonObject jwtData = new JsonObject();
+        jwtData.addProperty("test", "value");
+
+        Session.updateSession(process.main, sessionInfo.session.handle, sessionData, jwtData, null);
+
+        io.supertokens.pluginInterface.session.SessionInfo sessionInfo2 = Session.getSession(process.main,
+                sessionInfo.session.handle);
+
+        assertEquals(sessionInfo2.expiry - sessionInfo2.timeCreated, twoYearsInSeconds * 1000);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

@@ -36,7 +36,7 @@ public class CoreConfig {
     private int core_config_version = -1;
 
     @JsonProperty
-    private int access_token_validity = 3600; // in seconds
+    private long access_token_validity = 3600; // in seconds
 
     @JsonProperty
     private boolean access_token_blacklisting = false;
