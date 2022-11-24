@@ -367,4 +367,26 @@ public class SessionTest4 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    // session tests with long access and refresh token lifetimes
+    @Test
+    public void testCreatingSessionsWithLongAccessAndRefreshTokenLifeTimes() throws Exception {
+
+        Utils.setValueInConfig("access_token_validity", "63072000"); // 2 years in seconds
+        Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
+
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), "user", new JsonObject(),
+                new JsonObject());
+        long twoYearsInSeconds = 63072000;
+
+        assertEquals(sessionInfo.accessToken.expiry - sessionInfo.accessToken.createdTime, twoYearsInSeconds * 1000);
+        assertEquals(sessionInfo.refreshToken.expiry - sessionInfo.refreshToken.createdTime, twoYearsInSeconds * 1000);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
