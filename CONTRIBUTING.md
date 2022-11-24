@@ -117,8 +117,8 @@ We're happy to help!:raised_hands:
 
 1. Run `startTestEnv --wait` in a terminal, and keep it running
 2. Then open `supertokens-root` in another terminal and run `cp ./temp/config.yaml .`
-3. Then run `java -classpath "./core/*:./plugin-interface/*" io.supertokens.Main ./ DEV`. This will start the core to
-   listen on `http://localhost:3567`
+3. Then run `java -classpath "./core/*:./plugin-interface/*:./ee/*" io.supertokens.Main ./ DEV`. This will start the
+   core to listen on `http://localhost:3567`
 
 ## Pull Request
 

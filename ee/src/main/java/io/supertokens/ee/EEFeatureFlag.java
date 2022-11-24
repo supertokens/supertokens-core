@@ -89,7 +89,6 @@ import java.util.Map;
  * */
 
 public class EEFeatureFlag {
-    private static EEFeatureFlag instance = null;
     private static final long INTERVAL_BETWEEN_SERVER_SYNC = (long) 1000 * 3600 * 24; // 1 day.
     private static final long INTERVAL_BETWEEN_DB_READS = (long) 1000 * 3600 * 4; // 4 hour.
 
@@ -100,24 +99,13 @@ public class EEFeatureFlag {
     private long enabledFeaturesValueReadFromDbTime = -1;
     private EE_FEATURES[] enabledFeaturesFromDb = null;
 
-    private EEFeatureFlag() {
+    public EEFeatureFlag() {
         // TODO: fail start of core if db based error is thrown. If API error is thrown, ignore it.
         try {
             this.forceSyncWithServer();
         } catch (HttpResponseException | IOException ignored) {
             // server request failed. we ignore for now as later on it will sync up anyway.
         }
-    }
-
-    public static EEFeatureFlag getInstanceOrThrow() {
-        if (EEFeatureFlag.instance == null) {
-            throw new IllegalStateException("EEFeatureFlag not initialised");
-        }
-        return instance;
-    }
-
-    public static void init() {
-        EEFeatureFlag.instance = new EEFeatureFlag();
     }
 
     public EE_FEATURES[] getEnabledFeatures() {

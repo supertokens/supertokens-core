@@ -178,6 +178,9 @@ public class Main {
         }
         StorageLayer.getStorage(this).initStorage();
 
+        // enable ee features if license key is provided.
+        FeatureFlag.init(this, CLIOptions.get(this).getInstallationPath() + "ee/");
+
         // init signing keys
         AccessTokenSigningKey.init(this);
         RefreshTokenKey.init(this);
@@ -264,9 +267,9 @@ public class Main {
         CoreConfig config = Config.getConfig(this);
         String fileName = OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS
                 ? CLIOptions.get(this).getInstallationPath() + ".started\\" + config.getHost(this) + "-"
-                        + config.getPort(this)
+                + config.getPort(this)
                 : CLIOptions.get(this).getInstallationPath() + ".started/" + config.getHost(this) + "-"
-                        + config.getPort(this);
+                + config.getPort(this);
         File dotStarted = new File(fileName);
         if (!dotStarted.exists()) {
             File parent = dotStarted.getParentFile();

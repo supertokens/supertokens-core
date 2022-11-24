@@ -71,7 +71,8 @@ public class StartHandler extends CommandHandler {
             commands.add(installationDir + "jre/bin/java");
             commands.add("-Djava.security.egd=file:/dev/urandom");
             commands.add("-classpath");
-            commands.add(installationDir + "core/*:" + installationDir + "plugin-interface/*");
+            commands.add(
+                    installationDir + "core/*:" + installationDir + "plugin-interface/*:" + installationDir + "ee/*");
             if (space != null) {
                 commands.add("-Xmx" + space + "M");
             }
