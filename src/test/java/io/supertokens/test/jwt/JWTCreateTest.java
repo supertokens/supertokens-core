@@ -70,6 +70,28 @@ public class JWTCreateTest {
     }
 
     /**
+     * Call JWTSigningFunctions.createJWTToken with valid params and long validity and ensure that it does not throw any
+     * errors
+     */
+    @Test
+    public void testNormalFunctioningOfCreateTokenWithLongValidity() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String algorithm = "RS256";
+        JsonObject payload = new JsonObject();
+        payload.addProperty("customClaim", "customValue");
+        String jwksDomain = "http://localhost";
+        long validity = 63072000;
+
+        JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
      * Trying to create a JWT with an unsupported algorithm should throw an error
      */
     @Test
