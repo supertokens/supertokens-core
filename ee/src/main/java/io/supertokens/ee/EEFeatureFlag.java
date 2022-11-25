@@ -233,4 +233,5 @@ public class EEFeatureFlag {
  *      - We want to log the license key that's being used so that if there is license key sharing,
  *          then we can see the logs and know. Users can't easily spoof this license key in logs cause
  *          we are the only ones who can generate the licese keys in the first place.
+ *              - EDIT: this is no longer required cause the key will be in the db anyway.
  * */
