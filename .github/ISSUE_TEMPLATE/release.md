@@ -104,6 +104,7 @@ labels:
     - [ ] Update logic for deleting all data in dev env if a new table was added and if the data should be removed from it too
     - [ ] Update logic for exporting csv file for registered users
     - [ ] Update SaaS instances to use the latest docker images.
+    - [ ] Change checklist in contributing guide for which tables to pick when migrating data from dev to prod instance.
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
  - [ ] [supertokens-golang:X.Y](https://github.com/supertokens/supertokens-golang/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/tree/X.Y)
