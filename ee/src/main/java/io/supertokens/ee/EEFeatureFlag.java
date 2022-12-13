@@ -154,8 +154,7 @@ public class EEFeatureFlag {
             Map<String, String> queryParams = new HashMap<>();
             queryParams.put("licenseKey", licenseKey);
             // TODO: add telemetry ID (which is optional in case of in mem db) + details of paid features usage stats
-            //  to calculate accurate billing + core version.
-            // TODO: add currently enabled features from db.
+            //  to calculate accurate billing (regardless of actually enabled features) + core version.
             JsonObject licenseCheckResponse = HttpRequest.sendGETRequest("https://api.supertokens.io/0/st/license",
                     queryParams, 10000, 10000, 0);
             if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("OK")) {
@@ -177,7 +176,7 @@ public class EEFeatureFlag {
     }
 
     private void setEnabledEEFeaturesInDb(EE_FEATURES[] features) {
-        // TODO: save in db
+        // TODO: save in db - should overwrite all the current content.
         this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
         this.enabledFeaturesFromDb = features;
     }
