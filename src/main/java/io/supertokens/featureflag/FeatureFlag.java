@@ -14,10 +14,14 @@
  *    under the License.
  */
 
-package io.supertokens;
+package io.supertokens.featureflag;
 
+import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.ee.EEFeatureFlag;
+import io.supertokens.ee.EE_FEATURES;
 import io.supertokens.output.Logging;
+import io.supertokens.storageLayer.StorageLayer;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -28,7 +32,7 @@ import java.util.ServiceLoader;
 
 public class FeatureFlag extends ResourceDistributor.SingletonResource {
 
-    private static final String RESOURCE_KEY = "io.supertokens.FeatureFlag";
+    private static final String RESOURCE_KEY = "io.supertokens.featureflag.FeatureFlag";
     private final EEFeatureFlag eeFeatureFlag;
     private static URLClassLoader ucl = null;
 
@@ -60,6 +64,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
 
         if (eeLayerTemp != null) {
             this.eeFeatureFlag = eeLayerTemp;
+            this.eeFeatureFlag.constructor(StorageLayer.getStorage(main));
         } else {
             Logging.info(main, "Missing ee folder", true);
             eeFeatureFlag = null;
@@ -76,5 +81,12 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
         }
         main.getResourceDistributor().setResource(RESOURCE_KEY,
                 new FeatureFlag(main, eeFolderPath));
+    }
+
+    public EE_FEATURES[] getEnabledFeatures() {
+        if (this.eeFeatureFlag == null) {
+            return new EE_FEATURES[]{};
+        }
+        return this.eeFeatureFlag.getEnabledFeatures();
     }
 }

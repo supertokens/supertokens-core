@@ -1,19 +1,3 @@
-/*
- *    Copyright (c) 2020, VRAI Labs and/or its affiliates. All rights reserved.
- *
- *    This software is licensed under the Apache License, Version 2.0 (the
- *    "License") as published by the Apache Software Foundation.
- *
- *    You may not use this file except in compliance with the License. You may
- *    obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- *    License for the specific language governing permissions and limitations
- *    under the License.
- */
-
 package io.supertokens.ee.httpRequest;
 
 import com.google.gson.JsonElement;
@@ -55,7 +39,7 @@ public class HttpRequest {
 
     @SuppressWarnings("unchecked")
     public static <T> T sendGETRequest(String url, Map<String, String> params, int connectionTimeoutMS,
-            int readTimeoutMS, Integer version) throws IOException, HttpResponseException {
+                                       int readTimeoutMS, Integer version) throws IOException, HttpResponseException {
         StringBuilder paramBuilder = new StringBuilder();
 
         if (params != null) {
@@ -116,7 +100,8 @@ public class HttpRequest {
 
     @SuppressWarnings("unchecked")
     private static <T> T sendJsonRequest(String url, JsonElement requestBody, int connectionTimeoutMS,
-            int readTimeoutMS, Integer version, String method) throws IOException, HttpResponseException {
+                                         int readTimeoutMS, Integer version, String method)
+            throws IOException, HttpResponseException {
         URL obj = getURL(url);
         InputStream inputStream = null;
         HttpURLConnection con = null;
@@ -173,17 +158,20 @@ public class HttpRequest {
     }
 
     public static <T> T sendJsonPOSTRequest(String url, JsonElement requestBody, int connectionTimeoutMS,
-            int readTimeoutMS, Integer version) throws IOException, HttpResponseException {
+                                            int readTimeoutMS, Integer version)
+            throws IOException, HttpResponseException {
         return sendJsonRequest(url, requestBody, connectionTimeoutMS, readTimeoutMS, version, "POST");
     }
 
     public static <T> T sendJsonPUTRequest(String url, JsonElement requestBody, int connectionTimeoutMS,
-            int readTimeoutMS, Integer version) throws IOException, HttpResponseException {
+                                           int readTimeoutMS, Integer version)
+            throws IOException, HttpResponseException {
         return sendJsonRequest(url, requestBody, connectionTimeoutMS, readTimeoutMS, version, "PUT");
     }
 
     public static <T> T sendJsonDELETERequest(String url, JsonElement requestBody, int connectionTimeoutMS,
-            int readTimeoutMS, Integer version) throws IOException, HttpResponseException {
+                                              int readTimeoutMS, Integer version)
+            throws IOException, HttpResponseException {
         return sendJsonRequest(url, requestBody, connectionTimeoutMS, readTimeoutMS, version, "DELETE");
     }
 

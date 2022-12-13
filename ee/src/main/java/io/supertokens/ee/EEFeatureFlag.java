@@ -1,25 +1,10 @@
-/*
- *    Copyright (c) 2022, VRAI Labs and/or its affiliates. All rights reserved.
- *
- *    This software is licensed under the Apache License, Version 2.0 (the
- *    "License") as published by the Apache Software Foundation.
- *
- *    You may not use this file except in compliance with the License. You may
- *    obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
- *
- *    Unless required by applicable law or agreed to in writing, software
- *    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
- *    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
- *    License for the specific language governing permissions and limitations
- *    under the License.
- */
-
 package io.supertokens.ee;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ee.httpRequest.HttpRequest;
 import io.supertokens.ee.httpRequest.HttpResponseException;
+import io.supertokens.pluginInterface.Storage;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -99,7 +84,10 @@ public class EEFeatureFlag {
     private long enabledFeaturesValueReadFromDbTime = -1;
     private EE_FEATURES[] enabledFeaturesFromDb = null;
 
-    public EEFeatureFlag() {
+    private Storage storage;
+
+    public void constructor(Storage storage) {
+        this.storage = storage;
         // TODO: fail start of core if db based error is thrown. If API error is thrown, ignore it.
         try {
             this.forceSyncWithServer();
@@ -165,6 +153,9 @@ public class EEFeatureFlag {
 
             Map<String, String> queryParams = new HashMap<>();
             queryParams.put("licenseKey", licenseKey);
+            // TODO: add telemetry ID (which is optional in case of in mem db) + details of paid features usage stats
+            //  to calculate accurate billing + core version.
+            // TODO: add currently enabled features from db.
             JsonObject licenseCheckResponse = HttpRequest.sendGETRequest("https://api.supertokens.io/0/st/license",
                     queryParams, 10000, 10000, 0);
             if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("OK")) {
@@ -179,6 +170,7 @@ public class EEFeatureFlag {
                 });
                 this.setEnabledEEFeaturesInDb(enabledFeatures.toArray(EE_FEATURES[]::new));
             } else if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("INVALID_LICENSE_KEY")) {
+                // TODO: logging here and in other places.
                 this.removeLicenseKeyAndSyncFeatures();
             }
         }
