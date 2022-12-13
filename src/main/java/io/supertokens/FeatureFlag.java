@@ -61,7 +61,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
         if (eeLayerTemp != null) {
             this.eeFeatureFlag = eeLayerTemp;
         } else {
-            Logging.info(main, "Using in memory storage.", true);
+            Logging.info(main, "Missing ee folder", true);
             eeFeatureFlag = null;
         }
     }
