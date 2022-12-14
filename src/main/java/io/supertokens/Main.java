@@ -32,11 +32,14 @@ import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.utils.Utils;
 import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
 import org.jetbrains.annotations.TestOnly;
@@ -50,6 +53,8 @@ import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.UUID;
+
+import static io.supertokens.cronjobs.telemetry.Telemetry.TELEMETRY_ID_DB_KEY;
 
 public class Main {
 
@@ -179,6 +184,10 @@ public class Main {
         }
         StorageLayer.getStorage(this).initStorage();
 
+        // adding telemetry ID so that it can be used during license key sync and reused
+        // for telemetry API.
+        addTelemetryIdInDbIfNotPresent();
+
         // enable ee features if license key is provided.
         FeatureFlag.init(this, CLIOptions.get(this).getInstallationPath() + "ee/");
 
@@ -222,6 +231,22 @@ public class Main {
         // for start command
         Logging.info(this, "Started SuperTokens on " + Config.getConfig(this).getHost(this) + ":"
                 + Config.getConfig(this).getPort(this) + " with PID: " + ProcessHandle.current().pid(), true);
+    }
+
+    private void addTelemetryIdInDbIfNotPresent() {
+        try {
+            Storage storage = StorageLayer.getStorage(this);
+            if (StorageLayer.getInstance(this).isInMemDb()) {
+                return;
+            }
+            KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
+
+            if (telemetryId == null) {
+                telemetryId = new KeyValueInfo(Utils.getUUID());
+                storage.setKeyValue(TELEMETRY_ID_DB_KEY, telemetryId);
+            }
+        } catch (Throwable ignored) {
+        }
     }
 
     @TestOnly

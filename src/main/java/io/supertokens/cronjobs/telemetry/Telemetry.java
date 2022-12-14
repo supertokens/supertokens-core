@@ -66,6 +66,7 @@ public class Telemetry extends CronTask {
         KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
 
         if (telemetryId == null) {
+            // it should only come here very rarely if creating one failed during core startup.
             telemetryId = new KeyValueInfo(Utils.getUUID());
             storage.setKeyValue(TELEMETRY_ID_DB_KEY, telemetryId);
         }

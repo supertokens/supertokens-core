@@ -159,6 +159,7 @@ public class EEFeatureFlag {
             JsonObject json = new JsonObject();
             KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
             if (telemetryId != null) {
+                // this can be null if we are using in mem db right now.
                 json.addProperty("telemetryId", telemetryId.value);
             }
             json.addProperty("licenseKey", licenseKey);
