@@ -140,7 +140,7 @@ public class Main {
         }
     }
 
-    private void init() throws IOException {
+    private void init() throws IOException, StorageQueryException {
 
         // Handle kill signal gracefully
         handleKillSignalForWhenItHappens();

@@ -88,15 +88,15 @@ public class EEFeatureFlag {
     private Storage storage;
     private String coreVersion;
 
-    public void constructor(Storage storage, String coreVersion) {
+    public void constructor(Storage storage, String coreVersion) throws StorageQueryException {
         this.coreVersion = coreVersion;
         this.storage = storage;
-        // TODO: fail start of core if db based error is thrown. If API error is thrown, ignore it.
         try {
             this.forceSyncWithServer();
-        } catch (HttpResponseException | IOException | StorageQueryException ignored) {
+        } catch (HttpResponseException | IOException ignored) {
             // server request failed. we ignore for now as later on it will sync up anyway.
         }
+        // any other exception (like db related errors) will result in core not starting
     }
 
     public EE_FEATURES[] getEnabledFeatures() {

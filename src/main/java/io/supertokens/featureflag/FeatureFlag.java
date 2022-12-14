@@ -40,7 +40,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
     private final EEFeatureFlag eeFeatureFlag;
     private static URLClassLoader ucl = null;
 
-    private FeatureFlag(Main main, String eeFolderPath) throws MalformedURLException {
+    private FeatureFlag(Main main, String eeFolderPath) throws MalformedURLException, StorageQueryException {
         File loc = new File(eeFolderPath);
         EEFeatureFlag eeLayerTemp = null;
 
@@ -79,7 +79,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
         return (FeatureFlag) main.getResourceDistributor().getResource(RESOURCE_KEY);
     }
 
-    public static void init(Main main, String eeFolderPath) throws MalformedURLException {
+    public static void init(Main main, String eeFolderPath) throws MalformedURLException, StorageQueryException {
         if (getInstance(main) != null) {
             return;
         }
