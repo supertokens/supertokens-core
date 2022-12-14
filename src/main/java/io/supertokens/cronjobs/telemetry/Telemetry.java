@@ -53,8 +53,6 @@ public class Telemetry extends CronTask {
 
     @Override
     protected void doTask() throws Exception {
-        String plugin = Version.getVersion(main).getPluginName();
-
         if (StorageLayer.getInstance(main).isInMemDb() || Config.getConfig(main).isTelemetryDisabled()) {
             // we do not send any info in this case since it's not under development / production env or the user has
             // disabled Telemetry

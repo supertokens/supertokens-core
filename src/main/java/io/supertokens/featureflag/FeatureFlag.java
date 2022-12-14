@@ -22,6 +22,7 @@ import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.ee.EE_FEATURES;
 import io.supertokens.output.Logging;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.version.Version;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -64,7 +65,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
 
         if (eeLayerTemp != null) {
             this.eeFeatureFlag = eeLayerTemp;
-            this.eeFeatureFlag.constructor(StorageLayer.getStorage(main));
+            this.eeFeatureFlag.constructor(StorageLayer.getStorage(main), Version.getVersion(main).getCoreVersion());
         } else {
             Logging.info(main, "Missing ee folder", true);
             eeFeatureFlag = null;

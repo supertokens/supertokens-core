@@ -4,13 +4,13 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ee.httpRequest.HttpRequest;
 import io.supertokens.ee.httpRequest.HttpResponseException;
+import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 /*
  * Different scenarios:
@@ -78,6 +78,7 @@ public class EEFeatureFlag {
     private static final long INTERVAL_BETWEEN_DB_READS = (long) 1000 * 3600 * 4; // 4 hour.
 
     private long lastServerSyncAttemptTime = -1;
+    public static final String TELEMETRY_ID_DB_KEY = "TELEMETRY_ID";
 
     private Boolean isLicenseKeyPresent = null;
 
@@ -85,13 +86,15 @@ public class EEFeatureFlag {
     private EE_FEATURES[] enabledFeaturesFromDb = null;
 
     private Storage storage;
+    private String coreVersion;
 
-    public void constructor(Storage storage) {
+    public void constructor(Storage storage, String coreVersion) {
+        this.coreVersion = coreVersion;
         this.storage = storage;
         // TODO: fail start of core if db based error is thrown. If API error is thrown, ignore it.
         try {
             this.forceSyncWithServer();
-        } catch (HttpResponseException | IOException ignored) {
+        } catch (HttpResponseException | IOException | StorageQueryException ignored) {
             // server request failed. we ignore for now as later on it will sync up anyway.
         }
     }
@@ -116,25 +119,27 @@ public class EEFeatureFlag {
         }
     }
 
-    public void removeLicenseKeyAndSyncFeatures() throws HttpResponseException, IOException {
+    public void removeLicenseKeyAndSyncFeatures() throws HttpResponseException, IOException, StorageQueryException {
         // TODO: expose this as an API
         this.removeLicenseKeyFromDb();
         this.forceSyncWithServer();
     }
 
-    public void setLicenseKeyAndSyncFeatures(String key) throws HttpResponseException, IOException {
+    public void setLicenseKeyAndSyncFeatures(String key)
+            throws HttpResponseException, IOException, StorageQueryException {
         // TODO: expose this as an API
         this.setLicenseKeyInDb(key);
         this.forceSyncWithServer();
     }
 
-    public void forceSyncWithServer() throws HttpResponseException, IOException {
+    public void forceSyncWithServer() throws HttpResponseException, IOException, StorageQueryException {
         // TODO: call this in a cronjob once a day.
         // TODO: expose this as an API from the core as well.
         this.syncWithSuperTokensServerIfRequired(true);
     }
 
-    private void syncWithSuperTokensServerIfRequired(boolean force) throws HttpResponseException, IOException {
+    private void syncWithSuperTokensServerIfRequired(boolean force)
+            throws HttpResponseException, IOException, StorageQueryException {
         if (!force && !this.isLicenseKeyPresent) {
             return;
         }
@@ -151,12 +156,17 @@ public class EEFeatureFlag {
             }
             this.lastServerSyncAttemptTime = System.currentTimeMillis();
 
-            Map<String, String> queryParams = new HashMap<>();
-            queryParams.put("licenseKey", licenseKey);
-            // TODO: add telemetry ID (which is optional in case of in mem db) + details of paid features usage stats
-            //  to calculate accurate billing (regardless of actually enabled features) + core version.
-            JsonObject licenseCheckResponse = HttpRequest.sendGETRequest("https://api.supertokens.io/0/st/license",
-                    queryParams, 10000, 10000, 0);
+            JsonObject json = new JsonObject();
+            KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
+            if (telemetryId != null) {
+                json.addProperty("telemetryId", telemetryId.value);
+            }
+            json.addProperty("licenseKey", licenseKey);
+            json.addProperty("superTokensVersion", this.coreVersion);
+            // TODO: add details of paid features usage stats to calculate accurate billing (regardless of actually
+            //  enabled features)
+            JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest("https://api.supertokens.io/0/st/license",
+                    json, 10000, 10000, 0);
             if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("OK")) {
                 JsonArray enabledFeaturesJSON = licenseCheckResponse.getAsJsonArray("enabled_features");
                 List<EE_FEATURES> enabledFeatures = new ArrayList<>();
