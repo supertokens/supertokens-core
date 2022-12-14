@@ -59,13 +59,6 @@ public class Main {
 
     // this is a special variable that will be set to true by TestingProcessManager
     public static boolean makeConsolePrintSilent = false;
-    // TODO: caching with redis or memcached
-    // TODO: in memory storage -> shared across many instances of supertokens
-    // TODO: have last forced change value in session as well -> allow for absolute changing of tokens
-    // TODO: allow for just one use access tokens & hard limit on lifetime of access/refresh tokens
-    // TODO: device fingerprinting
-    // TODO: commenting
-    // TODO: database password needs to be given in other ways as well
     private final Object mainThreadWakeUpMonitor = new Object();
     // will be unique every time the server has started.
     private String processId = UUID.randomUUID().toString();
@@ -140,7 +133,7 @@ public class Main {
         }
     }
 
-    private void init() throws IOException, StorageQueryException {
+    private void init() throws IOException {
 
         // Handle kill signal gracefully
         handleKillSignalForWhenItHappens();

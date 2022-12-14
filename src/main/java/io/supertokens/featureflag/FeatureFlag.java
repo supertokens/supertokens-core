@@ -21,6 +21,7 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.ee.EE_FEATURES;
 import io.supertokens.ee.httpRequest.HttpResponseException;
+import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -40,7 +41,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
     private final EEFeatureFlag eeFeatureFlag;
     private static URLClassLoader ucl = null;
 
-    private FeatureFlag(Main main, String eeFolderPath) throws MalformedURLException, StorageQueryException {
+    private FeatureFlag(Main main, String eeFolderPath) throws MalformedURLException {
         File loc = new File(eeFolderPath);
         EEFeatureFlag eeLayerTemp = null;
 
@@ -68,7 +69,12 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
 
         if (eeLayerTemp != null) {
             this.eeFeatureFlag = eeLayerTemp;
-            this.eeFeatureFlag.constructor(StorageLayer.getStorage(main), Version.getVersion(main).getCoreVersion());
+            try {
+                this.eeFeatureFlag.constructor(StorageLayer.getStorage(main),
+                        Version.getVersion(main).getCoreVersion());
+            } catch (StorageQueryException e) {
+                throw new QuitProgramException(e);
+            }
         } else {
             Logging.info(main, "Missing ee folder", true);
             eeFeatureFlag = null;
@@ -79,7 +85,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
         return (FeatureFlag) main.getResourceDistributor().getResource(RESOURCE_KEY);
     }
 
-    public static void init(Main main, String eeFolderPath) throws MalformedURLException, StorageQueryException {
+    public static void init(Main main, String eeFolderPath) throws MalformedURLException {
         if (getInstance(main) != null) {
             return;
         }
