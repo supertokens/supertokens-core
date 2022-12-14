@@ -20,11 +20,14 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.ee.EE_FEATURES;
+import io.supertokens.ee.httpRequest.HttpResponseException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -89,5 +92,12 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
             return new EE_FEATURES[]{};
         }
         return this.eeFeatureFlag.getEnabledFeatures();
+    }
+
+    public void forceSyncWithServer() throws StorageQueryException, HttpResponseException, IOException {
+        if (this.eeFeatureFlag == null) {
+            return;
+        }
+        this.eeFeatureFlag.forceSyncWithServer();
     }
 }

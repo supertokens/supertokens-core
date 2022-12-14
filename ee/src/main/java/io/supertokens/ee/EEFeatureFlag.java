@@ -133,7 +133,6 @@ public class EEFeatureFlag {
     }
 
     public void forceSyncWithServer() throws HttpResponseException, IOException, StorageQueryException {
-        // TODO: call this in a cronjob once a day.
         // TODO: expose this as an API from the core as well.
         this.syncWithSuperTokensServerIfRequired(true);
     }
