@@ -95,6 +95,9 @@ public class EEFeatureFlag {
             this.forceSyncWithServer();
         } catch (HttpResponseException | IOException ignored) {
             // server request failed. we ignore for now as later on it will sync up anyway.
+        } catch (InvalidLicenseKeyException ignored) {
+            // the license key that was in the db was invalid. If this error is thrown,
+            // it means that the key was removed from the db anyway.. so we can just ignore here.
         }
         // any other exception (like db related errors) will result in core not starting
     }
@@ -120,24 +123,27 @@ public class EEFeatureFlag {
     }
 
     public void removeLicenseKeyAndSyncFeatures() throws HttpResponseException, IOException, StorageQueryException {
-        // TODO: expose this as an API
         this.removeLicenseKeyFromDb();
-        this.forceSyncWithServer();
+        try {
+            this.forceSyncWithServer();
+        } catch (InvalidLicenseKeyException ignored) {
+            // should never come here, because we are removing the license key.
+        }
     }
 
     public void setLicenseKeyAndSyncFeatures(String key)
-            throws HttpResponseException, IOException, StorageQueryException {
+            throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
         this.setLicenseKeyInDb(key);
         this.forceSyncWithServer();
     }
 
-    public void forceSyncWithServer() throws HttpResponseException, IOException, StorageQueryException {
-        // TODO: expose this as an API from the core as well.
+    public void forceSyncWithServer()
+            throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
         this.syncWithSuperTokensServerIfRequired(true);
     }
 
     private void syncWithSuperTokensServerIfRequired(boolean force)
-            throws HttpResponseException, IOException, StorageQueryException {
+            throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
         if (!force && !this.isLicenseKeyPresent) {
             return;
         }
@@ -162,6 +168,7 @@ public class EEFeatureFlag {
             } catch (InvalidLicenseKeyException e) {
                 // TODO: logging..
                 this.removeLicenseKeyAndSyncFeatures();
+                throw e;
             }
         }
     }
@@ -230,11 +237,11 @@ public class EEFeatureFlag {
         // TODO: save in db
     }
 
-    private String getLicenseKeyFromDb() throws NoLicenseKeyFoundException {
+    public String getLicenseKeyFromDb() throws NoLicenseKeyFoundException, StorageQueryException {
         return ""; // TODO: query from db
     }
 
-    private static class NoLicenseKeyFoundException extends Exception {
+    public static class NoLicenseKeyFoundException extends Exception {
 
         public NoLicenseKeyFoundException() {
         }
@@ -246,7 +253,7 @@ public class EEFeatureFlag {
         }
     }
 
-    private static class InvalidLicenseKeyException extends Exception {
+    public static class InvalidLicenseKeyException extends Exception {
         public InvalidLicenseKeyException() {
 
         }

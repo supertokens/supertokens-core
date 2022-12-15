@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.core;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.ee.httpRequest.HttpResponseException;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -47,10 +48,43 @@ public class LicenseKeyAPI extends WebserverAPI {
         try {
             boolean success = FeatureFlag.getInstance(main).setLicenseKeyAndSyncFeatures(licenseKey);
             JsonObject result = new JsonObject();
-            result.addProperty("success", success);
+            result.addProperty("status", success ? "OK" : "MISSING_EE_FOLDER_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | HttpResponseException e) {
             throw new ServletException(e);
+        } catch (EEFeatureFlag.InvalidLicenseKeyException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "INVALID_LICENSE_KEY_ERROR");
+            super.sendJsonResponse(200, result, resp);
+        }
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        try {
+            FeatureFlag.getInstance(main).removeLicenseKeyAndSyncFeatures();
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "OK");
+            super.sendJsonResponse(200, result, resp);
+        } catch (StorageQueryException | HttpResponseException e) {
+            throw new ServletException(e);
+        }
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        try {
+            String licenseKey = FeatureFlag.getInstance(main).getLicenseKey();
+            JsonObject result = new JsonObject();
+            result.addProperty("licenseKey", licenseKey);
+            result.addProperty("status", "OK");
+            super.sendJsonResponse(200, result, resp);
+        } catch (StorageQueryException e) {
+            throw new ServletException(e);
+        } catch (EEFeatureFlag.NoLicenseKeyFoundException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "NO_LICENSE_KEY_FOUND_ERROR");
+            super.sendJsonResponse(200, result, resp);
         }
     }
 }

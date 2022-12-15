@@ -100,7 +100,8 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
         return this.eeFeatureFlag.getEnabledFeatures();
     }
 
-    public void forceSyncWithServer() throws StorageQueryException, HttpResponseException, IOException {
+    public void forceSyncWithServer()
+            throws StorageQueryException, HttpResponseException, IOException, EEFeatureFlag.InvalidLicenseKeyException {
         if (this.eeFeatureFlag == null) {
             return;
         }
@@ -108,11 +109,25 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
     }
 
     public boolean setLicenseKeyAndSyncFeatures(String licenseKey)
-            throws StorageQueryException, HttpResponseException, IOException {
+            throws StorageQueryException, HttpResponseException, IOException, EEFeatureFlag.InvalidLicenseKeyException {
         if (this.eeFeatureFlag == null) {
             return false;
         }
         this.eeFeatureFlag.setLicenseKeyAndSyncFeatures(licenseKey);
         return true;
+    }
+
+    public void removeLicenseKeyAndSyncFeatures() throws StorageQueryException, HttpResponseException, IOException {
+        if (this.eeFeatureFlag == null) {
+            return;
+        }
+        this.eeFeatureFlag.removeLicenseKeyAndSyncFeatures();
+    }
+
+    public String getLicenseKey() throws EEFeatureFlag.NoLicenseKeyFoundException, StorageQueryException {
+        if (this.eeFeatureFlag == null) {
+            throw new EEFeatureFlag.NoLicenseKeyFoundException();
+        }
+        return this.eeFeatureFlag.getLicenseKeyFromDb();
     }
 }
