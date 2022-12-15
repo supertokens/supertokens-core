@@ -87,10 +87,12 @@ public class EEFeatureFlag {
 
     private Storage storage;
     private String coreVersion;
+    private Logging logger;
 
-    public void constructor(Storage storage, String coreVersion) throws StorageQueryException {
+    public void constructor(Storage storage, String coreVersion, Logging logger) throws StorageQueryException {
         this.coreVersion = coreVersion;
         this.storage = storage;
+        this.logger = logger;
         try {
             this.forceSyncWithServer();
         } catch (HttpResponseException | IOException ignored) {

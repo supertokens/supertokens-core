@@ -71,7 +71,17 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
             this.eeFeatureFlag = eeLayerTemp;
             try {
                 this.eeFeatureFlag.constructor(StorageLayer.getStorage(main),
-                        Version.getVersion(main).getCoreVersion());
+                        Version.getVersion(main).getCoreVersion(), new io.supertokens.ee.Logging() {
+                            @Override
+                            public void info(String msg, boolean toConsoleAsWell) {
+                                Logging.info(main, msg, toConsoleAsWell);
+                            }
+
+                            @Override
+                            public void debug(String msg) {
+                                Logging.debug(main, msg);
+                            }
+                        });
             } catch (StorageQueryException e) {
                 throw new QuitProgramException(e);
             }
