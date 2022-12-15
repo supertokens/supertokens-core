@@ -183,7 +183,7 @@ public class EEFeatureFlag {
     }
 
     private boolean doesLicenseKeyRequireServerQuery(String licenseKey) {
-        return licenseKey.split("\\.").length == 3;
+        return licenseKey.split("\\.").length != 3;
     }
 
     private EE_FEATURES[] decodeLicenseKeyToGetFeatures(String licenseKey) throws InvalidLicenseKeyException {
