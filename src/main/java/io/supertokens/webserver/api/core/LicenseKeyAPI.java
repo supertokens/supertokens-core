@@ -29,9 +29,9 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-public class LoadLicenseKeyAPI extends WebserverAPI {
+public class LicenseKeyAPI extends WebserverAPI {
 
-    public LoadLicenseKeyAPI(Main main) {
+    public LicenseKeyAPI(Main main) {
         super(main, "");
     }
 
