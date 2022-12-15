@@ -81,6 +81,13 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
                             public void debug(String msg) {
                                 Logging.debug(main, msg);
                             }
+
+                            @Override
+                            public void error(String message, boolean toConsoleAsWell, Exception e) {
+                                Logging.error(main, message, toConsoleAsWell, e);
+                            }
+
+
                         });
             } catch (StorageQueryException e) {
                 throw new QuitProgramException(e);
@@ -115,7 +122,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
         if (this.eeFeatureFlag == null) {
             return;
         }
-        this.eeFeatureFlag.forceSyncWithServer();
+        this.eeFeatureFlag.forceSyncFeatureFlagWithLicenseKey();
     }
 
     public boolean setLicenseKeyAndSyncFeatures(String licenseKey)

@@ -77,7 +77,7 @@ public class EEFeatureFlag {
     private static final long INTERVAL_BETWEEN_SERVER_SYNC = (long) 1000 * 3600 * 24; // 1 day.
     private static final long INTERVAL_BETWEEN_DB_READS = (long) 1000 * 3600 * 4; // 4 hour.
 
-    private long lastServerSyncAttemptTime = -1;
+    private long lastSyncAttemptTime = -1;
     public static final String TELEMETRY_ID_DB_KEY = "TELEMETRY_ID";
 
     private Boolean isLicenseKeyPresent = null;
@@ -94,8 +94,9 @@ public class EEFeatureFlag {
         this.storage = storage;
         this.logger = logger;
         try {
-            this.forceSyncWithServer();
-        } catch (HttpResponseException | IOException ignored) {
+            this.forceSyncFeatureFlagWithLicenseKey();
+        } catch (HttpResponseException | IOException e) {
+            this.logger.error("API Error during constructor sync", false, e);
             // server request failed. we ignore for now as later on it will sync up anyway.
         } catch (InvalidLicenseKeyException ignored) {
             // the license key that was in the db was invalid. If this error is thrown,
@@ -109,8 +110,9 @@ public class EEFeatureFlag {
             return new EE_FEATURES[]{};
         }
         try {
-            this.syncWithSuperTokensServerIfRequired(false);
-        } catch (Throwable ignored) {
+            this.syncFeatureFlagWithLicenseKeyIfRequired(false);
+        } catch (Exception e) {
+            this.logger.error("Error during getEnabledFeatures", false, e);
             // we catch all errors so that this does not affect the functioning of the core.
         }
 
@@ -125,7 +127,7 @@ public class EEFeatureFlag {
     public void removeLicenseKeyAndSyncFeatures() throws HttpResponseException, IOException, StorageQueryException {
         this.removeLicenseKeyFromDb();
         try {
-            this.forceSyncWithServer();
+            this.forceSyncFeatureFlagWithLicenseKey();
         } catch (InvalidLicenseKeyException ignored) {
             // should never come here, because we are removing the license key.
         }
@@ -134,21 +136,24 @@ public class EEFeatureFlag {
     public void setLicenseKeyAndSyncFeatures(String key)
             throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
         this.setLicenseKeyInDb(key);
-        this.forceSyncWithServer();
+        this.forceSyncFeatureFlagWithLicenseKey();
     }
 
-    public void forceSyncWithServer()
+    public void forceSyncFeatureFlagWithLicenseKey()
             throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
-        this.syncWithSuperTokensServerIfRequired(true);
+        this.syncFeatureFlagWithLicenseKeyIfRequired(true);
     }
 
-    private void syncWithSuperTokensServerIfRequired(boolean force)
+    private void syncFeatureFlagWithLicenseKeyIfRequired(boolean force)
             throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
+        this.logger.debug("Syncing feature flag with license key with force boolean as: " + force);
         if (!force && !this.isLicenseKeyPresent) {
+            this.logger.debug("Exiting sync function since no license key is present");
             return;
         }
-        if (force || this.lastServerSyncAttemptTime == -1
-                || ((System.currentTimeMillis() - lastServerSyncAttemptTime) > INTERVAL_BETWEEN_SERVER_SYNC)) {
+        if (force || this.lastSyncAttemptTime == -1
+                || ((System.currentTimeMillis() - lastSyncAttemptTime) > INTERVAL_BETWEEN_SERVER_SYNC)) {
+            this.logger.debug("Starting feature flag sync");
             String licenseKey = "";
             try {
                 licenseKey = this.getLicenseKeyFromDb();
@@ -158,7 +163,7 @@ public class EEFeatureFlag {
                 this.setEnabledEEFeaturesInDb(new EE_FEATURES[]{});
                 return;
             }
-            this.lastServerSyncAttemptTime = System.currentTimeMillis();
+            this.lastSyncAttemptTime = System.currentTimeMillis();
             try {
                 if (doesLicenseKeyRequireServerQuery(licenseKey)) {
                     this.setEnabledEEFeaturesInDb(doServerCall(licenseKey));
@@ -166,7 +171,6 @@ public class EEFeatureFlag {
                     this.setEnabledEEFeaturesInDb(decodeLicenseKeyToGetFeatures(licenseKey));
                 }
             } catch (InvalidLicenseKeyException e) {
-                // TODO: logging..
                 this.removeLicenseKeyAndSyncFeatures();
                 throw e;
             }
@@ -178,12 +182,19 @@ public class EEFeatureFlag {
     }
 
     private EE_FEATURES[] decodeLicenseKeyToGetFeatures(String licenseKey) throws InvalidLicenseKeyException {
-        // TODO:
-        throw new InvalidLicenseKeyException();
+        this.logger.debug("Decoding JWT license key");
+        try {
+            // TODO:
+            throw new InvalidLicenseKeyException();
+        } catch (InvalidLicenseKeyException e) {
+            this.logger.debug("Invalid license key: " + licenseKey);
+            throw e;
+        }
     }
 
     private EE_FEATURES[] doServerCall(String licenseKey)
             throws StorageQueryException, HttpResponseException, IOException, InvalidLicenseKeyException {
+        this.logger.debug("Making API call to server with licenseKey: " + licenseKey);
         JsonObject json = new JsonObject();
         KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
         if (telemetryId != null) {
@@ -197,6 +208,7 @@ public class EEFeatureFlag {
         JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest("https://api.supertokens.io/0/st/license",
                 json, 10000, 10000, 0);
         if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("OK")) {
+            this.logger.debug("API returned OK");
             JsonArray enabledFeaturesJSON = licenseCheckResponse.getAsJsonArray("enabled_features");
             List<EE_FEATURES> enabledFeatures = new ArrayList<>();
             enabledFeaturesJSON.forEach(jsonElement -> {
@@ -208,13 +220,14 @@ public class EEFeatureFlag {
             });
             return enabledFeatures.toArray(EE_FEATURES[]::new);
         } else if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("INVALID_LICENSE_KEY")) {
-            // TODO: logging here and in other places.
+            this.logger.debug("Invalid license key: " + licenseKey);
             throw new InvalidLicenseKeyException();
         }
         throw new RuntimeException("Should never come here");
     }
 
     private void setEnabledEEFeaturesInDb(EE_FEATURES[] features) {
+        this.logger.debug("Saving new feature flag in database");
         // TODO: save in db - should overwrite all the current content.
         this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
         this.enabledFeaturesFromDb = features;
@@ -222,24 +235,46 @@ public class EEFeatureFlag {
 
     private EE_FEATURES[] getEnabledEEFeaturesFromDbOrCache()
             throws EnabledFeaturesNotSetInDbException, StorageQueryException {
-        if (this.enabledFeaturesValueReadFromDbTime == -1
-                || (System.currentTimeMillis() - this.enabledFeaturesValueReadFromDbTime > INTERVAL_BETWEEN_DB_READS)) {
-            this.enabledFeaturesFromDb = new EE_FEATURES[]{}; // TODO: read from db
-            this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
+        try {
+            if (this.enabledFeaturesValueReadFromDbTime == -1
+                    || (System.currentTimeMillis() - this.enabledFeaturesValueReadFromDbTime >
+                    INTERVAL_BETWEEN_DB_READS)) {
+                this.logger.debug("Reading feature flag from database");
+                this.enabledFeaturesFromDb = new EE_FEATURES[]{}; // TODO: read from db
+                this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
+
+                throw new EnabledFeaturesNotSetInDbException();
+            } else {
+                this.logger.debug("Returning feature flag from cache");
+            }
+            return this.enabledFeaturesFromDb;
+        } catch (EnabledFeaturesNotSetInDbException e) {
+            this.logger.debug("No feature flag set in db");
+            throw e;
         }
-        return this.enabledFeaturesFromDb;
     }
 
     private void setLicenseKeyInDb(String key) {
+        this.logger.debug("Setting license key in db: " + key);
         // TODO: save in db
     }
 
     private void removeLicenseKeyFromDb() {
+        this.logger.debug("Removing license key from db");
         // TODO: save in db
     }
 
     public String getLicenseKeyFromDb() throws NoLicenseKeyFoundException, StorageQueryException {
-        return ""; // TODO: query from db
+        this.logger.debug("Attempting to fetch license key from db");
+        try {
+            String key = "";
+
+            this.logger.debug("Fetched license key from db: " + key);
+            throw new NoLicenseKeyFoundException();
+        } catch (NoLicenseKeyFoundException e) {
+            this.logger.debug("No license key found in db");
+            throw e;
+        }
     }
 
     public static class NoLicenseKeyFoundException extends Exception {
