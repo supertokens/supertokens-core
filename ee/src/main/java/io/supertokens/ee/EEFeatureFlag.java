@@ -36,7 +36,7 @@ import java.util.List;
  *      - remove license key called -> Not applicable since no license key present
  *      - on setting license key -> license key will be set in db, but enabled features will not be -> results in API
  *  error. -> calling getEnabledFeatures will lead to returning the older enabled features from the db, or if nothing
- *  existed, then all features.
+ *  existed, then no features.
  *
  * 2) License key in db
  *  - good case:
@@ -70,7 +70,7 @@ import java.util.List;
  *      - in cronjob -> call API -> fail -> cronjob ignores errors
  *      - remove license key called -> cleared from db, no API called, enabled features set to empty in db and in memory
  *      - on setting license key -> key set in db, API call failed resulting in API error -> calling
- * getEnabledFeatures will return the older enabled features from the db, or if nothing existed, then all features.
+ * getEnabledFeatures will return the older enabled features from the db, or if nothing existed, then no features.
  * */
 
 public class EEFeatureFlag {
@@ -102,8 +102,7 @@ public class EEFeatureFlag {
         // any other exception (like db related errors) will result in core not starting
     }
 
-    public EE_FEATURES[] getEnabledFeatures() {
-        // TODO: expose this in API as well
+    public EE_FEATURES[] getEnabledFeatures() throws StorageQueryException {
         if (!this.isLicenseKeyPresent) {
             return new EE_FEATURES[]{};
         }
@@ -117,8 +116,7 @@ public class EEFeatureFlag {
             return this.getEnabledEEFeaturesFromDbOrCache();
         } catch (EnabledFeaturesNotSetInDbException e) {
             // Never synced with SuperTokens for some reason.
-            // We still let the user try all the features.
-            return EE_FEATURES.values(); // returns all ENUM values.
+            return new EE_FEATURES[]{};
         }
     }
 
@@ -220,7 +218,8 @@ public class EEFeatureFlag {
         this.enabledFeaturesFromDb = features;
     }
 
-    private EE_FEATURES[] getEnabledEEFeaturesFromDbOrCache() throws EnabledFeaturesNotSetInDbException {
+    private EE_FEATURES[] getEnabledEEFeaturesFromDbOrCache()
+            throws EnabledFeaturesNotSetInDbException, StorageQueryException {
         if (this.enabledFeaturesValueReadFromDbTime == -1
                 || (System.currentTimeMillis() - this.enabledFeaturesValueReadFromDbTime > INTERVAL_BETWEEN_DB_READS)) {
             this.enabledFeaturesFromDb = new EE_FEATURES[]{}; // TODO: read from db

@@ -93,7 +93,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
                 new FeatureFlag(main, eeFolderPath));
     }
 
-    public EE_FEATURES[] getEnabledFeatures() {
+    public EE_FEATURES[] getEnabledFeatures() throws StorageQueryException {
         if (this.eeFeatureFlag == null) {
             return new EE_FEATURES[]{};
         }
