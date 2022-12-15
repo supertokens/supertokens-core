@@ -173,10 +173,6 @@ public class Main {
         }
         StorageLayer.getStorage(this).initStorage();
 
-        // adding telemetry ID so that it can be used during license key sync and reused
-        // for telemetry API.
-        addTelemetryIdInDbIfNotPresent();
-
         // enable ee features if license key is provided.
         FeatureFlag.init(this, CLIOptions.get(this).getInstallationPath() + "ee/");
 
@@ -223,13 +219,6 @@ public class Main {
         // for start command
         Logging.info(this, "Started SuperTokens on " + Config.getConfig(this).getHost(this) + ":"
                 + Config.getConfig(this).getPort(this) + " with PID: " + ProcessHandle.current().pid(), true);
-    }
-
-    private void addTelemetryIdInDbIfNotPresent() {
-        try {
-            Telemetry.getTelemetryId(this);
-        } catch (Throwable ignored) {
-        }
     }
 
     @TestOnly

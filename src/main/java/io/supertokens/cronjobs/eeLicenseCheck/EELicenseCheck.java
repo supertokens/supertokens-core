@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.featureflag.FeatureFlag;
 
 public class EELicenseCheck extends CronTask {
@@ -51,11 +52,12 @@ public class EELicenseCheck extends CronTask {
                 return interval;
             }
         }
-        return (24 * 3600); // once a day.
+        return EEFeatureFlag.INTERVAL_BETWEEN_SERVER_SYNC;
     }
 
     @Override
     public int getInitialWaitTimeSeconds() {
-        return (24 * 3600); // We delay by one day cause we attempt a sync on core startup anyway.
+        return EEFeatureFlag.INTERVAL_BETWEEN_SERVER_SYNC; // We delay by one day cause we attempt a sync on core
+        // startup anyway.
     }
 }

@@ -18,11 +18,13 @@ package io.supertokens.featureflag;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.ee.EE_FEATURES;
 import io.supertokens.ee.httpRequest.HttpResponseException;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
@@ -86,8 +88,9 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
                             public void error(String message, boolean toConsoleAsWell, Exception e) {
                                 Logging.error(main, message, toConsoleAsWell, e);
                             }
-
-
+                        }, () -> {
+                            KeyValueInfo info = Telemetry.getTelemetryId(main);
+                            return info == null ? null : info.value;
                         });
             } catch (StorageQueryException e) {
                 throw new QuitProgramException(e);

@@ -4,7 +4,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ee.httpRequest.HttpRequest;
 import io.supertokens.ee.httpRequest.HttpResponseException;
-import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 
@@ -74,11 +73,10 @@ import java.util.List;
  * */
 
 public class EEFeatureFlag {
-    private static final long INTERVAL_BETWEEN_SERVER_SYNC = (long) 1000 * 3600 * 24; // 1 day.
+    public static final int INTERVAL_BETWEEN_SERVER_SYNC = 1000 * 3600 * 24; // 1 day.
     private static final long INTERVAL_BETWEEN_DB_READS = (long) 1000 * 3600 * 4; // 4 hour.
 
     private long lastSyncAttemptTime = -1;
-    public static final String TELEMETRY_ID_DB_KEY = "TELEMETRY_ID";
 
     private Boolean isLicenseKeyPresent = null;
 
@@ -88,11 +86,18 @@ public class EEFeatureFlag {
     private Storage storage;
     private String coreVersion;
     private Logging logger;
+    private Telemetry getTelemetryId;
 
-    public void constructor(Storage storage, String coreVersion, Logging logger) throws StorageQueryException {
+    public interface Telemetry {
+        String get() throws StorageQueryException;
+    }
+
+    public void constructor(Storage storage, String coreVersion, Logging logger,
+                            Telemetry getTelemetryId) throws StorageQueryException {
         this.coreVersion = coreVersion;
         this.storage = storage;
         this.logger = logger;
+        this.getTelemetryId = getTelemetryId;
         try {
             this.forceSyncFeatureFlagWithLicenseKey();
         } catch (HttpResponseException | IOException e) {
@@ -196,10 +201,10 @@ public class EEFeatureFlag {
             throws StorageQueryException, HttpResponseException, IOException, InvalidLicenseKeyException {
         this.logger.debug("Making API call to server with licenseKey: " + licenseKey);
         JsonObject json = new JsonObject();
-        KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
+        String telemetryId = this.getTelemetryId.get();
         if (telemetryId != null) {
             // this can be null if we are using in mem db right now.
-            json.addProperty("telemetryId", telemetryId.value);
+            json.addProperty("telemetryId", telemetryId);
         }
         json.addProperty("licenseKey", licenseKey);
         json.addProperty("superTokensVersion", this.coreVersion);
