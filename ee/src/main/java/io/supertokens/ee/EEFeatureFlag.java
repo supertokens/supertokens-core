@@ -127,7 +127,6 @@ public class EEFeatureFlag {
 
     public void setLicenseKeyAndSyncFeatures(String key)
             throws HttpResponseException, IOException, StorageQueryException {
-        // TODO: expose this as an API
         this.setLicenseKeyInDb(key);
         this.forceSyncWithServer();
     }

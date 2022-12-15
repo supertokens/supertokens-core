@@ -106,4 +106,13 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
         }
         this.eeFeatureFlag.forceSyncWithServer();
     }
+
+    public boolean setLicenseKeyAndSyncFeatures(String licenseKey)
+            throws StorageQueryException, HttpResponseException, IOException {
+        if (this.eeFeatureFlag == null) {
+            return false;
+        }
+        this.eeFeatureFlag.setLicenseKeyAndSyncFeatures(licenseKey);
+        return true;
+    }
 }
