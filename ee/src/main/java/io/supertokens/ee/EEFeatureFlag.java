@@ -153,35 +153,58 @@ public class EEFeatureFlag {
                 return;
             }
             this.lastServerSyncAttemptTime = System.currentTimeMillis();
-
-            JsonObject json = new JsonObject();
-            KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
-            if (telemetryId != null) {
-                // this can be null if we are using in mem db right now.
-                json.addProperty("telemetryId", telemetryId.value);
-            }
-            json.addProperty("licenseKey", licenseKey);
-            json.addProperty("superTokensVersion", this.coreVersion);
-            // TODO: add details of paid features usage stats to calculate accurate billing (regardless of actually
-            //  enabled features)
-            JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest("https://api.supertokens.io/0/st/license",
-                    json, 10000, 10000, 0);
-            if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("OK")) {
-                JsonArray enabledFeaturesJSON = licenseCheckResponse.getAsJsonArray("enabled_features");
-                List<EE_FEATURES> enabledFeatures = new ArrayList<>();
-                enabledFeaturesJSON.forEach(jsonElement -> {
-                    // TODO: think about changes in features over versions of the core and APIs
-                    EE_FEATURES feature = EE_FEATURES.getEnumFromString(jsonElement.toString());
-                    if (feature != null) { // this check cause maybe the core is of an older version
-                        enabledFeatures.add(feature);
-                    }
-                });
-                this.setEnabledEEFeaturesInDb(enabledFeatures.toArray(EE_FEATURES[]::new));
-            } else if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("INVALID_LICENSE_KEY")) {
-                // TODO: logging here and in other places.
+            try {
+                if (doesLicenseKeyRequireServerQuery(licenseKey)) {
+                    this.setEnabledEEFeaturesInDb(doServerCall(licenseKey));
+                } else {
+                    this.setEnabledEEFeaturesInDb(decodeLicenseKeyToGetFeatures(licenseKey));
+                }
+            } catch (InvalidLicenseKeyException e) {
+                // TODO: logging..
                 this.removeLicenseKeyAndSyncFeatures();
             }
         }
+    }
+
+    private boolean doesLicenseKeyRequireServerQuery(String licenseKey) {
+        return licenseKey.split("\\.").length == 3;
+    }
+
+    private EE_FEATURES[] decodeLicenseKeyToGetFeatures(String licenseKey) throws InvalidLicenseKeyException {
+        // TODO:
+        throw new InvalidLicenseKeyException();
+    }
+
+    private EE_FEATURES[] doServerCall(String licenseKey)
+            throws StorageQueryException, HttpResponseException, IOException, InvalidLicenseKeyException {
+        JsonObject json = new JsonObject();
+        KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
+        if (telemetryId != null) {
+            // this can be null if we are using in mem db right now.
+            json.addProperty("telemetryId", telemetryId.value);
+        }
+        json.addProperty("licenseKey", licenseKey);
+        json.addProperty("superTokensVersion", this.coreVersion);
+        // TODO: add details of paid features usage stats to calculate accurate billing (regardless of actually
+        //  enabled features)
+        JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest("https://api.supertokens.io/0/st/license",
+                json, 10000, 10000, 0);
+        if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("OK")) {
+            JsonArray enabledFeaturesJSON = licenseCheckResponse.getAsJsonArray("enabled_features");
+            List<EE_FEATURES> enabledFeatures = new ArrayList<>();
+            enabledFeaturesJSON.forEach(jsonElement -> {
+                // TODO: think about changes in features over versions of the core and APIs
+                EE_FEATURES feature = EE_FEATURES.getEnumFromString(jsonElement.toString());
+                if (feature != null) { // this check cause maybe the core is of an older version
+                    enabledFeatures.add(feature);
+                }
+            });
+            return enabledFeatures.toArray(EE_FEATURES[]::new);
+        } else if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("INVALID_LICENSE_KEY")) {
+            // TODO: logging here and in other places.
+            throw new InvalidLicenseKeyException();
+        }
+        throw new RuntimeException("Should never come here");
     }
 
     private void setEnabledEEFeaturesInDb(EE_FEATURES[] features) {
@@ -223,15 +246,9 @@ public class EEFeatureFlag {
         }
     }
 
-    // TODO: Add a way to know which features are enabled to the backend SDK.
-}
+    private static class InvalidLicenseKeyException extends Exception {
+        public InvalidLicenseKeyException() {
 
-/*
- * TODO: Long term changes:
- *      - For people who want an air gaped system, we can issue license keys which are JWTs and the public
- *          key is stored in the core. The JWT payload contains the list of enabled features.
- *      - We want to log the license key that's being used so that if there is license key sharing,
- *          then we can see the logs and know. Users can't easily spoof this license key in logs cause
- *          we are the only ones who can generate the licese keys in the first place.
- *              - EDIT: this is no longer required cause the key will be in the db anyway.
- * */
+        }
+    }
+}
