@@ -115,6 +115,7 @@ public class EEFeatureFlag {
             return new EE_FEATURES[]{};
         }
         try {
+            // TODO: do we even need to do this here? The cronjob does a once per day sync anyway..
             this.syncFeatureFlagWithLicenseKeyIfRequired(false);
         } catch (Exception e) {
             this.logger.error("Error during getEnabledFeatures", false, e);
