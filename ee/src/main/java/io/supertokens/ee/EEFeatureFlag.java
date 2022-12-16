@@ -105,8 +105,6 @@ public class EEFeatureFlag {
     // works well enough anyway.
     private static final String LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE = "NOT_PRESENT";
 
-    private long lastSyncAttemptTime = -1;
-
     private Boolean isLicenseKeyPresent = null;
 
     private long enabledFeaturesValueReadFromDbTime = -1;
@@ -190,7 +188,6 @@ public class EEFeatureFlag {
             this.setEnabledEEFeaturesInDb(new EE_FEATURES[]{});
             return;
         }
-        this.lastSyncAttemptTime = System.currentTimeMillis();
         try {
             if (doesLicenseKeyRequireServerQuery(licenseKey)) {
                 this.setEnabledEEFeaturesInDb(doServerCall(licenseKey));
