@@ -44,9 +44,14 @@ public class LicenseKeyAPI extends WebserverAPI {
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-        String licenseKey = InputParser.parseStringOrThrowError(input, "licenseKey", false);
+        String licenseKey = InputParser.parseStringOrThrowError(input, "licenseKey", true);
         try {
-            boolean success = FeatureFlag.getInstance(main).setLicenseKeyAndSyncFeatures(licenseKey);
+            boolean success = false;
+            if (licenseKey != null) {
+                success = FeatureFlag.getInstance(main).setLicenseKeyAndSyncFeatures(licenseKey);
+            } else {
+                success = FeatureFlag.getInstance(main).forceSyncWithServer();
+            }
             JsonObject result = new JsonObject();
             result.addProperty("status", success ? "OK" : "MISSING_EE_FOLDER_ERROR");
             super.sendJsonResponse(200, result, resp);

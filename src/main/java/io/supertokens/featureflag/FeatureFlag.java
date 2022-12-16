@@ -16,6 +16,7 @@
 
 package io.supertokens.featureflag;
 
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.telemetry.Telemetry;
@@ -91,7 +92,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
                         }, () -> {
                             KeyValueInfo info = Telemetry.getTelemetryId(main);
                             return info == null ? null : info.value;
-                        });
+                        }, this::getPaidFeatureStats);
             } catch (StorageQueryException e) {
                 throw new QuitProgramException(e);
             }
@@ -99,6 +100,12 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
             Logging.info(main, "Missing ee folder", true);
             eeFeatureFlag = null;
         }
+    }
+
+    public JsonObject getPaidFeatureStats() throws StorageQueryException {
+        JsonObject result = new JsonObject();
+        // TODO:
+        return result;
     }
 
     public static FeatureFlag getInstance(Main main) {
@@ -120,12 +127,13 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
         return this.eeFeatureFlag.getEnabledFeatures();
     }
 
-    public void forceSyncWithServer()
+    public boolean forceSyncWithServer()
             throws StorageQueryException, HttpResponseException, IOException, EEFeatureFlag.InvalidLicenseKeyException {
         if (this.eeFeatureFlag == null) {
-            return;
+            return false;
         }
         this.eeFeatureFlag.forceSyncFeatureFlagWithLicenseKey();
+        return true;
     }
 
     public boolean setLicenseKeyAndSyncFeatures(String licenseKey)

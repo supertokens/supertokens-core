@@ -46,12 +46,14 @@ public class EEFeatureFlagAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
             EE_FEATURES[] features = FeatureFlag.getInstance(main).getEnabledFeatures();
+            JsonObject stats = FeatureFlag.getInstance(main).getPaidFeatureStats();
             JsonObject result = new JsonObject();
             JsonArray featuresJson = new JsonArray();
             Arrays.stream(features).forEach(ee_features -> {
                 featuresJson.add(new JsonPrimitive(ee_features.toString()));
             });
             result.add("features", featuresJson);
+            result.add("usageStats", stats);
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException e) {

@@ -87,17 +87,23 @@ public class EEFeatureFlag {
     private String coreVersion;
     private Logging logger;
     private Telemetry getTelemetryId;
+    private PaidFeatureStats paidFeatureStats;
 
     public interface Telemetry {
         String get() throws StorageQueryException;
     }
 
+    public interface PaidFeatureStats {
+        JsonObject get() throws StorageQueryException;
+    }
+
     public void constructor(Storage storage, String coreVersion, Logging logger,
-                            Telemetry getTelemetryId) throws StorageQueryException {
+                            Telemetry getTelemetryId, PaidFeatureStats paidFeatureStats) throws StorageQueryException {
         this.coreVersion = coreVersion;
         this.storage = storage;
         this.logger = logger;
         this.getTelemetryId = getTelemetryId;
+        this.paidFeatureStats = paidFeatureStats;
         try {
             this.forceSyncFeatureFlagWithLicenseKey();
         } catch (HttpResponseException | IOException e) {
@@ -209,8 +215,7 @@ public class EEFeatureFlag {
         }
         json.addProperty("licenseKey", licenseKey);
         json.addProperty("superTokensVersion", this.coreVersion);
-        // TODO: add details of paid features usage stats to calculate accurate billing (regardless of actually
-        //  enabled features)
+        json.add("paidFeatureUsageStats", this.paidFeatureStats.get());
         JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest("https://api.supertokens.io/0/st/license",
                 json, 10000, 10000, 0);
         if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("OK")) {
