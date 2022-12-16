@@ -1,5 +1,11 @@
 package io.supertokens.ee;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.JWTVerifier;
+import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
+import com.auth0.jwt.interfaces.RSAKeyProvider;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -11,8 +17,16 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 
 import java.io.IOException;
+import java.math.BigInteger;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
+import java.security.interfaces.RSAPrivateKey;
+import java.security.interfaces.RSAPublicKey;
+import java.security.spec.InvalidKeySpecException;
+import java.security.spec.RSAPublicKeySpec;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 /*
@@ -82,6 +96,9 @@ public class EEFeatureFlag {
 
     private static final String FEATURE_FLAG_KEY_IN_DB = "FEATURE_FLAG";
     private static final String LICENSE_KEY_IN_DB = "LICENSE_KEY";
+
+    private static final String JWT_PUBLIC_KEY_N = "TODO";
+    private static final String JWT_PUBLIC_KEY_E = "TODO";
 
     // the license key in the db will be set to this if we are explicitly removing
     // it because we do not have a remove key value function in the storage yet, and this
@@ -201,11 +218,50 @@ public class EEFeatureFlag {
     private EE_FEATURES[] decodeLicenseKeyToGetFeatures(String licenseKey) throws InvalidLicenseKeyException {
         this.logger.debug("Decoding JWT license key");
         try {
-            // TODO: Verify JWT and check expiry if it exists. If it doesn't exist, then assume infinite lifetime
-            throw new InvalidLicenseKeyException();
-        } catch (InvalidLicenseKeyException e) {
+            BigInteger modulus = new BigInteger(1, Base64.getUrlDecoder().decode(JWT_PUBLIC_KEY_N));
+            BigInteger exponent = new BigInteger(1, Base64.getUrlDecoder().decode(JWT_PUBLIC_KEY_E));
+
+            RSAPublicKey publicKey = (RSAPublicKey) KeyFactory.getInstance("RSA")
+                    .generatePublic(new RSAPublicKeySpec(modulus, exponent));
+            Algorithm verificationAlgorithm = Algorithm.RSA256(new RSAKeyProvider() {
+                @Override
+                public RSAPublicKey getPublicKeyById(String keyId) {
+                    return publicKey;
+                }
+
+                @Override
+                public RSAPrivateKey getPrivateKey() {
+                    return null;
+                }
+
+                @Override
+                public String getPrivateKeyId() {
+                    return null;
+                }
+            });
+
+            JWTVerifier verifier = JWT.require(verificationAlgorithm).ignoreIssuedAt().build();
+            // TODO: add test for making sure JWT validation is correct:
+            //  - should check for expiry in the claim is present in it
+            //  - if exp is not in the claim, then should assume infinite lifetime
+            DecodedJWT decoded = verifier.verify(licenseKey);
+            String enabled_features = decoded.getClaim("enabled_features").asString();
+            JsonArray enabledFeaturesJSON = new JsonParser().parse(enabled_features).getAsJsonArray();
+            List<EE_FEATURES> enabledFeatures = new ArrayList<>();
+            enabledFeaturesJSON.forEach(jsonElement -> {
+                EE_FEATURES feature = EE_FEATURES.getEnumFromString(jsonElement.toString());
+                if (feature != null) { // this check cause maybe the core is of an older version
+                    enabledFeatures.add(feature);
+                }
+            });
+            return enabledFeatures.toArray(EE_FEATURES[]::new);
+        } catch (JWTVerificationException e) {
             this.logger.debug("Invalid license key: " + licenseKey);
-            throw e;
+            this.logger.error("Invalid license key", false, e);
+            throw new InvalidLicenseKeyException(e);
+        } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
+            // should never come here...
+            throw new RuntimeException(e);
         }
     }
 
@@ -243,9 +299,9 @@ public class EEFeatureFlag {
     }
 
     private void setEnabledEEFeaturesInDb(EE_FEATURES[] features) throws StorageQueryException {
-        this.logger.debug("Saving new feature flag in database");
         JsonArray json = new JsonArray();
         Arrays.stream(features).forEach(ee_features -> json.add(new JsonPrimitive(ee_features.toString())));
+        this.logger.debug("Saving new feature flag in database: " + json.getAsString());
         storage.setKeyValue(FEATURE_FLAG_KEY_IN_DB, new KeyValueInfo(json.getAsString()));
         this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
         this.enabledFeaturesFromDb = features;
@@ -319,6 +375,10 @@ public class EEFeatureFlag {
     public static class InvalidLicenseKeyException extends Exception {
         public InvalidLicenseKeyException() {
 
+        }
+
+        public InvalidLicenseKeyException(Exception e) {
+            super(e);
         }
     }
 }

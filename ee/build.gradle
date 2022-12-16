@@ -19,6 +19,8 @@ dependencies {
 
     compileOnly project(":supertokens-plugin-interface")
     testImplementation project(":supertokens-plugin-interface")
+
+    compileOnly 'com.auth0:java-jwt:4.0.0'
 }
 
 task copyJars(type: Copy) {
