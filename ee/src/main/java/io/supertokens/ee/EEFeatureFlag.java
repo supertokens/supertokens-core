@@ -175,39 +175,31 @@ public class EEFeatureFlag {
 
     public void forceSyncFeatureFlagWithLicenseKey()
             throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
-        this.syncFeatureFlagWithLicenseKeyIfRequired(true);
+        this.syncFeatureFlagWithLicenseKeyIfRequired();
     }
 
-    private void syncFeatureFlagWithLicenseKeyIfRequired(boolean force)
+    private void syncFeatureFlagWithLicenseKeyIfRequired()
             throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
-        this.logger.debug("Syncing feature flag with license key with force boolean as: " + force);
-        if (!force && !this.isLicenseKeyPresent) {
-            this.logger.debug("Exiting sync function since no license key is present");
+        this.logger.debug("Syncing feature flag with license key");
+        String licenseKey;
+        try {
+            licenseKey = this.getLicenseKeyFromDb();
+            this.isLicenseKeyPresent = true;
+        } catch (NoLicenseKeyFoundException ex) {
+            this.isLicenseKeyPresent = false;
+            this.setEnabledEEFeaturesInDb(new EE_FEATURES[]{});
             return;
         }
-        if (force || this.lastSyncAttemptTime == -1
-                || ((System.currentTimeMillis() - lastSyncAttemptTime) > INTERVAL_BETWEEN_SERVER_SYNC)) {
-            this.logger.debug("Starting feature flag sync");
-            String licenseKey;
-            try {
-                licenseKey = this.getLicenseKeyFromDb();
-                this.isLicenseKeyPresent = true;
-            } catch (NoLicenseKeyFoundException ex) {
-                this.isLicenseKeyPresent = false;
-                this.setEnabledEEFeaturesInDb(new EE_FEATURES[]{});
-                return;
+        this.lastSyncAttemptTime = System.currentTimeMillis();
+        try {
+            if (doesLicenseKeyRequireServerQuery(licenseKey)) {
+                this.setEnabledEEFeaturesInDb(doServerCall(licenseKey));
+            } else {
+                this.setEnabledEEFeaturesInDb(decodeLicenseKeyToGetFeatures(licenseKey));
             }
-            this.lastSyncAttemptTime = System.currentTimeMillis();
-            try {
-                if (doesLicenseKeyRequireServerQuery(licenseKey)) {
-                    this.setEnabledEEFeaturesInDb(doServerCall(licenseKey));
-                } else {
-                    this.setEnabledEEFeaturesInDb(decodeLicenseKeyToGetFeatures(licenseKey));
-                }
-            } catch (InvalidLicenseKeyException e) {
-                this.removeLicenseKeyAndSyncFeatures();
-                throw e;
-            }
+        } catch (InvalidLicenseKeyException e) {
+            this.removeLicenseKeyAndSyncFeatures();
+            throw e;
         }
     }
 
