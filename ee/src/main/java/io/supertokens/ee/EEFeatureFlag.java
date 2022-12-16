@@ -2,13 +2,17 @@ package io.supertokens.ee;
 
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonPrimitive;
 import io.supertokens.ee.httpRequest.HttpRequest;
 import io.supertokens.ee.httpRequest.HttpResponseException;
+import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 /*
@@ -76,6 +80,14 @@ public class EEFeatureFlag {
     public static final int INTERVAL_BETWEEN_SERVER_SYNC = 1000 * 3600 * 24; // 1 day.
     private static final long INTERVAL_BETWEEN_DB_READS = (long) 1000 * 3600 * 4; // 4 hour.
 
+    private static final String FEATURE_FLAG_KEY_IN_DB = "FEATURE_FLAG";
+    private static final String LICENSE_KEY_IN_DB = "LICENSE_KEY";
+
+    // the license key in the db will be set to this if we are explicitly removing
+    // it because we do not have a remove key value function in the storage yet, and this
+    // works well enough anyway.
+    private static final String LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE = "NOT_PRESENT";
+
     private long lastSyncAttemptTime = -1;
 
     private Boolean isLicenseKeyPresent = null;
@@ -120,13 +132,6 @@ public class EEFeatureFlag {
         if (!this.isLicenseKeyPresent) {
             return new EE_FEATURES[]{};
         }
-        try {
-            // TODO: do we even need to do this here? The cronjob does a once per day sync anyway..
-            this.syncFeatureFlagWithLicenseKeyIfRequired(false);
-        } catch (Exception e) {
-            this.logger.error("Error during getEnabledFeatures", false, e);
-            // we catch all errors so that this does not affect the functioning of the core.
-        }
 
         try {
             return this.getEnabledEEFeaturesFromDbOrCache();
@@ -166,7 +171,7 @@ public class EEFeatureFlag {
         if (force || this.lastSyncAttemptTime == -1
                 || ((System.currentTimeMillis() - lastSyncAttemptTime) > INTERVAL_BETWEEN_SERVER_SYNC)) {
             this.logger.debug("Starting feature flag sync");
-            String licenseKey = "";
+            String licenseKey;
             try {
                 licenseKey = this.getLicenseKeyFromDb();
                 this.isLicenseKeyPresent = true;
@@ -196,7 +201,7 @@ public class EEFeatureFlag {
     private EE_FEATURES[] decodeLicenseKeyToGetFeatures(String licenseKey) throws InvalidLicenseKeyException {
         this.logger.debug("Decoding JWT license key");
         try {
-            // TODO:
+            // TODO: Verify JWT and check expiry if it exists. If it doesn't exist, then assume infinite lifetime
             throw new InvalidLicenseKeyException();
         } catch (InvalidLicenseKeyException e) {
             this.logger.debug("Invalid license key: " + licenseKey);
@@ -237,9 +242,11 @@ public class EEFeatureFlag {
         throw new RuntimeException("Should never come here");
     }
 
-    private void setEnabledEEFeaturesInDb(EE_FEATURES[] features) {
+    private void setEnabledEEFeaturesInDb(EE_FEATURES[] features) throws StorageQueryException {
         this.logger.debug("Saving new feature flag in database");
-        // TODO: save in db - should overwrite all the current content.
+        JsonArray json = new JsonArray();
+        Arrays.stream(features).forEach(ee_features -> json.add(new JsonPrimitive(ee_features.toString())));
+        storage.setKeyValue(FEATURE_FLAG_KEY_IN_DB, new KeyValueInfo(json.getAsString()));
         this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
         this.enabledFeaturesFromDb = features;
     }
@@ -251,10 +258,17 @@ public class EEFeatureFlag {
                     || (System.currentTimeMillis() - this.enabledFeaturesValueReadFromDbTime >
                     INTERVAL_BETWEEN_DB_READS)) {
                 this.logger.debug("Reading feature flag from database");
-                this.enabledFeaturesFromDb = new EE_FEATURES[]{}; // TODO: read from db
+                KeyValueInfo keyValueInfo = storage.getKeyValue(FEATURE_FLAG_KEY_IN_DB);
+                if (keyValueInfo == null) {
+                    throw new EnabledFeaturesNotSetInDbException();
+                }
+                JsonArray featuresArrayJson = new JsonParser().parse(keyValueInfo.value).getAsJsonArray();
+                EE_FEATURES[] features = new EE_FEATURES[featuresArrayJson.size()];
+                for (int i = 0; i < featuresArrayJson.size(); i++) {
+                    features[i] = EE_FEATURES.valueOf(featuresArrayJson.get(i).getAsString());
+                }
+                this.enabledFeaturesFromDb = features;
                 this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
-
-                throw new EnabledFeaturesNotSetInDbException();
             } else {
                 this.logger.debug("Returning feature flag from cache");
             }
@@ -265,23 +279,25 @@ public class EEFeatureFlag {
         }
     }
 
-    private void setLicenseKeyInDb(String key) {
+    private void setLicenseKeyInDb(String key) throws StorageQueryException {
         this.logger.debug("Setting license key in db: " + key);
-        // TODO: save in db
+        storage.setKeyValue(LICENSE_KEY_IN_DB, new KeyValueInfo(key));
     }
 
-    private void removeLicenseKeyFromDb() {
+    private void removeLicenseKeyFromDb() throws StorageQueryException {
         this.logger.debug("Removing license key from db");
-        // TODO: save in db
+        storage.setKeyValue(LICENSE_KEY_IN_DB, new KeyValueInfo(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE));
     }
 
     public String getLicenseKeyFromDb() throws NoLicenseKeyFoundException, StorageQueryException {
         this.logger.debug("Attempting to fetch license key from db");
         try {
-            String key = "";
-            // TODO:....
-            this.logger.debug("Fetched license key from db: " + key);
-            throw new NoLicenseKeyFoundException();
+            KeyValueInfo info = storage.getKeyValue(LICENSE_KEY_IN_DB);
+            if (info == null || info.value.equals(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE)) {
+                throw new NoLicenseKeyFoundException();
+            }
+            this.logger.debug("Fetched license key from db: " + info.value);
+            return info.value;
         } catch (NoLicenseKeyFoundException e) {
             this.logger.debug("No license key found in db");
             throw e;
