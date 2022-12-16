@@ -290,8 +290,8 @@ public class EEFeatureFlag {
     private void setEnabledEEFeaturesInDb(EE_FEATURES[] features) throws StorageQueryException {
         JsonArray json = new JsonArray();
         Arrays.stream(features).forEach(ee_features -> json.add(new JsonPrimitive(ee_features.toString())));
-        this.logger.debug("Saving new feature flag in database: " + json.getAsString());
-        storage.setKeyValue(FEATURE_FLAG_KEY_IN_DB, new KeyValueInfo(json.getAsString()));
+        this.logger.debug("Saving new feature flag in database: " + json);
+        storage.setKeyValue(FEATURE_FLAG_KEY_IN_DB, new KeyValueInfo(json.toString()));
         this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
         this.enabledFeaturesFromDb = features;
     }
