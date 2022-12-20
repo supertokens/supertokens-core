@@ -38,6 +38,8 @@ import java.net.URLClassLoader;
 import java.util.Iterator;
 import java.util.ServiceLoader;
 
+import org.jetbrains.annotations.TestOnly;
+
 public class FeatureFlag extends ResourceDistributor.SingletonResource {
 
     private static final String RESOURCE_KEY = "io.supertokens.featureflag.FeatureFlag";
@@ -125,6 +127,11 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
             return new EE_FEATURES[]{};
         }
         return this.eeFeatureFlag.getEnabledFeatures();
+    }
+
+    @TestOnly
+    public Boolean isLicenseKeyPresent(){
+        return this.eeFeatureFlag.getIsLicenseKeyPresent();
     }
 
     public boolean forceSyncWithServer()

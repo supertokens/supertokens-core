@@ -125,7 +125,7 @@ public class EEFeatureFlag {
     }
 
     public void constructor(Storage storage, String coreVersion, Logging logger,
-                            Telemetry getTelemetryId, PaidFeatureStats paidFeatureStats) throws StorageQueryException {
+            Telemetry getTelemetryId, PaidFeatureStats paidFeatureStats) throws StorageQueryException {
         this.coreVersion = coreVersion;
         this.storage = storage;
         this.logger = logger;
@@ -138,21 +138,22 @@ public class EEFeatureFlag {
             // server request failed. we ignore for now as later on it will sync up anyway.
         } catch (InvalidLicenseKeyException ignored) {
             // the license key that was in the db was invalid. If this error is thrown,
-            // it means that the key was removed from the db anyway.. so we can just ignore here.
+            // it means that the key was removed from the db anyway.. so we can just ignore
+            // here.
         }
         // any other exception (like db related errors) will result in core not starting
     }
 
     public EE_FEATURES[] getEnabledFeatures() throws StorageQueryException {
         if (!this.isLicenseKeyPresent) {
-            return new EE_FEATURES[]{};
+            return new EE_FEATURES[] {};
         }
 
         try {
             return this.getEnabledEEFeaturesFromDbOrCache();
         } catch (EnabledFeaturesNotSetInDbException e) {
             // Never synced with SuperTokens for some reason.
-            return new EE_FEATURES[]{};
+            return new EE_FEATURES[] {};
         }
     }
 
@@ -176,6 +177,10 @@ public class EEFeatureFlag {
         this.syncFeatureFlagWithLicenseKeyIfRequired();
     }
 
+    public Boolean getIsLicenseKeyPresent() {
+        return isLicenseKeyPresent;
+    }
+
     private void syncFeatureFlagWithLicenseKeyIfRequired()
             throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
         this.logger.debug("Syncing feature flag with license key");
@@ -185,7 +190,7 @@ public class EEFeatureFlag {
             this.isLicenseKeyPresent = true;
         } catch (NoLicenseKeyFoundException ex) {
             this.isLicenseKeyPresent = false;
-            this.setEnabledEEFeaturesInDb(new EE_FEATURES[]{});
+            this.setEnabledEEFeaturesInDb(new EE_FEATURES[] {});
             return;
         }
         try {
@@ -231,8 +236,8 @@ public class EEFeatureFlag {
 
             JWTVerifier verifier = JWT.require(verificationAlgorithm).ignoreIssuedAt().build();
             // TODO: add test for making sure JWT validation is correct:
-            //  - should check for expiry in the claim is present in it
-            //  - if exp is not in the claim, then should assume infinite lifetime
+            // - should check for expiry in the claim is present in it
+            // - if exp is not in the claim, then should assume infinite lifetime
             DecodedJWT decoded = verifier.verify(licenseKey);
             String enabled_features = decoded.getClaim("enabled_features").asString();
             JsonArray enabledFeaturesJSON = new JsonParser().parse(enabled_features).getAsJsonArray();
@@ -300,8 +305,8 @@ public class EEFeatureFlag {
             throws EnabledFeaturesNotSetInDbException, StorageQueryException {
         try {
             if (this.enabledFeaturesValueReadFromDbTime == -1
-                    || (System.currentTimeMillis() - this.enabledFeaturesValueReadFromDbTime >
-                    INTERVAL_BETWEEN_DB_READS)) {
+                    || (System.currentTimeMillis()
+                            - this.enabledFeaturesValueReadFromDbTime > INTERVAL_BETWEEN_DB_READS)) {
                 this.logger.debug("Reading feature flag from database");
                 KeyValueInfo keyValueInfo = storage.getKeyValue(FEATURE_FLAG_KEY_IN_DB);
                 if (keyValueInfo == null) {
