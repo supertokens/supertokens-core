@@ -329,6 +329,10 @@ public class EEFeatureFlag {
         }
     }
 
+    public void setJWTPublicAndPrivateKeysForTesting(String publicKey, String privateKey){
+        
+    }
+
     private void setLicenseKeyInDb(String key) throws StorageQueryException {
         this.logger.debug("Setting license key in db: " + key);
         storage.setKeyValue(LICENSE_KEY_IN_DB, new KeyValueInfo(key));
