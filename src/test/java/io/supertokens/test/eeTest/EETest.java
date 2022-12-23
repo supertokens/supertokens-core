@@ -171,5 +171,35 @@ import static org.junit.Assert.assertNotNull;
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));        
      }
+
+     @Test
+     public void testDeletingLicenseKeyWhenItDoesNotExist() throws Exception{
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "", "http://localhost:3567/ee/license",
+                        null, 1000, 1000, null, Utils.getCdiVersion2_16ForTests(), "");
+        assertEquals("OK", response.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));   
+     }
+
+     @Test
+     public void testRetrievingLicenseKeyWhenItIsNotSet() throws Exception{
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/ee/license",
+                        null, 1000, 1000, null, Utils.getCdiVersion2_16ForTests(), "");
+        assertEquals("NO_LICENSE_KEY_FOUND_ERROR", response.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));   
+     }
  }
  
