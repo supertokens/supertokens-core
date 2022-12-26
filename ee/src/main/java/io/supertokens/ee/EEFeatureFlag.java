@@ -234,8 +234,8 @@ public class EEFeatureFlag {
             //  - should check for expiry in the claim is present in it
             //  - if exp is not in the claim, then should assume infinite lifetime
             DecodedJWT decoded = verifier.verify(licenseKey);
-            String enabled_features = decoded.getClaim("enabled_features").asString();
-            JsonArray enabledFeaturesJSON = new JsonParser().parse(enabled_features).getAsJsonArray();
+            String enabledFeaturesStr = decoded.getClaim("enabledFeatures").asString();
+            JsonArray enabledFeaturesJSON = new JsonParser().parse(enabledFeaturesStr).getAsJsonArray();
             List<EE_FEATURES> enabledFeatures = new ArrayList<>();
             enabledFeaturesJSON.forEach(jsonElement -> {
                 EE_FEATURES feature = EE_FEATURES.getEnumFromString(jsonElement.toString());
@@ -271,7 +271,7 @@ public class EEFeatureFlag {
                 json, 10000, 10000, 0);
         if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("OK")) {
             this.logger.debug("API returned OK");
-            JsonArray enabledFeaturesJSON = licenseCheckResponse.getAsJsonArray("enabled_features");
+            JsonArray enabledFeaturesJSON = licenseCheckResponse.getAsJsonArray("enabledFeatures");
             List<EE_FEATURES> enabledFeatures = new ArrayList<>();
             enabledFeaturesJSON.forEach(jsonElement -> {
                 // TODO: think about changes in features over versions of the core and APIs
