@@ -266,7 +266,8 @@ public class EEFeatureFlag {
         json.addProperty("licenseKey", licenseKey);
         json.addProperty("superTokensVersion", this.coreVersion);
         json.add("paidFeatureUsageStats", this.paidFeatureStats.get());
-        JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest("https://api.supertokens.io/0/st/license",
+        JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest(
+                "https://api.supertokens.io/0/st/license/check",
                 json, 10000, 10000, 0);
         if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("OK")) {
             this.logger.debug("API returned OK");
