@@ -20,6 +20,9 @@ dependencies {
     compileOnly project(":supertokens-plugin-interface")
     testImplementation project(":supertokens-plugin-interface")
 
+    compileOnly group: 'org.jetbrains', name: 'annotations', version: '13.0'
+    testImplementation group: 'org.jetbrains', name: 'annotations', version: '13.0'
+
     compileOnly 'com.auth0:java-jwt:4.0.0'
 }
 

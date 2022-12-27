@@ -15,6 +15,7 @@ import io.supertokens.ee.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -128,7 +129,7 @@ public class EEFeatureFlag {
     }
 
     public void constructor(Storage storage, String coreVersion, Logging logger,
-            Telemetry getTelemetryId, PaidFeatureStats paidFeatureStats) throws StorageQueryException {
+                            Telemetry getTelemetryId, PaidFeatureStats paidFeatureStats) throws StorageQueryException {
         this.coreVersion = coreVersion;
         this.storage = storage;
         this.logger = logger;
@@ -149,14 +150,14 @@ public class EEFeatureFlag {
 
     public EE_FEATURES[] getEnabledFeatures() throws StorageQueryException {
         if (!this.isLicenseKeyPresent) {
-            return new EE_FEATURES[] {};
+            return new EE_FEATURES[]{};
         }
 
         try {
             return this.getEnabledEEFeaturesFromDbOrCache();
         } catch (EnabledFeaturesNotSetInDbException e) {
             // Never synced with SuperTokens for some reason.
-            return new EE_FEATURES[] {};
+            return new EE_FEATURES[]{};
         }
     }
 
@@ -180,6 +181,7 @@ public class EEFeatureFlag {
         this.syncFeatureFlagWithLicenseKeyIfRequired();
     }
 
+    @TestOnly
     public Boolean getIsLicenseKeyPresent() {
         return isLicenseKeyPresent;
     }
@@ -193,7 +195,7 @@ public class EEFeatureFlag {
             this.isLicenseKeyPresent = true;
         } catch (NoLicenseKeyFoundException ex) {
             this.isLicenseKeyPresent = false;
-            this.setEnabledEEFeaturesInDb(new EE_FEATURES[] {});
+            this.setEnabledEEFeaturesInDb(new EE_FEATURES[]{});
             return;
         }
         try {
@@ -309,7 +311,7 @@ public class EEFeatureFlag {
         try {
             if (this.enabledFeaturesValueReadFromDbTime == -1
                     || (System.currentTimeMillis()
-                            - this.enabledFeaturesValueReadFromDbTime > INTERVAL_BETWEEN_DB_READS)) {
+                    - this.enabledFeaturesValueReadFromDbTime > INTERVAL_BETWEEN_DB_READS)) {
                 this.logger.debug("Reading feature flag from database");
                 KeyValueInfo keyValueInfo = storage.getKeyValue(FEATURE_FLAG_KEY_IN_DB);
                 if (keyValueInfo == null) {
@@ -330,10 +332,6 @@ public class EEFeatureFlag {
             this.logger.debug("No feature flag set in db");
             throw e;
         }
-    }
-
-    public void setJWTPublicAndPrivateKeysForTesting(String publicKey, String privateKey){
-        
     }
 
     private void setLicenseKeyInDb(String key) throws StorageQueryException {
