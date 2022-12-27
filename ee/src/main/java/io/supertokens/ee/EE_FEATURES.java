@@ -1,7 +1,7 @@
 package io.supertokens.ee;
 
 public enum EE_FEATURES {
-    ACCOUNT_LINKING("account_linking"), MULTI_TENANCY("multi_tenancy");
+    ACCOUNT_LINKING("account_linking"), MULTI_TENANCY("multi_tenancy"), TEST("test");
 
     private final String name;
 
