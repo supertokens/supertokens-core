@@ -97,8 +97,9 @@ public class EEFeatureFlag {
     private static final String FEATURE_FLAG_KEY_IN_DB = "FEATURE_FLAG";
     private static final String LICENSE_KEY_IN_DB = "LICENSE_KEY";
 
-    private static final String JWT_PUBLIC_KEY_N = "TODO";
-    private static final String JWT_PUBLIC_KEY_E = "TODO";
+    private static final String JWT_PUBLIC_KEY_N = "tsfELbMfKlgUiUn_J3HACejtOPShZbUUYV5_yImL1M9raRCr7tHXBmw" +
+            "-xNKKRHod4QpZMZWpfkB48aXEVfFQbnLh4qG4k9goo4_6WG4SlcyZQSiNhFcR5Xhf8udVrkKxeAZTAaP4sEW1an8_NeTgcl78cht_NaOcqJMb5WAb5NWYlAHy-glqvlycobCmlNCdKJloyXc6lXkIwD5dj8ukACiMAnSfihjpGjtdNhRaEYmuKuKYPrNeu8eiCIK2sorK73vrci8MXndoEYDY2jJgY6OC6fEpqsdBXrRa-nCEP4zYGzERxrf0nfBmxwXHpscNfZNEyTLgDpM24IwYiT4QtQ";
+    private static final String JWT_PUBLIC_KEY_E = "AQAB";
 
     // the license key in the db will be set to this if we are explicitly removing
     // it because we do not have a remove key value function in the storage yet, and this
