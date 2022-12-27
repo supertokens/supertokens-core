@@ -97,8 +97,11 @@ public class EEFeatureFlag {
     private static final String FEATURE_FLAG_KEY_IN_DB = "FEATURE_FLAG";
     private static final String LICENSE_KEY_IN_DB = "LICENSE_KEY";
 
-    private static final String JWT_PUBLIC_KEY_N = "TODO";
-    private static final String JWT_PUBLIC_KEY_E = "TODO";
+    private static final String JWT_PUBLIC_KEY_N = "yDzeKQFJMtc4" +
+            "-Z4BkLvlHVTEW8DEu31onyslJ2fg48hWYlesBkb2UTLT2t7dZw9CCmqtuyYxxHIQ3iy" +
+            "-TkEMKroZzQjnMNmapKNQ8H6bx5h5nGnp_xmHSF" +
+            "-4ajF5XWrdVaXi2PDY6cd9LdXNRW6AC6WeXew47Ou_xJt9HSY24bpMVFa2_YwTJVwu0Wq6smu0XaHsd2Q2fDKB_Q05hYCat4FZni897en9j3qwJyU0ajE7wUWADySlKIXwnmWKG85Bh7ZhyXHRjnHskylGOCDBUao-3FObTHpD99sKxpxDKbKy_RB6n_5P_plN_gX0d-X5i1otKiyKoNKc2rSSzDOOaw";
+    private static final String JWT_PUBLIC_KEY_E = "AQAB";
 
     // the license key in the db will be set to this if we are explicitly removing
     // it because we do not have a remove key value function in the storage yet, and this
@@ -239,8 +242,8 @@ public class EEFeatureFlag {
             // - should check for expiry in the claim is present in it
             // - if exp is not in the claim, then should assume infinite lifetime
             DecodedJWT decoded = verifier.verify(licenseKey);
-            String enabled_features = decoded.getClaim("enabled_features").asString();
-            JsonArray enabledFeaturesJSON = new JsonParser().parse(enabled_features).getAsJsonArray();
+            String enabledFeaturesStr = decoded.getClaim("enabledFeatures").asString();
+            JsonArray enabledFeaturesJSON = new JsonParser().parse(enabledFeaturesStr).getAsJsonArray();
             List<EE_FEATURES> enabledFeatures = new ArrayList<>();
             enabledFeaturesJSON.forEach(jsonElement -> {
                 EE_FEATURES feature = EE_FEATURES.getEnumFromString(jsonElement.toString());
@@ -271,14 +274,14 @@ public class EEFeatureFlag {
         json.addProperty("licenseKey", licenseKey);
         json.addProperty("superTokensVersion", this.coreVersion);
         json.add("paidFeatureUsageStats", this.paidFeatureStats.get());
-        JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest("https://api.supertokens.io/0/st/license",
+        JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest(
+                "https://api.supertokens.io/0/st/license/check",
                 json, 10000, 10000, 0);
         if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("OK")) {
             this.logger.debug("API returned OK");
-            JsonArray enabledFeaturesJSON = licenseCheckResponse.getAsJsonArray("enabled_features");
+            JsonArray enabledFeaturesJSON = licenseCheckResponse.getAsJsonArray("enabledFeatures");
             List<EE_FEATURES> enabledFeatures = new ArrayList<>();
             enabledFeaturesJSON.forEach(jsonElement -> {
-                // TODO: think about changes in features over versions of the core and APIs
                 EE_FEATURES feature = EE_FEATURES.getEnumFromString(jsonElement.toString());
                 if (feature != null) { // this check cause maybe the core is of an older version
                     enabledFeatures.add(feature);
