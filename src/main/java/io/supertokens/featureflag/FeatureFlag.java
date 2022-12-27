@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
@@ -37,8 +38,6 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.Iterator;
 import java.util.ServiceLoader;
-
-import org.jetbrains.annotations.TestOnly;
 
 public class FeatureFlag extends ResourceDistributor.SingletonResource {
 
@@ -129,11 +128,6 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
         return this.eeFeatureFlag.getEnabledFeatures();
     }
 
-    @TestOnly
-    public Boolean isLicenseKeyPresent(){
-        return this.eeFeatureFlag.getIsLicenseKeyPresent();
-    }
-
     public boolean forceSyncWithServer()
             throws StorageQueryException, HttpResponseException, IOException, EEFeatureFlag.InvalidLicenseKeyException {
         if (this.eeFeatureFlag == null) {
@@ -164,5 +158,10 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
             throw new EEFeatureFlag.NoLicenseKeyFoundException();
         }
         return this.eeFeatureFlag.getLicenseKeyFromDb();
+    }
+
+    @TestOnly
+    public EEFeatureFlag getEeFeatureFlagInstance() {
+        return eeFeatureFlag;
     }
 }
