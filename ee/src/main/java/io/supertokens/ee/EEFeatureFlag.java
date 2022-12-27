@@ -97,8 +97,10 @@ public class EEFeatureFlag {
     private static final String FEATURE_FLAG_KEY_IN_DB = "FEATURE_FLAG";
     private static final String LICENSE_KEY_IN_DB = "LICENSE_KEY";
 
-    private static final String JWT_PUBLIC_KEY_N = "tsfELbMfKlgUiUn_J3HACejtOPShZbUUYV5_yImL1M9raRCr7tHXBmw" +
-            "-xNKKRHod4QpZMZWpfkB48aXEVfFQbnLh4qG4k9goo4_6WG4SlcyZQSiNhFcR5Xhf8udVrkKxeAZTAaP4sEW1an8_NeTgcl78cht_NaOcqJMb5WAb5NWYlAHy-glqvlycobCmlNCdKJloyXc6lXkIwD5dj8ukACiMAnSfihjpGjtdNhRaEYmuKuKYPrNeu8eiCIK2sorK73vrci8MXndoEYDY2jJgY6OC6fEpqsdBXrRa-nCEP4zYGzERxrf0nfBmxwXHpscNfZNEyTLgDpM24IwYiT4QtQ";
+    private static final String JWT_PUBLIC_KEY_N = "yDzeKQFJMtc4" +
+            "-Z4BkLvlHVTEW8DEu31onyslJ2fg48hWYlesBkb2UTLT2t7dZw9CCmqtuyYxxHIQ3iy" +
+            "-TkEMKroZzQjnMNmapKNQ8H6bx5h5nGnp_xmHSF" +
+            "-4ajF5XWrdVaXi2PDY6cd9LdXNRW6AC6WeXew47Ou_xJt9HSY24bpMVFa2_YwTJVwu0Wq6smu0XaHsd2Q2fDKB_Q05hYCat4FZni897en9j3qwJyU0ajE7wUWADySlKIXwnmWKG85Bh7ZhyXHRjnHskylGOCDBUao-3FObTHpD99sKxpxDKbKy_RB6n_5P_plN_gX0d-X5i1otKiyKoNKc2rSSzDOOaw";
     private static final String JWT_PUBLIC_KEY_E = "AQAB";
 
     // the license key in the db will be set to this if we are explicitly removing
