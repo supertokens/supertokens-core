@@ -46,72 +46,6 @@ public class EETest {
         Utils.reset();
     }
 
-    String testLicenseKey = "test";
-
-    /*
-     * Different scenarios:
-     *
-     * 1) No license key added to db
-     *  - good case:
-     *      - on init -> sets empty array as features in db, isLicenseKeyPresent = false
-     *      - in API -> returns empty array
-     *      - in cronjob -> same as on init
-     *      - remove license key called -> same as on init
-     *      - on setting license key -> set license key in db, query API and set features in db -> go to (2) License key
-     * in db
-     *  - database not working case:
-     *      - on init -> core stops.
-     *      - in API -> return empty array
-     *      - in cronjob -> error will be thrown in cronjob -> cronjob will ignore it
-     *      - remove license key called -> error thrown in API
-     *      - on setting license key -> error thrown in API
-     *  - API not working case
-     *      - on init -> Not applicable since no license key present
-     *      - in API -> Not applicable since no license key present
-     *      - in cronjob -> Not applicable since no license key present
-     *      - remove license key called -> Not applicable since no license key present
-     *      - on setting license key -> license key will be set in db, but enabled features will not be -> results in
-     *  API
-     *  error. -> calling getEnabledFeatures will lead to returning the older enabled features from the db, or if
-     * nothing
-     *  existed, then no features.
-     *
-     * 2) License key in db
-     *  - good case:
-     *      - on init -> query API and set features in db
-     *      - in API ->
-     *          - if last synced attempt more than 24 hours ago
-     *              - query API and set feature in db
-     *              - return those features
-     *          - if last sync within 24 hours
-     *              - if features in db last read before 4 hours
-     *                  - query db and return those features
-     *              - else return feature list from memory
-     *      - in cronjob -> same as init
-     *      - remove license key called -> same as init
-     *      - on setting license key -> same as init
-     *  - database not working case
-     *      - on init -> core not started
-     *      - in API ->
-     *          - no API call is made since license key fetching from db would fail
-     *          - if last read time of features from db is more than 4 hours ago -> throw an error
-     *          - else return enabled features from cache (memory)
-     *      - in cronjob -> error will be thrown in cronjob -> cronjob will ignore it
-     *      - remove license key called -> error thrown in API
-     *      - on setting license key -> error thrown in API
-     *  - API not working case
-     *      - on init -> error ignored.
-     *      - in API ->
-     *          - if last synced attempt more than 24 hours ago
-     *              - API call made -> fails -> read features enabled from db or cache
-     *          - else read features enabled from db or cache
-     *      - in cronjob -> call API -> fail -> cronjob ignores errors
-     *      - remove license key called -> cleared from db, no API called, enabled features set to empty in db and in
-     *  memory
-     *      - on setting license key -> key set in db, API call failed resulting in API error -> calling
-     * getEnabledFeatures will return the older enabled features from the db, or if nothing existed, then no features.
-     * */
-
     @Test
     public void testRetrievingEEFeaturesWhenNotSetInDb() throws Exception {
         String[] args = {"../"};
@@ -129,7 +63,6 @@ public class EETest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Check that API returns an empty array
     @Test
     public void testThatCallingGetFeatureFlagAPIReturnsEmptyArray() throws Exception {
         String[] args = {"../"};
@@ -146,10 +79,8 @@ public class EETest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
     }
 
-    // remove license key called -> same as on init
     @Test
     public void testRemovingLicenseKey() throws Exception {
         String[] args = {"../"};

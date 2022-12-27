@@ -17,63 +17,58 @@
 
 package io.supertokens.test.eeTest;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-
+import com.google.gson.JsonObject;
+import io.supertokens.ProcessState;
+import io.supertokens.test.TestingProcessManager;
+import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import com.google.gson.JsonObject;
-
-import io.supertokens.ProcessState;
-
-
-import io.supertokens.test.TestingProcessManager;
-import io.supertokens.test.Utils;
-import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.test.httpRequest.HttpResponseException;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class LicenseKeyAPITest {
     @Rule
-     public TestRule watchman = Utils.getOnFailure();
- 
-     @AfterClass
-     public static void afterTesting() {
-         Utils.afterTesting();
-     }
- 
-     @Before
-     public void beforeEach() {
-         Utils.reset();
-     }
+    public TestRule watchman = Utils.getOnFailure();
 
-     @Test
-     public void testBadInputForLicenseKeyAPI() throws Exception {
-         String[] args = {"../"};
- 
-         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-        
+    @AfterClass
+    public static void afterTesting() {
+        Utils.afterTesting();
+    }
 
-        // test passing licenseKey as a invalid type
+    @Before
+    public void beforeEach() {
+        Utils.reset();
+    }
+
+    @Test
+    public void testBadInputForLicenseKeyAPI() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+         
+        // test passing licenseKey as an invalid type
         JsonObject resquestBody = new JsonObject();
         resquestBody.addProperty("test", 10);
 
         Exception error = null;
         try {
             HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/ee/license",
-                        null, 1000, 1000, null, Utils.getCdiVersion2_16ForTests(), "");
+                    null, 1000, 1000, null, Utils.getCdiVersion2_16ForTests(), "");
         } catch (HttpResponseException e) {
             error = e;
         }
 
         assertNotNull(error);
         assertEquals("Http error. Status Code: 400. Message: Invalid Json Input", error.getMessage());
-                 
-         process.kill();
-         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-     }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
