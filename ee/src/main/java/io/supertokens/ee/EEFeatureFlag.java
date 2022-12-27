@@ -277,10 +277,6 @@ public class EEFeatureFlag {
             JsonArray enabledFeaturesJSON = licenseCheckResponse.getAsJsonArray("enabledFeatures");
             List<EE_FEATURES> enabledFeatures = new ArrayList<>();
             enabledFeaturesJSON.forEach(jsonElement -> {
-                // TODO: think about changes in features over versions of the core and APIs - should allow using
-                // existing known features even if some of the items in the array may not be known to this
-                // version of the core. Should throw an error in case no features are known of resulting response
-                // array is empty.
                 EE_FEATURES feature = EE_FEATURES.getEnumFromString(jsonElement.toString());
                 if (feature != null) { // this check cause maybe the core is of an older version
                     enabledFeatures.add(feature);
