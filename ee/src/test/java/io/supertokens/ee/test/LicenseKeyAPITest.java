@@ -15,7 +15,7 @@
  */
 
 
-package io.supertokens.test.eeTest;
+package io.supertokens.ee.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
@@ -23,14 +23,8 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TestRule;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class LicenseKeyAPITest {
     @Rule
@@ -51,8 +45,8 @@ public class LicenseKeyAPITest {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-         
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
         // test passing licenseKey as an invalid type
         JsonObject resquestBody = new JsonObject();
         resquestBody.addProperty("test", 10);
@@ -65,10 +59,10 @@ public class LicenseKeyAPITest {
             error = e;
         }
 
-        assertNotNull(error);
-        assertEquals("Http error. Status Code: 400. Message: Invalid Json Input", error.getMessage());
+        Assert.assertNotNull(error);
+        Assert.assertEquals("Http error. Status Code: 400. Message: Invalid Json Input", error.getMessage());
 
         process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }

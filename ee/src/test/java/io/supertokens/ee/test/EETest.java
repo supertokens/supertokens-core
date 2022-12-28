@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.test.eeTest;
+package io.supertokens.ee.test;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
@@ -23,13 +23,8 @@ import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TestRule;
-
-import static org.junit.Assert.*;
 
 public class EETest {
 
@@ -51,16 +46,17 @@ public class EETest {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // check that there are no features enabled
         EE_FEATURES[] eeArray = FeatureFlag.getInstance(process.getProcess()).getEnabledFeatures();
-        assertEquals(0, eeArray.length);
+        Assert.assertEquals(0, eeArray.length);
 
         // check that isLicenseKeyPresent is false
-        assertFalse(FeatureFlag.getInstance(process.getProcess()).getEeFeatureFlagInstance().getIsLicenseKeyPresent());
+        Assert.assertFalse(
+                FeatureFlag.getInstance(process.getProcess()).getEeFeatureFlagInstance().getIsLicenseKeyPresent());
         process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
@@ -68,17 +64,17 @@ public class EETest {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/featureflag",
                 null, 1000, 1000, null, Utils.getCdiVersion2_16ForTests(), "");
-        assertEquals("OK", response.get("status").getAsString());
-        assertNotNull(response.get("features"));
-        assertEquals(0, response.get("features").getAsJsonArray().size());
+        Assert.assertEquals("OK", response.get("status").getAsString());
+        Assert.assertNotNull(response.get("features"));
+        Assert.assertEquals(0, response.get("features").getAsJsonArray().size());
 
         process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
@@ -86,7 +82,7 @@ public class EETest {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         FeatureFlag featureFlag = FeatureFlag.getInstance(process.getProcess());
 
@@ -95,13 +91,13 @@ public class EETest {
 
         // check that there are no features enabled
         EE_FEATURES[] eeArray = featureFlag.getEnabledFeatures();
-        assertEquals(0, eeArray.length);
+        Assert.assertEquals(0, eeArray.length);
 
         // check that isLicenseKeyPresent is false
-        assertFalse(featureFlag.getEeFeatureFlagInstance().getIsLicenseKeyPresent());
+        Assert.assertFalse(featureFlag.getEeFeatureFlagInstance().getIsLicenseKeyPresent());
 
         process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
@@ -109,15 +105,15 @@ public class EETest {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         JsonObject response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
                 null, 1000, 1000, null, Utils.getCdiVersion2_16ForTests(), "");
-        assertEquals("OK", response.get("status").getAsString());
+        Assert.assertEquals("OK", response.get("status").getAsString());
 
         process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
@@ -125,15 +121,15 @@ public class EETest {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
                 null, 1000, 1000, null, Utils.getCdiVersion2_16ForTests(), "");
-        assertEquals("NO_LICENSE_KEY_FOUND_ERROR", response.get("status").getAsString());
+        Assert.assertEquals("NO_LICENSE_KEY_FOUND_ERROR", response.get("status").getAsString());
 
         process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
  
