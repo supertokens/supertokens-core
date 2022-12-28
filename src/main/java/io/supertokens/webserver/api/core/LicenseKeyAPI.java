@@ -18,9 +18,10 @@ package io.supertokens.webserver.api.core;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.ee.EEFeatureFlag;
-import io.supertokens.ee.httpRequest.HttpResponseException;
 import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
+import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
+import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -57,7 +58,7 @@ public class LicenseKeyAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | HttpResponseException e) {
             throw new ServletException(e);
-        } catch (EEFeatureFlag.InvalidLicenseKeyException e) {
+        } catch (InvalidLicenseKeyException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "INVALID_LICENSE_KEY_ERROR");
             super.sendJsonResponse(200, result, resp);
@@ -86,7 +87,7 @@ public class LicenseKeyAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
-        } catch (EEFeatureFlag.NoLicenseKeyFoundException e) {
+        } catch (NoLicenseKeyFoundException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "NO_LICENSE_KEY_FOUND_ERROR");
             super.sendJsonResponse(200, result, resp);

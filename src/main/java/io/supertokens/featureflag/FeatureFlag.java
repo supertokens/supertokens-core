@@ -19,16 +19,13 @@ package io.supertokens.featureflag;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
-import io.supertokens.cronjobs.telemetry.Telemetry;
-import io.supertokens.ee.EEFeatureFlag;
-import io.supertokens.ee.EE_FEATURES;
-import io.supertokens.ee.httpRequest.HttpResponseException;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
+import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
+import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.version.Version;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,12 +38,12 @@ import java.util.ServiceLoader;
 public class FeatureFlag extends ResourceDistributor.SingletonResource {
 
     private static final String RESOURCE_KEY = "io.supertokens.featureflag.FeatureFlag";
-    private final EEFeatureFlag eeFeatureFlag;
+    private final EEFeatureFlagInterface eeFeatureFlag;
     private static URLClassLoader ucl = null;
 
     private FeatureFlag(Main main, String eeFolderPath) throws MalformedURLException {
         File loc = new File(eeFolderPath);
-        EEFeatureFlag eeLayerTemp = null;
+        EEFeatureFlagInterface eeLayerTemp = null;
 
         File[] flist = loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar"));
 
@@ -63,36 +60,18 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
                 FeatureFlag.ucl = new URLClassLoader(urls);
             }
 
-            ServiceLoader<EEFeatureFlag> sl = ServiceLoader.load(EEFeatureFlag.class, ucl);
-            Iterator<EEFeatureFlag> it = sl.iterator();
+            ServiceLoader<EEFeatureFlagInterface> sl = ServiceLoader.load(EEFeatureFlagInterface.class, ucl);
+            Iterator<EEFeatureFlagInterface> it = sl.iterator();
             if (it.hasNext()) {
                 eeLayerTemp = it.next();
             }
         }
 
         if (eeLayerTemp != null) {
+            Logging.info(main, "Loaded ee folder", true);
             this.eeFeatureFlag = eeLayerTemp;
             try {
-                this.eeFeatureFlag.constructor(StorageLayer.getStorage(main),
-                        Version.getVersion(main).getCoreVersion(), new io.supertokens.ee.Logging() {
-                            @Override
-                            public void info(String msg, boolean toConsoleAsWell) {
-                                Logging.info(main, msg, toConsoleAsWell);
-                            }
-
-                            @Override
-                            public void debug(String msg) {
-                                Logging.debug(main, msg);
-                            }
-
-                            @Override
-                            public void error(String message, boolean toConsoleAsWell, Exception e) {
-                                Logging.error(main, message, toConsoleAsWell, e);
-                            }
-                        }, () -> {
-                            KeyValueInfo info = Telemetry.getTelemetryId(main);
-                            return info == null ? null : info.value;
-                        }, this::getPaidFeatureStats);
+                this.eeFeatureFlag.constructor(main);
             } catch (StorageQueryException e) {
                 throw new QuitProgramException(e);
             }
@@ -103,9 +82,10 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
     }
 
     public JsonObject getPaidFeatureStats() throws StorageQueryException {
-        JsonObject result = new JsonObject();
-        // TODO:
-        return result;
+        if (this.eeFeatureFlag == null) {
+            return new JsonObject();
+        }
+        return eeFeatureFlag.getPaidFeatureStats();
     }
 
     public static FeatureFlag getInstance(Main main) {
@@ -128,7 +108,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
     }
 
     public boolean forceSyncWithServer()
-            throws StorageQueryException, HttpResponseException, IOException, EEFeatureFlag.InvalidLicenseKeyException {
+            throws StorageQueryException, HttpResponseException, IOException, InvalidLicenseKeyException {
         if (this.eeFeatureFlag == null) {
             return false;
         }
@@ -137,7 +117,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
     }
 
     public boolean setLicenseKeyAndSyncFeatures(String licenseKey)
-            throws StorageQueryException, HttpResponseException, IOException, EEFeatureFlag.InvalidLicenseKeyException {
+            throws StorageQueryException, HttpResponseException, IOException, InvalidLicenseKeyException {
         if (this.eeFeatureFlag == null) {
             return false;
         }
@@ -152,10 +132,15 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
         this.eeFeatureFlag.removeLicenseKeyAndSyncFeatures();
     }
 
-    public String getLicenseKey() throws EEFeatureFlag.NoLicenseKeyFoundException, StorageQueryException {
+    public String getLicenseKey() throws NoLicenseKeyFoundException, StorageQueryException {
         if (this.eeFeatureFlag == null) {
-            throw new EEFeatureFlag.NoLicenseKeyFoundException();
+            throw new NoLicenseKeyFoundException();
         }
         return this.eeFeatureFlag.getLicenseKeyFromDb();
+    }
+
+    @TestOnly
+    public EEFeatureFlagInterface getEeFeatureFlagInstance() {
+        return eeFeatureFlag;
     }
 }

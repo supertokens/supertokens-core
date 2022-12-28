@@ -25,7 +25,6 @@ import io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpire
 import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens;
 import io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPasswordlessDevices;
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
-import io.supertokens.cronjobs.eeLicenseCheck.EELicenseCheck;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.exceptions.QuitProgramException;
@@ -202,9 +201,6 @@ public class Main {
         if (Config.getConfig(this).getAccessTokenSigningKeyDynamic()) {
             Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.getInstance(this));
         }
-
-        // does ee license check every 24 hours if license key is provided.
-        Cronjobs.addCronjob(this, EELicenseCheck.getInstance(this));
 
         // creates password hashing pool
         PasswordHashing.init(this);

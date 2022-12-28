@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.cronjobs.eeLicenseCheck;
+package io.supertokens.ee.cronjobs;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
@@ -25,7 +25,7 @@ import io.supertokens.featureflag.FeatureFlag;
 
 public class EELicenseCheck extends CronTask {
 
-    public static final String RESOURCE_KEY = "io.supertokens.cronjobs.eeLicenseCheck.EELicenseCheck";
+    public static final String RESOURCE_KEY = "io.supertokens.ee.cronjobs.EELicenseCheck";
 
     private EELicenseCheck(Main main) {
         super("EELicenseCheck", main);
