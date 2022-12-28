@@ -23,6 +23,9 @@ dependencies {
     compileOnly group: 'org.jetbrains', name: 'annotations', version: '13.0'
     testImplementation group: 'org.jetbrains', name: 'annotations', version: '13.0'
 
+    compileOnly project(":supertokens-core")
+    testImplementation project(":supertokens-core")
+
     compileOnly 'com.auth0:java-jwt:4.0.0'
 }
 
@@ -31,12 +34,13 @@ task copyJars(type: Copy) {
     from configurations.runtimeClasspath
 }
 
+def interfaceName = "io.supertokens.featureflag.EEFeatureFlagInterface"
 def className = "io.supertokens.ee.EEFeatureFlag"
 
 task generateMetaInf {
     doFirst {
         mkdir "src/main/resources/META-INF/services"
-        file("src/main/resources/META-INF/services/${className}").text = "${className}"
+        file("src/main/resources/META-INF/services/${interfaceName}").text = "${className}"
     }
 }
 

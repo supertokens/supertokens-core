@@ -65,9 +65,6 @@ dependencies {
     // https://mvnrepository.com/artifact/com.lambdaworks/scrypt
     implementation group: 'com.lambdaworks', name: 'scrypt', version: '1.4.0'
 
-    compileOnly project(":supertokens-core:ee")
-    testImplementation project(":supertokens-core:ee")
-
     compileOnly project(":supertokens-plugin-interface")
     testImplementation project(":supertokens-plugin-interface")
 

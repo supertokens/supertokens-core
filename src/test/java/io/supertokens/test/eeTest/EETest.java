@@ -18,7 +18,7 @@ package io.supertokens.test.eeTest;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.ee.EE_FEATURES;
+import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;

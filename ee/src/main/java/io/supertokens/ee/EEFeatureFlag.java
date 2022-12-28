@@ -10,11 +10,20 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
-import io.supertokens.ee.httpRequest.HttpRequest;
-import io.supertokens.ee.httpRequest.HttpResponseException;
+import io.supertokens.Main;
+import io.supertokens.cronjobs.Cronjobs;
+import io.supertokens.cronjobs.telemetry.Telemetry;
+import io.supertokens.ee.cronjobs.EELicenseCheck;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
+import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
+import io.supertokens.httpRequest.HttpRequest;
+import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.KeyValueInfo;
-import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.version.Version;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;
@@ -91,9 +100,10 @@ import java.util.List;
  * getEnabledFeatures will return the older enabled features from the db, or if nothing existed, then no features.
  * */
 
-public class EEFeatureFlag {
+public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagInterface {
     public static final int INTERVAL_BETWEEN_SERVER_SYNC = 1000 * 3600 * 24; // 1 day.
     private static final long INTERVAL_BETWEEN_DB_READS = (long) 1000 * 3600 * 4; // 4 hour.
+    private static final String REQUEST_ID = "licensecheck";
 
     private static final String FEATURE_FLAG_KEY_IN_DB = "FEATURE_FLAG";
     private static final String LICENSE_KEY_IN_DB = "LICENSE_KEY";
@@ -114,31 +124,16 @@ public class EEFeatureFlag {
     private long enabledFeaturesValueReadFromDbTime = -1;
     private EE_FEATURES[] enabledFeaturesFromDb = null;
 
-    private Storage storage;
-    private String coreVersion;
-    private Logging logger;
-    private Telemetry getTelemetryId;
-    private PaidFeatureStats paidFeatureStats;
+    private Main main;
 
-    public interface Telemetry {
-        String get() throws StorageQueryException;
-    }
-
-    public interface PaidFeatureStats {
-        JsonObject get() throws StorageQueryException;
-    }
-
-    public void constructor(Storage storage, String coreVersion, Logging logger,
-                            Telemetry getTelemetryId, PaidFeatureStats paidFeatureStats) throws StorageQueryException {
-        this.coreVersion = coreVersion;
-        this.storage = storage;
-        this.logger = logger;
-        this.getTelemetryId = getTelemetryId;
-        this.paidFeatureStats = paidFeatureStats;
+    @Override
+    public void constructor(Main main) throws StorageQueryException {
+        this.main = main;
+        Cronjobs.addCronjob(main, EELicenseCheck.getInstance(main));
         try {
             this.forceSyncFeatureFlagWithLicenseKey();
         } catch (HttpResponseException | IOException e) {
-            this.logger.error("API Error during constructor sync", false, e);
+            Logging.error(main, "API Error during constructor sync", false, e);
             // server request failed. we ignore for now as later on it will sync up anyway.
         } catch (InvalidLicenseKeyException ignored) {
             // the license key that was in the db was invalid. If this error is thrown,
@@ -148,19 +143,16 @@ public class EEFeatureFlag {
         // any other exception (like db related errors) will result in core not starting
     }
 
+    @Override
     public EE_FEATURES[] getEnabledFeatures() throws StorageQueryException {
         if (!this.isLicenseKeyPresent) {
             return new EE_FEATURES[]{};
         }
 
-        try {
-            return this.getEnabledEEFeaturesFromDbOrCache();
-        } catch (EnabledFeaturesNotSetInDbException e) {
-            // Never synced with SuperTokens for some reason.
-            return new EE_FEATURES[]{};
-        }
+        return this.getEnabledEEFeaturesFromDbOrCache();
     }
 
+    @Override
     public void removeLicenseKeyAndSyncFeatures() throws HttpResponseException, IOException, StorageQueryException {
         this.removeLicenseKeyFromDb();
         try {
@@ -170,25 +162,35 @@ public class EEFeatureFlag {
         }
     }
 
+    @Override
     public void setLicenseKeyAndSyncFeatures(String key)
             throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
         this.setLicenseKeyInDb(key);
         this.forceSyncFeatureFlagWithLicenseKey();
     }
 
+    @Override
     public void forceSyncFeatureFlagWithLicenseKey()
             throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
         this.syncFeatureFlagWithLicenseKeyIfRequired();
     }
 
+    @Override
     @TestOnly
     public Boolean getIsLicenseKeyPresent() {
         return isLicenseKeyPresent;
     }
 
+    @Override
+    public JsonObject getPaidFeatureStats() throws StorageQueryException {
+        JsonObject result = new JsonObject();
+        // TODO:
+        return result;
+    }
+
     private void syncFeatureFlagWithLicenseKeyIfRequired()
             throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
-        this.logger.debug("Syncing feature flag with license key");
+        Logging.debug(main, "Syncing feature flag with license key");
         String licenseKey;
         try {
             licenseKey = this.getLicenseKeyFromDb();
@@ -215,7 +217,7 @@ public class EEFeatureFlag {
     }
 
     private EE_FEATURES[] decodeLicenseKeyToGetFeatures(String licenseKey) throws InvalidLicenseKeyException {
-        this.logger.debug("Decoding JWT license key");
+        Logging.debug(main, "Decoding JWT license key");
         try {
             BigInteger modulus = new BigInteger(1, Base64.getUrlDecoder().decode(JWT_PUBLIC_KEY_N));
             BigInteger exponent = new BigInteger(1, Base64.getUrlDecoder().decode(JWT_PUBLIC_KEY_E));
@@ -255,8 +257,8 @@ public class EEFeatureFlag {
             });
             return enabledFeatures.toArray(EE_FEATURES[]::new);
         } catch (JWTVerificationException e) {
-            this.logger.debug("Invalid license key: " + licenseKey);
-            this.logger.error("Invalid license key", false, e);
+            Logging.debug(main, "Invalid license key: " + licenseKey);
+            Logging.error(main, "Invalid license key", false, e);
             throw new InvalidLicenseKeyException(e);
         } catch (InvalidKeySpecException | NoSuchAlgorithmException e) {
             // should never come here...
@@ -266,21 +268,22 @@ public class EEFeatureFlag {
 
     private EE_FEATURES[] doServerCall(String licenseKey)
             throws StorageQueryException, HttpResponseException, IOException, InvalidLicenseKeyException {
-        this.logger.debug("Making API call to server with licenseKey: " + licenseKey);
+        Logging.debug(main, "Making API call to server with licenseKey: " + licenseKey);
         JsonObject json = new JsonObject();
-        String telemetryId = this.getTelemetryId.get();
+        KeyValueInfo info = Telemetry.getTelemetryId(main);
+        String telemetryId = info == null ? null : info.value;
         if (telemetryId != null) {
             // this can be null if we are using in mem db right now.
             json.addProperty("telemetryId", telemetryId);
         }
         json.addProperty("licenseKey", licenseKey);
-        json.addProperty("superTokensVersion", this.coreVersion);
-        json.add("paidFeatureUsageStats", this.paidFeatureStats.get());
-        JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest(
+        json.addProperty("superTokensVersion", Version.getVersion(main).getCoreVersion());
+        json.add("paidFeatureUsageStats", this.getPaidFeatureStats());
+        JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest(this.main, REQUEST_ID,
                 "https://api.supertokens.io/0/st/license/check",
                 json, 10000, 10000, 0);
         if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("OK")) {
-            this.logger.debug("API returned OK");
+            Logging.debug(main, "API returned OK");
             JsonArray enabledFeaturesJSON = licenseCheckResponse.getAsJsonArray("enabledFeatures");
             List<EE_FEATURES> enabledFeatures = new ArrayList<>();
             enabledFeaturesJSON.forEach(jsonElement -> {
@@ -291,7 +294,7 @@ public class EEFeatureFlag {
             });
             return enabledFeatures.toArray(EE_FEATURES[]::new);
         } else if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("INVALID_LICENSE_KEY")) {
-            this.logger.debug("Invalid license key: " + licenseKey);
+            Logging.debug(main, "Invalid license key: " + licenseKey);
             throw new InvalidLicenseKeyException();
         }
         throw new RuntimeException("Should never come here");
@@ -300,84 +303,60 @@ public class EEFeatureFlag {
     private void setEnabledEEFeaturesInDb(EE_FEATURES[] features) throws StorageQueryException {
         JsonArray json = new JsonArray();
         Arrays.stream(features).forEach(ee_features -> json.add(new JsonPrimitive(ee_features.toString())));
-        this.logger.debug("Saving new feature flag in database: " + json);
-        storage.setKeyValue(FEATURE_FLAG_KEY_IN_DB, new KeyValueInfo(json.toString()));
+        Logging.debug(main, "Saving new feature flag in database: " + json);
+        StorageLayer.getStorage(main).setKeyValue(FEATURE_FLAG_KEY_IN_DB, new KeyValueInfo(json.toString()));
         this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
         this.enabledFeaturesFromDb = features;
     }
 
     private EE_FEATURES[] getEnabledEEFeaturesFromDbOrCache()
-            throws EnabledFeaturesNotSetInDbException, StorageQueryException {
-        try {
-            if (this.enabledFeaturesValueReadFromDbTime == -1
-                    || (System.currentTimeMillis()
-                    - this.enabledFeaturesValueReadFromDbTime > INTERVAL_BETWEEN_DB_READS)) {
-                this.logger.debug("Reading feature flag from database");
-                KeyValueInfo keyValueInfo = storage.getKeyValue(FEATURE_FLAG_KEY_IN_DB);
-                if (keyValueInfo == null) {
-                    throw new EnabledFeaturesNotSetInDbException();
-                }
-                JsonArray featuresArrayJson = new JsonParser().parse(keyValueInfo.value).getAsJsonArray();
-                EE_FEATURES[] features = new EE_FEATURES[featuresArrayJson.size()];
-                for (int i = 0; i < featuresArrayJson.size(); i++) {
-                    features[i] = EE_FEATURES.valueOf(featuresArrayJson.get(i).getAsString());
-                }
-                this.enabledFeaturesFromDb = features;
-                this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
-            } else {
-                this.logger.debug("Returning feature flag from cache");
+            throws StorageQueryException {
+        if (this.enabledFeaturesValueReadFromDbTime == -1
+                || (System.currentTimeMillis()
+                - this.enabledFeaturesValueReadFromDbTime > INTERVAL_BETWEEN_DB_READS)) {
+            Logging.debug(main, "Reading feature flag from database");
+            KeyValueInfo keyValueInfo = StorageLayer.getStorage(main).getKeyValue(FEATURE_FLAG_KEY_IN_DB);
+            if (keyValueInfo == null) {
+                Logging.debug(main, "No feature flag set in db");
+                return new EE_FEATURES[]{};
             }
-            return this.enabledFeaturesFromDb;
-        } catch (EnabledFeaturesNotSetInDbException e) {
-            this.logger.debug("No feature flag set in db");
-            throw e;
+            JsonArray featuresArrayJson = new JsonParser().parse(keyValueInfo.value).getAsJsonArray();
+            EE_FEATURES[] features = new EE_FEATURES[featuresArrayJson.size()];
+            for (int i = 0; i < featuresArrayJson.size(); i++) {
+                features[i] = EE_FEATURES.valueOf(featuresArrayJson.get(i).getAsString());
+            }
+            this.enabledFeaturesFromDb = features;
+            this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
+        } else {
+            Logging.debug(main, "Returning feature flag from cache");
         }
+        return this.enabledFeaturesFromDb;
     }
 
     private void setLicenseKeyInDb(String key) throws StorageQueryException {
-        this.logger.debug("Setting license key in db: " + key);
-        storage.setKeyValue(LICENSE_KEY_IN_DB, new KeyValueInfo(key));
+        Logging.debug(main, "Setting license key in db: " + key);
+        StorageLayer.getStorage(main).setKeyValue(LICENSE_KEY_IN_DB, new KeyValueInfo(key));
     }
 
     private void removeLicenseKeyFromDb() throws StorageQueryException {
-        this.logger.debug("Removing license key from db");
-        storage.setKeyValue(LICENSE_KEY_IN_DB, new KeyValueInfo(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE));
+        Logging.debug(main, "Removing license key from db");
+        StorageLayer.getStorage(main)
+                .setKeyValue(LICENSE_KEY_IN_DB, new KeyValueInfo(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE));
     }
 
+    @Override
     public String getLicenseKeyFromDb() throws NoLicenseKeyFoundException, StorageQueryException {
-        this.logger.debug("Attempting to fetch license key from db");
+        Logging.debug(main, "Attempting to fetch license key from db");
         try {
-            KeyValueInfo info = storage.getKeyValue(LICENSE_KEY_IN_DB);
+            KeyValueInfo info = StorageLayer.getStorage(main).getKeyValue(LICENSE_KEY_IN_DB);
             if (info == null || info.value.equals(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE)) {
                 throw new NoLicenseKeyFoundException();
             }
-            this.logger.debug("Fetched license key from db: " + info.value);
+            Logging.debug(main, "Fetched license key from db: " + info.value);
             return info.value;
         } catch (NoLicenseKeyFoundException e) {
-            this.logger.debug("No license key found in db");
+            Logging.debug(main, "No license key found in db");
             throw e;
-        }
-    }
-
-    public static class NoLicenseKeyFoundException extends Exception {
-
-        public NoLicenseKeyFoundException() {
-        }
-    }
-
-    private static class EnabledFeaturesNotSetInDbException extends Exception {
-
-        public EnabledFeaturesNotSetInDbException() {
-        }
-    }
-
-    public static class InvalidLicenseKeyException extends Exception {
-        public InvalidLicenseKeyException() {
-
-        }
-
-        public InvalidLicenseKeyException(Exception e) {
-            super(e);
         }
     }
 }
