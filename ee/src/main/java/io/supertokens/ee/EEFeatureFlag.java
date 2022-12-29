@@ -11,6 +11,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.ProcessState;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.ee.cronjobs.EELicenseCheck;
@@ -279,6 +280,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         json.addProperty("licenseKey", licenseKey);
         json.addProperty("superTokensVersion", Version.getVersion(main).getCoreVersion());
         json.add("paidFeatureUsageStats", this.getPaidFeatureStats());
+        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, null);
         JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest(this.main, REQUEST_ID,
                 "https://api.supertokens.io/0/st/license/check",
                 json, 10000, 10000, 0);

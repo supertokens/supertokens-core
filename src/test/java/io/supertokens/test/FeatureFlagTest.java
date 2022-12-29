@@ -16,11 +16,14 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.webserver.WebserverAPI;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
@@ -89,5 +92,23 @@ public class FeatureFlagTest {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatCallingGetFeatureFlagAPIReturnsEmptyArray() throws Exception {
+        String[] args = {"../../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/ee/featureflag",
+                null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+        Assert.assertEquals("OK", response.get("status").getAsString());
+        Assert.assertNotNull(response.get("features"));
+        Assert.assertEquals(0, response.get("features").getAsJsonArray().size());
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
