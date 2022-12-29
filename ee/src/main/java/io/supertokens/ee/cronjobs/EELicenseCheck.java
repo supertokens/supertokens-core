@@ -41,6 +41,12 @@ public class EELicenseCheck extends CronTask {
 
     @Override
     public int getInitialWaitTimeSeconds() {
+        if (Main.isTesting) {
+            Integer interval = CronTaskTest.getInstance(main).getIntervalInSeconds(RESOURCE_KEY);
+            if (interval != null) {
+                return interval;
+            }
+        }
         return EEFeatureFlag.INTERVAL_BETWEEN_SERVER_SYNC; // We delay by one day cause we attempt a sync on core
         // startup anyway.
     }

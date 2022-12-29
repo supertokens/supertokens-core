@@ -43,7 +43,7 @@ import java.util.List;
 public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagInterface {
     public static final int INTERVAL_BETWEEN_SERVER_SYNC = 1000 * 3600 * 24; // 1 day.
     private static final long INTERVAL_BETWEEN_DB_READS = (long) 1000 * 3600 * 4; // 4 hour.
-    private static final String REQUEST_ID = "licensecheck";
+    public static final String REQUEST_ID = "licensecheck";
 
     public static final String FEATURE_FLAG_KEY_IN_DB = "FEATURE_FLAG";
     public static final String LICENSE_KEY_IN_DB = "LICENSE_KEY";
@@ -79,8 +79,12 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             // the license key that was in the db was invalid. If this error is thrown,
             // it means that the key was removed from the db anyway.. so we can just ignore
             // here.
+        } catch (StorageQueryException e) {
+            // we intentionally throw this error so that the core stops
+            // since we need to know the initial state of the license and features from the db
+            throw e;
+        } catch (Throwable ignored) {
         }
-        // any other exception (like db related errors) will result in core not starting
     }
 
     @Override
@@ -208,38 +212,44 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
     private EE_FEATURES[] doServerCall(String licenseKey)
             throws StorageQueryException, HttpResponseException, IOException, InvalidLicenseKeyException {
-        Logging.debug(main, "Making API call to server with licenseKey: " + licenseKey);
-        JsonObject json = new JsonObject();
-        KeyValueInfo info = Telemetry.getTelemetryId(main);
-        String telemetryId = info == null ? null : info.value;
-        if (telemetryId != null) {
-            // this can be null if we are using in mem db right now.
-            json.addProperty("telemetryId", telemetryId);
+        try {
+            Logging.debug(main, "Making API call to server with licenseKey: " + licenseKey);
+            JsonObject json = new JsonObject();
+            KeyValueInfo info = Telemetry.getTelemetryId(main);
+            String telemetryId = info == null ? null : info.value;
+            if (telemetryId != null) {
+                // this can be null if we are using in mem db right now.
+                json.addProperty("telemetryId", telemetryId);
+            }
+            json.addProperty("licenseKey", licenseKey);
+            json.addProperty("superTokensVersion", Version.getVersion(main).getCoreVersion());
+            json.add("paidFeatureUsageStats", this.getPaidFeatureStats());
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, null);
+            JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest(this.main, REQUEST_ID,
+                    "https://api.supertokens.io/0/st/license/check",
+                    json, 10000, 10000, 0);
+            if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("OK")) {
+                Logging.debug(main, "API returned OK");
+                JsonArray enabledFeaturesJSON = licenseCheckResponse.getAsJsonArray("enabledFeatures");
+                List<EE_FEATURES> enabledFeatures = new ArrayList<>();
+                enabledFeaturesJSON.forEach(jsonElement -> {
+                    EE_FEATURES feature = EE_FEATURES.getEnumFromString(jsonElement.getAsString());
+                    if (feature != null) { // this check cause maybe the core is of an older version
+                        enabledFeatures.add(feature);
+                    }
+                });
+                return enabledFeatures.toArray(EE_FEATURES[]::new);
+            } else if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("INVALID_LICENSE_KEY")) {
+                Logging.debug(main, "Invalid license key: " + licenseKey);
+                ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY, null);
+                throw new InvalidLicenseKeyException();
+            }
+            throw new RuntimeException("Should never come here");
+        } catch (HttpResponseException | IOException e) {
+            ProcessState.getInstance(main)
+                    .addState(ProcessState.PROCESS_STATE.SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL, e);
+            throw e;
         }
-        json.addProperty("licenseKey", licenseKey);
-        json.addProperty("superTokensVersion", Version.getVersion(main).getCoreVersion());
-        json.add("paidFeatureUsageStats", this.getPaidFeatureStats());
-        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, null);
-        JsonObject licenseCheckResponse = HttpRequest.sendJsonPOSTRequest(this.main, REQUEST_ID,
-                "https://api.supertokens.io/0/st/license/check",
-                json, 10000, 10000, 0);
-        if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("OK")) {
-            Logging.debug(main, "API returned OK");
-            JsonArray enabledFeaturesJSON = licenseCheckResponse.getAsJsonArray("enabledFeatures");
-            List<EE_FEATURES> enabledFeatures = new ArrayList<>();
-            enabledFeaturesJSON.forEach(jsonElement -> {
-                EE_FEATURES feature = EE_FEATURES.getEnumFromString(jsonElement.getAsString());
-                if (feature != null) { // this check cause maybe the core is of an older version
-                    enabledFeatures.add(feature);
-                }
-            });
-            return enabledFeatures.toArray(EE_FEATURES[]::new);
-        } else if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("INVALID_LICENSE_KEY")) {
-            Logging.debug(main, "Invalid license key: " + licenseKey);
-            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY, null);
-            throw new InvalidLicenseKeyException();
-        }
-        throw new RuntimeException("Should never come here");
     }
 
     private void setEnabledEEFeaturesInDb(EE_FEATURES[] features) throws StorageQueryException {
@@ -265,7 +275,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             JsonArray featuresArrayJson = new JsonParser().parse(keyValueInfo.value).getAsJsonArray();
             EE_FEATURES[] features = new EE_FEATURES[featuresArrayJson.size()];
             for (int i = 0; i < featuresArrayJson.size(); i++) {
-                features[i] = EE_FEATURES.valueOf(featuresArrayJson.get(i).getAsString());
+                features[i] = EE_FEATURES.getEnumFromString(featuresArrayJson.get(i).getAsString());
             }
             this.enabledFeaturesFromDb = features;
             this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();

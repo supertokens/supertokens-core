@@ -75,6 +75,7 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
      * ADDING_REMOTE_ADDRESS_FILTER: If IP allow / deny regex has been passed, we add a filter to the tomcat server
      * LICENSE_KEY_CHECK_NETWORK_CALL: Called when license key is added and network call is being made to check it.
      * INVALID_LICENSE_KEY: Called when the licens key check failed
+     * SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL: Added when the server request failed during license key check
      */
     public enum PROCESS_STATE {
         INIT, INIT_FAILURE, STARTED, SHUTTING_DOWN, STOPPED, RETRYING_ACCESS_TOKEN_JWT_VERIFICATION,
@@ -82,7 +83,7 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
         CREATING_NEW_TABLE, SENDING_TELEMETRY, SENT_TELEMETRY, SETTING_ACCESS_TOKEN_SIGNING_KEY_TO_NULL,
         PASSWORD_HASH_BCRYPT, PASSWORD_HASH_ARGON, PASSWORD_VERIFY_BCRYPT, PASSWORD_VERIFY_ARGON,
         PASSWORD_VERIFY_FIREBASE_SCRYPT, ADDING_REMOTE_ADDRESS_FILTER, LICENSE_KEY_CHECK_NETWORK_CALL,
-        INVALID_LICENSE_KEY
+        INVALID_LICENSE_KEY, SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL
     }
 
     public static class EventAndException {

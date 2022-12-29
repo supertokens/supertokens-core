@@ -6,6 +6,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
+import io.supertokens.httpRequest.HttpRequestMocking;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -14,12 +15,15 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
 import org.junit.*;
 import org.junit.rules.TestRule;
+import org.mockito.Mockito;
 
-import java.io.IOException;
+import java.io.*;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
 
 import static org.junit.Assert.fail;
 
-public class EETest {
+public class EETest extends Mockito {
 
     public static final String OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE =
             "t7D8y1ekZ-sdGXaPBeY0q3lSV3TraGTDG9Uj6CiHpFT2Zmke0COrW" +
@@ -286,17 +290,20 @@ public class EETest {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            try {
-                FeatureFlag.getInstance(process.main).getLicenseKey();
-                fail();
-            } catch (NoLicenseKeyFoundException ignored) {
+            if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
+                    && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+                try {
+                    FeatureFlag.getInstance(process.main).getLicenseKey();
+                    fail();
+                } catch (NoLicenseKeyFoundException ignored) {
+                }
+
+                Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY));
+                Assert.assertNull(
+                        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
             }
-
-            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY));
-            Assert.assertNull(
-                    process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
-
-            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -323,17 +330,201 @@ public class EETest {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            try {
-                FeatureFlag.getInstance(process.main).getLicenseKey();
-                fail();
-            } catch (NoLicenseKeyFoundException ignored) {
+            if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
+                    && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+                try {
+                    FeatureFlag.getInstance(process.main).getLicenseKey();
+                    fail();
+                } catch (NoLicenseKeyFoundException ignored) {
+                }
+
+                Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY));
+                Assert.assertNotNull(
+                        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
+
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
             }
 
-            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY));
-            Assert.assertNotNull(
-                    process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
 
-            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
+    @Test
+    public void startCoreWithValidStatefulKeyBut500ServerResponseHasNoSideEffect()
+            throws InterruptedException, StorageQueryException, HttpResponseException, IOException,
+            InvalidLicenseKeyException {
+        String[] args = {"../../"};
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            final HttpURLConnection mockCon = mock(HttpURLConnection.class);
+            InputStream inputStrm = new ByteArrayInputStream("".getBytes(StandardCharsets.UTF_8));
+            when(mockCon.getInputStream()).thenReturn(inputStrm);
+            when(mockCon.getErrorStream()).thenReturn(inputStrm);
+            when(mockCon.getResponseCode()).thenReturn(500);
+            when(mockCon.getOutputStream()).thenReturn(new OutputStream() {
+                @Override
+                public void write(int b) {
+                    output.write(b);
+                }
+            });
+            HttpRequestMocking.getInstance(process.getProcess()).setMockURL(EEFeatureFlag.REQUEST_ID,
+                    new HttpRequestMocking.URLGetter() {
+
+                        @Override
+                        public URL getUrl(String url) throws MalformedURLException {
+                            URLStreamHandler stubURLStreamHandler = new URLStreamHandler() {
+                                @Override
+                                protected URLConnection openConnection(URL u) {
+                                    return mockCon;
+                                }
+                            };
+                            return new URL(null, url, stubURLStreamHandler);
+                        }
+                    });
+            process.startProcess();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
+                    && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+                Assert.assertNotNull(process.checkOrWaitForEvent(
+                        ProcessState.PROCESS_STATE.SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL, 1000));
+
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+            }
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void startCoreWithValidStatefulKeyButNoServerResponseHasNoSideEffect()
+            throws InterruptedException, StorageQueryException, HttpResponseException, IOException,
+            InvalidLicenseKeyException {
+        String[] args = {"../../"};
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            HttpRequestMocking.getInstance(process.getProcess()).setMockURL(EEFeatureFlag.REQUEST_ID,
+                    new HttpRequestMocking.URLGetter() {
+
+                        @Override
+                        public URL getUrl(String url) throws MalformedURLException {
+                            // this URL does not exist, so it's as good as the server not existing when queried
+                            return new URL("https://dnsflkjahsdpfiouahopjbnakfjds.supertokens.com");
+                        }
+                    });
+            process.startProcess();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
+                    && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+                Assert.assertNotNull(process.checkOrWaitForEvent(
+                        ProcessState.PROCESS_STATE.SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL, 1000));
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+            }
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void licenseCheckServerNotWorkingShouldYieldErrorInCaseOfSettingKey()
+            throws InterruptedException, StorageQueryException,
+            InvalidLicenseKeyException, IOException {
+        String[] args = {"../../"};
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            ByteArrayOutputStream output = new ByteArrayOutputStream();
+            final HttpURLConnection mockCon = mock(HttpURLConnection.class);
+            InputStream inputStrm = new ByteArrayInputStream("".getBytes(StandardCharsets.UTF_8));
+            when(mockCon.getInputStream()).thenReturn(inputStrm);
+            when(mockCon.getErrorStream()).thenReturn(inputStrm);
+            when(mockCon.getResponseCode()).thenReturn(500);
+            when(mockCon.getOutputStream()).thenReturn(new OutputStream() {
+                @Override
+                public void write(int b) {
+                    output.write(b);
+                }
+            });
+            HttpRequestMocking.getInstance(process.getProcess()).setMockURL(EEFeatureFlag.REQUEST_ID,
+                    new HttpRequestMocking.URLGetter() {
+
+                        @Override
+                        public URL getUrl(String url) throws MalformedURLException {
+                            URLStreamHandler stubURLStreamHandler = new URLStreamHandler() {
+                                @Override
+                                protected URLConnection openConnection(URL u) {
+                                    return mockCon;
+                                }
+                            };
+                            return new URL(null, url, stubURLStreamHandler);
+                        }
+                    });
+            process.startProcess();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            try {
+                FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_INVALID_LICENSE_KEY);
+                fail();
+            } catch (HttpResponseException ignored) {
+            }
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void licenseCheckServerNotReachableShouldYieldErrorInCaseOfSettingKey()
+            throws InterruptedException, StorageQueryException,
+            InvalidLicenseKeyException, HttpResponseException {
+        String[] args = {"../../"};
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            HttpRequestMocking.getInstance(process.getProcess()).setMockURL(EEFeatureFlag.REQUEST_ID,
+                    new HttpRequestMocking.URLGetter() {
+
+                        @Override
+                        public URL getUrl(String url) throws MalformedURLException {
+                            // this URL does not exist, so it's as good as the server not existing when queried
+                            return new URL("https://dnsflkjahsdpfiouahopjbnakfjds.supertokens.com");
+                        }
+                    });
+            process.startProcess();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            try {
+                FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_INVALID_LICENSE_KEY);
+                fail();
+            } catch (IOException ignored) {
+            }
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
