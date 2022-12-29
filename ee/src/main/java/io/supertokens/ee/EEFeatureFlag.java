@@ -348,16 +348,12 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     @Override
     public String getLicenseKeyFromDb() throws NoLicenseKeyFoundException, StorageQueryException {
         Logging.debug(main, "Attempting to fetch license key from db");
-        try {
-            KeyValueInfo info = StorageLayer.getStorage(main).getKeyValue(LICENSE_KEY_IN_DB);
-            if (info == null || info.value.equals(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE)) {
-                throw new NoLicenseKeyFoundException();
-            }
-            Logging.debug(main, "Fetched license key from db: " + info.value);
-            return info.value;
-        } catch (NoLicenseKeyFoundException e) {
+        KeyValueInfo info = StorageLayer.getStorage(main).getKeyValue(LICENSE_KEY_IN_DB);
+        if (info == null || info.value.equals(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE)) {
             Logging.debug(main, "No license key found in db");
-            throw e;
+            throw new NoLicenseKeyFoundException();
         }
+        Logging.debug(main, "Fetched license key from db: " + info.value);
+        return info.value;
     }
 }

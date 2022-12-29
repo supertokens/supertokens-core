@@ -184,5 +184,54 @@ public class EETest {
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
     }
+
+    @Test
+    public void testNetworkCallIsNotMadeOnCoreStartIfStatelessLicenseKeyPresent() throws Exception {
+        String[] args = {"../../"};
+
+        // we do this test only for non in mem db cause it requires saving the license key across
+        // core restarts..
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
+                    && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+                FeatureFlag.getInstance(process.main)
+                        .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_TEST_FEATURE);
+                Assert.assertNull(
+                        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+            }
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            Assert.assertNull(
+                    process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+            process.startProcess();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
+                    && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+
+                Assert.assertNull(
+                        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+            }
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
 }
  
