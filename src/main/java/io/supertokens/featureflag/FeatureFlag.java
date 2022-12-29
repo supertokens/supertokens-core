@@ -42,6 +42,11 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
     private static URLClassLoader ucl = null;
 
     private FeatureFlag(Main main, String eeFolderPath) throws MalformedURLException {
+        String locationForTest = FeatureFlagTestContent.getInstance(main)
+                .getValue(FeatureFlagTestContent.EE_FOLDER_LOCATION);
+        if (locationForTest != null) {
+            eeFolderPath = locationForTest;
+        }
         File loc = new File(eeFolderPath);
         EEFeatureFlagInterface eeLayerTemp = null;
 
