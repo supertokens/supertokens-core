@@ -34,6 +34,10 @@ public class EETest extends Mockito {
     public static final String OPAQUE_LICENSE_KEY_THAT_IS_REVOKED = "niFM" +
             "=FhjugpjM2gcoIDMAAk776gX8EnxkhGpxi8YMv7HHUEBC-tXXJBBOL45QOJ5yivFQdBJFHU=MWfNhu8hCxLCm1=nfZQ5V-FTDT2Hm" +
             "=4VKm6JgG4NXdzqqAx4dzwl";
+    public static final String OPAQUE_LICENSE_KEY_WITH_TEST_AND_RANDOM_FEATURE = "hXtnJKthVhKdcAO1692agPrPNx3t" +
+            "=Kh5iZKuHbvfHe-iC5EnFcjQJWHmXnWtq40nRu-YEDYvj8N3R1V5M-bNj1iBc0a=-gZTP=fORe84aV-xrQlM6qGynJJSqYKfjd7i";
+    public static final String OPAQUE_LICENSE_KEY_WITH_RANDOM_FEATURE = "ANg4QU6GaxjlTDjXQKyNP55CexB87" +
+            "=yOetPcQa5XaRe2HUbPh90RLVDj6AFfniKSOVC-KRZUNyyFq2=41SwpyutJcpS3yQWKEeGJpMMjTLwcFetFoJTZeezwi3=fdPXj";
     public static final String OPAQUE_INVALID_LICENSE_KEY = "abcd";
 
     public static final String STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9" +
