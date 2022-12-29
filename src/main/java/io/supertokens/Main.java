@@ -78,6 +78,10 @@ public class Main {
     private boolean waitToInitStorageModule = false;
     private final Object waitToInitStorageModuleLock = new Object();
 
+    private boolean waitToEnableFeatureFlag = false;
+    private final Object waitToEnableFeatureFlagLock = new Object();
+
+
     private boolean forceInMemoryDB = false;
 
     public static void main(String[] args) {
@@ -173,6 +177,14 @@ public class Main {
         StorageLayer.getStorage(this).initStorage();
 
         // enable ee features if license key is provided.
+        synchronized (waitToEnableFeatureFlagLock) {
+            while (waitToEnableFeatureFlag) {
+                try {
+                    waitToEnableFeatureFlagLock.wait();
+                } catch (InterruptedException ignored) {
+                }
+            }
+        }
         FeatureFlag.init(this, CLIOptions.get(this).getInstallationPath() + "ee/");
 
         // init signing keys
@@ -251,6 +263,29 @@ public class Main {
             synchronized (waitToInitStorageModuleLock) {
                 waitToInitStorageModule = false;
                 waitToInitStorageModuleLock.notifyAll();
+            }
+        } else {
+            throw new RuntimeException("Calling testing method in non-testing env");
+        }
+    }
+
+    @TestOnly
+    public void waitToEnableFeatureFlag() {
+        if (Main.isTesting) {
+            synchronized (waitToEnableFeatureFlagLock) {
+                waitToEnableFeatureFlag = true;
+            }
+        } else {
+            throw new RuntimeException("Calling testing method in non-testing env");
+        }
+    }
+
+    @TestOnly
+    public void proceedToEnableFeatureFlag() {
+        if (Main.isTesting) {
+            synchronized (waitToEnableFeatureFlagLock) {
+                waitToEnableFeatureFlag = false;
+                waitToEnableFeatureFlagLock.notifyAll();
             }
         } else {
             throw new RuntimeException("Calling testing method in non-testing env");

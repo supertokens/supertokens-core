@@ -21,7 +21,7 @@ import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
 
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 public class EETest extends Mockito {
 
@@ -871,7 +871,7 @@ public class EETest extends Mockito {
             // same state as previous key
             Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
             Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
-            
+
             try {
                 FeatureFlag.getInstance(process.main)
                         .setLicenseKeyAndSyncFeatures(STATELESS_INVALID_LICENSE_KEY);
@@ -939,6 +939,31 @@ public class EETest extends Mockito {
             FeatureFlag.getInstance(process.main)
                     .setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_RANDOM_FEATURE);
             Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void testDbQueryOnCoreStartStopsCore()
+            throws Exception {
+        String[] args = {"../../"};
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            process.main.waitToEnableFeatureFlag();
+            process.startProcess();
+            Thread.sleep(4000);
+            process.main.deleteAllInformationForTesting();
+            process.main.proceedToEnableFeatureFlag();
+            ProcessState.EventAndException coreFailure = process.checkOrWaitForEvent(
+                    ProcessState.PROCESS_STATE.INIT_FAILURE);
+            ProcessState.EventAndException fromEE = process.checkOrWaitForEvent(
+                    ProcessState.PROCESS_STATE.INIT_FAILURE_DUE_TO_LICENSE_KEY_DB_CHECK);
+            assertNotNull(coreFailure);
+            assertNotNull(fromEE);
+            assertEquals(coreFailure.exception.getCause(), fromEE.exception);
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
