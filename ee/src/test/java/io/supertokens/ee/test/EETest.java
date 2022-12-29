@@ -530,5 +530,88 @@ public class EETest extends Mockito {
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
     }
+
+    @Test
+    public void checkThatRemovingOpaqueLicenseKeyHasNoNetworkCall()
+            throws InterruptedException, StorageQueryException,
+            InvalidLicenseKeyException, HttpResponseException, IOException {
+        String[] args = {"../../"};
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
+
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+            ProcessState.getInstance(process.main).clear();
+
+            FeatureFlag.getInstance(process.main).removeLicenseKeyAndSyncFeatures();
+            Assert.assertNull(
+                    process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void addingInvalidKeyAfterAddingCorrectKeyShouldHaveNoEffect()
+            throws InterruptedException, StorageQueryException,
+            InvalidLicenseKeyException, HttpResponseException, IOException {
+        String[] args = {"../../"};
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
+
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+            ProcessState.getInstance(process.main).clear();
+
+            try {
+                FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_INVALID_LICENSE_KEY);
+                fail();
+            } catch (InvalidLicenseKeyException ignored) {
+            }
+            Assert.assertNotNull(
+                    process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void addingInvalidStatelessKeyAfterAddingCorrectKeyShouldHaveNoEffect()
+            throws InterruptedException, StorageQueryException,
+            InvalidLicenseKeyException, HttpResponseException, IOException {
+        String[] args = {"../../"};
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
+
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+            ProcessState.getInstance(process.main).clear();
+
+            try {
+                FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(STATELESS_INVALID_LICENSE_KEY);
+                fail();
+            } catch (InvalidLicenseKeyException ignored) {
+            }
+            Assert.assertNull(
+                    process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
 }
  

@@ -109,6 +109,9 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     @Override
     public void setLicenseKeyAndSyncFeatures(String key)
             throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
+        // if the key is not valid, we will not affect the current running of things.
+        // This would cause 2 calls to the supertokens server if the key is opaque, but that's OK.
+        verifyLicenseKey(key);
         this.setLicenseKeyInDb(key);
         this.forceSyncFeatureFlagWithLicenseKey();
     }
@@ -145,14 +148,19 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             return;
         }
         try {
-            if (doesLicenseKeyRequireServerQuery(licenseKey)) {
-                this.setEnabledEEFeaturesInDb(doServerCall(licenseKey));
-            } else {
-                this.setEnabledEEFeaturesInDb(decodeLicenseKeyToGetFeatures(licenseKey));
-            }
+            this.setEnabledEEFeaturesInDb(verifyLicenseKey(licenseKey));
         } catch (InvalidLicenseKeyException e) {
             this.removeLicenseKeyAndSyncFeatures();
             throw e;
+        }
+    }
+
+    private EE_FEATURES[] verifyLicenseKey(String licenseKey)
+            throws StorageQueryException, InvalidLicenseKeyException, HttpResponseException, IOException {
+        if (doesLicenseKeyRequireServerQuery(licenseKey)) {
+            return doServerCall(licenseKey);
+        } else {
+            return decodeLicenseKeyToGetFeatures(licenseKey);
         }
     }
 
