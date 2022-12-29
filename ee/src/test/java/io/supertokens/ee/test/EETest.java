@@ -28,10 +28,32 @@ public class EETest extends Mockito {
     public static final String OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE =
             "t7D8y1ekZ-sdGXaPBeY0q3lSV3TraGTDG9Uj6CiHpFT2Zmke0COrW" +
                     "=oP8ELgZcyUUdWFWVJD2Hu=BWtONBh8LlDNvg2d7sI2WnsludXyng=PT56UcKdbVexCcj7zg-Aa";
+    public static final String OPAQUE_LICENSE_KEY_WITH_EMPTY_FEATURE =
+            "HrExZ9Vq7mnvyjTlgO8DTTwiXTDnbaPihQSaqCcftxVKTc=c-y5XkJnZRbudRysk-GFH0FU7x5W387P-yCPHnB" +
+                    "-rMKbcci8kFDwwfiwAsM9sSl-s1UbrqWXjP0EqF2uO";
+    public static final String OPAQUE_LICENSE_KEY_THAT_IS_REVOKED = "niFM" +
+            "=FhjugpjM2gcoIDMAAk776gX8EnxkhGpxi8YMv7HHUEBC-tXXJBBOL45QOJ5yivFQdBJFHU=MWfNhu8hCxLCm1=nfZQ5V-FTDT2Hm" +
+            "=4VKm6JgG4NXdzqqAx4dzwl";
     public static final String OPAQUE_INVALID_LICENSE_KEY = "abcd";
 
-    public static final String STATELESS_LICENSE_KEY_WITH_TEST_FEATURE = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9" +
+    public static final String STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9" +
             ".eyJlbmFibGVkRmVhdHVyZXMiOlsidGVzdCJdLCJzY29wZSI6InRlc3QtRW5hYmxlZEZlYXR1cmVzPVRFU1QtTm8tRVhQIiwic3ViIjoiMGRkMDhlZmYtYzBmMy00ZDk1LTkxZjgtNDAzMTllNzA2ZGVmIiwiaWF0IjoxNjcyMzAyMjQ3fQ.EwKBbr3Fbo5qR2cbGjJgUl38ypjBu6pRmWQE5sCHAzuD1HnGRWxgRkjVMfcTPrT1QA3VNVLcRgEhTJOMGWIffKjK3YrI5d7qNHSiNfgYaf3qbTbn4LJCObATxa9cPhi3dK1VQJtMbGWo5SGwEGKG27G0bhJyVTmeeMilNJ-N5k0hodRJrOn97milkljJYGiewC9AhM35b1p7fuoxDOG69E6ZMlrQfCHSnheQEjFLtkaLHUptzmU57vsyizK85zm-1NL-f4bLPjtWBcYpzhI89MCss1fCiYEHJiMqh6SAeI1R5VTouer3Kp9JqfbF33CGOYj-dSHLrPkA6ME-gFtdlQ";
+    public static final String STATELESS_LICENSE_KEY_WITH_EMPTY_FEATURE_NO_EXP =
+            "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9" +
+                    ".eyJlbmFibGVkRmVhdHVyZXMiOltdLCJzY29wZSI6InRlc3QtRW5hYmxlZEZlYXR1cmVzPVtdLU5vLUVYUCIsInN1YiI6IjBkZDA4ZWZmLWMwZjMtNGQ5NS05MWY4LTQwMzE5ZTcwNmRlZiIsImlhdCI6MTY3MjMwMjE5Mn0.KhwaPVV9cD7Slzh-55DlJdeCZ-L7rlYv7oXNdHkowrQFsVuQjYJ-42D_o5Ucidf8JpOiTK8b9PZL_es40WqDXOYJ1sikL8Ruc8zXN3NTjZRXZAK1W9zREdTcuUuFI967N-OikixSGHwCc0__BhyKhYCAA9GDD2Up9t4GHmZPXgQFEFYovLQ7KTaCeAjX_PKIucLAJ4puUiQ5LTcUPT5DSHRaV0YB7r6CcBWJaOnxw2HmdEXmpXZ-bGjFYh0I8j1RxmORu55S6UmAWaJO7aH1SybJvXd0imwu98x75r3Pl8-_r0-Pvg4wOtgqV6-By0degLMpYPrXEXD8VsODfg2DDw";
+    public static final String STATELESS_LICENSE_KEY_EXPIRED = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9" +
+            ".eyJlbmFibGVkRmVhdHVyZXMiOltdLCJzY29wZSI6InRlc3QtRW5hYmxlZEZlYXR1cmVzPVtdLUVYUCIsInN1YiI6IjBkZDA4ZWZmLWMwZjMtNGQ5NS05MWY4LTQwMzE5ZTcwNmRlZiIsImV4cCI6MTY3MjMwMjU0MSwiaWF0IjoxNjcyMzAyNTQxfQ.LfoAg6t6mX4CqziaFgGpWmVinTThSkAhHk-nqmShXabvTyU0bss_UIG-ekcXY14iDBWNu9tZPuB7is3i5k4eU9oknFkb9syw0eYguAfwieDgS0pVtHhHQvq440hUhhSRPKzjxrByfgHlC2G0wyTFOdZclfgL3z6CYBMpXfvVW0jxc-1k-vhVw3nk0ZK_wY8ymPfJR-U0v531VCo934yNOv3x31HSp6RpM9nOw7olOpPyQDihUSgexw1cgkYQziOJ96x1FWrWSXGF57vSzct2cZ3OwOKZWxLJQeP8j4vzwMzm0KRNJtgzlP8cnl5rqqxkubJkaBYDJylE4FdBuN7oOg";
+    public static final String STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_WITH_EXP =
+            "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9" +
+                    ".eyJlbmFibGVkRmVhdHVyZXMiOlsidGVzdCJdLCJzY29wZSI6InRlc3QtRW5hYmxlZEZlYXR1cmVzPVRFU1QtTk9OLUVYUCIsInN1YiI6IjBkZDA4ZWZmLWMwZjMtNGQ5NS05MWY4LTQwMzE5ZTcwNmRlZiIsImV4cCI6MTkyNDc2MzM5OSwiaWF0IjoxNjcyMzAyNjIxfQ.pzgPwvW4aw0bLLt4Og8J2gcDFeM0XEFJpIsIQ75k7V1YuJPHNLYQ4n3q6_fArR1m7M4gA-irlGvuguwPRak42mtyH9Tj6FNd4Afstylus3V6A1Q_IBHBioDesEzWD0qm7fxQAKQT7GOkxq2yUbfaD8TvZj_gdWlSRQfZR0OvymkqkJ6CR-kK-ovCXeUakxSA8tQABQy0_H1KD0W71lraOejMdeTbcGljXnkYa_rgnml115wvu_SHEezugSnqwSyZ0Eoq5vZsDLZ8J0U0fuDt8Um7JtvfgkSrLvcpGkXL9THuxVC9bfuq_i-169hjSS02mu2mp5es2CkIw5YW-oddPg";
+    public static final String STATELESS_LICENSE_KEY_EMPTY_FEATURE_WITH_EXP = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9" +
+            ".eyJlbmFibGVkRmVhdHVyZXMiOltdLCJzY29wZSI6InRlc3QtRW5hYmxlZEZlYXR1cmVzPVtdLU5PTi1FWFAiLCJzdWIiOiIwZGQwOGVmZi1jMGYzLTRkOTUtOTFmOC00MDMxOWU3MDZkZWYiLCJleHAiOjE5MjQ3NjM0MjgsImlhdCI6MTY3MjMwMjY1MH0.CxUOCUA7Rqp94FOKIQ9pFLYcEwwXh8WZelJqmFhVpeBKQA9_YWki5xML08uJE-3Ls64m1T4a9kGmgc887qPlrWLRwoFm0UGlXC5QLLR3XBQ5h7SBijMb-5pS8fUD6Qh9sM1U2cT6gWrz52QBUNtBh9UmXiRznAx_5-uduKORXmCRbsgMntyDmZudzE6vP-cGoZqoCZDntCXCBCeBimdaH2zrjI4ylGFlFbqUdv3pUCW5fgtUSgOUHv4Vpy-2ruw8QuXi6ybapZSgb9uxv15h7ExtC9IyKHv7hhtuyx0F9V4U7zaoDsKQP3TdoznDG2kh8uWdlt6FGZDwvVxhVrSUng";
+    public static final String STATELESS_LICENSE_KEY_WITH_TEST_AND_RANDOM_FEATURE_WITH_EXP =
+            "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9" +
+                    ".eyJlbmFibGVkRmVhdHVyZXMiOlsiYWJjZGUiLCJ0ZXN0Il0sInNjb3BlIjoidGVzdC1FbmFibGVkRmVhdHVyZXM9QUJDREUsVEVTVC1OT04tRVhQIiwic3ViIjoiMGRkMDhlZmYtYzBmMy00ZDk1LTkxZjgtNDAzMTllNzA2ZGVmIiwiZXhwIjoxOTI0NzYzOTU4LCJpYXQiOjE2NzIzMDMxODB9.JInMiQWfnIRlAV_Ss1g5L8y0szywDufOvjJdbokP3V_2IdhxiYAI6mo5jiu7iUoNL4qBndX4Vqc1q_zYftltuT1RqjkRn7Swi1zAqoDWPpvwRTGHDOCvRhanZCH_BnDB7VcJ3YmJZPfjZbmhEm53ohkrAuqOLiv4zdt0-CPbuFG3hbScRlB_7FDEhimKbSY6X2BLhzf9nuELK2N-T2IK7TdWldqM40m76eCCdN2tiRL_N8_hX6dgmd449jShlUh4FWdB4CU6LnUjUOsCMM2aLhkGAj6VKkdYK9woUgaKNZRzkc5GGCD5z0sA2U8i137qXbI9N_xtmO7EuUmnPXtaaA";
+    public static final String STATELESS_LICENSE_KEY_WITH_RANDOM_FEATURE_WITH_EXP =
+            "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9" +
+                    ".eyJlbmFibGVkRmVhdHVyZXMiOlsiYWJjZGUiXSwic2NvcGUiOiJ0ZXN0LUVuYWJsZWRGZWF0dXJlcz1BQkNERS1OT04tRVhQIiwic3ViIjoiMGRkMDhlZmYtYzBmMy00ZDk1LTkxZjgtNDAzMTllNzA2ZGVmIiwiZXhwIjoxOTI0NzYzOTk5LCJpYXQiOjE2NzIzMDMyMjF9.i4p7gV5ZiTBnXazEqDpxpps1zyPZYBY4UrqL8aynrvp5Ubd4JL-NfJ4swnB9onDs-FkV7gsivzh6fIe6YUhvsJAfRzumEy0CGrqN2NSVtV_Gn_3DKClu_A5WBk1usAdJK0-vCrgY5C1RvrEnxUBWIl7Ss1yKdjqdMSi3It60Jt9RMJxSqQq4D_MPo2YQ0veCCzCc9RJ3XEYaYdDSvzRDVfYAc3LvQd0k2Ii1dNbiJMznp-PuxNfYe_1gXsXnZZPtaCSSLmVlhP-LA7vC-TncKOn5sox2i-Q1e7Wl5KEeGRTsgS8G0AEguidJDX9G1NFjhBsdFY99mRoqNyPerJ7N0Q";
     public static final String STATELESS_INVALID_LICENSE_KEY =
             "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9" +
                     ".eyJlbmFibGVkRmVhdHVyZXMiOlsidGVzdCJdLCJzY29wZSI6InRlc3QtRW5hYmxlZEZlYXR1cmVzPVRFU1QtTm8tRVhQIiwic3ViIjoiMGRkMDhlZmYtYzBmMy00ZDk1LTkxZjgtNDAzMTllNzA2ZGVmIiwiaWF0IjoxNjcyMzAyMjQ3fQ.EwKBbr3Fbo5qR2cbGjJgUl38ypjBu6pRmWQE5sCHAzuD1HnGRWxgRkjVMfcTPrT1QA3VNVLcRgEhTJOMGWIffKjK3YrI5d7qNHSiNfgYaf3qbTbn4LJCObATxa9cPhi3dK1VQJtMbGWo5SGwEGKG27G0bhJyVTmeeMilNJ-N5k0hodRJrOn97milkljJYGiewC9AhM35b1p7fuoxDOG69E6ZMlrQfCHSnheQEjFLtkaLHUptzmU57vsyizK85zm-1NL-f4bLPjtWBcYpzhI89MCYs1fCiYEHJiMqh6SAeI1R5VTouer3Kp9JqfbF33CGOYj-dSHLrPkA6ME-gFtdlQ";
@@ -49,6 +71,9 @@ public class EETest extends Mockito {
     public void beforeEach() {
         Utils.reset();
     }
+
+    @Rule
+    public Retry retry = new Retry(3);
 
     @Test
     public void testRemovingLicenseKeyWhenItIsNotSet() throws Exception {
@@ -186,7 +211,8 @@ public class EETest extends Mockito {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_TEST_FEATURE);
+            FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(
+                    STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
             Assert.assertNull(
                     process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
 
@@ -212,7 +238,7 @@ public class EETest extends Mockito {
             if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
                     && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
                 FeatureFlag.getInstance(process.main)
-                        .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_TEST_FEATURE);
+                        .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
                 Assert.assertNull(
                         process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
 

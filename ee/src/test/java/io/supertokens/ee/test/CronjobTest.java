@@ -126,7 +126,7 @@ public class CronjobTest {
 
             StorageLayer.getStorage(process.main)
                     .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB,
-                            new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE));
+                            new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP));
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -169,7 +169,7 @@ public class CronjobTest {
 
             StorageLayer.getStorage(process.main)
                     .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB,
-                            new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE));
+                            new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP));
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
