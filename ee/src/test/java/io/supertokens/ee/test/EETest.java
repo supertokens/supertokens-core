@@ -837,5 +837,112 @@ public class EETest extends Mockito {
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
     }
+
+    @Test
+    public void testVariousStatelessKeys()
+            throws InterruptedException, StorageQueryException,
+            InvalidLicenseKeyException, HttpResponseException, IOException {
+        String[] args = {"../../"};
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            FeatureFlag.getInstance(process.main)
+                    .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_EMPTY_FEATURE_NO_EXP);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
+
+
+            FeatureFlag.getInstance(process.main)
+                    .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_EMPTY_FEATURE_WITH_EXP);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
+
+            FeatureFlag.getInstance(process.main)
+                    .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_WITH_EXP);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+            try {
+                FeatureFlag.getInstance(process.main)
+                        .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_EXPIRED);
+                fail();
+            } catch (InvalidLicenseKeyException ignored) {
+            }
+            // same state as previous key
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+            
+            try {
+                FeatureFlag.getInstance(process.main)
+                        .setLicenseKeyAndSyncFeatures(STATELESS_INVALID_LICENSE_KEY);
+                fail();
+            } catch (InvalidLicenseKeyException ignored) {
+            }
+            // same state as previous key
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+            FeatureFlag.getInstance(process.main)
+                    .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_RANDOM_FEATURE_WITH_EXP);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void testVariousOpaqueKeys()
+            throws InterruptedException, StorageQueryException,
+            InvalidLicenseKeyException, HttpResponseException, IOException {
+        String[] args = {"../../"};
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            FeatureFlag.getInstance(process.main)
+                    .setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_EMPTY_FEATURE);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
+
+
+            FeatureFlag.getInstance(process.main)
+                    .setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_AND_RANDOM_FEATURE);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+            FeatureFlag.getInstance(process.main)
+                    .setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+            try {
+                FeatureFlag.getInstance(process.main)
+                        .setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_THAT_IS_REVOKED);
+                fail();
+            } catch (InvalidLicenseKeyException ignored) {
+            }
+            // same state as previous key
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+            try {
+                FeatureFlag.getInstance(process.main)
+                        .setLicenseKeyAndSyncFeatures(OPAQUE_INVALID_LICENSE_KEY);
+                fail();
+            } catch (InvalidLicenseKeyException ignored) {
+            }
+            // same state as previous key
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+            FeatureFlag.getInstance(process.main)
+                    .setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_RANDOM_FEATURE);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
 }
  
