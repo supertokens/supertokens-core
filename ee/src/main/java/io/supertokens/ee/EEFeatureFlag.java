@@ -251,7 +251,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             JsonArray enabledFeaturesJSON = new JsonParser().parse(enabledFeaturesStr).getAsJsonArray();
             List<EE_FEATURES> enabledFeatures = new ArrayList<>();
             enabledFeaturesJSON.forEach(jsonElement -> {
-                EE_FEATURES feature = EE_FEATURES.getEnumFromString(jsonElement.toString());
+                EE_FEATURES feature = EE_FEATURES.getEnumFromString(jsonElement.getAsString());
                 if (feature != null) { // this check cause maybe the core is of an older version
                     enabledFeatures.add(feature);
                 }
@@ -289,7 +289,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             JsonArray enabledFeaturesJSON = licenseCheckResponse.getAsJsonArray("enabledFeatures");
             List<EE_FEATURES> enabledFeatures = new ArrayList<>();
             enabledFeaturesJSON.forEach(jsonElement -> {
-                EE_FEATURES feature = EE_FEATURES.getEnumFromString(jsonElement.toString());
+                EE_FEATURES feature = EE_FEATURES.getEnumFromString(jsonElement.getAsString());
                 if (feature != null) { // this check cause maybe the core is of an older version
                     enabledFeatures.add(feature);
                 }

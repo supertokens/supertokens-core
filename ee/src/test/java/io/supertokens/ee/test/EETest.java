@@ -3,12 +3,24 @@ package io.supertokens.ee.test;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
+import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.version.Version;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
+import java.io.IOException;
+
+import static org.junit.Assert.fail;
+
 public class EETest {
 
-    public static final String OPAQUE_LICENSE_KEY = "TODO";
+    public static final String OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE =
+            "t7D8y1ekZ-sdGXaPBeY0q3lSV3TraGTDG9Uj6CiHpFT2Zmke0COrW" +
+                    "=oP8ELgZcyUUdWFWVJD2Hu=BWtONBh8LlDNvg2d7sI2WnsludXyng=PT56UcKdbVexCcj7zg-Aa";
     public static final String OPAQUE_INVALID_LICENSE_KEY = "abcd";
 
 
@@ -62,25 +74,88 @@ public class EETest {
     }
 
     @Test
-    public void testNetworkCallMadeWhenLicenseKeyPresent() throws Exception {
+    public void testLoadingValidOpaqueKey() throws Exception {
         String[] args = {"../../"};
 
         {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY);
+            FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
+            Assert.assertNotNull(
+                    process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
+
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void testNetworkCallMadeOnCoreStartIfLicenseKeyPresent() throws Exception {
+        String[] args = {"../../"};
+
+        // we do this test only for non in mem db cause it requires saving the license key across
+        // core restarts..
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
+                    && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+                FeatureFlag.getInstance(process.main)
+                        .setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
+                Assert.assertNotNull(
+                        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
+
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+            }
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
 
         {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            Assert.assertNull(
+                    process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+            process.startProcess();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
+                    && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+
+                Assert.assertNotNull(
+                        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
+
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+            }
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void invalidNewLicenseKeyNotAllowed()
+            throws InterruptedException, StorageQueryException, HttpResponseException, IOException {
+        String[] args = {"../../"};
+
+        {
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            Assert.assertNotNull(
-                    process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
+            try {
+                FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_INVALID_LICENSE_KEY);
+                fail();
+            } catch (InvalidLicenseKeyException ignored) {
+            }
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
