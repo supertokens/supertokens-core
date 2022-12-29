@@ -45,8 +45,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     private static final long INTERVAL_BETWEEN_DB_READS = (long) 1000 * 3600 * 4; // 4 hour.
     private static final String REQUEST_ID = "licensecheck";
 
-    private static final String FEATURE_FLAG_KEY_IN_DB = "FEATURE_FLAG";
-    private static final String LICENSE_KEY_IN_DB = "LICENSE_KEY";
+    public static final String FEATURE_FLAG_KEY_IN_DB = "FEATURE_FLAG";
+    public static final String LICENSE_KEY_IN_DB = "LICENSE_KEY";
 
     private static final String JWT_PUBLIC_KEY_N = "yDzeKQFJMtc4" +
             "-Z4BkLvlHVTEW8DEu31onyslJ2fg48hWYlesBkb2UTLT2t7dZw9CCmqtuyYxxHIQ3iy" +
@@ -196,6 +196,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             });
             return enabledFeatures.toArray(EE_FEATURES[]::new);
         } catch (JWTVerificationException e) {
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY, null);
             Logging.debug(main, "Invalid license key: " + licenseKey);
             Logging.error(main, "Invalid license key", false, e);
             throw new InvalidLicenseKeyException(e);
@@ -235,6 +236,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             return enabledFeatures.toArray(EE_FEATURES[]::new);
         } else if (licenseCheckResponse.get("status").getAsString().equalsIgnoreCase("INVALID_LICENSE_KEY")) {
             Logging.debug(main, "Invalid license key: " + licenseKey);
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY, null);
             throw new InvalidLicenseKeyException();
         }
         throw new RuntimeException("Should never come here");

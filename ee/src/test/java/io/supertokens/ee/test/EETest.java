@@ -1,10 +1,13 @@
 package io.supertokens.ee.test;
 
 import io.supertokens.ProcessState;
+import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
+import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -25,6 +28,9 @@ public class EETest {
 
     public static final String STATELESS_LICENSE_KEY_WITH_TEST_FEATURE = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9" +
             ".eyJlbmFibGVkRmVhdHVyZXMiOlsidGVzdCJdLCJzY29wZSI6InRlc3QtRW5hYmxlZEZlYXR1cmVzPVRFU1QtTm8tRVhQIiwic3ViIjoiMGRkMDhlZmYtYzBmMy00ZDk1LTkxZjgtNDAzMTllNzA2ZGVmIiwiaWF0IjoxNjcyMzAyMjQ3fQ.EwKBbr3Fbo5qR2cbGjJgUl38ypjBu6pRmWQE5sCHAzuD1HnGRWxgRkjVMfcTPrT1QA3VNVLcRgEhTJOMGWIffKjK3YrI5d7qNHSiNfgYaf3qbTbn4LJCObATxa9cPhi3dK1VQJtMbGWo5SGwEGKG27G0bhJyVTmeeMilNJ-N5k0hodRJrOn97milkljJYGiewC9AhM35b1p7fuoxDOG69E6ZMlrQfCHSnheQEjFLtkaLHUptzmU57vsyizK85zm-1NL-f4bLPjtWBcYpzhI89MCss1fCiYEHJiMqh6SAeI1R5VTouer3Kp9JqfbF33CGOYj-dSHLrPkA6ME-gFtdlQ";
+    public static final String STATELESS_INVALID_LICENSE_KEY =
+            "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9" +
+                    ".eyJlbmFibGVkRmVhdHVyZXMiOlsidGVzdCJdLCJzY29wZSI6InRlc3QtRW5hYmxlZEZlYXR1cmVzPVRFU1QtTm8tRVhQIiwic3ViIjoiMGRkMDhlZmYtYzBmMy00ZDk1LTkxZjgtNDAzMTllNzA2ZGVmIiwiaWF0IjoxNjcyMzAyMjQ3fQ.EwKBbr3Fbo5qR2cbGjJgUl38ypjBu6pRmWQE5sCHAzuD1HnGRWxgRkjVMfcTPrT1QA3VNVLcRgEhTJOMGWIffKjK3YrI5d7qNHSiNfgYaf3qbTbn4LJCObATxa9cPhi3dK1VQJtMbGWo5SGwEGKG27G0bhJyVTmeeMilNJ-N5k0hodRJrOn97milkljJYGiewC9AhM35b1p7fuoxDOG69E6ZMlrQfCHSnheQEjFLtkaLHUptzmU57vsyizK85zm-1NL-f4bLPjtWBcYpzhI89MCYs1fCiYEHJiMqh6SAeI1R5VTouer3Kp9JqfbF33CGOYj-dSHLrPkA6ME-gFtdlQ";
 
 
     @Rule
@@ -146,7 +152,7 @@ public class EETest {
     }
 
     @Test
-    public void invalidNewLicenseKeyNotAllowed()
+    public void invalidNewStatefulLicenseKeyNotAllowed()
             throws InterruptedException, StorageQueryException, HttpResponseException, IOException {
         String[] args = {"../../"};
 
@@ -159,6 +165,9 @@ public class EETest {
                 fail();
             } catch (InvalidLicenseKeyException ignored) {
             }
+
+            Assert.assertNotNull(
+                    process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -228,6 +237,103 @@ public class EETest {
                 Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
 
             }
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void invalidNewStatelessLicenseKeyNotAllowed()
+            throws InterruptedException, StorageQueryException, HttpResponseException, IOException {
+        String[] args = {"../../"};
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            try {
+                FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(STATELESS_INVALID_LICENSE_KEY);
+                fail();
+            } catch (InvalidLicenseKeyException ignored) {
+            }
+
+            Assert.assertNull(
+                    process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void startCoreWithInvalidStatelessLicenseKey()
+            throws InterruptedException, StorageQueryException, HttpResponseException, IOException {
+        String[] args = {"../../"};
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            StorageLayer.getStorage(process.main)
+                    .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB, new KeyValueInfo(STATELESS_INVALID_LICENSE_KEY));
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            try {
+                FeatureFlag.getInstance(process.main).getLicenseKey();
+                fail();
+            } catch (NoLicenseKeyFoundException ignored) {
+            }
+
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY));
+            Assert.assertNull(
+                    process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void startCoreWithInvalidStatefulLicenseKey()
+            throws InterruptedException, StorageQueryException, HttpResponseException, IOException {
+        String[] args = {"../../"};
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            StorageLayer.getStorage(process.main)
+                    .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB, new KeyValueInfo(OPAQUE_INVALID_LICENSE_KEY));
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            try {
+                FeatureFlag.getInstance(process.main).getLicenseKey();
+                fail();
+            } catch (NoLicenseKeyFoundException ignored) {
+            }
+
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INVALID_LICENSE_KEY));
+            Assert.assertNotNull(
+                    process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
+
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
