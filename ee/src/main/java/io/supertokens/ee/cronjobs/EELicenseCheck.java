@@ -25,7 +25,7 @@ public class EELicenseCheck extends CronTask {
 
     @Override
     protected void doTask() throws Exception {
-        FeatureFlag.getInstance(main).forceSyncWithServer();
+        FeatureFlag.getInstance(main).syncFeatureFlagWithLicenseKey();
     }
 
     @Override

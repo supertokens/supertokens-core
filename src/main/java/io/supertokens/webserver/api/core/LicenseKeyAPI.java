@@ -51,7 +51,7 @@ public class LicenseKeyAPI extends WebserverAPI {
             if (licenseKey != null) {
                 success = FeatureFlag.getInstance(main).setLicenseKeyAndSyncFeatures(licenseKey);
             } else {
-                success = FeatureFlag.getInstance(main).forceSyncWithServer();
+                success = FeatureFlag.getInstance(main).syncFeatureFlagWithLicenseKey();
             }
             JsonObject result = new JsonObject();
             result.addProperty("status", success ? "OK" : "MISSING_EE_FOLDER_ERROR");

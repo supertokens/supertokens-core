@@ -71,7 +71,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         this.main = main;
         Cronjobs.addCronjob(main, EELicenseCheck.getInstance(main));
         try {
-            this.forceSyncFeatureFlagWithLicenseKey();
+            this.syncFeatureFlagWithLicenseKey();
         } catch (HttpResponseException | IOException e) {
             Logging.error(main, "API Error during constructor sync", false, e);
             // server request failed. we ignore for now as later on it will sync up anyway.
@@ -100,7 +100,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     public void removeLicenseKeyAndSyncFeatures() throws HttpResponseException, IOException, StorageQueryException {
         this.removeLicenseKeyFromDb();
         try {
-            this.forceSyncFeatureFlagWithLicenseKey();
+            this.syncFeatureFlagWithLicenseKey();
         } catch (InvalidLicenseKeyException ignored) {
             // should never come here, because we are removing the license key.
         }
@@ -113,29 +113,11 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         // This would cause 2 calls to the supertokens server if the key is opaque, but that's OK.
         verifyLicenseKey(key);
         this.setLicenseKeyInDb(key);
-        this.forceSyncFeatureFlagWithLicenseKey();
+        this.syncFeatureFlagWithLicenseKey();
     }
 
     @Override
-    public void forceSyncFeatureFlagWithLicenseKey()
-            throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
-        this.syncFeatureFlagWithLicenseKeyIfRequired();
-    }
-
-    @Override
-    @TestOnly
-    public Boolean getIsLicenseKeyPresent() {
-        return isLicenseKeyPresent;
-    }
-
-    @Override
-    public JsonObject getPaidFeatureStats() throws StorageQueryException {
-        JsonObject result = new JsonObject();
-        // TODO:
-        return result;
-    }
-
-    private void syncFeatureFlagWithLicenseKeyIfRequired()
+    public void syncFeatureFlagWithLicenseKey()
             throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
         Logging.debug(main, "Syncing feature flag with license key");
         String licenseKey;
@@ -153,6 +135,19 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             this.removeLicenseKeyAndSyncFeatures();
             throw e;
         }
+    }
+
+    @Override
+    @TestOnly
+    public Boolean getIsLicenseKeyPresent() {
+        return isLicenseKeyPresent;
+    }
+
+    @Override
+    public JsonObject getPaidFeatureStats() throws StorageQueryException {
+        JsonObject result = new JsonObject();
+        // TODO:
+        return result;
     }
 
     private EE_FEATURES[] verifyLicenseKey(String licenseKey)

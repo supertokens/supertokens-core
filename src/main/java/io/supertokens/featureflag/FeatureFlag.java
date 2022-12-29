@@ -23,7 +23,6 @@ import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.httpRequest.HttpResponseException;
-import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import org.jetbrains.annotations.TestOnly;
 
@@ -73,7 +72,6 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
         }
 
         if (eeLayerTemp != null) {
-            Logging.info(main, "Loaded ee folder", true);
             this.eeFeatureFlag = eeLayerTemp;
             try {
                 this.eeFeatureFlag.constructor(main);
@@ -81,7 +79,6 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
                 throw new QuitProgramException(e);
             }
         } else {
-            Logging.info(main, "Missing ee folder", true);
             eeFeatureFlag = null;
         }
     }
@@ -112,12 +109,12 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
         return this.eeFeatureFlag.getEnabledFeatures();
     }
 
-    public boolean forceSyncWithServer()
+    public boolean syncFeatureFlagWithLicenseKey()
             throws StorageQueryException, HttpResponseException, IOException, InvalidLicenseKeyException {
         if (this.eeFeatureFlag == null) {
             return false;
         }
-        this.eeFeatureFlag.forceSyncFeatureFlagWithLicenseKey();
+        this.eeFeatureFlag.syncFeatureFlagWithLicenseKey();
         return true;
     }
 

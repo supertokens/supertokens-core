@@ -31,7 +31,7 @@ public interface EEFeatureFlagInterface {
 
     EE_FEATURES[] getEnabledFeatures() throws StorageQueryException;
 
-    void forceSyncFeatureFlagWithLicenseKey() throws StorageQueryException, HttpResponseException, IOException,
+    void syncFeatureFlagWithLicenseKey() throws StorageQueryException, HttpResponseException, IOException,
             InvalidLicenseKeyException;
 
     void setLicenseKeyAndSyncFeatures(String licenseKey)
