@@ -635,6 +635,12 @@ public class EETest extends Mockito {
                 fail();
             } catch (InvalidLicenseKeyException ignored) {
             }
+
+            try {
+                FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_EXPIRED);
+                fail();
+            } catch (InvalidLicenseKeyException ignored) {
+            }
             Assert.assertNull(
                     process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
             Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
