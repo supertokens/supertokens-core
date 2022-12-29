@@ -23,6 +23,9 @@ public class EETest {
                     "=oP8ELgZcyUUdWFWVJD2Hu=BWtONBh8LlDNvg2d7sI2WnsludXyng=PT56UcKdbVexCcj7zg-Aa";
     public static final String OPAQUE_INVALID_LICENSE_KEY = "abcd";
 
+    public static final String STATELESS_LICENSE_KEY_WITH_TEST_FEATURE = "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9" +
+            ".eyJlbmFibGVkRmVhdHVyZXMiOlsidGVzdCJdLCJzY29wZSI6InRlc3QtRW5hYmxlZEZlYXR1cmVzPVRFU1QtTm8tRVhQIiwic3ViIjoiMGRkMDhlZmYtYzBmMy00ZDk1LTkxZjgtNDAzMTllNzA2ZGVmIiwiaWF0IjoxNjcyMzAyMjQ3fQ.EwKBbr3Fbo5qR2cbGjJgUl38ypjBu6pRmWQE5sCHAzuD1HnGRWxgRkjVMfcTPrT1QA3VNVLcRgEhTJOMGWIffKjK3YrI5d7qNHSiNfgYaf3qbTbn4LJCObATxa9cPhi3dK1VQJtMbGWo5SGwEGKG27G0bhJyVTmeeMilNJ-N5k0hodRJrOn97milkljJYGiewC9AhM35b1p7fuoxDOG69E6ZMlrQfCHSnheQEjFLtkaLHUptzmU57vsyizK85zm-1NL-f4bLPjtWBcYpzhI89MCss1fCiYEHJiMqh6SAeI1R5VTouer3Kp9JqfbF33CGOYj-dSHLrPkA6ME-gFtdlQ";
+
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -156,6 +159,26 @@ public class EETest {
                 fail();
             } catch (InvalidLicenseKeyException ignored) {
             }
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void testLoadingValidStatelessKey() throws Exception {
+        String[] args = {"../../"};
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_TEST_FEATURE);
+            Assert.assertNull(
+                    process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

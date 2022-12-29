@@ -247,11 +247,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             // - should check for expiry in the claim is present in it
             // - if exp is not in the claim, then should assume infinite lifetime
             DecodedJWT decoded = verifier.verify(licenseKey);
-            String enabledFeaturesStr = decoded.getClaim("enabledFeatures").asString();
-            JsonArray enabledFeaturesJSON = new JsonParser().parse(enabledFeaturesStr).getAsJsonArray();
+            String[] enabledFeaturesFromClaim = decoded.getClaim("enabledFeatures").asArray(String.class);
             List<EE_FEATURES> enabledFeatures = new ArrayList<>();
-            enabledFeaturesJSON.forEach(jsonElement -> {
-                EE_FEATURES feature = EE_FEATURES.getEnumFromString(jsonElement.getAsString());
+            Arrays.stream(enabledFeaturesFromClaim).forEach(featureStr -> {
+                EE_FEATURES feature = EE_FEATURES.getEnumFromString(featureStr);
                 if (feature != null) { // this check cause maybe the core is of an older version
                     enabledFeatures.add(feature);
                 }
