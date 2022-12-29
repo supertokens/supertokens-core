@@ -275,7 +275,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             JsonArray featuresArrayJson = new JsonParser().parse(keyValueInfo.value).getAsJsonArray();
             EE_FEATURES[] features = new EE_FEATURES[featuresArrayJson.size()];
             for (int i = 0; i < featuresArrayJson.size(); i++) {
-                features[i] = EE_FEATURES.getEnumFromString(featuresArrayJson.get(i).getAsString());
+                EE_FEATURES feature = EE_FEATURES.getEnumFromString(featuresArrayJson.get(i).getAsString());
+                if (feature != null) {
+                    features[i] = feature;
+                }
             }
             this.enabledFeaturesFromDb = features;
             this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
