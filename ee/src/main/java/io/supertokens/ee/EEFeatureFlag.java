@@ -67,6 +67,12 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     private Main main;
 
     @Override
+    @TestOnly
+    public void updateEnabledFeaturesValueReadFromDbTime(long newTime) {
+        this.enabledFeaturesValueReadFromDbTime = newTime;
+    }
+
+    @Override
     public void constructor(Main main) throws StorageQueryException {
         this.main = main;
         Cronjobs.addCronjob(main, EELicenseCheck.getInstance(main));

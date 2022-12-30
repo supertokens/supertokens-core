@@ -1,5 +1,7 @@
 package io.supertokens.ee.test;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
 import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.featureflag.EE_FEATURES;
@@ -20,6 +22,7 @@ import org.mockito.Mockito;
 import java.io.*;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 
 import static org.junit.Assert.*;
 
@@ -968,6 +971,151 @@ public class EETest extends Mockito {
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
+    }
+
+    @Test
+    public void testThatInvalidOpaqueKeyOnCoreStartCausesNoFeaturesToBeLoaded() throws Exception {
+        String[] args = {"../../"};
+
+        // we do this test only for non in mem db cause it requires saving the license key across
+        // core restarts..
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
+                    && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+                FeatureFlag.getInstance(process.main)
+                        .setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
+                Assert.assertNotNull(
+                        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
+
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+                StorageLayer.getStorage(process.main)
+                        .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB, new KeyValueInfo(OPAQUE_INVALID_LICENSE_KEY));
+            }
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            Assert.assertNull(
+                    process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL, 1000));
+            process.startProcess();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
+                    && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+
+                Assert.assertNotNull(
+                        process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LICENSE_KEY_CHECK_NETWORK_CALL));
+
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
+            }
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void testThatInvalidstatelessKeyOnCoreStartCausesNoFeaturesToBeLoaded() throws Exception {
+        String[] args = {"../../"};
+
+        // we do this test only for non in mem db cause it requires saving the license key across
+        // core restarts..
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
+                    && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+                FeatureFlag.getInstance(process.main)
+                        .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_WITH_EXP);
+
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+                StorageLayer.getStorage(process.main)
+                        .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB, new KeyValueInfo(STATELESS_INVALID_LICENSE_KEY));
+            }
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            process.startProcess();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
+                    && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+
+                Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
+            }
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
+
+    @Test
+    public void gettingFeatureFlagInAPIDoesntAlwaysQueryDb() throws Exception {
+        String[] args = {"../../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlag.getInstance(process.main)
+                .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_WITH_EXP);
+
+        Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+        Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+        StorageLayer.getStorage(process.main)
+                .setKeyValue(EEFeatureFlag.FEATURE_FLAG_KEY_IN_DB, new KeyValueInfo(""));
+
+        Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+        Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void gettingFeatureFlagInAPIQueriesDbAfterCertainAmountOfTime() throws Exception {
+        String[] args = {"../../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlag.getInstance(process.main)
+                .setLicenseKeyAndSyncFeatures(STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_WITH_EXP);
+
+        Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+        Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+        EE_FEATURES[] features = new EE_FEATURES[]{EE_FEATURES.ACCOUNT_LINKING};
+        JsonArray json = new JsonArray();
+        Arrays.stream(features).forEach(ee_features -> json.add(new JsonPrimitive(ee_features.toString())));
+        StorageLayer.getStorage(process.main)
+                .setKeyValue(EEFeatureFlag.FEATURE_FLAG_KEY_IN_DB, new KeyValueInfo(json.toString()));
+
+        FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance()
+                .updateEnabledFeaturesValueReadFromDbTime(System.currentTimeMillis() - (1000 * 3600 * 5));
+
+        Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+        Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.ACCOUNT_LINKING);
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
  
