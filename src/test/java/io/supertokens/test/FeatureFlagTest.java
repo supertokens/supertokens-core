@@ -96,7 +96,7 @@ public class FeatureFlagTest {
 
     @Test
     public void testThatCallingGetFeatureFlagAPIReturnsEmptyArray() throws Exception {
-        String[] args = {"../../"};
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
