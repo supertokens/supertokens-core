@@ -260,5 +260,34 @@ public class CronjobTest {
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
     }
+
+    @Test
+    public void cronjobRemovesFeaturesIfJWTExpired() throws Exception {
+        String[] args = {"../../"};
+
+        {
+            TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+            CronTaskTest.getInstance(process.main).setIntervalInSeconds(EELicenseCheck.RESOURCE_KEY, 4);
+            process.startProcess();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+            FeatureFlag.getInstance(process.main)
+                    .setLicenseKeyAndSyncFeatures(EETest.STATELESS_LICENSE_KEY_WITH_TEST_AND_RANDOM_FEATURE_WITH_EXP);
+
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+            StorageLayer.getStorage(process.main)
+                    .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB,
+                            new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_EXPIRED));
+
+            Thread.sleep(5000);
+
+            Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 0);
+
+            process.kill();
+            Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+        }
+    }
 }
  
