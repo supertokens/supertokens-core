@@ -962,13 +962,18 @@ public class EETest extends Mockito {
             Thread.sleep(4000);
             process.main.deleteAllInformationForTesting();
             process.main.proceedToEnableFeatureFlag();
-            ProcessState.EventAndException coreFailure = process.checkOrWaitForEvent(
-                    ProcessState.PROCESS_STATE.INIT_FAILURE);
-            ProcessState.EventAndException fromEE = process.checkOrWaitForEvent(
-                    ProcessState.PROCESS_STATE.INIT_FAILURE_DUE_TO_LICENSE_KEY_DB_CHECK);
-            assertNotNull(coreFailure);
-            assertNotNull(fromEE);
-            assertEquals(coreFailure.exception.getCause(), fromEE.exception);
+            if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
+                    && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+                ProcessState.EventAndException coreFailure = process.checkOrWaitForEvent(
+                        ProcessState.PROCESS_STATE.INIT_FAILURE);
+                ProcessState.EventAndException fromEE = process.checkOrWaitForEvent(
+                        ProcessState.PROCESS_STATE.INIT_FAILURE_DUE_TO_LICENSE_KEY_DB_CHECK);
+                assertNotNull(coreFailure);
+                assertNotNull(fromEE);
+                assertEquals(coreFailure.exception.getCause(), fromEE.exception);
+            } else {
+                Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+            }
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
