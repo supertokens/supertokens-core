@@ -193,9 +193,6 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             });
 
             JWTVerifier verifier = JWT.require(verificationAlgorithm).ignoreIssuedAt().build();
-            // TODO: add test for making sure JWT validation is correct:
-            // - should check for expiry in the claim is present in it
-            // - if exp is not in the claim, then should assume infinite lifetime
             DecodedJWT decoded = verifier.verify(licenseKey);
             String[] enabledFeaturesFromClaim = decoded.getClaim("enabledFeatures").asArray(String.class);
             List<EE_FEATURES> enabledFeatures = new ArrayList<>();

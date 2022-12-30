@@ -1,6 +1,8 @@
 package io.supertokens.ee.test;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
 import io.supertokens.ee.EEFeatureFlag;
@@ -1177,6 +1179,69 @@ public class EETest extends Mockito {
         EE_FEATURES[] featuresFromDb = FeatureFlag.getInstance(process.main).getEnabledFeatures();
         Assert.assertEquals(featuresFromDb.length, 1);
         Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testLicenseKeyCheckAPIInput()
+            throws InterruptedException, StorageQueryException, HttpResponseException, IOException,
+            InvalidLicenseKeyException {
+        String[] args = {"../../"};
+
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        ByteArrayOutputStream output = new ByteArrayOutputStream();
+        final HttpURLConnection mockCon = mock(HttpURLConnection.class);
+        InputStream inputStrm = new ByteArrayInputStream("".getBytes(StandardCharsets.UTF_8));
+        when(mockCon.getInputStream()).thenReturn(inputStrm);
+        when(mockCon.getErrorStream()).thenReturn(inputStrm);
+        when(mockCon.getResponseCode()).thenReturn(200);
+        when(mockCon.getOutputStream()).thenReturn(new OutputStream() {
+            @Override
+            public void write(int b) {
+                output.write(b);
+            }
+        });
+        HttpRequestMocking.getInstance(process.getProcess()).setMockURL(EEFeatureFlag.REQUEST_ID,
+                new HttpRequestMocking.URLGetter() {
+
+                    @Override
+                    public URL getUrl(String url) throws MalformedURLException {
+                        URLStreamHandler stubURLStreamHandler = new URLStreamHandler() {
+                            @Override
+                            protected URLConnection openConnection(URL u) {
+                                return mockCon;
+                            }
+                        };
+                        return new URL(null, url, stubURLStreamHandler);
+                    }
+                });
+        process.startProcess();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        try {
+            FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_LICENSE_KEY_WITH_TEST_FEATURE);
+        } catch (Exception ignored) {
+            // we have this cause the mocked API response is not as per spec.
+        }
+        String requestBodyStr = output.toString();
+        JsonObject j = new JsonParser().parse(requestBodyStr).getAsJsonObject();
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
+                && Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+            assertEquals(j.entrySet().size(), 3);
+            assertNotNull(j.get("licenseKey"));
+            assertNotNull(j.get("superTokensVersion"));
+            assertEquals(j.getAsJsonObject("paidFeatureUsageStats").entrySet().size(), 0);
+        } else {
+            assertEquals(j.entrySet().size(), 4);
+            assertNotNull(j.get("telemetryId"));
+            assertNotNull(j.get("licenseKey"));
+            assertNotNull(j.get("superTokensVersion"));
+            assertEquals(j.getAsJsonObject("paidFeatureUsageStats").entrySet().size(), 0);
+        }
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
