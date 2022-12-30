@@ -97,10 +97,6 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
     @Override
     public EE_FEATURES[] getEnabledFeatures() throws StorageQueryException {
-        if (!this.isLicenseKeyPresent) {
-            return new EE_FEATURES[]{};
-        }
-
         return this.getEnabledEEFeaturesFromDbOrCache();
     }
 
@@ -284,14 +280,14 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                 return new EE_FEATURES[]{};
             }
             JsonArray featuresArrayJson = new JsonParser().parse(keyValueInfo.value).getAsJsonArray();
-            EE_FEATURES[] features = new EE_FEATURES[featuresArrayJson.size()];
+            List<EE_FEATURES> enabledFeatures = new ArrayList<>();
             for (int i = 0; i < featuresArrayJson.size(); i++) {
                 EE_FEATURES feature = EE_FEATURES.getEnumFromString(featuresArrayJson.get(i).getAsString());
                 if (feature != null) {
-                    features[i] = feature;
+                    enabledFeatures.add(feature);
                 }
             }
-            this.enabledFeaturesFromDb = features;
+            this.enabledFeaturesFromDb = enabledFeatures.toArray(EE_FEATURES[]::new);
             this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
         } else {
             Logging.debug(main, "Returning feature flag from cache");

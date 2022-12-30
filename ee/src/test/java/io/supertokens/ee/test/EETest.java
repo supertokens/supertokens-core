@@ -1117,5 +1117,69 @@ public class EETest extends Mockito {
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void gettingEmptyFeatureFlagFromDb() throws Exception {
+        String[] args = {"../../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        EE_FEATURES[] features = new EE_FEATURES[]{};
+        JsonArray json = new JsonArray();
+        Arrays.stream(features).forEach(ee_features -> json.add(new JsonPrimitive(ee_features.toString())));
+        StorageLayer.getStorage(process.main)
+                .setKeyValue(EEFeatureFlag.FEATURE_FLAG_KEY_IN_DB, new KeyValueInfo(json.toString()));
+
+        FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance()
+                .updateEnabledFeaturesValueReadFromDbTime(System.currentTimeMillis() - (1000 * 3600 * 5));
+
+        EE_FEATURES[] featuresFromDb = FeatureFlag.getInstance(process.main).getEnabledFeatures();
+        Assert.assertEquals(featuresFromDb.length, 0);
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void gettingMissingFeatureFlagFromDb() throws Exception {
+        String[] args = {"../../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance()
+                .updateEnabledFeaturesValueReadFromDbTime(System.currentTimeMillis() - (1000 * 3600 * 5));
+
+        EE_FEATURES[] featuresFromDb = FeatureFlag.getInstance(process.main).getEnabledFeatures();
+        Assert.assertEquals(featuresFromDb.length, 0);
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void gettingInvalidFeatureFlagShouldIgnoreItFromDb() throws Exception {
+        String[] args = {"../../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonArray json = new JsonArray();
+        json.add(new JsonPrimitive("random"));
+        json.add(new JsonPrimitive("test"));
+        StorageLayer.getStorage(process.main)
+                .setKeyValue(EEFeatureFlag.FEATURE_FLAG_KEY_IN_DB, new KeyValueInfo(json.toString()));
+
+        FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance()
+                .updateEnabledFeaturesValueReadFromDbTime(System.currentTimeMillis() - (1000 * 3600 * 5));
+
+        EE_FEATURES[] featuresFromDb = FeatureFlag.getInstance(process.main).getEnabledFeatures();
+        Assert.assertEquals(featuresFromDb.length, 1);
+        Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
  
