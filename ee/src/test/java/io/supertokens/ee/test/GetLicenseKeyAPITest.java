@@ -4,11 +4,15 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.ee.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.ee.test.httpRequest.HttpResponseException;
+import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.webserver.WebserverAPI;
+
+import static org.junit.Assert.assertEquals;
+
 import org.junit.*;
 import org.junit.rules.TestRule;
 
-public class LicenseKeyAPITest {
+public class GetLicenseKeyAPITest {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -23,32 +27,6 @@ public class LicenseKeyAPITest {
     }
 
     @Test
-    public void testBadInputForLicenseKeyAPI() throws Exception {
-        String[] args = {"../../"};
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        // test passing licenseKey as an invalid type
-        JsonObject resquestBody = new JsonObject();
-        resquestBody.addProperty("test", 10);
-
-        Exception error = null;
-        try {
-            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/ee/license",
-                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
-        } catch (HttpResponseException e) {
-            error = e;
-        }
-
-        Assert.assertNotNull(error);
-        Assert.assertEquals("Http error. Status Code: 400. Message: Invalid Json Input", error.getMessage());
-
-        process.kill();
-        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
     public void testRetrievingLicenseKeyWhenItIsNotSet() throws Exception {
         String[] args = {"../../"};
 
@@ -58,6 +36,7 @@ public class LicenseKeyAPITest {
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
                 null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+        Assert.assertEquals(1, response.entrySet().size());
         Assert.assertEquals("NO_LICENSE_KEY_FOUND_ERROR", response.get("status").getAsString());
 
         process.kill();
@@ -65,17 +44,24 @@ public class LicenseKeyAPITest {
     }
 
     @Test
-    public void testDeletingLicenseKeyWhenItDoesNotExist() throws Exception {
+    public void testRetrievingLicenseKeyWhenItIsSet() throws Exception {
         String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        JsonObject response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
+        // set license key
+        FeatureFlag.getInstance(process.getProcess()).setLicenseKeyAndSyncFeatures(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
+
+        // retrieve license key
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
                 null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
-        Assert.assertEquals("OK", response.get("status").getAsString());
-
+        
+        assertEquals(2, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+        assertEquals(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP, response.get("licenseKey").getAsString());
+        
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
