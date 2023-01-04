@@ -1,3 +1,12 @@
+Portions of this software are licensed as follows:
+
+* All content that resides under the "ee/" directory of this repository, if that directory exists, is licensed under the
+  license defined in "ee/LICENSE.md".
+* All third party components incorporated into the SuperTokens Software are licensed under the original license provided
+  by the owner of the applicable component.
+* Content outside of the above mentioned directories or restrictions above is available under the "Apache 2.0"
+  license as defined below.
+
 
                                  Apache License
                            Version 2.0, January 2004
@@ -176,7 +185,7 @@
 
    END OF TERMS AND CONDITIONS
 
-   Copyright 2020 SuperTokens, Inc.
+   Copyright 2020-2023 SuperTokens, Inc.
 
    Licensed under the Apache License, Version 2.0 (the "License");
    you may not use this file except in compliance with the License.

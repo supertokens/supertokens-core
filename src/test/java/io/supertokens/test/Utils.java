@@ -114,6 +114,10 @@ public abstract class Utils extends Mockito {
         return "2.16";
     }
 
+    public static String getCdiVersion2_17ForTests() {
+        return "2.17";
+    }
+
     public static String getCdiVersionLatestForTests() {
         return WebserverAPI.getLatestCDIVersion();
     }
@@ -209,7 +213,7 @@ public abstract class Utils extends Mockito {
     }
 
     public static JsonObject signUpRequest_2_4(TestingProcessManager.TestingProcess process, String email,
-            String password) throws IOException, HttpResponseException {
+                                               String password) throws IOException, HttpResponseException {
 
         JsonObject signUpRequestBody = new JsonObject();
         signUpRequestBody.addProperty("email", email);
@@ -221,7 +225,7 @@ public abstract class Utils extends Mockito {
     }
 
     public static JsonObject signUpRequest_2_5(TestingProcessManager.TestingProcess process, String email,
-            String password) throws IOException, HttpResponseException {
+                                               String password) throws IOException, HttpResponseException {
 
         JsonObject signUpRequestBody = new JsonObject();
         signUpRequestBody.addProperty("email", email);
@@ -233,7 +237,7 @@ public abstract class Utils extends Mockito {
     }
 
     public static JsonObject signInUpRequest_2_7(TestingProcessManager.TestingProcess process, String email,
-            boolean isVerified, String thirdPartyId, String thirdPartyUserId)
+                                                 boolean isVerified, String thirdPartyId, String thirdPartyUserId)
             throws IOException, HttpResponseException {
 
         JsonObject emailObject = new JsonObject();
@@ -251,7 +255,8 @@ public abstract class Utils extends Mockito {
     }
 
     public static JsonObject signInUpRequest_2_8(TestingProcessManager.TestingProcess process, String email,
-            String thirdPartyId, String thirdPartyUserId) throws IOException, HttpResponseException {
+                                                 String thirdPartyId, String thirdPartyUserId)
+            throws IOException, HttpResponseException {
 
         JsonObject emailObject = new JsonObject();
         emailObject.addProperty("id", email);

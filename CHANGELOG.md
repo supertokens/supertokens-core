@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [4.3.0] - 2023-01-05
+
+- Adds feature flag, ee folder and APIs to add / remove license keys for enterprise features.
+
 ## [4.2.1] - 2022-11-24
 
 - Updates the type of `access_token_validity` in the CoreConfig from `int` to `long`

@@ -21,7 +21,6 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -49,10 +48,11 @@ public abstract class WebserverAPI extends HttpServlet {
         supportedVersions.add("2.14");
         supportedVersions.add("2.15");
         supportedVersions.add("2.16");
+        supportedVersions.add("2.17");
     }
 
     public static String getLatestCDIVersion() {
-        return "2.16";
+        return "2.17";
     }
 
     public WebserverAPI(Main main, String rid) {
