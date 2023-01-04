@@ -1,6 +1,7 @@
 package io.supertokens.ee.test.api;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -14,6 +15,7 @@ import org.junit.rules.TestRule;
 import com.google.gson.JsonObject;
 
 import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.ee.test.EETest;
 import io.supertokens.ee.test.TestingProcessManager;
 import io.supertokens.ee.test.Utils;
@@ -22,6 +24,8 @@ import io.supertokens.ee.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.ee.test.httpRequest.HttpResponseException;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
 
 public class SetLicenseKeyAPITest {
@@ -119,17 +123,26 @@ public class SetLicenseKeyAPITest {
     }
 
     @Test
-    public void testCallingAPIWithoutALicenseKey() throws Exception {
+    public void testCallingAPIToSyncLicenseKey() throws Exception {
         String[] args = { "../../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
+        // set licenseKey in db
+        StorageLayer.getStorage(process.getProcess()).setKeyValue( EEFeatureFlag.LICENSE_KEY_IN_DB, new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP));
+        
+        // check that licenseKey is not present
+        assertFalse(FeatureFlag.getInstance(process.getProcess()).getEeFeatureFlagInstance().getIsLicenseKeyPresent());
+        
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
                 new JsonObject(), 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
         assertEquals(1, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
+
+        // check that licenseKey is present
+        assertTrue(FeatureFlag.getInstance(process.getProcess()).getEeFeatureFlagInstance().getIsLicenseKeyPresent());
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
