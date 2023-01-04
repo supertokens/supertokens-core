@@ -66,7 +66,6 @@ public class DeleteLicenseKeyAPITest {
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
-
     @Test
     public void testDeletingLicenseKey() throws Exception {
         String[] args = { "../../" };
@@ -75,10 +74,12 @@ public class DeleteLicenseKeyAPITest {
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         // set license key
-        FeatureFlag.getInstance(process.getProcess()).setLicenseKeyAndSyncFeatures(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
-        
+        FeatureFlag.getInstance(process.getProcess())
+                .setLicenseKeyAndSyncFeatures(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
+
         // check that license key is successfully set
-        assertEquals(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP, FeatureFlag.getInstance(process.getProcess()).getLicenseKey());
+        assertEquals(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP,
+                FeatureFlag.getInstance(process.getProcess()).getLicenseKey());
 
         JsonObject response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
@@ -96,6 +97,5 @@ public class DeleteLicenseKeyAPITest {
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
-
 
 }
