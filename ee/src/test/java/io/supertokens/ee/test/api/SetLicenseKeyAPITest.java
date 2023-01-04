@@ -130,11 +130,12 @@ public class SetLicenseKeyAPITest {
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         // set licenseKey in db
-        StorageLayer.getStorage(process.getProcess()).setKeyValue( EEFeatureFlag.LICENSE_KEY_IN_DB, new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP));
-        
+        StorageLayer.getStorage(process.getProcess()).setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB,
+                new KeyValueInfo(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP));
+
         // check that licenseKey is not present
         assertFalse(FeatureFlag.getInstance(process.getProcess()).getEeFeatureFlagInstance().getIsLicenseKeyPresent());
-        
+
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
                 new JsonObject(), 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
