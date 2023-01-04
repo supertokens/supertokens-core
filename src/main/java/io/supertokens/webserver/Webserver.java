@@ -249,6 +249,8 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new RemoveUserIdMappingAPI(main));
         addAPI(new UpdateExternalUserIdInfoAPI(main));
         addAPI(new ImportUserWithPasswordHashAPI(main));
+        addAPI(new LicenseKeyAPI(main));
+        addAPI(new EEFeatureFlagAPI(main));
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),
                 new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));

@@ -43,7 +43,7 @@ public class HelpHandler extends CommandHandler {
             if (command != null) {
                 String commandName = command.getCommandName();
                 if (commandName == null) {
-                    continue;   // this is an options for main supertokens command
+                    continue; // this is an options for main supertokens command
                 }
                 Logging.info(Utils.formatWithFixedSpaces("->  " + commandName, command.getShortDescription(), 40, 80));
             }
@@ -61,8 +61,7 @@ public class HelpHandler extends CommandHandler {
     }
 
     private void printFileInfo(String key, String value) {
-        Logging.info(
-                Utils.formatWithFixedSpaces("    " + key, value, 40, 80));
+        Logging.info(Utils.formatWithFixedSpaces("    " + key, value, 40, 80));
     }
 
     @Override

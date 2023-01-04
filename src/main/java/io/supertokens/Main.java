@@ -28,6 +28,7 @@ import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.output.Logging;
@@ -57,13 +58,6 @@ public class Main {
 
     // this is a special variable that will be set to true by TestingProcessManager
     public static boolean makeConsolePrintSilent = false;
-    // TODO: caching with redis or memcached
-    // TODO: in memory storage -> shared across many instances of supertokens
-    // TODO: have last forced change value in session as well -> allow for absolute changing of tokens
-    // TODO: allow for just one use access tokens & hard limit on lifetime of access/refresh tokens
-    // TODO: device fingerprinting
-    // TODO: commenting
-    // TODO: database password needs to be given in other ways as well
     private final Object mainThreadWakeUpMonitor = new Object();
     // will be unique every time the server has started.
     private String processId = UUID.randomUUID().toString();
@@ -83,6 +77,10 @@ public class Main {
 
     private boolean waitToInitStorageModule = false;
     private final Object waitToInitStorageModuleLock = new Object();
+
+    private boolean waitToEnableFeatureFlag = false;
+    private final Object waitToEnableFeatureFlagLock = new Object();
+
 
     private boolean forceInMemoryDB = false;
 
@@ -178,6 +176,17 @@ public class Main {
         }
         StorageLayer.getStorage(this).initStorage();
 
+        // enable ee features if license key is provided.
+        synchronized (waitToEnableFeatureFlagLock) {
+            while (waitToEnableFeatureFlag) {
+                try {
+                    waitToEnableFeatureFlagLock.wait();
+                } catch (InterruptedException ignored) {
+                }
+            }
+        }
+        FeatureFlag.init(this, CLIOptions.get(this).getInstallationPath() + "ee/");
+
         // init signing keys
         AccessTokenSigningKey.init(this);
         RefreshTokenKey.init(this);
@@ -260,13 +269,36 @@ public class Main {
         }
     }
 
+    @TestOnly
+    public void waitToEnableFeatureFlag() {
+        if (Main.isTesting) {
+            synchronized (waitToEnableFeatureFlagLock) {
+                waitToEnableFeatureFlag = true;
+            }
+        } else {
+            throw new RuntimeException("Calling testing method in non-testing env");
+        }
+    }
+
+    @TestOnly
+    public void proceedToEnableFeatureFlag() {
+        if (Main.isTesting) {
+            synchronized (waitToEnableFeatureFlagLock) {
+                waitToEnableFeatureFlag = false;
+                waitToEnableFeatureFlagLock.notifyAll();
+            }
+        } else {
+            throw new RuntimeException("Calling testing method in non-testing env");
+        }
+    }
+
     private void createDotStartedFileForThisProcess() throws IOException {
         CoreConfig config = Config.getConfig(this);
         String fileName = OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS
                 ? CLIOptions.get(this).getInstallationPath() + ".started\\" + config.getHost(this) + "-"
-                        + config.getPort(this)
+                + config.getPort(this)
                 : CLIOptions.get(this).getInstallationPath() + ".started/" + config.getHost(this) + "-"
-                        + config.getPort(this);
+                + config.getPort(this);
         File dotStarted = new File(fileName);
         if (!dotStarted.exists()) {
             File parent = dotStarted.getParentFile();

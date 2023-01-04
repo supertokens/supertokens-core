@@ -11,6 +11,7 @@ gradle-app.setting
 !jar/**/*.jar
 !cli/jar/**/*.jar
 !downloader/jar/**/*.jar
+!ee/jar/**/*.jar
 
 *target*
 *.war

@@ -33,8 +33,8 @@ public class ListHandler extends CommandHandler {
             }
             for (Processes.RunningProcess p : processes) {
                 p.fetchConfigFilePath();
-                Logging.info("-> Instance PID: " + p.pid + ", address: " + p.hostName + ":" + p.port +
-                        ", config file loaded: " + p.configFilePath);
+                Logging.info("-> Instance PID: " + p.pid + ", address: " + p.hostName + ":" + p.port
+                        + ", config file loaded: " + p.configFilePath);
             }
         } catch (Exception e) {
             throw new QuitProgramException("Could not execute list command.", e);

@@ -36,8 +36,8 @@ public class UninstallHandler extends CommandHandler {
             List<Processes.RunningProcess> processes = Processes.getRunningProcesses(installationDir);
             if (processes.size() > 0) {
                 Logging.error(
-                        "More than one SuperTokens instance is still running. Please run \"supertokens stop\" and " +
-                                "then run the uninstall command again.");
+                        "More than one SuperTokens instance is still running. Please run \"supertokens stop\" and "
+                                + "then run the uninstall command again.");
                 Main.exitCode = 1;
                 return;
             }
@@ -46,8 +46,8 @@ public class UninstallHandler extends CommandHandler {
                 // we cannot delete files currently being used - hence, we cannot delete anything.
                 // That executable will then delete the installation dir and itself
             } else {
-                if (!Utils.deleteDirOrFile(new File(installationDir)) ||
-                        !Utils.deleteDirOrFile(new File(executableLocation))) {
+                if (!Utils.deleteDirOrFile(new File(installationDir))
+                        || !Utils.deleteDirOrFile(new File(executableLocation))) {
                     Logging.error("Failed to uninstall SuperTokens. Try again with root permissions");
                     Main.exitCode = 1;
                     return;

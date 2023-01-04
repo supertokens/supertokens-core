@@ -27,6 +27,7 @@ import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpRequestMocking;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.version.Version;
@@ -53,8 +54,6 @@ public class Telemetry extends CronTask {
 
     @Override
     protected void doTask() throws Exception {
-        String plugin = Version.getVersion(main).getPluginName();
-
         if (StorageLayer.getInstance(main).isInMemDb() || Config.getConfig(main).isTelemetryDisabled()) {
             // we do not send any info in this case since it's not under development / production env or the user has
             // disabled Telemetry
@@ -65,12 +64,7 @@ public class Telemetry extends CronTask {
 
         Storage storage = StorageLayer.getStorage(main);
 
-        KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
-
-        if (telemetryId == null) {
-            telemetryId = new KeyValueInfo(Utils.getUUID());
-            storage.setKeyValue(TELEMETRY_ID_DB_KEY, telemetryId);
-        }
+        KeyValueInfo telemetryId = Telemetry.getTelemetryId(main);
 
         String coreVersion = Version.getVersion(main).getCoreVersion();
 
@@ -89,6 +83,21 @@ public class Telemetry extends CronTask {
             HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 0);
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENT_TELEMETRY, null);
         }
+    }
+
+    public static KeyValueInfo getTelemetryId(Main main) throws StorageQueryException {
+        if (StorageLayer.getInstance(main).isInMemDb()) {
+            return null;
+        }
+        Storage storage = StorageLayer.getStorage(main);
+
+        KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
+
+        if (telemetryId == null) {
+            telemetryId = new KeyValueInfo(Utils.getUUID());
+            storage.setKeyValue(TELEMETRY_ID_DB_KEY, telemetryId);
+        }
+        return telemetryId;
     }
 
     @Override

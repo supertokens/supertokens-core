@@ -1,0 +1,137 @@
+plugins {
+    id 'java-library'
+}
+
+version 'unspecified'
+
+repositories {
+    mavenCentral()
+}
+
+jar {
+    archiveBaseName.set('ee')
+}
+
+dependencies {
+    compileOnly group: 'com.google.code.gson', name: 'gson', version: '2.3.1'
+
+    compileOnly project(":supertokens-plugin-interface")
+    testImplementation project(":supertokens-plugin-interface")
+
+    compileOnly group: 'org.jetbrains', name: 'annotations', version: '13.0'
+
+    compileOnly project(":supertokens-core")
+    testImplementation project(":supertokens-core")
+
+    compileOnly 'com.auth0:java-jwt:4.0.0'
+
+    // this is so that we can find plugin-interface jar while testing
+    testImplementation 'junit:junit:4.12'
+
+    // https://mvnrepository.com/artifact/org.reflections/reflections
+    testImplementation group: 'org.reflections', name: 'reflections', version: '0.9.10'
+
+    // https://mvnrepository.com/artifact/org.mockito/mockito-core
+    testImplementation group: 'org.mockito', name: 'mockito-core', version: '3.1.0'
+
+    // https://mvnrepository.com/artifact/org.apache.tomcat.embed/tomcat-embed-core
+    testImplementation group: 'org.apache.tomcat.embed', name: 'tomcat-embed-core', version: '10.1.1'
+
+    // https://mvnrepository.com/artifact/ch.qos.logback/logback-classic
+    testImplementation group: 'ch.qos.logback', name: 'logback-classic', version: '1.2.3'
+
+    // https://mvnrepository.com/artifact/com.google.code.gson/gson
+    testImplementation group: 'com.google.code.gson', name: 'gson', version: '2.3.1'
+
+    testImplementation 'com.tngtech.archunit:archunit-junit4:0.22.0'
+
+    // https://mvnrepository.com/artifact/com.fasterxml.jackson.dataformat/jackson-dataformat-yaml
+    testImplementation group: 'com.fasterxml.jackson.dataformat', name: 'jackson-dataformat-yaml', version: '2.14.0'
+
+    // https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-core
+    testImplementation group: 'com.fasterxml.jackson.core', name: 'jackson-databind', version: '2.14.0'
+
+    testImplementation group: 'org.jetbrains', name: 'annotations', version: '13.0'
+}
+
+task copyJars(type: Copy) {
+    into "$buildDir/dependencies"
+    from configurations.runtimeClasspath
+}
+
+def interfaceName = "io.supertokens.featureflag.EEFeatureFlagInterface"
+def className = "io.supertokens.ee.EEFeatureFlag"
+
+task generateMetaInf {
+    doFirst {
+        mkdir "src/main/resources/META-INF/services"
+        file("src/main/resources/META-INF/services/${interfaceName}").text = "${className}"
+    }
+}
+
+build.dependsOn generateMetaInf
+
+test {
+    jvmArgs '-Djava.security.egd=file:/dev/urandom'
+    testLogging {
+        outputs.upToDateWhen { false }
+        showStandardStreams = true
+    }
+}
+
+import org.gradle.api.tasks.testing.logging.TestExceptionFormat
+import org.gradle.api.tasks.testing.logging.TestLogEvent
+
+tasks.withType(Test) {
+    testLogging {
+        // set options for log level LIFECYCLE
+        events TestLogEvent.FAILED,
+                TestLogEvent.PASSED,
+                TestLogEvent.SKIPPED,
+                TestLogEvent.STANDARD_OUT
+        exceptionFormat TestExceptionFormat.FULL
+        showExceptions true
+        showCauses true
+        showStackTraces true
+
+        // set options for log level DEBUG and INFO
+        debug {
+            events TestLogEvent.STARTED,
+                    TestLogEvent.FAILED,
+                    TestLogEvent.PASSED,
+                    TestLogEvent.SKIPPED,
+                    TestLogEvent.STANDARD_ERROR,
+                    TestLogEvent.STANDARD_OUT
+            exceptionFormat TestExceptionFormat.FULL
+        }
+        info.events = debug.events
+        info.exceptionFormat = debug.exceptionFormat
+
+
+        // collect failing test names
+        ext.failedTests = []
+        afterTest { descriptor, result ->
+            if (result.resultType == TestResult.ResultType.FAILURE) {
+                String failedTest = "${descriptor.className}::${descriptor.name}"
+                logger.debug("Adding " + failedTest + " to failedTests...")
+                failedTests << [failedTest]
+            }
+        }
+
+        afterSuite { desc, result ->
+            if (!desc.parent) { // will match the outermost suite
+                def output = "Results: ${result.resultType} (${result.testCount} tests, ${result.successfulTestCount} successes, ${result.failedTestCount} failures, ${result.skippedTestCount} skipped)"
+                def startItem = '|  ', endItem = '  |'
+                def repeatLength = startItem.length() + output.length() + endItem.length()
+                println('\n' + ('-' * repeatLength) + '\n' + startItem + output + endItem + '\n' + ('-' * repeatLength))
+                // print failing tests
+                if (!failedTests.empty) {
+                    println("\nFailed tests:")
+                    failedTests.each { failedTest ->
+                        logger.lifecycle("${failedTest}")
+                    }
+                }
+            }
+        }
+    }
+}

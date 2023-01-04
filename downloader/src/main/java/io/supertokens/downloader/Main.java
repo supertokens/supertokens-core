@@ -109,6 +109,9 @@ public class Main {
             current++;
             downloadFile(link, "cli", current, total);
         }
+
+        // we don't have any ee only dependencies which are not also dependencies
+        // of the core. So we don't do anything explicitly here.
     }
 
     private static void downloadFile(String urlStr, String parentDir, int currentCount, int total) throws IOException {

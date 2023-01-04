@@ -56,9 +56,8 @@ public class HTTPRequest {
 
         if (params != null) {
             for (Map.Entry<String, String> entry : params.entrySet()) {
-                paramBuilder.append(entry.getKey()).append("=").append(URLEncoder.encode(entry.getValue(),
-                        StandardCharsets.UTF_8))
-                        .append("&");
+                paramBuilder.append(entry.getKey()).append("=")
+                        .append(URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8)).append("&");
             }
         }
         String paramsStr = paramBuilder.toString();

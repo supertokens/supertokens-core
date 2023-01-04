@@ -53,9 +53,9 @@ public class StopHandler extends CommandHandler {
                 }
             }
             if (toKillPID != null && !killedTarget) {
-                Logging.info("Unknown PID: " + toKillPID +
-                        ". Please use \"supertokens list\" to list all currently running instances along " +
-                        "with their PIDs");
+                Logging.info("Unknown PID: " + toKillPID
+                        + ". Please use \"supertokens list\" to list all currently running instances along "
+                        + "with their PIDs");
                 Main.exitCode = 1;
                 return;
             }
@@ -83,7 +83,7 @@ public class StopHandler extends CommandHandler {
                 File f = new File(installationDir + ".started\\" + runningProcess.hostName + "-" + runningProcess.port);
                 exitCode = f.delete() ? 0 : 1;
                 // TODO: we also need to delete the webserver-temp folder's content for this process. This can be
-                //  done in multiple ways, but all of them require changing the core's code
+                // done in multiple ways, but all of them require changing the core's code
             }
         } else {
             ProcessBuilder pb = new ProcessBuilder("kill", runningProcess.pid);
@@ -93,14 +93,11 @@ public class StopHandler extends CommandHandler {
         }
         if (!silent) {
             if (exitCode == 0) {
-                Logging.info(
-                        "Successfully stopped SuperTokens with PID " + runningProcess.pid + ", running on " +
-                                runningProcess.hostName + ":" +
-                                runningProcess.port);
+                Logging.info("Successfully stopped SuperTokens with PID " + runningProcess.pid + ", running on "
+                        + runningProcess.hostName + ":" + runningProcess.port);
             } else {
-                Logging.error("Failed to stop SuperTokens with PID " + runningProcess.pid + ", running on " +
-                        runningProcess.hostName + ":" +
-                        runningProcess.port);
+                Logging.error("Failed to stop SuperTokens with PID " + runningProcess.pid + ", running on "
+                        + runningProcess.hostName + ":" + runningProcess.port);
             }
         }
         return exitCode == 0;
@@ -124,10 +121,9 @@ public class StopHandler extends CommandHandler {
     @Override
     protected List<Option> getOptionsAndDescription() {
         List<Option> options = new ArrayList<>();
-        options.add(
-                new Option("--id",
-                        "Stop an instance of SuperTokens that has a specific PID. An instance's PID can be obtained " +
-                                "via the \"supertokens list\" command. Example: \"--id=7634\""));
+        options.add(new Option("--id",
+                "Stop an instance of SuperTokens that has a specific PID. An instance's PID can be obtained "
+                        + "via the \"supertokens list\" command. Example: \"--id=7634\""));
         return options;
     }
 }

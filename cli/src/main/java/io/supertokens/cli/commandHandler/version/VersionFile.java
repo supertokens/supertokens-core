@@ -37,8 +37,8 @@ public class VersionFile {
     void validate() {
         if (core_version == null || plugin_interface_version == null) {
             throw new QuitProgramException(
-                    "version.yaml file seems to be corrupted. Please redownload and install SuperTokens from " +
-                            "https://supertokens.io/dashboard",
+                    "version.yaml file seems to be corrupted. Please redownload and install SuperTokens from "
+                            + "https://supertokens.io/dashboard",
                     null);
         }
     }
@@ -72,9 +72,9 @@ public class VersionFile {
             return false;
         }
         VersionFile otherFile = (VersionFile) other;
-        return this.core_version.equals(otherFile.getCoreVersion()) &&
-                this.plugin_interface_version.equals(otherFile.getPluginInterfaceVersion()) &&
-                this.plugin_version.equals(otherFile.getPluginVersion()) &&
-                this.plugin_name.equals(otherFile.getPluginName());
+        return this.core_version.equals(otherFile.getCoreVersion())
+                && this.plugin_interface_version.equals(otherFile.getPluginInterfaceVersion())
+                && this.plugin_version.equals(otherFile.getPluginVersion())
+                && this.plugin_name.equals(otherFile.getPluginName());
     }
 }

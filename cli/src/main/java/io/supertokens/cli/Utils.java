@@ -49,10 +49,9 @@ public class Utils {
             try {
                 Files.copy(sourceFolder.toPath(), destinationFolder.toPath(), StandardCopyOption.REPLACE_EXISTING);
             } catch (AccessDeniedException e) {
-                throw new QuitProgramException(
-                        "Moving content to installation location failed. Try again with" +
-                                ((OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) ? " root permissions." :
-                                        " sudo."), null);
+                throw new QuitProgramException("Moving content to installation location failed. Try again with"
+                        + ((OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) ? " root permissions." : " sudo."),
+                        null);
             }
         }
     }
@@ -61,10 +60,9 @@ public class Utils {
         if (destinationFolder != null && !destinationFolder.exists()) {
             boolean success = destinationFolder.mkdirs();
             if (!success) {
-                throw new QuitProgramException(
-                        "Moving content to installation location failed. Try again with" +
-                                ((OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) ? " root permissions." :
-                                        " sudo."), null);
+                throw new QuitProgramException("Moving content to installation location failed. Try again with"
+                        + ((OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS) ? " root permissions." : " sudo."),
+                        null);
             }
         }
     }
@@ -104,7 +102,6 @@ public class Utils {
         int numberOfSpaces = secondStart - first.length();
         spaces.append(" ".repeat(Math.max(0, numberOfSpaces)));
         String actual = first + spaces + second;
-
 
         StringBuilder maxSpaces = new StringBuilder();
         maxSpaces.append(" ".repeat(Math.max(0, secondStart)));

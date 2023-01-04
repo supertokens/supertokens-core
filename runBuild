@@ -36,3 +36,9 @@ then
     echo "Failed to build"
 	exit 1
 fi
+(cd ./ee/ && ./runBuild "$@")
+if [[ $? -ne 0 ]]
+then
+    echo "Failed to build"
+	exit 1
+fi
