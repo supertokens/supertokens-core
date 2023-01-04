@@ -1,7 +1,11 @@
-package io.supertokens.ee.test;
+package io.supertokens.ee.test.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.ee.test.EETest;
+import io.supertokens.ee.test.TestingProcessManager;
+import io.supertokens.ee.test.Utils;
+import io.supertokens.ee.test.TestingProcessManager.TestingProcess;
 import io.supertokens.ee.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.ee.test.httpRequest.HttpResponseException;
 import io.supertokens.featureflag.FeatureFlag;
