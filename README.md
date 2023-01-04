@@ -5,6 +5,7 @@
 <a href="https://supertokens.io/discord">
 <img src="https://img.shields.io/discord/603466164219281420.svg?logo=discord"
     alt="chat on Discord"></a>
+<span><img src="https://img.shields.io/docker/pulls/supertokens/supertokens-postgresql.svg" alt="Docker pull stats"/></span>
 
 Add **secure login and session management** to your apps. [SDKs available](https://supertokens.com/docs/community/sdks) for popular languages and front-end frameworks e.g. Node.js, Go, Python, React.js, React Native, Vanilla JS, etc.
 
@@ -195,6 +196,7 @@ Mihály Lengyel</b></sub></a></td>
   </tr>
   <tr>
 <td align="center"><a href="https://github.com/saurabhghatnekar"><img src="https://avatars.githubusercontent.com/u/20884782?v=4" width="100px;" alt=""/><br /><sub><b>Saurabh Ghatnekar</b></sub></a></td>
+<td align="center"><a href="https://github.com/alisher-aituarov"><img src="https://avatars.githubusercontent.com/u/63276190?v=4" width="100px;" alt=""/><br /><sub><b>Alisher Aituarov</b></sub></a></td>
   </tr>
 </table>
 
