@@ -28,7 +28,7 @@ public class GetLicenseKeyAPITest {
 
     @Test
     public void testRetrievingLicenseKeyWhenItIsNotSet() throws Exception {
-        String[] args = {"../../"};
+        String[] args = { "../../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -45,23 +45,24 @@ public class GetLicenseKeyAPITest {
 
     @Test
     public void testRetrievingLicenseKeyWhenItIsSet() throws Exception {
-        String[] args = {"../../"};
+        String[] args = { "../../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         // set license key
-        FeatureFlag.getInstance(process.getProcess()).setLicenseKeyAndSyncFeatures(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
+        FeatureFlag.getInstance(process.getProcess())
+                .setLicenseKeyAndSyncFeatures(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP);
 
         // retrieve license key
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
                 null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
-        
+
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(EETest.STATELESS_LICENSE_KEY_WITH_TEST_FEATURE_NO_EXP, response.get("licenseKey").getAsString());
-        
+
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
