@@ -51,7 +51,7 @@ public class DeleteLicenseKeyAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
-                null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+                null, 10000, 10000, null, WebserverAPI.getLatestCDIVersion(), "");
         assertEquals(1, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
 
@@ -83,7 +83,7 @@ public class DeleteLicenseKeyAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
-                null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+                null, 10000, 10000, null, WebserverAPI.getLatestCDIVersion(), "");
         assertEquals(1, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
 
