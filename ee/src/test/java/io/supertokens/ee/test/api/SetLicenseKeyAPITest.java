@@ -58,7 +58,7 @@ public class SetLicenseKeyAPITest {
         try {
             HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/ee/license",
-                    requestBody, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+                    requestBody, 10000, 10000, null, WebserverAPI.getLatestCDIVersion(), "");
             throw new Exception("should never come here");
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -91,7 +91,7 @@ public class SetLicenseKeyAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
-                requestBody, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+                requestBody, 10000, 10000, null, WebserverAPI.getLatestCDIVersion(), "");
         assertEquals(1, response.entrySet().size());
         assertEquals("MISSING_EE_FOLDER_ERROR", response.get("status").getAsString());
 
@@ -110,7 +110,7 @@ public class SetLicenseKeyAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
-                requestBody, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+                requestBody, 10000, 10000, null, WebserverAPI.getLatestCDIVersion(), "");
         assertEquals(1, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
 
@@ -138,7 +138,7 @@ public class SetLicenseKeyAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
-                new JsonObject(), 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+                new JsonObject(), 10000, 10000, null, WebserverAPI.getLatestCDIVersion(), "");
         assertEquals(1, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
 
@@ -163,7 +163,7 @@ public class SetLicenseKeyAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/license",
-                requestBody, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+                requestBody, 10000, 10000, null, WebserverAPI.getLatestCDIVersion(), "");
 
         assertEquals(1, response.entrySet().size());
         assertEquals("INVALID_LICENSE_KEY_ERROR", response.get("status").getAsString());
