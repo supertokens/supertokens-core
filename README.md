@@ -204,6 +204,13 @@ Mihály Lengyel</b></sub></a></td>
 Please see the [CONTRIBUTING.md](https://github.com/supertokens/supertokens-core/blob/master/CONTRIBUTING.md) file for instructions.
 
 ## 📝 License
-&copy; 2020 SuperTokens Inc and its contributors. All rights reserved.
+&copy; 2020-2023 SuperTokens Inc and its contributors. All rights reserved.
 
-Licensed under the Apache 2.0 license.
+Portions of this software are licensed as follows:
+
+* All content that resides under the "ee/" directory of this repository, if that directory exists, is licensed under the
+  license defined in "ee/LICENSE.md".
+* All third party components incorporated into the SuperTokens Software are licensed under the original license provided
+  by the owner of the applicable component.
+* Content outside of the above mentioned directories or restrictions above is available under the "Apache 2.0"
+  license as defined in the level "LICENSE.md" file
