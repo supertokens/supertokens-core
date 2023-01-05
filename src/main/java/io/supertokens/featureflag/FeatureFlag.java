@@ -19,7 +19,6 @@ package io.supertokens.featureflag;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
-import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.httpRequest.HttpResponseException;
@@ -73,11 +72,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
 
         if (eeLayerTemp != null) {
             this.eeFeatureFlag = eeLayerTemp;
-            try {
-                this.eeFeatureFlag.constructor(main);
-            } catch (StorageQueryException e) {
-                throw new QuitProgramException(e);
-            }
+            this.eeFeatureFlag.constructor(main);
         } else {
             eeFeatureFlag = null;
         }

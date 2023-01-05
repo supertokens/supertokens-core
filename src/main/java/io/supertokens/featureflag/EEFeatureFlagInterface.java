@@ -30,7 +30,7 @@ public interface EEFeatureFlagInterface {
     @TestOnly
     void updateEnabledFeaturesValueReadFromDbTime(long newTime);
 
-    void constructor(Main main) throws StorageQueryException;
+    void constructor(Main main);
 
     EE_FEATURES[] getEnabledFeatures() throws StorageQueryException;
 

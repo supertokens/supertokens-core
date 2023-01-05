@@ -73,7 +73,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     }
 
     @Override
-    public void constructor(Main main) throws StorageQueryException {
+    public void constructor(Main main) {
         this.main = main;
         Cronjobs.addCronjob(main, EELicenseCheck.getInstance(main));
         try {
@@ -85,12 +85,6 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             // the license key that was in the db was invalid. If this error is thrown,
             // it means that the key was removed from the db anyway.. so we can just ignore
             // here.
-        } catch (StorageQueryException e) {
-            ProcessState.getInstance(main)
-                    .addState(ProcessState.PROCESS_STATE.INIT_FAILURE_DUE_TO_LICENSE_KEY_DB_CHECK, e);
-            // we intentionally throw this error so that the core stops
-            // since we need to know the initial state of the license and features from the db
-            throw e;
         } catch (Throwable ignored) {
         }
     }
