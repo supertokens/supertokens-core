@@ -198,6 +198,7 @@ Mihály Lengyel</b></sub></a></td>
 <td align="center"><a href="https://github.com/saurabhghatnekar"><img src="https://avatars.githubusercontent.com/u/20884782?v=4" width="100px;" alt=""/><br /><sub><b>Saurabh Ghatnekar</b></sub></a></td>
 <td align="center"><a href="https://github.com/alisher-aituarov"><img src="https://avatars.githubusercontent.com/u/63276190?v=4" width="100px;" alt=""/><br /><sub><b>Alisher Aituarov</b></sub></a></td>
 <td align="center"><a href="https://github.com/wallstromsimon"><img src="https://avatars.githubusercontent.com/u/3397398?v=4" width="100px;" alt=""/><br /><sub><b>Simon Kihlberg Wallstrom</b></sub></a></td>
+<td align="center"><a href="https://github.com/AreebKhan619"><img src="https://avatars.githubusercontent.com/u/39133435?v=4" width="100px;" alt=""/><br /><sub><b>Areeb Khan</b></sub></a></td>
   </tr>
 </table>
 
