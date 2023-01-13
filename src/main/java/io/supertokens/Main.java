@@ -141,8 +141,8 @@ public class Main {
         // Handle kill signal gracefully
         handleKillSignalForWhenItHappens();
 
-        // loading configs for core.
-        Config.loadConfig(this,
+        // loading configs for core from config.yaml file.
+        Config.loadConfig(null, null, this,
                 CLIOptions.get(this).getConfigFilePath() == null
                         ? CLIOptions.get(this).getInstallationPath() + "config.yaml"
                         : CLIOptions.get(this).getConfigFilePath());
@@ -187,12 +187,21 @@ public class Main {
         }
         FeatureFlag.init(this, CLIOptions.get(this).getInstallationPath() + "ee/");
 
+        // TODO: load all tenant configs based on tenant config map in db
+        // TODO: Need to make sure that variables that can't be scoped based on tenantId in the same db don't
+        //  have conflicting values.
+
+        // TODO: init storage layers for each unique db connection.
+
         // init signing keys
+        // TODO: add this for all tenants based on db separation only (and not tenant id)
         AccessTokenSigningKey.init(this);
         RefreshTokenKey.init(this);
         JWTSigningKey.init(this);
 
         // starts removing old session cronjob
+        // TODO: start as many instances of the cronjob as required based on number of tenants. It might be per db or
+        //  per db & some config based on what the cronjob needs.
         Cronjobs.addCronjob(this, DeleteExpiredSessions.getInstance(this));
 
         // starts removing old password reset tokens
@@ -210,10 +219,12 @@ public class Main {
         }
 
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
+        // TODO: make this in a loop per tenant per db
         if (Config.getConfig(this).getAccessTokenSigningKeyDynamic()) {
             Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.getInstance(this));
         }
 
+        // TODO: need to determine how many pools combinations to make.
         // creates password hashing pool
         PasswordHashing.init(this);
 

@@ -41,20 +41,26 @@ public class Config extends ResourceDistributor.SingletonResource {
         }
     }
 
-    private static Config getInstance(Main main) {
-        return (Config) main.getResourceDistributor().getResource(RESOURCE_KEY);
+    private static Config getInstance(String connectionUriDomain, String tenantId, Main main) {
+        return (Config) main.getResourceDistributor().getResource(connectionUriDomain, tenantId, RESOURCE_KEY);
     }
 
-    public static void loadConfig(Main main, String configFilePath) {
-        main.getResourceDistributor().setResource(RESOURCE_KEY, new Config(main, configFilePath));
+    public static void loadConfig(String connectionUriDomain, String tenantId, Main main, String configFilePath) {
+        main.getResourceDistributor()
+                .setResource(connectionUriDomain, tenantId, RESOURCE_KEY, new Config(main, configFilePath));
         Logging.info(main, "Loading supertokens config.", true);
     }
 
-    public static CoreConfig getConfig(Main main) {
-        if (getInstance(main) == null) {
+    public static CoreConfig getConfig(String connectionUriDomain, String tenantId, Main main) {
+        if (getInstance(connectionUriDomain, tenantId, main) == null) {
             throw new QuitProgramException("Please call loadConfig() before calling getConfig()");
         }
-        return getInstance(main).core;
+        return getInstance(connectionUriDomain, tenantId, main).core;
+    }
+
+    @Deprecated
+    public static CoreConfig getConfig(Main main) {
+        return getConfig(null, null, main);
     }
 
     private CoreConfig loadCoreConfig(String configFilePath) throws IOException {
