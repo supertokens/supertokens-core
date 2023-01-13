@@ -46,9 +46,6 @@ public class Config extends ResourceDistributor.SingletonResource {
     }
 
     public static void loadConfig(Main main, String configFilePath) {
-        if (getInstance(main) != null) {
-            return;
-        }
         main.getResourceDistributor().setResource(RESOURCE_KEY, new Config(main, configFilePath));
         Logging.info(main, "Loading supertokens config.", true);
     }

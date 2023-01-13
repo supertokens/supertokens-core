@@ -34,9 +34,6 @@ public class Config extends ResourceDistributor.SingletonResource {
     }
 
     public static void loadConfig(Start start) {
-        if (getInstance(start) != null) {
-            return;
-        }
         start.getResourceDistributor().setResource(RESOURCE_KEY, new Config());
     }
 

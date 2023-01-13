@@ -90,9 +90,6 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
     }
 
     public static void init(Main main, String eeFolderPath) throws MalformedURLException {
-        if (getInstance(main) != null) {
-            return;
-        }
         main.getResourceDistributor().setResource(RESOURCE_KEY,
                 new FeatureFlag(main, eeFolderPath));
     }

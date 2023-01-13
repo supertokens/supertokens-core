@@ -74,9 +74,7 @@ public class CLIOptions extends ResourceDistributor.SingletonResource {
     }
 
     public static void load(Main main, String[] args) {
-        if (getInstance(main) == null) {
-            main.getResourceDistributor().setResource(RESOURCE_KEY, new CLIOptions(args));
-        }
+        main.getResourceDistributor().setResource(RESOURCE_KEY, new CLIOptions(args));
     }
 
     public static CLIOptions get(Main main) {

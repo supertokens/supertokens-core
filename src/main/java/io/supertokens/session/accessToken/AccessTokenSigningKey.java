@@ -64,11 +64,6 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     }
 
     public static void init(Main main) {
-        AccessTokenSigningKey instance = (AccessTokenSigningKey) main.getResourceDistributor()
-                .getResource(RESOURCE_KEY);
-        if (instance != null) {
-            return;
-        }
         main.getResourceDistributor().setResource(RESOURCE_KEY, new AccessTokenSigningKey(main));
     }
 
@@ -156,7 +151,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
 
         if (this.validKeys == null || this.validKeys.size() == 0
                 || System.currentTimeMillis() > this.validKeys.get(0).createdAtTime
-                        + config.getAccessTokenSigningKeyUpdateInterval()) {
+                + config.getAccessTokenSigningKeyUpdateInterval()) {
             this.validKeys = maybeGenerateNewKeyAndUpdateInDb();
         }
 

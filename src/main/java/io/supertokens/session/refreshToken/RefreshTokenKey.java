@@ -50,10 +50,6 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
     }
 
     public static void init(Main main) {
-        RefreshTokenKey instance = (RefreshTokenKey) main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance != null) {
-            return;
-        }
         main.getResourceDistributor().setResource(RESOURCE_KEY, new RefreshTokenKey(main));
     }
 

@@ -59,9 +59,6 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     }
 
     public static void init(Main main) {
-        if (getInstance(main) != null) {
-            return;
-        }
         main.getResourceDistributor().setResource(RESOURCE_KEY, new PasswordHashing(main));
     }
 

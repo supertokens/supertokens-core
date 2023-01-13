@@ -73,9 +73,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
     }
 
     public static void initFileLogging(Main main) {
-        if (getInstance(main) == null) {
-            main.getResourceDistributor().setResource(RESOURCE_ID, new Logging(main));
-        }
+        main.getResourceDistributor().setResource(RESOURCE_ID, new Logging(main));
     }
 
     public static void debug(Main main, String msg) {

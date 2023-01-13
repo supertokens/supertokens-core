@@ -151,9 +151,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     public static void init(Main main, String pluginFolderPath, String configFilePath) throws MalformedURLException {
-        if (getInstance(main) != null) {
-            return;
-        }
         main.getResourceDistributor().setResource(RESOURCE_KEY,
                 new StorageLayer(main, pluginFolderPath, configFilePath));
     }

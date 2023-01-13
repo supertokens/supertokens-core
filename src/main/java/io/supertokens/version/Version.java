@@ -46,9 +46,6 @@ public class Version extends ResourceDistributor.SingletonResource {
     }
 
     public static void loadVersion(Main main, String versionFilePath) {
-        if (getInstance(main) != null) {
-            return;
-        }
         main.getResourceDistributor().setResource(RESOURCE_KEY, new Version(main, versionFilePath));
     }
 
