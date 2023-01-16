@@ -18,10 +18,13 @@ package io.supertokens.config;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.storageLayer.StorageLayer;
 
 import java.io.File;
 import java.io.IOException;
@@ -41,6 +44,11 @@ public class Config extends ResourceDistributor.SingletonResource {
         }
     }
 
+    private Config(Main main, JsonObject jsonConfig) throws IOException {
+        this.main = main;
+        this.core = loadCoreConfigFromJson(jsonConfig);
+    }
+
     private static Config getInstance(String connectionUriDomain, String tenantId, Main main) {
         return (Config) main.getResourceDistributor().getResource(connectionUriDomain, tenantId, RESOURCE_KEY);
     }
@@ -49,6 +57,14 @@ public class Config extends ResourceDistributor.SingletonResource {
         main.getResourceDistributor()
                 .setResource(connectionUriDomain, tenantId, RESOURCE_KEY, new Config(main, configFilePath));
         Logging.info(main, "Loading supertokens config.", true);
+    }
+
+    public static void loadAllTenantConfig(Main main) throws IOException {
+        TenantConfig[] tenants = StorageLayer.getMultitenancyStorage(main).getAllTenants();
+        for (TenantConfig tenant : tenants) {
+            main.getResourceDistributor().setResource(tenant.connectionUriDomain, tenant.tenantId, RESOURCE_KEY,
+                    new Config(main, tenant.coreConfig));
+        }
     }
 
     public static CoreConfig getConfig(String connectionUriDomain, String tenantId, Main main) {
@@ -66,6 +82,13 @@ public class Config extends ResourceDistributor.SingletonResource {
     private CoreConfig loadCoreConfig(String configFilePath) throws IOException {
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         CoreConfig config = mapper.readValue(new File(configFilePath), CoreConfig.class);
+        config.validateAndInitialise(main);
+        return config;
+    }
+
+    private CoreConfig loadCoreConfigFromJson(JsonObject json) throws IOException {
+        final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
+        CoreConfig config = mapper.readValue(json.toString(), CoreConfig.class);
         config.validateAndInitialise(main);
         return config;
     }

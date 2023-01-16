@@ -28,6 +28,7 @@ import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.jwt.JWTSigningKey;
@@ -49,6 +50,7 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.UUID;
 
 public class Main {
@@ -136,7 +138,7 @@ public class Main {
         }
     }
 
-    private void init() throws IOException {
+    private void init() throws IOException, StorageQueryException {
 
         // Handle kill signal gracefully
         handleKillSignalForWhenItHappens();
@@ -187,7 +189,10 @@ public class Main {
         }
         FeatureFlag.init(this, CLIOptions.get(this).getInstallationPath() + "ee/");
 
-        // TODO: load all tenant configs based on tenant config map in db
+        if (Arrays.stream(FeatureFlag.getInstance(this).getEnabledFeatures())
+                .anyMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
+            Config.loadAllTenantConfig(this);
+        }
         // TODO: Need to make sure that variables that can't be scoped based on tenantId in the same db don't
         //  have conflicting values.
 
