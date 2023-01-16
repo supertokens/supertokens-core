@@ -191,7 +191,11 @@ public class Main {
 
         if (Arrays.stream(FeatureFlag.getInstance(this).getEnabledFeatures())
                 .anyMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
-            Config.loadAllTenantConfig(this);
+            try {
+                Config.assertAllTenantConfigs(Config.loadAllTenantConfig(this));
+            } catch (Config.InvalidTenantConfigException e) {
+                throw new QuitProgramException(e);
+            }
         }
         // TODO: Need to make sure that variables that can't be scoped based on tenantId in the same db don't
         //  have conflicting values.

@@ -18,7 +18,9 @@ package io.supertokens;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 // the purpose of this class is to tie singleton classes to s specific main instance. So that
@@ -75,6 +77,20 @@ public class ResourceDistributor {
         }
     }
 
+    public void clearAllResourcesWithResourceKey(String inputKey) {
+        List<KeyClass> toRemove = new ArrayList<>();
+        synchronized (lock) {
+            resources.forEach((key, value) -> {
+                if (key.key.equals(inputKey)) {
+                    toRemove.add(key);
+                }
+            });
+            for (KeyClass keyClass : toRemove) {
+                resources.remove(keyClass);
+            }
+        }
+    }
+
     public SingletonResource setResource(@Nonnull String key,
                                          SingletonResource resource) {
         return setResource(null, null, key, resource);
@@ -84,7 +100,7 @@ public class ResourceDistributor {
 
     }
 
-    private static class KeyClass {
+    public static class KeyClass {
         @Nonnull
         String key;
 
@@ -94,7 +110,7 @@ public class ResourceDistributor {
         @Nonnull
         String tenantId;
 
-        KeyClass(@Nullable String connectionUriDomain, @Nullable String tenantId, @Nonnull String key) {
+        public KeyClass(@Nullable String connectionUriDomain, @Nullable String tenantId, @Nonnull String key) {
             this.key = key;
             this.connectionUriDomain = connectionUriDomain == null ? "" : connectionUriDomain;
             this.tenantId = tenantId == null ? "" : tenantId;
