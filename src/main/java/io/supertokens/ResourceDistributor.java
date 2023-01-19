@@ -105,14 +105,17 @@ public class ResourceDistributor {
     }
 
     public static class KeyClass {
+        // we should keep these variables private cause they are normalised to be empty strings
+        // instead of being null which is different compared to how we have set the norm in the
+        // rest of the code
         @Nonnull
-        String key;
+        private final String key;
 
         @Nonnull
-        String connectionUriDomain;
+        private final String connectionUriDomain;
 
         @Nonnull
-        String tenantId;
+        private final String tenantId;
 
         public KeyClass(@Nullable String connectionUriDomain, @Nullable String tenantId, @Nonnull String key) {
             this.key = key;

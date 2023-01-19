@@ -34,6 +34,7 @@ import io.supertokens.inmemorydb.Start;
 import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
@@ -145,21 +146,20 @@ public class Main {
 
         // loading configs for core from config.yaml file.
         try {
-            Config.loadBaseConfig(null, null, this,
-                    CLIOptions.get(this).getConfigFilePath() == null
-                            ? CLIOptions.get(this).getInstallationPath() + "config.yaml"
-                            : CLIOptions.get(this).getConfigFilePath());
-        } catch (Config.InvalidConfigException e) {
+            Config.loadBaseConfig(null, null, this);
+        } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
         }
 
         Logging.info(this, "Completed config.yaml loading.", true);
 
         // loading storage layer
-        StorageLayer.init(this, CLIOptions.get(this).getInstallationPath() + "plugin/",
-                CLIOptions.get(this).getConfigFilePath() == null
-                        ? CLIOptions.get(this).getInstallationPath() + "config.yaml"
-                        : CLIOptions.get(this).getConfigFilePath());
+        try {
+            StorageLayer.init(this, CLIOptions.get(this).getInstallationPath() + "plugin/",
+                    Config.getBaseConfigAsJsonObject(this));
+        } catch (InvalidConfigException e) {
+            throw new QuitProgramException(e);
+        }
 
         // loading version file
         Version.loadVersion(this, CLIOptions.get(this).getInstallationPath() + "version.yaml");
@@ -197,7 +197,7 @@ public class Main {
                 .anyMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             try {
                 Config.assertAllTenantConfigs(this, Config.loadAllTenantConfig(this));
-            } catch (Config.InvalidConfigException e) {
+            } catch (InvalidConfigException e) {
                 throw new QuitProgramException(e);
             }
         }

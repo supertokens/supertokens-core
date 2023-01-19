@@ -16,6 +16,7 @@
 
 package io.supertokens.storageLayer;
 
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
@@ -28,6 +29,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
@@ -53,7 +55,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     private static Storage static_ref_to_storage = null;
     private static URLClassLoader ucl = null;
 
-    private StorageLayer(Main main, String pluginFolderPath, String configFilePath) throws MalformedURLException {
+    private StorageLayer(Main main, String pluginFolderPath, JsonObject configJson)
+            throws MalformedURLException, InvalidConfigException {
         Logging.info(main, "Loading storage layer.", true);
         if (static_ref_to_storage != null && Main.isTesting) {
             // we reuse the storage layer during testing so that we do not waste
@@ -95,7 +98,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             }
 
             if (storageLayerTemp != null && !main.isForceInMemoryDB()
-                    && (storageLayerTemp.canBeUsed(configFilePath) || CLIOptions.get(main).isForceNoInMemoryDB())) {
+                    && (storageLayerTemp.canBeUsed(configJson) || CLIOptions.get(main).isForceNoInMemoryDB())) {
                 this.storage = storageLayerTemp;
             } else {
                 Logging.info(main, "Using in memory storage.", true);
@@ -103,7 +106,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             }
         }
         this.storage.constructor(main.getProcessId(), Main.makeConsolePrintSilent);
-        this.storage.loadConfig(configFilePath, Config.getConfig(main).getLogLevels(main));
+        this.storage.loadConfig(configJson, Config.getConfig(main).getLogLevels(main));
         if (Main.isTesting && !(this.storage instanceof Start)) {
             // we save the storage layer for testing (if it's not an in mem db) purposes so that
             // next time, we can just reuse this.
@@ -151,9 +154,10 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return (StorageLayer) main.getResourceDistributor().getResource(RESOURCE_KEY);
     }
 
-    public static void init(Main main, String pluginFolderPath, String configFilePath) throws MalformedURLException {
+    public static void init(Main main, String pluginFolderPath, JsonObject configJson)
+            throws MalformedURLException, InvalidConfigException {
         main.getResourceDistributor().setResource(RESOURCE_KEY,
-                new StorageLayer(main, pluginFolderPath, configFilePath));
+                new StorageLayer(main, pluginFolderPath, configJson));
     }
 
     public static Storage getStorage(Main main) {

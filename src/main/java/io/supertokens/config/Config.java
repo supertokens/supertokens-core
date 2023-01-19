@@ -22,8 +22,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.storageLayer.StorageLayer;
 
@@ -62,11 +64,12 @@ public class Config extends ResourceDistributor.SingletonResource {
         return (Config) main.getResourceDistributor().getResource(connectionUriDomain, tenantId, RESOURCE_KEY);
     }
 
-    public static void loadBaseConfig(String connectionUriDomain, String tenantId, Main main, String configFilePath)
+    public static void loadBaseConfig(String connectionUriDomain, String tenantId, Main main)
             throws InvalidConfigException, IOException {
         synchronized (lock) {
             main.getResourceDistributor()
-                    .setResource(connectionUriDomain, tenantId, RESOURCE_KEY, new Config(main, configFilePath));
+                    .setResource(connectionUriDomain, tenantId, RESOURCE_KEY,
+                            new Config(main, getConfigFilePath(main)));
 
             // this function is only called for the base config since we only want one logging file(s) for all tenants
             getInstance(null, null, main).core.createLoggingFile(main);
@@ -75,7 +78,23 @@ public class Config extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static TenantConfig[] loadAllTenantConfig(Main main) throws IOException, InvalidConfigException {
+    public static JsonObject getBaseConfigAsJsonObject(Main main) throws IOException {
+        // we do not use the CoreConfig class here cause the actual config.yaml file may
+        // contain other fields which the CoreConfig doesn't have, and we do not want to
+        // omit them from the output json.
+        ObjectMapper yamlReader = new ObjectMapper(new YAMLFactory());
+        Object obj = yamlReader.readValue(new File(getConfigFilePath(main)), Object.class);
+        return new Gson().toJsonTree(obj).getAsJsonObject();
+    }
+
+    public static String getConfigFilePath(Main main) {
+        return CLIOptions.get(main).getConfigFilePath() == null
+                ? CLIOptions.get(main).getInstallationPath() + "config.yaml"
+                : CLIOptions.get(main).getConfigFilePath();
+    }
+
+    public static TenantConfig[] loadAllTenantConfig(Main main)
+            throws IOException, InvalidConfigException {
         // we load up all the json config from the core for each tenant
         // and then for each tenant, we create merge their jsons from most specific
         // to least specific and then save the final json as a core config in the
@@ -83,11 +102,10 @@ public class Config extends ResourceDistributor.SingletonResource {
         TenantConfig[] tenants = StorageLayer.getMultitenancyStorage(main).getAllTenants();
 
         synchronized (lock) {
-            Config baseConfig = getInstance(null, null, main);
             main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
             Map<ResourceDistributor.KeyClass, Config> normalisedConfigs = getNormalisedConfigsForAllTenants(main,
                     tenants,
-                    baseConfig);
+                    getBaseConfigAsJsonObject(main));
 
             // this also adds the base config back to the resource distributor.
             normalisedConfigs.forEach((keyClass, config) -> {
@@ -102,14 +120,13 @@ public class Config extends ResourceDistributor.SingletonResource {
     public static void assertAllTenantConfigs(Main main, TenantConfig[] tenants)
             throws InvalidConfigException, IOException {
         Map<ResourceDistributor.KeyClass, Config> normalisedConfigs = getNormalisedConfigsForAllTenants(main,
-                tenants,
-                getInstance(null, null, main));
+                tenants, getBaseConfigAsJsonObject(main));
         // TODO..
     }
 
     private static Map<ResourceDistributor.KeyClass, Config> getNormalisedConfigsForAllTenants(Main main,
                                                                                                TenantConfig[] tenants,
-                                                                                               Config baseConfig)
+                                                                                               JsonObject baseConfigJson)
             throws InvalidConfigException, IOException {
         Map<ResourceDistributor.KeyClass, Config> result = new HashMap<>();
         Map<ResourceDistributor.KeyClass, JsonObject> jsonConfigs = new HashMap<>();
@@ -120,6 +137,10 @@ public class Config extends ResourceDistributor.SingletonResource {
                     tenant.coreConfig);
         }
         for (TenantConfig tenant : tenants) {
+            if (tenant.tenantId == null && tenant.connectionUriDomain == null) {
+                // this refers to the base tenant's config which is in the config.yaml file.
+                continue;
+            }
             String connectionUriDomain = tenant.connectionUriDomain;
             String tenantId = tenant.tenantId;
             JsonObject finalJson = new JsonObject();
@@ -154,8 +175,6 @@ public class Config extends ResourceDistributor.SingletonResource {
                 });
             }
 
-            Gson gson = new Gson();
-            JsonObject baseConfigJson = gson.toJsonTree(baseConfig.core).getAsJsonObject();
             baseConfigJson.entrySet().forEach(stringJsonElementEntry -> {
                 if (!finalJson.has(stringJsonElementEntry.getKey())) {
                     finalJson.add(stringJsonElementEntry.getKey(), stringJsonElementEntry.getValue());
@@ -167,7 +186,7 @@ public class Config extends ResourceDistributor.SingletonResource {
         }
 
         result.put(new ResourceDistributor.KeyClass(null, null, RESOURCE_KEY),
-                baseConfig);
+                new Config(main, baseConfigJson));
 
         return result;
     }
@@ -184,20 +203,6 @@ public class Config extends ResourceDistributor.SingletonResource {
     @Deprecated
     public static CoreConfig getConfig(Main main) {
         return getConfig(null, null, main);
-    }
-
-    public static class InvalidConfigException extends Exception {
-        public InvalidConfigException(String message) {
-            super(message);
-        }
-
-        public InvalidConfigException() {
-            super();
-        }
-
-        public InvalidConfigException(Exception e) {
-            super(e);
-        }
     }
 
 }
