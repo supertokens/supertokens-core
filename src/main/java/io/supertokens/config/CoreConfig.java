@@ -479,4 +479,8 @@ public class CoreConfig {
         }
     }
 
+    void assertThatConfigFromSameUserPoolIsNotConflicting(CoreConfig other) throws InvalidConfigException {
+        // TODO:...
+    }
+
 }
