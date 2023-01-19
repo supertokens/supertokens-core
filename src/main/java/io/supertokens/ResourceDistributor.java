@@ -67,12 +67,16 @@ public class ResourceDistributor {
     public SingletonResource setResource(@Nullable String connectionUriDomain, @Nullable String tenantId,
                                          @Nonnull String key,
                                          SingletonResource resource) {
+        return setResource(new KeyClass(connectionUriDomain, tenantId, key), resource);
+    }
+
+    public SingletonResource setResource(KeyClass key, SingletonResource resource) {
         synchronized (lock) {
-            SingletonResource alreadyExists = resources.get(new KeyClass(connectionUriDomain, tenantId, key));
+            SingletonResource alreadyExists = resources.get(key);
             if (alreadyExists != null) {
                 return alreadyExists;
             }
-            resources.put(new KeyClass(connectionUriDomain, tenantId, key), resource);
+            resources.put(key, resource);
             return resource;
         }
     }

@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
-import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import org.jetbrains.annotations.TestOnly;
 
@@ -338,14 +337,14 @@ public class CoreConfig {
                 : CLIOptions.get(main).getConfigFilePath()).getAbsolutePath();
     }
 
-    void validateAndInitialise(Main main) throws IOException {
+    void validate(Main main) throws Config.InvalidConfigException {
         if (getConfigVersion() == -1) {
-            throw new QuitProgramException(
+            throw new Config.InvalidConfigException(
                     "'core_config_version' is not set in the config.yaml file. Please redownload and install "
                             + "SuperTokens");
         }
         if (access_token_validity < 1 || access_token_validity > 86400000) {
-            throw new QuitProgramException(
+            throw new Config.InvalidConfigException(
                     "'access_token_validity' must be between 1 and 86400000 seconds inclusive. The config file can be"
                             + " found here: " + getConfigFileLocation(main));
         }
@@ -354,7 +353,7 @@ public class CoreConfig {
         validityTesting = validityTesting == null ? false : validityTesting;
         if ((refresh_token_validity * 60) <= access_token_validity) {
             if (!Main.isTesting || validityTesting) {
-                throw new QuitProgramException(
+                throw new Config.InvalidConfigException(
                         "'refresh_token_validity' must be strictly greater than 'access_token_validity'. The config "
                                 + "file can be found here: " + getConfigFileLocation(main));
             }
@@ -362,31 +361,32 @@ public class CoreConfig {
 
         if (!Main.isTesting || validityTesting) { // since in testing we make this really small
             if (access_token_signing_key_update_interval < 1) {
-                throw new QuitProgramException(
+                throw new Config.InvalidConfigException(
                         "'access_token_signing_key_update_interval' must be greater than, equal to 1 hour. The "
                                 + "config file can be found here: " + getConfigFileLocation(main));
             }
         }
 
         if (password_reset_token_lifetime <= 0) {
-            throw new QuitProgramException("'password_reset_token_lifetime' must be >= 0");
+            throw new Config.InvalidConfigException("'password_reset_token_lifetime' must be >= 0");
         }
 
         if (email_verification_token_lifetime <= 0) {
-            throw new QuitProgramException("'email_verification_token_lifetime' must be >= 0");
+            throw new Config.InvalidConfigException("'email_verification_token_lifetime' must be >= 0");
         }
 
         if (passwordless_code_lifetime <= 0) {
-            throw new QuitProgramException("'passwordless_code_lifetime' must be > 0");
+            throw new Config.InvalidConfigException("'passwordless_code_lifetime' must be > 0");
         }
 
         if (passwordless_max_code_input_attempts <= 0) {
-            throw new QuitProgramException("'passwordless_max_code_input_attempts' must be > 0");
+            throw new Config.InvalidConfigException("'passwordless_max_code_input_attempts' must be > 0");
         }
 
         if (max_server_pool_size <= 0) {
-            throw new QuitProgramException("'max_server_pool_size' must be >= 1. The config file can be found here: "
-                    + getConfigFileLocation(main));
+            throw new Config.InvalidConfigException(
+                    "'max_server_pool_size' must be >= 1. The config file can be found here: "
+                            + getConfigFileLocation(main));
         }
 
         if (api_keys != null) {
@@ -394,14 +394,14 @@ public class CoreConfig {
             for (int i = 0; i < keys.length; i++) {
                 String currKey = keys[i].trim();
                 if (currKey.length() < 20) {
-                    throw new QuitProgramException(
+                    throw new Config.InvalidConfigException(
                             "One of the API keys is too short. Please use at least 20 characters");
                 }
                 for (int y = 0; y < currKey.length(); y++) {
                     char currChar = currKey.charAt(y);
                     if (!(currChar == '=' || currChar == '-' || (currChar >= '0' && currChar <= '9')
                             || (currChar >= 'a' && currChar <= 'z') || (currChar >= 'A' && currChar <= 'Z'))) {
-                        throw new QuitProgramException(
+                        throw new Config.InvalidConfigException(
                                 "Invalid characters in API key. Please only use '=', '-' and alpha-numeric (including"
                                         + " capitals)");
                     }
@@ -410,48 +410,51 @@ public class CoreConfig {
         }
 
         if (!password_hashing_alg.equalsIgnoreCase("ARGON2") && !password_hashing_alg.equalsIgnoreCase("BCRYPT")) {
-            throw new QuitProgramException("'password_hashing_alg' must be one of 'ARGON2' or 'BCRYPT'");
+            throw new Config.InvalidConfigException("'password_hashing_alg' must be one of 'ARGON2' or 'BCRYPT'");
         }
 
         if (password_hashing_alg.equalsIgnoreCase("ARGON2")) {
             if (argon2_iterations <= 0) {
-                throw new QuitProgramException("'argon2_iterations' must be >= 1");
+                throw new Config.InvalidConfigException("'argon2_iterations' must be >= 1");
             }
 
             if (argon2_parallelism <= 0) {
-                throw new QuitProgramException("'argon2_parallelism' must be >= 1");
+                throw new Config.InvalidConfigException("'argon2_parallelism' must be >= 1");
             }
 
             if (argon2_memory_kb <= 0) {
-                throw new QuitProgramException("'argon2_memory_kb' must be >= 1");
+                throw new Config.InvalidConfigException("'argon2_memory_kb' must be >= 1");
             }
 
             if (argon2_hashing_pool_size <= 0) {
-                throw new QuitProgramException("'argon2_hashing_pool_size' must be >= 1");
+                throw new Config.InvalidConfigException("'argon2_hashing_pool_size' must be >= 1");
             }
 
             if (argon2_hashing_pool_size > max_server_pool_size) {
-                throw new QuitProgramException("'argon2_hashing_pool_size' must be <= 'max_server_pool_size'");
+                throw new Config.InvalidConfigException(
+                        "'argon2_hashing_pool_size' must be <= 'max_server_pool_size'");
             }
         } else if (password_hashing_alg.equalsIgnoreCase("BCRYPT")) {
             if (bcrypt_log_rounds <= 0) {
-                throw new QuitProgramException("'bcrypt_log_rounds' must be >= 1");
+                throw new Config.InvalidConfigException("'bcrypt_log_rounds' must be >= 1");
             }
         }
 
         if (base_path != null && !base_path.equals("") && !base_path.equals("/")) {
             if (base_path.contains(" ")) {
-                throw new QuitProgramException("Invalid characters in base_path config");
+                throw new Config.InvalidConfigException("Invalid characters in base_path config");
             }
         }
 
         if (!log_level.equalsIgnoreCase("info") && !log_level.equalsIgnoreCase("none")
                 && !log_level.equalsIgnoreCase("error") && !log_level.equalsIgnoreCase("warn")
                 && !log_level.equalsIgnoreCase("debug")) {
-            throw new QuitProgramException(
+            throw new Config.InvalidConfigException(
                     "'log_level' config must be one of \"NONE\",\"DEBUG\", \"INFO\", \"WARN\" or \"ERROR\".");
         }
+    }
 
+    public void createLoggingFile(Main main) throws IOException {
         if (!getInfoLogPath(main).equals("null")) {
             File infoLog = new File(getInfoLogPath(main));
             if (!infoLog.exists()) {

@@ -53,7 +53,7 @@ public class LogLevelTest {
     @Test
     public void testLogLevels() throws Exception {
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -73,7 +73,7 @@ public class LogLevelTest {
 
         {
             Utils.setValueInConfig("log_level", "NONE");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -88,7 +88,7 @@ public class LogLevelTest {
 
         {
             Utils.setValueInConfig("log_level", "ERROR");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -104,7 +104,7 @@ public class LogLevelTest {
 
         {
             Utils.setValueInConfig("log_level", "WARN");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -121,7 +121,7 @@ public class LogLevelTest {
 
         {
             Utils.setValueInConfig("log_level", "INFO");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -139,7 +139,7 @@ public class LogLevelTest {
 
         {
             Utils.setValueInConfig("log_level", "DEBUG");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -161,7 +161,7 @@ public class LogLevelTest {
     public void testLogLevelNoneOutput() throws Exception {
         {
             Utils.setValueInConfig("log_level", "NONE");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -205,7 +205,7 @@ public class LogLevelTest {
     public void testLogLevelErrorOutput() throws Exception {
         {
             Utils.setValueInConfig("log_level", "ERROR");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -259,7 +259,7 @@ public class LogLevelTest {
     public void testLogLevelWarnOutput() throws Exception {
         {
             Utils.setValueInConfig("log_level", "WARN");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -313,7 +313,7 @@ public class LogLevelTest {
     public void testLogLevelInfoOutput() throws Exception {
         {
             Utils.setValueInConfig("log_level", "INFO");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -367,7 +367,7 @@ public class LogLevelTest {
     public void testLogLevelDebugOutput() throws Exception {
         {
             Utils.setValueInConfig("log_level", "DEBUG");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -427,7 +427,7 @@ public class LogLevelTest {
 
             Utils.setValueInConfig("log_level", "NONE");
             Utils.setValueInConfig("access_token_validity", "-1");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.INIT_FAILURE));
@@ -444,7 +444,7 @@ public class LogLevelTest {
     public void testLogLevelsUpperLowerCase() throws Exception {
         {
             Utils.setValueInConfig("log_level", "NonE");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -459,7 +459,7 @@ public class LogLevelTest {
 
         {
             Utils.setValueInConfig("log_level", "error");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -475,7 +475,7 @@ public class LogLevelTest {
 
         {
             Utils.setValueInConfig("log_level", "wArN");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -492,7 +492,7 @@ public class LogLevelTest {
 
         {
             Utils.setValueInConfig("log_level", "info");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -510,7 +510,7 @@ public class LogLevelTest {
 
         {
             Utils.setValueInConfig("log_level", "debug");
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcess process = TestingProcessManager.start(args);
 
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -531,12 +531,12 @@ public class LogLevelTest {
     @Test
     public void testIncorrectLogLevel() throws Exception {
         Utils.setValueInConfig("log_level", "random");
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
 
         ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
-        assertEquals(e.exception.getMessage(),
+        assertEquals(e.exception.getCause().getMessage(),
                 "'log_level' config must be one of \"NONE\",\"DEBUG\", \"INFO\", \"WARN\" or \"ERROR\".");
 
         process.kill();

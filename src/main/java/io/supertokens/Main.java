@@ -144,10 +144,14 @@ public class Main {
         handleKillSignalForWhenItHappens();
 
         // loading configs for core from config.yaml file.
-        Config.loadConfig(null, null, this,
-                CLIOptions.get(this).getConfigFilePath() == null
-                        ? CLIOptions.get(this).getInstallationPath() + "config.yaml"
-                        : CLIOptions.get(this).getConfigFilePath());
+        try {
+            Config.loadBaseConfig(null, null, this,
+                    CLIOptions.get(this).getConfigFilePath() == null
+                            ? CLIOptions.get(this).getInstallationPath() + "config.yaml"
+                            : CLIOptions.get(this).getConfigFilePath());
+        } catch (Config.InvalidConfigException e) {
+            throw new QuitProgramException(e);
+        }
 
         Logging.info(this, "Completed config.yaml loading.", true);
 
@@ -192,8 +196,8 @@ public class Main {
         if (Arrays.stream(FeatureFlag.getInstance(this).getEnabledFeatures())
                 .anyMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             try {
-                Config.assertAllTenantConfigs(Config.loadAllTenantConfig(this));
-            } catch (Config.InvalidTenantConfigException e) {
+                Config.assertAllTenantConfigs(this, Config.loadAllTenantConfig(this));
+            } catch (Config.InvalidConfigException e) {
                 throw new QuitProgramException(e);
             }
         }

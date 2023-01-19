@@ -66,7 +66,7 @@ public class EmailVerificationTest {
     // * the right values
     @Test
     public void testGeneratingEmailVerificationTokenTwoTimes() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -97,7 +97,7 @@ public class EmailVerificationTest {
     // Verify the email successfully, then create an email verification token and check that the right error is thrown.
     @Test
     public void testVerifyingEmailAndGeneratingToken() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -126,7 +126,7 @@ public class EmailVerificationTest {
     // give invalid token to verify email
     @Test
     public void testInvalidTokenInputToVerifyEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -148,7 +148,7 @@ public class EmailVerificationTest {
     // Generate two tokens, verify with one token, the other token should throw an invalid token error
     @Test
     public void testGeneratingTwoTokenVerifyOtherTokenShouldThrowAnError() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -178,7 +178,7 @@ public class EmailVerificationTest {
     // Use an expired token, it should throw an error
     @Test
     public void useAnExpiredTokenItShouldThrowAnError() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
@@ -211,7 +211,7 @@ public class EmailVerificationTest {
     // Test the format of the email verification token
     @Test
     public void testFormatOfEmailVerificationToken() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -236,7 +236,7 @@ public class EmailVerificationTest {
 
     @Test
     public void clashingEmailVerificationToken() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -271,7 +271,7 @@ public class EmailVerificationTest {
 
     @Test
     public void verifyEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -299,7 +299,7 @@ public class EmailVerificationTest {
     // Verify the email successfully, then unverify and check that its unverified
     @Test
     public void testVerifyingEmailAndThenUnverify() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -329,7 +329,7 @@ public class EmailVerificationTest {
     // Verify the same email twice
     @Test
     public void testVerifyingSameEmailTwice() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -360,7 +360,7 @@ public class EmailVerificationTest {
     public void changeEmailVerificationTokenLifetimeTest() throws Exception {
         {
 
-            String[] args = { "../" };
+            String[] args = {"../"};
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -379,7 +379,7 @@ public class EmailVerificationTest {
         {
             Utils.setValueInConfig("email_verification_token_lifetime", "100");
 
-            String[] args = { "../" };
+            String[] args = {"../"};
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -397,12 +397,12 @@ public class EmailVerificationTest {
         {
             Utils.setValueInConfig("email_verification_token_lifetime", "0");
 
-            String[] args = { "../" };
+            String[] args = {"../"};
 
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
             ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
             assertNotNull(e);
-            assertEquals(e.exception.getMessage(), "'email_verification_token_lifetime' must be >= 0");
+            assertEquals(e.exception.getCause().getMessage(), "'email_verification_token_lifetime' must be >= 0");
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
