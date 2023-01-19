@@ -131,6 +131,7 @@ public class Config extends ResourceDistributor.SingletonResource {
         Map<String, Storage> userPoolIdToStorage = new HashMap<>();
         Map<String, Config> userPoolIdToConfigArray = new HashMap<>();
         for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
+            // TODO: is this correct? Cause it does not check for all combinations.. just a linear check.
             JsonObject currentConfig = normalisedConfigs.get(key);
             final String userPoolId = instanceToGetUserPoolFrom.getUserPoolId(currentConfig);
             {

@@ -131,13 +131,14 @@ public class Start
 
     @Override
     public String getUserPoolId(JsonObject jsonConfig) {
-        // TODO..
-        return null;
+        // we do not allow multiple in memory dbs as that is not really useful in any way..
+        return "same-pool";
     }
 
     @Override
     public void assertThatConfigFromSameUserPoolIsNotConflicting(JsonObject otherConfig) throws InvalidConfigException {
-        // TODO..
+        // there is nothing to check here cause there is no config specific to in mem db that the user
+        // can give anyway.
     }
 
     @Override
