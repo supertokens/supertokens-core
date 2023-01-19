@@ -196,7 +196,7 @@ public class Main {
         if (Arrays.stream(FeatureFlag.getInstance(this).getEnabledFeatures())
                 .anyMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             try {
-                Config.assertAllTenantConfigs(this, Config.loadAllTenantConfig(this));
+                Config.assertAllTenantConfigsAreValid(this, Config.loadAllTenantConfig(this));
             } catch (InvalidConfigException e) {
                 throw new QuitProgramException(e);
             }

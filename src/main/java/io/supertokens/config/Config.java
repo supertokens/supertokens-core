@@ -25,6 +25,8 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.LOG_LEVEL;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.storageLayer.StorageLayer;
@@ -32,7 +34,9 @@ import io.supertokens.storageLayer.StorageLayer;
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 public class Config extends ResourceDistributor.SingletonResource {
 
@@ -117,11 +121,43 @@ public class Config extends ResourceDistributor.SingletonResource {
     }
 
     // this function will check for conflicting configs across all tenants, including the base config.
-    public static void assertAllTenantConfigs(Main main, TenantConfig[] tenants)
+    public static void assertAllTenantConfigsAreValid(Main main, TenantConfig[] tenants)
             throws InvalidConfigException, IOException {
         Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = getNormalisedConfigsForAllTenants(
                 tenants, getBaseConfigAsJsonObject(main));
-        // TODO..
+        Storage instanceToGetUserPoolFrom = StorageLayer.getNewStorageInstance();
+        Set<LOG_LEVEL> logLevelSet = new HashSet<>();
+        logLevelSet.add(LOG_LEVEL.NONE);
+        Map<String, Storage> userPoolIdToStorage = new HashMap<>();
+        Map<String, Config> userPoolIdToConfigArray = new HashMap<>();
+        for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
+            JsonObject currentConfig = normalisedConfigs.get(key);
+            final String userPoolId = instanceToGetUserPoolFrom.getUserPoolId(currentConfig);
+            {
+                Storage storageForCurrentUserPoolId = userPoolIdToStorage.get(userPoolId);
+                if (storageForCurrentUserPoolId == null) {
+                    storageForCurrentUserPoolId = StorageLayer.getNewStorageInstance();
+                    storageForCurrentUserPoolId.constructor(main.getProcessId(), true);
+                    storageForCurrentUserPoolId.loadConfig(currentConfig, logLevelSet);
+                    userPoolIdToStorage.put(userPoolId, storageForCurrentUserPoolId);
+                } else {
+                    // this will check conflicting configs for db plugin related configs..
+                    storageForCurrentUserPoolId.assertThatConfigFromSameUserPoolIsNotConflicting(currentConfig);
+                }
+            }
+
+            {
+                // now we check conflicting configs for core related configs.
+                Config configForCurrentUserPoolId = userPoolIdToConfigArray.get(userPoolId);
+                if (configForCurrentUserPoolId == null) {
+                    configForCurrentUserPoolId = new Config(main, currentConfig);
+                    userPoolIdToConfigArray.put(userPoolId, configForCurrentUserPoolId);
+                } else {
+                    configForCurrentUserPoolId.assertThatConfigFromSameUserPoolIsNotConflicting(
+                            new Config(main, currentConfig).core);
+                }
+            }
+        }
     }
 
     private static Map<ResourceDistributor.KeyClass, JsonObject> getNormalisedConfigsForAllTenants(
@@ -202,6 +238,11 @@ public class Config extends ResourceDistributor.SingletonResource {
     @Deprecated
     public static CoreConfig getConfig(Main main) {
         return getConfig(null, null, main);
+    }
+
+    private void assertThatConfigFromSameUserPoolIsNotConflicting(CoreConfig otherConfig)
+            throws InvalidConfigException {
+        // TODO:..
     }
 
 }

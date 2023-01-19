@@ -130,6 +130,17 @@ public class Start
     }
 
     @Override
+    public String getUserPoolId(JsonObject jsonConfig) {
+        // TODO..
+        return null;
+    }
+
+    @Override
+    public void assertThatConfigFromSameUserPoolIsNotConflicting(JsonObject otherConfig) throws InvalidConfigException {
+        // TODO..
+    }
+
+    @Override
     public void initFileLogging(String infoLogPath, String errorLogPath) {
         // no op
     }

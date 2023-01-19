@@ -55,6 +55,23 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     private static Storage static_ref_to_storage = null;
     private static URLClassLoader ucl = null;
 
+    public static Storage getNewStorageInstance() {
+        Storage storageLayer = null;
+        ServiceLoader<Storage> sl = ServiceLoader.load(Storage.class, ucl);
+        for (Storage plugin : sl) {
+            if (storageLayer == null) {
+                storageLayer = plugin;
+            } else {
+                throw new QuitProgramException(
+                        "Multiple database plugins found. Please make sure that just one plugin is in the "
+                                + "/plugin" + " "
+                                + "folder of the installation. Alternatively, please redownload and install "
+                                + "SuperTokens" + ".");
+            }
+        }
+        return storageLayer;
+    }
+
     private StorageLayer(Main main, String pluginFolderPath, JsonObject configJson)
             throws MalformedURLException, InvalidConfigException {
         Logging.info(main, "Loading storage layer.", true);
@@ -83,18 +100,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
                 ServiceLoader<Storage> sl = ServiceLoader.load(Storage.class, ucl);
                 Iterator<Storage> it = sl.iterator();
-                while (it.hasNext()) {
-                    Storage plugin = it.next();
-                    if (storageLayerTemp == null) {
-                        storageLayerTemp = plugin;
-                    } else {
-                        throw new QuitProgramException(
-                                "Multiple database plugins found. Please make sure that just one plugin is in the "
-                                        + "/plugin" + " "
-                                        + "folder of the installation. Alternatively, please redownload and install "
-                                        + "SuperTokens" + ".");
-                    }
-                }
+                storageLayerTemp = getNewStorageInstance();
             }
 
             if (storageLayerTemp != null && !main.isForceInMemoryDB()
