@@ -87,7 +87,7 @@ public class Config extends ResourceDistributor.SingletonResource {
         return new Gson().toJsonTree(obj).getAsJsonObject();
     }
 
-    public static String getConfigFilePath(Main main) {
+    private static String getConfigFilePath(Main main) {
         return CLIOptions.get(main).getConfigFilePath() == null
                 ? CLIOptions.get(main).getInstallationPath() + "config.yaml"
                 : CLIOptions.get(main).getConfigFilePath();
@@ -103,14 +103,14 @@ public class Config extends ResourceDistributor.SingletonResource {
 
         synchronized (lock) {
             main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
-            Map<ResourceDistributor.KeyClass, Config> normalisedConfigs = getNormalisedConfigsForAllTenants(main,
+            Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = getNormalisedConfigsForAllTenants(
                     tenants,
                     getBaseConfigAsJsonObject(main));
 
             // this also adds the base config back to the resource distributor.
-            normalisedConfigs.forEach((keyClass, config) -> {
-                main.getResourceDistributor().setResource(keyClass, config);
-            });
+            for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
+                main.getResourceDistributor().setResource(key, new Config(main, normalisedConfigs.get(key)));
+            }
         }
 
         return tenants;
@@ -119,16 +119,15 @@ public class Config extends ResourceDistributor.SingletonResource {
     // this function will check for conflicting configs across all tenants, including the base config.
     public static void assertAllTenantConfigs(Main main, TenantConfig[] tenants)
             throws InvalidConfigException, IOException {
-        Map<ResourceDistributor.KeyClass, Config> normalisedConfigs = getNormalisedConfigsForAllTenants(main,
+        Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = getNormalisedConfigsForAllTenants(
                 tenants, getBaseConfigAsJsonObject(main));
         // TODO..
     }
 
-    private static Map<ResourceDistributor.KeyClass, Config> getNormalisedConfigsForAllTenants(Main main,
-                                                                                               TenantConfig[] tenants,
-                                                                                               JsonObject baseConfigJson)
-            throws InvalidConfigException, IOException {
-        Map<ResourceDistributor.KeyClass, Config> result = new HashMap<>();
+    private static Map<ResourceDistributor.KeyClass, JsonObject> getNormalisedConfigsForAllTenants(
+            TenantConfig[] tenants,
+            JsonObject baseConfigJson) {
+        Map<ResourceDistributor.KeyClass, JsonObject> result = new HashMap<>();
         Map<ResourceDistributor.KeyClass, JsonObject> jsonConfigs = new HashMap<>();
 
         for (TenantConfig tenant : tenants) {
@@ -182,11 +181,11 @@ public class Config extends ResourceDistributor.SingletonResource {
             });
 
             result.put(new ResourceDistributor.KeyClass(connectionUriDomain, tenantId, RESOURCE_KEY),
-                    new Config(main, finalJson));
+                    finalJson);
         }
 
         result.put(new ResourceDistributor.KeyClass(null, null, RESOURCE_KEY),
-                new Config(main, baseConfigJson));
+                baseConfigJson);
 
         return result;
     }
