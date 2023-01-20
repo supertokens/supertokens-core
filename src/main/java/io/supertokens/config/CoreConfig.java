@@ -480,7 +480,91 @@ public class CoreConfig {
     }
 
     void assertThatConfigFromSameUserPoolIsNotConflicting(CoreConfig other) throws InvalidConfigException {
-        // TODO:...
+        // access_token_validity: can be different per tenant in the same user pool cause we directly store the
+        //  calculated expiry time of the access token in the db.
+
+        // access_token_blacklisting: can be different cause we don't store this in the db anywhere
+
+        // refresh_token_validity: can be different cause we don't store this in the db anywhere
+
+        // password_reset_token_lifetime: can be different cause we don't store this in the db anywhere
+
+        // email_verification_token_lifetime: can be different cause we don't store this in the db anywhere
+
+        // passwordless_max_code_input_attempts: can be different cause we don't store this in the db anywhere
+
+        // passwordless_code_lifetime: can be different cause we don't store this in the db anywhere
+
+        // we do not allow different values for this in the same user pool cause this affects sessions
+        // created by other tenants as well
+        if (other.getAccessTokenSigningKeyDynamic() != this.getAccessTokenSigningKeyDynamic()) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for access_token_signing_key_dynamic for the same user pool");
+        }
+
+        // we do not allow this cause clearing tokens based on this config may affect other tenant's
+        // tokens as well - since we do not store the explicit expiry time in the table, but instead
+        // clear based on createdTime and the current time.
+        if (other.getAccessTokenSigningKeyUpdateInterval() != this.getAccessTokenSigningKeyUpdateInterval()) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for access_token_signing_key_update_interval for the same user " +
+                            "pool");
+        }
+
+        // max_server_pool_size: can be different cause it affects only the storage layer created for that tenant
+
+        // api_keys: can be different cause it has nothing to do with a user pool
+
+        // password_hashing_alg and argon2, bcrypt and other hash settings: can be different cause we don't store
+        // this in db
+
+        // the settings below are per core and should only be changed in the base config.yaml file,
+        // therefore, they shouldn't be reflected in the dynamic tenant config
+        if (!other.getBasePath().equals(this.getBasePath())) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for base_path for the same user " +
+                            "pool");
+        }
+
+        if (!other.log_level.equals(this.log_level)) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for log_level for the same user " +
+                            "pool");
+        }
+
+        if (!other.host.equals(this.host)) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for host for the same user " +
+                            "pool");
+        }
+
+        if (other.port != this.port) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for port for the same user " +
+                            "pool");
+        }
+
+        if (!other.info_log_path.equals(this.info_log_path)) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for info_log_path for the same user " +
+                            "pool");
+        }
+
+        if (!other.error_log_path.equals(this.error_log_path)) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for error_log_path for the same user " +
+                            "pool");
+        }
+
+        if (other.webserver_https_enabled != this.webserver_https_enabled) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for webserver_https_enabled for the same user " +
+                            "pool");
+        }
+
+        // ip_allow_regex: can be different cause it has nothing to do with a user pool
+
+        // ip_deny_regex: can be different cause it has nothing to do with a user pool
     }
 
 }
