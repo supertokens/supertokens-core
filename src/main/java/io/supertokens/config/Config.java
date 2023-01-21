@@ -21,6 +21,7 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
@@ -30,6 +31,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.storageLayer.StorageLayer;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
@@ -99,12 +101,31 @@ public class Config extends ResourceDistributor.SingletonResource {
 
     public static TenantConfig[] loadAllTenantConfig(Main main)
             throws IOException, InvalidConfigException {
+        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG, null);
         // we load up all the json config from the core for each tenant
         // and then for each tenant, we create merge their jsons from most specific
         // to least specific and then save the final json as a core config in the
         // global resource distributor.
         TenantConfig[] tenants = StorageLayer.getMultitenancyStorage(main).getAllTenants();
 
+        synchronized (lock) {
+            main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
+            Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = getNormalisedConfigsForAllTenants(
+                    tenants,
+                    getBaseConfigAsJsonObject(main));
+
+            // this also adds the base config back to the resource distributor.
+            for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
+                main.getResourceDistributor().setResource(key, new Config(main, normalisedConfigs.get(key)));
+            }
+        }
+
+        return tenants;
+    }
+
+    @TestOnly
+    public static TenantConfig[] loadAllTenantConfig(Main main, TenantConfig[] tenants)
+            throws IOException, InvalidConfigException {
         synchronized (lock) {
             main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
             Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = getNormalisedConfigsForAllTenants(

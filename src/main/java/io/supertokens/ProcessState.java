@@ -77,6 +77,8 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
      * INVALID_LICENSE_KEY: Called when the licens key check failed
      * SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL: Added when the server request failed during license key check
      * INIT_FAILURE_DUE_TO_LICENSE_KEY_DB_CHECK: Added if license key check in db failed on core start
+     * LOADING_ALL_TENANT_CONFIG: Added when the Config.loadAllTenantConfig function is called, either on core start,
+     * or during API call which adds / modifies tenant
      */
     public enum PROCESS_STATE {
         INIT, INIT_FAILURE, STARTED, SHUTTING_DOWN, STOPPED, RETRYING_ACCESS_TOKEN_JWT_VERIFICATION,
@@ -84,7 +86,7 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
         CREATING_NEW_TABLE, SENDING_TELEMETRY, SENT_TELEMETRY, SETTING_ACCESS_TOKEN_SIGNING_KEY_TO_NULL,
         PASSWORD_HASH_BCRYPT, PASSWORD_HASH_ARGON, PASSWORD_VERIFY_BCRYPT, PASSWORD_VERIFY_ARGON,
         PASSWORD_VERIFY_FIREBASE_SCRYPT, ADDING_REMOTE_ADDRESS_FILTER, LICENSE_KEY_CHECK_NETWORK_CALL,
-        INVALID_LICENSE_KEY, SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL
+        INVALID_LICENSE_KEY, SERVER_ERROR_DURING_LICENSE_KEY_CHECK_FAIL, LOADING_ALL_TENANT_CONFIG
     }
 
     public static class EventAndException {
