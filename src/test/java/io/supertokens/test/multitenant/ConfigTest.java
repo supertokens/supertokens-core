@@ -25,13 +25,17 @@ import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfigTestContent;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
 import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.version.Version;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
@@ -216,6 +220,130 @@ public class ConfigTest {
                     .equals("You cannot set different values for access_token_signing_key_dynamic for the same user " +
                             "pool"));
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void mergingDifferentUserPoolTenantWithBaseConfigWithConflictingConfigsShouldNotThrowsError()
+            throws InterruptedException, IOException, InvalidConfigException {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        CoreConfigTestContent.getInstance(process.main)
+                .setKeyValue(CoreConfigTestContent.VALIDITY_TESTING, true);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Storage storage = StorageLayer.getStorage(process.getProcess());
+        if (storage.getType() == STORAGE_TYPE.SQL
+                && !Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+            JsonObject tenantConfig = new JsonObject();
+
+            if (Version.getVersion(process.getProcess()).getPluginName().equals("postgresql")) {
+                tenantConfig.add("postgresql_database_name", new JsonPrimitive("random"));
+            } else if (Version.getVersion(process.getProcess()).getPluginName().equals("mysql")) {
+                tenantConfig.add("mysql_database_name", new JsonPrimitive("random"));
+            } else {
+                tenantConfig.add("mongodb_connection_uri", new JsonPrimitive("mongodb://root:root@localhost:27018"));
+            }
+            tenantConfig.add("access_token_signing_key_dynamic", new JsonPrimitive(false));
+
+            Config.assertAllTenantConfigsAreValid(process.main,
+                    Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
+                            new TenantConfig("abc", null, new EmailPasswordConfig(false),
+                                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                                    new PasswordlessConfig(false),
+                                    tenantConfig)}));
+
+        }
+
+        Assert.assertEquals(Config.getConfig(process.getProcess()).getAccessTokenSigningKeyDynamic(),
+                true);
+
+        Assert.assertEquals(Config.getConfig("abc", null, process.getProcess()).getPasswordlessMaxCodeInputAttempts(),
+                5);
+        Assert.assertEquals(Config.getConfig("abc", null, process.getProcess()).getAccessTokenSigningKeyDynamic(),
+                false);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDifferentWaysToGetConfigBasedOnConnectionURIAndTenantId()
+            throws InterruptedException, IOException, InvalidConfigException {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("refresh_token_validity", "144001");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        TenantConfig[] tenants = new TenantConfig[4];
+
+        {
+            JsonObject tenantConfig = new JsonObject();
+            tenantConfig.add("refresh_token_validity", new JsonPrimitive(144002));
+            tenants[0] = new TenantConfig("c1", null, new EmailPasswordConfig(false),
+                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                    new PasswordlessConfig(false),
+                    tenantConfig);
+        }
+
+        {
+            JsonObject tenantConfig = new JsonObject();
+            tenantConfig.add("refresh_token_validity", new JsonPrimitive(144003));
+            tenants[1] = new TenantConfig("c1", "t1", new EmailPasswordConfig(false),
+                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                    new PasswordlessConfig(false),
+                    tenantConfig);
+        }
+
+        {
+            JsonObject tenantConfig = new JsonObject();
+            tenantConfig.add("refresh_token_validity", new JsonPrimitive(144004));
+            tenants[2] = new TenantConfig(null, "t2", new EmailPasswordConfig(false),
+                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                    new PasswordlessConfig(false),
+                    tenantConfig);
+        }
+
+        {
+            JsonObject tenantConfig = new JsonObject();
+            tenantConfig.add("refresh_token_validity", new JsonPrimitive(144005));
+            tenants[3] = new TenantConfig(null, "t1", new EmailPasswordConfig(false),
+                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                    new PasswordlessConfig(false),
+                    tenantConfig);
+        }
+
+        Config.assertAllTenantConfigsAreValid(process.main, Config.loadAllTenantConfig(process.getProcess(), tenants));
+
+        Assert.assertEquals(Config.getConfig(null, null, process.getProcess()).getRefreshTokenValidity(),
+                (long) 144001 * 60 * 1000);
+        Assert.assertEquals(Config.getConfig("c1", null, process.getProcess()).getRefreshTokenValidity(),
+                (long) 144002 * 60 * 1000);
+        Assert.assertEquals(Config.getConfig("c1", "t1", process.getProcess()).getRefreshTokenValidity(),
+                (long) 144003 * 60 * 1000);
+        Assert.assertEquals(Config.getConfig(null, "t1", process.getProcess()).getRefreshTokenValidity(),
+                (long) 144005 * 60 * 1000);
+        Assert.assertEquals(Config.getConfig("c2", null, process.getProcess()).getRefreshTokenValidity(),
+                (long) 144001 * 60 * 1000);
+        Assert.assertEquals(Config.getConfig("c2", "t1", process.getProcess()).getRefreshTokenValidity(),
+                (long) 144005 * 60 * 1000);
+        Assert.assertEquals(Config.getConfig("c3", "t2", process.getProcess()).getRefreshTokenValidity(),
+                (long) 144004 * 60 * 1000);
+        Assert.assertEquals(Config.getConfig("c1", "t2", process.getProcess()).getRefreshTokenValidity(),
+                (long) 144002 * 60 * 1000);
+        Assert.assertEquals(Config.getConfig(null, "t2", process.getProcess()).getRefreshTokenValidity(),
+                (long) 144004 * 60 * 1000);
+
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
