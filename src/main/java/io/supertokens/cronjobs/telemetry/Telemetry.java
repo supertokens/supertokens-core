@@ -54,7 +54,7 @@ public class Telemetry extends CronTask {
 
     @Override
     protected void doTask() throws Exception {
-        if (StorageLayer.getInstance(main).isInMemDb() || Config.getConfig(main).isTelemetryDisabled()) {
+        if (StorageLayer.isInMemDb(main) || Config.getConfig(main).isTelemetryDisabled()) {
             // we do not send any info in this case since it's not under development / production env or the user has
             // disabled Telemetry
             return;
@@ -86,7 +86,7 @@ public class Telemetry extends CronTask {
     }
 
     public static KeyValueInfo getTelemetryId(Main main) throws StorageQueryException {
-        if (StorageLayer.getInstance(main).isInMemDb()) {
+        if (StorageLayer.isInMemDb(main)) {
             return null;
         }
         Storage storage = StorageLayer.getStorage(main);

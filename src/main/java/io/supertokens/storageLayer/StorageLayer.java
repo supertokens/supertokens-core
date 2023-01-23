@@ -46,6 +46,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 
@@ -55,9 +56,10 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     private final Storage storage;
     private static Storage static_ref_to_storage = null;
     private static URLClassLoader ucl = null;
+    private static final Object lock = new Object();
 
     public static Storage getNewStorageInstance(Main main, JsonObject config) throws InvalidConfigException {
-        Storage result = null;
+        Storage result;
         if (StorageLayer.ucl == null) {
             result = new Start(main);
         } else {
@@ -130,10 +132,15 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     public static void close(Main main) {
-        if (getInstance(main) == null) {
+        if (getInstance(null, null, main) == null) {
             return;
         }
-        getInstance(main).storage.close();
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                main.getResourceDistributor()
+                        .getAllResourcesWithResourceKey(RESOURCE_KEY);
+        for (ResourceDistributor.SingletonResource resource : resources.values()) {
+            ((StorageLayer) resource).storage.close();
+        }
         StorageLayer.static_ref_to_storage = null;
     }
 
@@ -163,154 +170,254 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static StorageLayer getInstance(Main main) {
-        return (StorageLayer) main.getResourceDistributor().getResource(RESOURCE_KEY);
+    private static StorageLayer getInstance(String connectionUriDomain, String tenantId, Main main) {
+        return (StorageLayer) main.getResourceDistributor().getResource(connectionUriDomain, tenantId, RESOURCE_KEY);
     }
 
     public static void initPrimary(Main main, String pluginFolderPath, JsonObject configJson)
             throws MalformedURLException, InvalidConfigException {
-        main.getResourceDistributor().setResource(RESOURCE_KEY,
-                new StorageLayer(main, pluginFolderPath, configJson));
+        synchronized (lock) {
+            main.getResourceDistributor().setResource(RESOURCE_KEY,
+                    new StorageLayer(main, pluginFolderPath, configJson));
+        }
     }
 
     public static void loadAllTenantStorage(Main main)
-            throws IOException {
-        // TODO: locking
+            throws IOException, InvalidConfigException {
         TenantConfig[] tenants = StorageLayer.getMultitenancyStorage(main).getAllTenants();
 
         Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
                 tenants,
                 Config.getBaseConfigAsJsonObject(main));
 
+        Map<String, Storage> idToStorageMap = new HashMap<>();
+        Map<ResourceDistributor.KeyClass, Storage> resourceKeyToStorageMap = new HashMap<>();
         for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
-            try {
-                Storage storage = StorageLayer.getNewStorageInstance(main, normalisedConfigs.get(key));
-                String userPoolId = storage.getUserPoolId();
-                String connectionPoolId = storage.getConnectionPoolId();
-                // TODO..
-            } catch (InvalidConfigException e) {
-                // should never come here cause should have already checked the config validity before this step
-                throw new RuntimeException(e);
+            Storage storage = StorageLayer.getNewStorageInstance(main, normalisedConfigs.get(key));
+            String userPoolId = storage.getUserPoolId();
+            String connectionPoolId = storage.getConnectionPoolId();
+            String uniqueId = userPoolId + "~" + connectionPoolId;
+            if (idToStorageMap.get(uniqueId) != null) {
+                // this means there already exists a storage object that can be reused
+                // for this tenant
+                resourceKeyToStorageMap.put(key, idToStorageMap.get(uniqueId));
+            } else {
+                idToStorageMap.put(uniqueId, storage);
+                resourceKeyToStorageMap.put(key, storage);
             }
         }
 
+        // at this point, we have made sure that all the configs are fine and that the storage
+        // objects are shared across tenants based on the config of each tenant.
+
+        // now we loop through existing storage objects in the main resource distributor and reuse them
+        // if the unique ID is the same as the storage objects created above.
+        synchronized (lock) {
+            // TODO:..
+        }
     }
 
+    public static Storage getStorage(String connectionUriDomain, String tenantId, Main main) {
+        synchronized (lock) {
+            if (getInstance(connectionUriDomain, tenantId, main) == null) {
+                throw new QuitProgramException("please call init() before calling getStorageLayer");
+            }
+            return getInstance(connectionUriDomain, tenantId, main).storage;
+        }
+    }
+
+    @Deprecated
     public static Storage getStorage(Main main) {
-        if (getInstance(main) == null) {
-            throw new QuitProgramException("please call init() before calling getStorageLayer");
-        }
-        return getInstance(main).storage;
+        return getStorage(null, null, main);
     }
 
+    public static AuthRecipeStorage getAuthRecipeStorage(String connectionUriDomain, String tenantId, Main main) {
+        synchronized (lock) {
+            if (getInstance(connectionUriDomain, tenantId, main) == null) {
+                throw new QuitProgramException("please call init() before calling getStorageLayer");
+            }
+            return (AuthRecipeStorage) getInstance(connectionUriDomain, tenantId, main).storage;
+        }
+    }
+
+    @Deprecated
     public static AuthRecipeStorage getAuthRecipeStorage(Main main) {
-        if (getInstance(main) == null) {
-            throw new QuitProgramException("please call init() before calling getStorageLayer");
-        }
-        return (AuthRecipeStorage) getInstance(main).storage;
+        return getAuthRecipeStorage(null, null, main);
     }
 
+    public static SessionStorage getSessionStorage(String connectionUriDomain, String tenantId, Main main) {
+        synchronized (lock) {
+            if (getInstance(connectionUriDomain, tenantId, main) == null) {
+                throw new QuitProgramException("please call init() before calling getStorageLayer");
+            }
+            return (SessionStorage) getInstance(connectionUriDomain, tenantId, main).storage;
+        }
+    }
+
+    @Deprecated
     public static SessionStorage getSessionStorage(Main main) {
-        if (getInstance(main) == null) {
-            throw new QuitProgramException("please call init() before calling getStorageLayer");
-        }
-        return (SessionStorage) getInstance(main).storage;
+        return getSessionStorage(null, null, main);
     }
 
+    public static EmailPasswordSQLStorage getEmailPasswordStorage(String connectionUriDomain, String tenantId,
+                                                                  Main main) {
+        synchronized (lock) {
+            if (getInstance(connectionUriDomain, tenantId, main) == null) {
+                throw new QuitProgramException("please call init() before calling getStorageLayer");
+            }
+            if (getInstance(connectionUriDomain, tenantId, main).storage.getType() != STORAGE_TYPE.SQL) {
+                // we only support SQL for now
+                throw new UnsupportedOperationException("");
+            }
+            return (EmailPasswordSQLStorage) getInstance(connectionUriDomain, tenantId, main).storage;
+        }
+    }
+
+    @Deprecated
     public static EmailPasswordSQLStorage getEmailPasswordStorage(Main main) {
-        if (getInstance(main) == null) {
-            throw new QuitProgramException("please call init() before calling getStorageLayer");
-        }
-        if (getInstance(main).storage.getType() != STORAGE_TYPE.SQL) {
-            // we only support SQL for now
-            throw new UnsupportedOperationException("");
-        }
-        return (EmailPasswordSQLStorage) getInstance(main).storage;
+        return getEmailPasswordStorage(null, null, main);
     }
 
+    public static EmailVerificationSQLStorage getEmailVerificationStorage(String connectionUriDomain, String tenantId,
+                                                                          Main main) {
+        synchronized (lock) {
+            if (getInstance(connectionUriDomain, tenantId, main) == null) {
+                throw new QuitProgramException("please call init() before calling getStorageLayer");
+            }
+            if (getInstance(connectionUriDomain, tenantId, main).storage.getType() != STORAGE_TYPE.SQL) {
+                // we only support SQL for now
+                throw new UnsupportedOperationException("");
+            }
+            return (EmailVerificationSQLStorage) getInstance(connectionUriDomain, tenantId, main).storage;
+        }
+    }
+
+    @Deprecated
     public static EmailVerificationSQLStorage getEmailVerificationStorage(Main main) {
-        if (getInstance(main) == null) {
-            throw new QuitProgramException("please call init() before calling getStorageLayer");
-        }
-        if (getInstance(main).storage.getType() != STORAGE_TYPE.SQL) {
-            // we only support SQL for now
-            throw new UnsupportedOperationException("");
-        }
-        return (EmailVerificationSQLStorage) getInstance(main).storage;
+        return getEmailVerificationStorage(null, null, main);
     }
 
+    public static ThirdPartySQLStorage getThirdPartyStorage(String connectionUriDomain, String tenantId, Main main) {
+        synchronized (lock) {
+            if (getInstance(connectionUriDomain, tenantId, main) == null) {
+                throw new QuitProgramException("please call init() before calling getStorageLayer");
+            }
+            if (getInstance(connectionUriDomain, tenantId, main).storage.getType() != STORAGE_TYPE.SQL) {
+                // we only support SQL for now
+                throw new UnsupportedOperationException("");
+            }
+            return (ThirdPartySQLStorage) getInstance(connectionUriDomain, tenantId, main).storage;
+        }
+    }
+
+    @Deprecated
     public static ThirdPartySQLStorage getThirdPartyStorage(Main main) {
-        if (getInstance(main) == null) {
-            throw new QuitProgramException("please call init() before calling getStorageLayer");
-        }
-        if (getInstance(main).storage.getType() != STORAGE_TYPE.SQL) {
-            // we only support SQL for now
-            throw new UnsupportedOperationException("");
-        }
-        return (ThirdPartySQLStorage) getInstance(main).storage;
+        return getThirdPartyStorage(null, null, main);
     }
 
+    public static PasswordlessSQLStorage getPasswordlessStorage(String connectionUriDomain, String tenantId,
+                                                                Main main) {
+        synchronized (lock) {
+            if (getInstance(connectionUriDomain, tenantId, main) == null) {
+                throw new QuitProgramException("please call init() before calling getStorageLayer");
+            }
+            if (getInstance(connectionUriDomain, tenantId, main).storage.getType() != STORAGE_TYPE.SQL) {
+                // we only support SQL for now
+                throw new UnsupportedOperationException("");
+            }
+            return (PasswordlessSQLStorage) getInstance(connectionUriDomain, tenantId, main).storage;
+        }
+    }
+
+    @Deprecated
     public static PasswordlessSQLStorage getPasswordlessStorage(Main main) {
-        if (getInstance(main) == null) {
-            throw new QuitProgramException("please call init() before calling getStorageLayer");
-        }
-        if (getInstance(main).storage.getType() != STORAGE_TYPE.SQL) {
-            // we only support SQL for now
-            throw new UnsupportedOperationException("");
-        }
-        return (PasswordlessSQLStorage) getInstance(main).storage;
+        return getPasswordlessStorage(null, null, main);
     }
 
+    public static JWTRecipeStorage getJWTRecipeStorage(String connectionUriDomain, String tenantId, Main main) {
+        synchronized (lock) {
+            if (getInstance(connectionUriDomain, tenantId, main) == null) {
+                throw new QuitProgramException("please call init() before calling getStorageLayer");
+            }
+
+            return (JWTRecipeStorage) getInstance(connectionUriDomain, tenantId, main).storage;
+        }
+    }
+
+    @Deprecated
     public static JWTRecipeStorage getJWTRecipeStorage(Main main) {
-        if (getInstance(main) == null) {
-            throw new QuitProgramException("please call init() before calling getStorageLayer");
-        }
-
-        return (JWTRecipeStorage) getInstance(main).storage;
+        return getJWTRecipeStorage(null, null, main);
     }
 
+    public static UserMetadataSQLStorage getUserMetadataStorage(String connectionUriDomain, String tenantId,
+                                                                Main main) {
+        synchronized (lock) {
+            if (getInstance(connectionUriDomain, tenantId, main) == null) {
+                throw new QuitProgramException("please call init() before calling getStorageLayer");
+            }
+
+            if (getInstance(connectionUriDomain, tenantId, main).storage.getType() != STORAGE_TYPE.SQL) {
+                // we only support SQL for now
+                throw new UnsupportedOperationException("");
+            }
+
+            return (UserMetadataSQLStorage) getInstance(connectionUriDomain, tenantId, main).storage;
+        }
+    }
+
+    @Deprecated
     public static UserMetadataSQLStorage getUserMetadataStorage(Main main) {
-        if (getInstance(main) == null) {
-            throw new QuitProgramException("please call init() before calling getStorageLayer");
-        }
-
-        if (getInstance(main).storage.getType() != STORAGE_TYPE.SQL) {
-            // we only support SQL for now
-            throw new UnsupportedOperationException("");
-        }
-
-        return (UserMetadataSQLStorage) getInstance(main).storage;
+        return getUserMetadataStorage(null, null, main);
     }
 
+    public static UserRolesSQLStorage getUserRolesStorage(String connectionUriDomain, String tenantId, Main main) {
+        synchronized (lock) {
+            if (getInstance(connectionUriDomain, tenantId, main) == null) {
+                throw new QuitProgramException("please call init() before calling getStorageLayer");
+            }
+
+            if (getInstance(connectionUriDomain, tenantId, main).storage.getType() != STORAGE_TYPE.SQL) {
+                // we only support SQL for now
+                throw new UnsupportedOperationException("");
+            }
+            return (UserRolesSQLStorage) getInstance(connectionUriDomain, tenantId, main).storage;
+        }
+    }
+
+    @Deprecated
     public static UserRolesSQLStorage getUserRolesStorage(Main main) {
-        if (getInstance(main) == null) {
-            throw new QuitProgramException("please call init() before calling getStorageLayer");
-        }
-
-        if (getInstance(main).storage.getType() != STORAGE_TYPE.SQL) {
-            // we only support SQL for now
-            throw new UnsupportedOperationException("");
-        }
-        return (UserRolesSQLStorage) getInstance(main).storage;
+        return getUserRolesStorage(null, null, main);
     }
 
+    public static UserIdMappingStorage getUserIdMappingStorage(String connectionUriDomain, String tenantId, Main main) {
+        synchronized (lock) {
+            if (getInstance(connectionUriDomain, tenantId, main) == null) {
+                throw new QuitProgramException("please call init() before calling getStorageLayer");
+            }
+
+            return (UserIdMappingStorage) getInstance(connectionUriDomain, tenantId, main).storage;
+        }
+    }
+
+    @Deprecated
     public static UserIdMappingStorage getUserIdMappingStorage(Main main) {
-        if (getInstance(main) == null) {
-            throw new QuitProgramException("please call init() before calling getStorageLayer");
-        }
-
-        return (UserIdMappingStorage) getInstance(main).storage;
+        return getUserIdMappingStorage(null, null, main);
     }
 
+
+    // This function intentionally doesn't take connectionUriDomain and tenantId
+    // cause the data for this is only going to be in the primary db of the core.
     public static MultitenancyStorage getMultitenancyStorage(Main main) {
-        if (getInstance(main) == null) {
-            throw new QuitProgramException("please call init() before calling getStorageLayer");
-        }
+        synchronized (lock) {
+            if (getInstance(null, null, main) == null) {
+                throw new QuitProgramException("please call init() before calling getStorageLayer");
+            }
 
-        return (MultitenancyStorage) getInstance(main).storage;
+            return (MultitenancyStorage) getInstance(null, null, main).storage;
+        }
     }
 
-    public boolean isInMemDb() {
-        return this.storage instanceof Start;
+    public static boolean isInMemDb(Main main) {
+        return getInstance(null, null, main).storage instanceof Start;
     }
 }

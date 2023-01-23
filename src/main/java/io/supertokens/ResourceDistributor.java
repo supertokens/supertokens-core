@@ -95,6 +95,18 @@ public class ResourceDistributor {
         }
     }
 
+    public Map<KeyClass, SingletonResource> getAllResourcesWithResourceKey(String inputKey) {
+        Map<KeyClass, SingletonResource> result = new HashMap<>();
+        synchronized (lock) {
+            resources.forEach((key, value) -> {
+                if (key.key.equals(inputKey)) {
+                    result.put(key, value);
+                }
+            });
+        }
+        return result;
+    }
+
     public SingletonResource setResource(@Nonnull String key,
                                          SingletonResource resource) {
         return setResource(null, null, key, resource);
