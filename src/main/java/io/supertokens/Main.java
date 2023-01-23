@@ -155,7 +155,7 @@ public class Main {
 
         // loading storage layer
         try {
-            StorageLayer.init(this, CLIOptions.get(this).getInstallationPath() + "plugin/",
+            StorageLayer.initPrimary(this, CLIOptions.get(this).getInstallationPath() + "plugin/",
                     Config.getBaseConfigAsJsonObject(this));
         } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
@@ -201,10 +201,9 @@ public class Main {
                 throw new QuitProgramException(e);
             }
         }
-        // TODO: Need to make sure that variables that can't be scoped based on tenantId in the same db don't
-        //  have conflicting values.
 
-        // TODO: init storage layers for each unique db connection.
+        // init storage layers for each unique db connection.
+
 
         // init signing keys
         // TODO: add this for all tenants based on db separation only (and not tenant id)

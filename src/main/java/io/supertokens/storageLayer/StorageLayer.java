@@ -160,7 +160,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return (StorageLayer) main.getResourceDistributor().getResource(RESOURCE_KEY);
     }
 
-    public static void init(Main main, String pluginFolderPath, JsonObject configJson)
+    public static void initPrimary(Main main, String pluginFolderPath, JsonObject configJson)
             throws MalformedURLException, InvalidConfigException {
         main.getResourceDistributor().setResource(RESOURCE_KEY,
                 new StorageLayer(main, pluginFolderPath, configJson));
