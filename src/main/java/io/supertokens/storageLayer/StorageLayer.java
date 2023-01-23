@@ -90,6 +90,10 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return result;
     }
 
+    private StorageLayer(Storage storage) {
+        this.storage = storage;
+    }
+
     private StorageLayer(Main main, String pluginFolderPath, JsonObject configJson)
             throws MalformedURLException, InvalidConfigException {
         Logging.info(main, "Loading storage layer.", true);
@@ -190,20 +194,22 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 tenants,
                 Config.getBaseConfigAsJsonObject(main));
 
-        Map<String, Storage> idToStorageMap = new HashMap<>();
         Map<ResourceDistributor.KeyClass, Storage> resourceKeyToStorageMap = new HashMap<>();
-        for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
-            Storage storage = StorageLayer.getNewStorageInstance(main, normalisedConfigs.get(key));
-            String userPoolId = storage.getUserPoolId();
-            String connectionPoolId = storage.getConnectionPoolId();
-            String uniqueId = userPoolId + "~" + connectionPoolId;
-            if (idToStorageMap.get(uniqueId) != null) {
-                // this means there already exists a storage object that can be reused
-                // for this tenant
-                resourceKeyToStorageMap.put(key, idToStorageMap.get(uniqueId));
-            } else {
-                idToStorageMap.put(uniqueId, storage);
-                resourceKeyToStorageMap.put(key, storage);
+        {
+            Map<String, Storage> idToStorageMap = new HashMap<>();
+            for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
+                Storage storage = StorageLayer.getNewStorageInstance(main, normalisedConfigs.get(key));
+                String userPoolId = storage.getUserPoolId();
+                String connectionPoolId = storage.getConnectionPoolId();
+                String uniqueId = userPoolId + "~" + connectionPoolId;
+                if (idToStorageMap.get(uniqueId) != null) {
+                    // this means there already exists a storage object that can be reused
+                    // for this tenant
+                    resourceKeyToStorageMap.put(key, idToStorageMap.get(uniqueId));
+                } else {
+                    idToStorageMap.put(uniqueId, storage);
+                    resourceKeyToStorageMap.put(key, storage);
+                }
             }
         }
 
@@ -213,7 +219,31 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         // now we loop through existing storage objects in the main resource distributor and reuse them
         // if the unique ID is the same as the storage objects created above.
         synchronized (lock) {
-            // TODO:..
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorageMap =
+                    main.getResourceDistributor()
+                            .getAllResourcesWithResourceKey(RESOURCE_KEY);
+            Map<String, StorageLayer> idToExistingStorageLayerMap = new HashMap<>();
+            for (ResourceDistributor.SingletonResource resource : existingStorageMap.values()) {
+                StorageLayer currStorageLayer = (StorageLayer) resource;
+                String userPoolId = currStorageLayer.storage.getUserPoolId();
+                String connectionPoolId = currStorageLayer.storage.getConnectionPoolId();
+                String uniqueId = userPoolId + "~" + connectionPoolId;
+                idToExistingStorageLayerMap.put(uniqueId, currStorageLayer);
+            }
+            main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
+
+            for (ResourceDistributor.KeyClass key : resourceKeyToStorageMap.keySet()) {
+                Storage currStorage = resourceKeyToStorageMap.get(key);
+                String userPoolId = currStorage.getUserPoolId();
+                String connectionPoolId = currStorage.getConnectionPoolId();
+                String uniqueId = userPoolId + "~" + connectionPoolId;
+                if (idToExistingStorageLayerMap.containsKey(uniqueId)) {
+                    // we reuse the existing storage layer
+                    resourceKeyToStorageMap.put(key, idToExistingStorageLayerMap.get(uniqueId).storage);
+                }
+                main.getResourceDistributor().setResource(RESOURCE_KEY,
+                        new StorageLayer(resourceKeyToStorageMap.get(key)));
+            }
         }
     }
 

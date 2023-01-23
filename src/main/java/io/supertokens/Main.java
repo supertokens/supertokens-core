@@ -196,14 +196,15 @@ public class Main {
         if (Arrays.stream(FeatureFlag.getInstance(this).getEnabledFeatures())
                 .anyMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             try {
+                // load all configs for each of the tenants.
                 Config.loadAllTenantConfig(this);
+
+                // init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
+                StorageLayer.loadAllTenantStorage(this);
             } catch (InvalidConfigException e) {
                 throw new QuitProgramException(e);
             }
         }
-
-        // TODO: init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
-
 
         // init signing keys
         // TODO: add this for all tenants based on db separation only (and not tenant id)
