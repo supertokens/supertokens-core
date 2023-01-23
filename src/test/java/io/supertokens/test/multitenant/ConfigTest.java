@@ -126,12 +126,11 @@ public class ConfigTest {
         tenantConfig.add("refresh_token_validity", new JsonPrimitive(144002));
         tenantConfig.add("password_reset_token_lifetime", new JsonPrimitive(3600001));
 
-        Config.assertAllTenantConfigsAreValid(process.main,
-                Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
-                        new TenantConfig("abc", null, new EmailPasswordConfig(false),
-                                new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
-                                new PasswordlessConfig(false),
-                                tenantConfig)}));
+        Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
+                new TenantConfig("abc", null, new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        tenantConfig)});
 
         Assert.assertEquals(Config.getConfig(process.getProcess()).getRefreshTokenValidity(),
                 (long) 144001 * 60 * 1000);
@@ -175,12 +174,11 @@ public class ConfigTest {
         tenantConfig.add("password_reset_token_lifetime", new JsonPrimitive(3600001));
 
         try {
-            Config.assertAllTenantConfigsAreValid(process.main,
-                    Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
-                            new TenantConfig("abc", null, new EmailPasswordConfig(false),
-                                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
-                                    new PasswordlessConfig(false),
-                                    tenantConfig)}));
+            Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
+                    new TenantConfig("abc", null, new EmailPasswordConfig(false),
+                            new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                            new PasswordlessConfig(false),
+                            tenantConfig)});
             fail();
         } catch (InvalidConfigException e) {
             assert (e.getMessage()
@@ -208,12 +206,11 @@ public class ConfigTest {
         tenantConfig.add("access_token_signing_key_dynamic", new JsonPrimitive(false));
 
         try {
-            Config.assertAllTenantConfigsAreValid(process.main,
-                    Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
-                            new TenantConfig("abc", null, new EmailPasswordConfig(false),
-                                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
-                                    new PasswordlessConfig(false),
-                                    tenantConfig)}));
+            Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
+                    new TenantConfig("abc", null, new EmailPasswordConfig(false),
+                            new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                            new PasswordlessConfig(false),
+                            tenantConfig)});
             fail();
         } catch (InvalidConfigException e) {
             assert (e.getMessage()
@@ -252,12 +249,11 @@ public class ConfigTest {
             }
             tenantConfig.add("access_token_signing_key_dynamic", new JsonPrimitive(false));
 
-            Config.assertAllTenantConfigsAreValid(process.main,
-                    Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
-                            new TenantConfig("abc", null, new EmailPasswordConfig(false),
-                                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
-                                    new PasswordlessConfig(false),
-                                    tenantConfig)}));
+            Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
+                    new TenantConfig("abc", null, new EmailPasswordConfig(false),
+                            new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                            new PasswordlessConfig(false),
+                            tenantConfig)});
 
         }
 
@@ -323,7 +319,7 @@ public class ConfigTest {
                     tenantConfig);
         }
 
-        Config.assertAllTenantConfigsAreValid(process.main, Config.loadAllTenantConfig(process.getProcess(), tenants));
+        Config.loadAllTenantConfig(process.getProcess(), tenants);
 
         Assert.assertEquals(Config.getConfig(null, null, process.getProcess()).getRefreshTokenValidity(),
                 (long) 144001 * 60 * 1000);

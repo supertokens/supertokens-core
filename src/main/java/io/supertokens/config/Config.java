@@ -26,19 +26,15 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.storageLayer.StorageLayer;
-import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 
 public class Config extends ResourceDistributor.SingletonResource {
 
@@ -99,7 +95,7 @@ public class Config extends ResourceDistributor.SingletonResource {
                 : CLIOptions.get(main).getConfigFilePath();
     }
 
-    public static TenantConfig[] loadAllTenantConfig(Main main)
+    public static void loadAllTenantConfig(Main main)
             throws IOException, InvalidConfigException {
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG, null);
         // we load up all the json config from the core for each tenant
@@ -108,59 +104,44 @@ public class Config extends ResourceDistributor.SingletonResource {
         // global resource distributor.
         TenantConfig[] tenants = StorageLayer.getMultitenancyStorage(main).getAllTenants();
 
-        synchronized (lock) {
-            main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
-            Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = getNormalisedConfigsForAllTenants(
-                    tenants,
-                    getBaseConfigAsJsonObject(main));
-
-            // this also adds the base config back to the resource distributor.
-            for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
-                main.getResourceDistributor().setResource(key, new Config(main, normalisedConfigs.get(key)));
-            }
-        }
-
-        return tenants;
+        loadAllTenantConfig(main, tenants);
     }
 
-    @TestOnly
-    public static TenantConfig[] loadAllTenantConfig(Main main, TenantConfig[] tenants)
+    public static void loadAllTenantConfig(Main main, TenantConfig[] tenants)
             throws IOException, InvalidConfigException {
         synchronized (lock) {
-            main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
             Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = getNormalisedConfigsForAllTenants(
                     tenants,
                     getBaseConfigAsJsonObject(main));
 
-            // this also adds the base config back to the resource distributor.
+            assertAllTenantConfigsAreValid(main, normalisedConfigs);
+
+            // At this point, we know that all configs are valid.
+            main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
             for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
                 main.getResourceDistributor().setResource(key, new Config(main, normalisedConfigs.get(key)));
             }
         }
-
-        return tenants;
     }
 
     // this function will check for conflicting configs across all tenants, including the base config.
-    public static void assertAllTenantConfigsAreValid(Main main, TenantConfig[] tenants)
+    private static void assertAllTenantConfigsAreValid(Main main,
+                                                       Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs)
             throws InvalidConfigException, IOException {
-        Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = getNormalisedConfigsForAllTenants(
-                tenants, getBaseConfigAsJsonObject(main));
-        Storage instanceToGetUserPoolFrom = StorageLayer.getNewStorageInstance();
-        Set<LOG_LEVEL> logLevelSet = new HashSet<>();
-        logLevelSet.add(LOG_LEVEL.NONE);
         Map<String, Storage> userPoolIdToStorage = new HashMap<>();
         Map<String, Config> userPoolIdToConfigArray = new HashMap<>();
         for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
             JsonObject currentConfig = normalisedConfigs.get(key);
-            final String userPoolId = instanceToGetUserPoolFrom.getUserPoolId(currentConfig);
+            // this also checks for the validity of the config from the db's point
+            // of view cause getNewStorageInstance calls loadConfig on the db plugin
+            // which calls creates a new instance of the Config object, which calls
+            // the validate function.
+            Storage storage = StorageLayer.getNewStorageInstance(main, currentConfig);
+            final String userPoolId = storage.getUserPoolId();
             {
                 Storage storageForCurrentUserPoolId = userPoolIdToStorage.get(userPoolId);
                 if (storageForCurrentUserPoolId == null) {
-                    storageForCurrentUserPoolId = StorageLayer.getNewStorageInstance();
-                    storageForCurrentUserPoolId.constructor(main.getProcessId(), true);
-                    storageForCurrentUserPoolId.loadConfig(currentConfig, logLevelSet);
-                    userPoolIdToStorage.put(userPoolId, storageForCurrentUserPoolId);
+                    userPoolIdToStorage.put(userPoolId, storage);
                 } else {
                     // this will check conflicting configs for db plugin related configs..
                     storageForCurrentUserPoolId.assertThatConfigFromSameUserPoolIsNotConflicting(currentConfig);
@@ -169,6 +150,8 @@ public class Config extends ResourceDistributor.SingletonResource {
 
             {
                 // now we check conflicting configs for core related configs.
+                // this also checks for the validity of currentConfig itself cause
+                // it creates a new Config object, and the constructor calls the validate function.
                 Config configForCurrentUserPoolId = userPoolIdToConfigArray.get(userPoolId);
                 if (configForCurrentUserPoolId == null) {
                     configForCurrentUserPoolId = new Config(main, currentConfig);
@@ -181,7 +164,7 @@ public class Config extends ResourceDistributor.SingletonResource {
         }
     }
 
-    private static Map<ResourceDistributor.KeyClass, JsonObject> getNormalisedConfigsForAllTenants(
+    public static Map<ResourceDistributor.KeyClass, JsonObject> getNormalisedConfigsForAllTenants(
             TenantConfig[] tenants,
             JsonObject baseConfigJson) {
         Map<ResourceDistributor.KeyClass, JsonObject> result = new HashMap<>();

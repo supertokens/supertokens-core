@@ -130,13 +130,13 @@ public class Start
     }
 
     @Override
-    public String getUserPoolId(JsonObject jsonConfig) {
+    public String getUserPoolId() {
         // we do not allow multiple in memory dbs as that is not really useful in any way..
         return "same-user-pool";
     }
 
     @Override
-    public String getConnectionPoolId(JsonObject jsonConfig) throws InvalidConfigException {
+    public String getConnectionPoolId() {
         // we do not allow multiple in memory dbs as that is not really useful in any way..
         return "same-connection-pool";
     }

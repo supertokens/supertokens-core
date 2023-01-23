@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerifica
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
@@ -45,7 +46,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.Iterator;
+import java.util.Map;
 import java.util.ServiceLoader;
 
 public class StorageLayer extends ResourceDistributor.SingletonResource {
@@ -55,21 +56,36 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     private static Storage static_ref_to_storage = null;
     private static URLClassLoader ucl = null;
 
-    public static Storage getNewStorageInstance() {
-        Storage storageLayer = null;
-        ServiceLoader<Storage> sl = ServiceLoader.load(Storage.class, ucl);
-        for (Storage plugin : sl) {
-            if (storageLayer == null) {
-                storageLayer = plugin;
+    public static Storage getNewStorageInstance(Main main, JsonObject config) throws InvalidConfigException {
+        Storage result = null;
+        if (StorageLayer.ucl == null) {
+            result = new Start(main);
+        } else {
+            Storage storageLayer = null;
+            ServiceLoader<Storage> sl = ServiceLoader.load(Storage.class, ucl);
+            for (Storage plugin : sl) {
+                if (storageLayer == null) {
+                    storageLayer = plugin;
+                } else {
+                    throw new QuitProgramException(
+                            "Multiple database plugins found. Please make sure that just one plugin is in the "
+                                    + "/plugin" + " "
+                                    + "folder of the installation. Alternatively, please redownload and install "
+                                    + "SuperTokens" + ".");
+                }
+            }
+            if (storageLayer != null && !main.isForceInMemoryDB()
+                    && (storageLayer.canBeUsed(config) || CLIOptions.get(main).isForceNoInMemoryDB())) {
+                result = storageLayer;
             } else {
-                throw new QuitProgramException(
-                        "Multiple database plugins found. Please make sure that just one plugin is in the "
-                                + "/plugin" + " "
-                                + "folder of the installation. Alternatively, please redownload and install "
-                                + "SuperTokens" + ".");
+                result = new Start(main);
             }
         }
-        return storageLayer;
+        result.constructor(main.getProcessId(), Main.makeConsolePrintSilent);
+
+        // this is intentionally null, null below cause log levels is per core and not per tenant anyway
+        result.loadConfig(config, Config.getConfig(null, null, main).getLogLevels(main));
+        return result;
     }
 
     private StorageLayer(Main main, String pluginFolderPath, JsonObject configJson)
@@ -81,7 +97,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             this.storage = StorageLayer.static_ref_to_storage;
         } else {
             File loc = new File(pluginFolderPath);
-            Storage storageLayerTemp = null;
 
             File[] flist = loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar"));
 
@@ -97,22 +112,14 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     // once too cause the JARs don't change across tests either.
                     StorageLayer.ucl = new URLClassLoader(urls);
                 }
-
-                ServiceLoader<Storage> sl = ServiceLoader.load(Storage.class, ucl);
-                Iterator<Storage> it = sl.iterator();
-                storageLayerTemp = getNewStorageInstance();
             }
 
-            if (storageLayerTemp != null && !main.isForceInMemoryDB()
-                    && (storageLayerTemp.canBeUsed(configJson) || CLIOptions.get(main).isForceNoInMemoryDB())) {
-                this.storage = storageLayerTemp;
-            } else {
+            this.storage = getNewStorageInstance(main, configJson);
+
+            if (this.storage instanceof Start) {
                 Logging.info(main, "Using in memory storage.", true);
-                this.storage = new Start(main);
             }
         }
-        this.storage.constructor(main.getProcessId(), Main.makeConsolePrintSilent);
-        this.storage.loadConfig(configJson, Config.getConfig(main).getLogLevels(main));
         if (Main.isTesting && !(this.storage instanceof Start)) {
             // we save the storage layer for testing (if it's not an in mem db) purposes so that
             // next time, we can just reuse this.
@@ -164,6 +171,29 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             throws MalformedURLException, InvalidConfigException {
         main.getResourceDistributor().setResource(RESOURCE_KEY,
                 new StorageLayer(main, pluginFolderPath, configJson));
+    }
+
+    public static void loadAllTenantStorage(Main main)
+            throws IOException {
+        // TODO: locking
+        TenantConfig[] tenants = StorageLayer.getMultitenancyStorage(main).getAllTenants();
+
+        Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
+                tenants,
+                Config.getBaseConfigAsJsonObject(main));
+
+        for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
+            try {
+                Storage storage = StorageLayer.getNewStorageInstance(main, normalisedConfigs.get(key));
+                String userPoolId = storage.getUserPoolId();
+                String connectionPoolId = storage.getConnectionPoolId();
+                // TODO..
+            } catch (InvalidConfigException e) {
+                // should never come here cause should have already checked the config validity before this step
+                throw new RuntimeException(e);
+            }
+        }
+
     }
 
     public static Storage getStorage(Main main) {
