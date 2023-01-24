@@ -97,7 +97,6 @@ public class Config extends ResourceDistributor.SingletonResource {
 
     public static void loadAllTenantConfig(Main main)
             throws IOException, InvalidConfigException {
-        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG, null);
         // we load up all the json config from the core for each tenant
         // and then for each tenant, we create merge their jsons from most specific
         // to least specific and then save the final json as a core config in the
@@ -109,6 +108,7 @@ public class Config extends ResourceDistributor.SingletonResource {
 
     public static void loadAllTenantConfig(Main main, TenantConfig[] tenants)
             throws IOException, InvalidConfigException {
+        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG, null);
         synchronized (lock) {
             Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = getNormalisedConfigsForAllTenants(
                     tenants,

@@ -18,6 +18,7 @@ package io.supertokens.storageLayer;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
@@ -53,7 +54,7 @@ import java.util.ServiceLoader;
 
 public class StorageLayer extends ResourceDistributor.SingletonResource {
 
-    private static final String RESOURCE_KEY = "io.supertokens.storageLayer.StorageLayer";
+    public static final String RESOURCE_KEY = "io.supertokens.storageLayer.StorageLayer";
     private final Storage storage;
     private static Storage static_ref_to_storage = null;
     private static URLClassLoader ucl = null;
@@ -200,9 +201,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void loadAllTenantStorage(Main main)
-            throws IOException, InvalidConfigException {
-        TenantConfig[] tenants = StorageLayer.getMultitenancyStorage(main).getAllTenants();
+    public static void loadAllTenantStorage(Main main, TenantConfig[] tenants)
+            throws InvalidConfigException, IOException {
+        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE, null);
 
         Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
                 tenants,
@@ -259,6 +260,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         new StorageLayer(resourceKeyToStorageMap.get(key)));
             }
         }
+    }
+
+    public static void loadAllTenantStorage(Main main)
+            throws IOException, InvalidConfigException {
+        TenantConfig[] tenants = StorageLayer.getMultitenancyStorage(main).getAllTenants();
+        loadAllTenantStorage(main, tenants);
     }
 
     public static Storage getStorage(String connectionUriDomain, String tenantId, Main main) {
