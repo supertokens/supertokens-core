@@ -53,7 +53,7 @@ public class StorageLayerTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG));
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
 
         Assert.assertEquals(
                 process.getProcess().getResourceDistributor().getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY)
@@ -63,33 +63,6 @@ public class StorageLayerTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-//    private String getConfigFileLocation(Main main) {
-//        return new File(CLIOptions.get(main).getConfigFilePath() == null
-//                ? CLIOptions.get(main).getInstallationPath() + "config.yaml"
-//                : CLIOptions.get(main).getConfigFilePath()).getAbsolutePath();
-//    }
-//
-//    @Test
-//    public void normalConfigErrorContinuesToWork() throws InterruptedException, IOException {
-//        String[] args = {"../"};
-//
-//        Utils.setValueInConfig("access_token_validity", "-1");
-//        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-//        FeatureFlagTestContent.getInstance(process.getProcess())
-//                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-//        process.startProcess();
-//
-//        ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
-//        assertNotNull(e);
-//        assertEquals(e.exception.getCause().getMessage(),
-//                "'access_token_validity' must be between 1 and 86400000 seconds inclusive. The config file can be "
-//                        + "found here: " + getConfigFileLocation(process.getProcess()));
-//
-//        assertNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG, 1000));
-//
-//        process.kill();
-//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-//    }
 //
 //    @Test
 //    public void mergingTenantWithBaseConfigWorks() throws InterruptedException, IOException, InvalidConfigException {
