@@ -67,10 +67,17 @@ public class ResourceDistributor {
     public SingletonResource setResource(@Nullable String connectionUriDomain, @Nullable String tenantId,
                                          @Nonnull String key,
                                          SingletonResource resource) {
-        return setResource(new KeyClass(connectionUriDomain, tenantId, key), resource);
+        return setResource(key, new KeyClass(connectionUriDomain, tenantId, key), resource);
     }
 
-    public SingletonResource setResource(KeyClass key, SingletonResource resource) {
+    public SingletonResource setResource(String resourceKey, KeyClass key, SingletonResource resource) {
+        // we do this because sometimes a keyclass is generated with a specific resource,
+        // but then is reused later on to add a different resource. For example, the 
+        // getNormalisedConfigsForAllTenants function returns a KeyClass with the resource string from the
+        // Config.java file, but then this returned KeyClass if reused in the StorageLayer to add
+        // storage layer resources.
+
+        key.key = resourceKey;
         synchronized (lock) {
             SingletonResource alreadyExists = resources.get(key);
             if (alreadyExists != null) {
@@ -107,6 +114,7 @@ public class ResourceDistributor {
         return result;
     }
 
+    @Deprecated
     public SingletonResource setResource(@Nonnull String key,
                                          SingletonResource resource) {
         return setResource(null, null, key, resource);
@@ -121,7 +129,7 @@ public class ResourceDistributor {
         // instead of being null which is different compared to how we have set the norm in the
         // rest of the code
         @Nonnull
-        private final String key;
+        private String key;
 
         @Nonnull
         private final String connectionUriDomain;

@@ -146,7 +146,7 @@ public class Main {
 
         // loading configs for core from config.yaml file.
         try {
-            Config.loadBaseConfig(null, null, this);
+            Config.loadBaseConfig(this);
         } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
         }

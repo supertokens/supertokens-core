@@ -196,7 +196,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     public static void initPrimary(Main main, String pluginFolderPath, JsonObject configJson)
             throws MalformedURLException, InvalidConfigException {
         synchronized (lock) {
-            main.getResourceDistributor().setResource(RESOURCE_KEY,
+            main.getResourceDistributor().setResource(null, null, RESOURCE_KEY,
                     new StorageLayer(main, pluginFolderPath, configJson));
         }
     }
@@ -256,7 +256,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     // we reuse the existing storage layer
                     resourceKeyToStorageMap.put(key, idToExistingStorageLayerMap.get(uniqueId).storage);
                 }
-                main.getResourceDistributor().setResource(RESOURCE_KEY,
+                main.getResourceDistributor().setResource(RESOURCE_KEY, key,
                         new StorageLayer(resourceKeyToStorageMap.get(key)));
             }
         }

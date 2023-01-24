@@ -66,11 +66,11 @@ public class Config extends ResourceDistributor.SingletonResource {
         return (Config) main.getResourceDistributor().getResource(connectionUriDomain, tenantId, RESOURCE_KEY);
     }
 
-    public static void loadBaseConfig(String connectionUriDomain, String tenantId, Main main)
+    public static void loadBaseConfig(Main main)
             throws InvalidConfigException, IOException {
         synchronized (lock) {
             main.getResourceDistributor()
-                    .setResource(connectionUriDomain, tenantId, RESOURCE_KEY,
+                    .setResource(null, null, RESOURCE_KEY,
                             new Config(main, getConfigFilePath(main)));
 
             // this function is only called for the base config since we only want one logging file(s) for all tenants
@@ -119,7 +119,8 @@ public class Config extends ResourceDistributor.SingletonResource {
             // At this point, we know that all configs are valid.
             main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
             for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
-                main.getResourceDistributor().setResource(key, new Config(main, normalisedConfigs.get(key)));
+                main.getResourceDistributor()
+                        .setResource(RESOURCE_KEY, key, new Config(main, normalisedConfigs.get(key)));
             }
         }
     }
