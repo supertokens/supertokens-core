@@ -352,15 +352,17 @@ public class Main {
         return resourceDistributor;
     }
 
+    @TestOnly
     public void deleteAllInformationForTesting() throws Exception {
         assertIsTesting();
         try {
-            StorageLayer.getStorage(this).deleteAllInformation();
+            StorageLayer.deleteAllInformation(this);
         } catch (StorageQueryException e) {
             throw new Exception(e);
         }
     }
 
+    @TestOnly
     public void killForTestingAndWaitForShutdown() throws InterruptedException {
         assertIsTesting();
         wakeUpMainThreadToShutdown();

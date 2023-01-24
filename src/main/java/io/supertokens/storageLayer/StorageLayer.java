@@ -30,6 +30,7 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
@@ -146,6 +147,19 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             ((StorageLayer) resource).storage.close();
         }
         StorageLayer.static_ref_to_storage = null;
+    }
+
+    @TestOnly
+    public static void deleteAllInformation(Main main) throws StorageQueryException {
+        if (getInstance(null, null, main) == null) {
+            return;
+        }
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                main.getResourceDistributor()
+                        .getAllResourcesWithResourceKey(RESOURCE_KEY);
+        for (ResourceDistributor.SingletonResource resource : resources.values()) {
+            ((StorageLayer) resource).storage.deleteAllInformation();
+        }
     }
 
     @TestOnly
