@@ -30,10 +30,9 @@ import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
-import io.supertokens.inmemorydb.Start;
 import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
@@ -180,7 +179,11 @@ public class Main {
                 }
             }
         }
-        StorageLayer.getStorage(this).initStorage();
+        try {
+            StorageLayer.getStorage(this).initStorage();
+        } catch (DbInitException e) {
+            throw new QuitProgramException(e);
+        }
 
         // enable ee features if license key is provided.
         synchronized (waitToEnableFeatureFlagLock) {
@@ -201,7 +204,7 @@ public class Main {
 
                 // init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
                 StorageLayer.loadAllTenantStorage(this);
-            } catch (InvalidConfigException e) {
+            } catch (InvalidConfigException | DbInitException e) {
                 throw new QuitProgramException(e);
             }
         }
@@ -392,28 +395,7 @@ public class Main {
             Logging.info(this, "Stopping SuperTokens...", true);
             Webserver.getInstance(this).stop();
             Cronjobs.shutdownAndAwaitTermination(this);
-            if (!Main.isTesting) {
-                StorageLayer.close(this);
-            } else {
-                if (StorageLayer.getStorage(this).getType() == STORAGE_TYPE.NOSQL_1
-                        || StorageLayer.getStorage(this) instanceof Start) {
-                    // we close mongodb storage and in mem db storage during testing everytime as well cause it
-                    // doesn't take time for it to connect during each test.
-                    StorageLayer.close(this);
-                } else {
-                    // We don't close SQL storage layers during testing cause the same storage layer can be resued
-                    // across tests to save testing time.
-
-                    /*
-                     * Instead, during testing, we close it when:
-                     * - We are force using an in mem db
-                     * - Any config.yaml info changes across tests via setValueInConfig and commentConfigValue functions
-                     * - Between tests, if the test had modified the config file (which then got loaded). So we close
-                     * the storage layer in the reset function so that in the next test, the default configs are loaded
-                     * again.
-                     */
-                }
-            }
+            StorageLayer.close(this);
             removeDotStartedFileForThisProcess();
             Logging.stopLogging(this);
             // uncomment this when you want to confirm that processes are actually shut.

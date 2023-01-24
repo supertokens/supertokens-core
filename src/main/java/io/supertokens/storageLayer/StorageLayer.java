@@ -30,6 +30,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
+import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
@@ -56,7 +57,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static final String RESOURCE_KEY = "io.supertokens.storageLayer.StorageLayer";
     private final Storage storage;
-    private static Storage static_ref_to_storage = null;
     private static URLClassLoader ucl = null;
     private static final Object lock = new Object();
 
@@ -99,41 +99,28 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     private StorageLayer(Main main, String pluginFolderPath, JsonObject configJson)
             throws MalformedURLException, InvalidConfigException {
         Logging.info(main, "Loading storage layer.", true);
-        if (static_ref_to_storage != null && Main.isTesting) {
-            // we reuse the storage layer during testing so that we do not waste
-            // time reconnecting to the db.
-            this.storage = StorageLayer.static_ref_to_storage;
-        } else {
-            File loc = new File(pluginFolderPath);
+        File loc = new File(pluginFolderPath);
 
-            File[] flist = loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar"));
+        File[] flist = loc.listFiles(file -> file.getPath().toLowerCase().endsWith(".jar"));
 
-            if (flist != null) {
-                URL[] urls = new URL[flist.length];
-                for (int i = 0; i < flist.length; i++) {
-                    urls[i] = flist[i].toURI().toURL();
-                }
-                if (StorageLayer.ucl == null) {
-                    // we have this as a static variable because
-                    // in prod, this is loaded just once anyway.
-                    // During testing, we just want to load the jars
-                    // once too cause the JARs don't change across tests either.
-                    StorageLayer.ucl = new URLClassLoader(urls);
-                }
+        if (flist != null) {
+            URL[] urls = new URL[flist.length];
+            for (int i = 0; i < flist.length; i++) {
+                urls[i] = flist[i].toURI().toURL();
             }
-
-            this.storage = getNewStorageInstance(main, configJson);
-
-            if (this.storage instanceof Start) {
-                Logging.info(main, "Using in memory storage.", true);
+            if (StorageLayer.ucl == null) {
+                // we have this as a static variable because
+                // in prod, this is loaded just once anyway.
+                // During testing, we just want to load the jars
+                // once too cause the JARs don't change across tests either.
+                StorageLayer.ucl = new URLClassLoader(urls);
             }
         }
-        if (Main.isTesting && !(this.storage instanceof Start)) {
-            // we save the storage layer for testing (if it's not an in mem db) purposes so that
-            // next time, we can just reuse this.
-            // StorageLayer.static_ref_to_storage is set to null by the testing framework in case
-            // something in the config or CLI args change.
-            StorageLayer.static_ref_to_storage = this.storage;
+
+        this.storage = getNewStorageInstance(main, configJson);
+
+        if (this.storage instanceof Start) {
+            Logging.info(main, "Using in memory storage.", true);
         }
     }
 
@@ -147,7 +134,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         for (ResourceDistributor.SingletonResource resource : resources.values()) {
             ((StorageLayer) resource).storage.close();
         }
-        StorageLayer.static_ref_to_storage = null;
     }
 
     @TestOnly
@@ -165,21 +151,17 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static void close() {
-        if (StorageLayer.static_ref_to_storage != null) {
-            StorageLayer.static_ref_to_storage.close();
-        }
-        StorageLayer.static_ref_to_storage = null;
+        // TODO: remove this function and remove all the places it's being used.
     }
 
     @TestOnly
-    public static void closeWithClearingURLClassLoader() {
+    public static void clearURLClassLoader() {
         /*
          * This is needed for PluginTests where we want to try and load from the plugin directory
          * again and again. If we do not close the static URLCLassLoader before, those tests will fail
          *
          * Also note that closing it doesn't actually remove it from memory (strange..). But we do it anyway
          */
-        StorageLayer.close();
         if (StorageLayer.ucl != null) {
             try {
                 StorageLayer.ucl.close();
@@ -202,7 +184,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     public static void loadAllTenantStorage(Main main, TenantConfig[] tenants)
-            throws InvalidConfigException, IOException {
+            throws InvalidConfigException, IOException, DbInitException {
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE, null);
 
         Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
@@ -256,14 +238,30 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     // we reuse the existing storage layer
                     resourceKeyToStorageMap.put(key, idToExistingStorageLayerMap.get(uniqueId).storage);
                 }
+
                 main.getResourceDistributor().setResource(RESOURCE_KEY, key,
                         new StorageLayer(resourceKeyToStorageMap.get(key)));
+            }
+
+            DbInitException lastError = null;
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                    main.getResourceDistributor()
+                            .getAllResourcesWithResourceKey(RESOURCE_KEY);
+            for (ResourceDistributor.SingletonResource resource : resources.values()) {
+                try {
+                    ((StorageLayer) resource).storage.initStorage();
+                } catch (DbInitException e) {
+                    lastError = e;
+                }
+            }
+            if (lastError != null) {
+                throw lastError;
             }
         }
     }
 
     public static void loadAllTenantStorage(Main main)
-            throws IOException, InvalidConfigException {
+            throws IOException, InvalidConfigException, DbInitException {
         TenantConfig[] tenants = StorageLayer.getMultitenancyStorage(main).getAllTenants();
         loadAllTenantStorage(main, tenants);
     }

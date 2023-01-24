@@ -40,8 +40,8 @@ import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
+import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
-import io.supertokens.pluginInterface.exceptions.QuitProgramFromPluginException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
@@ -158,12 +158,12 @@ public class Start
     }
 
     @Override
-    public void initStorage() {
+    public void initStorage() throws DbInitException {
         try {
             ConnectionPool.initPool(this);
             GeneralQueries.createTablesIfNotExists(this, this.main);
         } catch (SQLException | StorageQueryException e) {
-            throw new QuitProgramFromPluginException(e);
+            throw new DbInitException(e);
         }
     }
 
