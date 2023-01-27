@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.KeyValueInfoWithLastUpdated;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
@@ -33,15 +34,21 @@ import io.supertokens.utils.Utils;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Map;
 
 public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
 
     private static final String RESOURCE_KEY = "io.supertokens.session.refreshToken.RefreshTokenKey";
     private final Main main;
     private String key;
+    private final String connectionUriDomain;
+    private final String tenantId;
+    private static final Object lock = new Object();
 
-    private RefreshTokenKey(Main main) {
+    private RefreshTokenKey(String connectionUriDomain, String tenantId, Main main) {
         this.main = main;
+        this.connectionUriDomain = connectionUriDomain;
+        this.tenantId = tenantId;
         try {
             this.getKey();
         } catch (StorageQueryException | StorageTransactionLogicException e) {
@@ -49,16 +56,48 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void init(Main main) {
-        main.getResourceDistributor().setResource(RESOURCE_KEY, new RefreshTokenKey(main));
+    public static void initForBaseTenant(Main main) {
+        synchronized (lock) {
+            main.getResourceDistributor().setResource(null, null, RESOURCE_KEY,
+                    new RefreshTokenKey(null, null, main));
+        }
     }
 
-    public static RefreshTokenKey getInstance(Main main) {
-        RefreshTokenKey instance = (RefreshTokenKey) main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance == null) {
-            init(main);
+    public static RefreshTokenKey getInstance(String connectionUriDomain, String tenantId, Main main) {
+        synchronized (lock) {
+            RefreshTokenKey instance = (RefreshTokenKey) main.getResourceDistributor()
+                    .getResource(connectionUriDomain, tenantId, RESOURCE_KEY);
+            if (instance == null) {
+                throw new QuitProgramException("please call init() before calling getInstance");
+            }
+            return instance;
         }
-        return (RefreshTokenKey) main.getResourceDistributor().getResource(RESOURCE_KEY);
+    }
+
+    @Deprecated
+    public static RefreshTokenKey getInstance(Main main) {
+        return getInstance(null, null, main);
+    }
+
+    public static void loadForAllTenants(Main main) {
+        TenantConfig[] tenants = StorageLayer.getMultitenancyStorage(main).getAllTenants();
+        synchronized (lock) {
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
+                    main.getResourceDistributor()
+                            .getAllResourcesWithResourceKey(RESOURCE_KEY);
+            main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
+            for (TenantConfig tenant : tenants) {
+                ResourceDistributor.SingletonResource resource = existingResources.get(
+                        new ResourceDistributor.KeyClass(tenant.connectionUriDomain, tenant.tenantId, RESOURCE_KEY));
+                if (resource != null) {
+                    main.getResourceDistributor().setResource(tenant.connectionUriDomain, tenant.tenantId, RESOURCE_KEY,
+                            resource);
+                } else {
+                    main.getResourceDistributor().setResource(tenant.connectionUriDomain, tenant.tenantId, RESOURCE_KEY,
+                            new RefreshTokenKey(tenant.connectionUriDomain, tenant.tenantId, main));
+                }
+            }
+        }
     }
 
     public String getKey() throws StorageQueryException, StorageTransactionLogicException {
@@ -70,7 +109,7 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
     }
 
     private String maybeGenerateNewKeyAndUpdateInDb() throws StorageQueryException, StorageTransactionLogicException {
-        SessionStorage storage = StorageLayer.getSessionStorage(main);
+        SessionStorage storage = StorageLayer.getSessionStorage(this.connectionUriDomain, this.tenantId, main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
 

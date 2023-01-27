@@ -120,7 +120,8 @@ public class Config extends ResourceDistributor.SingletonResource {
             main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
             for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
                 main.getResourceDistributor()
-                        .setResource(RESOURCE_KEY, key, new Config(main, normalisedConfigs.get(key)));
+                        .setResource(key.getConnectionUriDomain(), key.getTenantId(), RESOURCE_KEY,
+                                new Config(main, normalisedConfigs.get(key)));
             }
         }
     }

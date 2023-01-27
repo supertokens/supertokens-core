@@ -31,6 +31,7 @@ import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.jwt.JWTSigningKey;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -210,10 +211,19 @@ public class Main {
         }
 
         // init signing keys
-        // TODO: add this for all tenants based on db separation only (and not tenant id)
-        AccessTokenSigningKey.init(this);
-        RefreshTokenKey.init(this);
-        JWTSigningKey.init(this);
+        try {
+            AccessTokenSigningKey.initForBaseTenant(this);
+            RefreshTokenKey.initForBaseTenant(this);
+            JWTSigningKey.initForBaseTenant(this);
+            if (Arrays.stream(FeatureFlag.getInstance(this).getEnabledFeatures())
+                    .anyMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
+                AccessTokenSigningKey.loadForAllTenants(this);
+                RefreshTokenKey.loadForAllTenants(this);
+                JWTSigningKey.loadForAllTenants(this);
+            }
+        } catch (UnsupportedJWTSigningAlgorithmException e) {
+            throw new QuitProgramException(e);
+        }
 
         // starts removing old session cronjob
         // TODO: start as many instances of the cronjob as required based on number of tenants. It might be per db or
@@ -230,13 +240,17 @@ public class Main {
         Cronjobs.addCronjob(this, DeleteExpiredPasswordlessDevices.getInstance(this));
 
         // starts Telemetry cronjob if the user has not disabled it
-        if (!Config.getConfig(this).isTelemetryDisabled()) {
+        if (!Config.getConfig(this).
+
+                isTelemetryDisabled()) {
             Cronjobs.addCronjob(this, Telemetry.getInstance(this));
         }
 
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
         // TODO: make this in a loop per tenant per db
-        if (Config.getConfig(this).getAccessTokenSigningKeyDynamic()) {
+        if (Config.getConfig(this).
+
+                getAccessTokenSigningKeyDynamic()) {
             Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.getInstance(this));
         }
 
@@ -245,15 +259,23 @@ public class Main {
         PasswordHashing.init(this);
 
         // start web server to accept incoming traffic
-        Webserver.getInstance(this).start();
+        Webserver.getInstance(this).
+
+                start();
 
         // this is a sign to the controlling script that this process has started.
         createDotStartedFileForThisProcess();
 
         // NOTE: If the message below is changed, make sure to also change the corresponding check in the CLI program
         // for start command
-        Logging.info(this, "Started SuperTokens on " + Config.getConfig(this).getHost(this) + ":"
-                + Config.getConfig(this).getPort(this) + " with PID: " + ProcessHandle.current().pid(), true);
+        Logging.info(this, "Started SuperTokens on " + Config.getConfig(this).
+
+                getHost(this) + ":"
+                + Config.getConfig(this).
+
+                getPort(this) + " with PID: " + ProcessHandle.current().
+
+                pid(), true);
     }
 
     @TestOnly

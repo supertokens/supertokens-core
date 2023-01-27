@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
@@ -36,10 +37,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource {
@@ -50,9 +48,14 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     private static final String RESOURCE_KEY = "io.supertokens.session.accessToken.AccessTokenSigningKey";
     private final Main main;
     private List<KeyInfo> validKeys;
+    private final String connectionUriDomain;
+    private final String tenantId;
+    private static final Object lock = new Object();
 
-    private AccessTokenSigningKey(Main main) {
+    private AccessTokenSigningKey(String connectionUriDomain, String tenantId, Main main) {
         this.main = main;
+        this.connectionUriDomain = connectionUriDomain;
+        this.tenantId = tenantId;
         if (!Main.isTesting) {
             try {
                 this.transferLegacyKeyToNewTable();
@@ -63,17 +66,48 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         }
     }
 
-    public static void init(Main main) {
-        main.getResourceDistributor().setResource(RESOURCE_KEY, new AccessTokenSigningKey(main));
+    public static void initForBaseTenant(Main main) {
+        synchronized (lock) {
+            main.getResourceDistributor().setResource(null, null, RESOURCE_KEY,
+                    new AccessTokenSigningKey(null, null, main));
+        }
     }
 
-    public static AccessTokenSigningKey getInstance(Main main) {
-        AccessTokenSigningKey instance = (AccessTokenSigningKey) main.getResourceDistributor()
-                .getResource(RESOURCE_KEY);
-        if (instance == null) {
-            init(main);
+    public static AccessTokenSigningKey getInstance(String connectionUriDomain, String tenantId, Main main) {
+        synchronized (lock) {
+            AccessTokenSigningKey instance = (AccessTokenSigningKey) main.getResourceDistributor()
+                    .getResource(connectionUriDomain, tenantId, RESOURCE_KEY);
+            if (instance == null) {
+                throw new QuitProgramException("please call init() before calling getInstance");
+            }
+            return instance;
         }
-        return (AccessTokenSigningKey) main.getResourceDistributor().getResource(RESOURCE_KEY);
+    }
+
+    @Deprecated
+    public static AccessTokenSigningKey getInstance(Main main) {
+        return getInstance(null, null, main);
+    }
+
+    public static void loadForAllTenants(Main main) {
+        TenantConfig[] tenants = StorageLayer.getMultitenancyStorage(main).getAllTenants();
+        synchronized (lock) {
+            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
+                    main.getResourceDistributor()
+                            .getAllResourcesWithResourceKey(RESOURCE_KEY);
+            main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
+            for (TenantConfig tenant : tenants) {
+                ResourceDistributor.SingletonResource resource = existingResources.get(
+                        new ResourceDistributor.KeyClass(tenant.connectionUriDomain, tenant.tenantId, RESOURCE_KEY));
+                if (resource != null) {
+                    main.getResourceDistributor().setResource(tenant.connectionUriDomain, tenant.tenantId, RESOURCE_KEY,
+                            resource);
+                } else {
+                    main.getResourceDistributor().setResource(tenant.connectionUriDomain, tenant.tenantId, RESOURCE_KEY,
+                            new AccessTokenSigningKey(tenant.connectionUriDomain, tenant.tenantId, main));
+                }
+            }
+        }
     }
 
     synchronized void removeKeyFromMemoryIfItHasNotChanged(List<KeyInfo> oldKeyInfo) {
@@ -96,7 +130,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
 
     public synchronized void transferLegacyKeyToNewTable()
             throws StorageQueryException, StorageTransactionLogicException {
-        Storage storage = StorageLayer.getSessionStorage(main);
+        Storage storage = StorageLayer.getSessionStorage(this.connectionUriDomain, this.tenantId, main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
@@ -130,8 +164,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     }
 
     public synchronized void cleanExpiredAccessTokenSigningKeys() throws StorageQueryException {
-        SessionStorage storage = StorageLayer.getSessionStorage(main);
-        CoreConfig config = Config.getConfig(main);
+        SessionStorage storage = StorageLayer.getSessionStorage(this.connectionUriDomain, this.tenantId, main);
+        CoreConfig config = Config.getConfig(this.connectionUriDomain, this.tenantId, main);
 
         if (config.getAccessTokenSigningKeyDynamic()) {
             final long signingKeyLifetime = config.getAccessTokenSigningKeyUpdateInterval()
@@ -142,7 +176,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     }
 
     public synchronized List<KeyInfo> getAllKeys() throws StorageQueryException, StorageTransactionLogicException {
-        CoreConfig config = Config.getConfig(main);
+        CoreConfig config = Config.getConfig(this.connectionUriDomain, this.tenantId, main);
 
         if (this.validKeys != null) {
             this.validKeys = this.validKeys.stream().filter(((KeyInfo k) -> k.expiryTime >= System.currentTimeMillis()))
@@ -166,13 +200,14 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         this.getAllKeys();
         // getKey ensures we have at least 1 valid keys
         long createdAtTime = this.validKeys.get(0).createdAtTime;
-        return createdAtTime + Config.getConfig(main).getAccessTokenSigningKeyUpdateInterval();
+        return createdAtTime + Config.getConfig(this.connectionUriDomain, this.tenantId, main)
+                .getAccessTokenSigningKeyUpdateInterval();
     }
 
     private List<KeyInfo> maybeGenerateNewKeyAndUpdateInDb()
             throws StorageQueryException, StorageTransactionLogicException {
-        Storage storage = StorageLayer.getSessionStorage(main);
-        CoreConfig config = Config.getConfig(main);
+        Storage storage = StorageLayer.getSessionStorage(this.connectionUriDomain, this.tenantId, main);
+        CoreConfig config = Config.getConfig(this.connectionUriDomain, this.tenantId, main);
 
         // Access token signing keys older than this are deleted (ms)
         final long signingKeyLifetime = config.getAccessTokenSigningKeyUpdateInterval()

@@ -239,7 +239,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     resourceKeyToStorageMap.put(key, idToExistingStorageLayerMap.get(uniqueId).storage);
                 }
 
-                main.getResourceDistributor().setResource(RESOURCE_KEY, key,
+                main.getResourceDistributor().setResource(key.getConnectionUriDomain(), key.getTenantId(), RESOURCE_KEY,
                         new StorageLayer(resourceKeyToStorageMap.get(key)));
             }
 
@@ -469,4 +469,23 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     public static boolean isInMemDb(Main main) {
         return getInstance(null, null, main).storage instanceof Start;
     }
+
+    // TODO: remove this if not needed.
+//    public static List<ResourceDistributor.KeyClass> getTenantResourceKeyBasedOnUniqueUserPoolId(Main main) {
+//        List<ResourceDistributor.KeyClass> result = new ArrayList<ResourceDistributor.KeyClass>();
+//        Set<String> usedIds = new HashSet<>();
+//
+//        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+//                main.getResourceDistributor()
+//                        .getAllResourcesWithResourceKey(RESOURCE_KEY);
+//        for (ResourceDistributor.KeyClass key : resources.keySet()) {
+//            Storage storage = ((StorageLayer) resources.get(key)).storage;
+//            if (usedIds.contains(storage.getUserPoolId())) {
+//                continue;
+//            }
+//            usedIds.add(storage.getUserPoolId());
+//            result.add(key);
+//        }
+//        return result;
+//    }
 }

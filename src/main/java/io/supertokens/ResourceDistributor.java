@@ -58,6 +58,7 @@ public class ResourceDistributor {
         }
     }
 
+    @Deprecated
     public SingletonResource getResource(@Nonnull String key) {
         synchronized (lock) {
             return resources.get(new KeyClass(null, null, key));
@@ -67,23 +68,12 @@ public class ResourceDistributor {
     public SingletonResource setResource(@Nullable String connectionUriDomain, @Nullable String tenantId,
                                          @Nonnull String key,
                                          SingletonResource resource) {
-        return setResource(key, new KeyClass(connectionUriDomain, tenantId, key), resource);
-    }
-
-    public SingletonResource setResource(String resourceKey, KeyClass key, SingletonResource resource) {
-        // we do this because sometimes a keyclass is generated with a specific resource,
-        // but then is reused later on to add a different resource. For example, the 
-        // getNormalisedConfigsForAllTenants function returns a KeyClass with the resource string from the
-        // Config.java file, but then this returned KeyClass if reused in the StorageLayer to add
-        // storage layer resources.
-
-        key.key = resourceKey;
         synchronized (lock) {
-            SingletonResource alreadyExists = resources.get(key);
+            SingletonResource alreadyExists = resources.get(new KeyClass(connectionUriDomain, tenantId, key));
             if (alreadyExists != null) {
                 return alreadyExists;
             }
-            resources.put(key, resource);
+            resources.put(new KeyClass(connectionUriDomain, tenantId, key), resource);
             return resource;
         }
     }
@@ -114,6 +104,21 @@ public class ResourceDistributor {
         return result;
     }
 
+
+    public void clearAllResourcesForTenantWithExactMatch(String connectionUriDomain, String tenantId) {
+        List<KeyClass> toRemove = new ArrayList<>();
+        synchronized (lock) {
+            resources.forEach((key, value) -> {
+                if (key.tenantId.equals(tenantId) && key.connectionUriDomain.equals(connectionUriDomain)) {
+                    toRemove.add(key);
+                }
+            });
+            for (KeyClass keyClass : toRemove) {
+                resources.remove(keyClass);
+            }
+        }
+    }
+
     @Deprecated
     public SingletonResource setResource(@Nonnull String key,
                                          SingletonResource resource) {
@@ -125,9 +130,6 @@ public class ResourceDistributor {
     }
 
     public static class KeyClass {
-        // we should keep these variables private cause they are normalised to be empty strings
-        // instead of being null which is different compared to how we have set the norm in the
-        // rest of the code
         @Nonnull
         private String key;
 
@@ -141,6 +143,14 @@ public class ResourceDistributor {
             this.key = key;
             this.connectionUriDomain = connectionUriDomain == null ? "" : connectionUriDomain;
             this.tenantId = tenantId == null ? "" : tenantId;
+        }
+
+        public String getConnectionUriDomain() {
+            return connectionUriDomain.equals("") ? null : connectionUriDomain;
+        }
+
+        public String getTenantId() {
+            return tenantId.equals("") ? null : tenantId;
         }
 
         @Override
