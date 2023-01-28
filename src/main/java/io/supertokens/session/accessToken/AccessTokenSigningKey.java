@@ -107,6 +107,9 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                             new AccessTokenSigningKey(tenant.connectionUriDomain, tenant.tenantId, main));
                 }
             }
+            // re add the base config
+            main.getResourceDistributor().setResource(null, null, RESOURCE_KEY,
+                    existingResources.get(new ResourceDistributor.KeyClass(null, null, RESOURCE_KEY)));
         }
     }
 
