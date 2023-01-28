@@ -1650,4 +1650,9 @@ public class Start
             throw new IllegalStateException("ClassName: " + className + " is not part of NonAuthRecipeStorage");
         }
     }
+
+    @Override
+    public void modifyConfigToAddANewUserPoolForTesting(JsonObject config, int poolNumber) {
+        // do nothing cause we have only one in mem db.
+    }
 }

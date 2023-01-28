@@ -16,12 +16,22 @@
 
 package io.supertokens.test.multitenant;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
+import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.pluginInterface.exceptions.DbInitException;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
+import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import org.junit.AfterClass;
@@ -32,8 +42,7 @@ import org.junit.rules.TestRule;
 
 import java.io.IOException;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 public class SigningKeysTest {
     @Rule
@@ -69,8 +78,48 @@ public class SigningKeysTest {
     }
 
     @Test
-    public void keysAreGeneratedForAllUserPoolIds() throws InterruptedException, IOException {
+    public void keysAreGeneratedForAllUserPoolIds()
+            throws InterruptedException, IOException, StorageQueryException, StorageTransactionLogicException,
+            InvalidConfigException, DbInitException {
+        String[] args = {"../"};
 
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject tenantConfig = new JsonObject();
+        StorageLayer.getStorage(null, null, process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
+        tenantConfig.add("access_token_signing_key_update_interval", new JsonPrimitive(200));
+
+        TenantConfig[] tenants = new TenantConfig[]{
+                new TenantConfig("c1", null, new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        tenantConfig)};
+
+        Config.loadAllTenantConfig(process.getProcess(), tenants);
+
+        StorageLayer.loadAllTenantStorage(process.getProcess(), tenants);
+
+        AccessTokenSigningKey.loadForAllTenants(process.getProcess(), tenants);
+
+        assertEquals(AccessTokenSigningKey.getInstance(null, null, process.main).getAllKeys().size(), 1);
+        assertEquals(AccessTokenSigningKey.getInstance("c1", null, process.main).getAllKeys().size(), 1);
+        AccessTokenSigningKey.KeyInfo baseTenant = AccessTokenSigningKey.getInstance(null, null, process.main)
+                .getAllKeys().get(0);
+        AccessTokenSigningKey.KeyInfo c1Tenant = AccessTokenSigningKey.getInstance("c1", null, process.main)
+                .getAllKeys().get(0);
+
+        assertNotEquals(baseTenant.createdAtTime, c1Tenant.createdAtTime);
+        assertNotEquals(baseTenant.expiryTime, c1Tenant.expiryTime);
+        assertTrue(baseTenant.expiryTime + (31 * 3600 * 1000) < c1Tenant.expiryTime);
+        assertNotEquals(baseTenant.value, c1Tenant.value);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test

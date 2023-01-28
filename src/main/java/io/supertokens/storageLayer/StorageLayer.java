@@ -49,9 +49,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.ServiceLoader;
+import java.util.*;
 
 public class StorageLayer extends ResourceDistributor.SingletonResource {
 
@@ -470,22 +468,24 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return getInstance(null, null, main).storage instanceof Start;
     }
 
-    // TODO: remove this if not needed.
-//    public static List<ResourceDistributor.KeyClass> getTenantResourceKeyBasedOnUniqueUserPoolId(Main main) {
-//        List<ResourceDistributor.KeyClass> result = new ArrayList<ResourceDistributor.KeyClass>();
-//        Set<String> usedIds = new HashSet<>();
-//
-//        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
-//                main.getResourceDistributor()
-//                        .getAllResourcesWithResourceKey(RESOURCE_KEY);
-//        for (ResourceDistributor.KeyClass key : resources.keySet()) {
-//            Storage storage = ((StorageLayer) resources.get(key)).storage;
-//            if (usedIds.contains(storage.getUserPoolId())) {
-//                continue;
-//            }
-//            usedIds.add(storage.getUserPoolId());
-//            result.add(key);
-//        }
-//        return result;
-//    }
+    @TestOnly
+    public static boolean hasMultipleUserPools(Main main) {
+        List<ResourceDistributor.KeyClass> result = new ArrayList<ResourceDistributor.KeyClass>();
+        String usedIds = "";
+
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                main.getResourceDistributor()
+                        .getAllResourcesWithResourceKey(RESOURCE_KEY);
+        for (ResourceDistributor.KeyClass key : resources.keySet()) {
+            Storage storage = ((StorageLayer) resources.get(key)).storage;
+            if (usedIds.equals("")) {
+                usedIds = storage.getUserPoolId();
+            }
+            if (usedIds.equals(storage.getUserPoolId())) {
+                continue;
+            }
+            return true;
+        }
+        return false;
+    }
 }
