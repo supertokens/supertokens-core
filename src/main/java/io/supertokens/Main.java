@@ -255,9 +255,7 @@ public class Main {
         PasswordHashing.init(this);
 
         // start web server to accept incoming traffic
-        Webserver.getInstance(this).
-
-                start();
+        Webserver.getInstance(this).start();
 
         // this is a sign to the controlling script that this process has started.
         createDotStartedFileForThisProcess();
