@@ -240,17 +240,13 @@ public class Main {
         Cronjobs.addCronjob(this, DeleteExpiredPasswordlessDevices.getInstance(this));
 
         // starts Telemetry cronjob if the user has not disabled it
-        if (!Config.getConfig(this).
-
-                isTelemetryDisabled()) {
+        if (!Config.getConfig(this).isTelemetryDisabled()) {
             Cronjobs.addCronjob(this, Telemetry.getInstance(this));
         }
 
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
         // TODO: make this in a loop per tenant per db
-        if (Config.getConfig(this).
-
-                getAccessTokenSigningKeyDynamic()) {
+        if (Config.getConfig(this).getAccessTokenSigningKeyDynamic()) {
             Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.getInstance(this));
         }
 
