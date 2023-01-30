@@ -22,14 +22,23 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 public abstract class CronTask extends ResourceDistributor.SingletonResource implements Runnable {
 
     protected final Main main;
     private final String jobName;
+    protected final List<ResourceDistributor.KeyClass> tenantsInfo;
 
-    protected CronTask(String jobName, Main main) {
+    protected CronTask(String jobName, Main main, List<ResourceDistributor.KeyClass> tenantsInfo) {
         this.jobName = jobName;
         this.main = main;
+        this.tenantsInfo = tenantsInfo;
         Logging.info(main, "Starting task: " + jobName, false);
     }
 
@@ -39,20 +48,45 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
 
     @Override
     public void run() {
+        Logging.info(main, "Cronjob started: " + jobName, false);
+
+        // first we copy over the array so that if it changes while the cronjob runs, it won't affect
+        // this run of the cronjob
+        List<ResourceDistributor.KeyClass> copied = new ArrayList<>(tenantsInfo);
+
+        ExecutorService service = Executors.newFixedThreadPool(copied.size());
+        AtomicBoolean threwQuitProgramException = new AtomicBoolean(false);
+        for (ResourceDistributor.KeyClass keyClass : tenantsInfo) {
+            String connectionUriDomain = keyClass.getConnectionUriDomain();
+            String tenantId = keyClass.getTenantId();
+            service.execute(() -> {
+                try {
+                    doTask(connectionUriDomain, tenantId);
+                } catch (Exception e) {
+                    ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
+                    Logging.error(main, "Cronjob threw an exception: " + this.jobName, Main.isTesting, e);
+                    if (e instanceof QuitProgramException) {
+                        threwQuitProgramException.set(true);
+                    }
+                }
+            });
+        }
+        service.shutdown();
+        boolean didShutdown = false;
         try {
-            Logging.info(main, "Cronjob started: " + jobName, false);
-            doTask();
-        } catch (Exception e) {
-            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
-            Logging.error(main, "Cronjob threw an exception: " + this.jobName, Main.isTesting, e);
-            if (e instanceof QuitProgramException) {
-                main.wakeUpMainThreadToShutdown();
-            }
+            didShutdown = service.awaitTermination(this.getInitialWaitTimeSeconds(), TimeUnit.SECONDS);
+        } catch (InterruptedException ignored) {
+        }
+        if (!didShutdown) {
+            service.shutdownNow();
+        }
+        if (threwQuitProgramException.get()) {
+            main.wakeUpMainThreadToShutdown();
         }
         Logging.info(main, "Cronjob finished: " + jobName, false);
     }
 
-    protected abstract void doTask() throws Exception;
+    protected abstract void doTask(String connectionUriDomain, String tenantId) throws Exception;
 
     public abstract int getIntervalTimeSeconds();
 

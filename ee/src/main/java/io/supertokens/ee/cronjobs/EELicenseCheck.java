@@ -6,25 +6,33 @@ import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.storageLayer.StorageLayer;
+
+import java.util.ArrayList;
+import java.util.List;
 
 public class EELicenseCheck extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.ee.cronjobs.EELicenseCheck";
 
-    private EELicenseCheck(Main main) {
-        super("EELicenseCheck", main);
+    private EELicenseCheck(Main main, List<ResourceDistributor.KeyClass> tenants) {
+        super("EELicenseCheck", main, tenants);
     }
 
     public static EELicenseCheck getInstance(Main main) {
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
+        ResourceDistributor.SingletonResource instance = main.getResourceDistributor()
+                .getResource(null, null, RESOURCE_KEY);
         if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new EELicenseCheck(main));
+            List<ResourceDistributor.KeyClass> tenants = new ArrayList<>();
+            tenants.add(new ResourceDistributor.KeyClass(null, null, StorageLayer.RESOURCE_KEY));
+            instance = main.getResourceDistributor()
+                    .setResource(null, null, RESOURCE_KEY, new EELicenseCheck(main, tenants));
         }
         return (EELicenseCheck) instance;
     }
 
     @Override
-    protected void doTask() throws Exception {
+    protected void doTask(String connectionUriDomain, String tenantId) throws Exception {
         FeatureFlag.getInstance(main).syncFeatureFlagWithLicenseKey();
     }
 

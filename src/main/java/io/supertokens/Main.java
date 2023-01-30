@@ -52,6 +52,7 @@ import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
+import java.util.List;
 import java.util.UUID;
 
 public class Main {
@@ -226,29 +227,26 @@ public class Main {
         }
 
         // starts removing old session cronjob
-        // TODO: start as many instances of the cronjob as required based on number of tenants. It might be per db or
-        //  per db & some config based on what the cronjob needs.
-        Cronjobs.addCronjob(this, DeleteExpiredSessions.getInstance(this));
+        List<ResourceDistributor.KeyClass> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(this);
+
+        Cronjobs.addCronjob(this, DeleteExpiredSessions.init(this, uniqueUserPoolIdsTenants));
 
         // starts removing old password reset tokens
-        Cronjobs.addCronjob(this, DeleteExpiredPasswordResetTokens.getInstance(this));
+        Cronjobs.addCronjob(this, DeleteExpiredPasswordResetTokens.init(this, uniqueUserPoolIdsTenants));
 
         // starts removing expired email verification tokens
-        Cronjobs.addCronjob(this, DeleteExpiredEmailVerificationTokens.getInstance(this));
+        Cronjobs.addCronjob(this, DeleteExpiredEmailVerificationTokens.init(this, uniqueUserPoolIdsTenants));
 
         // removes passwordless devices with only expired codes
-        Cronjobs.addCronjob(this, DeleteExpiredPasswordlessDevices.getInstance(this));
+        Cronjobs.addCronjob(this, DeleteExpiredPasswordlessDevices.init(this, uniqueUserPoolIdsTenants));
 
         // starts Telemetry cronjob if the user has not disabled it
-        if (!Config.getConfig(this).isTelemetryDisabled()) {
+        if (!Config.getConfig(null, null, this).isTelemetryDisabled()) {
             Cronjobs.addCronjob(this, Telemetry.getInstance(this));
         }
 
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
-        // TODO: make this in a loop per tenant per db
-        if (Config.getConfig(this).getAccessTokenSigningKeyDynamic()) {
-            Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.getInstance(this));
-        }
+        Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.init(this, uniqueUserPoolIdsTenants));
 
         // TODO: need to determine how many pools combinations to make.
         // creates password hashing pool

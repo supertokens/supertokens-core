@@ -32,6 +32,9 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.version.Version;
 
+import java.util.ArrayList;
+import java.util.List;
+
 public class Telemetry extends CronTask {
 
     public static final String TELEMETRY_ID_DB_KEY = "TELEMETRY_ID";
@@ -40,21 +43,25 @@ public class Telemetry extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.telemetry.Telemetry";
 
-    private Telemetry(Main main) {
-        super("Telemetry", main);
+    private Telemetry(Main main, List<ResourceDistributor.KeyClass> tenants) {
+        super("Telemetry", main, tenants);
     }
 
     public static Telemetry getInstance(Main main) {
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
+        ResourceDistributor.SingletonResource instance = main.getResourceDistributor()
+                .getResource(null, null, RESOURCE_KEY);
         if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new Telemetry(main));
+            List<ResourceDistributor.KeyClass> tenants = new ArrayList<>();
+            tenants.add(new ResourceDistributor.KeyClass(null, null, StorageLayer.RESOURCE_KEY));
+            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new Telemetry(main, tenants));
         }
         return (Telemetry) instance;
     }
 
     @Override
-    protected void doTask() throws Exception {
-        if (StorageLayer.isInMemDb(main) || Config.getConfig(main).isTelemetryDisabled()) {
+    protected void doTask(String connectionUriDomain, String tenantId) throws Exception {
+        if (StorageLayer.isInMemDb(main) ||
+                Config.getConfig(connectionUriDomain, tenantId, main).isTelemetryDisabled()) {
             // we do not send any info in this case since it's not under development / production env or the user has
             // disabled Telemetry
             return;
@@ -62,7 +69,7 @@ public class Telemetry extends CronTask {
 
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENDING_TELEMETRY, null);
 
-        Storage storage = StorageLayer.getStorage(main);
+        Storage storage = StorageLayer.getStorage(connectionUriDomain, tenantId, main);
 
         KeyValueInfo telemetryId = Telemetry.getTelemetryId(main);
 
@@ -89,7 +96,7 @@ public class Telemetry extends CronTask {
         if (StorageLayer.isInMemDb(main)) {
             return null;
         }
-        Storage storage = StorageLayer.getStorage(main);
+        Storage storage = StorageLayer.getStorage(null, null, main);
 
         KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
 

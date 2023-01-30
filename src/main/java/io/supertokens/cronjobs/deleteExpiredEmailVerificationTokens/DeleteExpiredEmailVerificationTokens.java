@@ -20,33 +20,47 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
+import org.jetbrains.annotations.TestOnly;
+
+import java.util.List;
 
 public class DeleteExpiredEmailVerificationTokens extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens"
             + ".DeleteExpiredEmailVerificationTokens";
 
-    private DeleteExpiredEmailVerificationTokens(Main main) {
-        super("RemoveOldEmailVerificationTokens", main);
+    private DeleteExpiredEmailVerificationTokens(Main main, List<ResourceDistributor.KeyClass> tenantsInfo) {
+        super("RemoveOldEmailVerificationTokens", main, tenantsInfo);
     }
 
-    public static DeleteExpiredEmailVerificationTokens getInstance(Main main) {
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
+    public static DeleteExpiredEmailVerificationTokens init(Main main,
+                                                            List<ResourceDistributor.KeyClass> tenantsInfo) {
+        return (DeleteExpiredEmailVerificationTokens) main.getResourceDistributor()
+                .setResource(null, null, RESOURCE_KEY,
+                        new DeleteExpiredEmailVerificationTokens(main, tenantsInfo));
+    }
+
+    @TestOnly
+    public static DeleteExpiredEmailVerificationTokens getInstance(Main main,
+                                                                   List<ResourceDistributor.KeyClass> tenantsInfo) {
+        ResourceDistributor.SingletonResource instance = main.getResourceDistributor()
+                .getResource(null, null, RESOURCE_KEY);
         if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY,
-                    new DeleteExpiredEmailVerificationTokens(main));
+            throw new QuitProgramException("Please call init() before calling getInstance");
         }
         return (DeleteExpiredEmailVerificationTokens) instance;
     }
 
     @Override
-    protected void doTask() throws Exception {
-        if (StorageLayer.getStorage(this.main).getType() != STORAGE_TYPE.SQL) {
+    protected void doTask(String connectionUriDomain, String tenantId) throws Exception {
+        if (StorageLayer.getStorage(connectionUriDomain, tenantId, this.main).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        StorageLayer.getEmailVerificationStorage(this.main).deleteExpiredEmailVerificationTokens();
+        StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, this.main)
+                .deleteExpiredEmailVerificationTokens();
     }
 
     @Override

@@ -16,48 +16,59 @@
 
 package io.supertokens.cronjobs.deleteExpiredPasswordlessDevices;
 
-import java.util.Set;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
-
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
+import org.jetbrains.annotations.TestOnly;
+
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class DeleteExpiredPasswordlessDevices extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredPasswordlessDevices"
             + ".DeleteExpiredPasswordlessDevices";
 
-    private DeleteExpiredPasswordlessDevices(Main main) {
-        super("DeleteExpiredPasswordlessDevices", main);
+    private DeleteExpiredPasswordlessDevices(Main main, List<ResourceDistributor.KeyClass> tenantsInfo) {
+        super("DeleteExpiredPasswordlessDevices", main, tenantsInfo);
     }
 
+    public static DeleteExpiredPasswordlessDevices init(Main main,
+                                                        List<ResourceDistributor.KeyClass> tenantsInfo) {
+        return (DeleteExpiredPasswordlessDevices) main.getResourceDistributor()
+                .setResource(null, null, RESOURCE_KEY,
+                        new DeleteExpiredPasswordlessDevices(main, tenantsInfo));
+    }
+
+    @TestOnly
     public static DeleteExpiredPasswordlessDevices getInstance(Main main) {
         ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
         if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY,
-                    new DeleteExpiredPasswordlessDevices(main));
+            throw new QuitProgramException("Please call init() before calling getInstance");
         }
         return (DeleteExpiredPasswordlessDevices) instance;
     }
 
     @Override
-    protected void doTask() throws Exception {
-        if (StorageLayer.getStorage(this.main).getType() != STORAGE_TYPE.SQL) {
+    protected void doTask(String connectionUriDomain, String tenantId) throws Exception {
+        if (StorageLayer.getStorage(connectionUriDomain, tenantId, this.main).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(this.main);
+        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId, this.main);
 
-        long codeExpirationCutoff = System.currentTimeMillis() - Config.getConfig(main).getPasswordlessCodeLifetime();
+        long codeExpirationCutoff = System.currentTimeMillis() -
+                Config.getConfig(connectionUriDomain, tenantId, main).getPasswordlessCodeLifetime();
         PasswordlessCode[] expiredCodes = storage.getCodesBefore(codeExpirationCutoff);
         Set<String> uniqueDevicesIdHashes = Stream.of(expiredCodes).map(code -> code.deviceIdHash)
                 .collect(Collectors.toSet());

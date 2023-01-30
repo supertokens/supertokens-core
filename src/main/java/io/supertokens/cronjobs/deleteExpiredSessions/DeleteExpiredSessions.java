@@ -20,27 +20,38 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.storageLayer.StorageLayer;
+import org.jetbrains.annotations.TestOnly;
+
+import java.util.List;
 
 public class DeleteExpiredSessions extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions";
 
-    private DeleteExpiredSessions(Main main) {
-        super("RemoveOldSessions", main);
+    private DeleteExpiredSessions(Main main, List<ResourceDistributor.KeyClass> tenantsInfo) {
+        super("RemoveOldSessions", main, tenantsInfo);
     }
 
+    public static DeleteExpiredSessions init(Main main, List<ResourceDistributor.KeyClass> tenantsInfo) {
+        return (DeleteExpiredSessions) main.getResourceDistributor()
+                .setResource(null, null, RESOURCE_KEY, new DeleteExpiredSessions(main, tenantsInfo));
+    }
+
+    @TestOnly
     public static DeleteExpiredSessions getInstance(Main main) {
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
+        ResourceDistributor.SingletonResource instance = main.getResourceDistributor()
+                .getResource(null, null, RESOURCE_KEY);
         if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new DeleteExpiredSessions(main));
+            throw new QuitProgramException("Please call init() before calling getInstance");
         }
         return (DeleteExpiredSessions) instance;
     }
 
     @Override
-    protected void doTask() throws Exception {
-        StorageLayer.getSessionStorage(this.main).deleteAllExpiredSessions();
+    protected void doTask(String connectionUriDomain, String tenantId) throws Exception {
+        StorageLayer.getSessionStorage(connectionUriDomain, tenantId, this.main).deleteAllExpiredSessions();
     }
 
     @Override

@@ -488,4 +488,22 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
         return false;
     }
+
+    public static List<ResourceDistributor.KeyClass> getTenantsWithUniqueUserPoolId(Main main) {
+        List<ResourceDistributor.KeyClass> result = new ArrayList<ResourceDistributor.KeyClass>();
+        Set<String> usedIds = new HashSet<>();
+
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                main.getResourceDistributor()
+                        .getAllResourcesWithResourceKey(RESOURCE_KEY);
+        for (ResourceDistributor.KeyClass key : resources.keySet()) {
+            Storage storage = ((StorageLayer) resources.get(key)).storage;
+            if (usedIds.contains(storage.getUserPoolId())) {
+                continue;
+            }
+            usedIds.add(storage.getUserPoolId());
+            result.add(key);
+        }
+        return result;
+    }
 }
