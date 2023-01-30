@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
+import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import org.jetbrains.annotations.TestOnly;
@@ -59,6 +60,12 @@ public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
 
     @Override
     public int getIntervalTimeSeconds() {
+        if (Main.isTesting) {
+            Integer interval = CronTaskTest.getInstance(main).getIntervalInSeconds(RESOURCE_KEY);
+            if (interval != null) {
+                return interval;
+            }
+        }
         // Every 24 hours.
         return 24 * 3600;
     }

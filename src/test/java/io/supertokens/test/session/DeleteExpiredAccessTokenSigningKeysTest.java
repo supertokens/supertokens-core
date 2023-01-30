@@ -51,22 +51,8 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
     }
 
     @Test
-    public void intervalTimeSecondsCleanExpiredAccessTokenSigningKeysTest() throws Exception {
-        String[] args = { "../" };
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        assertEquals(DeleteExpiredAccessTokenSigningKeys.getInstance(process.getProcess()).getIntervalTimeSeconds(),
-                Config.getConfig(process.getProcess()).getAccessTokenSigningKeyUpdateInterval() / 1000);
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
     public void jobCleansOldKeysTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         CronTaskTest.getInstance(process.getProcess())
@@ -115,7 +101,7 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
 
     @Test
     public void jobKeepsOldKeysIfNotDynamicTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
 

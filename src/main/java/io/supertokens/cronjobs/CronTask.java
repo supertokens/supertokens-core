@@ -56,7 +56,7 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
 
         ExecutorService service = Executors.newFixedThreadPool(copied.size());
         AtomicBoolean threwQuitProgramException = new AtomicBoolean(false);
-        for (ResourceDistributor.KeyClass keyClass : tenantsInfo) {
+        for (ResourceDistributor.KeyClass keyClass : copied) {
             String connectionUriDomain = keyClass.getConnectionUriDomain();
             String tenantId = keyClass.getTenantId();
             service.execute(() -> {
@@ -74,7 +74,7 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
         service.shutdown();
         boolean didShutdown = false;
         try {
-            didShutdown = service.awaitTermination(this.getInitialWaitTimeSeconds(), TimeUnit.SECONDS);
+            didShutdown = service.awaitTermination(this.getIntervalTimeSeconds(), TimeUnit.SECONDS);
         } catch (InterruptedException ignored) {
         }
         if (!didShutdown) {
