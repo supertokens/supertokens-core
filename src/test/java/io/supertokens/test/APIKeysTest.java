@@ -318,6 +318,7 @@ public class APIKeysTest {
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
+        request.addProperty("useStaticKey", false);
 
         // check that any one of the keys can be used
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",

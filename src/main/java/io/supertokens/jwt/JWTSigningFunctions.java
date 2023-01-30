@@ -58,9 +58,8 @@ public class JWTSigningFunctions {
      * @throws UnsupportedJWTSigningAlgorithmException If the algorithm provided does not match any of the supported
      *                                                 algorithms
      */
-    @SuppressWarnings("unchecked")
     public static String createJWTToken(Main main, String algorithm, JsonObject payload, String jwksDomain,
-            long jwtValidity) throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
+                                        long jwtValidity) throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
             InvalidKeySpecException, JWTCreationException, UnsupportedJWTSigningAlgorithmException {
         // TODO: In the future we will have a way for the user to send a custom key id to use
         JWTSigningKey.SupportedAlgorithms supportedAlgorithm;
@@ -72,27 +71,35 @@ public class JWTSigningFunctions {
             throw new UnsupportedJWTSigningAlgorithmException();
         }
 
+        long currentTimeInMillis = System.currentTimeMillis();
+
+        // JWT Expiry is seconds from epoch not millis
+        long jwtExpiry = Double.valueOf(Math.ceil((currentTimeInMillis / 1000.0))).longValue() + jwtValidity;
+        return createJWTToken(main, supportedAlgorithm, new HashMap<>(), payload, jwksDomain, jwtExpiry, currentTimeInMillis / 1000);
+    }
+
+    @SuppressWarnings("unchecked")
+    public static String createJWTToken(Main main, JWTSigningKey.SupportedAlgorithms supportedAlgorithm, Map<String, Object> headerClaims, JsonObject payload, String jwksDomain,
+            long jwtExpiry, long jwtIssuedAt) throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
+            InvalidKeySpecException, JWTCreationException, UnsupportedJWTSigningAlgorithmException {
         JWTSigningKeyInfo keyToUse = JWTSigningKey.getInstance(main)
                 .getOrCreateAndGetKeyForAlgorithm(supportedAlgorithm);
         // Get an instance of auth0's Algorithm which is needed when signing using auth0's package
         Algorithm signingAlgorithm = getAuth0Algorithm(supportedAlgorithm, keyToUse);
 
         // Create the claims for the JWT header
-        Map<String, Object> headerClaims = new HashMap<>();
         headerClaims.put("alg", supportedAlgorithm.name().toUpperCase()); // All examples in the RFC have the algorithm
                                                                           // in upper case
         headerClaims.put("typ", "JWT");
         headerClaims.put("kid", keyToUse.keyId);
 
-        long currentTimeInMillis = System.currentTimeMillis();
-        // JWT Expiry is seconds from epoch not millis
-        long jwtExpiry = Double.valueOf(Math.ceil((currentTimeInMillis / 1000.0))).longValue() + (jwtValidity);
-
         // Add relevant claims to the payload, note we only add/override ones that we absolutely need to.
         Map<String, Object> jwtPayload = new Gson().fromJson(payload, HashMap.class);
-        jwtPayload.putIfAbsent("iss", jwksDomain);
+        if (jwksDomain != null ) {
+            jwtPayload.putIfAbsent("iss", jwksDomain);
+        }
         jwtPayload.put("exp", jwtExpiry);
-        jwtPayload.put("iat", currentTimeInMillis / 1000); // JWT uses seconds from epoch not millis
+        jwtPayload.put("iat", jwtIssuedAt); // JWT uses seconds from epoch not millis
 
         return com.auth0.jwt.JWT.create().withPayload(jwtPayload).withHeader(headerClaims).sign(signingAlgorithm);
     }

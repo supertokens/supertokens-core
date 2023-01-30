@@ -661,6 +661,7 @@ public class StorageTest {
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
+        request.addProperty("useStaticKey", false);
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -713,7 +714,7 @@ public class StorageTest {
     @Test
     public void multipleParallelTransactionTest() throws InterruptedException, IOException {
         String[] args = { "../" };
-        Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00005");
+        Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00005");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

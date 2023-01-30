@@ -86,7 +86,7 @@ public class AccessTokenSigningKeyTest {
     public void getAllKeysReturnsOrdered()
             throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
             StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException {
-        Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 seconds
+        Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00027"); // 1 seconds
 
         String[] args = { "../" };
         TestingProcess process = TestingProcessManager.start(args);
@@ -107,7 +107,7 @@ public class AccessTokenSigningKeyTest {
 
         accessTokenSigningKeyInstance.getAllKeys();
 
-        // Wait for access_token_signing_key_update_interval + margin
+        // Wait for access_token_dynamic_signing_key_update_interval + margin
         Thread.sleep(1500);
 
         List<KeyInfo> allKeys = accessTokenSigningKeyInstance.getAllKeys();
@@ -135,7 +135,7 @@ public class AccessTokenSigningKeyTest {
     public void getAllKeysFiltersOldKeys()
             throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
             StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException {
-        Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 seconds
+        Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00027"); // 1 seconds
         Utils.setValueInConfig("access_token_validity", "1");
 
         String[] args = { "../" };
@@ -149,7 +149,7 @@ public class AccessTokenSigningKeyTest {
         List<KeyInfo> oldKeys = accessTokenSigningKeyInstance.getAllKeys();
         assertEquals(oldKeys.size(), 1);
 
-        // Wait for access_token_signing_key_update_interval + 2 * access_token_validity + margin
+        // Wait for access_token_dynamic_signing_key_update_interval + 2 * access_token_validity + margin
         Thread.sleep(3500);
 
         List<KeyInfo> newKeys = accessTokenSigningKeyInstance.getAllKeys();

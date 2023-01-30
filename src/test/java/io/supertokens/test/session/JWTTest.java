@@ -54,8 +54,8 @@ public class JWTTest {
         {
             TestInput input = new TestInput("value");
             io.supertokens.utils.Utils.PubPriKey rsa = io.supertokens.utils.Utils.generateNewPubPriKey();
-            String token = JWT.createJWT(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V1);
-            TestInput output = new Gson().fromJson(JWT.verifyJWTAndGetPayload(token, rsa.publicKey).payload,
+            String token = JWT.createJWT(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V1, "kid");
+            TestInput output = new Gson().fromJson(JWT.verifyJWTAndGetPayload(JWT.preParseJWTInfo(token), rsa.publicKey).payload,
                     TestInput.class);
             assertEquals(input, output);
         }
@@ -63,8 +63,8 @@ public class JWTTest {
         {
             TestInput input = new TestInput("value");
             io.supertokens.utils.Utils.PubPriKey rsa = io.supertokens.utils.Utils.generateNewPubPriKey();
-            String token = JWT.createJWT(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V2);
-            TestInput output = new Gson().fromJson(JWT.verifyJWTAndGetPayload(token, rsa.publicKey).payload,
+            String token = JWT.createJWT(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V2, "kid");
+            TestInput output = new Gson().fromJson(JWT.verifyJWTAndGetPayload(JWT.preParseJWTInfo(token), rsa.publicKey).payload,
                     TestInput.class);
             assertEquals(input, output);
         }
@@ -76,9 +76,9 @@ public class JWTTest {
         {
             TestInput input = new TestInput("value");
             io.supertokens.utils.Utils.PubPriKey rsa = io.supertokens.utils.Utils.generateNewPubPriKey();
-            String token = JWT.createJWT(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V1);
+            String token = JWT.createJWT(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V1, "kid");
             try {
-                JWT.verifyJWTAndGetPayload(token, "signingKey2");
+                JWT.verifyJWTAndGetPayload(JWT.preParseJWTInfo(token), "signingKey2");
                 fail();
             } catch (JWTException e) {
                 assertEquals("JWT verification failed", e.getMessage());
@@ -88,9 +88,9 @@ public class JWTTest {
         {
             TestInput input = new TestInput("value");
             io.supertokens.utils.Utils.PubPriKey rsa = io.supertokens.utils.Utils.generateNewPubPriKey();
-            String token = JWT.createJWT(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V2);
+            String token = JWT.createJWT(new Gson().toJsonTree(input), rsa.privateKey, AccessToken.VERSION.V2, "kid");
             try {
-                JWT.verifyJWTAndGetPayload(token, "signingKey2");
+                JWT.verifyJWTAndGetPayload(JWT.preParseJWTInfo(token), "signingKey2");
                 fail();
             } catch (JWTException e) {
                 assertEquals("JWT verification failed", e.getMessage());
@@ -102,24 +102,24 @@ public class JWTTest {
     public void signingSuccess()
             throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, SignatureException {
         io.supertokens.utils.Utils.PubPriKey key = io.supertokens.utils.Utils.generateNewPubPriKey();
-        String signature = io.supertokens.utils.Utils.signWithPrivateKey("hello", key.privateKey);
-        assertTrue(io.supertokens.utils.Utils.verifyWithPublicKey("hello", signature, key.publicKey));
+        String signature = io.supertokens.utils.Utils.signWithPrivateKey("hello", key.privateKey, false);
+        assertTrue(io.supertokens.utils.Utils.verifyWithPublicKey("hello", signature, key.publicKey, false));
     }
 
     @Test
     public void signingFailure()
             throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, SignatureException {
         io.supertokens.utils.Utils.PubPriKey key = io.supertokens.utils.Utils.generateNewPubPriKey();
-        String signature = io.supertokens.utils.Utils.signWithPrivateKey("hello", key.privateKey);
+        String signature = io.supertokens.utils.Utils.signWithPrivateKey("hello", key.privateKey, false);
         try {
-            io.supertokens.utils.Utils.verifyWithPublicKey("hello", signature + "random", key.publicKey);
+            io.supertokens.utils.Utils.verifyWithPublicKey("hello", signature + "random", key.publicKey, false);
             fail();
         } catch (IllegalArgumentException e) {
         }
-        assertFalse(io.supertokens.utils.Utils.verifyWithPublicKey("helloo", signature, key.publicKey));
+        assertFalse(io.supertokens.utils.Utils.verifyWithPublicKey("helloo", signature, key.publicKey, false));
         try {
             io.supertokens.utils.Utils.verifyWithPublicKey("hello", signature,
-                    key.publicKey.substring(0, 10) + "random" + key.publicKey.substring(10));
+                    key.publicKey.substring(0, 10) + "random" + key.publicKey.substring(10), false);
             fail();
         } catch (InvalidKeySpecException e) {
         }

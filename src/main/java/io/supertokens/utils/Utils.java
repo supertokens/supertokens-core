@@ -57,6 +57,9 @@ public class Utils {
         return email;
     }
 
+    public static String convertToBase64Url(String str) {
+        return new String(Base64.getUrlEncoder().encode(stringToBytes(str)), StandardCharsets.UTF_8);
+    }
     public static String convertToBase64(String str) {
         return new String(Base64.getEncoder().encode(stringToBytes(str)), StandardCharsets.UTF_8);
     }
@@ -227,7 +230,7 @@ public class Utils {
         return new PubPriKey(pubStr, priStr);
     }
 
-    public static String signWithPrivateKey(String content, String privateKey)
+    public static String signWithPrivateKey(String content, String privateKey, boolean urlEncode)
             throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, SignatureException {
         Signature sign = Signature.getInstance("SHA256withRSA");
         Base64.Decoder decoder = Base64.getDecoder();
@@ -237,18 +240,19 @@ public class Utils {
 
         sign.initSign(pvt);
         sign.update(stringToBytes(content));
-        Base64.Encoder encoder = Base64.getEncoder();
+        Base64.Encoder encoder = urlEncode ? Base64.getUrlEncoder() : Base64.getEncoder();
         return encoder.encodeToString(sign.sign());
     }
 
-    public static boolean verifyWithPublicKey(String content, String signature, String publicKey)
+    public static boolean verifyWithPublicKey(String content, String signature, String publicKey, boolean urlEncoded)
             throws NoSuchAlgorithmException, InvalidKeySpecException, InvalidKeyException, SignatureException {
         Signature sign = Signature.getInstance("SHA256withRSA");
-        Base64.Decoder decoder = Base64.getDecoder();
-        X509EncodedKeySpec ks = new X509EncodedKeySpec(decoder.decode(publicKey));
+        Base64.Decoder keyDecoder = Base64.getDecoder();
+        X509EncodedKeySpec ks = new X509EncodedKeySpec(keyDecoder.decode(publicKey));
         KeyFactory kf = KeyFactory.getInstance("RSA");
         PublicKey pub = kf.generatePublic(ks);
 
+        Base64.Decoder decoder = urlEncoded ? Base64.getUrlDecoder() : Base64.getDecoder();
         sign.initVerify(pub);
         sign.update(stringToBytes(content));
         return sign.verify(decoder.decode(signature));
@@ -263,9 +267,12 @@ public class Utils {
             this.privateKey = privateKey;
         }
 
+        public PubPriKey(String[] parts) {
+            this.publicKey = parts[0];
+            this.privateKey = parts[1];
+        }
         public PubPriKey(String s) {
-            this.publicKey = s.split(";")[0];
-            this.privateKey = s.split(";")[1];
+            this(s.split(";"));
         }
 
         @Override

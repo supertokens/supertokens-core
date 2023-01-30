@@ -23,6 +23,7 @@ import io.supertokens.config.Config;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -33,6 +34,7 @@ import io.supertokens.session.accessToken.AccessToken.AccessTokenInfo;
 import io.supertokens.session.info.SessionInfo;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.session.info.TokenInfo;
+import io.supertokens.session.jwt.JWT;
 import io.supertokens.session.refreshToken.RefreshToken;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
@@ -58,27 +60,28 @@ public class Session {
             @Nonnull JsonObject userDataInJWT, @Nonnull JsonObject userDataInDatabase)
             throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
-            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
-        return createNewSession(main, userId, userDataInJWT, userDataInDatabase, false);
+            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException, UnauthorisedException, JWT.JWTException, UnsupportedJWTSigningAlgorithmException {
+        return createNewSession(main, userId, userDataInJWT, userDataInDatabase, false, true, false);
     }
 
     public static SessionInformationHolder createNewSession(Main main, @Nonnull String userId,
-            @Nonnull JsonObject userDataInJWT, @Nonnull JsonObject userDataInDatabase, boolean enableAntiCsrf)
+            @Nonnull JsonObject userDataInJWT, @Nonnull JsonObject userDataInDatabase, boolean enableAntiCsrf, boolean useV3AccessToken, boolean useStaticKey)
             throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
-            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
+            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException, UnauthorisedException,
+            UnsupportedJWTSigningAlgorithmException {
         String sessionHandle = UUID.randomUUID().toString();
         String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
         final TokenInfo refreshToken = RefreshToken.createNewRefreshToken(main, sessionHandle, userId, null,
                 antiCsrfToken);
 
         TokenInfo accessToken = AccessToken.createNewAccessToken(main, sessionHandle, userId,
-                Utils.hashSHA256(refreshToken.token), null, userDataInJWT, antiCsrfToken, System.currentTimeMillis(),
-                null);
+                Utils.hashSHA256(refreshToken.token), null, userDataInJWT, antiCsrfToken,
+                null, useV3AccessToken ? AccessToken.VERSION.V3 : AccessToken.VERSION.V2, useStaticKey);
 
         StorageLayer.getSessionStorage(main).createNewSession(sessionHandle, userId,
                 Utils.hashSHA256(Utils.hashSHA256(refreshToken.token)), userDataInDatabase, refreshToken.expiry,
-                userDataInJWT, refreshToken.createdTime); // TODO: add lmrt to database
+                userDataInJWT, refreshToken.createdTime, useStaticKey);
 
         TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(), refreshToken.expiry,
                 refreshToken.createdTime);
@@ -105,17 +108,16 @@ public class Session {
     public static SessionInformationHolder regenerateToken(Main main, @Nonnull String token,
             @Nullable JsonObject userDataInJWT) throws StorageQueryException, StorageTransactionLogicException,
             UnauthorisedException, InvalidKeySpecException, SignatureException, NoSuchAlgorithmException,
-            InvalidKeyException, UnsupportedEncodingException {
+            InvalidKeyException, UnsupportedEncodingException, JWT.JWTException, TryRefreshTokenException, UnsupportedJWTSigningAlgorithmException {
 
         // We assume the token has already been verified at this point. It may be expired or JWT signing key may have
         // changed for it...
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessTokenWithoutVerifying(token);
 
-        JsonObject newJWTUserPayload = userDataInJWT == null ? getSession(main, accessToken.sessionHandle).userDataInJWT
+        io.supertokens.pluginInterface.session.SessionInfo sessionInfo = getSession(main, accessToken.sessionHandle);
+        JsonObject newJWTUserPayload = userDataInJWT == null ? sessionInfo.userDataInJWT
                 : userDataInJWT;
-        long lmrt = System.currentTimeMillis();
-
-        updateSession(main, accessToken.sessionHandle, null, newJWTUserPayload, lmrt);
+        updateSession(main, accessToken.sessionHandle, null, newJWTUserPayload);
 
         // if the above succeeds but the below fails, it's OK since the client will get server error and will try
         // again. In this case, the JWT data will be updated again since the API will get the old JWT. In case there
@@ -130,7 +132,7 @@ public class Session {
 
         TokenInfo newAccessToken = AccessToken.createNewAccessToken(main, accessToken.sessionHandle, accessToken.userId,
                 accessToken.refreshTokenHash1, accessToken.parentRefreshTokenHash1, newJWTUserPayload,
-                accessToken.antiCsrfToken, lmrt, accessToken.expiryTime);
+                accessToken.antiCsrfToken, accessToken.expiryTime, accessToken.version, sessionInfo.useStaticKey);
 
         return new SessionInformationHolder(
                 new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload),
@@ -141,7 +143,7 @@ public class Session {
     // pass antiCsrfToken to disable csrf check for this request
     public static SessionInformationHolder getSession(Main main, @Nonnull String token, @Nullable String antiCsrfToken,
             boolean enableAntiCsrf, Boolean doAntiCsrfCheck) throws StorageQueryException,
-            StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException {
+            StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException, UnsupportedJWTSigningAlgorithmException {
 
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessToken(main, token,
                 doAntiCsrfCheck && enableAntiCsrf);
@@ -203,10 +205,9 @@ public class Session {
                                         accessToken.userId, accessToken.refreshTokenHash1, null,
                                         sessionInfo.userDataInJWT, accessToken.antiCsrfToken);
                             } else {
-                                assert accessToken.lmrt != null;
                                 newAccessToken = AccessToken.createNewAccessToken(main, accessToken.sessionHandle,
                                         accessToken.userId, accessToken.refreshTokenHash1, null,
-                                        sessionInfo.userDataInJWT, accessToken.antiCsrfToken, accessToken.lmrt, null);
+                                        sessionInfo.userDataInJWT, accessToken.antiCsrfToken, null, accessToken.version, sessionInfo.useStaticKey);
                             }
 
                             return new SessionInformationHolder(
@@ -224,7 +225,7 @@ public class Session {
                                 // because we are not returning a new access token
                                 null, null, null, null);
                     } catch (UnauthorisedException | NoSuchAlgorithmException | UnsupportedEncodingException
-                            | InvalidKeyException | InvalidKeySpecException | SignatureException e) {
+                            | InvalidKeyException | InvalidKeySpecException | SignatureException | UnsupportedJWTSigningAlgorithmException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                 });
@@ -261,15 +262,14 @@ public class Session {
                         }
 
                         TokenInfo newAccessToken;
-                        if (AccessToken.getAccessTokenVersion(accessToken) == AccessToken.VERSION.V1) {
+                        if (accessToken.version == AccessToken.VERSION.V1) {
                             newAccessToken = AccessToken.createNewAccessTokenV1(main, accessToken.sessionHandle,
                                     accessToken.userId, accessToken.refreshTokenHash1, null, sessionInfo.userDataInJWT,
                                     accessToken.antiCsrfToken);
                         } else {
-                            assert accessToken.lmrt != null;
                             newAccessToken = AccessToken.createNewAccessToken(main, accessToken.sessionHandle,
                                     accessToken.userId, accessToken.refreshTokenHash1, null, sessionInfo.userDataInJWT,
-                                    accessToken.antiCsrfToken, accessToken.lmrt, null);
+                                    accessToken.antiCsrfToken, null, accessToken.version, sessionInfo.useStaticKey);
                         }
 
                         return new SessionInformationHolder(
@@ -295,8 +295,8 @@ public class Session {
     }
 
     public static SessionInformationHolder refreshSession(Main main, @Nonnull String refreshToken,
-            @Nullable String antiCsrfToken, boolean enableAntiCsrf) throws StorageTransactionLogicException,
-            UnauthorisedException, StorageQueryException, TokenTheftDetectedException {
+            @Nullable String antiCsrfToken, boolean enableAntiCsrf, boolean useV3AccessToken) throws StorageTransactionLogicException,
+            UnauthorisedException, StorageQueryException, TokenTheftDetectedException, UnsupportedJWTSigningAlgorithmException {
         RefreshToken.RefreshTokenInfo refreshTokenInfo = RefreshToken.getInfoFromRefreshToken(main, refreshToken);
 
         if (enableAntiCsrf && refreshTokenInfo.antiCsrfToken != null) {
@@ -306,13 +306,13 @@ public class Session {
             }
         }
 
-        return refreshSessionHelper(main, refreshToken, refreshTokenInfo, enableAntiCsrf);
+        return refreshSessionHelper(main, refreshToken, refreshTokenInfo, enableAntiCsrf, useV3AccessToken ? AccessToken.VERSION.V3 : AccessToken.VERSION.V2);
     }
 
     private static SessionInformationHolder refreshSessionHelper(Main main, String refreshToken,
-            RefreshToken.RefreshTokenInfo refreshTokenInfo, boolean enableAntiCsrf)
+            RefreshToken.RefreshTokenInfo refreshTokenInfo, boolean enableAntiCsrf, AccessToken.VERSION accessTokenVersion)
             throws StorageTransactionLogicException, UnauthorisedException, StorageQueryException,
-            TokenTheftDetectedException {
+            TokenTheftDetectedException, UnsupportedJWTSigningAlgorithmException {
         ////////////////////////////////////////// SQL/////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////
@@ -343,7 +343,7 @@ public class Session {
                             TokenInfo newAccessToken = AccessToken.createNewAccessToken(main, sessionHandle,
                                     sessionInfo.userId, Utils.hashSHA256(newRefreshToken.token),
                                     Utils.hashSHA256(refreshToken), sessionInfo.userDataInJWT, antiCsrfToken,
-                                    System.currentTimeMillis(), null); // TODO: get lmrt from database
+                                    null, accessTokenVersion, sessionInfo.useStaticKey);
 
                             TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(),
                                     newRefreshToken.expiry, newRefreshToken.createdTime);
@@ -365,7 +365,7 @@ public class Session {
 
                             storage.commitTransaction(con);
 
-                            return refreshSessionHelper(main, refreshToken, refreshTokenInfo, enableAntiCsrf);
+                            return refreshSessionHelper(main, refreshToken, refreshTokenInfo, enableAntiCsrf, accessTokenVersion);
                         }
 
                         storage.commitTransaction(con);
@@ -375,7 +375,7 @@ public class Session {
                     } catch (UnauthorisedException | NoSuchAlgorithmException | InvalidKeyException
                             | UnsupportedEncodingException | TokenTheftDetectedException | InvalidKeySpecException
                             | SignatureException | NoSuchPaddingException | InvalidAlgorithmParameterException
-                            | IllegalBlockSizeException | BadPaddingException e) {
+                            | IllegalBlockSizeException | BadPaddingException| UnsupportedJWTSigningAlgorithmException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                 });
@@ -415,7 +415,7 @@ public class Session {
                         TokenInfo newAccessToken = AccessToken.createNewAccessToken(main, sessionHandle,
                                 sessionInfo.userId, Utils.hashSHA256(newRefreshToken.token),
                                 Utils.hashSHA256(refreshToken), sessionInfo.userDataInJWT, antiCsrfToken,
-                                System.currentTimeMillis(), null); // TODO: get lmrt from database
+                                null,accessTokenVersion, sessionInfo.useStaticKey);
 
                         TokenInfo idRefreshToken = new TokenInfo(UUID.randomUUID().toString(), newRefreshToken.expiry,
                                 newRefreshToken.createdTime);
@@ -438,7 +438,7 @@ public class Session {
                         if (!success) {
                             continue;
                         }
-                        return refreshSessionHelper(main, refreshToken, refreshTokenInfo, enableAntiCsrf);
+                        return refreshSessionHelper(main, refreshToken, refreshTokenInfo, enableAntiCsrf,accessTokenVersion);
                     }
 
                     throw new TokenTheftDetectedException(sessionHandle, sessionInfo.userId);
@@ -531,7 +531,7 @@ public class Session {
     }
 
     public static void updateSession(Main main, String sessionHandle, @Nullable JsonObject sessionData,
-            @Nullable JsonObject jwtData, @Nullable Long lmrt) throws StorageQueryException, UnauthorisedException {
+            @Nullable JsonObject jwtData) throws StorageQueryException, UnauthorisedException {
         io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
                 .getSession(sessionHandle);
         // If there is no session, or session is expired

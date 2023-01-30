@@ -96,7 +96,6 @@ public class SessionRegenerateAPITest2_7 {
                 sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("token").getAsString(), false);
 
         assertEquals(accessTokenBefore.expiryTime, accessTokenAfter.expiryTime);
-        assertNotEquals(accessTokenBefore.lmrt, accessTokenAfter.lmrt);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

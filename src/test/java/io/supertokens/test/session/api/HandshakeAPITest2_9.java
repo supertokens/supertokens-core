@@ -146,7 +146,7 @@ public class HandshakeAPITest2_9 {
     public void changingSigningKeyHandshakeAPITest() throws Exception {
         String[] args = { "../" };
 
-        Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00081"); // 0.00027*3 = 3 seconds
+        Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00081"); // 0.00027*3 = 3 seconds
         Utils.setValueInConfig("access_token_validity", "1"); // 1 second
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

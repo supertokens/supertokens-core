@@ -210,9 +210,7 @@ public class Main {
         }
 
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
-        if (Config.getConfig(this).getAccessTokenSigningKeyDynamic()) {
-            Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.getInstance(this));
-        }
+        Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.getInstance(this));
 
         // creates password hashing pool
         PasswordHashing.init(this);

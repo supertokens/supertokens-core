@@ -20,13 +20,16 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
+import io.supertokens.session.jwt.JWT;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -70,8 +73,9 @@ public class SessionRegenerateAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
-                | InvalidKeyException | SignatureException | InvalidKeySpecException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | TryRefreshTokenException
+                 | InvalidKeyException | SignatureException | InvalidKeySpecException | JWT.JWTException |
+                 UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));

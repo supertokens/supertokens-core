@@ -22,6 +22,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -63,6 +64,8 @@ public class SessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        String version = super.getVersionFromRequest(req);
+
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         assert userId != null;
@@ -72,10 +75,14 @@ public class SessionAPI extends WebserverAPI {
         assert userDataInJWT != null;
         JsonObject userDataInDatabase = InputParser.parseJsonObjectOrThrowError(input, "userDataInDatabase", false);
         assert userDataInDatabase != null;
+        // TODO: get from legacy config prop
+        Boolean useStaticKey = version.equals("2.14") ?
+                InputParser.parseBooleanOrThrowError(input, "useStaticKey", false) : Boolean.FALSE;
+        assert useStaticKey != null;
 
         try {
             SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
-                    userDataInDatabase, enableAntiCsrf);
+                    userDataInDatabase, enableAntiCsrf, version.equals("2.14"), useStaticKey);
 
             JsonObject result = sessionInfo.toJsonObject();
 
@@ -86,7 +93,7 @@ public class SessionAPI extends WebserverAPI {
             result.addProperty("jwtSigningPublicKeyExpiryTime",
                     AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
 
-            if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
+            if (!version.equals("2.7") && !version.equals("2.8")) {
                 List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getAllKeys();
                 JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                 result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
@@ -94,8 +101,9 @@ public class SessionAPI extends WebserverAPI {
 
             super.sendJsonResponse(200, result, resp);
         } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException
-                | StorageTransactionLogicException | SignatureException | IllegalBlockSizeException
-                | BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
+                 | StorageTransactionLogicException | SignatureException | IllegalBlockSizeException
+                 | BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException |
+                 UnsupportedJWTSigningAlgorithmException | UnauthorisedException e) {
             throw new ServletException(e);
         }
     }
@@ -111,6 +119,10 @@ public class SessionAPI extends WebserverAPI {
             JsonObject result = new Gson().toJsonTree(sessionInfo).getAsJsonObject();
             result.add("userDataInJWT", Utils.toJsonTreeWithNulls(sessionInfo.userDataInJWT));
             result.add("userDataInDatabase", Utils.toJsonTreeWithNulls(sessionInfo.userDataInDatabase));
+            String version = super.getVersionFromRequest(req);
+            if (!version.equals("2.14")) {
+                result.remove("useStaticKey");
+            }
 
             result.addProperty("status", "OK");
 

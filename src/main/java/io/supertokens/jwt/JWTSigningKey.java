@@ -30,10 +30,13 @@ import io.supertokens.pluginInterface.jwt.JWTSymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.nosqlstorage.JWTRecipeNoSQLStorage_1;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
+import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.List;
 
 public class JWTSigningKey extends ResourceDistributor.SingletonResource {

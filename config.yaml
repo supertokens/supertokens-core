@@ -31,9 +31,8 @@ core_config_version: 0
 # access_token_signing_key_dynamic:
 
 
-# (OPTIONAL | Default:168) integer value. Time in hours for how frequently the JWT (access token) signing key
-# will change. This value only makes sense if "access_token_signing_key_dynamic" is true.
-# access_token_signing_key_update_interval:
+# (OPTIONAL | Default:168) integer value. Time in hours for how frequently the dynamic signing key will change.
+# access_token_dynamic_signing_key_update_interval:
 
 
 # (OPTIONAL | Default: 144000) double value. Time in mins for how long a refresh token is valid for.

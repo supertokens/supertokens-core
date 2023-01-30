@@ -65,10 +65,7 @@ public class SessionTest4 {
     }
 
     @Test
-    public void checkForNumberOfDeletedSessions()
-            throws InterruptedException, StorageQueryException, NoSuchAlgorithmException, InvalidKeyException,
-            IOException, InvalidKeySpecException, StorageTransactionLogicException, SignatureException,
-            IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
+    public void checkForNumberOfDeletedSessions() throws Exception {
 
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -81,19 +78,19 @@ public class SessionTest4 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
 
         assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(),
                 new String[] { sessionInfo.session.handle })[0], sessionInfo.session.handle);
 
         SessionInformationHolder sessionInfo2 = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
         SessionInformationHolder sessionInfo3 = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
         SessionInformationHolder sessionInfo4 = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
-        Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
-        Session.createNewSession(process.getProcess(), "userId2", userDataInJWT, userDataInDatabase, false);
+                userDataInDatabase);
+        Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+        Session.createNewSession(process.getProcess(), "userId2", userDataInJWT, userDataInDatabase);
 
         String[] handles = { sessionInfo2.session.handle, sessionInfo3.session.handle, sessionInfo4.session.handle };
         String[] actuallyRevoked = Session.revokeSessionUsingSessionHandles(process.getProcess(), handles);
@@ -110,9 +107,9 @@ public class SessionTest4 {
 
         assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 2);
 
-        Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
-        Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
-        Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
+        Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+        Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
+        Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase);
 
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), userId).length, 4);
 
@@ -148,7 +145,7 @@ public class SessionTest4 {
         }
 
         try {
-            Session.updateSession(process.getProcess(), "random", new JsonObject(), null, null);
+            Session.updateSession(process.getProcess(), "random", new JsonObject(), null);
             fail();
         } catch (UnauthorisedException e) {
             assertEquals(e.getMessage(), "Session does not exist.");
@@ -160,11 +157,7 @@ public class SessionTest4 {
     }
 
     @Test
-    public void createVerifyRefreshVerifyRefresh()
-            throws InterruptedException, StorageQueryException, NoSuchAlgorithmException, InvalidKeyException,
-            IOException, InvalidKeySpecException, StorageTransactionLogicException, UnauthorisedException,
-            TryRefreshTokenException, TokenTheftDetectedException, SignatureException, IllegalBlockSizeException,
-            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
+    public void createVerifyRefreshVerifyRefresh() throws Exception {
 
         Utils.setValueInConfig("access_token_validity", "1");
 
@@ -179,7 +172,7 @@ public class SessionTest4 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
         assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
@@ -212,7 +205,7 @@ public class SessionTest4 {
             }
 
             sessionInfo = Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token,
-                    sessionInfo.antiCsrfToken, false);
+                    sessionInfo.antiCsrfToken, false, true);
             assert sessionInfo.refreshToken != null;
             assert sessionInfo.accessToken != null;
 
@@ -224,11 +217,7 @@ public class SessionTest4 {
     }
 
     @Test
-    public void verifyAccessTokenThatIsBelongsToGrandparentRefreshToken()
-            throws InterruptedException, StorageQueryException, NoSuchAlgorithmException, InvalidKeyException,
-            IOException, InvalidKeySpecException, StorageTransactionLogicException, UnauthorisedException,
-            TryRefreshTokenException, TokenTheftDetectedException, SignatureException, IllegalBlockSizeException,
-            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
+    public void verifyAccessTokenThatIsBelongsToGrandparentRefreshToken() throws Exception {
 
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -241,7 +230,7 @@ public class SessionTest4 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
         assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
@@ -250,16 +239,16 @@ public class SessionTest4 {
         assertNull(sessionInfo.antiCsrfToken);
 
         SessionInformationHolder refreshedSession = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
         assert refreshedSession.refreshToken != null;
         assert refreshedSession.accessToken != null;
 
         SessionInformationHolder refreshedSession2 = Session.refreshSession(process.getProcess(),
-                refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, false);
+                refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, false, true);
         assert refreshedSession2.refreshToken != null;
 
         Session.refreshSession(process.getProcess(), refreshedSession2.refreshToken.token,
-                refreshedSession2.antiCsrfToken, false);
+                refreshedSession2.antiCsrfToken, false, true);
 
         SessionInformationHolder verifiedSession = Session.getSession(process.getProcess(),
                 refreshedSession.accessToken.token, refreshedSession.antiCsrfToken, false, true);
@@ -274,10 +263,7 @@ public class SessionTest4 {
     }
 
     @Test
-    public void passInvalidRefreshTokenShouldGiveUnauthorisedError() throws InterruptedException, StorageQueryException,
-            NoSuchAlgorithmException, InvalidKeyException, IOException, InvalidKeySpecException,
-            StorageTransactionLogicException, TokenTheftDetectedException, SignatureException,
-            IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
+    public void passInvalidRefreshTokenShouldGiveUnauthorisedError() throws Exception {
 
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -290,18 +276,18 @@ public class SessionTest4 {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
 
         try {
             Session.refreshSession(process.getProcess(), "INVALID_TOKEN" + sessionInfo.refreshToken,
-                    sessionInfo.antiCsrfToken, true);
+                    sessionInfo.antiCsrfToken, true, true);
             Assert.fail();
         } catch (UnauthorisedException ignored) {
         }
 
         try {
             Session.refreshSession(process.getProcess(), sessionInfo.refreshToken + "INVALID_TOKEN",
-                    sessionInfo.antiCsrfToken, true);
+                    sessionInfo.antiCsrfToken, true, true);
             Assert.fail();
         } catch (UnauthorisedException ignored) {
         }
@@ -359,13 +345,13 @@ public class SessionTest4 {
         }
 
         try {
-            Session.updateSession(process.getProcess(), expiredSession.session.handle, new JsonObject(), null, null);
+            Session.updateSession(process.getProcess(), expiredSession.session.handle, new JsonObject(), null);
             throw new Exception("Test failed");
         } catch (UnauthorisedException ignored) {
         }
 
         Session.getSession(process.getProcess(), nonExpiredSession.session.handle);
-        Session.updateSession(process.getProcess(), nonExpiredSession.session.handle, new JsonObject(), null, null);
+        Session.updateSession(process.getProcess(), nonExpiredSession.session.handle, new JsonObject(), null);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -411,7 +397,7 @@ public class SessionTest4 {
         assertEquals(sessionInfo.refreshToken.expiry - sessionInfo.refreshToken.createdTime, twoYearsInSeconds * 1000);
 
         SessionInformationHolder sessionInfo2 = Session.refreshSession(process.main, sessionInfo.refreshToken.token,
-                null, false);
+                null, false, true);
 
         assertFalse(sessionInfo.accessToken.token.equals(sessionInfo2.accessToken.token));
         assertFalse(sessionInfo.refreshToken.token.equals(sessionInfo2.refreshToken.token));
@@ -445,7 +431,7 @@ public class SessionTest4 {
         JsonObject jwtData = new JsonObject();
         jwtData.addProperty("test", "value");
 
-        Session.updateSession(process.main, sessionInfo.session.handle, sessionData, jwtData, null);
+        Session.updateSession(process.main, sessionInfo.session.handle, sessionData, jwtData);
 
         io.supertokens.pluginInterface.session.SessionInfo sessionInfo2 = Session.getSession(process.main,
                 sessionInfo.session.handle);
