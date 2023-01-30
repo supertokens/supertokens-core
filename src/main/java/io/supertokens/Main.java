@@ -247,8 +247,7 @@ public class Main {
 
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
         Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.init(this, uniqueUserPoolIdsTenants));
-
-        // TODO: need to determine how many pools combinations to make.
+        
         // creates password hashing pool
         PasswordHashing.init(this);
 

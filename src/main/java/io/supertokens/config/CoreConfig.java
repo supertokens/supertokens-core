@@ -525,6 +525,11 @@ public class CoreConfig {
 
         // the settings below are per core and should only be changed in the base config.yaml file,
         // therefore, they shouldn't be reflected in the dynamic tenant config
+        if (other.argon2_hashing_pool_size != this.argon2_hashing_pool_size) {
+            throw new InvalidConfigException(
+                    "You cannot set different values for argon2_hashing_pool_size for the same user " +
+                            "pool");
+        }
         if (!other.getBasePath().equals(this.getBasePath())) {
             throw new InvalidConfigException(
                     "You cannot set different values for base_path for the same user " +
