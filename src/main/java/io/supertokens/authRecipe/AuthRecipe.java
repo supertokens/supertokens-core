@@ -23,6 +23,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
+import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
 
@@ -37,7 +38,8 @@ public class AuthRecipe {
     }
 
     public static UserPaginationContainer getUsers(Main main, Integer limit, String timeJoinedOrder,
-            @Nullable String paginationToken, @Nullable RECIPE_ID[] includeRecipeIds)
+                                                   @Nullable String paginationToken,
+                                                   @Nullable RECIPE_ID[] includeRecipeIds)
             throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         AuthRecipeUserInfo[] users;
         if (paginationToken == null) {
@@ -59,7 +61,8 @@ public class AuthRecipe {
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
 
-    public static void deleteUser(Main main, String userId) throws StorageQueryException {
+    public static void deleteUser(String connectionUriDomain, String tenantId, Main main, String userId)
+            throws StorageQueryException {
         // We clean up the user last so that if anything before that throws an error, then that will throw a 500 to the
         // developer. In this case, they expect that the user has not been deleted (which will be true). This is as
         // opposed to deleting the user first, in which case if something later throws an error, then the user has
@@ -82,30 +85,37 @@ public class AuthRecipe {
             if (StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(userIdMapping.externalUserId)) {
                 // db is in state A4
                 // delete only from auth tables
-                deleteAuthRecipeUser(main, userId);
+                deleteAuthRecipeUser(connectionUriDomain, tenantId, main, userId);
             } else {
                 // db is in state A3
                 // delete user from non-auth tables with externalUserId
-                deleteNonAuthRecipeUser(main, userIdMapping.externalUserId);
+                deleteNonAuthRecipeUser(connectionUriDomain, tenantId, main, userIdMapping.externalUserId);
                 // delete user from auth tables with superTokensUserId
-                deleteAuthRecipeUser(main, userIdMapping.superTokensUserId);
+                deleteAuthRecipeUser(connectionUriDomain, tenantId, main, userIdMapping.superTokensUserId);
             }
         } else {
-            deleteNonAuthRecipeUser(main, userId);
-            deleteAuthRecipeUser(main, userId);
+            deleteNonAuthRecipeUser(connectionUriDomain, tenantId, main, userId);
+            deleteAuthRecipeUser(connectionUriDomain, tenantId, main, userId);
         }
-
     }
 
-    private static void deleteNonAuthRecipeUser(Main main, String userId) throws StorageQueryException {
+    @TestOnly
+    public static void deleteUser(Main main, String userId)
+            throws StorageQueryException {
+        deleteUser(null, null, main, userId);
+    }
+
+    private static void deleteNonAuthRecipeUser(String connectionUriDomain, String tenantId, Main main, String userId)
+            throws StorageQueryException {
         // non auth recipe deletion
         StorageLayer.getUserMetadataStorage(main).deleteUserMetadata(userId);
         StorageLayer.getSessionStorage(main).deleteSessionsOfUser(userId);
         StorageLayer.getEmailVerificationStorage(main).deleteEmailVerificationUserInfo(userId);
-        StorageLayer.getUserRolesStorage(main).deleteAllRolesForUser(userId);
+        StorageLayer.getUserRolesStorage(connectionUriDomain, tenantId, main).deleteAllRolesForUser(userId);
     }
 
-    private static void deleteAuthRecipeUser(Main main, String userId) throws StorageQueryException {
+    private static void deleteAuthRecipeUser(String connectionUriDomain, String tenantId, Main main, String userId)
+            throws StorageQueryException {
         // auth recipe deletions here only
         StorageLayer.getEmailPasswordStorage(main).deleteEmailPasswordUser(userId);
         StorageLayer.getThirdPartyStorage(main).deleteThirdPartyUser(userId);

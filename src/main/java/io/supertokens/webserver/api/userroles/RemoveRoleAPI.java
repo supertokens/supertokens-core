@@ -20,15 +20,13 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -57,7 +55,8 @@ public class RemoveRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean didRoleExist = UserRoles.deleteRole(main, role);
+            boolean didRoleExist = UserRoles.deleteRole(this.getConnectionUriDomain(req), this.getTenantId(req), main,
+                    role);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

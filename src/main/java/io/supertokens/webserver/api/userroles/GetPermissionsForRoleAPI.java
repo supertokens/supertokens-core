@@ -26,10 +26,10 @@ import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -57,7 +57,8 @@ public class GetPermissionsForRoleAPI extends WebserverAPI {
         }
 
         try {
-            String[] permissions = UserRoles.getPermissionsForRole(main, role);
+            String[] permissions = UserRoles.getPermissionsForRole(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, role);
             JsonArray arr = new JsonArray();
             for (String permission : permissions) {
                 arr.add(new JsonPrimitive(permission));

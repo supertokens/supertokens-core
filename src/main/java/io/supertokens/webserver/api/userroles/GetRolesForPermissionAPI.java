@@ -25,10 +25,10 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -58,7 +58,8 @@ public class GetRolesForPermissionAPI extends WebserverAPI {
 
         try {
 
-            String[] roles = UserRoles.getRolesThatHavePermission(main, permission);
+            String[] roles = UserRoles.getRolesThatHavePermission(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, permission);
             JsonArray arr = new JsonArray();
 
             for (String s : roles) {

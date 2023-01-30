@@ -26,10 +26,10 @@ import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -78,7 +78,8 @@ public class RemovePermissionsForRoleAPI extends WebserverAPI {
         }
 
         try {
-            UserRoles.deletePermissionsFromRole(main, role, permissions);
+            UserRoles.deletePermissionsFromRole(this.getConnectionUriDomain(req), this.getTenantId(req), main, role,
+                    permissions);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);

@@ -59,7 +59,8 @@ public class GetUsersForRoleAPI extends WebserverAPI {
 
         try {
 
-            String[] roleUsers = UserRoles.getUsersForRole(main, role);
+            String[] roleUsers = UserRoles.getUsersForRole(this.getConnectionUriDomain(req), this.getTenantId(req),
+                    main, role);
             JsonArray arr = new JsonArray();
 
             for (String s : roleUsers) {

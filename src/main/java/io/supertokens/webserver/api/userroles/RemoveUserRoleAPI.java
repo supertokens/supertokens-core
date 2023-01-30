@@ -25,10 +25,10 @@ import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -58,7 +58,8 @@ public class RemoveUserRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean didUserHaveRole = UserRoles.removeUserRole(main, userId, role);
+            boolean didUserHaveRole = UserRoles.removeUserRole(this.getConnectionUriDomain(req), this.getTenantId(req),
+                    main, userId, role);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

@@ -18,17 +18,16 @@ package io.supertokens.webserver.api.userroles;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.inmemorydb.queries.UserRoleQueries;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.userroles.UserRoles;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -59,7 +58,8 @@ public class AddUserRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean didUserAlreadyHaveRole = !UserRoles.addRoleToUser(main, userId, role);
+            boolean didUserAlreadyHaveRole = !UserRoles.addRoleToUser(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, userId, role);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("didUserAlreadyHaveRole", didUserAlreadyHaveRole);
