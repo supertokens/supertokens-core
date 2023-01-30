@@ -127,8 +127,8 @@ public abstract class WebserverAPI extends HttpServlet {
         return true;
     }
 
-    private void assertThatAPIKeyCheckPasses(String apiKey) throws ServletException {
-        String[] keys = Config.getConfig(this.main).getAPIKeys();
+    private void assertThatAPIKeyCheckPasses(HttpServletRequest req, String apiKey) throws ServletException {
+        String[] keys = Config.getConfig(getConnectionUriDomain(req), null, this.main).getAPIKeys();
         if (keys != null) {
             if (apiKey == null) {
                 throw new ServletException(new APIKeyUnauthorisedException());
@@ -148,11 +148,15 @@ public abstract class WebserverAPI extends HttpServlet {
         return true;
     }
 
+    protected String getConnectionUriDomain(HttpServletRequest req) {
+        return req.getServerName() + ":" + req.getServerPort();
+    }
+
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
             if (this.checkAPIKey(req)) {
-                assertThatAPIKeyCheckPasses(req.getHeader("api-key"));
+                assertThatAPIKeyCheckPasses(req, req.getHeader("api-key"));
             }
             if (this.versionNeeded(req)) {
                 String version = getVersionFromRequest(req);

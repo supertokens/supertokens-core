@@ -1,0 +1,190 @@
+/*
+ *    Copyright (c) 2023, VRAI Labs and/or its affiliates. All rights reserved.
+ *
+ *    This software is licensed under the Apache License, Version 2.0 (the
+ *    "License") as published by the Apache Software Foundation.
+ *
+ *    You may not use this file except in compliance with the License. You may
+ *    obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *    License for the specific language governing permissions and limitations
+ *    under the License.
+ */
+
+package io.supertokens.test.multitenant;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
+import io.supertokens.ProcessState;
+import io.supertokens.config.Config;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.httpRequest.HttpRequest;
+import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
+import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
+import io.supertokens.test.TestingProcessManager;
+import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.webserver.Webserver;
+import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
+import java.io.IOException;
+
+import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.*;
+
+public class RequestConnectionUriDomainTest {
+    @Rule
+    public TestRule watchman = Utils.getOnFailure();
+
+    @AfterClass
+    public static void afterTesting() {
+        Utils.afterTesting();
+    }
+
+    @Before
+    public void beforeEach() {
+        Utils.reset();
+    }
+
+    @Test
+    public void basicTesting() throws InterruptedException, IOException, HttpResponseException {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+            @Override
+            public String getPath() {
+                return "/test";
+            }
+
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                super.sendTextResponse(200, super.getConnectionUriDomain(req), resp);
+            }
+        });
+
+        {
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/test", null, 1000, 1000, null);
+            assertEquals("localhost:3567", response);
+        }
+
+        {
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "",
+                    "http://127.0.0.1:3567/test", null, 1000, 1000, null);
+            assertEquals("127.0.0.1:3567", response);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void basicTestingWithDifferentAPIKey()
+            throws InterruptedException, IOException, HttpResponseException, InvalidConfigException,
+            io.supertokens.test.httpRequest.HttpResponseException {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject tenantConfig = new JsonObject();
+        tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
+        JsonObject tenant2Config = new JsonObject();
+        tenant2Config.add("api_keys", new JsonPrimitive("abcasdfaliojmo3jenbogweg=-9382923"));
+
+        Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
+                new TenantConfig("localhost:3567", null, new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        tenantConfig),
+                new TenantConfig("127.0.0.1:3567", null, new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        tenant2Config)});
+
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+            @Override
+            public String getPath() {
+                return "/test";
+            }
+
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                super.sendTextResponse(200, super.getConnectionUriDomain(req), resp);
+            }
+        });
+
+        {
+            String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(),
+                    "abctijenbogweg=-2438243u98", "");
+            assertEquals("localhost:3567", response);
+        }
+
+        {
+            String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://127.0.0.1:3567/test", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(),
+                    "abcasdfaliojmo3jenbogweg=-9382923", "");
+            assertEquals("127.0.0.1:3567", response);
+        }
+
+        {
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(),
+                        "", "");
+                fail();
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 401
+                        && e.getMessage().equals("Http error. Status Code: 401. Message: Invalid API key"));
+            }
+        }
+
+        {
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://127.0.0.1:3567/test", new JsonObject(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(),
+                        "abctijenbogweg=-2438243u98", "");
+                fail();
+            } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+                assertTrue(e.statusCode == 401
+                        && e.getMessage().equals("Http error. Status Code: 401. Message: Invalid API key"));
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+}
