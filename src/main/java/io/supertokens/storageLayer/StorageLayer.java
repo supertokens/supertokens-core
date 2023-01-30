@@ -431,6 +431,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
+    @TestOnly
+    public static UserRolesSQLStorage getUserRolesStorage(Main main) {
+        return getUserRolesStorage(null, null, main);
+    }
+
     public static UserIdMappingStorage getUserIdMappingStorage(String connectionUriDomain, String tenantId, Main main) {
         synchronized (lock) {
             if (getInstance(connectionUriDomain, tenantId, main) == null) {
