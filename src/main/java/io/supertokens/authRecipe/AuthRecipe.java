@@ -129,7 +129,7 @@ public class AuthRecipe {
             throws StorageQueryException {
         // non auth recipe deletion
         StorageLayer.getUserMetadataStorage(main).deleteUserMetadata(userId);
-        StorageLayer.getSessionStorage(main).deleteSessionsOfUser(userId);
+        StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main).deleteSessionsOfUser(userId);
         StorageLayer.getEmailVerificationStorage(main).deleteEmailVerificationUserInfo(userId);
         StorageLayer.getUserRolesStorage(connectionUriDomain, tenantId, main).deleteAllRolesForUser(userId);
     }

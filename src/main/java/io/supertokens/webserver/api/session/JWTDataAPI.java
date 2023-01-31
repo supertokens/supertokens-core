@@ -27,10 +27,10 @@ import io.supertokens.session.Session;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class JWTDataAPI extends WebserverAPI {
@@ -56,7 +56,8 @@ public class JWTDataAPI extends WebserverAPI {
         assert userDataInJWT != null;
 
         try {
-            Session.updateSession(main, sessionHandle, null, userDataInJWT, null);
+            Session.updateSession(this.getConnectionUriDomain(req), this.getTenantId(req), main, sessionHandle, null,
+                    userDataInJWT, null);
 
             JsonObject result = new JsonObject();
 
@@ -81,7 +82,8 @@ public class JWTDataAPI extends WebserverAPI {
         assert sessionHandle != null;
 
         try {
-            JsonElement jwtPayload = Session.getJWTData(main, sessionHandle);
+            JsonElement jwtPayload = Session.getJWTData(this.getConnectionUriDomain(req), this.getTenantId(req), main,
+                    sessionHandle);
 
             JsonObject result = new JsonObject();
 

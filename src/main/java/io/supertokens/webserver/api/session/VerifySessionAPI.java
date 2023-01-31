@@ -16,10 +16,8 @@
 
 package io.supertokens.webserver.api.session;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
@@ -34,10 +32,10 @@ import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -66,7 +64,8 @@ public class VerifySessionAPI extends WebserverAPI {
         assert enableAntiCsrf != null;
 
         try {
-            SessionInformationHolder sessionInfo = Session.getSession(main, accessToken, antiCsrfToken, enableAntiCsrf,
+            SessionInformationHolder sessionInfo = Session.getSession(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, accessToken, antiCsrfToken, enableAntiCsrf,
                     doAntiCsrfCheck);
 
             JsonObject result = sessionInfo.toJsonObject();

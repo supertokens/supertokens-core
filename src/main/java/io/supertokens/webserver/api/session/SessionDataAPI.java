@@ -26,10 +26,10 @@ import io.supertokens.session.Session;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class SessionDataAPI extends WebserverAPI {
@@ -51,7 +51,8 @@ public class SessionDataAPI extends WebserverAPI {
         assert sessionHandle != null;
 
         try {
-            JsonObject userDataInDatabase = Session.getSessionData(main, sessionHandle);
+            JsonObject userDataInDatabase = Session.getSessionData(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, sessionHandle);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -78,7 +79,8 @@ public class SessionDataAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         try {
-            Session.updateSession(main, sessionHandle, userDataInDatabase, null, null);
+            Session.updateSession(this.getConnectionUriDomain(req), this.getTenantId(req), main, sessionHandle,
+                    userDataInDatabase, null, null);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

@@ -19,7 +19,6 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
@@ -34,13 +33,13 @@ import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.NoSuchPaddingException;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.security.InvalidAlgorithmParameterException;
 import java.security.InvalidKeyException;
@@ -74,7 +73,8 @@ public class SessionAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         try {
-            SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
+            SessionInformationHolder sessionInfo = Session.createNewSession(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf);
 
             JsonObject result = sessionInfo.toJsonObject();

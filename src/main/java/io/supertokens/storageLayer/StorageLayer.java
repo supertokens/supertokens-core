@@ -328,7 +328,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    @Deprecated
+    @TestOnly
     public static SessionStorage getSessionStorage(Main main) {
         return getSessionStorage(null, null, main);
     }

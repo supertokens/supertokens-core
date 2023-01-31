@@ -54,16 +54,43 @@ import java.util.UUID;
 public class Session {
 
     @TestOnly
-    public static SessionInformationHolder createNewSession(Main main, @Nonnull String userId,
-            @Nonnull JsonObject userDataInJWT, @Nonnull JsonObject userDataInDatabase)
+    public static SessionInformationHolder createNewSession(String connectionUriDomain, String tenantId, Main main,
+                                                            @Nonnull String userId,
+                                                            @Nonnull JsonObject userDataInJWT,
+                                                            @Nonnull JsonObject userDataInDatabase)
             throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
-        return createNewSession(main, userId, userDataInJWT, userDataInDatabase, false);
+        return createNewSession(connectionUriDomain, tenantId, main, userId, userDataInJWT, userDataInDatabase, false);
     }
 
+    @TestOnly
+    public static SessionInformationHolder createNewSession(Main main,
+                                                            @Nonnull String userId,
+                                                            @Nonnull JsonObject userDataInJWT,
+                                                            @Nonnull JsonObject userDataInDatabase)
+            throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
+            InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
+            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
+        return createNewSession(null, null, main, userId, userDataInJWT, userDataInDatabase);
+    }
+
+    @TestOnly
     public static SessionInformationHolder createNewSession(Main main, @Nonnull String userId,
-            @Nonnull JsonObject userDataInJWT, @Nonnull JsonObject userDataInDatabase, boolean enableAntiCsrf)
+                                                            @Nonnull JsonObject userDataInJWT,
+                                                            @Nonnull JsonObject userDataInDatabase,
+                                                            boolean enableAntiCsrf)
+            throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
+            InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
+            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
+        return createNewSession(null, null, main, userId, userDataInJWT, userDataInDatabase, enableAntiCsrf);
+    }
+
+    public static SessionInformationHolder createNewSession(String connectionUriDomain, String tenantId, Main main,
+                                                            @Nonnull String userId,
+                                                            @Nonnull JsonObject userDataInJWT,
+                                                            @Nonnull JsonObject userDataInDatabase,
+                                                            boolean enableAntiCsrf)
             throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
@@ -76,7 +103,7 @@ public class Session {
                 Utils.hashSHA256(refreshToken.token), null, userDataInJWT, antiCsrfToken, System.currentTimeMillis(),
                 null);
 
-        StorageLayer.getSessionStorage(main).createNewSession(sessionHandle, userId,
+        StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main).createNewSession(sessionHandle, userId,
                 Utils.hashSHA256(Utils.hashSHA256(refreshToken.token)), userDataInDatabase, refreshToken.expiry,
                 userDataInJWT, refreshToken.createdTime); // TODO: add lmrt to database
 
@@ -85,6 +112,16 @@ public class Session {
         return new SessionInformationHolder(new SessionInfo(sessionHandle, userId, userDataInJWT), accessToken,
                 refreshToken, idRefreshToken, antiCsrfToken);
 
+    }
+
+    @TestOnly
+    public static SessionInformationHolder regenerateToken(Main main,
+                                                           @Nonnull String token,
+                                                           @Nullable JsonObject userDataInJWT)
+            throws StorageQueryException, StorageTransactionLogicException,
+            UnauthorisedException, InvalidKeySpecException, SignatureException, NoSuchAlgorithmException,
+            InvalidKeyException, UnsupportedEncodingException {
+        return regenerateToken(null, null, main, token, userDataInJWT);
     }
 
     /*
@@ -102,8 +139,10 @@ public class Session {
      *
      *
      */
-    public static SessionInformationHolder regenerateToken(Main main, @Nonnull String token,
-            @Nullable JsonObject userDataInJWT) throws StorageQueryException, StorageTransactionLogicException,
+    public static SessionInformationHolder regenerateToken(String connectionUriDomain, String tenantId, Main main,
+                                                           @Nonnull String token,
+                                                           @Nullable JsonObject userDataInJWT)
+            throws StorageQueryException, StorageTransactionLogicException,
             UnauthorisedException, InvalidKeySpecException, SignatureException, NoSuchAlgorithmException,
             InvalidKeyException, UnsupportedEncodingException {
 
@@ -111,11 +150,12 @@ public class Session {
         // changed for it...
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessTokenWithoutVerifying(token);
 
-        JsonObject newJWTUserPayload = userDataInJWT == null ? getSession(main, accessToken.sessionHandle).userDataInJWT
+        JsonObject newJWTUserPayload = userDataInJWT == null ?
+                getSession(connectionUriDomain, tenantId, main, accessToken.sessionHandle).userDataInJWT
                 : userDataInJWT;
         long lmrt = System.currentTimeMillis();
 
-        updateSession(main, accessToken.sessionHandle, null, newJWTUserPayload, lmrt);
+        updateSession(connectionUriDomain, tenantId, main, accessToken.sessionHandle, null, newJWTUserPayload, lmrt);
 
         // if the above succeeds but the below fails, it's OK since the client will get server error and will try
         // again. In this case, the JWT data will be updated again since the API will get the old JWT. In case there
@@ -138,9 +178,19 @@ public class Session {
                 null);
     }
 
-    // pass antiCsrfToken to disable csrf check for this request
+    @TestOnly
     public static SessionInformationHolder getSession(Main main, @Nonnull String token, @Nullable String antiCsrfToken,
-            boolean enableAntiCsrf, Boolean doAntiCsrfCheck) throws StorageQueryException,
+                                                      boolean enableAntiCsrf, Boolean doAntiCsrfCheck)
+            throws StorageQueryException,
+            StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException {
+        return getSession(null, null, main, token, antiCsrfToken, enableAntiCsrf, doAntiCsrfCheck);
+    }
+
+    // pass antiCsrfToken to disable csrf check for this request
+    public static SessionInformationHolder getSession(String connectionUriDomain, String tenantId, Main main,
+                                                      @Nonnull String token, @Nullable String antiCsrfToken,
+                                                      boolean enableAntiCsrf, Boolean doAntiCsrfCheck)
+            throws StorageQueryException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException {
 
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessToken(main, token,
@@ -153,7 +203,8 @@ public class Session {
 
         io.supertokens.pluginInterface.session.SessionInfo sessionInfoForBlacklisting = null;
         if (Config.getConfig(main).getAccessTokenBlacklisting()) {
-            sessionInfoForBlacklisting = StorageLayer.getSessionStorage(main).getSession(accessToken.sessionHandle);
+            sessionInfoForBlacklisting = StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main)
+                    .getSession(accessToken.sessionHandle);
             if (sessionInfoForBlacklisting == null) {
                 throw new UnauthorisedException("Either the session has ended or has been blacklisted");
             }
@@ -171,8 +222,9 @@ public class Session {
 
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.GET_SESSION_NEW_TOKENS, null);
 
-        if (StorageLayer.getSessionStorage(main).getType() == STORAGE_TYPE.SQL) {
-            SessionSQLStorage storage = (SessionSQLStorage) StorageLayer.getSessionStorage(main);
+        if (StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main).getType() == STORAGE_TYPE.SQL) {
+            SessionSQLStorage storage = (SessionSQLStorage) StorageLayer.getSessionStorage(connectionUriDomain,
+                    tenantId, main);
             try {
                 return storage.startTransaction(con -> {
                     try {
@@ -234,8 +286,10 @@ public class Session {
                 }
                 throw e;
             }
-        } else if (StorageLayer.getSessionStorage(main).getType() == STORAGE_TYPE.NOSQL_1) {
-            SessionNoSQLStorage_1 storage = (SessionNoSQLStorage_1) StorageLayer.getSessionStorage(main);
+        } else if (StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main).getType() ==
+                STORAGE_TYPE.NOSQL_1) {
+            SessionNoSQLStorage_1 storage = (SessionNoSQLStorage_1) StorageLayer.getSessionStorage(connectionUriDomain,
+                    tenantId, main);
             while (true) {
                 try {
 
@@ -294,8 +348,18 @@ public class Session {
         }
     }
 
+    @TestOnly
     public static SessionInformationHolder refreshSession(Main main, @Nonnull String refreshToken,
-            @Nullable String antiCsrfToken, boolean enableAntiCsrf) throws StorageTransactionLogicException,
+                                                          @Nullable String antiCsrfToken, boolean enableAntiCsrf)
+            throws StorageTransactionLogicException,
+            UnauthorisedException, StorageQueryException, TokenTheftDetectedException {
+        return refreshSession(null, null, main, refreshToken, antiCsrfToken, enableAntiCsrf);
+    }
+
+    public static SessionInformationHolder refreshSession(String connectionUriDomain, String tenantId, Main main,
+                                                          @Nonnull String refreshToken,
+                                                          @Nullable String antiCsrfToken, boolean enableAntiCsrf)
+            throws StorageTransactionLogicException,
             UnauthorisedException, StorageQueryException, TokenTheftDetectedException {
         RefreshToken.RefreshTokenInfo refreshTokenInfo = RefreshToken.getInfoFromRefreshToken(main, refreshToken);
 
@@ -306,11 +370,14 @@ public class Session {
             }
         }
 
-        return refreshSessionHelper(main, refreshToken, refreshTokenInfo, enableAntiCsrf);
+        return refreshSessionHelper(connectionUriDomain, tenantId, main, refreshToken, refreshTokenInfo,
+                enableAntiCsrf);
     }
 
-    private static SessionInformationHolder refreshSessionHelper(Main main, String refreshToken,
-            RefreshToken.RefreshTokenInfo refreshTokenInfo, boolean enableAntiCsrf)
+    private static SessionInformationHolder refreshSessionHelper(String connectionUriDomain, String tenantId, Main main,
+                                                                 String refreshToken,
+                                                                 RefreshToken.RefreshTokenInfo refreshTokenInfo,
+                                                                 boolean enableAntiCsrf)
             throws StorageTransactionLogicException, UnauthorisedException, StorageQueryException,
             TokenTheftDetectedException {
         ////////////////////////////////////////// SQL/////////////////////////////////////////////
@@ -319,8 +386,9 @@ public class Session {
         //////////////////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////
-        if (StorageLayer.getSessionStorage(main).getType() == STORAGE_TYPE.SQL) {
-            SessionSQLStorage storage = (SessionSQLStorage) StorageLayer.getSessionStorage(main);
+        if (StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main).getType() == STORAGE_TYPE.SQL) {
+            SessionSQLStorage storage = (SessionSQLStorage) StorageLayer.getSessionStorage(connectionUriDomain,
+                    tenantId, main);
             try {
                 return storage.startTransaction(con -> {
                     try {
@@ -357,15 +425,16 @@ public class Session {
                                 && refreshTokenInfo.parentRefreshTokenHash2 != null
                                 && refreshTokenInfo.parentRefreshTokenHash2.equals(sessionInfo.refreshTokenHash2))
                                 || (refreshTokenInfo.parentRefreshTokenHash1 != null
-                                        && Utils.hashSHA256(refreshTokenInfo.parentRefreshTokenHash1)
-                                                .equals(sessionInfo.refreshTokenHash2))) {
+                                && Utils.hashSHA256(refreshTokenInfo.parentRefreshTokenHash1)
+                                .equals(sessionInfo.refreshTokenHash2))) {
                             storage.updateSessionInfo_Transaction(con, sessionHandle,
                                     Utils.hashSHA256(Utils.hashSHA256(refreshToken)),
                                     System.currentTimeMillis() + Config.getConfig(main).getRefreshTokenValidity());
 
                             storage.commitTransaction(con);
 
-                            return refreshSessionHelper(main, refreshToken, refreshTokenInfo, enableAntiCsrf);
+                            return refreshSessionHelper(connectionUriDomain, tenantId, main, refreshToken,
+                                    refreshTokenInfo, enableAntiCsrf);
                         }
 
                         storage.commitTransaction(con);
@@ -394,8 +463,10 @@ public class Session {
             //////////////////////////////////////////////////////////////////////////////////////////////
             //////////////////////////////////////////////////////////////////////////////////////////////
             //////////////////////////////////////////////////////////////////////////////////////////////
-        } else if (StorageLayer.getSessionStorage(main).getType() == STORAGE_TYPE.NOSQL_1) {
-            SessionNoSQLStorage_1 storage = (SessionNoSQLStorage_1) StorageLayer.getSessionStorage(main);
+        } else if (StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main).getType() ==
+                STORAGE_TYPE.NOSQL_1) {
+            SessionNoSQLStorage_1 storage = (SessionNoSQLStorage_1) StorageLayer.getSessionStorage(connectionUriDomain,
+                    tenantId, main);
             while (true) {
                 try {
                     String sessionHandle = refreshTokenInfo.sessionHandle;
@@ -429,8 +500,8 @@ public class Session {
                             && refreshTokenInfo.parentRefreshTokenHash2 != null
                             && refreshTokenInfo.parentRefreshTokenHash2.equals(sessionInfo.refreshTokenHash2))
                             || (refreshTokenInfo.parentRefreshTokenHash1 != null
-                                    && Utils.hashSHA256(refreshTokenInfo.parentRefreshTokenHash1)
-                                            .equals(sessionInfo.refreshTokenHash2))) {
+                            && Utils.hashSHA256(refreshTokenInfo.parentRefreshTokenHash1)
+                            .equals(sessionInfo.refreshTokenHash2))) {
                         boolean success = storage.updateSessionInfo_Transaction(sessionHandle,
                                 Utils.hashSHA256(Utils.hashSHA256(refreshToken)),
                                 System.currentTimeMillis() + Config.getConfig(main).getRefreshTokenValidity(),
@@ -438,7 +509,8 @@ public class Session {
                         if (!success) {
                             continue;
                         }
-                        return refreshSessionHelper(main, refreshToken, refreshTokenInfo, enableAntiCsrf);
+                        return refreshSessionHelper(connectionUriDomain, tenantId, main, refreshToken, refreshTokenInfo,
+                                enableAntiCsrf);
                     }
 
                     throw new TokenTheftDetectedException(sessionHandle, sessionInfo.userId);
@@ -455,9 +527,18 @@ public class Session {
         }
     }
 
-    public static String[] revokeSessionUsingSessionHandles(Main main, String[] sessionHandles)
+    @TestOnly
+    public static String[] revokeSessionUsingSessionHandles(Main main,
+                                                            String[] sessionHandles)
             throws StorageQueryException {
-        int numberOfSessionsRevoked = StorageLayer.getSessionStorage(main).deleteSession(sessionHandles);
+        return revokeSessionUsingSessionHandles(null, null, main, sessionHandles);
+    }
+
+    public static String[] revokeSessionUsingSessionHandles(String connectionUriDomain, String tenantId, Main main,
+                                                            String[] sessionHandles)
+            throws StorageQueryException {
+        int numberOfSessionsRevoked = StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main)
+                .deleteSession(sessionHandles);
 
         // most of the time we will enter the below if statement
         if (numberOfSessionsRevoked == sessionHandles.length) {
@@ -471,7 +552,7 @@ public class Session {
                 break;
             }
 
-            if (StorageLayer.getSessionStorage(main).getSession(sessionHandle) == null) {
+            if (StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main).getSession(sessionHandle) == null) {
                 result[indexIntoResult] = sessionHandle;
                 indexIntoResult++;
             }
@@ -480,20 +561,45 @@ public class Session {
         return result;
     }
 
-    public static String[] revokeAllSessionsForUser(Main main, String userId) throws StorageQueryException {
-        String[] sessionHandles = getAllNonExpiredSessionHandlesForUser(main, userId);
-        return revokeSessionUsingSessionHandles(main, sessionHandles);
+    @TestOnly
+    public static String[] revokeAllSessionsForUser(Main main,
+                                                    String userId) throws StorageQueryException {
+        return revokeAllSessionsForUser(null, null, main, userId);
     }
 
+    public static String[] revokeAllSessionsForUser(String connectionUriDomain, String tenantId, Main main,
+                                                    String userId) throws StorageQueryException {
+        String[] sessionHandles = getAllNonExpiredSessionHandlesForUser(connectionUriDomain, tenantId, main, userId);
+        return revokeSessionUsingSessionHandles(connectionUriDomain, tenantId, main, sessionHandles);
+    }
+
+    @TestOnly
     public static String[] getAllNonExpiredSessionHandlesForUser(Main main, String userId)
             throws StorageQueryException {
-        return StorageLayer.getSessionStorage(main).getAllNonExpiredSessionHandlesForUser(userId);
+        return getAllNonExpiredSessionHandlesForUser(null, null, main, userId);
+    }
+
+    public static String[] getAllNonExpiredSessionHandlesForUser(String connectionUriDomain, String tenantId, Main main,
+                                                                 String userId)
+            throws StorageQueryException {
+        return StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main)
+                .getAllNonExpiredSessionHandlesForUser(userId);
+    }
+
+    @TestOnly
+    @Deprecated
+    public static JsonObject getSessionData(Main main,
+                                            String sessionHandle)
+            throws StorageQueryException, UnauthorisedException {
+        return getSessionData(null, null, main, sessionHandle);
     }
 
     @Deprecated
-    public static JsonObject getSessionData(Main main, String sessionHandle)
+    public static JsonObject getSessionData(String connectionUriDomain, String tenantId, Main main,
+                                            String sessionHandle)
             throws StorageQueryException, UnauthorisedException {
-        io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
+        io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(connectionUriDomain,
+                        tenantId, main)
                 .getSession(sessionHandle);
         if (session == null || session.expiry <= System.currentTimeMillis()) {
             throw new UnauthorisedException("Session does not exist.");
@@ -501,10 +607,18 @@ public class Session {
         return session.userDataInDatabase;
     }
 
+    @TestOnly
     @Deprecated
     public static JsonObject getJWTData(Main main, String sessionHandle)
             throws StorageQueryException, UnauthorisedException {
-        io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
+        return getJWTData(null, null, main, sessionHandle);
+    }
+
+    @Deprecated
+    public static JsonObject getJWTData(String connectionUriDomain, String tenantId, Main main, String sessionHandle)
+            throws StorageQueryException, UnauthorisedException {
+        io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(connectionUriDomain,
+                        tenantId, main)
                 .getSession(sessionHandle);
         if (session == null || session.expiry <= System.currentTimeMillis()) {
             throw new UnauthorisedException("Session does not exist.");
@@ -512,14 +626,24 @@ public class Session {
         return session.userDataInJWT;
     }
 
+    @TestOnly
+    public static io.supertokens.pluginInterface.session.SessionInfo getSession(Main main,
+                                                                                String sessionHandle)
+            throws StorageQueryException, UnauthorisedException {
+        return getSession(null, null, main, sessionHandle);
+    }
+
     /**
      * Used to retrieve all session information for a given session handle.
      * Used by:
      * - /recipe/session GET
      */
-    public static io.supertokens.pluginInterface.session.SessionInfo getSession(Main main, String sessionHandle)
+    public static io.supertokens.pluginInterface.session.SessionInfo getSession(String connectionUriDomain,
+                                                                                String tenantId, Main main,
+                                                                                String sessionHandle)
             throws StorageQueryException, UnauthorisedException {
-        io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
+        io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(connectionUriDomain,
+                        tenantId, main)
                 .getSession(sessionHandle);
 
         // If there is no session, or session is expired
@@ -530,17 +654,29 @@ public class Session {
         return session;
     }
 
-    public static void updateSession(Main main, String sessionHandle, @Nullable JsonObject sessionData,
-            @Nullable JsonObject jwtData, @Nullable Long lmrt) throws StorageQueryException, UnauthorisedException {
-        io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
+    @TestOnly
+    public static void updateSession(Main main, String sessionHandle,
+                                     @Nullable JsonObject sessionData,
+                                     @Nullable JsonObject jwtData, @Nullable Long lmrt)
+            throws StorageQueryException, UnauthorisedException {
+        updateSession(null, null, main, sessionHandle, sessionData, jwtData, lmrt);
+    }
+
+    public static void updateSession(String connectionUriDomain, String tenantId, Main main, String sessionHandle,
+                                     @Nullable JsonObject sessionData,
+                                     @Nullable JsonObject jwtData, @Nullable Long lmrt)
+            throws StorageQueryException, UnauthorisedException {
+        io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(connectionUriDomain,
+                        tenantId, main)
                 .getSession(sessionHandle);
         // If there is no session, or session is expired
         if (session == null || session.expiry <= System.currentTimeMillis()) {
             throw new UnauthorisedException("Session does not exist.");
         }
 
-        int numberOfRowsAffected = StorageLayer.getSessionStorage(main).updateSession(sessionHandle, sessionData,
-                jwtData); // TODO: update lmrt as well
+        int numberOfRowsAffected = StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main)
+                .updateSession(sessionHandle, sessionData,
+                        jwtData); // TODO: update lmrt as well
         if (numberOfRowsAffected != 1) {
             throw new UnauthorisedException("Session does not exist.");
         }

@@ -25,10 +25,10 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.Session;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class SessionRemoveAPI extends WebserverAPI {
@@ -73,7 +73,8 @@ public class SessionRemoveAPI extends WebserverAPI {
 
         if (userId != null) {
             try {
-                String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(main, userId);
+                String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(this.getConnectionUriDomain(req),
+                        this.getTenantId(req), main, userId);
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();
@@ -87,7 +88,8 @@ public class SessionRemoveAPI extends WebserverAPI {
             }
         } else {
             try {
-                String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(main, sessionHandles);
+                String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(
+                        this.getConnectionUriDomain(req), this.getTenantId(req), main, sessionHandles);
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();

@@ -16,9 +16,7 @@
 
 package io.supertokens.webserver.api.session;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
@@ -30,10 +28,10 @@ import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
@@ -63,7 +61,8 @@ public class SessionRegenerateAPI extends WebserverAPI {
         JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", true);
 
         try {
-            SessionInformationHolder sessionInfo = Session.regenerateToken(main, accessToken, userDataInJWT);
+            SessionInformationHolder sessionInfo = Session.regenerateToken(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, accessToken, userDataInJWT);
 
             JsonObject result = sessionInfo.toJsonObject();
 

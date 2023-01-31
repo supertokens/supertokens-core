@@ -25,10 +25,10 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.Session;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class SessionUserAPI extends WebserverAPI {
@@ -50,7 +50,8 @@ public class SessionUserAPI extends WebserverAPI {
         assert userId != null;
 
         try {
-            String[] sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(main, userId);
+            String[] sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
