@@ -366,7 +366,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    @Deprecated
+    @TestOnly
     public static EmailVerificationSQLStorage getEmailVerificationStorage(Main main) {
         return getEmailVerificationStorage(null, null, main);
     }

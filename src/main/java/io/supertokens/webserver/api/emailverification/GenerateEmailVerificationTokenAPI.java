@@ -26,10 +26,10 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -59,7 +59,8 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
         // but then changed slightly when extracting this into its own recipe
 
         try {
-            String token = EmailVerification.generateEmailVerificationToken(super.main, userId, email);
+            String token = EmailVerification.generateEmailVerificationToken(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), super.main, userId, email);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

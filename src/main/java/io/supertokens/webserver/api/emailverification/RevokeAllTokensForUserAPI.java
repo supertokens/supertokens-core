@@ -23,10 +23,10 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class RevokeAllTokensForUserAPI extends WebserverAPI {
@@ -48,7 +48,8 @@ public class RevokeAllTokensForUserAPI extends WebserverAPI {
         String email = InputParser.parseStringOrThrowError(input, "email", false);
 
         try {
-            EmailVerification.revokeAllTokens(main, userId, email);
+            EmailVerification.revokeAllTokens(this.getConnectionUriDomain(req), this.getTenantId(req), main, userId,
+                    email);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

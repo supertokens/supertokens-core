@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdExcept
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -46,16 +47,19 @@ public class ThirdParty {
     // as seen below. But then, in newer versions, we stopped doing that cause of
     // https://github.com/supertokens/supertokens-core/issues/295, so we changed the API spec.
     @Deprecated
-    public static SignInUpResponse signInUp2_7(Main main, String thirdPartyId, String thirdPartyUserId, String email,
-            boolean isEmailVerified) throws StorageQueryException {
+    public static SignInUpResponse signInUp2_7(String connectionUriDomain, String tenantId, Main main,
+                                               String thirdPartyId, String thirdPartyUserId, String email,
+                                               boolean isEmailVerified) throws StorageQueryException {
         SignInUpResponse response = signInUpHelper(main, thirdPartyId, thirdPartyUserId, email);
 
         if (isEmailVerified) {
             try {
-                StorageLayer.getEmailVerificationStorage(main).startTransaction(con -> {
-                    StorageLayer.getEmailVerificationStorage(main).updateIsEmailVerified_Transaction(con,
-                            response.user.id, response.user.email, true);
-                    StorageLayer.getEmailVerificationStorage(main).commitTransaction(con);
+                StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main).startTransaction(con -> {
+                    StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main)
+                            .updateIsEmailVerified_Transaction(con,
+                                    response.user.id, response.user.email, true);
+                    StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main)
+                            .commitTransaction(con);
                     return null;
                 });
             } catch (StorageTransactionLogicException e) {
@@ -66,13 +70,21 @@ public class ThirdParty {
         return response;
     }
 
+    @Deprecated
+    @TestOnly
+    public static SignInUpResponse signInUp2_7(Main main,
+                                               String thirdPartyId, String thirdPartyUserId, String email,
+                                               boolean isEmailVerified) throws StorageQueryException {
+        return signInUp2_7(null, null, main, thirdPartyId, thirdPartyUserId, email, isEmailVerified);
+    }
+
     public static SignInUpResponse signInUp(Main main, String thirdPartyId, String thirdPartyUserId, String email)
             throws StorageQueryException {
         return signInUpHelper(main, thirdPartyId, thirdPartyUserId, email);
     }
 
     private static SignInUpResponse signInUpHelper(Main main, String thirdPartyId, String thirdPartyUserId,
-            String email) throws StorageQueryException {
+                                                   String email) throws StorageQueryException {
         ThirdPartySQLStorage storage = StorageLayer.getThirdPartyStorage(main);
         while (true) {
             // loop for sign in + sign up
@@ -141,7 +153,8 @@ public class ThirdParty {
 
     @Deprecated
     public static UserPaginationContainer getUsers(Main main, @Nullable String paginationToken, Integer limit,
-            String timeJoinedOrder) throws StorageQueryException, UserPaginationToken.InvalidTokenException {
+                                                   String timeJoinedOrder)
+            throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         UserInfo[] users;
         if (paginationToken == null) {
             users = StorageLayer.getThirdPartyStorage(main).getThirdPartyUsers(limit + 1, timeJoinedOrder);

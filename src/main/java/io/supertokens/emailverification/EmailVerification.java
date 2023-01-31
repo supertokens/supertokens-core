@@ -47,11 +47,20 @@ public class EmailVerification {
         return Config.getConfig(main).getEmailVerificationTokenLifetime();
     }
 
+    @TestOnly
     public static String generateEmailVerificationToken(Main main, String userId, String email)
             throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException,
             EmailAlreadyVerifiedException {
+        return generateEmailVerificationToken(null, null, main, userId, email);
+    }
 
-        if (StorageLayer.getEmailVerificationStorage(main).isEmailVerified(userId, email)) {
+    public static String generateEmailVerificationToken(String connectionUriDomain, String tenantId, Main main,
+                                                        String userId, String email)
+            throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException,
+            EmailAlreadyVerifiedException {
+
+        if (StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main)
+                .isEmailVerified(userId, email)) {
             throw new EmailAlreadyVerifiedException();
         }
 
@@ -77,7 +86,7 @@ public class EmailVerification {
             String hashedToken = getHashedToken(token);
 
             try {
-                StorageLayer.getEmailVerificationStorage(main)
+                StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main)
                         .addEmailVerificationToken(new EmailVerificationTokenInfo(userId, hashedToken,
                                 System.currentTimeMillis() + getEmailVerificationTokenLifetime(main), email));
                 return token;
@@ -86,12 +95,21 @@ public class EmailVerification {
         }
     }
 
-    public static User verifyEmail(Main main, String token) throws StorageQueryException,
+    @TestOnly
+    public static User verifyEmail(Main main, String token)
+            throws StorageQueryException,
+            EmailVerificationInvalidTokenException, NoSuchAlgorithmException, StorageTransactionLogicException {
+        return verifyEmail(null, null, main, token);
+    }
+
+    public static User verifyEmail(String connectionUriDomain, String tenantId, Main main, String token)
+            throws StorageQueryException,
             EmailVerificationInvalidTokenException, NoSuchAlgorithmException, StorageTransactionLogicException {
 
         String hashedToken = getHashedToken(token);
 
-        EmailVerificationSQLStorage storage = StorageLayer.getEmailVerificationStorage(main);
+        EmailVerificationSQLStorage storage = StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId,
+                main);
 
         final EmailVerificationTokenInfo tokenInfo = storage.getEmailVerificationTokenInfo(hashedToken);
         if (tokenInfo == null) {
@@ -139,16 +157,38 @@ public class EmailVerification {
         }
     }
 
-    public static boolean isEmailVerified(Main main, String userId, String email) throws StorageQueryException {
-        return StorageLayer.getEmailVerificationStorage(main).isEmailVerified(userId, email);
+    @TestOnly
+    public static boolean isEmailVerified(Main main, String userId,
+                                          String email) throws StorageQueryException {
+        return isEmailVerified(null, null, main, userId, email);
     }
 
-    public static void revokeAllTokens(Main main, String userId, String email) throws StorageQueryException {
-        StorageLayer.getEmailVerificationStorage(main).revokeAllTokens(userId, email);
+    public static boolean isEmailVerified(String connectionUriDomain, String tenantId, Main main, String userId,
+                                          String email) throws StorageQueryException {
+        return StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main)
+                .isEmailVerified(userId, email);
     }
 
-    public static void unverifyEmail(Main main, String userId, String email) throws StorageQueryException {
-        StorageLayer.getEmailVerificationStorage(main).unverifyEmail(userId, email);
+    @TestOnly
+    public static void revokeAllTokens(Main main, String userId,
+                                       String email) throws StorageQueryException {
+        revokeAllTokens(null, null, main, userId, email);
+    }
+
+    public static void revokeAllTokens(String connectionUriDomain, String tenantId, Main main, String userId,
+                                       String email) throws StorageQueryException {
+        StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main).revokeAllTokens(userId, email);
+    }
+
+    @TestOnly
+    public static void unverifyEmail(Main main, String userId,
+                                     String email) throws StorageQueryException {
+        unverifyEmail(null, null, main, userId, email);
+    }
+
+    public static void unverifyEmail(String connectionUriDomain, String tenantId, Main main, String userId,
+                                     String email) throws StorageQueryException {
+        StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main).unverifyEmail(userId, email);
     }
 
     private static String getHashedToken(String token) throws NoSuchAlgorithmException {

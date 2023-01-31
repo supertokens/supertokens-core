@@ -28,10 +28,10 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
@@ -63,7 +63,8 @@ public class VerifyEmailAPI extends WebserverAPI {
         }
 
         try {
-            User user = EmailVerification.verifyEmail(super.main, token);
+            User user = EmailVerification.verifyEmail(this.getConnectionUriDomain(req), this.getTenantId(req),
+                    super.main, token);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -90,7 +91,8 @@ public class VerifyEmailAPI extends WebserverAPI {
         assert email != null;
 
         try {
-            boolean isVerified = EmailVerification.isEmailVerified(super.main, userId, email);
+            boolean isVerified = EmailVerification.isEmailVerified(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), super.main, userId, email);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
