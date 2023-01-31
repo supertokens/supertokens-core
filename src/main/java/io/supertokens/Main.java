@@ -182,7 +182,7 @@ public class Main {
             }
         }
         try {
-            StorageLayer.getStorage(this).initStorage();
+            StorageLayer.getStorage(null, null, this).initStorage();
         } catch (DbInitException e) {
             throw new QuitProgramException(e);
         }
@@ -247,7 +247,7 @@ public class Main {
 
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change
         Cronjobs.addCronjob(this, DeleteExpiredAccessTokenSigningKeys.init(this, uniqueUserPoolIdsTenants));
-        
+
         // creates password hashing pool
         PasswordHashing.init(this);
 

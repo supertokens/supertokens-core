@@ -37,13 +37,15 @@ import java.util.HashMap;
 
 public class UserIdMapping {
 
-    public static void createUserIdMapping(Main main, String superTokensUserId, String externalUserId,
-            String externalUserIdInfo, boolean force) throws UnknownSuperTokensUserIdException,
+    public static void createUserIdMapping(String connectionUriDomain, String tenantId, Main main,
+                                           String superTokensUserId, String externalUserId,
+                                           String externalUserIdInfo, boolean force)
+            throws UnknownSuperTokensUserIdException,
             UserIdMappingAlreadyExistsException, StorageQueryException, ServletException {
         // if a userIdMapping is created with force, then we skip the following checks
         if (!force) {
             // check that none of the non-auth recipes are using the superTokensUserId
-            assertThatUserIdIsNotBeingUsedInNonAuthRecipes(main, superTokensUserId);
+            assertThatUserIdIsNotBeingUsedInNonAuthRecipes(connectionUriDomain, tenantId, main, superTokensUserId);
 
             // We do not allow for a UserIdMapping to be created when the externalUserId is a SuperTokens userId.
             // There could be a case where User_1 has a userId mapping and a new SuperTokens User, User_2 is created
@@ -64,7 +66,8 @@ public class UserIdMapping {
     }
 
     public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(Main main, String userId,
-            UserIdType userIdType) throws StorageQueryException {
+                                                                                              UserIdType userIdType)
+            throws StorageQueryException {
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
 
         if (userIdType == UserIdType.SUPERTOKENS) {
@@ -95,7 +98,8 @@ public class UserIdMapping {
         throw new IllegalStateException("Retrieved more than 2 UserId Mapping entries for a single userId.");
     }
 
-    public static boolean deleteUserIdMapping(Main main, String userId, UserIdType userIdType, boolean force)
+    public static boolean deleteUserIdMapping(String connectionUriDomain, String tenantId, Main main, String userId,
+                                              UserIdType userIdType, boolean force)
             throws StorageQueryException, ServletException {
 
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
@@ -119,7 +123,7 @@ public class UserIdMapping {
             String externalId = mapping.externalUserId;
 
             // check if externalId is used in any non-auth recipes
-            assertThatUserIdIsNotBeingUsedInNonAuthRecipes(main, externalId);
+            assertThatUserIdIsNotBeingUsedInNonAuthRecipes(connectionUriDomain, tenantId, main, externalId);
         }
 
         // db is in state A3
@@ -138,8 +142,10 @@ public class UserIdMapping {
         return storage.deleteUserIdMapping(userId, false);
     }
 
-    public static boolean updateOrDeleteExternalUserIdInfo(Main main, String userId, UserIdType userIdType,
-            @Nullable String externalUserIdInfo) throws StorageQueryException {
+    public static boolean updateOrDeleteExternalUserIdInfo(String connectionUriDomain, String tenantId, Main main,
+                                                           String userId, UserIdType userIdType,
+                                                           @Nullable String externalUserIdInfo)
+            throws StorageQueryException {
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
 
         if (userIdType == UserIdType.SUPERTOKENS) {
@@ -162,39 +168,45 @@ public class UserIdMapping {
         return StorageLayer.getUserIdMappingStorage(main).getUserIdMappingForSuperTokensIds(userIds);
     }
 
-    private static void assertThatUserIdIsNotBeingUsedInNonAuthRecipes(Main main, String userId)
+    private static void assertThatUserIdIsNotBeingUsedInNonAuthRecipes(String connectionUriDomain, String tenantId,
+                                                                       Main main, String userId)
             throws StorageQueryException, ServletException {
         {
-            if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(SessionStorage.class.getName(),
-                    userId)) {
+            if (StorageLayer.getStorage(connectionUriDomain, tenantId, main)
+                    .isUserIdBeingUsedInNonAuthRecipe(SessionStorage.class.getName(),
+                            userId)) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("UserId is already in use in Session recipe"));
             }
         }
         {
-            if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(UserMetadataStorage.class.getName(),
-                    userId)) {
+            if (StorageLayer.getStorage(connectionUriDomain, tenantId, main)
+                    .isUserIdBeingUsedInNonAuthRecipe(UserMetadataStorage.class.getName(),
+                            userId)) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("UserId is already in use in UserMetadata recipe"));
             }
         }
         {
-            if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(UserRolesStorage.class.getName(),
-                    userId)) {
+            if (StorageLayer.getStorage(connectionUriDomain, tenantId, main)
+                    .isUserIdBeingUsedInNonAuthRecipe(UserRolesStorage.class.getName(),
+                            userId)) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("UserId is already in use in UserRoles recipe"));
             }
         }
         {
-            if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(EmailVerificationStorage.class.getName(),
-                    userId)) {
+            if (StorageLayer.getStorage(connectionUriDomain, tenantId, main)
+                    .isUserIdBeingUsedInNonAuthRecipe(EmailVerificationStorage.class.getName(),
+                            userId)) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("UserId is already in use in EmailVerification recipe"));
             }
         }
         {
-            if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(JWTRecipeStorage.class.getName(),
-                    userId)) {
+            if (StorageLayer.getStorage(connectionUriDomain, tenantId, main)
+                    .isUserIdBeingUsedInNonAuthRecipe(JWTRecipeStorage.class.getName(),
+                            userId)) {
                 throw new ServletException(new WebserverAPI.BadRequestException("Should never come here"));
             }
         }

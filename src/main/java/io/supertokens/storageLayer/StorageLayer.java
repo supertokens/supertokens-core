@@ -134,6 +134,18 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
+    public static void stopLogging(Main main) {
+        if (getInstance(null, null, main) == null) {
+            return;
+        }
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                main.getResourceDistributor()
+                        .getAllResourcesWithResourceKey(RESOURCE_KEY);
+        for (ResourceDistributor.SingletonResource resource : resources.values()) {
+            ((StorageLayer) resource).storage.stopLogging();
+        }
+    }
+
     @TestOnly
     public static void deleteAllInformation(Main main) throws StorageQueryException {
         if (getInstance(null, null, main) == null) {
@@ -251,6 +263,9 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 } catch (DbInitException e) {
                     lastError = e;
                 }
+                ((StorageLayer) resource).storage.initFileLogging(
+                        Config.getConfig(null, null, main).getInfoLogPath(main),
+                        Config.getConfig(null, null, main).getErrorLogPath(main));
             }
             if (lastError != null) {
                 throw lastError;
@@ -273,7 +288,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    @Deprecated
+    @TestOnly
     public static Storage getStorage(Main main) {
         return getStorage(null, null, main);
     }

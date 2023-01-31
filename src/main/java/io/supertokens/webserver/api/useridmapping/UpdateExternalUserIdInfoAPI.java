@@ -24,10 +24,10 @@ import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -89,7 +89,8 @@ public class UpdateExternalUserIdInfoAPI extends WebserverAPI {
         }
 
         try {
-            if (UserIdMapping.updateOrDeleteExternalUserIdInfo(main, userId, userIdType, externalUserIdInfo)) {
+            if (UserIdMapping.updateOrDeleteExternalUserIdInfo(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, userId, userIdType, externalUserIdInfo)) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 super.sendJsonResponse(200, response, resp);

@@ -26,10 +26,10 @@ import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -90,7 +90,8 @@ public class UserIdMappingAPI extends WebserverAPI {
 
         try {
 
-            UserIdMapping.createUserIdMapping(main, superTokensUserId, externalUserId, externalUserIdInfo, force);
+            UserIdMapping.createUserIdMapping(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, superTokensUserId, externalUserId, externalUserIdInfo, force);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

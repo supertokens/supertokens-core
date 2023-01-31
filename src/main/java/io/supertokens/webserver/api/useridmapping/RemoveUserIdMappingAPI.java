@@ -24,10 +24,10 @@ import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -80,7 +80,8 @@ public class RemoveUserIdMappingAPI extends WebserverAPI {
         }
 
         try {
-            boolean didMappingExist = UserIdMapping.deleteUserIdMapping(main, userId, userIdType, force);
+            boolean didMappingExist = UserIdMapping.deleteUserIdMapping(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, userId, userIdType, force);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("didMappingExist", didMappingExist);
