@@ -253,6 +253,18 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         new StorageLayer(resourceKeyToStorageMap.get(key)));
             }
 
+            // we remove storage layers that are no longer being used
+            for (ResourceDistributor.KeyClass key : existingStorageMap.keySet()) {
+                if (((StorageLayer) main.getResourceDistributor()
+                        .getResource(key.getConnectionUriDomain(), key.getTenantId(), RESOURCE_KEY)).storage !=
+                        ((StorageLayer) existingStorageMap.get(key)).storage) {
+                    // this means that this storage layer is no longer being used, so we close it
+                    ((StorageLayer) existingStorageMap.get(key)).storage.close();
+                    ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
+                }
+            }
+
+            // we call init on all the newly saved storage objects.
             DbInitException lastError = null;
             Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
                     main.getResourceDistributor()
@@ -260,12 +272,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             for (ResourceDistributor.SingletonResource resource : resources.values()) {
                 try {
                     ((StorageLayer) resource).storage.initStorage();
+                    ((StorageLayer) resource).storage.initFileLogging(
+                            Config.getConfig(null, null, main).getInfoLogPath(main),
+                            Config.getConfig(null, null, main).getErrorLogPath(main));
                 } catch (DbInitException e) {
                     lastError = e;
                 }
-                ((StorageLayer) resource).storage.initFileLogging(
-                        Config.getConfig(null, null, main).getInfoLogPath(main),
-                        Config.getConfig(null, null, main).getErrorLogPath(main));
             }
             if (lastError != null) {
                 throw lastError;
