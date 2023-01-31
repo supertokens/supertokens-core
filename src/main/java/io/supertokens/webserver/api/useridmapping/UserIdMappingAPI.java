@@ -148,7 +148,8 @@ public class UserIdMappingAPI extends WebserverAPI {
 
         try {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(main, userId, userIdType);
+                    .getUserIdMapping(this.getConnectionUriDomain(req), this.getTenantId(req), main, userId,
+                            userIdType);
             if (userIdMapping == null) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "UNKNOWN_MAPPING_ERROR");

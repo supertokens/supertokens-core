@@ -30,6 +30,7 @@ import io.supertokens.pluginInterface.userroles.UserRolesStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
+import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -65,8 +66,18 @@ public class UserIdMapping {
                 externalUserIdInfo);
     }
 
-    public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(Main main, String userId,
-                                                                                              UserIdType userIdType)
+    @TestOnly
+    public static void createUserIdMapping(Main main,
+                                           String superTokensUserId, String externalUserId,
+                                           String externalUserIdInfo, boolean force)
+            throws UnknownSuperTokensUserIdException,
+            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException {
+        createUserIdMapping(null, null, main, superTokensUserId, externalUserId, externalUserIdInfo, force);
+    }
+
+    public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(
+            String connectionUriDomain, String tenantId, Main main, String userId,
+            UserIdType userIdType)
             throws StorageQueryException {
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
 
@@ -98,6 +109,14 @@ public class UserIdMapping {
         throw new IllegalStateException("Retrieved more than 2 UserId Mapping entries for a single userId.");
     }
 
+    @TestOnly
+    public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(
+            Main main, String userId,
+            UserIdType userIdType)
+            throws StorageQueryException {
+        return getUserIdMapping(null, null, main, userId, userIdType);
+    }
+
     public static boolean deleteUserIdMapping(String connectionUriDomain, String tenantId, Main main, String userId,
                                               UserIdType userIdType, boolean force)
             throws StorageQueryException, ServletException {
@@ -107,7 +126,8 @@ public class UserIdMapping {
         // referring to
         // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
         // we need to check if db is in A3 or A4.
-        io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = getUserIdMapping(main, userId,
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = getUserIdMapping(connectionUriDomain,
+                tenantId, main, userId,
                 UserIdType.ANY);
         if (mapping != null) {
             if (StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(mapping.externalUserId)) {
@@ -142,6 +162,13 @@ public class UserIdMapping {
         return storage.deleteUserIdMapping(userId, false);
     }
 
+    @TestOnly
+    public static boolean deleteUserIdMapping(Main main, String userId,
+                                              UserIdType userIdType, boolean force)
+            throws StorageQueryException, ServletException {
+        return deleteUserIdMapping(null, null, main, userId, userIdType, force);
+    }
+
     public static boolean updateOrDeleteExternalUserIdInfo(String connectionUriDomain, String tenantId, Main main,
                                                            String userId, UserIdType userIdType,
                                                            @Nullable String externalUserIdInfo)
@@ -163,9 +190,26 @@ public class UserIdMapping {
         return storage.updateOrDeleteExternalUserIdInfo(userId, false, externalUserIdInfo);
     }
 
-    public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(Main main, ArrayList<String> userIds)
+    @TestOnly
+    public static boolean updateOrDeleteExternalUserIdInfo(Main main,
+                                                           String userId, UserIdType userIdType,
+                                                           @Nullable String externalUserIdInfo)
+            throws StorageQueryException {
+        return updateOrDeleteExternalUserIdInfo(null, null, main, userId, userIdType, externalUserIdInfo);
+    }
+
+    public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(String connectionUriDomain,
+                                                                                String tenantId, Main main,
+                                                                                ArrayList<String> userIds)
             throws StorageQueryException {
         return StorageLayer.getUserIdMappingStorage(main).getUserIdMappingForSuperTokensIds(userIds);
+    }
+
+    @TestOnly
+    public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(Main main,
+                                                                                ArrayList<String> userIds)
+            throws StorageQueryException {
+        return getUserIdMappingForSuperTokensUserIds(null, null, main, userIds);
     }
 
     private static void assertThatUserIdIsNotBeingUsedInNonAuthRecipes(String connectionUriDomain, String tenantId,
@@ -211,5 +255,4 @@ public class UserIdMapping {
             }
         }
     }
-
 }
