@@ -306,13 +306,13 @@ public class GeneralQueries {
             if (timeJoined != null && userId != null) {
                 String Query = "SELECT user_id, recipe_id FROM(SELECT au.user_id, recipe_id, au.time_joined FROM "+ getConfig(start).getUsersTable() +
                         " au JOIN " + getConfig(start).getThirdPartyUsersTable() + " tu ON au.user_id = tu.user_id WHERE tu" +
-                        ".email LIKE '" + search + "%' UNION SELECT au.user_id, recipe_id, au.time_joined FROM " + getConfig(start).getUsersTable() +
-                        " au JOIN " + getConfig(start).getPasswordlessUsersTable() + " pu ON au.user_id = pu.user_id" +
-                        " WHERE pu.email LIKE '" + search + "%' OR pu.phone_number LIKE '" + search + "%' UNION " +
-                        "SELECT au.user_id, recipe_id, au.time_joined FROM "+ getConfig(start).getUsersTable() +" au JOIN "+
-                        getConfig(start).getEmailPasswordUsersTable() + " eu ON au.user_id = eu.user_id" +
-                        " WHERE eu.email LIKE '"+ search + "%') AS users WHERE time_joined " + timeJoinedOrderSymbol + " ? OR (time_joined = ? AND" +
-                        " user_id <= ?)) ORDER BY time_joined ?,user_id DESC LIMIT ?";
+                                ".email LIKE '" + search + "%' UNION SELECT au.user_id, recipe_id, au.time_joined FROM " + getConfig(start).getUsersTable() +
+                                " au JOIN " + getConfig(start).getPasswordlessUsersTable() + " pu ON au.user_id = pu.user_id" +
+                                " WHERE pu.email LIKE '" + search + "%' OR pu.phone_number LIKE '" + search + "%' UNION " +
+                                "SELECT au.user_id, recipe_id, au.time_joined FROM "+ getConfig(start).getUsersTable() +" au JOIN "+
+                                getConfig(start).getEmailPasswordUsersTable() + " eu ON au.user_id = eu.user_id" +
+                                " WHERE eu.email LIKE '"+ search + "%') AS users WHERE time_joined " + timeJoinedOrderSymbol + " " + timeJoined +" OR (time_joined = "+ timeJoined + " AND" +
+                        " user_id <= "+ userId + ")) ORDER BY time_joined " + timeJoinedOrder +" ,user_id DESC LIMIT " + limit;
                 System.out.println(Query);
                 usersFromQuery = execute(start, Query, pst -> {
                     pst.setString(1,search);
