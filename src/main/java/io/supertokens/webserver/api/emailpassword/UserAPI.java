@@ -33,10 +33,10 @@ import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class UserAPI extends WebserverAPI {
@@ -71,11 +71,13 @@ public class UserAPI extends WebserverAPI {
             if (userId != null) {
                 // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(main, userId, UserIdType.ANY);
+                        .getUserIdMapping(this.getConnectionUriDomain(req),
+                                this.getTenantId(req), main, userId, UserIdType.ANY);
                 if (userIdMapping != null) {
                     userId = userIdMapping.superTokensUserId;
                 }
-                user = EmailPassword.getUserUsingId(main, userId);
+                user = EmailPassword.getUserUsingId(this.getConnectionUriDomain(req),
+                        this.getTenantId(req), main, userId);
 
                 // if the userIdMapping exists set the userId in the response to the externalUserId
                 if (user != null && userIdMapping != null) {
@@ -84,11 +86,13 @@ public class UserAPI extends WebserverAPI {
 
             } else {
                 String normalisedEmail = Utils.normaliseEmail(email);
-                user = EmailPassword.getUserUsingEmail(main, normalisedEmail);
+                user = EmailPassword.getUserUsingEmail(this.getConnectionUriDomain(req),
+                        this.getTenantId(req), main, normalisedEmail);
                 // if a userIdMapping exists, set the userId in the response to the externalUserId
                 if (user != null) {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                            .getUserIdMapping(main, user.id, UserIdType.ANY);
+                            .getUserIdMapping(this.getConnectionUriDomain(req),
+                                    this.getTenantId(req), main, user.id, UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
                     }
@@ -132,11 +136,13 @@ public class UserAPI extends WebserverAPI {
         try {
             // if a userIdMapping exists, pass the superTokensUserId to the updateUsersEmailOrPassword
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(main, userId, UserIdType.ANY);
+                    .getUserIdMapping(this.getConnectionUriDomain(req),
+                            this.getTenantId(req), main, userId, UserIdType.ANY);
             if (userIdMapping != null) {
                 userId = userIdMapping.superTokensUserId;
             }
-            EmailPassword.updateUsersEmailOrPassword(main, userId, email, password);
+            EmailPassword.updateUsersEmailOrPassword(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, userId, email, password);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

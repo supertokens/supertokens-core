@@ -31,10 +31,10 @@ import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class SignInAPI extends WebserverAPI {
@@ -63,10 +63,13 @@ public class SignInAPI extends WebserverAPI {
         String normalisedEmail = Utils.normaliseEmail(email);
 
         try {
-            UserInfo user = EmailPassword.signIn(super.main, normalisedEmail, password);
+            UserInfo user = EmailPassword.signIn(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), super.main, normalisedEmail, password);
 
             // if a userIdMapping exists, pass the externalUserId to the response
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main,
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                    this.getConnectionUriDomain(req),
+                    this.getTenantId(req), super.main,
                     user.id, UserIdType.ANY);
             if (userIdMapping != null) {
                 user.id = userIdMapping.externalUserId;

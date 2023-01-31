@@ -20,10 +20,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.emailpassword.ParsedFirebaseSCryptResponse;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -31,10 +29,10 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.Serial;
 
@@ -92,7 +90,9 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
         }
 
         try {
-            EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(main, email,
+            EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(
+                    this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, email,
                     passwordHash, passwordHashingAlgorithm);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

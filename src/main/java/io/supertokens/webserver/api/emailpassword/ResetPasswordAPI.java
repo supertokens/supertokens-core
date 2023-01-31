@@ -29,10 +29,10 @@ import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 
@@ -69,11 +69,13 @@ public class ResetPasswordAPI extends WebserverAPI {
         }
 
         try {
-            String userId = EmailPassword.resetPassword(super.main, token, newPassword);
+            String userId = EmailPassword.resetPassword(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), super.main, token, newPassword);
 
             // if userIdMapping exists, pass the externalUserId to the response
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(main, userId, UserIdType.ANY);
+                    .getUserIdMapping(this.getConnectionUriDomain(req),
+                            this.getTenantId(req), main, userId, UserIdType.ANY);
             if (userIdMapping != null) {
                 userId = userIdMapping.externalUserId;
             }

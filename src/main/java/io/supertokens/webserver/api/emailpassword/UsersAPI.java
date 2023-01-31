@@ -28,10 +28,10 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 @Deprecated
@@ -90,7 +90,8 @@ public class UsersAPI extends WebserverAPI {
         }
 
         try {
-            UserPaginationContainer users = EmailPassword.getUsers(super.main, paginationToken, limit, timeJoinedOrder);
+            UserPaginationContainer users = EmailPassword.getUsers(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), super.main, paginationToken, limit, timeJoinedOrder);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             JsonArray usersJson = new JsonParser().parse(new Gson().toJson(users.users)).getAsJsonArray();

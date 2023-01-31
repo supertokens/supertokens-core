@@ -137,7 +137,7 @@ public class AuthRecipe {
     private static void deleteAuthRecipeUser(String connectionUriDomain, String tenantId, Main main, String userId)
             throws StorageQueryException {
         // auth recipe deletions here only
-        StorageLayer.getEmailPasswordStorage(main).deleteEmailPasswordUser(userId);
+        StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main).deleteEmailPasswordUser(userId);
         StorageLayer.getThirdPartyStorage(main).deleteThirdPartyUser(userId);
         StorageLayer.getPasswordlessStorage(main).deletePasswordlessUser(userId);
     }

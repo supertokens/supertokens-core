@@ -28,10 +28,10 @@ import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -60,11 +60,13 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
         try {
             // if a userIdMapping exists, pass the superTokensUserId to the generatePasswordResetToken
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(main, userId, UserIdType.ANY);
+                    .getUserIdMapping(this.getConnectionUriDomain(req), this.getTenantId(req), main, userId,
+                            UserIdType.ANY);
             if (userIdMapping != null) {
                 userId = userIdMapping.superTokensUserId;
             }
-            String token = EmailPassword.generatePasswordResetToken(super.main, userId);
+            String token = EmailPassword.generatePasswordResetToken(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), super.main, userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

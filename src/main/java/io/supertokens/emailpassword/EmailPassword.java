@@ -38,7 +38,6 @@ import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import jakarta.servlet.ServletException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
@@ -67,7 +66,14 @@ public class EmailPassword {
         return Config.getConfig(main).getPasswordResetTokenLifetime();
     }
 
+    @TestOnly
     public static UserInfo signUp(Main main, @Nonnull String email, @Nonnull String password)
+            throws DuplicateEmailException, StorageQueryException {
+        return signUp(null, null, main, email, password);
+    }
+
+    public static UserInfo signUp(String connectionUriDomain, String tenantId, Main main, @Nonnull String email,
+                                  @Nonnull String password)
             throws DuplicateEmailException, StorageQueryException {
 
         String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
@@ -79,7 +85,7 @@ public class EmailPassword {
 
             try {
                 UserInfo user = new UserInfo(userId, email, hashedPassword, timeJoined);
-                StorageLayer.getEmailPasswordStorage(main).signUp(user);
+                StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main).signUp(user);
 
                 return user;
 
@@ -89,8 +95,18 @@ public class EmailPassword {
         }
     }
 
+    @TestOnly
     public static ImportUserResponse importUserWithPasswordHash(Main main, @Nonnull String email,
-            @Nonnull String passwordHash, @Nullable CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
+                                                                @Nonnull String passwordHash, @Nullable
+                                                                        CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
+            throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
+        return importUserWithPasswordHash(null, null, main, email, passwordHash, hashingAlgorithm);
+    }
+
+    public static ImportUserResponse importUserWithPasswordHash(String connectionUriDomain, String tenantId, Main main,
+                                                                @Nonnull String email,
+                                                                @Nonnull String passwordHash, @Nullable
+                                                                        CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
 
         PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(main, passwordHash, hashingAlgorithm);
@@ -100,15 +116,16 @@ public class EmailPassword {
             long timeJoined = System.currentTimeMillis();
 
             UserInfo userInfo = new UserInfo(userId, email, passwordHash, timeJoined);
-            EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
+            EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main);
 
             try {
-                StorageLayer.getEmailPasswordStorage(main).signUp(userInfo);
+                StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main).signUp(userInfo);
                 return new ImportUserResponse(false, userInfo);
             } catch (DuplicateUserIdException e) {
                 // we retry with a new userId
             } catch (DuplicateEmailException e) {
-                UserInfo userInfoToBeUpdated = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingEmail(email);
+                UserInfo userInfoToBeUpdated = StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main)
+                        .getUserInfoUsingEmail(email);
                 // if user does not exist we retry signup
                 if (userInfoToBeUpdated != null) {
                     String finalPasswordHash = passwordHash;
@@ -124,15 +141,24 @@ public class EmailPassword {
 
     @TestOnly
     public static ImportUserResponse importUserWithPasswordHash(Main main, @Nonnull String email,
-            @Nonnull String passwordHash)
+                                                                @Nonnull String passwordHash)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
-        return importUserWithPasswordHash(main, email, passwordHash, null);
+        return importUserWithPasswordHash(null, null, main, email, passwordHash, null);
     }
 
-    public static UserInfo signIn(Main main, @Nonnull String email, @Nonnull String password)
+    @TestOnly
+    public static UserInfo signIn(Main main, @Nonnull String email,
+                                  @Nonnull String password)
+            throws StorageQueryException, WrongCredentialsException {
+        return signIn(null, null, main, email, password);
+    }
+
+    public static UserInfo signIn(String connectionUriDomain, String tenantId, Main main, @Nonnull String email,
+                                  @Nonnull String password)
             throws StorageQueryException, WrongCredentialsException {
 
-        UserInfo user = StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingEmail(email);
+        UserInfo user = StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main)
+                .getUserInfoUsingEmail(email);
 
         if (user == null) {
             throw new WrongCredentialsException();
@@ -157,7 +183,14 @@ public class EmailPassword {
         return user;
     }
 
+    @TestOnly
     public static String generatePasswordResetToken(Main main, String userId)
+            throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException, UnknownUserIdException {
+        return generatePasswordResetToken(null, null, main, userId);
+    }
+
+    public static String generatePasswordResetToken(String connectionUriDomain, String tenantId, Main main,
+                                                    String userId)
             throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException, UnknownUserIdException {
 
         while (true) {
@@ -182,22 +215,32 @@ public class EmailPassword {
             String hashedToken = Utils.hashSHA256(token);
 
             try {
-                StorageLayer.getEmailPasswordStorage(main).addPasswordResetToken(new PasswordResetTokenInfo(userId,
-                        hashedToken, System.currentTimeMillis() + getPasswordResetTokenLifetime(main)));
+                StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main)
+                        .addPasswordResetToken(new PasswordResetTokenInfo(userId,
+                                hashedToken, System.currentTimeMillis() + getPasswordResetTokenLifetime(main)));
                 return token;
             } catch (DuplicatePasswordResetTokenException ignored) {
             }
         }
     }
 
-    public static String resetPassword(Main main, String token, String password)
+    @TestOnly
+    public static String resetPassword(Main main, String token,
+                                       String password)
+            throws ResetPasswordInvalidTokenException, NoSuchAlgorithmException, StorageQueryException,
+            StorageTransactionLogicException {
+        return resetPassword(null, null, main, token, password);
+    }
+
+    public static String resetPassword(String connectionUriDomain, String tenantId, Main main, String token,
+                                       String password)
             throws ResetPasswordInvalidTokenException, NoSuchAlgorithmException, StorageQueryException,
             StorageTransactionLogicException {
 
         String hashedToken = Utils.hashSHA256(token);
         String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
 
-        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
+        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main);
 
         PasswordResetTokenInfo resetInfo = storage.getPasswordResetTokenInfo(hashedToken);
 
@@ -245,10 +288,21 @@ public class EmailPassword {
         }
     }
 
-    public static void updateUsersEmailOrPassword(Main main, @Nonnull String userId, @Nullable String email,
-            @Nullable String password) throws StorageQueryException, StorageTransactionLogicException,
+    @TestOnly
+    public static void updateUsersEmailOrPassword(Main main,
+                                                  @Nonnull String userId, @Nullable String email,
+                                                  @Nullable String password)
+            throws StorageQueryException, StorageTransactionLogicException,
             UnknownUserIdException, DuplicateEmailException {
-        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(main);
+        updateUsersEmailOrPassword(null, null, main, userId, email, password);
+    }
+
+    public static void updateUsersEmailOrPassword(String connectionUriDomain, String tenantId, Main main,
+                                                  @Nonnull String userId, @Nullable String email,
+                                                  @Nullable String password)
+            throws StorageQueryException, StorageTransactionLogicException,
+            UnknownUserIdException, DuplicateEmailException {
+        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main);
         try {
             storage.startTransaction(transaction -> {
                 UserInfo userInfo = storage.getUserInfoUsingId_Transaction(transaction, userId);
@@ -283,24 +337,51 @@ public class EmailPassword {
         }
     }
 
-    public static UserInfo getUserUsingId(Main main, String userId) throws StorageQueryException {
-        return StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingId(userId);
+    @TestOnly
+    public static UserInfo getUserUsingId(Main main, String userId)
+            throws StorageQueryException {
+        return getUserUsingId(null, null, main, userId);
     }
 
-    public static UserInfo getUserUsingEmail(Main main, String email) throws StorageQueryException {
-        return StorageLayer.getEmailPasswordStorage(main).getUserInfoUsingEmail(email);
+    public static UserInfo getUserUsingId(String connectionUriDomain, String tenantId, Main main, String userId)
+            throws StorageQueryException {
+        return StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main).getUserInfoUsingId(userId);
+    }
+
+    @TestOnly
+    public static UserInfo getUserUsingEmail(Main main, String email)
+            throws StorageQueryException {
+        return getUserUsingEmail(null, null, main, email);
+    }
+
+    public static UserInfo getUserUsingEmail(String connectionUriDomain, String tenantId, Main main, String email)
+            throws StorageQueryException {
+        return StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main).getUserInfoUsingEmail(email);
     }
 
     @Deprecated
-    public static UserPaginationContainer getUsers(Main main, @Nullable String paginationToken, Integer limit,
-            String timeJoinedOrder) throws StorageQueryException, UserPaginationToken.InvalidTokenException {
+    @TestOnly
+    public static UserPaginationContainer getUsers(Main main,
+                                                   @Nullable String paginationToken, Integer limit,
+                                                   String timeJoinedOrder)
+            throws StorageQueryException, UserPaginationToken.InvalidTokenException {
+        return getUsers(null, null, main, paginationToken, limit, timeJoinedOrder);
+    }
+
+    @Deprecated
+    public static UserPaginationContainer getUsers(String connectionUriDomain, String tenantId, Main main,
+                                                   @Nullable String paginationToken, Integer limit,
+                                                   String timeJoinedOrder)
+            throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         UserInfo[] users;
         if (paginationToken == null) {
-            users = StorageLayer.getEmailPasswordStorage(main).getUsers(limit + 1, timeJoinedOrder);
+            users = StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main)
+                    .getUsers(limit + 1, timeJoinedOrder);
         } else {
             UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
-            users = StorageLayer.getEmailPasswordStorage(main).getUsers(tokenInfo.userId, tokenInfo.timeJoined,
-                    limit + 1, timeJoinedOrder);
+            users = StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main)
+                    .getUsers(tokenInfo.userId, tokenInfo.timeJoined,
+                            limit + 1, timeJoinedOrder);
         }
         String nextPaginationToken = null;
         int maxLoop = users.length;
@@ -313,8 +394,16 @@ public class EmailPassword {
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
 
+    @TestOnly
     @Deprecated
-    public static long getUsersCount(Main main) throws StorageQueryException {
-        return StorageLayer.getEmailPasswordStorage(main).getUsersCount();
+    public static long getUsersCount(Main main)
+            throws StorageQueryException {
+        return getUsersCount(null, null, main);
+    }
+
+    @Deprecated
+    public static long getUsersCount(String connectionUriDomain, String tenantId, Main main)
+            throws StorageQueryException {
+        return StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main).getUsersCount();
     }
 }

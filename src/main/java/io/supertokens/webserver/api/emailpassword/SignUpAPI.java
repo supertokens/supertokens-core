@@ -29,10 +29,10 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class SignUpAPI extends WebserverAPI {
@@ -65,7 +65,8 @@ public class SignUpAPI extends WebserverAPI {
         }
 
         try {
-            UserInfo user = EmailPassword.signUp(super.main, normalisedEmail, password);
+            UserInfo user = EmailPassword.signUp(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), super.main, normalisedEmail, password);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

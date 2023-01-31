@@ -347,7 +347,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    @Deprecated
+    @TestOnly
     public static EmailPasswordSQLStorage getEmailPasswordStorage(Main main) {
         return getEmailPasswordStorage(null, null, main);
     }

@@ -22,10 +22,10 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 @Deprecated
@@ -47,7 +47,8 @@ public class UsersCountAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
 
         try {
-            long count = EmailPassword.getUsersCount(super.main);
+            long count = EmailPassword.getUsersCount(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), super.main);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("count", count);
