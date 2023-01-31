@@ -37,16 +37,16 @@ public class AuthRecipe {
     }
 
     public static UserPaginationContainer getUsers(Main main, Integer limit, String timeJoinedOrder,
-            @Nullable String paginationToken, @Nullable RECIPE_ID[] includeRecipeIds)
+            @Nullable String paginationToken, @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String search)
             throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         AuthRecipeUserInfo[] users;
         if (paginationToken == null) {
             users = StorageLayer.getAuthRecipeStorage(main).getUsers(limit + 1, timeJoinedOrder, includeRecipeIds, null,
-                    null);
+                    null, search);
         } else {
             UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
             users = StorageLayer.getAuthRecipeStorage(main).getUsers(limit + 1, timeJoinedOrder, includeRecipeIds,
-                    tokenInfo.userId, tokenInfo.timeJoined);
+                    tokenInfo.userId, tokenInfo.timeJoined, search);
         }
         String nextPaginationToken = null;
         int maxLoop = users.length;

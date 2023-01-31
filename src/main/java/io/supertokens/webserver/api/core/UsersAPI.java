@@ -90,6 +90,7 @@ public class UsersAPI extends WebserverAPI {
          */
         String timeJoinedOrder = InputParser.getQueryParamOrThrowError(req, "timeJoinedOrder", true);
 
+        String search = InputParser.getQueryParamOrThrowError(req,"search", false);
         if (timeJoinedOrder != null) {
             if (!timeJoinedOrder.equals("ASC") && !timeJoinedOrder.equals("DESC")) {
                 throw new ServletException(new BadRequestException("timeJoinedOrder can be either ASC OR DESC"));
@@ -111,7 +112,7 @@ public class UsersAPI extends WebserverAPI {
 
         try {
             UserPaginationContainer users = AuthRecipe.getUsers(super.main, limit, timeJoinedOrder, paginationToken,
-                    recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
+                    recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new), search);
 
             ArrayList<String> userIds = new ArrayList<>();
             for (int i = 0; i < users.users.length; i++) {
