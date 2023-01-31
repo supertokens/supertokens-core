@@ -33,22 +33,32 @@ public class AuthRecipe {
 
     public static final int USER_PAGINATION_LIMIT = 500;
 
-    public static long getUsersCount(Main main, RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
-        return StorageLayer.getAuthRecipeStorage(main).getUsersCount(includeRecipeIds);
+    public static long getUsersCount(String connectionUriDomain, String tenantId, Main main,
+                                     RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
+        return StorageLayer.getAuthRecipeStorage(connectionUriDomain, tenantId, main).getUsersCount(includeRecipeIds);
     }
 
-    public static UserPaginationContainer getUsers(Main main, Integer limit, String timeJoinedOrder,
+    @TestOnly
+    public static long getUsersCount(Main main,
+                                     RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
+        return getUsersCount(null, null, main, includeRecipeIds);
+    }
+
+    public static UserPaginationContainer getUsers(String connectionUriDomain, String tenantId, Main main,
+                                                   Integer limit, String timeJoinedOrder,
                                                    @Nullable String paginationToken,
                                                    @Nullable RECIPE_ID[] includeRecipeIds)
             throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         AuthRecipeUserInfo[] users;
         if (paginationToken == null) {
-            users = StorageLayer.getAuthRecipeStorage(main).getUsers(limit + 1, timeJoinedOrder, includeRecipeIds, null,
-                    null);
+            users = StorageLayer.getAuthRecipeStorage(connectionUriDomain, tenantId, main)
+                    .getUsers(limit + 1, timeJoinedOrder, includeRecipeIds, null,
+                            null);
         } else {
             UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
-            users = StorageLayer.getAuthRecipeStorage(main).getUsers(limit + 1, timeJoinedOrder, includeRecipeIds,
-                    tokenInfo.userId, tokenInfo.timeJoined);
+            users = StorageLayer.getAuthRecipeStorage(connectionUriDomain, tenantId, main)
+                    .getUsers(limit + 1, timeJoinedOrder, includeRecipeIds,
+                            tokenInfo.userId, tokenInfo.timeJoined);
         }
         String nextPaginationToken = null;
         int maxLoop = users.length;
@@ -59,6 +69,15 @@ public class AuthRecipe {
         AuthRecipeUserInfo[] resultUsers = new AuthRecipeUserInfo[maxLoop];
         System.arraycopy(users, 0, resultUsers, 0, maxLoop);
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
+    }
+
+    @TestOnly
+    public static UserPaginationContainer getUsers(Main main,
+                                                   Integer limit, String timeJoinedOrder,
+                                                   @Nullable String paginationToken,
+                                                   @Nullable RECIPE_ID[] includeRecipeIds)
+            throws StorageQueryException, UserPaginationToken.InvalidTokenException {
+        return getUsers(null, null, main, limit, timeJoinedOrder, paginationToken, includeRecipeIds);
     }
 
     public static void deleteUser(String connectionUriDomain, String tenantId, Main main, String userId)
@@ -74,15 +93,16 @@ public class AuthRecipe {
 
         // If userId mapping exists then delete entries with superTokensUserId from auth related tables and
         // externalUserid from non-auth tables
-        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main, userId,
-                UserIdType.ANY);
+        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(connectionUriDomain,
+                tenantId, main, userId, UserIdType.ANY);
         if (userIdMapping != null) {
             // We check if the mapped externalId is another SuperTokens UserId, this could come up when migrating
             // recipes.
             // in reference to
             // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
             // we want to check which state the db is in
-            if (StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(userIdMapping.externalUserId)) {
+            if (StorageLayer.getAuthRecipeStorage(connectionUriDomain, tenantId, main)
+                    .doesUserIdExist(userIdMapping.externalUserId)) {
                 // db is in state A4
                 // delete only from auth tables
                 deleteAuthRecipeUser(connectionUriDomain, tenantId, main, userId);

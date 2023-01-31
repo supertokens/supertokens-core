@@ -314,7 +314,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    @Deprecated
+    @TestOnly
     public static AuthRecipeStorage getAuthRecipeStorage(Main main) {
         return getAuthRecipeStorage(null, null, main);
     }

@@ -23,10 +23,10 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.util.stream.Stream;
 
@@ -61,7 +61,8 @@ public class UsersCountAPI extends WebserverAPI {
         }
 
         try {
-            long count = AuthRecipe.getUsersCount(super.main, recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
+            long count = AuthRecipe.getUsersCount(this.getConnectionUriDomain(req), this.getTenantId(req), super.main,
+                    recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("count", count);

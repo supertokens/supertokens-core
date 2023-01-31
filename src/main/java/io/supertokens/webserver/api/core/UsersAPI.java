@@ -26,17 +26,15 @@ import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -110,14 +108,16 @@ public class UsersAPI extends WebserverAPI {
         }
 
         try {
-            UserPaginationContainer users = AuthRecipe.getUsers(super.main, limit, timeJoinedOrder, paginationToken,
+            UserPaginationContainer users = AuthRecipe.getUsers(this.getConnectionUriDomain(req), this.getTenantId(req),
+                    super.main, limit, timeJoinedOrder, paginationToken,
                     recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
 
             ArrayList<String> userIds = new ArrayList<>();
             for (int i = 0; i < users.users.length; i++) {
                 userIds.add(users.users[i].user.id);
             }
-            HashMap<String, String> userIdMapping = UserIdMapping.getUserIdMappingForSuperTokensUserIds(super.main,
+            HashMap<String, String> userIdMapping = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
+                    this.getConnectionUriDomain(req), this.getTenantId(req), super.main,
                     userIds);
             if (!userIdMapping.isEmpty()) {
                 for (int i = 0; i < users.users.length; i++) {

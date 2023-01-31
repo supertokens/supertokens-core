@@ -55,7 +55,8 @@ public class UserIdMapping {
             // ignore it.
 
             {
-                if (StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(externalUserId)) {
+                if (StorageLayer.getAuthRecipeStorage(connectionUriDomain, tenantId, main)
+                        .doesUserIdExist(externalUserId)) {
                     throw new ServletException(new WebserverAPI.BadRequestException(
                             "Cannot create a userId mapping where the externalId is also a SuperTokens userID"));
                 }
@@ -130,7 +131,8 @@ public class UserIdMapping {
                 tenantId, main, userId,
                 UserIdType.ANY);
         if (mapping != null) {
-            if (StorageLayer.getAuthRecipeStorage(main).doesUserIdExist(mapping.externalUserId)) {
+            if (StorageLayer.getAuthRecipeStorage(connectionUriDomain, tenantId, main)
+                    .doesUserIdExist(mapping.externalUserId)) {
                 // this means that the db is in state A4
                 return storage.deleteUserIdMapping(mapping.superTokensUserId, true);
             }
@@ -154,7 +156,7 @@ public class UserIdMapping {
             return storage.deleteUserIdMapping(userId, false);
         }
 
-        AuthRecipeStorage authRecipeStorage = StorageLayer.getAuthRecipeStorage(main);
+        AuthRecipeStorage authRecipeStorage = StorageLayer.getAuthRecipeStorage(connectionUriDomain, tenantId, main);
         if (authRecipeStorage.doesUserIdExist(userId)) {
             return storage.deleteUserIdMapping(userId, true);
         }
@@ -182,7 +184,7 @@ public class UserIdMapping {
             return storage.updateOrDeleteExternalUserIdInfo(userId, false, externalUserIdInfo);
         }
 
-        AuthRecipeStorage authRecipeStorage = StorageLayer.getAuthRecipeStorage(main);
+        AuthRecipeStorage authRecipeStorage = StorageLayer.getAuthRecipeStorage(connectionUriDomain, tenantId, main);
         if (authRecipeStorage.doesUserIdExist(userId)) {
             return storage.updateOrDeleteExternalUserIdInfo(userId, true, externalUserIdInfo);
         }
