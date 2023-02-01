@@ -40,14 +40,45 @@ public class DashboardQueries {
             pst.setString(2, email);
             pst.setString(3, passwordHash);
             pst.setInt(4, isSuspendedAsInt);
-            pst.setLong(5,timeJoined);
+            pst.setLong(5, timeJoined);
         });
     }
 
     public static DashboardUser[] getAllDashBoardUsers(Start start) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT id, email, is_suspended, password_hash, time_joined FROM "
+        String QUERY = "SELECT * FROM "
                 + Config.getConfig(start).getDashboardEmailPasswordUsersTable();
         return execute(start, QUERY, null, new DashboardUserInfoResultExtractor());
+    }
+
+    public static boolean deleteDashboardUserWithEmail(Start start, String email)
+            throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardEmailPasswordUsersTable()
+                + " WHERE email = ?";
+        // store the number of rows updated
+        int rowUpdatedCount = update(start, QUERY, pst -> pst.setString(1, email));
+
+        return rowUpdatedCount > 0;
+    }
+
+    public static boolean deleteDashboardUserWithUserId(Start start, String userId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardEmailPasswordUsersTable() + " WHERE id = ?";
+        // store the number of rows updated
+        int rowUpdatedCount = update(start, QUERY, pst -> pst.setString(1, userId));
+
+        return rowUpdatedCount > 0;
+    }
+
+    public static DashboardUser getDashboardUserByEmail(Start start, String email)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM "
+                + Config.getConfig(start).getDashboardEmailPasswordUsersTable() + " WHERE email = ?";
+        return execute(start, QUERY, pst -> pst.setString(1, email), result -> {
+            if (result.next()) {
+                return DashboardInfoMapper.getInstance().mapOrThrow(result);
+            }
+            return null;
+        });
     }
 
     private static class DashboardInfoMapper implements RowMapper<DashboardUser, ResultSet> {
@@ -72,7 +103,7 @@ public class DashboardQueries {
         @Override
         public DashboardUser[] extract(ResultSet result) throws SQLException, StorageQueryException {
             List<DashboardUser> temp = new ArrayList<>();
-            while(result.next()){
+            while (result.next()) {
                 temp.add(DashboardInfoMapper.getInstance().mapOrThrow(result));
             }
             return temp.toArray(DashboardUser[]::new);

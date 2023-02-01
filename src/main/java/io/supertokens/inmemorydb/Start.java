@@ -1657,20 +1657,30 @@ public class Start
     }
 
     @Override
-    public void deleteUserWithEmail() throws StorageQueryException {
-        // TODO Auto-generated method stub
-
+    public boolean deleteDashboardUserWithEmail(String email) throws StorageQueryException {
+        try {
+            return DashboardQueries.deleteDashboardUserWithEmail(this, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+       
     }
 
     @Override
-    public void deleteUserWithUserId() throws StorageQueryException {
-        // TODO Auto-generated method stub
-
+    public boolean deleteDashboardUserWithUserId(String userId) throws StorageQueryException {
+        try {
+            return DashboardQueries.deleteDashboardUserWithUserId(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public DashboardUser getDashboardUserByEmail(String email) throws StorageQueryException {
-        // TODO Auto-generated method stub
-        return null;
+        try {
+            return DashboardQueries.getDashboardUserByEmail(this, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }
