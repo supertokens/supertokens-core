@@ -67,6 +67,8 @@ import io.supertokens.pluginInterface.userroles.UserRolesStorage;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
+import io.supertokens.pluginInterface.dashabord.DashboardStorage;
+import io.supertokens.pluginInterface.dashabord.DashboardUser;
 import io.supertokens.session.Session;
 import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
@@ -87,7 +89,8 @@ import java.util.Set;
 
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
-        JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage {
+        JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
+        DashboardStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -1455,7 +1458,8 @@ public class Start
             @Nullable String externalUserIdInfo)
             throws StorageQueryException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException {
 
-        // SQLite is not compiled with foreign key constraint, so we need an explicit check to see if superTokensUserId
+        // SQLite is not compiled with foreign key constraint, so we need an explicit
+        // check to see if superTokensUserId
         // is a valid
         // userId.
         if (!doesUserIdExist(superTokensUserId)) {
@@ -1618,5 +1622,41 @@ public class Start
         } else {
             throw new IllegalStateException("ClassName: " + className + " is not part of NonAuthRecipeStorage");
         }
+    }
+
+    @Override
+    public void createNewDashboardUser(DashboardUser userInfo)
+            throws StorageQueryException, DuplicateUserIdException, DuplicateEmailException {
+        try {
+            DashboardQueries.createDashboardUser(this, userInfo.id, userInfo.email, userInfo.passwordHash,
+                    userInfo.isSuspended, userInfo.timeJoined);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+
+    }
+
+    @Override
+    public DashboardStorage[] getAllUsers() throws StorageQueryException {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public void deleteUserWithEmail() throws StorageQueryException {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public void deleteUserWithUserId() throws StorageQueryException {
+        // TODO Auto-generated method stub
+
+    }
+
+    @Override
+    public DashboardUser getDashboardUserByEmail(String email) throws StorageQueryException {
+        // TODO Auto-generated method stub
+        return null;
     }
 }

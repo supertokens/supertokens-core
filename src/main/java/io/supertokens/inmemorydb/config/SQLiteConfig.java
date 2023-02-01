@@ -89,4 +89,8 @@ public class SQLiteConfig {
     public String getUserIdMappingTable() {
         return "userid_mapping";
     }
+
+    public String getDashboardEmailPasswordUsersTable(){
+        return "dashboard_emailpassword_users";
+    }
 }
