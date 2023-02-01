@@ -12,7 +12,6 @@ import org.junit.rules.TestRule;
 
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
-import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.dashabord.DashboardUser;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;

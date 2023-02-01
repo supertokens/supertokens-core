@@ -1683,4 +1683,16 @@ public class Start
             throw new StorageQueryException(e);
         }
     }
+
+    @Override
+    public void updateDashboardUserWithEmail(String email, String newEmail, String newPassword) {
+        // TODO Auto-generated method stub
+        
+    }
+
+    @Override
+    public void updateDashboardUserWithUserId(String userId, String newEmail, String newPassword) {
+        // TODO Auto-generated method stub
+        
+    }
 }

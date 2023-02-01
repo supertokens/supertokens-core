@@ -81,6 +81,38 @@ public class DashboardQueries {
         });
     }
 
+    public void updateDashboardUsersEmailWithEmail(Start start, String email, String newEmail) throws SQLException, StorageQueryException{
+        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET email = ? WHERE email = ?";
+        update(start, QUERY, pst -> {
+            pst.setString(1, newEmail);
+            pst.setString(2, email);
+        });
+    }
+
+    public void updateDashboardUsersPasswordWithEmail(Start start, String email, String newPassword) throws SQLException, StorageQueryException{
+        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET password = ? WHERE email = ?";
+        update(start, QUERY, pst -> {
+            pst.setString(1, newPassword);
+            pst.setString(2, email);
+        });
+    }
+
+    public void updateDashboardUsersEmailWithUserId(Start start, String userId, String newEmail) throws SQLException, StorageQueryException{
+        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET email = ? WHERE id = ?";
+        update(start, QUERY, pst -> {
+            pst.setString(1, newEmail);
+            pst.setString(2, userId);
+        });
+    }
+
+    public void updateDashboardUsersPasswordWithUserId(Start start, String userId, String newPassword) throws SQLException, StorageQueryException{
+        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET password = ? WHERE id = ?";
+        update(start, QUERY, pst -> {
+            pst.setString(1, newPassword);
+            pst.setString(2, userId);
+        });
+    }
+
     private static class DashboardInfoMapper implements RowMapper<DashboardUser, ResultSet> {
         private static final DashboardInfoMapper INSTANCE = new DashboardInfoMapper();
 
