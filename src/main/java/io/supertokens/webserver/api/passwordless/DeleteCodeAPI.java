@@ -24,7 +24,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -52,7 +51,8 @@ public class DeleteCodeAPI extends WebserverAPI {
         String codeId = InputParser.parseStringOrThrowError(input, "codeId", false);
 
         try {
-            Passwordless.removeCode(main, codeId);
+            Passwordless.removeCode(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, codeId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

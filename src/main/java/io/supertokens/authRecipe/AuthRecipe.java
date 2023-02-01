@@ -140,6 +140,6 @@ public class AuthRecipe {
         // auth recipe deletions here only
         StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main).deleteEmailPasswordUser(userId);
         StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main).deleteThirdPartyUser(userId);
-        StorageLayer.getPasswordlessStorage(main).deletePasswordlessUser(userId);
+        StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId, main).deletePasswordlessUser(userId);
     }
 }

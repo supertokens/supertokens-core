@@ -403,7 +403,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    @Deprecated
+    @TestOnly
     public static PasswordlessSQLStorage getPasswordlessStorage(Main main) {
         return getPasswordlessStorage(null, null, main);
     }

@@ -29,7 +29,6 @@ import io.supertokens.pluginInterface.passwordless.exception.DuplicateLinkCodeHa
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -75,7 +74,8 @@ public class CreateCodeAPI extends WebserverAPI {
         }
 
         try {
-            CreateCodeResponse createCodeResponse = Passwordless.createCode(main, email, phoneNumber, deviceId,
+            CreateCodeResponse createCodeResponse = Passwordless.createCode(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, email, phoneNumber, deviceId,
                     userInputCode);
             long passwordlessCodeLifetime = Config.getConfig(main).getPasswordlessCodeLifetime();
 

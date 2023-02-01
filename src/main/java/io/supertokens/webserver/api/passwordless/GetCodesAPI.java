@@ -30,7 +30,6 @@ import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -74,17 +73,22 @@ public class GetCodesAPI extends WebserverAPI {
         try {
             List<Passwordless.DeviceWithCodes> devicesInfos;
             if (deviceId != null) {
-                DeviceWithCodes deviceWithCodes = Passwordless.getDeviceWithCodesById(main, deviceId);
+                DeviceWithCodes deviceWithCodes = Passwordless.getDeviceWithCodesById(this.getConnectionUriDomain(req),
+                        this.getTenantId(req), main, deviceId);
                 devicesInfos = deviceWithCodes == null ? Collections.emptyList()
                         : Collections.singletonList(deviceWithCodes);
             } else if (deviceIdHash != null) {
-                DeviceWithCodes deviceWithCodes = Passwordless.getDeviceWithCodesByIdHash(main, deviceIdHash);
+                DeviceWithCodes deviceWithCodes = Passwordless.getDeviceWithCodesByIdHash(
+                        this.getConnectionUriDomain(req),
+                        this.getTenantId(req), main, deviceIdHash);
                 devicesInfos = deviceWithCodes == null ? Collections.emptyList()
                         : Collections.singletonList(deviceWithCodes);
             } else if (email != null) {
-                devicesInfos = Passwordless.getDevicesWithCodesByEmail(main, Utils.normaliseEmail(email));
+                devicesInfos = Passwordless.getDevicesWithCodesByEmail(this.getConnectionUriDomain(req),
+                        this.getTenantId(req), main, Utils.normaliseEmail(email));
             } else {
-                devicesInfos = Passwordless.getDevicesWithCodesByPhoneNumber(main, phoneNumber);
+                devicesInfos = Passwordless.getDevicesWithCodesByPhoneNumber(this.getConnectionUriDomain(req),
+                        this.getTenantId(req), main, phoneNumber);
             }
 
             JsonObject result = new JsonObject();

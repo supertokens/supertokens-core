@@ -30,7 +30,6 @@ import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -78,10 +77,13 @@ public class ConsumeCodeAPI extends WebserverAPI {
         }
 
         try {
-            ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(main, deviceId, deviceIdHash,
+            ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main, deviceId, deviceIdHash,
                     userInputCode, linkCode);
 
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(main,
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                    this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main,
                     consumeCodeResponse.user.id, UserIdType.ANY);
             if (userIdMapping != null) {
                 consumeCodeResponse.user.id = userIdMapping.externalUserId;

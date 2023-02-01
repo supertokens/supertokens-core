@@ -24,7 +24,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -61,9 +60,11 @@ public class DeleteCodesAPI extends WebserverAPI {
         }
         try {
             if (email != null) {
-                Passwordless.removeCodesByEmail(main, email);
+                Passwordless.removeCodesByEmail(this.getConnectionUriDomain(req),
+                        this.getTenantId(req), main, email);
             } else {
-                Passwordless.removeCodesByPhoneNumber(main, phoneNumber);
+                Passwordless.removeCodesByPhoneNumber(this.getConnectionUriDomain(req),
+                        this.getTenantId(req), main, phoneNumber);
             }
         } catch (StorageTransactionLogicException | StorageQueryException e) {
             throw new ServletException(e);
