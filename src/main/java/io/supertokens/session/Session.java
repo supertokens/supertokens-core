@@ -96,10 +96,12 @@ public class Session {
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
         String sessionHandle = UUID.randomUUID().toString();
         String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
-        final TokenInfo refreshToken = RefreshToken.createNewRefreshToken(main, sessionHandle, userId, null,
+        final TokenInfo refreshToken = RefreshToken.createNewRefreshToken(connectionUriDomain, tenantId, main,
+                sessionHandle, userId, null,
                 antiCsrfToken);
 
-        TokenInfo accessToken = AccessToken.createNewAccessToken(main, sessionHandle, userId,
+        TokenInfo accessToken = AccessToken.createNewAccessToken(connectionUriDomain, tenantId, main, sessionHandle,
+                userId,
                 Utils.hashSHA256(refreshToken.token), null, userDataInJWT, antiCsrfToken, System.currentTimeMillis(),
                 null);
 
@@ -168,7 +170,8 @@ public class Session {
                     null);
         }
 
-        TokenInfo newAccessToken = AccessToken.createNewAccessToken(main, accessToken.sessionHandle, accessToken.userId,
+        TokenInfo newAccessToken = AccessToken.createNewAccessToken(connectionUriDomain, tenantId, main,
+                accessToken.sessionHandle, accessToken.userId,
                 accessToken.refreshTokenHash1, accessToken.parentRefreshTokenHash1, newJWTUserPayload,
                 accessToken.antiCsrfToken, lmrt, accessToken.expiryTime);
 
@@ -202,7 +205,7 @@ public class Session {
         }
 
         io.supertokens.pluginInterface.session.SessionInfo sessionInfoForBlacklisting = null;
-        if (Config.getConfig(main).getAccessTokenBlacklisting()) {
+        if (Config.getConfig(connectionUriDomain, tenantId, main).getAccessTokenBlacklisting()) {
             sessionInfoForBlacklisting = StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main)
                     .getSession(accessToken.sessionHandle);
             if (sessionInfoForBlacklisting == null) {
@@ -245,18 +248,22 @@ public class Session {
                             if (promote) {
                                 storage.updateSessionInfo_Transaction(con, accessToken.sessionHandle,
                                         Utils.hashSHA256(accessToken.refreshTokenHash1),
-                                        System.currentTimeMillis() + Config.getConfig(main).getRefreshTokenValidity());
+                                        System.currentTimeMillis() +
+                                                Config.getConfig(connectionUriDomain, tenantId, main)
+                                                        .getRefreshTokenValidity());
                             }
                             storage.commitTransaction(con);
 
                             TokenInfo newAccessToken;
                             if (AccessToken.getAccessTokenVersion(accessToken) == AccessToken.VERSION.V1) {
-                                newAccessToken = AccessToken.createNewAccessTokenV1(main, accessToken.sessionHandle,
+                                newAccessToken = AccessToken.createNewAccessTokenV1(connectionUriDomain, tenantId, main,
+                                        accessToken.sessionHandle,
                                         accessToken.userId, accessToken.refreshTokenHash1, null,
                                         sessionInfo.userDataInJWT, accessToken.antiCsrfToken);
                             } else {
                                 assert accessToken.lmrt != null;
-                                newAccessToken = AccessToken.createNewAccessToken(main, accessToken.sessionHandle,
+                                newAccessToken = AccessToken.createNewAccessToken(connectionUriDomain, tenantId, main,
+                                        accessToken.sessionHandle,
                                         accessToken.userId, accessToken.refreshTokenHash1, null,
                                         sessionInfo.userDataInJWT, accessToken.antiCsrfToken, accessToken.lmrt, null);
                             }
@@ -307,7 +314,8 @@ public class Session {
                         if (promote) {
                             boolean success = storage.updateSessionInfo_Transaction(accessToken.sessionHandle,
                                     Utils.hashSHA256(accessToken.refreshTokenHash1),
-                                    System.currentTimeMillis() + Config.getConfig(main).getRefreshTokenValidity(),
+                                    System.currentTimeMillis() + Config.getConfig(connectionUriDomain, tenantId, main)
+                                            .getRefreshTokenValidity(),
                                     sessionInfo.lastUpdatedSign);
                             if (!success) {
                                 continue;
@@ -316,12 +324,14 @@ public class Session {
 
                         TokenInfo newAccessToken;
                         if (AccessToken.getAccessTokenVersion(accessToken) == AccessToken.VERSION.V1) {
-                            newAccessToken = AccessToken.createNewAccessTokenV1(main, accessToken.sessionHandle,
+                            newAccessToken = AccessToken.createNewAccessTokenV1(connectionUriDomain, tenantId, main,
+                                    accessToken.sessionHandle,
                                     accessToken.userId, accessToken.refreshTokenHash1, null, sessionInfo.userDataInJWT,
                                     accessToken.antiCsrfToken);
                         } else {
                             assert accessToken.lmrt != null;
-                            newAccessToken = AccessToken.createNewAccessToken(main, accessToken.sessionHandle,
+                            newAccessToken = AccessToken.createNewAccessToken(connectionUriDomain, tenantId, main,
+                                    accessToken.sessionHandle,
                                     accessToken.userId, accessToken.refreshTokenHash1, null, sessionInfo.userDataInJWT,
                                     accessToken.antiCsrfToken, accessToken.lmrt, null);
                         }
@@ -408,7 +418,8 @@ public class Session {
                             final TokenInfo newRefreshToken = RefreshToken.createNewRefreshToken(main, sessionHandle,
                                     sessionInfo.userId, Utils.hashSHA256(refreshToken), antiCsrfToken);
 
-                            TokenInfo newAccessToken = AccessToken.createNewAccessToken(main, sessionHandle,
+                            TokenInfo newAccessToken = AccessToken.createNewAccessToken(connectionUriDomain, tenantId,
+                                    main, sessionHandle,
                                     sessionInfo.userId, Utils.hashSHA256(newRefreshToken.token),
                                     Utils.hashSHA256(refreshToken), sessionInfo.userDataInJWT, antiCsrfToken,
                                     System.currentTimeMillis(), null); // TODO: get lmrt from database
@@ -429,7 +440,8 @@ public class Session {
                                 .equals(sessionInfo.refreshTokenHash2))) {
                             storage.updateSessionInfo_Transaction(con, sessionHandle,
                                     Utils.hashSHA256(Utils.hashSHA256(refreshToken)),
-                                    System.currentTimeMillis() + Config.getConfig(main).getRefreshTokenValidity());
+                                    System.currentTimeMillis() + Config.getConfig(connectionUriDomain, tenantId, main)
+                                            .getRefreshTokenValidity());
 
                             storage.commitTransaction(con);
 
@@ -481,9 +493,11 @@ public class Session {
                         // at this point, the input refresh token is the parent one.
                         String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
 
-                        final TokenInfo newRefreshToken = RefreshToken.createNewRefreshToken(main, sessionHandle,
+                        final TokenInfo newRefreshToken = RefreshToken.createNewRefreshToken(connectionUriDomain,
+                                tenantId, main, sessionHandle,
                                 sessionInfo.userId, Utils.hashSHA256(refreshToken), antiCsrfToken);
-                        TokenInfo newAccessToken = AccessToken.createNewAccessToken(main, sessionHandle,
+                        TokenInfo newAccessToken = AccessToken.createNewAccessToken(connectionUriDomain, tenantId, main,
+                                sessionHandle,
                                 sessionInfo.userId, Utils.hashSHA256(newRefreshToken.token),
                                 Utils.hashSHA256(refreshToken), sessionInfo.userDataInJWT, antiCsrfToken,
                                 System.currentTimeMillis(), null); // TODO: get lmrt from database
@@ -504,7 +518,8 @@ public class Session {
                             .equals(sessionInfo.refreshTokenHash2))) {
                         boolean success = storage.updateSessionInfo_Transaction(sessionHandle,
                                 Utils.hashSHA256(Utils.hashSHA256(refreshToken)),
-                                System.currentTimeMillis() + Config.getConfig(main).getRefreshTokenValidity(),
+                                System.currentTimeMillis() +
+                                        Config.getConfig(connectionUriDomain, tenantId, main).getRefreshTokenValidity(),
                                 sessionInfo.lastUpdatedSign);
                         if (!success) {
                             continue;

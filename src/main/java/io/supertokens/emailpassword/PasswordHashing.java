@@ -40,9 +40,10 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     final Main main;
 
     private PasswordHashing(Main main) {
-        this.argon2BoundedQueue = new LinkedBlockingQueue<>(Config.getConfig(main).getArgon2HashingPoolSize());
+        this.argon2BoundedQueue = new LinkedBlockingQueue<>(
+                Config.getConfig(null, null, main).getArgon2HashingPoolSize());
         this.firebaseSCryptBoundedQueue = new LinkedBlockingQueue<>(
-                Config.getConfig(main).getFirebaseSCryptPasswordHashingPoolSize());
+                Config.getConfig(null, null, main).getFirebaseSCryptPasswordHashingPoolSize());
         this.main = main;
     }
 
@@ -62,22 +63,33 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         main.getResourceDistributor().setResource(RESOURCE_KEY, new PasswordHashing(main));
     }
 
+    @TestOnly
     public String createHashWithSalt(String password) {
+        return createHashWithSalt(null, null, password);
+    }
+
+    public String createHashWithSalt(String connectionUriDomain, String tenantId, String password) {
 
         String passwordHash = "";
 
-        if (Config.getConfig(main).getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.BCRYPT) {
+        if (Config.getConfig(connectionUriDomain, tenantId, main).getPasswordHashingAlg() ==
+                CoreConfig.PASSWORD_HASHING_ALG.BCRYPT) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT, null);
-            passwordHash = BCrypt.hashpw(password, BCrypt.gensalt(Config.getConfig(main).getBcryptLogRounds()));
-        } else if (Config.getConfig(main).getPasswordHashingAlg() == CoreConfig.PASSWORD_HASHING_ALG.ARGON2) {
+            passwordHash = BCrypt.hashpw(password,
+                    BCrypt.gensalt(Config.getConfig(connectionUriDomain, tenantId, main).getBcryptLogRounds()));
+        } else if (Config.getConfig(connectionUriDomain, tenantId, main).getPasswordHashingAlg() ==
+                CoreConfig.PASSWORD_HASHING_ALG.ARGON2) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_ARGON, null);
-            passwordHash = withConcurrencyLimited(() -> argon2id.hash(Config.getConfig(main).getArgon2Iterations(),
-                    Config.getConfig(main).getArgon2MemoryKb(), Config.getConfig(main).getArgon2Parallelism(),
-                    password.toCharArray()), this.argon2BoundedQueue);
+            passwordHash = withConcurrencyLimited(
+                    () -> argon2id.hash(Config.getConfig(connectionUriDomain, tenantId, main).getArgon2Iterations(),
+                            Config.getConfig(connectionUriDomain, tenantId, main).getArgon2MemoryKb(),
+                            Config.getConfig(connectionUriDomain, tenantId, main).getArgon2Parallelism(),
+                            password.toCharArray()), this.argon2BoundedQueue);
         }
 
         try {
-            PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(main, passwordHash, null);
+            PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(connectionUriDomain, tenantId, main,
+                    passwordHash, null);
         } catch (UnsupportedPasswordHashingFormatException e) {
             throw new IllegalStateException(e);
         }
@@ -106,7 +118,12 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         }
     }
 
+    @TestOnly
     public boolean verifyPasswordWithHash(String password, String hash) {
+        return verifyPasswordWithHash(null, null, password, hash);
+    }
+
+    public boolean verifyPasswordWithHash(String connectionUriDomain, String tenantId, String password, String hash) {
 
         if (PasswordHashingUtils.isInputHashInArgon2Format(hash)) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON, null);
@@ -133,7 +150,8 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_FIREBASE_SCRYPT, null);
             return withConcurrencyLimited(
                     () -> PasswordHashingUtils.verifyFirebaseSCryptPasswordHash(password, hash,
-                            Config.getConfig(main).getFirebase_password_hashing_signer_key()),
+                            Config.getConfig(connectionUriDomain, tenantId, main)
+                                    .getFirebase_password_hashing_signer_key()),
                     this.firebaseSCryptBoundedQueue);
         }
 

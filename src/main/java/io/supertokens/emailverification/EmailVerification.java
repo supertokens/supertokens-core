@@ -37,14 +37,14 @@ public class EmailVerification {
 
     @TestOnly
     public static long getEmailVerificationTokenLifetimeForTests(Main main) {
-        return getEmailVerificationTokenLifetime(main);
+        return getEmailVerificationTokenLifetime(null, null, main);
     }
 
-    private static long getEmailVerificationTokenLifetime(Main main) {
+    private static long getEmailVerificationTokenLifetime(String connectionUriDomain, String tenantId, Main main) {
         if (Main.isTesting) {
             return EmailVerificationTest.getInstance(main).getEmailVerificationTokenLifetime();
         }
-        return Config.getConfig(main).getEmailVerificationTokenLifetime();
+        return Config.getConfig(connectionUriDomain, tenantId, main).getEmailVerificationTokenLifetime();
     }
 
     @TestOnly
@@ -88,7 +88,8 @@ public class EmailVerification {
             try {
                 StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main)
                         .addEmailVerificationToken(new EmailVerificationTokenInfo(userId, hashedToken,
-                                System.currentTimeMillis() + getEmailVerificationTokenLifetime(main), email));
+                                System.currentTimeMillis() +
+                                        getEmailVerificationTokenLifetime(connectionUriDomain, tenantId, main), email));
                 return token;
             } catch (DuplicateEmailVerificationTokenException ignored) {
             }

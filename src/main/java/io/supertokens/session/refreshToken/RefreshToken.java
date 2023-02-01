@@ -24,6 +24,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.utils.Utils;
+import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -65,8 +66,20 @@ public class RefreshToken {
         }
     }
 
+    @TestOnly
     public static TokenInfo createNewRefreshToken(@Nonnull Main main, @Nonnull String sessionHandle,
-            @Nonnull String userId, @Nullable String parentRefreshTokenHash1, @Nullable String antiCsrfToken)
+                                                  @Nonnull String userId, @Nullable String parentRefreshTokenHash1,
+                                                  @Nullable String antiCsrfToken)
+            throws NoSuchAlgorithmException, StorageQueryException, NoSuchPaddingException, InvalidKeyException,
+            IllegalBlockSizeException, BadPaddingException, StorageTransactionLogicException,
+            InvalidAlgorithmParameterException, InvalidKeySpecException {
+        return createNewRefreshToken(null, null, main, sessionHandle, userId, parentRefreshTokenHash1, antiCsrfToken);
+    }
+
+    public static TokenInfo createNewRefreshToken(String connectionUriDomain, String tenantId, @Nonnull Main main,
+                                                  @Nonnull String sessionHandle,
+                                                  @Nonnull String userId, @Nullable String parentRefreshTokenHash1,
+                                                  @Nullable String antiCsrfToken)
             throws NoSuchAlgorithmException, StorageQueryException, NoSuchPaddingException, InvalidKeyException,
             IllegalBlockSizeException, BadPaddingException, StorageTransactionLogicException,
             InvalidAlgorithmParameterException, InvalidKeySpecException {
@@ -78,7 +91,8 @@ public class RefreshToken {
         String encryptedPayload = Utils.encrypt(payloadSerialised, key);
         String token = encryptedPayload + "." + nonce + "." + TYPE.FREE_OPTIMISED.toString();
         long now = System.currentTimeMillis();
-        return new TokenInfo(token, now + Config.getConfig(main).getRefreshTokenValidity(), now);
+        return new TokenInfo(token,
+                now + Config.getConfig(connectionUriDomain, tenantId, main).getRefreshTokenValidity(), now);
     }
 
     private static TYPE getTypeFromToken(String token) throws InvalidRefreshTokenFormatException {
@@ -133,7 +147,8 @@ public class RefreshToken {
         public final String antiCsrfToken;
 
         RefreshTokenPayload(@Nonnull String sessionHandle, @Nonnull String userId,
-                @Nullable String parentRefreshTokenHash1, @Nonnull String nonce, @Nullable String antiCsrfToken) {
+                            @Nullable String parentRefreshTokenHash1, @Nonnull String nonce,
+                            @Nullable String antiCsrfToken) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.parentRefreshTokenHash1 = parentRefreshTokenHash1;
@@ -157,8 +172,8 @@ public class RefreshToken {
         public final String antiCsrfToken;
 
         RefreshTokenInfo(@Nonnull String sessionHandle, @Nullable String userId,
-                @Nullable String parentRefreshTokenHash1, @Nullable String parentRefreshTokenHash2,
-                @Nullable String antiCsrfToken, @Nonnull TYPE type) {
+                         @Nullable String parentRefreshTokenHash1, @Nullable String parentRefreshTokenHash2,
+                         @Nullable String antiCsrfToken, @Nonnull TYPE type) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.parentRefreshTokenHash1 = parentRefreshTokenHash1;

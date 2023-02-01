@@ -30,6 +30,7 @@ import io.supertokens.session.info.TokenInfo;
 import io.supertokens.session.jwt.JWT;
 import io.supertokens.session.jwt.JWT.JWTException;
 import io.supertokens.utils.Utils;
+import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -45,7 +46,7 @@ public class AccessToken {
     // TODO: device fingerprint - store hash of this in JWT.
 
     private static AccessTokenInfo getInfoFromAccessToken(@Nonnull Main main, @Nonnull String token, boolean retry,
-            boolean doAntiCsrfCheck)
+                                                          boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException {
         List<AccessTokenSigningKey.KeyInfo> keyInfoList = AccessTokenSigningKey.getInstance(main).getAllKeys();
 
@@ -123,7 +124,7 @@ public class AccessToken {
     }
 
     public static AccessTokenInfo getInfoFromAccessToken(@Nonnull Main main, @Nonnull String token,
-            boolean doAntiCsrfCheck)
+                                                         boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException {
         return getInfoFromAccessToken(main, token, true, doAntiCsrfCheck);
     }
@@ -132,9 +133,25 @@ public class AccessToken {
         return new Gson().fromJson(JWT.getPayloadWithoutVerifying(token).payload, AccessTokenInfo.class);
     }
 
-    public static TokenInfo createNewAccessToken(@Nonnull Main main, @Nonnull String sessionHandle,
-            @Nonnull String userId, @Nonnull String refreshTokenHash1, @Nullable String parentRefreshTokenHash1,
-            @Nonnull JsonObject userData, @Nullable String antiCsrfToken, long lmrt, @Nullable Long expiryTime)
+    @TestOnly
+    public static TokenInfo createNewAccessToken(@Nonnull Main main,
+                                                 @Nonnull String sessionHandle,
+                                                 @Nonnull String userId, @Nonnull String refreshTokenHash1,
+                                                 @Nullable String parentRefreshTokenHash1,
+                                                 @Nonnull JsonObject userData, @Nullable String antiCsrfToken,
+                                                 long lmrt, @Nullable Long expiryTime)
+            throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
+            NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
+        return createNewAccessToken(null, null, main, sessionHandle, userId, refreshTokenHash1, parentRefreshTokenHash1,
+                userData, antiCsrfToken, lmrt, expiryTime);
+    }
+
+    public static TokenInfo createNewAccessToken(String connectionUriDomain, String tenantId, @Nonnull Main main,
+                                                 @Nonnull String sessionHandle,
+                                                 @Nonnull String userId, @Nonnull String refreshTokenHash1,
+                                                 @Nullable String parentRefreshTokenHash1,
+                                                 @Nonnull JsonObject userData, @Nullable String antiCsrfToken,
+                                                 long lmrt, @Nullable Long expiryTime)
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
 
@@ -142,7 +159,7 @@ public class AccessToken {
                 AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value);
         long now = System.currentTimeMillis();
         if (expiryTime == null) {
-            expiryTime = now + Config.getConfig(main).getAccessTokenValidity();
+            expiryTime = now + Config.getConfig(connectionUriDomain, tenantId, main).getAccessTokenValidity();
         }
         AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime,
                 parentRefreshTokenHash1, userData, antiCsrfToken, now, lmrt);
@@ -152,9 +169,23 @@ public class AccessToken {
 
     }
 
-    public static TokenInfo createNewAccessTokenV1(@Nonnull Main main, @Nonnull String sessionHandle,
-            @Nonnull String userId, @Nonnull String refreshTokenHash1, @Nullable String parentRefreshTokenHash1,
-            @Nonnull JsonObject userData, @Nullable String antiCsrfToken)
+    @TestOnly
+    public static TokenInfo createNewAccessTokenV1(@Nonnull Main main,
+                                                   @Nonnull String sessionHandle,
+                                                   @Nonnull String userId, @Nonnull String refreshTokenHash1,
+                                                   @Nullable String parentRefreshTokenHash1,
+                                                   @Nonnull JsonObject userData, @Nullable String antiCsrfToken)
+            throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
+            NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
+        return createNewAccessTokenV1(null, null, main, sessionHandle, userId, refreshTokenHash1,
+                parentRefreshTokenHash1, userData, antiCsrfToken);
+    }
+
+    public static TokenInfo createNewAccessTokenV1(String connectionUriDomain, String tenantId, @Nonnull Main main,
+                                                   @Nonnull String sessionHandle,
+                                                   @Nonnull String userId, @Nonnull String refreshTokenHash1,
+                                                   @Nullable String parentRefreshTokenHash1,
+                                                   @Nonnull JsonObject userData, @Nullable String antiCsrfToken)
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
 
@@ -163,7 +194,7 @@ public class AccessToken {
         long now = System.currentTimeMillis();
         AccessTokenInfo accessToken;
 
-        long expiryTime = now + Config.getConfig(main).getAccessTokenValidity();
+        long expiryTime = now + Config.getConfig(connectionUriDomain, tenantId, main).getAccessTokenValidity();
         accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime, parentRefreshTokenHash1,
                 userData, antiCsrfToken, now, null);
 
@@ -198,8 +229,8 @@ public class AccessToken {
         public final Long lmrt; // lastManualRegenerationTime - nullable since v1 of JWT does not have this
 
         AccessTokenInfo(@Nonnull String sessionHandle, @Nonnull String userId, @Nonnull String refreshTokenHash1,
-                long expiryTime, @Nullable String parentRefreshTokenHash1, @Nonnull JsonObject userData,
-                @Nullable String antiCsrfToken, long timeCreated, @Nullable Long lmrt) {
+                        long expiryTime, @Nullable String parentRefreshTokenHash1, @Nonnull JsonObject userData,
+                        @Nullable String antiCsrfToken, long timeCreated, @Nullable Long lmrt) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.refreshTokenHash1 = refreshTokenHash1;

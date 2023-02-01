@@ -77,7 +77,8 @@ public class CreateCodeAPI extends WebserverAPI {
             CreateCodeResponse createCodeResponse = Passwordless.createCode(this.getConnectionUriDomain(req),
                     this.getTenantId(req), main, email, phoneNumber, deviceId,
                     userInputCode);
-            long passwordlessCodeLifetime = Config.getConfig(main).getPasswordlessCodeLifetime();
+            long passwordlessCodeLifetime = Config.getConfig(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main).getPasswordlessCodeLifetime();
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

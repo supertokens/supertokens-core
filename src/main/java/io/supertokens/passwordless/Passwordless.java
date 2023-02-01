@@ -215,8 +215,10 @@ public class Passwordless {
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId,
                 main);
-        long passwordlessCodeLifetime = Config.getConfig(main).getPasswordlessCodeLifetime();
-        int maxCodeInputAttempts = Config.getConfig(main).getPasswordlessMaxCodeInputAttempts();
+        long passwordlessCodeLifetime = Config.getConfig(connectionUriDomain, tenantId, main)
+                .getPasswordlessCodeLifetime();
+        int maxCodeInputAttempts = Config.getConfig(connectionUriDomain, tenantId, main)
+                .getPasswordlessMaxCodeInputAttempts();
 
         PasswordlessDeviceIdHash deviceIdHash;
         PasswordlessLinkCodeHash linkCodeHash;

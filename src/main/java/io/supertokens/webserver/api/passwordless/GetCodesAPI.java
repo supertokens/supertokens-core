@@ -68,7 +68,8 @@ public class GetCodesAPI extends WebserverAPI {
                     "Please provide exactly one of email, phoneNumber, deviceId or preAuthSessionId"));
         }
 
-        long passwordlessCodeLifetime = Config.getConfig(main).getPasswordlessCodeLifetime();
+        long passwordlessCodeLifetime = Config.getConfig(this.getConnectionUriDomain(req),
+                this.getTenantId(req), main).getPasswordlessCodeLifetime();
 
         try {
             List<Passwordless.DeviceWithCodes> devicesInfos;

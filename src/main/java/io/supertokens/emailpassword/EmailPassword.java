@@ -56,14 +56,14 @@ public class EmailPassword {
 
     @TestOnly
     public static long getPasswordResetTokenLifetimeForTests(Main main) {
-        return getPasswordResetTokenLifetime(main);
+        return getPasswordResetTokenLifetime(null, null, main);
     }
 
-    private static long getPasswordResetTokenLifetime(Main main) {
+    private static long getPasswordResetTokenLifetime(String connectionUriDomain, String tenantId, Main main) {
         if (Main.isTesting) {
             return EmailPasswordTest.getInstance(main).getPasswordResetTokenLifetime();
         }
-        return Config.getConfig(main).getPasswordResetTokenLifetime();
+        return Config.getConfig(connectionUriDomain, tenantId, main).getPasswordResetTokenLifetime();
     }
 
     @TestOnly
@@ -76,7 +76,8 @@ public class EmailPassword {
                                   @Nonnull String password)
             throws DuplicateEmailException, StorageQueryException {
 
-        String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
+        String hashedPassword = PasswordHashing.getInstance(main)
+                .createHashWithSalt(connectionUriDomain, tenantId, password);
 
         while (true) {
 
@@ -109,7 +110,8 @@ public class EmailPassword {
                                                                         CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
 
-        PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(main, passwordHash, hashingAlgorithm);
+        PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(connectionUriDomain, tenantId, main,
+                passwordHash, hashingAlgorithm);
 
         while (true) {
             String userId = Utils.getUUID();
@@ -165,7 +167,8 @@ public class EmailPassword {
         }
 
         try {
-            if (!PasswordHashing.getInstance(main).verifyPasswordWithHash(password, user.passwordHash)) {
+            if (!PasswordHashing.getInstance(main)
+                    .verifyPasswordWithHash(connectionUriDomain, tenantId, password, user.passwordHash)) {
                 throw new WrongCredentialsException();
             }
         } catch (WrongCredentialsException e) {
@@ -217,7 +220,8 @@ public class EmailPassword {
             try {
                 StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main)
                         .addPasswordResetToken(new PasswordResetTokenInfo(userId,
-                                hashedToken, System.currentTimeMillis() + getPasswordResetTokenLifetime(main)));
+                                hashedToken, System.currentTimeMillis() +
+                                getPasswordResetTokenLifetime(connectionUriDomain, tenantId, main)));
                 return token;
             } catch (DuplicatePasswordResetTokenException ignored) {
             }
@@ -238,7 +242,8 @@ public class EmailPassword {
             StorageTransactionLogicException {
 
         String hashedToken = Utils.hashSHA256(token);
-        String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
+        String hashedPassword = PasswordHashing.getInstance(main)
+                .createHashWithSalt(connectionUriDomain, tenantId, password);
 
         EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main);
 
@@ -320,7 +325,8 @@ public class EmailPassword {
                 }
 
                 if (password != null) {
-                    String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
+                    String hashedPassword = PasswordHashing.getInstance(main)
+                            .createHashWithSalt(connectionUriDomain, tenantId, password);
                     storage.updateUsersPassword_Transaction(transaction, userId, hashedPassword);
                 }
 

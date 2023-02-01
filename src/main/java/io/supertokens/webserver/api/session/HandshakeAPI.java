@@ -27,10 +27,10 @@ import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -63,9 +63,15 @@ public class HandshakeAPI extends WebserverAPI {
                 result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
             }
 
-            result.addProperty("accessTokenBlacklistingEnabled", Config.getConfig(main).getAccessTokenBlacklisting());
-            result.addProperty("accessTokenValidity", Config.getConfig(main).getAccessTokenValidity());
-            result.addProperty("refreshTokenValidity", Config.getConfig(main).getRefreshTokenValidity());
+            result.addProperty("accessTokenBlacklistingEnabled",
+                    Config.getConfig(this.getConnectionUriDomain(req), this.getTenantId(req), main)
+                            .getAccessTokenBlacklisting());
+            result.addProperty("accessTokenValidity",
+                    Config.getConfig(this.getConnectionUriDomain(req), this.getTenantId(req), main)
+                            .getAccessTokenValidity());
+            result.addProperty("refreshTokenValidity",
+                    Config.getConfig(this.getConnectionUriDomain(req), this.getTenantId(req), main)
+                            .getRefreshTokenValidity());
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             throw new ServletException(e);
