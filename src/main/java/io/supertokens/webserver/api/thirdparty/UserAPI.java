@@ -28,10 +28,10 @@ import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class UserAPI extends WebserverAPI {
@@ -69,19 +69,22 @@ public class UserAPI extends WebserverAPI {
             UserInfo user = null;
             if (userId != null) {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(main, userId, UserIdType.ANY);
+                        .getUserIdMapping(this.getConnectionUriDomain(req), this.getTenantId(req), main, userId,
+                                UserIdType.ANY);
                 if (userIdMapping != null) {
                     userId = userIdMapping.superTokensUserId;
                 }
-                user = ThirdParty.getUser(main, userId);
+                user = ThirdParty.getUser(this.getConnectionUriDomain(req), this.getTenantId(req), main, userId);
                 if (user != null && userIdMapping != null) {
                     user.id = userIdMapping.externalUserId;
                 }
             } else {
-                user = ThirdParty.getUser(main, thirdPartyId, thirdPartyUserId);
+                user = ThirdParty.getUser(this.getConnectionUriDomain(req), this.getTenantId(req), main, thirdPartyId,
+                        thirdPartyUserId);
                 if (user != null) {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                            .getUserIdMapping(main, user.id, UserIdType.ANY);
+                            .getUserIdMapping(this.getConnectionUriDomain(req), this.getTenantId(req), main, user.id,
+                                    UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
                     }

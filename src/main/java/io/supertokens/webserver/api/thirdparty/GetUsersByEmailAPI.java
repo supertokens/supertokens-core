@@ -29,10 +29,10 @@ import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class GetUsersByEmailAPI extends WebserverAPI {
@@ -52,14 +52,16 @@ public class GetUsersByEmailAPI extends WebserverAPI {
         try {
             String email = InputParser.getQueryParamOrThrowError(req, "email", false);
 
-            UserInfo[] users = ThirdParty.getUsersByEmail(super.main, email);
+            UserInfo[] users = ThirdParty.getUsersByEmail(this.getConnectionUriDomain(req), this.getTenantId(req),
+                    super.main, email);
 
             // return the externalUserId if a mapping exists for a user
             for (int i = 0; i < users.length; i++) {
                 // we intentionally do not use the function that accepts an array of user IDs to get the mapping cause
                 // this is simpler to use, and cause there shouldn't be that many userIds per email anyway
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(super.main, users[i].id, UserIdType.ANY);
+                        .getUserIdMapping(this.getConnectionUriDomain(req), this.getTenantId(req), super.main,
+                                users[i].id, UserIdType.ANY);
                 if (userIdMapping != null) {
                     users[i].id = userIdMapping.externalUserId;
                 }

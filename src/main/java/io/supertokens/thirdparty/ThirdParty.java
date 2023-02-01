@@ -50,7 +50,8 @@ public class ThirdParty {
     public static SignInUpResponse signInUp2_7(String connectionUriDomain, String tenantId, Main main,
                                                String thirdPartyId, String thirdPartyUserId, String email,
                                                boolean isEmailVerified) throws StorageQueryException {
-        SignInUpResponse response = signInUpHelper(main, thirdPartyId, thirdPartyUserId, email);
+        SignInUpResponse response = signInUpHelper(connectionUriDomain, tenantId, main, thirdPartyId, thirdPartyUserId,
+                email);
 
         if (isEmailVerified) {
             try {
@@ -78,14 +79,22 @@ public class ThirdParty {
         return signInUp2_7(null, null, main, thirdPartyId, thirdPartyUserId, email, isEmailVerified);
     }
 
+    @TestOnly
     public static SignInUpResponse signInUp(Main main, String thirdPartyId, String thirdPartyUserId, String email)
             throws StorageQueryException {
-        return signInUpHelper(main, thirdPartyId, thirdPartyUserId, email);
+        return signInUp(null, null, main, thirdPartyId, thirdPartyUserId, email);
     }
 
-    private static SignInUpResponse signInUpHelper(Main main, String thirdPartyId, String thirdPartyUserId,
+    public static SignInUpResponse signInUp(String connectionUriDomain, String tenantId, Main main, String thirdPartyId,
+                                            String thirdPartyUserId, String email)
+            throws StorageQueryException {
+        return signInUpHelper(connectionUriDomain, tenantId, main, thirdPartyId, thirdPartyUserId, email);
+    }
+
+    private static SignInUpResponse signInUpHelper(String connectionUriDomain, String tenantId, Main main,
+                                                   String thirdPartyId, String thirdPartyUserId,
                                                    String email) throws StorageQueryException {
-        ThirdPartySQLStorage storage = StorageLayer.getThirdPartyStorage(main);
+        ThirdPartySQLStorage storage = StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main);
         while (true) {
             // loop for sign in + sign up
 
@@ -142,26 +151,47 @@ public class ThirdParty {
         }
     }
 
-    public static UserInfo getUser(Main main, String userId) throws StorageQueryException {
-        return StorageLayer.getThirdPartyStorage(main).getThirdPartyUserInfoUsingId(userId);
+    public static UserInfo getUser(String connectionUriDomain, String tenantId, Main main, String userId)
+            throws StorageQueryException {
+        return StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main)
+                .getThirdPartyUserInfoUsingId(userId);
     }
 
-    public static UserInfo getUser(Main main, String thirdPartyId, String thirdPartyUserId)
+    @TestOnly
+    static UserInfo getUser(Main main, String userId)
             throws StorageQueryException {
-        return StorageLayer.getThirdPartyStorage(main).getThirdPartyUserInfoUsingId(thirdPartyId, thirdPartyUserId);
+        return getUser(null, null, main, userId);
+    }
+
+
+    public static UserInfo getUser(String connectionUriDomain, String tenantId, Main main, String thirdPartyId,
+                                   String thirdPartyUserId)
+            throws StorageQueryException {
+        return StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main)
+                .getThirdPartyUserInfoUsingId(thirdPartyId, thirdPartyUserId);
+    }
+
+    @TestOnly
+    public static UserInfo getUser(Main main, String thirdPartyId,
+                                   String thirdPartyUserId)
+            throws StorageQueryException {
+        return getUser(null, null, main, thirdPartyId, thirdPartyUserId);
     }
 
     @Deprecated
-    public static UserPaginationContainer getUsers(Main main, @Nullable String paginationToken, Integer limit,
+    public static UserPaginationContainer getUsers(String connectionUriDomain, String tenantId, Main main,
+                                                   @Nullable String paginationToken, Integer limit,
                                                    String timeJoinedOrder)
             throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         UserInfo[] users;
         if (paginationToken == null) {
-            users = StorageLayer.getThirdPartyStorage(main).getThirdPartyUsers(limit + 1, timeJoinedOrder);
+            users = StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main)
+                    .getThirdPartyUsers(limit + 1, timeJoinedOrder);
         } else {
             UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
-            users = StorageLayer.getThirdPartyStorage(main).getThirdPartyUsers(tokenInfo.userId, tokenInfo.timeJoined,
-                    limit + 1, timeJoinedOrder);
+            users = StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main)
+                    .getThirdPartyUsers(tokenInfo.userId, tokenInfo.timeJoined,
+                            limit + 1, timeJoinedOrder);
         }
         String nextPaginationToken = null;
         int maxLoop = users.length;
@@ -174,13 +204,31 @@ public class ThirdParty {
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
 
-    public static UserInfo[] getUsersByEmail(Main main, @Nonnull String email) throws StorageQueryException {
-        return StorageLayer.getThirdPartyStorage(main).getThirdPartyUsersByEmail(email);
+    @TestOnly
+    @Deprecated
+    public static UserPaginationContainer getUsers(Main main,
+                                                   @Nullable String paginationToken, Integer limit,
+                                                   String timeJoinedOrder)
+            throws StorageQueryException, UserPaginationToken.InvalidTokenException {
+        return getUsers(null, null, main, paginationToken, limit, timeJoinedOrder);
+    }
+
+    public static UserInfo[] getUsersByEmail(String connectionUriDomain, String tenantId, Main main,
+                                             @Nonnull String email) throws StorageQueryException {
+        return StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main).getThirdPartyUsersByEmail(email);
     }
 
     @Deprecated
-    public static long getUsersCount(Main main) throws StorageQueryException {
-        return StorageLayer.getThirdPartyStorage(main).getThirdPartyUsersCount();
+    public static long getUsersCount(String connectionUriDomain, String tenantId, Main main)
+            throws StorageQueryException {
+        return StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main).getThirdPartyUsersCount();
+    }
+
+    @TestOnly
+    @Deprecated
+    public static long getUsersCount(Main main)
+            throws StorageQueryException {
+        return getUsersCount(null, null, main);
     }
 
 }

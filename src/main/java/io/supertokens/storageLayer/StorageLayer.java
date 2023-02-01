@@ -384,7 +384,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    @Deprecated
+    @TestOnly
     public static ThirdPartySQLStorage getThirdPartyStorage(Main main) {
         return getThirdPartyStorage(null, null, main);
     }

@@ -139,7 +139,7 @@ public class AuthRecipe {
             throws StorageQueryException {
         // auth recipe deletions here only
         StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main).deleteEmailPasswordUser(userId);
-        StorageLayer.getThirdPartyStorage(main).deleteThirdPartyUser(userId);
+        StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main).deleteThirdPartyUser(userId);
         StorageLayer.getPasswordlessStorage(main).deletePasswordlessUser(userId);
     }
 }

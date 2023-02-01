@@ -28,10 +28,10 @@ import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class SignInUpAPI extends WebserverAPI {
@@ -67,7 +67,8 @@ public class SignInUpAPI extends WebserverAPI {
             String normalisedEmail = Utils.normaliseEmail(email);
 
             try {
-                ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(super.main, thirdPartyId,
+                ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(this.getConnectionUriDomain(req),
+                        this.getTenantId(req), super.main, thirdPartyId,
                         thirdPartyUserId, normalisedEmail, isEmailVerified);
 
                 JsonObject result = new JsonObject();
@@ -97,12 +98,14 @@ public class SignInUpAPI extends WebserverAPI {
             String normalisedEmail = Utils.normaliseEmail(email);
 
             try {
-                ThirdParty.SignInUpResponse response = ThirdParty.signInUp(super.main, thirdPartyId, thirdPartyUserId,
+                ThirdParty.SignInUpResponse response = ThirdParty.signInUp(this.getConnectionUriDomain(req),
+                        this.getTenantId(req), super.main, thirdPartyId, thirdPartyUserId,
                         normalisedEmail);
 
                 //
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(main, response.user.id, UserIdType.ANY);
+                        .getUserIdMapping(this.getConnectionUriDomain(req), this.getTenantId(req), main,
+                                response.user.id, UserIdType.ANY);
                 if (userIdMapping != null) {
                     response.user.id = userIdMapping.externalUserId;
                 }
