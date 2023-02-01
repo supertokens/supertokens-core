@@ -1,24 +1,30 @@
 package io.supertokens.inmemorydb.queries;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.List;
 
-import io.supertokens.inmemorydb.QueryExecutorTemplate;
+import io.supertokens.inmemorydb.ResultSetValueExtractor;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.pluginInterface.RowMapper;
+import io.supertokens.pluginInterface.dashabord.DashboardUser;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
+import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 
 public class DashboardQueries {
     public static String getQueryToCreateUserIdMappingTable(Start start) {
-        String tableName = Config.getConfig(start).getUserIdMappingTable();
+        String tableName = Config.getConfig(start).getDashboardEmailPasswordUsersTable();
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
-                + "user_id CHAR(36) NOT NULL,"
+                + "id CHAR(36) NOT NULL,"
                 + "email VARCHAR(256) NOT NULL UNIQUE,"
                 + "password_hash VARCHAR(256) NOT NULL,"
                 + "is_suspended TINYINT,"
                 + "time_joined BIGINT UNSIGNED NOT NULL,"
-                + "PRIMARY KEY(user_id)";
-
+                + "PRIMARY KEY(id));";
         // @formatter:on
     }
 
@@ -28,13 +34,48 @@ public class DashboardQueries {
         int isSuspendedAsInt = isSuspended ? 1 : 0;
 
         String QUERY = "INSERT INTO " + Config.getConfig(start).getDashboardEmailPasswordUsersTable()
-                + "(id, email, is_suspended, time_joined, password_hash)" + " VALUES(?, ?, ?, ?, ?)";
-        QueryExecutorTemplate.update(start, QUERY, pst -> {
+                + "(id, email, password_hash, is_suspended, time_joined)" + " VALUES(?, ?, ?, ?, ?)";
+        update(start, QUERY, pst -> {
             pst.setString(1, userId);
             pst.setString(2, email);
-            pst.setInt(3, isSuspendedAsInt);
-            pst.setLong(4, timeJoined);
-            pst.setString(5, passwordHash);
+            pst.setString(3, passwordHash);
+            pst.setInt(4, isSuspendedAsInt);
+            pst.setLong(5,timeJoined);
         });
+    }
+
+    public static DashboardUser[] getAllDashBoardUsers(Start start) throws SQLException, StorageQueryException {
+        String QUERY = "SELECT id, email, is_suspended, password_hash, time_joined FROM "
+                + Config.getConfig(start).getDashboardEmailPasswordUsersTable();
+        return execute(start, QUERY, null, new DashboardUserInfoResultExtractor());
+    }
+
+    private static class DashboardInfoMapper implements RowMapper<DashboardUser, ResultSet> {
+        private static final DashboardInfoMapper INSTANCE = new DashboardInfoMapper();
+
+        private DashboardInfoMapper() {
+        }
+
+        private static DashboardInfoMapper getInstance() {
+            return INSTANCE;
+        }
+
+        @Override
+        public DashboardUser map(ResultSet rs) throws Exception {
+
+            return new DashboardUser(rs.getString("id"), rs.getString("email"), rs.getString("password_hash"),
+                    rs.getLong("time_joined"), rs.getInt("is_suspended") == 1 ? true : false);
+        }
+    }
+
+    private static class DashboardUserInfoResultExtractor implements ResultSetValueExtractor<DashboardUser[]> {
+        @Override
+        public DashboardUser[] extract(ResultSet result) throws SQLException, StorageQueryException {
+            List<DashboardUser> temp = new ArrayList<>();
+            while(result.next()){
+                temp.add(DashboardInfoMapper.getInstance().mapOrThrow(result));
+            }
+            return temp.toArray(DashboardUser[]::new);
+        }
     }
 }

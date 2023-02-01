@@ -1631,15 +1631,29 @@ public class Start
             DashboardQueries.createDashboardUser(this, userInfo.id, userInfo.email, userInfo.passwordHash,
                     userInfo.isSuspended, userInfo.timeJoined);
         } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getDashboardEmailPasswordUsersTable() + ".email)")) {
+                throw new DuplicateEmailException();
+            }
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getDashboardEmailPasswordUsersTable() + ".id)")) {
+                throw new DuplicateUserIdException();
+            }
             throw new StorageQueryException(e);
         }
 
     }
 
     @Override
-    public DashboardStorage[] getAllUsers() throws StorageQueryException {
-        // TODO Auto-generated method stub
-        return null;
+    public DashboardUser[] getAllDashboardUsers() throws StorageQueryException {
+        try {
+            return DashboardQueries.getAllDashBoardUsers(this);
+        } catch(SQLException e){
+            throw new StorageQueryException(e);
+        }
+        
     }
 
     @Override
