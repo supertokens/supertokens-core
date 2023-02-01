@@ -23,10 +23,10 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class RemoveUserMetadataAPI extends WebserverAPI {
@@ -46,7 +46,7 @@ public class RemoveUserMetadataAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         try {
-            UserMetadata.deleteUserMetadata(main, userId);
+            UserMetadata.deleteUserMetadata(this.getConnectionUriDomain(req), this.getTenantId(req), main, userId);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);

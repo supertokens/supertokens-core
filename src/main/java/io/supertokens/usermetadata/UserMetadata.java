@@ -16,21 +16,30 @@
 
 package io.supertokens.usermetadata;
 
-import javax.annotation.Nonnull;
-
 import com.google.gson.JsonObject;
-
 import io.supertokens.Main;
-import io.supertokens.utils.MetadataUtils;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.utils.MetadataUtils;
+import org.jetbrains.annotations.TestOnly;
+
+import javax.annotation.Nonnull;
 
 public class UserMetadata {
-    public static JsonObject updateUserMetadata(Main main, @Nonnull String userId, @Nonnull JsonObject metadataUpdate)
+
+    @TestOnly
+    public static JsonObject updateUserMetadata(Main main,
+                                                @Nonnull String userId, @Nonnull JsonObject metadataUpdate)
             throws StorageQueryException, StorageTransactionLogicException {
-        UserMetadataSQLStorage storage = StorageLayer.getUserMetadataStorage(main);
+        return updateUserMetadata(null, null, main, userId, metadataUpdate);
+    }
+
+    public static JsonObject updateUserMetadata(String connectionUriDomain, String tenantId, Main main,
+                                                @Nonnull String userId, @Nonnull JsonObject metadataUpdate)
+            throws StorageQueryException, StorageTransactionLogicException {
+        UserMetadataSQLStorage storage = StorageLayer.getUserMetadataStorage(connectionUriDomain, tenantId, main);
 
         return storage.startTransaction((con) -> {
             JsonObject originalMetadata = storage.getUserMetadata_Transaction(con, userId);
@@ -44,8 +53,14 @@ public class UserMetadata {
         });
     }
 
+    @TestOnly
     public static JsonObject getUserMetadata(Main main, @Nonnull String userId) throws StorageQueryException {
-        UserMetadataSQLStorage storage = StorageLayer.getUserMetadataStorage(main);
+        return getUserMetadata(null, null, main, userId);
+    }
+
+    public static JsonObject getUserMetadata(String connectionUriDomain, String tenantId, Main main,
+                                             @Nonnull String userId) throws StorageQueryException {
+        UserMetadataSQLStorage storage = StorageLayer.getUserMetadataStorage(connectionUriDomain, tenantId, main);
 
         JsonObject metadata = storage.getUserMetadata(userId);
 
@@ -56,7 +71,13 @@ public class UserMetadata {
         return metadata;
     }
 
+    @TestOnly
     public static void deleteUserMetadata(Main main, @Nonnull String userId) throws StorageQueryException {
-        StorageLayer.getUserMetadataStorage(main).deleteUserMetadata(userId);
+        deleteUserMetadata(null, null, main, userId);
+    }
+
+    public static void deleteUserMetadata(String connectionUriDomain, String tenantId, Main main,
+                                          @Nonnull String userId) throws StorageQueryException {
+        StorageLayer.getUserMetadataStorage(connectionUriDomain, tenantId, main).deleteUserMetadata(userId);
     }
 }

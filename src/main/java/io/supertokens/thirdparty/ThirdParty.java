@@ -158,7 +158,7 @@ public class ThirdParty {
     }
 
     @TestOnly
-    static UserInfo getUser(Main main, String userId)
+    public static UserInfo getUser(Main main, String userId)
             throws StorageQueryException {
         return getUser(null, null, main, userId);
     }

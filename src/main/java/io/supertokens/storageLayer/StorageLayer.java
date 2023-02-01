@@ -418,7 +418,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    @Deprecated
+    @TestOnly
     public static JWTRecipeStorage getJWTRecipeStorage(Main main) {
         return getJWTRecipeStorage(null, null, main);
     }
@@ -439,7 +439,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    @Deprecated
+    @TestOnly
     public static UserMetadataSQLStorage getUserMetadataStorage(Main main) {
         return getUserMetadataStorage(null, null, main);
     }

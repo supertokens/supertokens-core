@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
+import org.jetbrains.annotations.TestOnly;
 
 import java.math.BigInteger;
 import java.security.KeyFactory;
@@ -40,6 +41,16 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 
 public class JWTSigningFunctions {
+
+    @TestOnly
+    public static String createJWTToken(Main main, String algorithm,
+                                        JsonObject payload, String jwksDomain,
+                                        long jwtValidity)
+            throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
+            InvalidKeySpecException, JWTCreationException, UnsupportedJWTSigningAlgorithmException {
+        return createJWTToken(null, null, main, algorithm, payload, jwksDomain, jwtValidity);
+    }
+
     /**
      * Creates and returns a JWT string
      *
@@ -59,8 +70,10 @@ public class JWTSigningFunctions {
      *                                                 algorithms
      */
     @SuppressWarnings("unchecked")
-    public static String createJWTToken(Main main, String algorithm, JsonObject payload, String jwksDomain,
-            long jwtValidity) throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
+    public static String createJWTToken(String connectionUriDomain, String tenantId, Main main, String algorithm,
+                                        JsonObject payload, String jwksDomain,
+                                        long jwtValidity)
+            throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
             InvalidKeySpecException, JWTCreationException, UnsupportedJWTSigningAlgorithmException {
         // TODO: In the future we will have a way for the user to send a custom key id to use
         JWTSigningKey.SupportedAlgorithms supportedAlgorithm;
@@ -72,7 +85,7 @@ public class JWTSigningFunctions {
             throw new UnsupportedJWTSigningAlgorithmException();
         }
 
-        JWTSigningKeyInfo keyToUse = JWTSigningKey.getInstance(main)
+        JWTSigningKeyInfo keyToUse = JWTSigningKey.getInstance(connectionUriDomain, tenantId, main)
                 .getOrCreateAndGetKeyForAlgorithm(supportedAlgorithm);
         // Get an instance of auth0's Algorithm which is needed when signing using auth0's package
         Algorithm signingAlgorithm = getAuth0Algorithm(supportedAlgorithm, keyToUse);
@@ -80,7 +93,7 @@ public class JWTSigningFunctions {
         // Create the claims for the JWT header
         Map<String, Object> headerClaims = new HashMap<>();
         headerClaims.put("alg", supportedAlgorithm.name().toUpperCase()); // All examples in the RFC have the algorithm
-                                                                          // in upper case
+        // in upper case
         headerClaims.put("typ", "JWT");
         headerClaims.put("kid", keyToUse.keyId);
 
@@ -103,9 +116,8 @@ public class JWTSigningFunctions {
      *
      * @param bigInt The big integer to be converted. Must not be
      *               {@code null}.
-     *
      * @return A byte array representation of the big integer, without the
-     *         sign bit.
+     * sign bit.
      */
     private static byte[] toBytesUnsigned(final BigInteger bigInt) {
 
@@ -140,6 +152,13 @@ public class JWTSigningFunctions {
         return resizedBytes;
     }
 
+    @TestOnly
+    public static List<JsonObject> getJWKS(Main main)
+            throws StorageQueryException, StorageTransactionLogicException,
+            NoSuchAlgorithmException, InvalidKeySpecException {
+        return getJWKS(null, null, main);
+    }
+
     /**
      * Used to return public keys that a JWT verifier will use. Note returns an empty array if there are no keys in
      * storage.
@@ -151,10 +170,12 @@ public class JWTSigningFunctions {
      * @throws NoSuchAlgorithmException         If there is an error when using Java's cryptography packages
      * @throws InvalidKeySpecException          If there is an error when using Java's cryptography packages
      */
-    public static List<JsonObject> getJWKS(Main main) throws StorageQueryException, StorageTransactionLogicException,
+    public static List<JsonObject> getJWKS(String connectionUriDomain, String tenantId, Main main)
+            throws StorageQueryException, StorageTransactionLogicException,
             NoSuchAlgorithmException, InvalidKeySpecException {
         // Retrieve all keys in storage
-        List<JWTSigningKeyInfo> keys = JWTSigningKey.getInstance(main).getAllSigningKeys();
+        List<JWTSigningKeyInfo> keys = JWTSigningKey.getInstance(connectionUriDomain, tenantId, main)
+                .getAllSigningKeys();
         List<JsonObject> jwks = new ArrayList<>();
 
         for (int i = 0; i < keys.size(); i++) {
@@ -181,7 +202,7 @@ public class JWTSigningFunctions {
                             .encodeToString(toBytesUnsigned(((RSAPublicKey) publicKey).getPublicExponent())));
                     jwk.addProperty("alg", currentKeyInfo.algorithm.toUpperCase());
                     jwk.addProperty("use", "sig"); // We generate JWKs that are meant to be used for signature
-                                                   // verification
+                    // verification
 
                     jwks.add(jwk);
                 } else {

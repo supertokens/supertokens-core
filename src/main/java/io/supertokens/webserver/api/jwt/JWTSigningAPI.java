@@ -25,10 +25,10 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -66,7 +66,8 @@ public class JWTSigningAPI extends WebserverAPI {
         }
 
         try {
-            String jwt = JWTSigningFunctions.createJWTToken(main, algorithm.toUpperCase(), payload, jwksDomain,
+            String jwt = JWTSigningFunctions.createJWTToken(this.getConnectionUriDomain(req), this.getTenantId(req),
+                    main, algorithm.toUpperCase(), payload, jwksDomain,
                     validity);
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "OK");
