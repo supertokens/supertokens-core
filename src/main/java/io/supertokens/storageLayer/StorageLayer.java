@@ -473,7 +473,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    @Deprecated
+    @TestOnly
     public static UserIdMappingStorage getUserIdMappingStorage(Main main) {
         return getUserIdMappingStorage(null, null, main);
     }

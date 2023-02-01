@@ -63,8 +63,9 @@ public class UserIdMapping {
             }
         }
 
-        StorageLayer.getUserIdMappingStorage(main).createUserIdMapping(superTokensUserId, externalUserId,
-                externalUserIdInfo);
+        StorageLayer.getUserIdMappingStorage(connectionUriDomain, tenantId, main)
+                .createUserIdMapping(superTokensUserId, externalUserId,
+                        externalUserIdInfo);
     }
 
     @TestOnly
@@ -80,7 +81,7 @@ public class UserIdMapping {
             String connectionUriDomain, String tenantId, Main main, String userId,
             UserIdType userIdType)
             throws StorageQueryException {
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
+        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(connectionUriDomain, tenantId, main);
 
         if (userIdType == UserIdType.SUPERTOKENS) {
             return storage.getUserIdMapping(userId, true);
@@ -122,7 +123,7 @@ public class UserIdMapping {
                                               UserIdType userIdType, boolean force)
             throws StorageQueryException, ServletException {
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
+        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(connectionUriDomain, tenantId, main);
 
         // referring to
         // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
@@ -175,7 +176,7 @@ public class UserIdMapping {
                                                            String userId, UserIdType userIdType,
                                                            @Nullable String externalUserIdInfo)
             throws StorageQueryException {
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
+        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(connectionUriDomain, tenantId, main);
 
         if (userIdType == UserIdType.SUPERTOKENS) {
             return storage.updateOrDeleteExternalUserIdInfo(userId, true, externalUserIdInfo);
@@ -204,7 +205,8 @@ public class UserIdMapping {
                                                                                 String tenantId, Main main,
                                                                                 ArrayList<String> userIds)
             throws StorageQueryException {
-        return StorageLayer.getUserIdMappingStorage(main).getUserIdMappingForSuperTokensIds(userIds);
+        return StorageLayer.getUserIdMappingStorage(connectionUriDomain, tenantId, main)
+                .getUserIdMappingForSuperTokensIds(userIds);
     }
 
     @TestOnly
