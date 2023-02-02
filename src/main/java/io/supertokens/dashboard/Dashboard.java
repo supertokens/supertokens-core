@@ -10,6 +10,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 
 public class Dashboard {
+    public static final int MAX_NUMBER_OF_FREE_DASHBOARD_USERS = 1;
 
     public static void signUpDashboardUser(Main main, String email, String password)
             throws StorageQueryException, DuplicateEmailException {
@@ -33,6 +34,32 @@ public class Dashboard {
     public static DashboardUser[] getAllDashboardUsers(Main main) throws StorageQueryException {
 
         return StorageLayer.getDashboardStorage(main).getAllDashboardUsers();
+    }
 
+    public static String signInDashboardUser(Main main, String email, String password) throws StorageQueryException {
+        DashboardUser user = StorageLayer.getDashboardStorage(main).getDashboardUserByEmail(email);
+        if (user != null){
+            String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
+            if(user.passwordHash.equals(hashedPassword)){
+                // TODO: generate JWT
+                return "JWT";
+            }
+        }
+        return null;
+    }
+    
+
+    public static void updateUsersCredentialsWithEmail(Main main, String email, String newEmail, String newPassword) throws StorageQueryException, DuplicateEmailException {
+        StorageLayer.getDashboardStorage(main).updateDashboardUserWithEmail(email, newEmail, newPassword);
+    }
+
+    public static void updateUsersCredentialsWithUserId(Main main, String userId, String newEmail, String newPassword) throws StorageQueryException, DuplicateEmailException {
+        StorageLayer.getDashboardStorage(main).updateDashboardUserWithUserId(userId, newEmail, newPassword);
+    }
+
+    public static boolean isDashboardFeatureFlagEnabled(){
+        // TODO: check that dashboard is enabled in the feature flag
+
+        return false;
     }
 }

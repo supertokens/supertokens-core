@@ -1685,7 +1685,7 @@ public class Start
     }
 
     @Override
-    public void updateDashboardUserWithEmail(String email, String newEmail, String newPassword) throws StorageQueryException {
+    public void updateDashboardUserWithEmail(String email, String newEmail, String newPassword) throws StorageQueryException, DuplicateEmailException {
         try {
             if (newEmail != null){
                 DashboardQueries.updateDashboardUsersEmailWithEmail(this, email, newEmail);
@@ -1695,12 +1695,17 @@ public class Start
                 DashboardQueries.updateDashboardUsersPasswordWithEmail(this, email, newPassword);
             }
         } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getDashboardEmailPasswordUsersTable() + ".email)")) {
+                throw new DuplicateEmailException();
+            }
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public void updateDashboardUserWithUserId(String userId, String newEmail, String newPassword) throws StorageQueryException {
+    public void updateDashboardUserWithUserId(String userId, String newEmail, String newPassword) throws StorageQueryException, DuplicateEmailException {
         try {
             if (newEmail != null){
                 DashboardQueries.updateDashboardUsersEmailWithEmail(this, userId, newEmail);
@@ -1710,6 +1715,11 @@ public class Start
                 DashboardQueries.updateDashboardUsersPasswordWithEmail(this, userId, newPassword);
             }
         } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getDashboardEmailPasswordUsersTable() + ".email)")) {
+                throw new DuplicateEmailException();
+            }
             throw new StorageQueryException(e);
         }
     }
