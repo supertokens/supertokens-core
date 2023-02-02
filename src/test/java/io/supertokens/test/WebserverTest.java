@@ -500,8 +500,12 @@ public class WebserverTest extends Mockito {
                         "http://" + hostName + ":" + port + "/hello", null, 1000, 1000, null);
                 assertEquals("Hello", response);
 
-                response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+                response = HttpRequest.sendGETRequest(process.getProcess(), "",
                         "http://" + hostName + ":" + port + "/hello", null, 1000, 1000, null);
+                assertEquals("Hello", response);
+
+                response = HttpRequest.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://" + hostName + ":" + port + "/hello/", null, 1000, 1000, null);
                 assertEquals("Hello", response);
 
                 response = HttpRequest.sendJsonPUTRequest(process.getProcess(), "",

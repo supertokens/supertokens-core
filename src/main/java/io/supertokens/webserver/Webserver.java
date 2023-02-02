@@ -74,6 +74,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
     // contextPath is the prefix to all paths for all URLs. So it's "" for us.
     private String CONTEXT_PATH = "";
     private final Main main;
+    final PathRouter pathRouter;
 
     private final WebServerLogging logging;
     private TomcatReference tomcatReference;
@@ -81,6 +82,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
     private Webserver(Main main) {
         this.main = main;
         this.logging = new WebServerLogging(main);
+        this.pathRouter = new PathRouter(main);
     }
 
     public static Webserver getInstance(Main main) {
@@ -256,16 +258,16 @@ public class Webserver extends ResourceDistributor.SingletonResource {
                 new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersCountAPI(main),
                 new io.supertokens.webserver.api.thirdparty.UsersCountAPI(main)));
-    }
 
-    public void addAPI(WebserverAPI api) {
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();
 
-        tomcat.addServlet(CONTEXT_PATH, api.getPath(), api);
-        context.addServletMappingDecoded(api.getPath(), api.getPath());
-        // add an additional mapping for the same api so that trailing slashes also work
-        context.addServletMappingDecoded(api.getPath() + "/", api.getPath());
+        tomcat.addServlet(CONTEXT_PATH, pathRouter.getPath(), pathRouter);
+        context.addServletMappingDecoded(pathRouter.getPath(), pathRouter.getPath());
+    }
+
+    public void addAPI(WebserverAPI api) {
+        this.pathRouter.addAPI(api);
     }
 
     public void stop() {

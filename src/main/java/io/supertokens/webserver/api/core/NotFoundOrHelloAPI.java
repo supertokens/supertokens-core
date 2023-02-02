@@ -22,9 +22,10 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
-
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class NotFoundOrHelloAPI extends WebserverAPI {
@@ -41,9 +42,29 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
     }
 
     @Override
-    protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        if (req.getRequestURI().equals("/")) {
-            Storage storage = StorageLayer.getStorage(main);
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        handleRequest(req, resp);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        handleRequest(req, resp);
+    }
+
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        handleRequest(req, resp);
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        handleRequest(req, resp);
+    }
+
+    protected void handleRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        // getServletPath returns the path without the base path.
+        if (req.getServletPath().equals("/")) {
+            Storage storage = StorageLayer.getStorage(null, null, main);
             try {
                 storage.getKeyValue("Test");
                 super.sendTextResponse(200, "Hello", resp);

@@ -167,14 +167,15 @@ public abstract class WebserverAPI extends HttpServlet {
                 String version = getVersionFromRequest(req);
                 assertThatVersionIsCompatible(version);
                 Logging.info(main,
-                        "API called: " + this.getPath() + ". Method: " + req.getMethod() + ". Version: " + version,
+                        "API called: " + req.getRequestURI() + ". Method: " + req.getMethod() + ". Version: " + version,
                         false);
             } else {
-                Logging.info(main, "API called: " + this.getPath() + ". Method: " + req.getMethod(), false);
+                Logging.info(main, "API called: " + req.getRequestURI() + ". Method: " + req.getMethod(), false);
             }
             super.service(req, resp);
         } catch (Exception e) {
-            Logging.error(main, "API threw an exception: " + req.getMethod() + " " + this.getPath(), Main.isTesting, e);
+            Logging.error(main, "API threw an exception: " + req.getMethod() + " " + req.getRequestURI(),
+                    Main.isTesting, e);
 
             if (e instanceof QuitProgramException) {
                 main.wakeUpMainThreadToShutdown();
@@ -192,7 +193,7 @@ public abstract class WebserverAPI extends HttpServlet {
                 sendTextResponse(500, "Internal Error", resp);
             }
         }
-        Logging.info(main, "API ended: " + this.getPath() + ". Method: " + req.getMethod(), false);
+        Logging.info(main, "API ended: " + req.getRequestURI() + ". Method: " + req.getMethod(), false);
     }
 
     protected String getRIDFromRequest(HttpServletRequest req) {
