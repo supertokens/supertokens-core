@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.core;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -50,7 +51,7 @@ public class DeleteUserAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
     }

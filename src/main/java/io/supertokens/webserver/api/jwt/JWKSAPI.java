@@ -21,6 +21,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.jwt.JWTSigningFunctions;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -57,8 +58,7 @@ public class JWKSAPI extends WebserverAPI {
             reply.add("keys", jwksJsonArray);
             reply.addProperty("status", "OK");
             super.sendJsonResponse(200, reply, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
-                | InvalidKeySpecException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | InvalidKeySpecException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
     }

@@ -20,6 +20,8 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
+import io.supertokens.config.CoreConfig;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
@@ -61,7 +63,12 @@ public class Session {
             throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
-        return createNewSession(connectionUriDomain, tenantId, main, userId, userDataInJWT, userDataInDatabase, false);
+        try {
+            return createNewSession(connectionUriDomain, tenantId, main, userId, userDataInJWT, userDataInDatabase,
+                    false);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     @TestOnly
@@ -83,7 +90,11 @@ public class Session {
             throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
-        return createNewSession(null, null, main, userId, userDataInJWT, userDataInDatabase, enableAntiCsrf);
+        try {
+            return createNewSession(null, null, main, userId, userDataInJWT, userDataInDatabase, enableAntiCsrf);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static SessionInformationHolder createNewSession(String connectionUriDomain, String tenantId, Main main,
@@ -93,7 +104,7 @@ public class Session {
                                                             boolean enableAntiCsrf)
             throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
-            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
+            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException, TenantNotFoundException {
         String sessionHandle = UUID.randomUUID().toString();
         String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
         final TokenInfo refreshToken = RefreshToken.createNewRefreshToken(connectionUriDomain, tenantId, main,
@@ -123,7 +134,11 @@ public class Session {
             throws StorageQueryException, StorageTransactionLogicException,
             UnauthorisedException, InvalidKeySpecException, SignatureException, NoSuchAlgorithmException,
             InvalidKeyException, UnsupportedEncodingException {
-        return regenerateToken(null, null, main, token, userDataInJWT);
+        try {
+            return regenerateToken(null, null, main, token, userDataInJWT);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     /*
@@ -146,7 +161,7 @@ public class Session {
                                                            @Nullable JsonObject userDataInJWT)
             throws StorageQueryException, StorageTransactionLogicException,
             UnauthorisedException, InvalidKeySpecException, SignatureException, NoSuchAlgorithmException,
-            InvalidKeyException, UnsupportedEncodingException {
+            InvalidKeyException, UnsupportedEncodingException, TenantNotFoundException {
 
         // We assume the token has already been verified at this point. It may be expired or JWT signing key may have
         // changed for it...
@@ -186,7 +201,11 @@ public class Session {
                                                       boolean enableAntiCsrf, Boolean doAntiCsrfCheck)
             throws StorageQueryException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException {
-        return getSession(null, null, main, token, antiCsrfToken, enableAntiCsrf, doAntiCsrfCheck);
+        try {
+            return getSession(null, null, main, token, antiCsrfToken, enableAntiCsrf, doAntiCsrfCheck);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     // pass antiCsrfToken to disable csrf check for this request
@@ -194,9 +213,9 @@ public class Session {
                                                       @Nonnull String token, @Nullable String antiCsrfToken,
                                                       boolean enableAntiCsrf, Boolean doAntiCsrfCheck)
             throws StorageQueryException,
-            StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException {
+            StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException, TenantNotFoundException {
 
-        AccessTokenInfo accessToken = AccessToken.getInfoFromAccessToken(main, token,
+        AccessTokenInfo accessToken = AccessToken.getInfoFromAccessToken(connectionUriDomain, tenantId, main, token,
                 doAntiCsrfCheck && enableAntiCsrf);
 
         if (enableAntiCsrf && doAntiCsrfCheck
@@ -229,6 +248,7 @@ public class Session {
             SessionSQLStorage storage = (SessionSQLStorage) StorageLayer.getSessionStorage(connectionUriDomain,
                     tenantId, main);
             try {
+                CoreConfig config = Config.getConfig(connectionUriDomain, tenantId, main);
                 return storage.startTransaction(con -> {
                     try {
 
@@ -249,8 +269,7 @@ public class Session {
                                 storage.updateSessionInfo_Transaction(con, accessToken.sessionHandle,
                                         Utils.hashSHA256(accessToken.refreshTokenHash1),
                                         System.currentTimeMillis() +
-                                                Config.getConfig(connectionUriDomain, tenantId, main)
-                                                        .getRefreshTokenValidity());
+                                                config.getRefreshTokenValidity());
                             }
                             storage.commitTransaction(con);
 
@@ -283,13 +302,15 @@ public class Session {
                                 // because we are not returning a new access token
                                 null, null, null, null);
                     } catch (UnauthorisedException | NoSuchAlgorithmException | UnsupportedEncodingException
-                            | InvalidKeyException | InvalidKeySpecException | SignatureException e) {
+                            | InvalidKeyException | InvalidKeySpecException | SignatureException | TenantNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                 });
             } catch (StorageTransactionLogicException e) {
                 if (e.actualException instanceof UnauthorisedException) {
                     throw (UnauthorisedException) e.actualException;
+                } else if (e.actualException instanceof TenantNotFoundException) {
+                    throw (TenantNotFoundException) e.actualException;
                 }
                 throw e;
             }
@@ -363,15 +384,20 @@ public class Session {
                                                           @Nullable String antiCsrfToken, boolean enableAntiCsrf)
             throws StorageTransactionLogicException,
             UnauthorisedException, StorageQueryException, TokenTheftDetectedException {
-        return refreshSession(null, null, main, refreshToken, antiCsrfToken, enableAntiCsrf);
+        try {
+            return refreshSession(null, null, main, refreshToken, antiCsrfToken, enableAntiCsrf);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static SessionInformationHolder refreshSession(String connectionUriDomain, String tenantId, Main main,
                                                           @Nonnull String refreshToken,
                                                           @Nullable String antiCsrfToken, boolean enableAntiCsrf)
             throws StorageTransactionLogicException,
-            UnauthorisedException, StorageQueryException, TokenTheftDetectedException {
-        RefreshToken.RefreshTokenInfo refreshTokenInfo = RefreshToken.getInfoFromRefreshToken(main, refreshToken);
+            UnauthorisedException, StorageQueryException, TokenTheftDetectedException, TenantNotFoundException {
+        RefreshToken.RefreshTokenInfo refreshTokenInfo = RefreshToken.getInfoFromRefreshToken(connectionUriDomain,
+                tenantId, main, refreshToken);
 
         if (enableAntiCsrf && refreshTokenInfo.antiCsrfToken != null) {
             // anti csrf is enabled, and the refresh token contains an anticsrf token (it's not the older version)
@@ -389,7 +415,7 @@ public class Session {
                                                                  RefreshToken.RefreshTokenInfo refreshTokenInfo,
                                                                  boolean enableAntiCsrf)
             throws StorageTransactionLogicException, UnauthorisedException, StorageQueryException,
-            TokenTheftDetectedException {
+            TokenTheftDetectedException, TenantNotFoundException {
         ////////////////////////////////////////// SQL/////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////
@@ -400,6 +426,7 @@ public class Session {
             SessionSQLStorage storage = (SessionSQLStorage) StorageLayer.getSessionStorage(connectionUriDomain,
                     tenantId, main);
             try {
+                CoreConfig config = Config.getConfig(connectionUriDomain, tenantId, main);
                 return storage.startTransaction(con -> {
                     try {
                         String sessionHandle = refreshTokenInfo.sessionHandle;
@@ -415,7 +442,8 @@ public class Session {
                             // at this point, the input refresh token is the parent one.
                             storage.commitTransaction(con);
                             String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
-                            final TokenInfo newRefreshToken = RefreshToken.createNewRefreshToken(main, sessionHandle,
+                            final TokenInfo newRefreshToken = RefreshToken.createNewRefreshToken(connectionUriDomain,
+                                    tenantId, main, sessionHandle,
                                     sessionInfo.userId, Utils.hashSHA256(refreshToken), antiCsrfToken);
 
                             TokenInfo newAccessToken = AccessToken.createNewAccessToken(connectionUriDomain, tenantId,
@@ -440,8 +468,7 @@ public class Session {
                                 .equals(sessionInfo.refreshTokenHash2))) {
                             storage.updateSessionInfo_Transaction(con, sessionHandle,
                                     Utils.hashSHA256(Utils.hashSHA256(refreshToken)),
-                                    System.currentTimeMillis() + Config.getConfig(connectionUriDomain, tenantId, main)
-                                            .getRefreshTokenValidity());
+                                    System.currentTimeMillis() + config.getRefreshTokenValidity());
 
                             storage.commitTransaction(con);
 
@@ -456,7 +483,7 @@ public class Session {
                     } catch (UnauthorisedException | NoSuchAlgorithmException | InvalidKeyException
                             | UnsupportedEncodingException | TokenTheftDetectedException | InvalidKeySpecException
                             | SignatureException | NoSuchPaddingException | InvalidAlgorithmParameterException
-                            | IllegalBlockSizeException | BadPaddingException e) {
+                            | IllegalBlockSizeException | BadPaddingException | TenantNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                 });
@@ -465,6 +492,8 @@ public class Session {
                     throw (UnauthorisedException) e.actualException;
                 } else if (e.actualException instanceof TokenTheftDetectedException) {
                     throw (TokenTheftDetectedException) e.actualException;
+                } else if (e.actualException instanceof TenantNotFoundException) {
+                    throw (TenantNotFoundException) e.actualException;
                 }
                 throw e;
             }
@@ -546,12 +575,16 @@ public class Session {
     public static String[] revokeSessionUsingSessionHandles(Main main,
                                                             String[] sessionHandles)
             throws StorageQueryException {
-        return revokeSessionUsingSessionHandles(null, null, main, sessionHandles);
+        try {
+            return revokeSessionUsingSessionHandles(null, null, main, sessionHandles);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static String[] revokeSessionUsingSessionHandles(String connectionUriDomain, String tenantId, Main main,
                                                             String[] sessionHandles)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         int numberOfSessionsRevoked = StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main)
                 .deleteSession(sessionHandles);
 
@@ -579,11 +612,16 @@ public class Session {
     @TestOnly
     public static String[] revokeAllSessionsForUser(Main main,
                                                     String userId) throws StorageQueryException {
-        return revokeAllSessionsForUser(null, null, main, userId);
+        try {
+            return revokeAllSessionsForUser(null, null, main, userId);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static String[] revokeAllSessionsForUser(String connectionUriDomain, String tenantId, Main main,
-                                                    String userId) throws StorageQueryException {
+                                                    String userId) throws StorageQueryException,
+            TenantNotFoundException {
         String[] sessionHandles = getAllNonExpiredSessionHandlesForUser(connectionUriDomain, tenantId, main, userId);
         return revokeSessionUsingSessionHandles(connectionUriDomain, tenantId, main, sessionHandles);
     }
@@ -591,12 +629,16 @@ public class Session {
     @TestOnly
     public static String[] getAllNonExpiredSessionHandlesForUser(Main main, String userId)
             throws StorageQueryException {
-        return getAllNonExpiredSessionHandlesForUser(null, null, main, userId);
+        try {
+            return getAllNonExpiredSessionHandlesForUser(null, null, main, userId);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static String[] getAllNonExpiredSessionHandlesForUser(String connectionUriDomain, String tenantId, Main main,
                                                                  String userId)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         return StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main)
                 .getAllNonExpiredSessionHandlesForUser(userId);
     }
@@ -606,13 +648,17 @@ public class Session {
     public static JsonObject getSessionData(Main main,
                                             String sessionHandle)
             throws StorageQueryException, UnauthorisedException {
-        return getSessionData(null, null, main, sessionHandle);
+        try {
+            return getSessionData(null, null, main, sessionHandle);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     @Deprecated
     public static JsonObject getSessionData(String connectionUriDomain, String tenantId, Main main,
                                             String sessionHandle)
-            throws StorageQueryException, UnauthorisedException {
+            throws StorageQueryException, UnauthorisedException, TenantNotFoundException {
         io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(connectionUriDomain,
                         tenantId, main)
                 .getSession(sessionHandle);
@@ -626,12 +672,16 @@ public class Session {
     @Deprecated
     public static JsonObject getJWTData(Main main, String sessionHandle)
             throws StorageQueryException, UnauthorisedException {
-        return getJWTData(null, null, main, sessionHandle);
+        try {
+            return getJWTData(null, null, main, sessionHandle);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     @Deprecated
     public static JsonObject getJWTData(String connectionUriDomain, String tenantId, Main main, String sessionHandle)
-            throws StorageQueryException, UnauthorisedException {
+            throws StorageQueryException, UnauthorisedException, TenantNotFoundException {
         io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(connectionUriDomain,
                         tenantId, main)
                 .getSession(sessionHandle);
@@ -645,7 +695,11 @@ public class Session {
     public static io.supertokens.pluginInterface.session.SessionInfo getSession(Main main,
                                                                                 String sessionHandle)
             throws StorageQueryException, UnauthorisedException {
-        return getSession(null, null, main, sessionHandle);
+        try {
+            return getSession(null, null, main, sessionHandle);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     /**
@@ -656,7 +710,7 @@ public class Session {
     public static io.supertokens.pluginInterface.session.SessionInfo getSession(String connectionUriDomain,
                                                                                 String tenantId, Main main,
                                                                                 String sessionHandle)
-            throws StorageQueryException, UnauthorisedException {
+            throws StorageQueryException, UnauthorisedException, TenantNotFoundException {
         io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(connectionUriDomain,
                         tenantId, main)
                 .getSession(sessionHandle);
@@ -674,13 +728,17 @@ public class Session {
                                      @Nullable JsonObject sessionData,
                                      @Nullable JsonObject jwtData, @Nullable Long lmrt)
             throws StorageQueryException, UnauthorisedException {
-        updateSession(null, null, main, sessionHandle, sessionData, jwtData, lmrt);
+        try {
+            updateSession(null, null, main, sessionHandle, sessionData, jwtData, lmrt);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static void updateSession(String connectionUriDomain, String tenantId, Main main, String sessionHandle,
                                      @Nullable JsonObject sessionData,
                                      @Nullable JsonObject jwtData, @Nullable Long lmrt)
-            throws StorageQueryException, UnauthorisedException {
+            throws StorageQueryException, UnauthorisedException, TenantNotFoundException {
         io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(connectionUriDomain,
                         tenantId, main)
                 .getSession(sessionHandle);

@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
+import io.supertokens.exceptions.TenantNotFoundException;
 import org.apache.tomcat.util.codec.binary.Base64;
 
 import javax.annotation.Nullable;
@@ -50,7 +51,7 @@ public class PasswordHashingUtils {
                                                                        Main main, String passwordHash,
                                                                        @Nullable
                                                                                CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
-            throws UnsupportedPasswordHashingFormatException {
+            throws UnsupportedPasswordHashingFormatException, TenantNotFoundException {
         if (hashingAlgorithm == null) {
             if (ParsedFirebaseSCryptResponse.fromHashString(passwordHash) != null) {
                 // since input hash is in firebase scrypt format we check if firebase scrypt signer key is set

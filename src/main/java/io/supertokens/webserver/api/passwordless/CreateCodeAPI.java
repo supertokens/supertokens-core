@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.passwordless;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.CreateCodeResponse;
 import io.supertokens.passwordless.exceptions.Base64EncodingException;
@@ -101,7 +102,7 @@ public class CreateCodeAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "USER_INPUT_CODE_ALREADY_USED_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeyException e) {
+        } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeyException | TenantNotFoundException e) {
             throw new ServletException(e);
         } catch (Base64EncodingException ex) {
             throw new ServletException(new BadRequestException("Input encoding error in " + ex.source));

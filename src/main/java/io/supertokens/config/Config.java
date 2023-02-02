@@ -24,7 +24,7 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
-import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -63,7 +63,8 @@ public class Config extends ResourceDistributor.SingletonResource {
         this.core = config;
     }
 
-    private static Config getInstance(String connectionUriDomain, String tenantId, Main main) {
+    private static Config getInstance(String connectionUriDomain, String tenantId, Main main)
+            throws TenantNotFoundException {
         return (Config) main.getResourceDistributor().getResource(connectionUriDomain, tenantId, RESOURCE_KEY);
     }
 
@@ -75,7 +76,11 @@ public class Config extends ResourceDistributor.SingletonResource {
                             new Config(main, getConfigFilePath(main)));
 
             // this function is only called for the base config since we only want one logging file(s) for all tenants
-            getInstance(null, null, main).core.createLoggingFile(main);
+            try {
+                getInstance(null, null, main).core.createLoggingFile(main);
+            } catch (TenantNotFoundException ignored) {
+                // should never come here..
+            }
 
             Logging.info(main, "Loading supertokens config.", true);
         }
@@ -207,16 +212,6 @@ public class Config extends ResourceDistributor.SingletonResource {
                 });
             }
 
-            fetchedConfig = jsonConfigs.get(
-                    new ResourceDistributor.KeyClass(null, tenantId, RESOURCE_KEY));
-            if (fetchedConfig != null) {
-                fetchedConfig.entrySet().forEach(stringJsonElementEntry -> {
-                    if (!finalJson.has(stringJsonElementEntry.getKey())) {
-                        finalJson.add(stringJsonElementEntry.getKey(), stringJsonElementEntry.getValue());
-                    }
-                });
-            }
-
             baseConfigJson.entrySet().forEach(stringJsonElementEntry -> {
                 if (!finalJson.has(stringJsonElementEntry.getKey())) {
                     finalJson.add(stringJsonElementEntry.getKey(), stringJsonElementEntry.getValue());
@@ -233,17 +228,25 @@ public class Config extends ResourceDistributor.SingletonResource {
         return result;
     }
 
-    public static CoreConfig getConfig(String connectionUriDomain, String tenantId, Main main) {
+    public static CoreConfig getConfig(String connectionUriDomain, String tenantId, Main main)
+            throws TenantNotFoundException {
         synchronized (lock) {
-            if (getInstance(connectionUriDomain, tenantId, main) == null) {
-                throw new QuitProgramException("Please call loadConfig() before calling getConfig()");
-            }
             return getInstance(connectionUriDomain, tenantId, main).core;
         }
     }
 
+    public static CoreConfig getBaseConfig(Main main) {
+        synchronized (lock) {
+            try {
+                return getInstance(null, null, main).core;
+            } catch (TenantNotFoundException ignored) {
+                throw new IllegalStateException("Should never come here");
+            }
+        }
+    }
+
     @TestOnly
-    public static CoreConfig getConfig(Main main) {
+    public static CoreConfig getConfig(Main main) throws TenantNotFoundException {
         return getConfig(null, null, main);
     }
 

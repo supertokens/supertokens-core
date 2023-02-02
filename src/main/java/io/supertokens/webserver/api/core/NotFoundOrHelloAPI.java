@@ -64,7 +64,7 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
     protected void handleRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         // getServletPath returns the path without the base path.
         if (req.getServletPath().equals("/")) {
-            Storage storage = StorageLayer.getStorage(null, null, main);
+            Storage storage = StorageLayer.getBaseStorage(main);
             try {
                 storage.getKeyValue("Test");
                 super.sendTextResponse(200, "Hello", resp);

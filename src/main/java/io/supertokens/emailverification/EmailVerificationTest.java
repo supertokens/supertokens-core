@@ -43,7 +43,7 @@ public class EmailVerificationTest extends ResourceDistributor.SingletonResource
 
     public long getEmailVerificationTokenLifetime() {
         if (this.emailVerificationTokenLifetimeMS == null) {
-            return Config.getConfig(null, null, this.main).getEmailVerificationTokenLifetime();
+            return Config.getBaseConfig(this.main).getEmailVerificationTokenLifetime();
         }
         return this.emailVerificationTokenLifetimeMS;
     }

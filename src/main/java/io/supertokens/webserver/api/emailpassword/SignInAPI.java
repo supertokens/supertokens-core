@@ -22,6 +22,7 @@ import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -86,7 +87,7 @@ public class SignInAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "WRONG_CREDENTIALS_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
 

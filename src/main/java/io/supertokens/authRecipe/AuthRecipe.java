@@ -17,6 +17,7 @@
 package io.supertokens.authRecipe;
 
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -34,21 +35,26 @@ public class AuthRecipe {
     public static final int USER_PAGINATION_LIMIT = 500;
 
     public static long getUsersCount(String connectionUriDomain, String tenantId, Main main,
-                                     RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
+                                     RECIPE_ID[] includeRecipeIds) throws StorageQueryException,
+            TenantNotFoundException {
         return StorageLayer.getAuthRecipeStorage(connectionUriDomain, tenantId, main).getUsersCount(includeRecipeIds);
     }
 
     @TestOnly
     public static long getUsersCount(Main main,
                                      RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
-        return getUsersCount(null, null, main, includeRecipeIds);
+        try {
+            return getUsersCount(null, null, main, includeRecipeIds);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static UserPaginationContainer getUsers(String connectionUriDomain, String tenantId, Main main,
                                                    Integer limit, String timeJoinedOrder,
                                                    @Nullable String paginationToken,
                                                    @Nullable RECIPE_ID[] includeRecipeIds)
-            throws StorageQueryException, UserPaginationToken.InvalidTokenException {
+            throws StorageQueryException, UserPaginationToken.InvalidTokenException, TenantNotFoundException {
         AuthRecipeUserInfo[] users;
         if (paginationToken == null) {
             users = StorageLayer.getAuthRecipeStorage(connectionUriDomain, tenantId, main)
@@ -77,11 +83,15 @@ public class AuthRecipe {
                                                    @Nullable String paginationToken,
                                                    @Nullable RECIPE_ID[] includeRecipeIds)
             throws StorageQueryException, UserPaginationToken.InvalidTokenException {
-        return getUsers(null, null, main, limit, timeJoinedOrder, paginationToken, includeRecipeIds);
+        try {
+            return getUsers(null, null, main, limit, timeJoinedOrder, paginationToken, includeRecipeIds);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static void deleteUser(String connectionUriDomain, String tenantId, Main main, String userId)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         // We clean up the user last so that if anything before that throws an error, then that will throw a 500 to the
         // developer. In this case, they expect that the user has not been deleted (which will be true). This is as
         // opposed to deleting the user first, in which case if something later throws an error, then the user has
@@ -122,11 +132,15 @@ public class AuthRecipe {
     @TestOnly
     public static void deleteUser(Main main, String userId)
             throws StorageQueryException {
-        deleteUser(null, null, main, userId);
+        try {
+            deleteUser(null, null, main, userId);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     private static void deleteNonAuthRecipeUser(String connectionUriDomain, String tenantId, Main main, String userId)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         // non auth recipe deletion
         StorageLayer.getUserMetadataStorage(connectionUriDomain, tenantId, main).deleteUserMetadata(userId);
         StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main).deleteSessionsOfUser(userId);
@@ -136,7 +150,7 @@ public class AuthRecipe {
     }
 
     private static void deleteAuthRecipeUser(String connectionUriDomain, String tenantId, Main main, String userId)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         // auth recipe deletions here only
         StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main).deleteEmailPasswordUser(userId);
         StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main).deleteThirdPartyUser(userId);

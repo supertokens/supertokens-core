@@ -18,6 +18,7 @@ package io.supertokens.thirdparty;
 
 import io.supertokens.Main;
 import io.supertokens.authRecipe.UserPaginationToken;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
@@ -49,21 +50,29 @@ public class ThirdParty {
     @Deprecated
     public static SignInUpResponse signInUp2_7(String connectionUriDomain, String tenantId, Main main,
                                                String thirdPartyId, String thirdPartyUserId, String email,
-                                               boolean isEmailVerified) throws StorageQueryException {
+                                               boolean isEmailVerified)
+            throws StorageQueryException, TenantNotFoundException {
         SignInUpResponse response = signInUpHelper(connectionUriDomain, tenantId, main, thirdPartyId, thirdPartyUserId,
                 email);
 
         if (isEmailVerified) {
             try {
                 StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main).startTransaction(con -> {
-                    StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main)
-                            .updateIsEmailVerified_Transaction(con,
-                                    response.user.id, response.user.email, true);
-                    StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main)
-                            .commitTransaction(con);
-                    return null;
+                    try {
+                        StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main)
+                                .updateIsEmailVerified_Transaction(con,
+                                        response.user.id, response.user.email, true);
+                        StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main)
+                                .commitTransaction(con);
+                        return null;
+                    } catch (TenantNotFoundException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
                 });
             } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof TenantNotFoundException) {
+                    throw (TenantNotFoundException) e.actualException;
+                }
                 throw new StorageQueryException(e);
             }
         }
@@ -76,24 +85,32 @@ public class ThirdParty {
     public static SignInUpResponse signInUp2_7(Main main,
                                                String thirdPartyId, String thirdPartyUserId, String email,
                                                boolean isEmailVerified) throws StorageQueryException {
-        return signInUp2_7(null, null, main, thirdPartyId, thirdPartyUserId, email, isEmailVerified);
+        try {
+            return signInUp2_7(null, null, main, thirdPartyId, thirdPartyUserId, email, isEmailVerified);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     @TestOnly
     public static SignInUpResponse signInUp(Main main, String thirdPartyId, String thirdPartyUserId, String email)
             throws StorageQueryException {
-        return signInUp(null, null, main, thirdPartyId, thirdPartyUserId, email);
+        try {
+            return signInUp(null, null, main, thirdPartyId, thirdPartyUserId, email);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static SignInUpResponse signInUp(String connectionUriDomain, String tenantId, Main main, String thirdPartyId,
                                             String thirdPartyUserId, String email)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         return signInUpHelper(connectionUriDomain, tenantId, main, thirdPartyId, thirdPartyUserId, email);
     }
 
     private static SignInUpResponse signInUpHelper(String connectionUriDomain, String tenantId, Main main,
                                                    String thirdPartyId, String thirdPartyUserId,
-                                                   String email) throws StorageQueryException {
+                                                   String email) throws StorageQueryException, TenantNotFoundException {
         ThirdPartySQLStorage storage = StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main);
         while (true) {
             // loop for sign in + sign up
@@ -152,7 +169,7 @@ public class ThirdParty {
     }
 
     public static UserInfo getUser(String connectionUriDomain, String tenantId, Main main, String userId)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         return StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main)
                 .getThirdPartyUserInfoUsingId(userId);
     }
@@ -160,13 +177,17 @@ public class ThirdParty {
     @TestOnly
     public static UserInfo getUser(Main main, String userId)
             throws StorageQueryException {
-        return getUser(null, null, main, userId);
+        try {
+            return getUser(null, null, main, userId);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
 
     public static UserInfo getUser(String connectionUriDomain, String tenantId, Main main, String thirdPartyId,
                                    String thirdPartyUserId)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         return StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main)
                 .getThirdPartyUserInfoUsingId(thirdPartyId, thirdPartyUserId);
     }
@@ -175,14 +196,18 @@ public class ThirdParty {
     public static UserInfo getUser(Main main, String thirdPartyId,
                                    String thirdPartyUserId)
             throws StorageQueryException {
-        return getUser(null, null, main, thirdPartyId, thirdPartyUserId);
+        try {
+            return getUser(null, null, main, thirdPartyId, thirdPartyUserId);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     @Deprecated
     public static UserPaginationContainer getUsers(String connectionUriDomain, String tenantId, Main main,
                                                    @Nullable String paginationToken, Integer limit,
                                                    String timeJoinedOrder)
-            throws StorageQueryException, UserPaginationToken.InvalidTokenException {
+            throws StorageQueryException, UserPaginationToken.InvalidTokenException, TenantNotFoundException {
         UserInfo[] users;
         if (paginationToken == null) {
             users = StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main)
@@ -210,17 +235,22 @@ public class ThirdParty {
                                                    @Nullable String paginationToken, Integer limit,
                                                    String timeJoinedOrder)
             throws StorageQueryException, UserPaginationToken.InvalidTokenException {
-        return getUsers(null, null, main, paginationToken, limit, timeJoinedOrder);
+        try {
+            return getUsers(null, null, main, paginationToken, limit, timeJoinedOrder);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static UserInfo[] getUsersByEmail(String connectionUriDomain, String tenantId, Main main,
-                                             @Nonnull String email) throws StorageQueryException {
+                                             @Nonnull String email)
+            throws StorageQueryException, TenantNotFoundException {
         return StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main).getThirdPartyUsersByEmail(email);
     }
 
     @Deprecated
     public static long getUsersCount(String connectionUriDomain, String tenantId, Main main)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         return StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main).getThirdPartyUsersCount();
     }
 
@@ -228,7 +258,11 @@ public class ThirdParty {
     @Deprecated
     public static long getUsersCount(Main main)
             throws StorageQueryException {
-        return getUsersCount(null, null, main);
+        try {
+            return getUsersCount(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
 }

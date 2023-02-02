@@ -23,6 +23,7 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -86,7 +87,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         result.constructor(main.getProcessId(), Main.makeConsolePrintSilent);
 
         // this is intentionally null, null below cause log levels is per core and not per tenant anyway
-        result.loadConfig(config, Config.getConfig(null, null, main).getLogLevels(main));
+        result.loadConfig(config, Config.getBaseConfig(main).getLogLevels(main));
         return result;
     }
 
@@ -123,9 +124,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     public static void close(Main main) {
-        if (getInstance(null, null, main) == null) {
-            return;
-        }
         Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
                 main.getResourceDistributor()
                         .getAllResourcesWithResourceKey(RESOURCE_KEY);
@@ -135,9 +133,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     public static void stopLogging(Main main) {
-        if (getInstance(null, null, main) == null) {
-            return;
-        }
         Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
                 main.getResourceDistributor()
                         .getAllResourcesWithResourceKey(RESOURCE_KEY);
@@ -148,9 +143,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static void deleteAllInformation(Main main) throws StorageQueryException {
-        if (getInstance(null, null, main) == null) {
-            return;
-        }
         Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
                 main.getResourceDistributor()
                         .getAllResourcesWithResourceKey(RESOURCE_KEY);
@@ -181,7 +173,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    private static StorageLayer getInstance(String connectionUriDomain, String tenantId, Main main) {
+    private static StorageLayer getInstance(String connectionUriDomain, String tenantId, Main main)
+            throws TenantNotFoundException {
         return (StorageLayer) main.getResourceDistributor().getResource(connectionUriDomain, tenantId, RESOURCE_KEY);
     }
 
@@ -255,12 +248,16 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
             // we remove storage layers that are no longer being used
             for (ResourceDistributor.KeyClass key : existingStorageMap.keySet()) {
-                if (((StorageLayer) main.getResourceDistributor()
-                        .getResource(key.getConnectionUriDomain(), key.getTenantId(), RESOURCE_KEY)).storage !=
-                        ((StorageLayer) existingStorageMap.get(key)).storage) {
-                    // this means that this storage layer is no longer being used, so we close it
-                    ((StorageLayer) existingStorageMap.get(key)).storage.close();
-                    ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
+                try {
+                    if (((StorageLayer) main.getResourceDistributor()
+                            .getResource(key.getConnectionUriDomain(), key.getTenantId(), RESOURCE_KEY)).storage !=
+                            ((StorageLayer) existingStorageMap.get(key)).storage) {
+                        // this means that this storage layer is no longer being used, so we close it
+                        ((StorageLayer) existingStorageMap.get(key)).storage.close();
+                        ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
+                    }
+                } catch (TenantNotFoundException e) {
+                    throw new IllegalStateException("Should never come here");
                 }
             }
 
@@ -273,8 +270,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 try {
                     ((StorageLayer) resource).storage.initStorage();
                     ((StorageLayer) resource).storage.initFileLogging(
-                            Config.getConfig(null, null, main).getInfoLogPath(main),
-                            Config.getConfig(null, null, main).getErrorLogPath(main));
+                            Config.getBaseConfig(main).getInfoLogPath(main),
+                            Config.getBaseConfig(main).getErrorLogPath(main));
                 } catch (DbInitException e) {
                     lastError = e;
                 }
@@ -291,54 +288,67 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         loadAllTenantStorage(main, tenants);
     }
 
-    public static Storage getStorage(String connectionUriDomain, String tenantId, Main main) {
+    public static Storage getBaseStorage(Main main) {
         synchronized (lock) {
-            if (getInstance(connectionUriDomain, tenantId, main) == null) {
-                throw new QuitProgramException("please call init() before calling getStorageLayer");
+            try {
+                return getInstance(null, null, main).storage;
+            } catch (TenantNotFoundException e) {
+                throw new IllegalStateException("Should never come here");
             }
+        }
+    }
+
+    public static Storage getStorage(String connectionUriDomain, String tenantId, Main main)
+            throws TenantNotFoundException {
+        synchronized (lock) {
             return getInstance(connectionUriDomain, tenantId, main).storage;
         }
     }
 
     @TestOnly
     public static Storage getStorage(Main main) {
-        return getStorage(null, null, main);
+        try {
+            return getStorage(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
-    public static AuthRecipeStorage getAuthRecipeStorage(String connectionUriDomain, String tenantId, Main main) {
+    public static AuthRecipeStorage getAuthRecipeStorage(String connectionUriDomain, String tenantId, Main main)
+            throws TenantNotFoundException {
         synchronized (lock) {
-            if (getInstance(connectionUriDomain, tenantId, main) == null) {
-                throw new QuitProgramException("please call init() before calling getStorageLayer");
-            }
             return (AuthRecipeStorage) getInstance(connectionUriDomain, tenantId, main).storage;
         }
     }
 
     @TestOnly
     public static AuthRecipeStorage getAuthRecipeStorage(Main main) {
-        return getAuthRecipeStorage(null, null, main);
+        try {
+            return getAuthRecipeStorage(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
-    public static SessionStorage getSessionStorage(String connectionUriDomain, String tenantId, Main main) {
+    public static SessionStorage getSessionStorage(String connectionUriDomain, String tenantId, Main main)
+            throws TenantNotFoundException {
         synchronized (lock) {
-            if (getInstance(connectionUriDomain, tenantId, main) == null) {
-                throw new QuitProgramException("please call init() before calling getStorageLayer");
-            }
             return (SessionStorage) getInstance(connectionUriDomain, tenantId, main).storage;
         }
     }
 
     @TestOnly
     public static SessionStorage getSessionStorage(Main main) {
-        return getSessionStorage(null, null, main);
+        try {
+            return getSessionStorage(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static EmailPasswordSQLStorage getEmailPasswordStorage(String connectionUriDomain, String tenantId,
-                                                                  Main main) {
+                                                                  Main main) throws TenantNotFoundException {
         synchronized (lock) {
-            if (getInstance(connectionUriDomain, tenantId, main) == null) {
-                throw new QuitProgramException("please call init() before calling getStorageLayer");
-            }
             if (getInstance(connectionUriDomain, tenantId, main).storage.getType() != STORAGE_TYPE.SQL) {
                 // we only support SQL for now
                 throw new UnsupportedOperationException("");
@@ -349,15 +359,16 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static EmailPasswordSQLStorage getEmailPasswordStorage(Main main) {
-        return getEmailPasswordStorage(null, null, main);
+        try {
+            return getEmailPasswordStorage(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static EmailVerificationSQLStorage getEmailVerificationStorage(String connectionUriDomain, String tenantId,
-                                                                          Main main) {
+                                                                          Main main) throws TenantNotFoundException {
         synchronized (lock) {
-            if (getInstance(connectionUriDomain, tenantId, main) == null) {
-                throw new QuitProgramException("please call init() before calling getStorageLayer");
-            }
             if (getInstance(connectionUriDomain, tenantId, main).storage.getType() != STORAGE_TYPE.SQL) {
                 // we only support SQL for now
                 throw new UnsupportedOperationException("");
@@ -368,14 +379,16 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static EmailVerificationSQLStorage getEmailVerificationStorage(Main main) {
-        return getEmailVerificationStorage(null, null, main);
+        try {
+            return getEmailVerificationStorage(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
-    public static ThirdPartySQLStorage getThirdPartyStorage(String connectionUriDomain, String tenantId, Main main) {
+    public static ThirdPartySQLStorage getThirdPartyStorage(String connectionUriDomain, String tenantId, Main main)
+            throws TenantNotFoundException {
         synchronized (lock) {
-            if (getInstance(connectionUriDomain, tenantId, main) == null) {
-                throw new QuitProgramException("please call init() before calling getStorageLayer");
-            }
             if (getInstance(connectionUriDomain, tenantId, main).storage.getType() != STORAGE_TYPE.SQL) {
                 // we only support SQL for now
                 throw new UnsupportedOperationException("");
@@ -386,15 +399,16 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static ThirdPartySQLStorage getThirdPartyStorage(Main main) {
-        return getThirdPartyStorage(null, null, main);
+        try {
+            return getThirdPartyStorage(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static PasswordlessSQLStorage getPasswordlessStorage(String connectionUriDomain, String tenantId,
-                                                                Main main) {
+                                                                Main main) throws TenantNotFoundException {
         synchronized (lock) {
-            if (getInstance(connectionUriDomain, tenantId, main) == null) {
-                throw new QuitProgramException("please call init() before calling getStorageLayer");
-            }
             if (getInstance(connectionUriDomain, tenantId, main).storage.getType() != STORAGE_TYPE.SQL) {
                 // we only support SQL for now
                 throw new UnsupportedOperationException("");
@@ -405,31 +419,32 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static PasswordlessSQLStorage getPasswordlessStorage(Main main) {
-        return getPasswordlessStorage(null, null, main);
+        try {
+            return getPasswordlessStorage(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
-    public static JWTRecipeStorage getJWTRecipeStorage(String connectionUriDomain, String tenantId, Main main) {
+    public static JWTRecipeStorage getJWTRecipeStorage(String connectionUriDomain, String tenantId, Main main)
+            throws TenantNotFoundException {
         synchronized (lock) {
-            if (getInstance(connectionUriDomain, tenantId, main) == null) {
-                throw new QuitProgramException("please call init() before calling getStorageLayer");
-            }
-
             return (JWTRecipeStorage) getInstance(connectionUriDomain, tenantId, main).storage;
         }
     }
 
     @TestOnly
     public static JWTRecipeStorage getJWTRecipeStorage(Main main) {
-        return getJWTRecipeStorage(null, null, main);
+        try {
+            return getJWTRecipeStorage(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static UserMetadataSQLStorage getUserMetadataStorage(String connectionUriDomain, String tenantId,
-                                                                Main main) {
+                                                                Main main) throws TenantNotFoundException {
         synchronized (lock) {
-            if (getInstance(connectionUriDomain, tenantId, main) == null) {
-                throw new QuitProgramException("please call init() before calling getStorageLayer");
-            }
-
             if (getInstance(connectionUriDomain, tenantId, main).storage.getType() != STORAGE_TYPE.SQL) {
                 // we only support SQL for now
                 throw new UnsupportedOperationException("");
@@ -441,15 +456,16 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static UserMetadataSQLStorage getUserMetadataStorage(Main main) {
-        return getUserMetadataStorage(null, null, main);
+        try {
+            return getUserMetadataStorage(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
-    public static UserRolesSQLStorage getUserRolesStorage(String connectionUriDomain, String tenantId, Main main) {
+    public static UserRolesSQLStorage getUserRolesStorage(String connectionUriDomain, String tenantId, Main main)
+            throws TenantNotFoundException {
         synchronized (lock) {
-            if (getInstance(connectionUriDomain, tenantId, main) == null) {
-                throw new QuitProgramException("please call init() before calling getStorageLayer");
-            }
-
             if (getInstance(connectionUriDomain, tenantId, main).storage.getType() != STORAGE_TYPE.SQL) {
                 // we only support SQL for now
                 throw new UnsupportedOperationException("");
@@ -460,22 +476,27 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static UserRolesSQLStorage getUserRolesStorage(Main main) {
-        return getUserRolesStorage(null, null, main);
+        try {
+            return getUserRolesStorage(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
-    public static UserIdMappingStorage getUserIdMappingStorage(String connectionUriDomain, String tenantId, Main main) {
+    public static UserIdMappingStorage getUserIdMappingStorage(String connectionUriDomain, String tenantId, Main main)
+            throws TenantNotFoundException {
         synchronized (lock) {
-            if (getInstance(connectionUriDomain, tenantId, main) == null) {
-                throw new QuitProgramException("please call init() before calling getStorageLayer");
-            }
-
             return (UserIdMappingStorage) getInstance(connectionUriDomain, tenantId, main).storage;
         }
     }
 
     @TestOnly
     public static UserIdMappingStorage getUserIdMappingStorage(Main main) {
-        return getUserIdMappingStorage(null, null, main);
+        try {
+            return getUserIdMappingStorage(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
 
@@ -483,16 +504,20 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     // cause the data for this is only going to be in the primary db of the core.
     public static MultitenancyStorage getMultitenancyStorage(Main main) {
         synchronized (lock) {
-            if (getInstance(null, null, main) == null) {
-                throw new QuitProgramException("please call init() before calling getStorageLayer");
+            try {
+                return (MultitenancyStorage) getInstance(null, null, main).storage;
+            } catch (TenantNotFoundException ignored) {
+                throw new IllegalStateException("Should never come here");
             }
-
-            return (MultitenancyStorage) getInstance(null, null, main).storage;
         }
     }
 
     public static boolean isInMemDb(Main main) {
-        return getInstance(null, null, main).storage instanceof Start;
+        try {
+            return getInstance(null, null, main).storage instanceof Start;
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     @TestOnly

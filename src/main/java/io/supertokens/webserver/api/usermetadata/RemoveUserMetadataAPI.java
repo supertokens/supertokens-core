@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.usermetadata;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.usermetadata.UserMetadata;
@@ -50,7 +51,7 @@ public class RemoveUserMetadataAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
     }

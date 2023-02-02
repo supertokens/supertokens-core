@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.userroles;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -65,7 +66,7 @@ public class RemoveUserRoleAPI extends WebserverAPI {
             response.addProperty("status", "OK");
             response.addProperty("didUserHaveRole", didUserHaveRole);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantNotFoundException e) {
             throw new ServletException(e);
         } catch (UnknownRoleException e) {
             JsonObject response = new JsonObject();

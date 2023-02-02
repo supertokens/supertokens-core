@@ -48,18 +48,18 @@ public class Logging extends ResourceDistributor.SingletonResource {
     public static final String ANSI_WHITE = "\u001B[37m";
 
     private Logging(Main main) {
-        this.infoLogger = Config.getConfig(null, null, main).getInfoLogPath(main).equals("null")
+        this.infoLogger = Config.getBaseConfig(main).getInfoLogPath(main).equals("null")
                 ? createLoggerForConsole(main, "io.supertokens.Info")
-                : createLoggerForFile(main, Config.getConfig(null, null, main).getInfoLogPath(main),
+                : createLoggerForFile(main, Config.getBaseConfig(main).getInfoLogPath(main),
                 "io.supertokens.Info");
-        this.errorLogger = Config.getConfig(null, null, main).getErrorLogPath(main).equals("null")
+        this.errorLogger = Config.getBaseConfig(main).getErrorLogPath(main).equals("null")
                 ? createLoggerForConsole(main, "io.supertokens.Error")
-                : createLoggerForFile(main, Config.getConfig(null, null, main).getErrorLogPath(main),
+                : createLoggerForFile(main, Config.getBaseConfig(main).getErrorLogPath(main),
                 "io.supertokens.Error");
-        Storage storage = StorageLayer.getStorage(null, null, main);
+        Storage storage = StorageLayer.getBaseStorage(main);
         if (storage != null) {
-            storage.initFileLogging(Config.getConfig(null, null, main).getInfoLogPath(main),
-                    Config.getConfig(null, null, main).getErrorLogPath(main));
+            storage.initFileLogging(Config.getBaseConfig(main).getInfoLogPath(main),
+                    Config.getBaseConfig(main).getErrorLogPath(main));
         }
         try {
             // we wait here for a bit so that the loggers can be properly initialised..
@@ -79,7 +79,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
     }
 
     public static void debug(Main main, String msg) {
-        if (!Config.getConfig(null, null, main).getLogLevels(main).contains(LOG_LEVEL.DEBUG)) {
+        if (!Config.getBaseConfig(main).getLogLevels(main).contains(LOG_LEVEL.DEBUG)) {
             return;
         }
         try {
@@ -93,7 +93,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
     }
 
     public static void info(Main main, String msg, boolean toConsoleAsWell) {
-        if (!Config.getConfig(null, null, main).getLogLevels(main).contains(LOG_LEVEL.INFO)) {
+        if (!Config.getBaseConfig(main).getLogLevels(main).contains(LOG_LEVEL.INFO)) {
             return;
         }
         try {
@@ -109,7 +109,7 @@ public class Logging extends ResourceDistributor.SingletonResource {
     }
 
     public static void warn(Main main, String msg) {
-        if (!Config.getConfig(null, null, main).getLogLevels(main).contains(LOG_LEVEL.WARN)) {
+        if (!Config.getBaseConfig(main).getLogLevels(main).contains(LOG_LEVEL.WARN)) {
             return;
         }
         try {

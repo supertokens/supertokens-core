@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.emailpassword;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.WebserverAPI;
@@ -53,7 +54,7 @@ public class UsersCountAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             result.addProperty("count", count);
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
     }

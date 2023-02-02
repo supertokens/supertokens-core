@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
@@ -37,10 +38,15 @@ public class EmailVerification {
 
     @TestOnly
     public static long getEmailVerificationTokenLifetimeForTests(Main main) {
-        return getEmailVerificationTokenLifetime(null, null, main);
+        try {
+            return getEmailVerificationTokenLifetime(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
-    private static long getEmailVerificationTokenLifetime(String connectionUriDomain, String tenantId, Main main) {
+    private static long getEmailVerificationTokenLifetime(String connectionUriDomain, String tenantId, Main main)
+            throws TenantNotFoundException {
         if (Main.isTesting) {
             return EmailVerificationTest.getInstance(main).getEmailVerificationTokenLifetime();
         }
@@ -51,13 +57,17 @@ public class EmailVerification {
     public static String generateEmailVerificationToken(Main main, String userId, String email)
             throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException,
             EmailAlreadyVerifiedException {
-        return generateEmailVerificationToken(null, null, main, userId, email);
+        try {
+            return generateEmailVerificationToken(null, null, main, userId, email);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static String generateEmailVerificationToken(String connectionUriDomain, String tenantId, Main main,
                                                         String userId, String email)
             throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException,
-            EmailAlreadyVerifiedException {
+            EmailAlreadyVerifiedException, TenantNotFoundException {
 
         if (StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main)
                 .isEmailVerified(userId, email)) {
@@ -100,12 +110,17 @@ public class EmailVerification {
     public static User verifyEmail(Main main, String token)
             throws StorageQueryException,
             EmailVerificationInvalidTokenException, NoSuchAlgorithmException, StorageTransactionLogicException {
-        return verifyEmail(null, null, main, token);
+        try {
+            return verifyEmail(null, null, main, token);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static User verifyEmail(String connectionUriDomain, String tenantId, Main main, String token)
             throws StorageQueryException,
-            EmailVerificationInvalidTokenException, NoSuchAlgorithmException, StorageTransactionLogicException {
+            EmailVerificationInvalidTokenException, NoSuchAlgorithmException, StorageTransactionLogicException,
+            TenantNotFoundException {
 
         String hashedToken = getHashedToken(token);
 
@@ -161,11 +176,15 @@ public class EmailVerification {
     @TestOnly
     public static boolean isEmailVerified(Main main, String userId,
                                           String email) throws StorageQueryException {
-        return isEmailVerified(null, null, main, userId, email);
+        try {
+            return isEmailVerified(null, null, main, userId, email);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static boolean isEmailVerified(String connectionUriDomain, String tenantId, Main main, String userId,
-                                          String email) throws StorageQueryException {
+                                          String email) throws StorageQueryException, TenantNotFoundException {
         return StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main)
                 .isEmailVerified(userId, email);
     }
@@ -173,22 +192,30 @@ public class EmailVerification {
     @TestOnly
     public static void revokeAllTokens(Main main, String userId,
                                        String email) throws StorageQueryException {
-        revokeAllTokens(null, null, main, userId, email);
+        try {
+            revokeAllTokens(null, null, main, userId, email);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static void revokeAllTokens(String connectionUriDomain, String tenantId, Main main, String userId,
-                                       String email) throws StorageQueryException {
+                                       String email) throws StorageQueryException, TenantNotFoundException {
         StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main).revokeAllTokens(userId, email);
     }
 
     @TestOnly
     public static void unverifyEmail(Main main, String userId,
                                      String email) throws StorageQueryException {
-        unverifyEmail(null, null, main, userId, email);
+        try {
+            unverifyEmail(null, null, main, userId, email);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static void unverifyEmail(String connectionUriDomain, String tenantId, Main main, String userId,
-                                     String email) throws StorageQueryException {
+                                     String email) throws StorageQueryException, TenantNotFoundException {
         StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main).unverifyEmail(userId, email);
     }
 

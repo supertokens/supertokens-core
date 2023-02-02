@@ -20,7 +20,6 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
@@ -46,11 +45,7 @@ public class DeleteExpiredPasswordResetTokens extends CronTask {
     @TestOnly
     public static DeleteExpiredPasswordResetTokens getInstance(Main main,
                                                                List<ResourceDistributor.KeyClass> tenantsInfo) {
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance == null) {
-            throw new QuitProgramException("Please call init() before calling getInstance");
-        }
-        return (DeleteExpiredPasswordResetTokens) instance;
+        return (DeleteExpiredPasswordResetTokens) main.getResourceDistributor().getResource(RESOURCE_KEY);
     }
 
     @Override

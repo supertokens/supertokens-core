@@ -24,6 +24,7 @@ import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.authRecipe.UserPaginationToken;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -141,7 +142,7 @@ public class UsersAPI extends WebserverAPI {
         } catch (UserPaginationToken.InvalidTokenException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
             throw new ServletException(new BadRequestException("invalid pagination token"));
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
     }

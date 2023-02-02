@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.User;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -77,7 +78,7 @@ public class VerifyEmailAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_VERIFICATION_INVALID_TOKEN_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
 
@@ -99,7 +100,7 @@ public class VerifyEmailAPI extends WebserverAPI {
             result.addProperty("isVerified", isVerified);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
 

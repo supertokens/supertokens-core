@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.DeviceWithCodes;
 import io.supertokens.passwordless.exceptions.Base64EncodingException;
@@ -68,10 +69,9 @@ public class GetCodesAPI extends WebserverAPI {
                     "Please provide exactly one of email, phoneNumber, deviceId or preAuthSessionId"));
         }
 
-        long passwordlessCodeLifetime = Config.getConfig(this.getConnectionUriDomain(req),
-                this.getTenantId(req), main).getPasswordlessCodeLifetime();
-
         try {
+            long passwordlessCodeLifetime = Config.getConfig(this.getConnectionUriDomain(req),
+                    this.getTenantId(req), main).getPasswordlessCodeLifetime();
             List<Passwordless.DeviceWithCodes> devicesInfos;
             if (deviceId != null) {
                 DeviceWithCodes deviceWithCodes = Passwordless.getDeviceWithCodesById(this.getConnectionUriDomain(req),
@@ -129,7 +129,7 @@ public class GetCodesAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (Base64EncodingException ex) {
             throw new ServletException(new BadRequestException("Input encoding error in " + ex.source));
-        } catch (NoSuchAlgorithmException | StorageTransactionLogicException | StorageQueryException e) {
+        } catch (NoSuchAlgorithmException | StorageTransactionLogicException | StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
     }

@@ -21,7 +21,7 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import org.jetbrains.annotations.TestOnly;
 
@@ -43,12 +43,12 @@ public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
 
     @TestOnly
     public static DeleteExpiredAccessTokenSigningKeys getInstance(Main main) {
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor()
-                .getResource(null, null, RESOURCE_KEY);
-        if (instance == null) {
-            throw new QuitProgramException("Please call init() before calling getInstance");
+        try {
+            return (DeleteExpiredAccessTokenSigningKeys) main.getResourceDistributor()
+                    .getResource(null, null, RESOURCE_KEY);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
         }
-        return (DeleteExpiredAccessTokenSigningKeys) instance;
     }
 
     @Override

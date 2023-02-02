@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -53,12 +54,16 @@ public class HandshakeAPI extends WebserverAPI {
             result.addProperty("status", "OK");
 
             result.addProperty("jwtSigningPublicKey",
-                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value).publicKey);
+                    new Utils.PubPriKey(
+                            AccessTokenSigningKey.getInstance(this.getConnectionUriDomain(req), this.getTenantId(req),
+                                    main).getLatestIssuedKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
+                    AccessTokenSigningKey.getInstance(this.getConnectionUriDomain(req), this.getTenantId(req), main)
+                            .getKeyExpiryTime());
 
             if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
-                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getAllKeys();
+                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getConnectionUriDomain(req),
+                        this.getTenantId(req), main).getAllKeys();
                 JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                 result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
             }
@@ -73,7 +78,7 @@ public class HandshakeAPI extends WebserverAPI {
                     Config.getConfig(this.getConnectionUriDomain(req), this.getTenantId(req), main)
                             .getRefreshTokenValidity());
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
     }

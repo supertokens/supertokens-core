@@ -182,7 +182,7 @@ public class Main {
             }
         }
         try {
-            StorageLayer.getStorage(null, null, this).initStorage();
+            StorageLayer.getBaseStorage(this).initStorage();
         } catch (DbInitException e) {
             throw new QuitProgramException(e);
         }
@@ -241,7 +241,7 @@ public class Main {
         Cronjobs.addCronjob(this, DeleteExpiredPasswordlessDevices.init(this, uniqueUserPoolIdsTenants));
 
         // starts Telemetry cronjob if the user has not disabled it
-        if (!Config.getConfig(null, null, this).isTelemetryDisabled()) {
+        if (!Config.getBaseConfig(this).isTelemetryDisabled()) {
             Cronjobs.addCronjob(this, Telemetry.getInstance(this));
         }
 
@@ -259,10 +259,10 @@ public class Main {
 
         // NOTE: If the message below is changed, make sure to also change the corresponding check in the CLI program
         // for start command
-        Logging.info(this, "Started SuperTokens on " + Config.getConfig(null, null, this).
+        Logging.info(this, "Started SuperTokens on " + Config.getBaseConfig(this).
 
                 getHost(this) + ":"
-                + Config.getConfig(null, null, this).
+                + Config.getBaseConfig(this).
 
                 getPort(this) + " with PID: " + ProcessHandle.current().
 
@@ -333,7 +333,7 @@ public class Main {
     }
 
     private void createDotStartedFileForThisProcess() throws IOException {
-        CoreConfig config = Config.getConfig(null, null, this);
+        CoreConfig config = Config.getBaseConfig(this);
         String fileName = OperatingSystem.getOS() == OperatingSystem.OS.WINDOWS
                 ? CLIOptions.get(this).getInstallationPath() + ".started\\" + config.getHost(this) + "-"
                 + config.getPort(this)
@@ -350,7 +350,7 @@ public class Main {
         boolean ignored = dotStarted.setWritable(true, false);
         this.startedFileName = fileName;
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(dotStarted))) { // overwrite mode
-            writer.write(ProcessHandle.current().pid() + "\n" + Config.getConfig(null, null, this).getBasePath());
+            writer.write(ProcessHandle.current().pid() + "\n" + Config.getBaseConfig(this).getBasePath());
         }
     }
 

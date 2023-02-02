@@ -17,7 +17,6 @@
 package io.supertokens.webserver;
 
 import io.supertokens.Main;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

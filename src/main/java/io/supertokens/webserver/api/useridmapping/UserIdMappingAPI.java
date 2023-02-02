@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.useridmapping;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
@@ -111,7 +112,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             response.addProperty("doesExternalUserIdExist", e.doesExternalUserIdExist);
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
     }
@@ -165,7 +166,7 @@ public class UserIdMappingAPI extends WebserverAPI {
                 response.addProperty("externalUserIdInfo", userIdMapping.externalUserIdInfo);
             }
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
     }

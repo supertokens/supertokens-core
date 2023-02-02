@@ -23,10 +23,10 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 import static io.supertokens.cronjobs.telemetry.Telemetry.TELEMETRY_ID_DB_KEY;
@@ -46,7 +46,7 @@ public class TelemetryAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            Storage storage = StorageLayer.getStorage(main);
+            Storage storage = StorageLayer.getBaseStorage(main);
             KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
 
             JsonObject result = new JsonObject();

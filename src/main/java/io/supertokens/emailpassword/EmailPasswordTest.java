@@ -43,7 +43,7 @@ public class EmailPasswordTest extends ResourceDistributor.SingletonResource {
 
     public long getPasswordResetTokenLifetime() {
         if (this.passwordResetTokenLifetimeMS == null) {
-            return Config.getConfig(null, null, this.main).getPasswordResetTokenLifetime();
+            return Config.getBaseConfig(this.main).getPasswordResetTokenLifetime();
         }
         return this.passwordResetTokenLifetimeMS;
     }

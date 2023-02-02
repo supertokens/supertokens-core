@@ -18,6 +18,7 @@ package io.supertokens.passwordless;
 
 import io.supertokens.Main;
 import io.supertokens.config.Config;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
@@ -55,14 +56,19 @@ public class Passwordless {
                                                 @Nullable String userInputCode)
             throws RestartFlowException, DuplicateLinkCodeHashException,
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException {
-        return createCode(null, null, main, email, phoneNumber, deviceId, userInputCode);
+        try {
+            return createCode(null, null, main, email, phoneNumber, deviceId, userInputCode);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static CreateCodeResponse createCode(String connectionUriDomain, String tenantId, Main main, String email,
                                                 String phoneNumber, @Nullable String deviceId,
                                                 @Nullable String userInputCode)
             throws RestartFlowException, DuplicateLinkCodeHashException,
-            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException {
+            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
+            TenantNotFoundException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId,
                 main);
         if (deviceId == null) {
@@ -119,7 +125,8 @@ public class Passwordless {
 
     public static DeviceWithCodes getDeviceWithCodesById(String connectionUriDomain, String tenantId, Main main,
                                                          String deviceId) throws StorageQueryException,
-            StorageTransactionLogicException, NoSuchAlgorithmException, Base64EncodingException {
+            StorageTransactionLogicException, NoSuchAlgorithmException, Base64EncodingException,
+            TenantNotFoundException {
         return getDeviceWithCodesByIdHash(connectionUriDomain, tenantId, main,
                 PasswordlessDeviceId.decodeString(deviceId).getHash().encode());
     }
@@ -127,19 +134,27 @@ public class Passwordless {
     @TestOnly
     public static DeviceWithCodes getDeviceWithCodesById(Main main, String deviceId) throws StorageQueryException,
             StorageTransactionLogicException, NoSuchAlgorithmException, Base64EncodingException {
-        return getDeviceWithCodesById(null, null, main, deviceId);
+        try {
+            return getDeviceWithCodesById(null, null, main, deviceId);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     @TestOnly
     public static DeviceWithCodes getDeviceWithCodesByIdHash(Main main,
                                                              String deviceIdHash)
             throws StorageQueryException, StorageTransactionLogicException {
-        return getDeviceWithCodesByIdHash(null, null, main, deviceIdHash);
+        try {
+            return getDeviceWithCodesByIdHash(null, null, main, deviceIdHash);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static DeviceWithCodes getDeviceWithCodesByIdHash(String connectionUriDomain, String tenantId, Main main,
                                                              String deviceIdHash)
-            throws StorageQueryException, StorageTransactionLogicException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId,
                 main);
 
@@ -155,7 +170,7 @@ public class Passwordless {
 
     public static List<DeviceWithCodes> getDevicesWithCodesByEmail(String connectionUriDomain, String tenantId,
                                                                    Main main, String email)
-            throws StorageQueryException, StorageTransactionLogicException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId,
                 main);
 
@@ -172,12 +187,16 @@ public class Passwordless {
     @TestOnly
     public static List<DeviceWithCodes> getDevicesWithCodesByEmail(Main main, String email)
             throws StorageQueryException, StorageTransactionLogicException {
-        return getDevicesWithCodesByEmail(null, null, main, email);
+        try {
+            return getDevicesWithCodesByEmail(null, null, main, email);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static List<DeviceWithCodes> getDevicesWithCodesByPhoneNumber(String connectionUriDomain, String tenantId,
                                                                          Main main, String phoneNumber)
-            throws StorageQueryException, StorageTransactionLogicException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId,
                 main);
 
@@ -194,7 +213,11 @@ public class Passwordless {
     @TestOnly
     public static List<DeviceWithCodes> getDevicesWithCodesByPhoneNumber(Main main, String phoneNumber)
             throws StorageQueryException, StorageTransactionLogicException {
-        return getDevicesWithCodesByPhoneNumber(null, null, main, phoneNumber);
+        try {
+            return getDevicesWithCodesByPhoneNumber(null, null, main, phoneNumber);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     @TestOnly
@@ -204,7 +227,11 @@ public class Passwordless {
             throws RestartFlowException, ExpiredUserInputCodeException,
             IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException {
-        return consumeCode(null, null, main, deviceId, deviceIdHashFromUser, userInputCode, linkCode);
+        try {
+            return consumeCode(null, null, main, deviceId, deviceIdHashFromUser, userInputCode, linkCode);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static ConsumeCodeResponse consumeCode(String connectionUriDomain, String tenantId, Main main,
@@ -212,7 +239,8 @@ public class Passwordless {
                                                   String userInputCode, String linkCode)
             throws RestartFlowException, ExpiredUserInputCodeException,
             IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
-            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException {
+            StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
+            TenantNotFoundException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId,
                 main);
         long passwordlessCodeLifetime = Config.getConfig(connectionUriDomain, tenantId, main)
@@ -351,11 +379,15 @@ public class Passwordless {
     @TestOnly
     public static void removeCode(Main main, String codeId)
             throws StorageQueryException, StorageTransactionLogicException {
-        removeCode(null, null, main, codeId);
+        try {
+            removeCode(null, null, main, codeId);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static void removeCode(String connectionUriDomain, String tenantId, Main main, String codeId)
-            throws StorageQueryException, StorageTransactionLogicException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId,
                 main);
 
@@ -390,11 +422,15 @@ public class Passwordless {
     @TestOnly
     public static void removeCodesByEmail(Main main, String email)
             throws StorageQueryException, StorageTransactionLogicException {
-        removeCodesByEmail(null, null, main, email);
+        try {
+            removeCodesByEmail(null, null, main, email);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static void removeCodesByEmail(String connectionUriDomain, String tenantId, Main main, String email)
-            throws StorageQueryException, StorageTransactionLogicException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId,
                 main);
 
@@ -409,12 +445,16 @@ public class Passwordless {
     public static void removeCodesByPhoneNumber(Main main,
                                                 String phoneNumber)
             throws StorageQueryException, StorageTransactionLogicException {
-        removeCodesByPhoneNumber(null, null, main, phoneNumber);
+        try {
+            removeCodesByPhoneNumber(null, null, main, phoneNumber);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static void removeCodesByPhoneNumber(String connectionUriDomain, String tenantId, Main main,
                                                 String phoneNumber)
-            throws StorageQueryException, StorageTransactionLogicException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
         PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId,
                 main);
 
@@ -428,22 +468,31 @@ public class Passwordless {
     @TestOnly
     public static UserInfo getUserById(Main main, String userId)
             throws StorageQueryException {
-        return getUserById(null, null, main, userId);
+        try {
+            return getUserById(null, null, main, userId);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static UserInfo getUserById(String connectionUriDomain, String tenantId, Main main, String userId)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         return StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId, main).getUserById(userId);
     }
 
     @TestOnly
     public static UserInfo getUserByPhoneNumber(Main main,
                                                 String phoneNumber) throws StorageQueryException {
-        return getUserByPhoneNumber(null, null, main, phoneNumber);
+        try {
+            return getUserByPhoneNumber(null, null, main, phoneNumber);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static UserInfo getUserByPhoneNumber(String connectionUriDomain, String tenantId, Main main,
-                                                String phoneNumber) throws StorageQueryException {
+                                                String phoneNumber)
+            throws StorageQueryException, TenantNotFoundException {
         return StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId, main)
                 .getUserByPhoneNumber(phoneNumber);
     }
@@ -451,12 +500,16 @@ public class Passwordless {
     @TestOnly
     public static UserInfo getUserByEmail(Main main, String email)
             throws StorageQueryException {
-        return getUserByEmail(null, null, main, email);
+        try {
+            return getUserByEmail(null, null, main, email);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
 
     public static UserInfo getUserByEmail(String connectionUriDomain, String tenantId, Main main, String email)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         return StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId, main).getUserByEmail(email);
     }
 
@@ -465,13 +518,17 @@ public class Passwordless {
                                   FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
             DuplicatePhoneNumberException, UserWithoutContactInfoException {
-        updateUser(null, null, main, userId, emailUpdate, phoneNumberUpdate);
+        try {
+            updateUser(null, null, main, userId, emailUpdate, phoneNumberUpdate);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static void updateUser(String connectionUriDomain, String tenantId, Main main, String userId,
                                   FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
-            DuplicatePhoneNumberException, UserWithoutContactInfoException {
+            DuplicatePhoneNumberException, UserWithoutContactInfoException, TenantNotFoundException {
         PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId, main);
 
         // We do not lock the user here, because we decided that even if the device cleanup used outdated information

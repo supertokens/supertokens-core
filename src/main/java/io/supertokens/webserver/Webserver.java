@@ -103,7 +103,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
             webserverTemp.mkdir();
         }
 
-        CONTEXT_PATH = Config.getConfig(null, null, main).getBasePath();
+        CONTEXT_PATH = Config.getBaseConfig(main).getBasePath();
 
         // this will make it so that if there is a failure, then tomcat will throw an
         // error...
@@ -118,9 +118,9 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         // set thread pool size and port
         Connector connector = new Connector();
-        connector.setProperty("maxThreads", Config.getConfig(null, null, main).getMaxThreadPoolSize() + "");
-        connector.setPort(Config.getConfig(null, null, main).getPort(main));
-        connector.setProperty("address", Config.getConfig(null, null, main).getHost(main));
+        connector.setProperty("maxThreads", Config.getBaseConfig(main).getMaxThreadPoolSize() + "");
+        connector.setPort(Config.getBaseConfig(main).getPort(main));
+        connector.setProperty("address", Config.getBaseConfig(main).getHost(main));
 
         tomcat.setConnector(connector);
 
@@ -164,8 +164,8 @@ public class Webserver extends ResourceDistributor.SingletonResource {
     }
 
     private void addRemoteAddressFilter(StandardContext context, Main main) {
-        String allow = Config.getConfig(null, null, main).getIpAllowRegex();
-        String deny = Config.getConfig(null, null, main).getIpDenyRegex();
+        String allow = Config.getBaseConfig(main).getIpAllowRegex();
+        String deny = Config.getBaseConfig(main).getIpDenyRegex();
         if (allow == null && deny == null) {
             return;
         }

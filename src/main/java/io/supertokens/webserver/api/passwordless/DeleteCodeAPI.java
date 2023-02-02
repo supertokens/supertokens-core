@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.passwordless;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -58,7 +59,7 @@ public class DeleteCodeAPI extends WebserverAPI {
             result.addProperty("status", "OK");
 
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageTransactionLogicException | StorageQueryException e) {
+        } catch (StorageTransactionLogicException | StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
     }

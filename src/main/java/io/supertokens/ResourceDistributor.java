@@ -16,7 +16,8 @@
 
 package io.supertokens;
 
-import io.supertokens.config.Config;
+import io.supertokens.exceptions.TenantNotFoundException;
+import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -34,8 +35,7 @@ public class ResourceDistributor {
     private Map<KeyClass, SingletonResource> resources = new HashMap<>();
 
     public SingletonResource getResource(@Nullable String connectionUriDomain, @Nullable String tenantId,
-                                         @Nonnull String key) {
-        // TODO: change to just return exact match or with connectionUriDomain as null??
+                                         @Nonnull String key) throws TenantNotFoundException {
         synchronized (lock) {
             // first we do exact match
             SingletonResource resource = resources.get(new KeyClass(connectionUriDomain, tenantId, key));
@@ -43,25 +43,29 @@ public class ResourceDistributor {
                 return resource;
             }
 
-            // then we prioritise based on connectionUriDomain match
-            resource = resources.get(new KeyClass(connectionUriDomain, null, key));
-            if (resource != null) {
-                return resource;
+            // then we see if the user has configured anything to do with connectionUriDomain, and if they have,
+            // then we must return null cause the user has not specifically added tenantId to it
+            for (KeyClass currKey : resources.keySet()) {
+                if ((currKey.getConnectionUriDomain() == null && connectionUriDomain == null) ||
+                        (currKey.getConnectionUriDomain() != null &&
+                                currKey.getConnectionUriDomain().equals(connectionUriDomain))) {
+                    throw new TenantNotFoundException(connectionUriDomain, tenantId);
+                }
             }
 
-            // then we prioritise based on tenantId match
+            // if it comes here, it means that the user has not configured anything to do with
+            // connectionUriDomain, and therefore we fallback on the case where connectionUriDomain is *
             resource = resources.get(new KeyClass(null, tenantId, key));
             if (resource != null) {
                 return resource;
             }
 
-            // then we return the base case
-            resource = resources.get(new KeyClass(null, null, key));
-            return resource;
+            throw new TenantNotFoundException(connectionUriDomain, tenantId);
         }
     }
 
     @Deprecated
+    @TestOnly
     public SingletonResource getResource(@Nonnull String key) {
         synchronized (lock) {
             return resources.get(new KeyClass(null, null, key));
@@ -107,24 +111,8 @@ public class ResourceDistributor {
         return result;
     }
 
-    public boolean doesTenantExist(String connectionUriDomain, String tenantId) {
-        // TODO: do we need to change getResource function and config normalisation to follow this
-        // pattern as well? It also depends on if we require the user to create a (connectionUriDomain, *) before
-        // being able to add a (connectionUriDomain, tenantId) to their tenant pool.
-        if (resources.containsKey(new KeyClass(connectionUriDomain, tenantId, Config.RESOURCE_KEY))) {
-            return true;
-        }
-
-        if (resources.containsKey(new KeyClass(connectionUriDomain, null, Config.RESOURCE_KEY))) {
-            // this means that the user has configured a (connectionUriDomain, *) and if we do not find
-            // the tenantId match within that, then the tenant doesn't exist
-            return false;
-        }
-
-        return resources.containsKey(new KeyClass(null, tenantId, Config.RESOURCE_KEY));
-    }
-
     @Deprecated
+    @TestOnly
     public SingletonResource setResource(@Nonnull String key,
                                          SingletonResource resource) {
         return setResource(null, null, key, resource);

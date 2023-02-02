@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -71,7 +72,7 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_ALREADY_VERIFIED_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeySpecException e) {
+        } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeySpecException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
 

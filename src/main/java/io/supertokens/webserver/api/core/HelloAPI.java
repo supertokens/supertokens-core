@@ -21,10 +21,10 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 // the point of this API is only to test that the server is up and running.
@@ -74,7 +74,7 @@ public class HelloAPI extends WebserverAPI {
 
     private void handleRequest(HttpServletResponse resp) throws IOException, ServletException {
 
-        Storage storage = StorageLayer.getStorage(main);
+        Storage storage = StorageLayer.getBaseStorage(main);
         try {
             storage.getKeyValue("Test");
             super.sendTextResponse(200, "Hello", resp);

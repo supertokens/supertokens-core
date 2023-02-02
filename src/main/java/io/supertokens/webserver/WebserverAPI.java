@@ -20,6 +20,7 @@ import com.google.gson.JsonElement;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.output.Logging;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -127,7 +128,7 @@ public abstract class WebserverAPI extends HttpServlet {
         return true;
     }
 
-    private void assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException {
+    private void assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException, TenantNotFoundException {
         String apiKey = req.getHeader("api-key");
         String[] keys = Config.getConfig(getConnectionUriDomain(req), getTenantId(req), this.main).getAPIKeys();
         if (keys != null) {
@@ -180,12 +181,6 @@ public abstract class WebserverAPI extends HttpServlet {
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
-            String connectionUriDomain = getConnectionUriDomain(req);
-            String tenantId = getTenantId(req);
-            if (!main.getResourceDistributor().doesTenantExist(connectionUriDomain, tenantId)) {
-                throw new ServletException(new TenantNotFoundException(connectionUriDomain, tenantId));
-            }
-
             if (this.checkAPIKey(req)) {
                 assertThatAPIKeyCheckPasses(req);
             }
@@ -205,6 +200,8 @@ public abstract class WebserverAPI extends HttpServlet {
 
             if (e instanceof QuitProgramException) {
                 main.wakeUpMainThreadToShutdown();
+            } else if (e instanceof TenantNotFoundException) {
+                sendTextResponse(400, "Tenant not found", resp);
             } else if (e instanceof ServletException) {
                 ServletException se = (ServletException) e;
                 Throwable rootCause = se.getRootCause();
@@ -250,16 +247,6 @@ public abstract class WebserverAPI extends HttpServlet {
 
         public APIKeyUnauthorisedException() {
             super();
-        }
-    }
-
-    protected static class TenantNotFoundException extends Exception {
-
-        private static final long serialVersionUID = 6058119187747009809L;
-
-        public TenantNotFoundException(String connectionUriDomain, String tenantId) {
-            super("Tenant with the following connectionURIDomain and tenantId not found: (" + connectionUriDomain +
-                    ", " + tenantId + ")");
         }
     }
 

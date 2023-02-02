@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.Session;
@@ -83,7 +84,7 @@ public class SessionRemoveAPI extends WebserverAPI {
                 }
                 result.add("sessionHandlesRevoked", sessionHandlesRevokedJSON);
                 super.sendJsonResponse(200, result, resp);
-            } catch (StorageQueryException e) {
+            } catch (StorageQueryException | TenantNotFoundException e) {
                 throw new ServletException(e);
             }
         } else {
@@ -98,7 +99,7 @@ public class SessionRemoveAPI extends WebserverAPI {
                 }
                 result.add("sessionHandlesRevoked", sessionHandlesRevokedJSON);
                 super.sendJsonResponse(200, result, resp);
-            } catch (StorageQueryException e) {
+            } catch (StorageQueryException | TenantNotFoundException e) {
                 throw new ServletException(e);
             }
         }

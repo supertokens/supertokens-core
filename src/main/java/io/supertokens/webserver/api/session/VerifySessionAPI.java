@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
@@ -72,18 +73,21 @@ public class VerifySessionAPI extends WebserverAPI {
             result.addProperty("status", "OK");
 
             result.addProperty("jwtSigningPublicKey",
-                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value).publicKey);
+                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(this.getConnectionUriDomain(req),
+                            this.getTenantId(req), main).getLatestIssuedKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
+                    AccessTokenSigningKey.getInstance(this.getConnectionUriDomain(req),
+                            this.getTenantId(req), main).getKeyExpiryTime());
 
             if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
-                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getAllKeys();
+                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getConnectionUriDomain(req),
+                        this.getTenantId(req), main).getAllKeys();
                 JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                 result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
             }
 
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantNotFoundException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
@@ -98,20 +102,23 @@ public class VerifySessionAPI extends WebserverAPI {
                 reply.addProperty("status", "TRY_REFRESH_TOKEN");
 
                 reply.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(
-                        AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value).publicKey);
+                        AccessTokenSigningKey.getInstance(this.getConnectionUriDomain(req),
+                                this.getTenantId(req), main).getLatestIssuedKey().value).publicKey);
                 reply.addProperty("jwtSigningPublicKeyExpiryTime",
-                        AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
+                        AccessTokenSigningKey.getInstance(this.getConnectionUriDomain(req),
+                                this.getTenantId(req), main).getKeyExpiryTime());
 
                 if (!super.getVersionFromRequest(req).equals("2.7")
                         && !super.getVersionFromRequest(req).equals("2.8")) {
-                    List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getAllKeys();
+                    List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getConnectionUriDomain(req),
+                            this.getTenantId(req), main).getAllKeys();
                     JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                     reply.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
                 }
 
                 reply.addProperty("message", e.getMessage());
                 super.sendJsonResponse(200, reply, resp);
-            } catch (StorageQueryException | StorageTransactionLogicException e2) {
+            } catch (StorageQueryException | StorageTransactionLogicException | TenantNotFoundException e2) {
                 throw new ServletException(e2);
             }
         }

@@ -17,6 +17,7 @@
 package io.supertokens.useridmapping;
 
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -42,7 +43,7 @@ public class UserIdMapping {
                                            String superTokensUserId, String externalUserId,
                                            String externalUserIdInfo, boolean force)
             throws UnknownSuperTokensUserIdException,
-            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException {
+            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException, TenantNotFoundException {
         // if a userIdMapping is created with force, then we skip the following checks
         if (!force) {
             // check that none of the non-auth recipes are using the superTokensUserId
@@ -74,13 +75,17 @@ public class UserIdMapping {
                                            String externalUserIdInfo, boolean force)
             throws UnknownSuperTokensUserIdException,
             UserIdMappingAlreadyExistsException, StorageQueryException, ServletException {
-        createUserIdMapping(null, null, main, superTokensUserId, externalUserId, externalUserIdInfo, force);
+        try {
+            createUserIdMapping(null, null, main, superTokensUserId, externalUserId, externalUserIdInfo, force);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(
             String connectionUriDomain, String tenantId, Main main, String userId,
             UserIdType userIdType)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(connectionUriDomain, tenantId, main);
 
         if (userIdType == UserIdType.SUPERTOKENS) {
@@ -116,12 +121,16 @@ public class UserIdMapping {
             Main main, String userId,
             UserIdType userIdType)
             throws StorageQueryException {
-        return getUserIdMapping(null, null, main, userId, userIdType);
+        try {
+            return getUserIdMapping(null, null, main, userId, userIdType);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static boolean deleteUserIdMapping(String connectionUriDomain, String tenantId, Main main, String userId,
                                               UserIdType userIdType, boolean force)
-            throws StorageQueryException, ServletException {
+            throws StorageQueryException, ServletException, TenantNotFoundException {
 
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(connectionUriDomain, tenantId, main);
 
@@ -169,13 +178,17 @@ public class UserIdMapping {
     public static boolean deleteUserIdMapping(Main main, String userId,
                                               UserIdType userIdType, boolean force)
             throws StorageQueryException, ServletException {
-        return deleteUserIdMapping(null, null, main, userId, userIdType, force);
+        try {
+            return deleteUserIdMapping(null, null, main, userId, userIdType, force);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static boolean updateOrDeleteExternalUserIdInfo(String connectionUriDomain, String tenantId, Main main,
                                                            String userId, UserIdType userIdType,
                                                            @Nullable String externalUserIdInfo)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(connectionUriDomain, tenantId, main);
 
         if (userIdType == UserIdType.SUPERTOKENS) {
@@ -198,13 +211,17 @@ public class UserIdMapping {
                                                            String userId, UserIdType userIdType,
                                                            @Nullable String externalUserIdInfo)
             throws StorageQueryException {
-        return updateOrDeleteExternalUserIdInfo(null, null, main, userId, userIdType, externalUserIdInfo);
+        try {
+            return updateOrDeleteExternalUserIdInfo(null, null, main, userId, userIdType, externalUserIdInfo);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(String connectionUriDomain,
                                                                                 String tenantId, Main main,
                                                                                 ArrayList<String> userIds)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         return StorageLayer.getUserIdMappingStorage(connectionUriDomain, tenantId, main)
                 .getUserIdMappingForSuperTokensIds(userIds);
     }
@@ -213,12 +230,16 @@ public class UserIdMapping {
     public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(Main main,
                                                                                 ArrayList<String> userIds)
             throws StorageQueryException {
-        return getUserIdMappingForSuperTokensUserIds(null, null, main, userIds);
+        try {
+            return getUserIdMappingForSuperTokensUserIds(null, null, main, userIds);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     private static void assertThatUserIdIsNotBeingUsedInNonAuthRecipes(String connectionUriDomain, String tenantId,
                                                                        Main main, String userId)
-            throws StorageQueryException, ServletException {
+            throws StorageQueryException, ServletException, TenantNotFoundException {
         {
             if (StorageLayer.getStorage(connectionUriDomain, tenantId, main)
                     .isUserIdBeingUsedInNonAuthRecipe(SessionStorage.class.getName(),

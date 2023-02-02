@@ -23,6 +23,7 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpRequestMocking;
 import io.supertokens.pluginInterface.KeyValueInfo;
@@ -48,14 +49,13 @@ public class Telemetry extends CronTask {
     }
 
     public static Telemetry getInstance(Main main) {
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor()
-                .getResource(null, null, RESOURCE_KEY);
-        if (instance == null) {
+        try {
+            return (Telemetry) main.getResourceDistributor().getResource(null, null, RESOURCE_KEY);
+        } catch (TenantNotFoundException e) {
             List<ResourceDistributor.KeyClass> tenants = new ArrayList<>();
             tenants.add(new ResourceDistributor.KeyClass(null, null, StorageLayer.RESOURCE_KEY));
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new Telemetry(main, tenants));
+            return (Telemetry) main.getResourceDistributor().setResource(RESOURCE_KEY, new Telemetry(main, tenants));
         }
-        return (Telemetry) instance;
     }
 
     @Override
@@ -96,7 +96,7 @@ public class Telemetry extends CronTask {
         if (StorageLayer.isInMemDb(main)) {
             return null;
         }
-        Storage storage = StorageLayer.getStorage(null, null, main);
+        Storage storage = StorageLayer.getBaseStorage(main);
 
         KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
 

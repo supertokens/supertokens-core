@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -114,7 +115,7 @@ public class UserAPI extends WebserverAPI {
                 super.sendJsonResponse(200, result, resp);
             }
 
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
 
@@ -148,7 +149,7 @@ public class UserAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantNotFoundException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));

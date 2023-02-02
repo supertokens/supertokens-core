@@ -24,6 +24,7 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
+import io.supertokens.exceptions.TenantNotFoundException;
 import org.jetbrains.annotations.TestOnly;
 import org.mindrot.jbcrypt.BCrypt;
 
@@ -41,9 +42,9 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
 
     private PasswordHashing(Main main) {
         this.argon2BoundedQueue = new LinkedBlockingQueue<>(
-                Config.getConfig(null, null, main).getArgon2HashingPoolSize());
+                Config.getBaseConfig(main).getArgon2HashingPoolSize());
         this.firebaseSCryptBoundedQueue = new LinkedBlockingQueue<>(
-                Config.getConfig(null, null, main).getFirebaseSCryptPasswordHashingPoolSize());
+                Config.getBaseConfig(main).getFirebaseSCryptPasswordHashingPoolSize());
         this.main = main;
     }
 
@@ -65,10 +66,15 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public String createHashWithSalt(String password) {
-        return createHashWithSalt(null, null, password);
+        try {
+            return createHashWithSalt(null, null, password);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
-    public String createHashWithSalt(String connectionUriDomain, String tenantId, String password) {
+    public String createHashWithSalt(String connectionUriDomain, String tenantId, String password)
+            throws TenantNotFoundException {
 
         String passwordHash = "";
 
@@ -97,10 +103,11 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     }
 
     public interface Func<T> {
-        T op();
+        T op() throws TenantNotFoundException;
     }
 
-    private <T> T withConcurrencyLimited(Func<T> func, BlockingQueue<Object> blockingQueue) {
+    private <T> T withConcurrencyLimited(Func<T> func, BlockingQueue<Object> blockingQueue)
+            throws TenantNotFoundException {
         Object waiter = new Object();
         try {
             while (!blockingQueue.contains(waiter)) {
@@ -120,10 +127,15 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public boolean verifyPasswordWithHash(String password, String hash) {
-        return verifyPasswordWithHash(null, null, password, hash);
+        try {
+            return verifyPasswordWithHash(null, null, password, hash);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
-    public boolean verifyPasswordWithHash(String connectionUriDomain, String tenantId, String password, String hash) {
+    public boolean verifyPasswordWithHash(String connectionUriDomain, String tenantId, String password, String hash)
+            throws TenantNotFoundException {
 
         if (PasswordHashingUtils.isInputHashInArgon2Format(hash)) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_ARGON, null);

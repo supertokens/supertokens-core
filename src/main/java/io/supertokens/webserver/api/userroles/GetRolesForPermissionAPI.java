@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.userroles.UserRoles;
@@ -71,7 +72,7 @@ public class GetRolesForPermissionAPI extends WebserverAPI {
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
     }

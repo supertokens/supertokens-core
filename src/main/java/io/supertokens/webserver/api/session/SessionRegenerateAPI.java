@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.session;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -69,8 +70,7 @@ public class SessionRegenerateAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
-                | InvalidKeyException | SignatureException | InvalidKeySpecException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | InvalidKeyException | SignatureException | InvalidKeySpecException | TenantNotFoundException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));

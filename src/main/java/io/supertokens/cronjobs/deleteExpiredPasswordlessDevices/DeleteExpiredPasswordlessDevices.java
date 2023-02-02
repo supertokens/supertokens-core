@@ -21,7 +21,6 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
@@ -52,11 +51,7 @@ public class DeleteExpiredPasswordlessDevices extends CronTask {
 
     @TestOnly
     public static DeleteExpiredPasswordlessDevices getInstance(Main main) {
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance == null) {
-            throw new QuitProgramException("Please call init() before calling getInstance");
-        }
-        return (DeleteExpiredPasswordlessDevices) instance;
+        return (DeleteExpiredPasswordlessDevices) main.getResourceDistributor().getResource(RESOURCE_KEY);
     }
 
     @Override

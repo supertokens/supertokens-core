@@ -22,6 +22,7 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -48,15 +49,15 @@ public class CronjobTest {
         }
 
         public static QuitProgramExceptionCronjob getInstance(Main main) {
-            ResourceDistributor.SingletonResource instance = main.getResourceDistributor()
-                    .getResource(null, null, RESOURCE_ID);
-            if (instance == null) {
+            try {
+                return (QuitProgramExceptionCronjob) main.getResourceDistributor()
+                        .getResource(null, null, RESOURCE_ID);
+            } catch (TenantNotFoundException e) {
                 List<ResourceDistributor.KeyClass> tenants = new ArrayList<>();
                 tenants.add(new ResourceDistributor.KeyClass(null, null, StorageLayer.RESOURCE_KEY));
-                instance = main.getResourceDistributor().setResource(null, null, RESOURCE_ID,
+                return (QuitProgramExceptionCronjob) main.getResourceDistributor().setResource(null, null, RESOURCE_ID,
                         new QuitProgramExceptionCronjob(main, tenants));
             }
-            return (QuitProgramExceptionCronjob) instance;
         }
 
         @Override
@@ -85,14 +86,15 @@ public class CronjobTest {
         }
 
         public static ErrorCronjob getInstance(Main main) {
-            ResourceDistributor.SingletonResource instance = main.getResourceDistributor()
-                    .getResource(null, null, RESOURCE_ID);
-            if (instance == null) {
+            try {
+                return (ErrorCronjob) main.getResourceDistributor()
+                        .getResource(null, null, RESOURCE_ID);
+            } catch (TenantNotFoundException e) {
                 List<ResourceDistributor.KeyClass> tenants = new ArrayList<>();
                 tenants.add(new ResourceDistributor.KeyClass(null, null, StorageLayer.RESOURCE_KEY));
-                instance = main.getResourceDistributor().setResource(RESOURCE_ID, new ErrorCronjob(main, tenants));
+                return (ErrorCronjob) main.getResourceDistributor()
+                        .setResource(RESOURCE_ID, new ErrorCronjob(main, tenants));
             }
-            return (ErrorCronjob) instance;
         }
 
         @Override
@@ -122,15 +124,15 @@ public class CronjobTest {
         }
 
         public static NormalCronjob getInstance(Main main) {
-            ResourceDistributor.SingletonResource instance = main.getResourceDistributor()
-                    .getResource(null, null, RESOURCE_ID);
-            if (instance == null) {
+            try {
+                return (NormalCronjob) main.getResourceDistributor()
+                        .getResource(null, null, RESOURCE_ID);
+            } catch (TenantNotFoundException e) {
                 List<ResourceDistributor.KeyClass> tenants = new ArrayList<>();
                 tenants.add(new ResourceDistributor.KeyClass(null, null, StorageLayer.RESOURCE_KEY));
-                instance = main.getResourceDistributor()
+                return (NormalCronjob) main.getResourceDistributor()
                         .setResource(null, null, RESOURCE_ID, new NormalCronjob(main, tenants));
             }
-            return (NormalCronjob) instance;
         }
 
         @Override

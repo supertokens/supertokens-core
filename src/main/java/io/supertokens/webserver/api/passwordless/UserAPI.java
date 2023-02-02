@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.FieldUpdate;
 import io.supertokens.passwordless.exceptions.UserWithoutContactInfoException;
@@ -121,7 +122,7 @@ public class UserAPI extends WebserverAPI {
                 result.add("user", userJson);
                 super.sendJsonResponse(200, result, resp);
             }
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         }
     }
@@ -156,7 +157,7 @@ public class UserAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             JsonObject result = new JsonObject();

@@ -22,6 +22,7 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.KeyValueInfoWithLastUpdated;
@@ -35,6 +36,7 @@ import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import org.jetbrains.annotations.TestOnly;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -52,7 +54,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     private final String tenantId;
     private static final Object lock = new Object();
 
-    private AccessTokenSigningKey(String connectionUriDomain, String tenantId, Main main) {
+    private AccessTokenSigningKey(String connectionUriDomain, String tenantId, Main main)
+            throws TenantNotFoundException {
         this.main = main;
         this.connectionUriDomain = connectionUriDomain;
         this.tenantId = tenantId;
@@ -68,25 +71,30 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
 
     public static void initForBaseTenant(Main main) {
         synchronized (lock) {
-            main.getResourceDistributor().setResource(null, null, RESOURCE_KEY,
-                    new AccessTokenSigningKey(null, null, main));
-        }
-    }
-
-    public static AccessTokenSigningKey getInstance(String connectionUriDomain, String tenantId, Main main) {
-        synchronized (lock) {
-            AccessTokenSigningKey instance = (AccessTokenSigningKey) main.getResourceDistributor()
-                    .getResource(connectionUriDomain, tenantId, RESOURCE_KEY);
-            if (instance == null) {
-                throw new QuitProgramException("please call init() before calling getInstance");
+            try {
+                main.getResourceDistributor().setResource(null, null, RESOURCE_KEY,
+                        new AccessTokenSigningKey(null, null, main));
+            } catch (TenantNotFoundException e) {
+                throw new IllegalStateException("Should never come here");
             }
-            return instance;
         }
     }
 
-    @Deprecated
+    public static AccessTokenSigningKey getInstance(String connectionUriDomain, String tenantId, Main main)
+            throws TenantNotFoundException {
+        synchronized (lock) {
+            return (AccessTokenSigningKey) main.getResourceDistributor()
+                    .getResource(connectionUriDomain, tenantId, RESOURCE_KEY);
+        }
+    }
+
+    @TestOnly
     public static AccessTokenSigningKey getInstance(Main main) {
-        return getInstance(null, null, main);
+        try {
+            return getInstance(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static void loadForAllTenants(Main main) {
@@ -107,8 +115,13 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                     main.getResourceDistributor().setResource(tenant.connectionUriDomain, tenant.tenantId, RESOURCE_KEY,
                             resource);
                 } else {
-                    main.getResourceDistributor().setResource(tenant.connectionUriDomain, tenant.tenantId, RESOURCE_KEY,
-                            new AccessTokenSigningKey(tenant.connectionUriDomain, tenant.tenantId, main));
+                    try {
+                        main.getResourceDistributor()
+                                .setResource(tenant.connectionUriDomain, tenant.tenantId, RESOURCE_KEY,
+                                        new AccessTokenSigningKey(tenant.connectionUriDomain, tenant.tenantId, main));
+                    } catch (TenantNotFoundException e) {
+                        throw new IllegalStateException("Should never come here");
+                    }
                 }
             }
             // re add the base config
@@ -136,7 +149,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     }
 
     public synchronized void transferLegacyKeyToNewTable()
-            throws StorageQueryException, StorageTransactionLogicException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
         Storage storage = StorageLayer.getSessionStorage(this.connectionUriDomain, this.tenantId, main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
@@ -170,7 +183,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         }
     }
 
-    public synchronized void cleanExpiredAccessTokenSigningKeys() throws StorageQueryException {
+    public synchronized void cleanExpiredAccessTokenSigningKeys() throws StorageQueryException,
+            TenantNotFoundException {
         SessionStorage storage = StorageLayer.getSessionStorage(this.connectionUriDomain, this.tenantId, main);
         CoreConfig config = Config.getConfig(this.connectionUriDomain, this.tenantId, main);
 
@@ -182,7 +196,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         }
     }
 
-    public synchronized List<KeyInfo> getAllKeys() throws StorageQueryException, StorageTransactionLogicException {
+    public synchronized List<KeyInfo> getAllKeys()
+            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
         CoreConfig config = Config.getConfig(this.connectionUriDomain, this.tenantId, main);
 
         if (this.validKeys != null) {
@@ -199,11 +214,13 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         return this.validKeys;
     }
 
-    public KeyInfo getLatestIssuedKey() throws StorageQueryException, StorageTransactionLogicException {
+    public KeyInfo getLatestIssuedKey()
+            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
         return this.getAllKeys().get(0);
     }
 
-    public synchronized long getKeyExpiryTime() throws StorageQueryException, StorageTransactionLogicException {
+    public synchronized long getKeyExpiryTime()
+            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
         this.getAllKeys();
         // getKey ensures we have at least 1 valid keys
         long createdAtTime = this.validKeys.get(0).createdAtTime;
@@ -212,7 +229,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     }
 
     private List<KeyInfo> maybeGenerateNewKeyAndUpdateInDb()
-            throws StorageQueryException, StorageTransactionLogicException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
         Storage storage = StorageLayer.getSessionStorage(this.connectionUriDomain, this.tenantId, main);
         CoreConfig config = Config.getConfig(this.connectionUriDomain, this.tenantId, main);
 

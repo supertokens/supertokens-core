@@ -17,6 +17,7 @@
 package io.supertokens.userroles;
 
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
@@ -32,7 +33,7 @@ public class UserRoles {
     // the role does not exist, throw an UNKNOWN_ROLE_EXCEPTION error
     public static boolean addRoleToUser(String connectionUriDomain, String tenantId, Main main, String userId,
                                         String role)
-            throws StorageQueryException, UnknownRoleException {
+            throws StorageQueryException, UnknownRoleException, TenantNotFoundException {
         try {
             StorageLayer.getUserRolesStorage(connectionUriDomain, tenantId, main).addRoleToUser(userId, role);
             return true;
@@ -46,13 +47,17 @@ public class UserRoles {
     public static boolean addRoleToUser(Main main, String userId,
                                         String role)
             throws StorageQueryException, UnknownRoleException {
-        return addRoleToUser(null, null, main, userId, role);
+        try {
+            return addRoleToUser(null, null, main, userId, role);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     // create a new role if it doesn't exist and add permissions to the role
     public static boolean createNewRoleOrModifyItsPermissions(String connectionUriDomain, String tenantId, Main main,
                                                               String role, String[] permissions)
-            throws StorageQueryException, StorageTransactionLogicException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(connectionUriDomain, tenantId, main);
         return storage.startTransaction(con -> {
             boolean wasANewRoleCreated = storage.createNewRoleOrDoNothingIfExists_Transaction(con, role);
@@ -75,11 +80,15 @@ public class UserRoles {
     public static boolean createNewRoleOrModifyItsPermissions(Main main,
                                                               String role, String[] permissions)
             throws StorageQueryException, StorageTransactionLogicException {
-        return createNewRoleOrModifyItsPermissions(null, null, main, role, permissions);
+        try {
+            return createNewRoleOrModifyItsPermissions(null, null, main, role, permissions);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static boolean doesRoleExist(String connectionUriDomain, String tenantId, Main main, String role)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(connectionUriDomain, tenantId, main);
         return storage.doesRoleExist(role);
     }
@@ -87,13 +96,18 @@ public class UserRoles {
     @TestOnly
     public static boolean doesRoleExist(Main main, String role)
             throws StorageQueryException {
-        return doesRoleExist(null, null, main, role);
+        try {
+            return doesRoleExist(null, null, main, role);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     // remove a role mapped to a user, if the role doesn't exist throw a UNKNOWN_ROLE_EXCEPTION error
     public static boolean removeUserRole(String connectionUriDomain, String tenantId, Main main, String userId,
                                          String role)
-            throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
+            throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException,
+            TenantNotFoundException {
 
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(connectionUriDomain, tenantId, main);
 
@@ -120,24 +134,32 @@ public class UserRoles {
     public static boolean removeUserRole(Main main, String userId,
                                          String role)
             throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
-        return removeUserRole(null, null, main, userId, role);
+        try {
+            return removeUserRole(null, null, main, userId, role);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     // retrieve all roles associated with the user
     public static String[] getRolesForUser(String connectionUriDomain, String tenantId, Main main, String userId)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         return StorageLayer.getUserRolesStorage(connectionUriDomain, tenantId, main).getRolesForUser(userId);
     }
 
     @TestOnly
     public static String[] getRolesForUser(Main main, String userId)
             throws StorageQueryException {
-        return getRolesForUser(null, null, main, userId);
+        try {
+            return getRolesForUser(null, null, main, userId);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     // retrieve all users who have the input role, if role does not exist then throw UNKNOWN_ROLE_EXCEPTION
     public static String[] getUsersForRole(String connectionUriDomain, String tenantId, Main main, String role)
-            throws StorageQueryException, UnknownRoleException {
+            throws StorageQueryException, UnknownRoleException, TenantNotFoundException {
         // Since getUsersForRole does not change any data we do not use a transaction since it would not solve any
         // problem
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(connectionUriDomain, tenantId, main);
@@ -152,12 +174,16 @@ public class UserRoles {
     @TestOnly
     public static String[] getUsersForRole(Main main, String role)
             throws StorageQueryException, UnknownRoleException {
-        return getUsersForRole(null, null, main, role);
+        try {
+            return getUsersForRole(null, null, main, role);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     // retrieve all permissions associated with the role
     public static String[] getPermissionsForRole(String connectionUriDomain, String tenantId, Main main, String role)
-            throws StorageQueryException, UnknownRoleException {
+            throws StorageQueryException, UnknownRoleException, TenantNotFoundException {
         // Since getPermissionsForRole does not change any data we do not use a transaction since it would not solve any
         // problem
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(connectionUriDomain, tenantId, main);
@@ -173,13 +199,18 @@ public class UserRoles {
     @TestOnly
     public static String[] getPermissionsForRole(Main main, String role)
             throws StorageQueryException, UnknownRoleException {
-        return getPermissionsForRole(null, null, main, role);
+        try {
+            return getPermissionsForRole(null, null, main, role);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     // delete permissions from a role, if the role doesn't exist throw an UNKNOWN_ROLE_EXCEPTION
     public static void deletePermissionsFromRole(String connectionUriDomain, String tenantId, Main main, String role,
                                                  @Nullable String[] permissions)
-            throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
+            throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException,
+            TenantNotFoundException {
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(connectionUriDomain, tenantId, main);
         try {
             storage.startTransaction(con -> {
@@ -211,12 +242,17 @@ public class UserRoles {
     public static void deletePermissionsFromRole(Main main, String role,
                                                  @Nullable String[] permissions)
             throws StorageQueryException, StorageTransactionLogicException, UnknownRoleException {
-        deletePermissionsFromRole(null, null, main, role, permissions);
+        try {
+            deletePermissionsFromRole(null, null, main, role, permissions);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     // retrieve roles that have the input permission
     public static String[] getRolesThatHavePermission(String connectionUriDomain, String tenantId, Main main,
-                                                      String permission) throws StorageQueryException {
+                                                      String permission)
+            throws StorageQueryException, TenantNotFoundException {
         return StorageLayer.getUserRolesStorage(connectionUriDomain, tenantId, main)
                 .getRolesThatHavePermission(permission);
     }
@@ -224,43 +260,59 @@ public class UserRoles {
     @TestOnly
     public static String[] getRolesThatHavePermission(Main main,
                                                       String permission) throws StorageQueryException {
-        return getRolesThatHavePermission(null, null, main, permission);
+        try {
+            return getRolesThatHavePermission(null, null, main, permission);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     // delete a role
     public static boolean deleteRole(String connectionUriDomain, String tenantId, Main main, String role)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         return StorageLayer.getUserRolesStorage(connectionUriDomain, tenantId, main).deleteRole(role);
     }
 
     @TestOnly
     public static boolean deleteRole(Main main, String role)
             throws StorageQueryException {
-        return deleteRole(null, null, main, role);
+        try {
+            return deleteRole(null, null, main, role);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     // retrieve all roles that have been created
     public static String[] getRoles(String connectionUriDomain, String tenantId, Main main)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         return StorageLayer.getUserRolesStorage(connectionUriDomain, tenantId, main).getRoles();
     }
 
     @TestOnly
     public static String[] getRoles(Main main)
             throws StorageQueryException {
-        return getRoles(null, null, main);
+        try {
+            return getRoles(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     // delete all roles associated with a user
     public static int deleteAllRolesForUser(String connectionUriDomain, String tenantId, Main main, String userId)
-            throws StorageQueryException {
+            throws StorageQueryException, TenantNotFoundException {
         return StorageLayer.getUserRolesStorage(connectionUriDomain, tenantId, main).deleteAllRolesForUser(userId);
     }
 
     @TestOnly
     public static int deleteAllRolesForUser(Main main, String userId)
             throws StorageQueryException {
-        return deleteAllRolesForUser(null, null, main, userId);
+        try {
+            return deleteAllRolesForUser(null, null, main, userId);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
 }

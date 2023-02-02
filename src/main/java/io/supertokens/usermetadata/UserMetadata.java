@@ -18,6 +18,7 @@ package io.supertokens.usermetadata;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
@@ -33,12 +34,16 @@ public class UserMetadata {
     public static JsonObject updateUserMetadata(Main main,
                                                 @Nonnull String userId, @Nonnull JsonObject metadataUpdate)
             throws StorageQueryException, StorageTransactionLogicException {
-        return updateUserMetadata(null, null, main, userId, metadataUpdate);
+        try {
+            return updateUserMetadata(null, null, main, userId, metadataUpdate);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static JsonObject updateUserMetadata(String connectionUriDomain, String tenantId, Main main,
                                                 @Nonnull String userId, @Nonnull JsonObject metadataUpdate)
-            throws StorageQueryException, StorageTransactionLogicException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
         UserMetadataSQLStorage storage = StorageLayer.getUserMetadataStorage(connectionUriDomain, tenantId, main);
 
         return storage.startTransaction((con) -> {
@@ -55,11 +60,16 @@ public class UserMetadata {
 
     @TestOnly
     public static JsonObject getUserMetadata(Main main, @Nonnull String userId) throws StorageQueryException {
-        return getUserMetadata(null, null, main, userId);
+        try {
+            return getUserMetadata(null, null, main, userId);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static JsonObject getUserMetadata(String connectionUriDomain, String tenantId, Main main,
-                                             @Nonnull String userId) throws StorageQueryException {
+                                             @Nonnull String userId)
+            throws StorageQueryException, TenantNotFoundException {
         UserMetadataSQLStorage storage = StorageLayer.getUserMetadataStorage(connectionUriDomain, tenantId, main);
 
         JsonObject metadata = storage.getUserMetadata(userId);
@@ -73,11 +83,16 @@ public class UserMetadata {
 
     @TestOnly
     public static void deleteUserMetadata(Main main, @Nonnull String userId) throws StorageQueryException {
-        deleteUserMetadata(null, null, main, userId);
+        try {
+            deleteUserMetadata(null, null, main, userId);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static void deleteUserMetadata(String connectionUriDomain, String tenantId, Main main,
-                                          @Nonnull String userId) throws StorageQueryException {
+                                          @Nonnull String userId) throws StorageQueryException,
+            TenantNotFoundException {
         StorageLayer.getUserMetadataStorage(connectionUriDomain, tenantId, main).deleteUserMetadata(userId);
     }
 }

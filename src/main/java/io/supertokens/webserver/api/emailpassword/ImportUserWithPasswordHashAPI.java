@@ -23,6 +23,7 @@ import io.supertokens.Main;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -100,7 +101,7 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
             response.add("user", userJson);
             response.addProperty("didUserAlreadyExist", importUserResponse.didUserAlreadyExist);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantNotFoundException e) {
             throw new ServletException(e);
         } catch (UnsupportedPasswordHashingFormatException e) {
             throw new ServletException(new WebserverAPI.BadRequestException(e.getMessage()));

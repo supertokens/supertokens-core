@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -64,7 +65,7 @@ public class JWTDataAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
@@ -91,7 +92,7 @@ public class JWTDataAPI extends WebserverAPI {
             result.add("userDataInJWT", jwtPayload);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantNotFoundException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));

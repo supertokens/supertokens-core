@@ -5,6 +5,7 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.ee.EEFeatureFlag;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.storageLayer.StorageLayer;
 
@@ -20,15 +21,14 @@ public class EELicenseCheck extends CronTask {
     }
 
     public static EELicenseCheck getInstance(Main main) {
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor()
-                .getResource(null, null, RESOURCE_KEY);
-        if (instance == null) {
+        try {
+            return (EELicenseCheck) main.getResourceDistributor().getResource(null, null, RESOURCE_KEY);
+        } catch (TenantNotFoundException e) {
             List<ResourceDistributor.KeyClass> tenants = new ArrayList<>();
             tenants.add(new ResourceDistributor.KeyClass(null, null, StorageLayer.RESOURCE_KEY));
-            instance = main.getResourceDistributor()
+            return (EELicenseCheck) main.getResourceDistributor()
                     .setResource(null, null, RESOURCE_KEY, new EELicenseCheck(main, tenants));
         }
-        return (EELicenseCheck) instance;
     }
 
     @Override

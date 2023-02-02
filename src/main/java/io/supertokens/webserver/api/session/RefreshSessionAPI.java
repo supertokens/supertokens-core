@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.session;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
@@ -63,7 +64,7 @@ public class RefreshSessionAPI extends WebserverAPI {
             JsonObject result = sessionInfo.toJsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantNotFoundException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));

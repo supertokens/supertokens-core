@@ -20,7 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
@@ -46,12 +46,12 @@ public class DeleteExpiredEmailVerificationTokens extends CronTask {
     @TestOnly
     public static DeleteExpiredEmailVerificationTokens getInstance(Main main,
                                                                    List<ResourceDistributor.KeyClass> tenantsInfo) {
-        ResourceDistributor.SingletonResource instance = main.getResourceDistributor()
-                .getResource(null, null, RESOURCE_KEY);
-        if (instance == null) {
-            throw new QuitProgramException("Please call init() before calling getInstance");
+        try {
+            return (DeleteExpiredEmailVerificationTokens) main.getResourceDistributor()
+                    .getResource(null, null, RESOURCE_KEY);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
         }
-        return (DeleteExpiredEmailVerificationTokens) instance;
     }
 
     @Override
