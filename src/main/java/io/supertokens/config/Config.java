@@ -39,7 +39,7 @@ import java.util.Map;
 
 public class Config extends ResourceDistributor.SingletonResource {
 
-    private static final String RESOURCE_KEY = "io.supertokens.config.Config";
+    public static final String RESOURCE_KEY = "io.supertokens.config.Config";
     private final Main main;
     private final CoreConfig core;
 

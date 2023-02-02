@@ -16,6 +16,8 @@
 
 package io.supertokens;
 
+import io.supertokens.config.Config;
+
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.util.ArrayList;
@@ -33,6 +35,7 @@ public class ResourceDistributor {
 
     public SingletonResource getResource(@Nullable String connectionUriDomain, @Nullable String tenantId,
                                          @Nonnull String key) {
+        // TODO: change to just return exact match or with connectionUriDomain as null??
         synchronized (lock) {
             // first we do exact match
             SingletonResource resource = resources.get(new KeyClass(connectionUriDomain, tenantId, key));
@@ -104,19 +107,21 @@ public class ResourceDistributor {
         return result;
     }
 
-
-    public void clearAllResourcesForTenantWithExactMatch(String connectionUriDomain, String tenantId) {
-        List<KeyClass> toRemove = new ArrayList<>();
-        synchronized (lock) {
-            resources.forEach((key, value) -> {
-                if (key.tenantId.equals(tenantId) && key.connectionUriDomain.equals(connectionUriDomain)) {
-                    toRemove.add(key);
-                }
-            });
-            for (KeyClass keyClass : toRemove) {
-                resources.remove(keyClass);
-            }
+    public boolean doesTenantExist(String connectionUriDomain, String tenantId) {
+        // TODO: do we need to change getResource function and config normalisation to follow this
+        // pattern as well? It also depends on if we require the user to create a (connectionUriDomain, *) before
+        // being able to add a (connectionUriDomain, tenantId) to their tenant pool.
+        if (resources.containsKey(new KeyClass(connectionUriDomain, tenantId, Config.RESOURCE_KEY))) {
+            return true;
         }
+
+        if (resources.containsKey(new KeyClass(connectionUriDomain, null, Config.RESOURCE_KEY))) {
+            // this means that the user has configured a (connectionUriDomain, *) and if we do not find
+            // the tenantId match within that, then the tenant doesn't exist
+            return false;
+        }
+
+        return resources.containsKey(new KeyClass(null, tenantId, Config.RESOURCE_KEY));
     }
 
     @Deprecated

@@ -180,6 +180,12 @@ public abstract class WebserverAPI extends HttpServlet {
     @Override
     protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         try {
+            String connectionUriDomain = getConnectionUriDomain(req);
+            String tenantId = getTenantId(req);
+            if (!main.getResourceDistributor().doesTenantExist(connectionUriDomain, tenantId)) {
+                throw new ServletException(new TenantNotFoundException(connectionUriDomain, tenantId));
+            }
+
             if (this.checkAPIKey(req)) {
                 assertThatAPIKeyCheckPasses(req);
             }
@@ -206,6 +212,8 @@ public abstract class WebserverAPI extends HttpServlet {
                     sendTextResponse(400, rootCause.getMessage(), resp);
                 } else if (rootCause instanceof APIKeyUnauthorisedException) {
                     sendTextResponse(401, "Invalid API key", resp);
+                } else if (rootCause instanceof TenantNotFoundException) {
+                    sendTextResponse(400, "Tenant not found", resp);
                 } else {
                     sendTextResponse(500, "Internal Error", resp);
                 }
@@ -242,6 +250,16 @@ public abstract class WebserverAPI extends HttpServlet {
 
         public APIKeyUnauthorisedException() {
             super();
+        }
+    }
+
+    protected static class TenantNotFoundException extends Exception {
+
+        private static final long serialVersionUID = 6058119187747009809L;
+
+        public TenantNotFoundException(String connectionUriDomain, String tenantId) {
+            super("Tenant with the following connectionURIDomain and tenantId not found: (" + connectionUriDomain +
+                    ", " + tenantId + ")");
         }
     }
 
