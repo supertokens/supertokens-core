@@ -150,6 +150,26 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     protected String getTenantId(HttpServletRequest req) {
+        String path = req.getServletPath().toLowerCase();
+        String apiPath = getPath().toLowerCase();
+        if (!apiPath.startsWith("/")) {
+            apiPath = "/" + apiPath;
+        }
+        if (apiPath.equals("/")) {
+            if (path.equals("") || path.equals("/")) {
+                return null;
+            }
+        } else {
+            if (path.matches("^/[a-z0-9-]+" + apiPath + "/?$")) {
+                String tenantId = path.split("/")[0].toLowerCase();
+                if (tenantId.equals("defaulttenantid")) {
+                    return null;
+                }
+                return tenantId;
+            } else {
+                return null;
+            }
+        }
         return null;
     }
 

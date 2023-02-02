@@ -63,9 +63,26 @@ public class PathRouter extends WebserverAPI {
 
     private WebserverAPI getAPIThatMatchesPath(HttpServletRequest req) {
         // getServletPath returns the path without the configured base path.
-        String path = req.getServletPath();
+        String requestPath = req.getServletPath().toLowerCase();
+
+        // first we check for exact match
         for (WebserverAPI api : this.apis) {
-            if (api.getPath().equals(path) || (api.getPath() + "/").equals(path)) {
+            String apiPath = api.getPath().toLowerCase();
+            if (!apiPath.startsWith("/")) {
+                apiPath = "/" + apiPath;
+            }
+            if (requestPath.equals(apiPath) || requestPath.equals(apiPath + "/")) {
+                return api;
+            }
+        }
+
+        // then we check if tenantId is embedded in the URL.
+        for (WebserverAPI api : this.apis) {
+            String apiPath = api.getPath().toLowerCase();
+            if (!apiPath.startsWith("/")) {
+                apiPath = "/" + apiPath;
+            }
+            if (requestPath.matches("^(/[a-z0-9-]+)?" + apiPath + "/?$")) {
                 return api;
             }
         }
