@@ -29,6 +29,8 @@ import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.dashboard.DashboardStorage;
+import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
@@ -67,8 +69,6 @@ import io.supertokens.pluginInterface.userroles.UserRolesStorage;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
-import io.supertokens.pluginInterface.dashabord.DashboardStorage;
-import io.supertokens.pluginInterface.dashabord.DashboardUser;
 import io.supertokens.session.Session;
 import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
@@ -1685,14 +1685,32 @@ public class Start
     }
 
     @Override
-    public void updateDashboardUserWithEmail(String email, String newEmail, String newPassword) {
-        // TODO Auto-generated method stub
-        
+    public void updateDashboardUserWithEmail(String email, String newEmail, String newPassword) throws StorageQueryException {
+        try {
+            if (newEmail != null){
+                DashboardQueries.updateDashboardUsersEmailWithEmail(this, email, newEmail);
+            }
+
+            if(newPassword != null){
+                DashboardQueries.updateDashboardUsersPasswordWithEmail(this, email, newPassword);
+            }
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
-    public void updateDashboardUserWithUserId(String userId, String newEmail, String newPassword) {
-        // TODO Auto-generated method stub
-        
+    public void updateDashboardUserWithUserId(String userId, String newEmail, String newPassword) throws StorageQueryException {
+        try {
+            if (newEmail != null){
+                DashboardQueries.updateDashboardUsersEmailWithEmail(this, userId, newEmail);
+            }
+
+            if(newPassword != null){
+                DashboardQueries.updateDashboardUsersPasswordWithEmail(this, userId, newPassword);
+            }
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }

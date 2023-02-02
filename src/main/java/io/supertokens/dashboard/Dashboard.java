@@ -2,7 +2,7 @@ package io.supertokens.dashboard;
 
 import io.supertokens.Main;
 import io.supertokens.emailpassword.PasswordHashing;
-import io.supertokens.pluginInterface.dashabord.DashboardUser;
+import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;

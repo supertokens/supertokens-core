@@ -26,7 +26,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
-import io.supertokens.pluginInterface.dashabord.DashboardStorage;
+import io.supertokens.pluginInterface.dashboard.DashboardStorage;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
