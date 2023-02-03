@@ -59,7 +59,17 @@ public class Dashboard {
 
     public static boolean isDashboardFeatureFlagEnabled(){
         // TODO: check that dashboard is enabled in the feature flag
+        return false;
+    }
 
+    public static boolean isValidEmail(String email){
+        // TODO: check that input email is in valid format
+
+        return false;
+    }
+
+    public static boolean isStrongPassword(String password){
+        // TODO: check that input password is strong
         return false;
     }
 }

@@ -43,22 +43,54 @@ public class DashboardUserAPI extends WebserverAPI {
                 if (users.length >= Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS) {
                     JsonObject response = new JsonObject();
                     response.addProperty("status", "USER_LIMIT_REACHED");
-                    // super.sendJsonResponse(200, result, resp);
                     super.sendJsonResponse(200, response, resp);
                 }
             }
 
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
             String email = InputParser.parseStringOrThrowError(input, "email", false);
+
+            // normalize email
+            String normalizedEmail = email.trim();
+            if (normalizedEmail.length() == 0) {
+                throw new ServletException(
+                        new WebserverAPI.BadRequestException("Field name 'email' cannot be an empty String"));
+            }
+
+            // check if input email is invalid
+            if (!Dashboard.isValidEmail(email)) {
+                JsonObject response = new JsonObject();
+                response.addProperty("status", "INVALID_EMAIL_ERROR");
+
+            }
+
             String password = InputParser.parseStringOrThrowError(input, "password", false);
+
+            // normalize password
+            String normalizedPassword = password.trim();
+            if (normalizedPassword.length() == 0) {
+                throw new ServletException(
+                        new WebserverAPI.BadRequestException("Field name 'password' cannot be an empty String"));
+            }
+
+            // check if input password is a strong password
+            if (!Dashboard.isStrongPassword(normalizedPassword)) {
+                JsonObject response = new JsonObject();
+                response.addProperty("status", "PASSWORD_WEAK_ERROR");
+            }
 
             Dashboard.signUpDashboardUser(main, email, password);
 
-        } catch (StorageQueryException e) {
-            throw new ServletException(e);
+            JsonObject response = new JsonObject();
+            response.addProperty("status", "OK");
+            super.sendJsonResponse(200, response, resp);
+
         } catch (DuplicateEmailException e) {
             JsonObject response = new JsonObject();
             response.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
+            super.sendJsonResponse(200, response, resp);
+        } catch (StorageQueryException e) {
+            throw new ServletException(e);
         }
     }
 
