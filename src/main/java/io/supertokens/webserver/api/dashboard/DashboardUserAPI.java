@@ -53,11 +53,7 @@ public class DashboardUserAPI extends WebserverAPI {
             String email = InputParser.parseStringOrThrowError(input, "email", false);
 
             // normalize email
-            String normalizedEmail = email.trim();
-            if (normalizedEmail.length() == 0) {
-                throw new ServletException(
-                        new WebserverAPI.BadRequestException("Field name 'email' cannot be an empty String"));
-            }
+            email = normalizeStringParam(email, "email");
 
             // check if input email is invalid
             if (!Dashboard.isValidEmail(email)) {
@@ -70,14 +66,10 @@ public class DashboardUserAPI extends WebserverAPI {
             String password = InputParser.parseStringOrThrowError(input, "password", false);
 
             // normalize password
-            String normalizedPassword = password.trim();
-            if (normalizedPassword.length() == 0) {
-                throw new ServletException(
-                        new WebserverAPI.BadRequestException("Field name 'password' cannot be an empty String"));
-            }
-
+            password = normalizeStringParam(password, "password");
+            
             // check if input password is a strong password
-            if (!Dashboard.isStrongPassword(normalizedPassword)) {
+            if (!Dashboard.isStrongPassword(password)) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "PASSWORD_WEAK_ERROR");
                 super.sendJsonResponse(200, response, resp);
@@ -106,11 +98,7 @@ public class DashboardUserAPI extends WebserverAPI {
         String newEmail = InputParser.parseStringOrThrowError(input, "newEmail", true);
         if (newEmail != null) {
             // normalize new email
-            newEmail = newEmail.trim();
-            if (newEmail.length() == 0) {
-                throw new ServletException(
-                        new WebserverAPI.BadRequestException("Field name 'newEmail' cannot be an empty String"));
-            }
+            newEmail = normalizeStringParam(newEmail, "newEmail");
 
             // check if the newEmail is in valid format
             if (!Dashboard.isValidEmail(newEmail)) {
@@ -124,12 +112,7 @@ public class DashboardUserAPI extends WebserverAPI {
         String newPassword = InputParser.parseStringOrThrowError(input, "newPassword", true);
         if (newPassword != null) {
             // normalize new password
-            newPassword = newPassword.trim();
-            if (newPassword.length() == 0) {
-                throw new ServletException(
-                        new WebserverAPI.BadRequestException("Field name 'newPassword' cannot be an empty String"));
-            }
-
+            newPassword = normalizeStringParam(newPassword, "newPassword");
             // check if the new password is strong
             if (Dashboard.isStrongPassword(newPassword)) {
                 JsonObject response = new JsonObject();
@@ -143,11 +126,7 @@ public class DashboardUserAPI extends WebserverAPI {
             String userId = InputParser.parseStringOrThrowError(input, "userId", true);
             if (userId != null) {
                 // normalize userId
-                userId = userId.trim();
-                if (userId.length() == 0) {
-                    throw new ServletException(
-                            new WebserverAPI.BadRequestException("Field name 'userId' cannot be an empty String"));
-                }
+                userId = normalizeStringParam(userId, "userId");
 
                 Dashboard.updateUsersCredentialsWithUserId(main, userId, newEmail, newPassword);
                 JsonObject response = new JsonObject();
@@ -159,11 +138,7 @@ public class DashboardUserAPI extends WebserverAPI {
             String email = InputParser.parseStringOrThrowError(input, "email", true);
             if (email != null) {
                 // normalize userId
-                email = email.trim();
-                if (email.length() == 0) {
-                    throw new ServletException(
-                            new WebserverAPI.BadRequestException("Field name 'email' cannot be an empty String"));
-                }
+                email = normalizeStringParam(email, "email");
                 Dashboard.updateUsersCredentialsWithEmail(main, email, newEmail, newPassword);
 
                 JsonObject response = new JsonObject();
@@ -182,6 +157,15 @@ public class DashboardUserAPI extends WebserverAPI {
         JsonObject response = new JsonObject();
         response.addProperty("status", "OK");
         super.sendJsonResponse(200, response, resp);
+    }
+
+    private static String normalizeStringParam(String param, String paramName) throws ServletException {
+        param = param.trim();
+        if(param.length() == 0){
+            throw new ServletException(
+                            new WebserverAPI.BadRequestException("Field name "+paramName+" cannot be an empty String"));
+        }
+        return param;
     }
 
 }
