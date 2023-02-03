@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
@@ -55,7 +56,7 @@ public class HandshakeAPITest2_9 {
 
     @Test
     public void inputErrorsInHandshakeAPITest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -76,7 +77,7 @@ public class HandshakeAPITest2_9 {
 
     @Test
     public void signingKeyHandshakeAPITest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -109,7 +110,7 @@ public class HandshakeAPITest2_9 {
 
     @Test
     public void signingKeyHandshakeAPIWithCookiesTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("cookie_domain", "localhost");
 
@@ -144,7 +145,7 @@ public class HandshakeAPITest2_9 {
 
     @Test
     public void changingSigningKeyHandshakeAPITest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00081"); // 0.00027*3 = 3 seconds
         Utils.setValueInConfig("access_token_validity", "1"); // 1 second
@@ -206,7 +207,7 @@ public class HandshakeAPITest2_9 {
     }
 
     private static void checkHandshakeAPIResponse(JsonObject response, TestingProcessManager.TestingProcess process)
-            throws StorageQueryException, StorageTransactionLogicException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
         // check status
         assertEquals(response.get("status").getAsString(), "OK");
 

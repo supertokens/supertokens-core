@@ -17,9 +17,8 @@
 package io.supertokens.test.session;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
 import io.supertokens.ProcessState;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
@@ -27,7 +26,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
-import io.supertokens.session.info.SessionInfo;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -70,7 +68,7 @@ public class SessionTest4 {
             IOException, InvalidKeySpecException, StorageTransactionLogicException, SignatureException,
             IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -84,7 +82,7 @@ public class SessionTest4 {
                 userDataInDatabase, false);
 
         assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(),
-                new String[] { sessionInfo.session.handle })[0], sessionInfo.session.handle);
+                new String[]{sessionInfo.session.handle})[0], sessionInfo.session.handle);
 
         SessionInformationHolder sessionInfo2 = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
                 userDataInDatabase, false);
@@ -95,7 +93,7 @@ public class SessionTest4 {
         Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
         Session.createNewSession(process.getProcess(), "userId2", userDataInJWT, userDataInDatabase, false);
 
-        String[] handles = { sessionInfo2.session.handle, sessionInfo3.session.handle, sessionInfo4.session.handle };
+        String[] handles = {sessionInfo2.session.handle, sessionInfo3.session.handle, sessionInfo4.session.handle};
         String[] actuallyRevoked = Session.revokeSessionUsingSessionHandles(process.getProcess(), handles);
         boolean revokedAll = true;
         assertEquals(actuallyRevoked.length, 3);
@@ -125,7 +123,7 @@ public class SessionTest4 {
         assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(), handles).length, 0);
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), "userId2").length, 0);
         assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(),
-                new String[] { sessionInfo.session.handle }).length, 0);
+                new String[]{sessionInfo.session.handle}).length, 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -136,7 +134,7 @@ public class SessionTest4 {
     public void gettingAndUpdatingSessionDataForNonExistantSession()
             throws InterruptedException, StorageQueryException {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -168,7 +166,7 @@ public class SessionTest4 {
 
         Utils.setValueInConfig("access_token_validity", "1");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -230,7 +228,7 @@ public class SessionTest4 {
             TryRefreshTokenException, TokenTheftDetectedException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -279,7 +277,7 @@ public class SessionTest4 {
             StorageTransactionLogicException, TokenTheftDetectedException, SignatureException,
             IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -311,11 +309,12 @@ public class SessionTest4 {
 
     @Test
     public void noSigningKeyRotationShouldYieldFarAwayExpiry()
-            throws InterruptedException, StorageQueryException, IOException, StorageTransactionLogicException {
+            throws InterruptedException, StorageQueryException, IOException, StorageTransactionLogicException,
+            TenantNotFoundException {
 
         Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -332,7 +331,7 @@ public class SessionTest4 {
         Utils.setValueInConfig("access_token_validity", "3");
         Utils.setValueInConfig("refresh_token_validity", "0.08"); // 5 seconds
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -378,7 +377,7 @@ public class SessionTest4 {
         Utils.setValueInConfig("access_token_validity", "63072000"); // 2 years in seconds
         Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -399,7 +398,7 @@ public class SessionTest4 {
         Utils.setValueInConfig("access_token_validity", "63072000"); // 2 years in seconds
         Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -429,7 +428,7 @@ public class SessionTest4 {
 
         Utils.setValueInConfig("access_token_validity", "63072000"); // 2 years in seconds
         Utils.setValueInConfig("refresh_token_validity", "1051200"); // 2 years in minutes
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 

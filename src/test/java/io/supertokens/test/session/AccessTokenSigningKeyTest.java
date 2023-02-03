@@ -18,6 +18,7 @@ package io.supertokens.test.session;
 
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -59,8 +60,8 @@ public class AccessTokenSigningKeyTest {
 
     @Test
     public void legacySigningKeysAreMigratedProperly() throws InterruptedException, NoSuchAlgorithmException,
-            StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+            StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
@@ -85,10 +86,11 @@ public class AccessTokenSigningKeyTest {
     @Test
     public void getAllKeysReturnsOrdered()
             throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
-            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException {
+            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException,
+            TenantNotFoundException {
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 seconds
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
@@ -97,7 +99,7 @@ public class AccessTokenSigningKeyTest {
         io.supertokens.utils.Utils.PubPriKey rsaKeys = io.supertokens.utils.Utils.generateNewPubPriKey();
         String signingKey = rsaKeys.toString();
         KeyValueInfo legacyKey = new KeyValueInfo(signingKey, System.currentTimeMillis() - 2000); // 2 seconds in the
-                                                                                                  // past
+        // past
 
         SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
         sessionStorage.setKeyValue("access_token_signing_key", legacyKey);
@@ -134,11 +136,12 @@ public class AccessTokenSigningKeyTest {
     @Test
     public void getAllKeysFiltersOldKeys()
             throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
-            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException {
+            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException,
+            TenantNotFoundException {
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 seconds
         Utils.setValueInConfig("access_token_validity", "1");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
@@ -164,10 +167,11 @@ public class AccessTokenSigningKeyTest {
     @Test
     public void migratingStaticSigningKeys()
             throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
-            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException {
+            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException,
+            TenantNotFoundException {
         Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
 
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);

@@ -246,8 +246,12 @@ public class Config extends ResourceDistributor.SingletonResource {
     }
 
     @TestOnly
-    public static CoreConfig getConfig(Main main) throws TenantNotFoundException {
-        return getConfig(null, null, main);
+    public static CoreConfig getConfig(Main main) {
+        try {
+            return getConfig(null, null, main);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     private void assertThatConfigFromSameUserPoolIsNotConflicting(CoreConfig otherConfig)

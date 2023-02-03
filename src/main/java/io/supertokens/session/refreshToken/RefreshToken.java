@@ -40,6 +40,16 @@ import java.util.UUID;
 
 public class RefreshToken {
 
+    @TestOnly
+    public static RefreshTokenInfo getInfoFromRefreshToken(@Nonnull Main main, @Nonnull String token)
+            throws UnauthorisedException, StorageQueryException, StorageTransactionLogicException {
+        try {
+            return getInfoFromRefreshToken(null, null, main, token);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
+    }
+
     public static RefreshTokenInfo getInfoFromRefreshToken(String connectionUriDomain, String tenantId,
                                                            @Nonnull Main main, @Nonnull String token)
             throws UnauthorisedException, StorageQueryException, StorageTransactionLogicException,

@@ -129,6 +129,17 @@ public class AccessToken {
         return tokenInfo;
     }
 
+    @TestOnly
+    public static AccessTokenInfo getInfoFromAccessToken(@Nonnull Main main, @Nonnull String token,
+                                                         boolean doAntiCsrfCheck)
+            throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException {
+        try {
+            return getInfoFromAccessToken(null, null, main, token, doAntiCsrfCheck);
+        } catch (TenantNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
+    }
+
     public static AccessTokenInfo getInfoFromAccessToken(String connectionUriDomain, String tenantId,
                                                          @Nonnull Main main, @Nonnull String token,
                                                          boolean doAntiCsrfCheck)

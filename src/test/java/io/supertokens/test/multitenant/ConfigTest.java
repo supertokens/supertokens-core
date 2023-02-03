@@ -23,6 +23,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfigTestContent;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -111,7 +112,8 @@ public class ConfigTest {
     }
 
     @Test
-    public void mergingTenantWithBaseConfigWorks() throws InterruptedException, IOException, InvalidConfigException {
+    public void mergingTenantWithBaseConfigWorks()
+            throws InterruptedException, IOException, InvalidConfigException, TenantNotFoundException {
         String[] args = {"../"};
 
         Utils.setValueInConfig("refresh_token_validity", "144001");
@@ -224,7 +226,7 @@ public class ConfigTest {
 
     @Test
     public void mergingDifferentUserPoolTenantWithBaseConfigWithConflictingConfigsShouldNotThrowsError()
-            throws InterruptedException, IOException, InvalidConfigException {
+            throws InterruptedException, IOException, InvalidConfigException, TenantNotFoundException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -271,7 +273,7 @@ public class ConfigTest {
 
     @Test
     public void testDifferentWaysToGetConfigBasedOnConnectionURIAndTenantId()
-            throws InterruptedException, IOException, InvalidConfigException {
+            throws InterruptedException, IOException, InvalidConfigException, TenantNotFoundException {
         String[] args = {"../"};
 
         Utils.setValueInConfig("refresh_token_validity", "144001");
@@ -335,8 +337,6 @@ public class ConfigTest {
                 (long) 144005 * 60 * 1000);
         Assert.assertEquals(Config.getConfig("c3", "t2", process.getProcess()).getRefreshTokenValidity(),
                 (long) 144004 * 60 * 1000);
-        Assert.assertEquals(Config.getConfig("c1", "t2", process.getProcess()).getRefreshTokenValidity(),
-                (long) 144002 * 60 * 1000);
         Assert.assertEquals(Config.getConfig(null, "t2", process.getProcess()).getRefreshTokenValidity(),
                 (long) 144004 * 60 * 1000);
 

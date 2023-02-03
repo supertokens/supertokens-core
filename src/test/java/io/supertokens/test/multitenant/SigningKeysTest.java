@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
@@ -60,7 +61,8 @@ public class SigningKeysTest {
 
     @Test
     public void normalConfigContinuesToWork()
-            throws InterruptedException, IOException, StorageQueryException, StorageTransactionLogicException {
+            throws InterruptedException, IOException, StorageQueryException, StorageTransactionLogicException,
+            TenantNotFoundException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -80,7 +82,7 @@ public class SigningKeysTest {
     @Test
     public void keysAreGeneratedForAllUserPoolIds()
             throws InterruptedException, IOException, StorageQueryException, StorageTransactionLogicException,
-            InvalidConfigException, DbInitException {
+            InvalidConfigException, DbInitException, TenantNotFoundException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -125,7 +127,7 @@ public class SigningKeysTest {
     @Test
     public void signingKeyClassesAreThereForAllTenants()
             throws InterruptedException, IOException, InvalidConfigException, DbInitException, StorageQueryException,
-            StorageTransactionLogicException {
+            StorageTransactionLogicException, TenantNotFoundException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -175,8 +177,6 @@ public class SigningKeysTest {
                 .getAllKeys().get(0);
         AccessTokenSigningKey.KeyInfo c3Tenant = AccessTokenSigningKey.getInstance("c3", null, process.main)
                 .getAllKeys().get(0);
-        AccessTokenSigningKey.KeyInfo t1Tenant = AccessTokenSigningKey.getInstance(null, "t1", process.main)
-                .getAllKeys().get(0);
 
         assertNotEquals(baseTenant.createdAtTime, c1Tenant.createdAtTime);
         assertNotEquals(baseTenant.expiryTime, c1Tenant.expiryTime);
@@ -191,8 +191,6 @@ public class SigningKeysTest {
 
         assertEquals(baseTenant.expiryTime, c3Tenant.expiryTime);
         assertEquals(baseTenant.value, c3Tenant.value);
-        assertEquals(t1Tenant.expiryTime, baseTenant.expiryTime);
-        assertEquals(t1Tenant.value, baseTenant.value);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
