@@ -162,7 +162,7 @@ public abstract class WebserverAPI extends HttpServlet {
             }
         } else {
             if (path.matches("^/[a-z0-9-]+" + apiPath + "/?$")) {
-                String tenantId = path.split("/")[0].toLowerCase();
+                String tenantId = path.split("/")[1].toLowerCase();
                 if (tenantId.equals("defaulttenantid")) {
                     return null;
                 }
@@ -200,6 +200,8 @@ public abstract class WebserverAPI extends HttpServlet {
 
             if (e instanceof QuitProgramException) {
                 main.wakeUpMainThreadToShutdown();
+            } else if (e instanceof TenantNotFoundException) {
+                sendTextResponse(400, "Tenant not found", resp);
             } else if (e instanceof ServletException) {
                 ServletException se = (ServletException) e;
                 Throwable rootCause = se.getRootCause();

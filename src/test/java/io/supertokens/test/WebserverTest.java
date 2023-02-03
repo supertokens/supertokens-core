@@ -1052,19 +1052,4 @@ public class WebserverTest extends Mockito {
 
         }
     }
-
-    /*
-     * TODO: PathRouter Test cases:
-     *   - passing regular tenantId in path should hit that path with that tenantId
-     *   - calling path like /recipe/users vs /users should return tenantId as null and hit the right recipe
-     *   - using defaulttenantid should yield null tenantId
-     *   - passing /random/tenantId/users should yield a 404
-     *   - using tenantId along with RecipeRouter
-     *   - passing query params should not affect the detection of tenantId and path routing
-     *   - all the above tests, but with a base path:
-     *      - /basepath
-     *      - /base/path
-     *   -
-     * */
-
 }

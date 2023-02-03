@@ -17,7 +17,6 @@
 package io.supertokens.webserver;
 
 import io.supertokens.Main;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -71,37 +70,7 @@ public class RecipeRouter extends WebserverAPI {
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        getAPIThatMatchesRID(req).doGet(req, resp);
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        getAPIThatMatchesRID(req).doPost(req, resp);
-    }
-
-    @Override
-    protected void doHead(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        getAPIThatMatchesRID(req).doHead(req, resp);
-    }
-
-    @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        getAPIThatMatchesRID(req).doPut(req, resp);
-    }
-
-    @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        getAPIThatMatchesRID(req).doDelete(req, resp);
-    }
-
-    @Override
-    protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        getAPIThatMatchesRID(req).doOptions(req, resp);
-    }
-
-    @Override
-    protected void doTrace(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        getAPIThatMatchesRID(req).doTrace(req, resp);
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        getAPIThatMatchesRID(req).service(req, resp);
     }
 }

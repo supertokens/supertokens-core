@@ -17,7 +17,6 @@
 package io.supertokens.webserver;
 
 import io.supertokens.Main;
-import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
@@ -95,37 +94,7 @@ public class PathRouter extends WebserverAPI {
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        getAPIThatMatchesPath(req).doGet(req, resp);
-    }
-
-    @Override
-    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        getAPIThatMatchesPath(req).doPost(req, resp);
-    }
-
-    @Override
-    protected void doHead(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        getAPIThatMatchesPath(req).doHead(req, resp);
-    }
-
-    @Override
-    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        getAPIThatMatchesPath(req).doPut(req, resp);
-    }
-
-    @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        getAPIThatMatchesPath(req).doDelete(req, resp);
-    }
-
-    @Override
-    protected void doOptions(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        getAPIThatMatchesPath(req).doOptions(req, resp);
-    }
-
-    @Override
-    protected void doTrace(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-        getAPIThatMatchesPath(req).doTrace(req, resp);
+    protected void service(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+        getAPIThatMatchesPath(req).service(req, resp);
     }
 }
