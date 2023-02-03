@@ -34,8 +34,7 @@ import org.mockito.Mockito;
 import java.io.IOException;
 import java.util.HashMap;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /*
  * TODO: PathRouter Test cases:
@@ -73,25 +72,29 @@ public class PathRouterTest extends Mockito {
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
-        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+        String[] paths = new String[]{"/test", "/recipe/test", "/test/t1", "/t1/t1"};
 
-            private static final long serialVersionUID = 1L;
+        for (String p : paths) {
+            Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
 
-            @Override
-            public boolean checkAPIKey(HttpServletRequest req) {
-                return false;
-            }
+                private static final long serialVersionUID = 1L;
 
-            @Override
-            public String getPath() {
-                return "/test";
-            }
+                @Override
+                public boolean checkAPIKey(HttpServletRequest req) {
+                    return false;
+                }
 
-            @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-                super.sendTextResponse(200, this.getConnectionUriDomain(req) + "," + this.getTenantId(req), resp);
-            }
-        });
+                @Override
+                public String getPath() {
+                    return p;
+                }
+
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                    super.sendTextResponse(200, this.getConnectionUriDomain(req) + "," + this.getTenantId(req), resp);
+                }
+            });
+        }
 
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -101,9 +104,55 @@ public class PathRouterTest extends Mockito {
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t2/recipe/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t2", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/t1/test", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionLatestForTests(), "");
             assertEquals("localhost:3567,t1", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/test/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/test/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t1", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t1", response);
+        }
+        {
+            try {
+                String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/t2/t1/test/t1", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
         }
 
         process.kill();
