@@ -1,5 +1,6 @@
 package io.supertokens.inmemorydb.queries;
 
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -81,33 +82,33 @@ public class DashboardQueries {
         });
     }
 
-    public static void updateDashboardUsersEmailWithEmail(Start start, String email, String newEmail) throws SQLException, StorageQueryException{
+    public static void updateDashboardUsersEmailWithEmail_Transaction(Start start, Connection con ,String email, String newEmail) throws SQLException, StorageQueryException{
         String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET email = ? WHERE email = ?";
-        update(start, QUERY, pst -> {
+        update(con, QUERY, pst -> {
             pst.setString(1, newEmail);
             pst.setString(2, email);
         });
     }
 
-    public static  void updateDashboardUsersPasswordWithEmail(Start start, String email, String newPassword) throws SQLException, StorageQueryException{
+    public static  void updateDashboardUsersPasswordWithEmail_Transaction(Start start, Connection con, String email, String newPassword) throws SQLException, StorageQueryException{
         String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET password = ? WHERE email = ?";
-        update(start, QUERY, pst -> {
+        update(con, QUERY, pst -> {
             pst.setString(1, newPassword);
             pst.setString(2, email);
         });
     }
 
-    public static void updateDashboardUsersEmailWithUserId(Start start, String userId, String newEmail) throws SQLException, StorageQueryException{
+    public static void updateDashboardUsersEmailWithUserId_Transaction(Start start, Connection con, String userId, String newEmail) throws SQLException, StorageQueryException{
         String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET email = ? WHERE id = ?";
-        update(start, QUERY, pst -> {
+        update(con, QUERY, pst -> {
             pst.setString(1, newEmail);
             pst.setString(2, userId);
         });
     }
 
-    public static void updateDashboardUsersPasswordWithUserId(Start start, String userId, String newPassword) throws SQLException, StorageQueryException{
+    public static void updateDashboardUsersPasswordWithUserId_Transaction(Start start, Connection con, String userId, String newPassword) throws SQLException, StorageQueryException{
         String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET password = ? WHERE id = ?";
-        update(start, QUERY, pst -> {
+        update(con, QUERY, pst -> {
             pst.setString(1, newPassword);
             pst.setString(2, userId);
         });

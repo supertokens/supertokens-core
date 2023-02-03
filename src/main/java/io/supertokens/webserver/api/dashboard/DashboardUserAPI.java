@@ -9,7 +9,7 @@ import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
-import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;

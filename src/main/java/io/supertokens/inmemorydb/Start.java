@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.dashboard.Dashboard;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.inmemorydb.config.Config;
@@ -31,6 +32,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardStorage;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
+import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
@@ -90,7 +92,7 @@ import java.util.Set;
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
-        DashboardStorage {
+        DashboardSQLStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -1626,7 +1628,8 @@ public class Start
 
     @Override
     public void createNewDashboardUser(DashboardUser userInfo)
-            throws StorageQueryException, DuplicateUserIdException, DuplicateEmailException {
+            throws StorageQueryException, io.supertokens.pluginInterface.dashboard.exceptions.DuplicateUserIdException,
+            io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException {
         try {
             DashboardQueries.createDashboardUser(this, userInfo.id, userInfo.email, userInfo.passwordHash,
                     userInfo.isSuspended, userInfo.timeJoined);
@@ -1634,12 +1637,12 @@ public class Start
             if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getDashboardEmailPasswordUsersTable() + ".email)")) {
-                throw new DuplicateEmailException();
+                throw new io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException();
             }
             if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getDashboardEmailPasswordUsersTable() + ".id)")) {
-                throw new DuplicateUserIdException();
+                throw new io.supertokens.pluginInterface.dashboard.exceptions.DuplicateUserIdException();
             }
             throw new StorageQueryException(e);
         }
@@ -1650,10 +1653,10 @@ public class Start
     public DashboardUser[] getAllDashboardUsers() throws StorageQueryException {
         try {
             return DashboardQueries.getAllDashBoardUsers(this);
-        } catch(SQLException e){
+        } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
-        
+
     }
 
     @Override
@@ -1663,7 +1666,7 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
-       
+
     }
 
     @Override
@@ -1685,41 +1688,46 @@ public class Start
     }
 
     @Override
-    public void updateDashboardUserWithEmail(String email, String newEmail, String newPassword) throws StorageQueryException, DuplicateEmailException {
+    public void updateDashboardUsersEmailWithEmail_Transaction(TransactionConnection con, String email, String newEmail)
+            throws StorageQueryException, io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException {
+        Connection sqlCon = (Connection) con.getConnection();
         try {
-            if (newEmail != null){
-                DashboardQueries.updateDashboardUsersEmailWithEmail(this, email, newEmail);
-            }
-
-            if(newPassword != null){
-                DashboardQueries.updateDashboardUsersPasswordWithEmail(this, email, newPassword);
-            }
+            DashboardQueries.updateDashboardUsersEmailWithEmail_Transaction(this, sqlCon, email, newEmail);
         } catch (SQLException e) {
-            if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                            + Config.getConfig(this).getDashboardEmailPasswordUsersTable() + ".email)")) {
-                throw new DuplicateEmailException();
-            }
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public void updateDashboardUserWithUserId(String userId, String newEmail, String newPassword) throws StorageQueryException, DuplicateEmailException {
+    public void updateDashboardUsersPasswordWithEmail_Transaction(TransactionConnection con, String email,
+            String newPassword) throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
         try {
-            if (newEmail != null){
-                DashboardQueries.updateDashboardUsersEmailWithEmail(this, userId, newEmail);
-            }
-
-            if(newPassword != null){
-                DashboardQueries.updateDashboardUsersPasswordWithEmail(this, userId, newPassword);
-            }
+            DashboardQueries.updateDashboardUsersPasswordWithEmail_Transaction(this, sqlCon, email, newPassword);
         } catch (SQLException e) {
-            if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                            + Config.getConfig(this).getDashboardEmailPasswordUsersTable() + ".email)")) {
-                throw new DuplicateEmailException();
-            }
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void updateDashboardUsersEmailWithUserId_Transaction(TransactionConnection con, String userId,
+            String newEmail)
+            throws StorageQueryException, io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            DashboardQueries.updateDashboardUsersEmailWithUserId_Transaction(this, sqlCon, userId, newEmail);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void updateDashboardUsersPasswordWithUserId_Transaction(TransactionConnection con, String userId,
+            String newPassword) throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            DashboardQueries.updateDashboardUsersEmailWithUserId_Transaction(this, sqlCon, userId, newPassword);
+        } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
