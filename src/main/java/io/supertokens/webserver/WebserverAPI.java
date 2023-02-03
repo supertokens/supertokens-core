@@ -200,8 +200,6 @@ public abstract class WebserverAPI extends HttpServlet {
 
             if (e instanceof QuitProgramException) {
                 main.wakeUpMainThreadToShutdown();
-            } else if (e instanceof TenantNotFoundException) {
-                sendTextResponse(400, "Tenant not found", resp);
             } else if (e instanceof ServletException) {
                 ServletException se = (ServletException) e;
                 Throwable rootCause = se.getRootCause();
