@@ -38,16 +38,9 @@ import static org.junit.Assert.*;
 
 /*
  * TODO: PathRouter Test cases:
- *   - passing regular tenantId in path should hit that path with that tenantId
- *   - calling path like /recipe/users vs /users should return tenantId as null and hit the right recipe
- *   - using defaulttenantid should yield null tenantId
- *   - passing /random/tenantId/users should yield a 404
  *   - using tenantId along with RecipeRouter
- *   - passing query params should not affect the detection of tenantId and path routing
- *   - all the above tests, but with a base path:
- *      - /basepath
- *      - /base/path
- *   -
+ *   - /hello and / API test
+ *   - TenantNotFoundException tests
  * */
 
 
@@ -145,13 +138,627 @@ public class PathRouterTest extends Mockito {
             assertEquals("localhost:3567,t1", response);
         }
         {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,hello", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/defaulttenantid/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/defaultTenantId/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
             try {
-                String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/test/t1/t2", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+                assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/t2/t1/test/t1", new HashMap<>(), 1000, 1000, null,
                         Utils.getCdiVersionLatestForTests(), "");
                 fail();
             } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
                 assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/t2/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+                assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void basicTenantIdFetchingWihQueryParamTest()
+            throws InterruptedException, IOException, HttpResponseException {
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        String[] paths = new String[]{"/test", "/recipe/test", "/test/t1", "/t1/t1"};
+
+        for (String p : paths) {
+            Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+                private static final long serialVersionUID = 1L;
+
+                @Override
+                public boolean checkAPIKey(HttpServletRequest req) {
+                    return false;
+                }
+
+                @Override
+                public String getPath() {
+                    return p;
+                }
+
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                    super.sendTextResponse(200, this.getConnectionUriDomain(req) + "," + this.getTenantId(req), resp);
+                }
+            });
+        }
+
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/test?a=b&c=d", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/test?t1=b", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t2/recipe/test?a=b&c=d", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t2", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/test?a=b&c=d", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t1", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/test/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/test/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t1", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t1", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/Hello/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,hello", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/defaulttenantid/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/defaultTenantId/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/test/t1/t2?a=b&c=d", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+                assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/t2/t1/test/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+                assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/t2/t1/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+                assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void basicTenantIdFetchingWithBasePathTest()
+            throws InterruptedException, IOException, HttpResponseException {
+        String[] args = {"../"};
+        Utils.setValueInConfig("base_path", "base_path");
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        String[] paths = new String[]{"/test", "/recipe/test", "/test/t1", "/t1/t1"};
+
+        for (String p : paths) {
+            Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+                private static final long serialVersionUID = 1L;
+
+                @Override
+                public boolean checkAPIKey(HttpServletRequest req) {
+                    return false;
+                }
+
+                @Override
+                public String getPath() {
+                    return p;
+                }
+
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                    super.sendTextResponse(200, this.getConnectionUriDomain(req) + "," + this.getTenantId(req), resp);
+                }
+            });
+        }
+
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base_path/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base_path/recipe/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base_path/t2/recipe/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t2", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base_path/t1/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t1", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base_path/test/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base_path/t1/test/t1?t1=a", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t1", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base_path/t1/t1?a=b", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base_path/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t1", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base_path/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,hello", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base_path/defaulttenantid/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base_path/defaultTenantId/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/base_path/test/t1/t2", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+                assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/base_path/t2/t1/test/t1", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+                assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/base_path/t2/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+                assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/test/t1", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void basicTenantIdFetchingWithBasePathTest2()
+            throws InterruptedException, IOException, HttpResponseException {
+        String[] args = {"../"};
+        Utils.setValueInConfig("base_path", "/base/path");
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        String[] paths = new String[]{"/test", "/recipe/test", "/test/t1", "/t1/t1"};
+
+        for (String p : paths) {
+            Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+                private static final long serialVersionUID = 1L;
+
+                @Override
+                public boolean checkAPIKey(HttpServletRequest req) {
+                    return false;
+                }
+
+                @Override
+                public String getPath() {
+                    return p;
+                }
+
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                    super.sendTextResponse(200, this.getConnectionUriDomain(req) + "," + this.getTenantId(req), resp);
+                }
+            });
+        }
+
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base/path/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base/path/recipe/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base/path/t2/recipe/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t2", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base/path/t1/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t1", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base/path/test/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base/path/t1/test/t1?t1=a", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t1", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base/path/t1/t1?a=b", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base/path/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t1", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base/path/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,hello", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base/path/defaulttenantid/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/base/path/defaultTenantId/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/base/path/test/t1/t2", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+                assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/base/path/t2/t1/test/t1", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+                assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/base/path/t2/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+                assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/test/t1", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void basicTenantIdFetchingWithBasePathTest3()
+            throws InterruptedException, IOException, HttpResponseException {
+        String[] args = {"../"};
+        Utils.setValueInConfig("base_path", "/t1");
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        String[] paths = new String[]{"/test", "/recipe/test", "/test/t1", "/t1/t1"};
+
+        for (String p : paths) {
+            Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+                private static final long serialVersionUID = 1L;
+
+                @Override
+                public boolean checkAPIKey(HttpServletRequest req) {
+                    return false;
+                }
+
+                @Override
+                public String getPath() {
+                    return p;
+                }
+
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                    super.sendTextResponse(200, this.getConnectionUriDomain(req) + "," + this.getTenantId(req), resp);
+                }
+            });
+        }
+
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/recipe/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/t2/recipe/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t2", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/t1/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t1", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/test/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/t1/test/t1?t1=a", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t1", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/t1/t1?a=b", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t1", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/Hello/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,hello", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/defaulttenantid/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/defaultTenantId/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/t1/test/t1/t2", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+                assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/t1/t2/t1/test/t1", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+                assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/t1/t2/t1/t1/t1", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
+                assertEquals(e.getMessage(), "Http error. Status Code: 404. Message: Not found");
+            }
+        }
+        {
+            try {
+                HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/test/t1", new HashMap<>(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(), "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 404);
             }
         }
 
