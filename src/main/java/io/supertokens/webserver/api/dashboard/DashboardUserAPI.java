@@ -11,6 +11,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -44,6 +45,7 @@ public class DashboardUserAPI extends WebserverAPI {
                     JsonObject response = new JsonObject();
                     response.addProperty("status", "USER_LIMIT_REACHED");
                     super.sendJsonResponse(200, response, resp);
+                    return;
                 }
             }
 
@@ -61,7 +63,8 @@ public class DashboardUserAPI extends WebserverAPI {
             if (!Dashboard.isValidEmail(email)) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "INVALID_EMAIL_ERROR");
-
+                super.sendJsonResponse(200, response, resp);
+                return;
             }
 
             String password = InputParser.parseStringOrThrowError(input, "password", false);
@@ -77,6 +80,8 @@ public class DashboardUserAPI extends WebserverAPI {
             if (!Dashboard.isStrongPassword(normalizedPassword)) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "PASSWORD_WEAK_ERROR");
+                super.sendJsonResponse(200, response, resp);
+                return;
             }
 
             Dashboard.signUpDashboardUser(main, email, password);
@@ -92,6 +97,91 @@ public class DashboardUserAPI extends WebserverAPI {
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
+    }
+
+    @Override
+    protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+
+        String newEmail = InputParser.parseStringOrThrowError(input, "newEmail", true);
+        if (newEmail != null) {
+            // normalize new email
+            newEmail = newEmail.trim();
+            if (newEmail.length() == 0) {
+                throw new ServletException(
+                        new WebserverAPI.BadRequestException("Field name 'newEmail' cannot be an empty String"));
+            }
+
+            // check if the newEmail is in valid format
+            if (!Dashboard.isValidEmail(newEmail)) {
+                JsonObject response = new JsonObject();
+                response.addProperty("status", "INVALID_EMAIL_ERROR");
+                super.sendJsonResponse(200, response, resp);
+                return;
+            }
+        }
+
+        String newPassword = InputParser.parseStringOrThrowError(input, "newPassword", true);
+        if (newPassword != null) {
+            // normalize new password
+            newPassword = newPassword.trim();
+            if (newPassword.length() == 0) {
+                throw new ServletException(
+                        new WebserverAPI.BadRequestException("Field name 'newPassword' cannot be an empty String"));
+            }
+
+            // check if the new password is strong
+            if (Dashboard.isStrongPassword(newPassword)) {
+                JsonObject response = new JsonObject();
+                response.addProperty("status", "PASSWORD_WEAK_ERROR");
+                super.sendJsonResponse(200, response, resp);
+                return;
+            }
+        }
+
+        try {
+            String userId = InputParser.parseStringOrThrowError(input, "userId", true);
+            if (userId != null) {
+                // normalize userId
+                userId = userId.trim();
+                if (userId.length() == 0) {
+                    throw new ServletException(
+                            new WebserverAPI.BadRequestException("Field name 'userId' cannot be an empty String"));
+                }
+
+                Dashboard.updateUsersCredentialsWithUserId(main, userId, newEmail, newPassword);
+                JsonObject response = new JsonObject();
+
+                response.addProperty("status", "OK");
+                super.sendJsonResponse(200, response, resp);
+            }
+
+            String email = InputParser.parseStringOrThrowError(input, "email", true);
+            if (email != null) {
+                // normalize userId
+                email = email.trim();
+                if (email.length() == 0) {
+                    throw new ServletException(
+                            new WebserverAPI.BadRequestException("Field name 'email' cannot be an empty String"));
+                }
+                Dashboard.updateUsersCredentialsWithEmail(main, email, newEmail, newPassword);
+
+                JsonObject response = new JsonObject();
+                response.addProperty("status", "OK");
+                super.sendJsonResponse(200, response, resp);
+            }
+        } catch (DuplicateEmailException e) {
+            JsonObject response = new JsonObject();
+            response.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
+            super.sendJsonResponse(200, response, resp);
+
+        } catch (StorageQueryException | StorageTransactionLogicException e) {
+            throw new ServletException(e);
+        }
+
+        JsonObject response = new JsonObject();
+        response.addProperty("status", "OK");
+        super.sendJsonResponse(200, response, resp);
     }
 
 }
