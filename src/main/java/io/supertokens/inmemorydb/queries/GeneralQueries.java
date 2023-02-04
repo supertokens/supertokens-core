@@ -299,31 +299,46 @@ public class GeneralQueries {
 
         // This list will be used to keep track of the result's order from the db
         List<UserInfoPaginationResultHolder> usersFromQuery;
+        StringBuilder RECIPE_ID_CONDITION = new StringBuilder();
+        if (includeRecipeIds != null && includeRecipeIds.length > 0) {
+            RECIPE_ID_CONDITION.append("recipe_id IN (");
+            for (int i = 0; i < includeRecipeIds.length; i++) {
+                String recipeId = includeRecipeIds[i].toString();
+                RECIPE_ID_CONDITION.append("'").append(recipeId).append("'");
+                if (i != includeRecipeIds.length - 1) {
+                    // not the last element
+                    RECIPE_ID_CONDITION.append(",");
+                }
+            }
+            RECIPE_ID_CONDITION.append(")");
+        }
+
 
         {
-            System.out.println(limit);
             String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
             if (timeJoined != null && userId != null) {
+                String recipeIdCondition = RECIPE_ID_CONDITION.toString();
+                if (!recipeIdCondition.equals("")) {
+                    recipeIdCondition = recipeIdCondition + " AND";
+                }
                 String Query = "SELECT user_id, recipe_id FROM(SELECT au.user_id, recipe_id, au.time_joined FROM "+ getConfig(start).getUsersTable() +
                         " au JOIN " + getConfig(start).getThirdPartyUsersTable() + " tu ON au.user_id = tu.user_id WHERE tu" +
-                                ".email LIKE '" + search + "%' UNION SELECT au.user_id, recipe_id, au.time_joined FROM " + getConfig(start).getUsersTable() +
+                                ".email LIKE ? UNION SELECT au.user_id, recipe_id, au.time_joined FROM " + getConfig(start).getUsersTable() +
                                 " au JOIN " + getConfig(start).getPasswordlessUsersTable() + " pu ON au.user_id = pu.user_id" +
-                                " WHERE pu.email LIKE '" + search + "%' OR pu.phone_number LIKE '" + search + "%' UNION " +
+                                " WHERE pu.email LIKE ? OR pu.phone_number LIKE ? UNION " +
                                 "SELECT au.user_id, recipe_id, au.time_joined FROM "+ getConfig(start).getUsersTable() +" au JOIN "+
                                 getConfig(start).getEmailPasswordUsersTable() + " eu ON au.user_id = eu.user_id" +
-                                " WHERE eu.email LIKE '"+ search + "%') AS users WHERE time_joined " + timeJoinedOrderSymbol + " " + timeJoined +" OR (time_joined = "+ timeJoined + " AND" +
-                        " user_id <= "+ userId + ")) ORDER BY time_joined " + timeJoinedOrder +" ,user_id DESC LIMIT " + limit;
-                System.out.println(Query);
+                                " WHERE eu.email LIKE ? ) AS users WHERE "+ recipeIdCondition + " time_joined " + timeJoinedOrderSymbol + " ? OR (time_joined = ? AND" +
+                        " user_id <= ? )) ORDER BY time_joined " + timeJoinedOrder +" ,user_id DESC LIMIT " + limit;
                 usersFromQuery = execute(start, Query, pst -> {
-                    pst.setString(1,search);
-                    pst.setString(2,search);
-                    pst.setString(3,search);
-                    pst.setString(4,search);
+                    pst.setString(1,search + "%");
+                    pst.setString(2,search + "%");
+                    pst.setString(3,search + "%");
+                    pst.setString(4,search + "%");
                     pst.setLong(5, timeJoined);
                     pst.setLong(6, timeJoined);
                     pst.setString(7, userId);
-                    pst.setString(8, timeJoinedOrder);
-                    pst.setInt(9, limit);
+                    pst.setInt(8, limit);
                 }, result -> {
                     List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
                     while (result.next()) {
@@ -332,21 +347,27 @@ public class GeneralQueries {
                     }
                     return temp;
                 });
-                System.out.println(usersFromQuery);
 
             } else {
-                String Query = "SELECT user_id, recipe_id FROM(SELECT au.user_id, recipe_id, au.time_joined FROM "+ getConfig(start).getUsersTable() +
+                String recipeIdCondition = RECIPE_ID_CONDITION.toString();
+                if (!recipeIdCondition.equals("")) {
+                    recipeIdCondition = "WHERE " + recipeIdCondition;
+                }
+                String Query = "SELECT user_id, recipe_id FROM(" +
+                        "SELECT au.user_id, recipe_id, au.time_joined FROM " + getConfig(start).getUsersTable() +
                         " au JOIN " + getConfig(start).getThirdPartyUsersTable() + " tu ON au.user_id = tu.user_id WHERE tu" +
-                        ".email LIKE '" + search + "%' UNION SELECT au.user_id, recipe_id, au.time_joined FROM " + getConfig(start).getUsersTable() +
+                        ".email LIKE ? UNION SELECT au.user_id, recipe_id, au.time_joined FROM " + getConfig(start).getUsersTable() +
                         " au JOIN " + getConfig(start).getPasswordlessUsersTable() + " pu ON au.user_id = pu.user_id" +
-                        " WHERE pu.email LIKE '" + search + "%' OR pu.phone_number LIKE '" + search + "%' UNION " +
+                        " WHERE pu.email LIKE ? OR pu.phone_number LIKE ? UNION " +
                         "SELECT au.user_id, recipe_id, au.time_joined FROM "+ getConfig(start).getUsersTable() +" au JOIN "+
                         getConfig(start).getEmailPasswordUsersTable() + " eu ON au.user_id = eu.user_id" +
-                        " WHERE eu.email LIKE '"+ search + "%') AS users ORDER BY time_joined " + timeJoinedOrder +" ,user_id DESC LIMIT " + limit;
-
-                System.out.println(Query);
-
+                        " WHERE eu.email LIKE ?) AS users " + recipeIdCondition + " ORDER BY time_joined " +  timeJoinedOrder+ " ,user_id DESC LIMIT ? ";
                 usersFromQuery = execute(start, Query,pst -> {
+                    pst.setString(1,search + "%");
+                    pst.setString(2,search + "%");
+                    pst.setString(3,search + "%");
+                    pst.setString(4,search + "%");
+                    pst.setInt(5, limit);
                 }, result -> {
                     List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
                     while (result.next()) {
