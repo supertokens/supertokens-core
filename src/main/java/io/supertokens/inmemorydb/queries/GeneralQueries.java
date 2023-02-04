@@ -376,7 +376,6 @@ public class GeneralQueries {
                     }
                     return temp;
                 });
-                System.out.println(usersFromQuery);
             }
         }
 
