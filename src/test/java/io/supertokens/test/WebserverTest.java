@@ -960,6 +960,107 @@ public class WebserverTest extends Mockito {
 
     }
 
+    @Test
+    public void validBasePathWithEmptyHelloPath() throws InterruptedException, IOException, HttpResponseException {
+        {
+            Utils.setValueInConfig("base_path", "/");
+            String[] args = {"../"};
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/", null,
+                    1000, 1000, null);
+            assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+            Utils.reset();
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "\"\"");
+            String[] args = {"../"};
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/", null,
+                    1000, 1000, null);
+            assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+            Utils.reset();
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "\"/test\"");
+            String[] args = {"../"};
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/test",
+                    null, 1000, 1000, null);
+            assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+            Utils.reset();
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "\"/test/path\"");
+            String[] args = {"../"};
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/test/path/", null, 1000, 1000, null);
+            assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "\"/te3st/Pa23th\"");
+            String[] args = {"../"};
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            {
+                String response = HttpRequest.sendGETRequest(process.getProcess(), "",
+                        "http://localhost:3567/te3st/Pa23th/", null, 1000, 1000, null);
+                assertEquals("Hello", response);
+            }
+
+            try {
+                HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567/hello", null, 1000, 1000,
+                        null);
+                fail();
+            } catch (Exception e) {
+                assert (e.getMessage().startsWith("Http error. Status Code: 404"));
+            }
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+        {
+            Utils.setValueInConfig("base_path", "");
+            String[] args = {"../"};
+            TestingProcess process = TestingProcessManager.start(args);
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+            String response = HttpRequest.sendGETRequest(process.getProcess(), "", "http://localhost:3567", null,
+                    1000, 1000, null);
+            assertEquals("Hello", response);
+
+            process.kill();
+            assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        }
+
+    }
+
     private static RecipeRouter getRecipeRouter(TestingProcess process, String recipe_1, String recipe_2)
             throws Exception {
         WebserverAPI recipe_1_api = new WebserverAPI(process.getProcess(), recipe_1) {

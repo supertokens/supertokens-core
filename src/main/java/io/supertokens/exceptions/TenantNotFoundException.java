@@ -19,9 +19,18 @@ package io.supertokens.exceptions;
 public class TenantNotFoundException extends Exception {
 
     private static final long serialVersionUID = 1L;
+    private String tenantId;
 
     public TenantNotFoundException(String connectionUriDomain, String tenantId) {
         super("Tenant with the following connectionURIDomain and tenantId not found: (" + connectionUriDomain +
                 ", " + tenantId + ")");
+        this.tenantId = tenantId;
+    }
+
+    public String getTenantId() {
+        if (this.tenantId == null || this.tenantId.equals("")) {
+            return "defaultTenantId";
+        }
+        return this.tenantId;
     }
 }

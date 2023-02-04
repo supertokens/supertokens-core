@@ -201,7 +201,7 @@ public abstract class WebserverAPI extends HttpServlet {
             if (e instanceof QuitProgramException) {
                 main.wakeUpMainThreadToShutdown();
             } else if (e instanceof TenantNotFoundException) {
-                sendTextResponse(400, "Tenant not found", resp);
+                sendTextResponse(400, "Tenant not found: " + ((TenantNotFoundException) e).getTenantId(), resp);
             } else if (e instanceof ServletException) {
                 ServletException se = (ServletException) e;
                 Throwable rootCause = se.getRootCause();
@@ -210,7 +210,8 @@ public abstract class WebserverAPI extends HttpServlet {
                 } else if (rootCause instanceof APIKeyUnauthorisedException) {
                     sendTextResponse(401, "Invalid API key", resp);
                 } else if (rootCause instanceof TenantNotFoundException) {
-                    sendTextResponse(400, "Tenant not found", resp);
+                    sendTextResponse(400, "Tenant not found: " + ((TenantNotFoundException) rootCause).getTenantId(),
+                            resp);
                 } else {
                     sendTextResponse(500, "Internal Error", resp);
                 }
