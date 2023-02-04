@@ -23,6 +23,7 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.exceptions.TenantNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.webserver.api.core.UsersAPI;
 import io.supertokens.webserver.api.core.UsersCountAPI;
@@ -86,11 +87,11 @@ public class Webserver extends ResourceDistributor.SingletonResource {
     }
 
     public static Webserver getInstance(Main main) {
-        Webserver instance = (Webserver) main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance == null) {
-            instance = (Webserver) main.getResourceDistributor().setResource(RESOURCE_KEY, new Webserver(main));
+        try {
+            return (Webserver) main.getResourceDistributor().getResource(null, null, RESOURCE_KEY);
+        } catch (TenantNotFoundException e) {
+            return (Webserver) main.getResourceDistributor().setResource(null, null, RESOURCE_KEY, new Webserver(main));
         }
-        return instance;
     }
 
     public void start() {
@@ -155,12 +156,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
         tomcatReference = new TomcatReference(tomcat, context);
 
-        try {
-            setupRoutes();
-        } catch (Exception e) {
-            Logging.error(main, null, false, e);
-            throw new QuitProgramException("API routes not initialised properly: " + e.getMessage());
-        }
+        setupRoutes();
     }
 
     private void addRemoteAddressFilter(StandardContext context, Main main) {
@@ -198,7 +194,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         context.addFilterMap(filterMapping);
     }
 
-    private void setupRoutes() throws Exception {
+    private void setupRoutes() {
         addAPI(new NotFoundOrHelloAPI(main));
         addAPI(new HelloAPI(main));
         addAPI(new SessionAPI(main));

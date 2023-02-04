@@ -20,6 +20,7 @@ import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.webserver.RecipeRouter;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,7 +39,6 @@ import static org.junit.Assert.*;
 
 /*
  * TODO: PathRouter Test cases:
- *   - using tenantId along with RecipeRouter
  *   - /hello and / API test
  *   - TenantNotFoundException tests
  * */
@@ -760,6 +760,280 @@ public class PathRouterTest extends Mockito {
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 404);
             }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+
+    @Test
+    public void withRecipeRouterTest() throws Exception {
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        Webserver.getInstance(process.getProcess())
+                .addAPI(new RecipeRouter(process.main, new WebserverAPI(process.getProcess(), "") {
+
+                    private static final long serialVersionUID = 1L;
+
+                    @Override
+                    public boolean checkAPIKey(HttpServletRequest req) {
+                        return false;
+                    }
+
+                    @Override
+                    public String getPath() {
+                        return "/test";
+                    }
+
+                    @Override
+                    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                        super.sendTextResponse(200,
+                                this.getConnectionUriDomain(req) + "," + this.getTenantId(req) + ",",
+                                resp);
+                    }
+                }, new WebserverAPI(process.getProcess(), "r1") {
+
+                    private static final long serialVersionUID = 1L;
+
+                    @Override
+                    public boolean checkAPIKey(HttpServletRequest req) {
+                        return false;
+                    }
+
+                    @Override
+                    public String getPath() {
+                        return "/test";
+                    }
+
+                    @Override
+                    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                        super.sendTextResponse(200,
+                                this.getConnectionUriDomain(req) + "," + this.getTenantId(req) + ",r1",
+                                resp);
+                    }
+                }));
+
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public boolean checkAPIKey(HttpServletRequest req) {
+                return false;
+            }
+
+            @Override
+            public String getPath() {
+                return "/t1/test";
+            }
+
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                super.sendTextResponse(200, this.getConnectionUriDomain(req) + "," + this.getTenantId(req), resp);
+            }
+        });
+
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null,", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t2/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,t2,", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t1/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "r1");
+            assertEquals("localhost:3567,null", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "r1");
+            assertEquals("localhost:3567,null,r1", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/t2/test", new HashMap<>(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(), "r1");
+            assertEquals("localhost:3567,t2,r1", response);
+        }
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void errorFromAddAPICauseOfSameRoute() throws Exception {
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        Webserver.getInstance(process.getProcess())
+                .addAPI(new RecipeRouter(process.main, new WebserverAPI(process.getProcess(), "") {
+
+                    private static final long serialVersionUID = 1L;
+
+                    @Override
+                    public boolean checkAPIKey(HttpServletRequest req) {
+                        return false;
+                    }
+
+                    @Override
+                    public String getPath() {
+                        return "/test";
+                    }
+
+                    @Override
+                    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                        super.sendTextResponse(200,
+                                this.getConnectionUriDomain(req) + "," + this.getTenantId(req) + ",",
+                                resp);
+                    }
+                }));
+
+        try {
+            Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+                private static final long serialVersionUID = 1L;
+
+                @Override
+                public boolean checkAPIKey(HttpServletRequest req) {
+                    return false;
+                }
+
+                @Override
+                public String getPath() {
+                    return "/test";
+                }
+
+                @Override
+                protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                    super.sendTextResponse(200, this.getConnectionUriDomain(req) + "," + this.getTenantId(req), resp);
+                }
+            });
+            fail();
+        } catch (IllegalStateException e) {
+            assertEquals(e.getMessage(), "APIs given to the router cannot have the same path");
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void errorFromRecipeRouterCauseOfSameRouteAndRid() throws Exception {
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        try {
+            Webserver.getInstance(process.getProcess())
+                    .addAPI(new RecipeRouter(process.main, new WebserverAPI(process.getProcess(), "r1") {
+
+                        private static final long serialVersionUID = 1L;
+
+                        @Override
+                        public boolean checkAPIKey(HttpServletRequest req) {
+                            return false;
+                        }
+
+                        @Override
+                        public String getPath() {
+                            return "/test";
+                        }
+
+                        @Override
+                        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                            super.sendTextResponse(200,
+                                    this.getConnectionUriDomain(req) + "," + this.getTenantId(req) + ",",
+                                    resp);
+                        }
+                    }, new WebserverAPI(process.getProcess(), "r1") {
+
+                        private static final long serialVersionUID = 1L;
+
+                        @Override
+                        public boolean checkAPIKey(HttpServletRequest req) {
+                            return false;
+                        }
+
+                        @Override
+                        public String getPath() {
+                            return "/test";
+                        }
+
+                        @Override
+                        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                            super.sendTextResponse(200,
+                                    this.getConnectionUriDomain(req) + "," + this.getTenantId(req) + ",r1",
+                                    resp);
+                        }
+                    }));
+            fail();
+        } catch (Exception e) {
+            assertEquals(e.getMessage(), "Same rid used in recipe router");
+        }
+
+        try {
+            Webserver.getInstance(process.getProcess())
+                    .addAPI(new RecipeRouter(process.main, new WebserverAPI(process.getProcess(), "") {
+
+                        private static final long serialVersionUID = 1L;
+
+                        @Override
+                        public boolean checkAPIKey(HttpServletRequest req) {
+                            return false;
+                        }
+
+                        @Override
+                        public String getPath() {
+                            return "/t1/test";
+                        }
+
+                        @Override
+                        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                            super.sendTextResponse(200,
+                                    this.getConnectionUriDomain(req) + "," + this.getTenantId(req) + ",",
+                                    resp);
+                        }
+                    }, new WebserverAPI(process.getProcess(), "r1") {
+
+                        private static final long serialVersionUID = 1L;
+
+                        @Override
+                        public boolean checkAPIKey(HttpServletRequest req) {
+                            return false;
+                        }
+
+                        @Override
+                        public String getPath() {
+                            return "/test";
+                        }
+
+                        @Override
+                        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                            super.sendTextResponse(200,
+                                    this.getConnectionUriDomain(req) + "," + this.getTenantId(req) + ",r1",
+                                    resp);
+                        }
+                    }));
+            fail();
+        } catch (Exception e) {
+            assertEquals(e.getMessage(), "All APIs given to router do not have the same path");
         }
 
         process.kill();
