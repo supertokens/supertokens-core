@@ -19,7 +19,7 @@ package io.supertokens.webserver.api.emailpassword;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -61,13 +61,12 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
         try {
             // if a userIdMapping exists, pass the superTokensUserId to the generatePasswordResetToken
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(this.getConnectionUriDomain(req), this.getTenantId(req), main, userId,
+                    .getUserIdMapping(this.getTenantIdentifier(req), main, userId,
                             UserIdType.ANY);
             if (userIdMapping != null) {
                 userId = userIdMapping.superTokensUserId;
             }
-            String token = EmailPassword.generatePasswordResetToken(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), super.main, userId);
+            String token = EmailPassword.generatePasswordResetToken(this.getTenantIdentifier(req), super.main, userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -78,7 +77,7 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeySpecException | TenantNotFoundException e) {
+        } catch (StorageQueryException | NoSuchAlgorithmException | InvalidKeySpecException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 

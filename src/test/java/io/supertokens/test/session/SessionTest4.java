@@ -18,7 +18,7 @@ package io.supertokens.test.session;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
@@ -310,7 +310,7 @@ public class SessionTest4 {
     @Test
     public void noSigningKeyRotationShouldYieldFarAwayExpiry()
             throws InterruptedException, StorageQueryException, IOException, StorageTransactionLogicException,
-            TenantNotFoundException {
+            TenantOrAppNotFoundException {
 
         Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
 

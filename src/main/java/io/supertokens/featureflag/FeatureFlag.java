@@ -19,10 +19,12 @@ package io.supertokens.featureflag;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
@@ -88,11 +90,16 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
     }
 
     public static FeatureFlag getInstance(Main main) {
-        return (FeatureFlag) main.getResourceDistributor().getResource(RESOURCE_KEY);
+        try {
+            return (FeatureFlag) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static void init(Main main, String eeFolderPath) throws MalformedURLException {
-        main.getResourceDistributor().setResource(RESOURCE_KEY,
+        main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
                 new FeatureFlag(main, eeFolderPath));
     }
 

@@ -19,10 +19,11 @@ package io.supertokens.session.refreshToken;
 import com.google.gson.Gson;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
@@ -44,17 +45,17 @@ public class RefreshToken {
     public static RefreshTokenInfo getInfoFromRefreshToken(@Nonnull Main main, @Nonnull String token)
             throws UnauthorisedException, StorageQueryException, StorageTransactionLogicException {
         try {
-            return getInfoFromRefreshToken(null, null, main, token);
-        } catch (TenantNotFoundException e) {
+            return getInfoFromRefreshToken(new TenantIdentifier(null, null, null), main, token);
+        } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException("Should never come here");
         }
     }
 
-    public static RefreshTokenInfo getInfoFromRefreshToken(String connectionUriDomain, String tenantId,
+    public static RefreshTokenInfo getInfoFromRefreshToken(TenantIdentifier tenantIdentifier,
                                                            @Nonnull Main main, @Nonnull String token)
             throws UnauthorisedException, StorageQueryException, StorageTransactionLogicException,
-            TenantNotFoundException {
-        String key = RefreshTokenKey.getInstance(connectionUriDomain, tenantId, main).getKey();
+            TenantOrAppNotFoundException {
+        String key = RefreshTokenKey.getInstance(tenantIdentifier, main).getKey();
         try {
             TYPE tokenType = getTypeFromToken(token);
 
@@ -87,21 +88,22 @@ public class RefreshToken {
             IllegalBlockSizeException, BadPaddingException, StorageTransactionLogicException,
             InvalidAlgorithmParameterException, InvalidKeySpecException {
         try {
-            return createNewRefreshToken(null, null, main, sessionHandle, userId, parentRefreshTokenHash1,
+            return createNewRefreshToken(new TenantIdentifier(null, null, null), main, sessionHandle, userId,
+                    parentRefreshTokenHash1,
                     antiCsrfToken);
-        } catch (TenantNotFoundException e) {
+        } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException("Should never come here");
         }
     }
 
-    public static TokenInfo createNewRefreshToken(String connectionUriDomain, String tenantId, @Nonnull Main main,
+    public static TokenInfo createNewRefreshToken(TenantIdentifier tenantIdentifier, @Nonnull Main main,
                                                   @Nonnull String sessionHandle,
                                                   @Nonnull String userId, @Nullable String parentRefreshTokenHash1,
                                                   @Nullable String antiCsrfToken)
             throws NoSuchAlgorithmException, StorageQueryException, NoSuchPaddingException, InvalidKeyException,
             IllegalBlockSizeException, BadPaddingException, StorageTransactionLogicException,
-            InvalidAlgorithmParameterException, InvalidKeySpecException, TenantNotFoundException {
-        String key = RefreshTokenKey.getInstance(connectionUriDomain, tenantId, main).getKey();
+            InvalidAlgorithmParameterException, InvalidKeySpecException, TenantOrAppNotFoundException {
+        String key = RefreshTokenKey.getInstance(tenantIdentifier, main).getKey();
         String nonce = Utils.hashSHA256(UUID.randomUUID().toString());
         RefreshTokenPayload payload = new RefreshTokenPayload(sessionHandle, userId, parentRefreshTokenHash1, nonce,
                 antiCsrfToken);
@@ -110,7 +112,7 @@ public class RefreshToken {
         String token = encryptedPayload + "." + nonce + "." + TYPE.FREE_OPTIMISED.toString();
         long now = System.currentTimeMillis();
         return new TokenInfo(token,
-                now + Config.getConfig(connectionUriDomain, tenantId, main).getRefreshTokenValidity(), now);
+                now + Config.getConfig(tenantIdentifier, main).getRefreshTokenValidity(), now);
     }
 
     private static TYPE getTypeFromToken(String token) throws InvalidRefreshTokenFormatException {

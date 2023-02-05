@@ -21,7 +21,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -66,8 +66,7 @@ public class SignUpAPI extends WebserverAPI {
         }
 
         try {
-            UserInfo user = EmailPassword.signUp(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), super.main, normalisedEmail, password);
+            UserInfo user = EmailPassword.signUp(this.getTenantIdentifier(req), super.main, normalisedEmail, password);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -83,7 +82,7 @@ public class SignUpAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 

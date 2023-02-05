@@ -18,7 +18,7 @@ package io.supertokens.webserver.api.useridmapping;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
@@ -91,8 +91,8 @@ public class UserIdMappingAPI extends WebserverAPI {
 
         try {
 
-            UserIdMapping.createUserIdMapping(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main, superTokensUserId, externalUserId, externalUserIdInfo, force);
+            UserIdMapping.createUserIdMapping(this.getTenantIdentifier(req), main, superTokensUserId, externalUserId,
+                    externalUserIdInfo, force);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
@@ -112,7 +112,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             response.addProperty("doesExternalUserIdExist", e.doesExternalUserIdExist);
             super.sendJsonResponse(200, response, resp);
 
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }
@@ -149,7 +149,7 @@ public class UserIdMappingAPI extends WebserverAPI {
 
         try {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(this.getConnectionUriDomain(req), this.getTenantId(req), main, userId,
+                    .getUserIdMapping(this.getTenantIdentifier(req), main, userId,
                             userIdType);
             if (userIdMapping == null) {
                 JsonObject response = new JsonObject();
@@ -166,7 +166,7 @@ public class UserIdMappingAPI extends WebserverAPI {
                 response.addProperty("externalUserIdInfo", userIdMapping.externalUserIdInfo);
             }
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

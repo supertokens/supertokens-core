@@ -19,7 +19,7 @@ package io.supertokens.test.session;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -231,7 +231,7 @@ public class AccessTokenTest {
     @Test
     public void signingKeyShortInterval()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException, IOException,
-            TenantNotFoundException {
+            TenantOrAppNotFoundException {
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 second
 
         String[] args = {"../"};

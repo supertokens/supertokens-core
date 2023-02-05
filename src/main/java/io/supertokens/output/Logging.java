@@ -24,8 +24,10 @@ import ch.qos.logback.core.FileAppender;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.Webserver;
@@ -71,11 +73,17 @@ public class Logging extends ResourceDistributor.SingletonResource {
     }
 
     private static Logging getInstance(Main main) {
-        return (Logging) main.getResourceDistributor().getResource(RESOURCE_ID);
+        try {
+            return (Logging) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+        } catch (TenantOrAppNotFoundException e) {
+            return null;
+        }
     }
 
     public static void initFileLogging(Main main) {
-        main.getResourceDistributor().setResource(RESOURCE_ID, new Logging(main));
+        main.getResourceDistributor()
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new Logging(main));
     }
 
     public static void debug(Main main, String msg) {
@@ -123,7 +131,8 @@ public class Logging extends ResourceDistributor.SingletonResource {
 
     public static void error(Main main, String err, boolean toConsoleAsWell) {
         try {
-            if (!Config.getConfig(null, null, main).getLogLevels(main).contains(LOG_LEVEL.ERROR)) {
+            if (!Config.getConfig(new TenantIdentifier(null, null, null), main).getLogLevels(main)
+                    .contains(LOG_LEVEL.ERROR)) {
                 return;
             }
         } catch (Throwable ignored) {
@@ -145,7 +154,8 @@ public class Logging extends ResourceDistributor.SingletonResource {
 
     public static void error(Main main, String message, boolean toConsoleAsWell, Exception e) {
         try {
-            if (!Config.getConfig(null, null, main).getLogLevels(main).contains(LOG_LEVEL.ERROR)) {
+            if (!Config.getConfig(new TenantIdentifier(null, null, null), main).getLogLevels(main)
+                    .contains(LOG_LEVEL.ERROR)) {
                 return;
             }
         } catch (Throwable ignored) {

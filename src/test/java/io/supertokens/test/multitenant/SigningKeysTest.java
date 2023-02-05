@@ -20,17 +20,14 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.EmailPasswordConfig;
-import io.supertokens.pluginInterface.multitenancy.PasswordlessConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -62,7 +59,7 @@ public class SigningKeysTest {
     @Test
     public void normalConfigContinuesToWork()
             throws InterruptedException, IOException, StorageQueryException, StorageTransactionLogicException,
-            TenantNotFoundException {
+            TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -73,7 +70,9 @@ public class SigningKeysTest {
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG));
 
-        assertEquals(AccessTokenSigningKey.getInstance(null, null, process.main).getAllKeys().size(), 1);
+        assertEquals(
+                AccessTokenSigningKey.getInstance(new TenantIdentifier(null, null, null), process.main).getAllKeys()
+                        .size(), 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -82,7 +81,7 @@ public class SigningKeysTest {
     @Test
     public void keysAreGeneratedForAllUserPoolIds()
             throws InterruptedException, IOException, StorageQueryException, StorageTransactionLogicException,
-            InvalidConfigException, DbInitException, TenantNotFoundException {
+            InvalidConfigException, DbInitException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -92,12 +91,12 @@ public class SigningKeysTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         JsonObject tenantConfig = new JsonObject();
-        StorageLayer.getStorage(null, null, process.getProcess())
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
         tenantConfig.add("access_token_signing_key_update_interval", new JsonPrimitive(200));
 
         TenantConfig[] tenants = new TenantConfig[]{
-                new TenantConfig("c1", null, new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
                         tenantConfig)};
@@ -108,11 +107,17 @@ public class SigningKeysTest {
 
         AccessTokenSigningKey.loadForAllTenants(process.getProcess(), tenants);
 
-        assertEquals(AccessTokenSigningKey.getInstance(null, null, process.main).getAllKeys().size(), 1);
-        assertEquals(AccessTokenSigningKey.getInstance("c1", null, process.main).getAllKeys().size(), 1);
-        AccessTokenSigningKey.KeyInfo baseTenant = AccessTokenSigningKey.getInstance(null, null, process.main)
+        assertEquals(
+                AccessTokenSigningKey.getInstance(new TenantIdentifier(null, null, null), process.main).getAllKeys()
+                        .size(), 1);
+        assertEquals(
+                AccessTokenSigningKey.getInstance(new TenantIdentifier("c1", null, null), process.main).getAllKeys()
+                        .size(), 1);
+        AccessTokenSigningKey.KeyInfo baseTenant = AccessTokenSigningKey.getInstance(
+                        new TenantIdentifier(null, null, null), process.main)
                 .getAllKeys().get(0);
-        AccessTokenSigningKey.KeyInfo c1Tenant = AccessTokenSigningKey.getInstance("c1", null, process.main)
+        AccessTokenSigningKey.KeyInfo c1Tenant = AccessTokenSigningKey.getInstance(
+                        new TenantIdentifier("c1", null, null), process.main)
                 .getAllKeys().get(0);
 
         assertNotEquals(baseTenant.createdAtTime, c1Tenant.createdAtTime);
@@ -127,7 +132,7 @@ public class SigningKeysTest {
     @Test
     public void signingKeyClassesAreThereForAllTenants()
             throws InterruptedException, IOException, InvalidConfigException, DbInitException, StorageQueryException,
-            StorageTransactionLogicException, TenantNotFoundException {
+            StorageTransactionLogicException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -137,24 +142,24 @@ public class SigningKeysTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         JsonObject tenantConfig = new JsonObject();
-        StorageLayer.getStorage(null, null, process.getProcess())
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
         tenantConfig.add("access_token_signing_key_update_interval", new JsonPrimitive(200));
         JsonObject tenantConfig2 = new JsonObject();
-        StorageLayer.getStorage(null, null, process.getProcess())
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                 .modifyConfigToAddANewUserPoolForTesting(tenantConfig2, 3);
         tenantConfig2.add("access_token_signing_key_update_interval", new JsonPrimitive(400));
 
         TenantConfig[] tenants = new TenantConfig[]{
-                new TenantConfig("c1", null, new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
                         tenantConfig),
-                new TenantConfig("c1", "t1", new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("c1", null, "t1"), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
                         tenantConfig2),
-                new TenantConfig("c2", null, new EmailPasswordConfig(false),
+                new TenantConfig(new TenantIdentifier("c2", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
                         tenantConfig2)};
@@ -165,17 +170,26 @@ public class SigningKeysTest {
 
         AccessTokenSigningKey.loadForAllTenants(process.getProcess(), tenants);
 
-        assertEquals(AccessTokenSigningKey.getInstance(null, null, process.main).getAllKeys().size(), 1);
-        assertEquals(AccessTokenSigningKey.getInstance("c1", null, process.main).getAllKeys().size(), 1);
-        AccessTokenSigningKey.KeyInfo baseTenant = AccessTokenSigningKey.getInstance(null, null, process.main)
+        assertEquals(
+                AccessTokenSigningKey.getInstance(new TenantIdentifier(null, null, null), process.main).getAllKeys()
+                        .size(), 1);
+        assertEquals(
+                AccessTokenSigningKey.getInstance(new TenantIdentifier("c1", null, null), process.main).getAllKeys()
+                        .size(), 1);
+        AccessTokenSigningKey.KeyInfo baseTenant = AccessTokenSigningKey.getInstance(
+                        new TenantIdentifier(null, null, null), process.main)
                 .getAllKeys().get(0);
-        AccessTokenSigningKey.KeyInfo c1Tenant = AccessTokenSigningKey.getInstance("c1", null, process.main)
+        AccessTokenSigningKey.KeyInfo c1Tenant = AccessTokenSigningKey.getInstance(
+                        new TenantIdentifier("c1", null, null), process.main)
                 .getAllKeys().get(0);
-        AccessTokenSigningKey.KeyInfo c1t1Tenant = AccessTokenSigningKey.getInstance("c1", "t1", process.main)
+        AccessTokenSigningKey.KeyInfo c1t1Tenant = AccessTokenSigningKey.getInstance(
+                        new TenantIdentifier("c1", null, "t1"), process.main)
                 .getAllKeys().get(0);
-        AccessTokenSigningKey.KeyInfo c2Tenant = AccessTokenSigningKey.getInstance("c2", null, process.main)
+        AccessTokenSigningKey.KeyInfo c2Tenant = AccessTokenSigningKey.getInstance(
+                        new TenantIdentifier("c2", null, null), process.main)
                 .getAllKeys().get(0);
-        AccessTokenSigningKey.KeyInfo c3Tenant = AccessTokenSigningKey.getInstance("c3", null, process.main)
+        AccessTokenSigningKey.KeyInfo c3Tenant = AccessTokenSigningKey.getInstance(
+                        new TenantIdentifier("c3", null, null), process.main)
                 .getAllKeys().get(0);
 
         assertNotEquals(baseTenant.createdAtTime, c1Tenant.createdAtTime);

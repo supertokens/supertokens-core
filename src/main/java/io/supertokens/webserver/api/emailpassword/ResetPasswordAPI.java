@@ -20,7 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -70,13 +70,11 @@ public class ResetPasswordAPI extends WebserverAPI {
         }
 
         try {
-            String userId = EmailPassword.resetPassword(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), super.main, token, newPassword);
+            String userId = EmailPassword.resetPassword(this.getTenantIdentifier(req), super.main, token, newPassword);
 
             // if userIdMapping exists, pass the externalUserId to the response
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(this.getConnectionUriDomain(req),
-                            this.getTenantId(req), main, userId, UserIdType.ANY);
+                    .getUserIdMapping(this.getTenantIdentifier(req), main, userId, UserIdType.ANY);
             if (userIdMapping != null) {
                 userId = userIdMapping.externalUserId;
             }
@@ -98,7 +96,7 @@ public class ResetPasswordAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "RESET_PASSWORD_INVALID_TOKEN_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException | TenantNotFoundException e) {
+        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 

@@ -24,7 +24,7 @@ import io.supertokens.Main;
 import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.UserPaginationContainer;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
@@ -91,8 +91,8 @@ public class UsersAPI extends WebserverAPI {
         }
 
         try {
-            UserPaginationContainer users = EmailPassword.getUsers(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), super.main, paginationToken, limit, timeJoinedOrder);
+            UserPaginationContainer users = EmailPassword.getUsers(this.getTenantIdentifier(req), super.main,
+                    paginationToken, limit, timeJoinedOrder);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             JsonArray usersJson = new JsonParser().parse(new Gson().toJson(users.users)).getAsJsonArray();
@@ -103,7 +103,7 @@ public class UsersAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (UserPaginationToken.InvalidTokenException e) {
             throw new ServletException(new WebserverAPI.BadRequestException("invalid pagination token"));
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

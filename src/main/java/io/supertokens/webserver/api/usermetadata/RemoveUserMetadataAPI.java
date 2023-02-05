@@ -18,7 +18,7 @@ package io.supertokens.webserver.api.usermetadata;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.usermetadata.UserMetadata;
@@ -47,11 +47,11 @@ public class RemoveUserMetadataAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         try {
-            UserMetadata.deleteUserMetadata(this.getConnectionUriDomain(req), this.getTenantId(req), main, userId);
+            UserMetadata.deleteUserMetadata(this.getTenantIdentifier(req), main, userId);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

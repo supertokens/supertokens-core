@@ -18,7 +18,7 @@ package io.supertokens.webserver.api.session;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -62,15 +62,15 @@ public class SessionRegenerateAPI extends WebserverAPI {
         JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", true);
 
         try {
-            SessionInformationHolder sessionInfo = Session.regenerateToken(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main, accessToken, userDataInJWT);
+            SessionInformationHolder sessionInfo = Session.regenerateToken(this.getTenantIdentifier(req), main,
+                    accessToken, userDataInJWT);
 
             JsonObject result = sessionInfo.toJsonObject();
 
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | InvalidKeyException | SignatureException | InvalidKeySpecException | TenantNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | InvalidKeyException | SignatureException | InvalidKeySpecException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));

@@ -16,21 +16,21 @@
 
 package io.supertokens.exceptions;
 
-public class TenantNotFoundException extends Exception {
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+
+public class TenantOrAppNotFoundException extends Exception {
 
     private static final long serialVersionUID = 1L;
-    private String tenantId;
+    private final TenantIdentifier tenantIdentifier;
 
-    public TenantNotFoundException(String connectionUriDomain, String tenantId) {
-        super("Tenant with the following connectionURIDomain and tenantId not found: (" + connectionUriDomain +
-                ", " + tenantId + ")");
-        this.tenantId = tenantId;
+    public TenantOrAppNotFoundException(TenantIdentifier tenantIdentifier) {
+        super("Tenant with the following connectionURIDomain, appId and tenantId combination not found: (" +
+                tenantIdentifier.getConnectionUriDomain() +
+                ", " + tenantIdentifier.getAppId() + ", " + tenantIdentifier.getTenantId() + ")");
+        this.tenantIdentifier = tenantIdentifier;
     }
 
-    public String getTenantId() {
-        if (this.tenantId == null || this.tenantId.equals("")) {
-            return "public";
-        }
-        return this.tenantId;
+    public TenantIdentifier getTenantIdentifier() {
+        return this.tenantIdentifier;
     }
 }

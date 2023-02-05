@@ -19,6 +19,9 @@ package io.supertokens.emailpassword;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import org.jetbrains.annotations.TestOnly;
 
 public class EmailPasswordTest extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_ID = "io.supertokens.emailpassword.EmailPasswordTest";
@@ -30,13 +33,16 @@ public class EmailPasswordTest extends ResourceDistributor.SingletonResource {
     }
 
     public static EmailPasswordTest getInstance(Main main) {
-        ResourceDistributor.SingletonResource resource = main.getResourceDistributor().getResource(RESOURCE_ID);
-        if (resource == null) {
-            resource = main.getResourceDistributor().setResource(RESOURCE_ID, new EmailPasswordTest(main));
+        try {
+            return (EmailPasswordTest) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+        } catch (TenantOrAppNotFoundException e) {
+            return (EmailPasswordTest) main.getResourceDistributor()
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new EmailPasswordTest(main));
         }
-        return (EmailPasswordTest) resource;
     }
 
+    @TestOnly
     public void setPasswordResetTokenLifetime(long intervalMS) {
         this.passwordResetTokenLifetimeMS = intervalMS;
     }

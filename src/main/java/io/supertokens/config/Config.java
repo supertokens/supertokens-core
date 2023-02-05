@@ -24,11 +24,12 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
 
@@ -63,22 +64,22 @@ public class Config extends ResourceDistributor.SingletonResource {
         this.core = config;
     }
 
-    private static Config getInstance(String connectionUriDomain, String tenantId, Main main)
-            throws TenantNotFoundException {
-        return (Config) main.getResourceDistributor().getResource(connectionUriDomain, tenantId, RESOURCE_KEY);
+    private static Config getInstance(TenantIdentifier tenantIdentifier, Main main)
+            throws TenantOrAppNotFoundException {
+        return (Config) main.getResourceDistributor().getResource(tenantIdentifier, RESOURCE_KEY);
     }
 
     public static void loadBaseConfig(Main main)
             throws InvalidConfigException, IOException {
         synchronized (lock) {
             main.getResourceDistributor()
-                    .setResource(null, null, RESOURCE_KEY,
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
                             new Config(main, getConfigFilePath(main)));
 
             // this function is only called for the base config since we only want one logging file(s) for all tenants
             try {
-                getInstance(null, null, main).core.createLoggingFile(main);
-            } catch (TenantNotFoundException ignored) {
+                getInstance(new TenantIdentifier(null, null, null), main).core.createLoggingFile(main);
+            } catch (TenantOrAppNotFoundException ignored) {
                 // should never come here..
             }
 
@@ -126,7 +127,7 @@ public class Config extends ResourceDistributor.SingletonResource {
             main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
             for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
                 main.getResourceDistributor()
-                        .setResource(key.getConnectionUriDomain(), key.getTenantId(), RESOURCE_KEY,
+                        .setResource(key.getTenantIdentifier(), RESOURCE_KEY,
                                 new Config(main, normalisedConfigs.get(key)));
             }
         }
@@ -180,20 +181,18 @@ public class Config extends ResourceDistributor.SingletonResource {
 
         for (TenantConfig tenant : tenants) {
             jsonConfigs.put(
-                    new ResourceDistributor.KeyClass(tenant.connectionUriDomain, tenant.tenantId, RESOURCE_KEY),
+                    new ResourceDistributor.KeyClass(tenant.tenantIdentifier, RESOURCE_KEY),
                     tenant.coreConfig);
         }
         for (TenantConfig tenant : tenants) {
-            if (tenant.tenantId == null && tenant.connectionUriDomain == null) {
+            if (tenant.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
                 // this refers to the base tenant's config which is in the config.yaml file.
                 continue;
             }
-            String connectionUriDomain = tenant.connectionUriDomain;
-            String tenantId = tenant.tenantId;
             JsonObject finalJson = new JsonObject();
 
             JsonObject fetchedConfig = jsonConfigs.get(
-                    new ResourceDistributor.KeyClass(connectionUriDomain, tenantId, RESOURCE_KEY));
+                    new ResourceDistributor.KeyClass(tenant.tenantIdentifier, RESOURCE_KEY));
             if (fetchedConfig != null) {
                 fetchedConfig.entrySet().forEach(stringJsonElementEntry -> {
                     if (!finalJson.has(stringJsonElementEntry.getKey())) {
@@ -203,7 +202,26 @@ public class Config extends ResourceDistributor.SingletonResource {
             }
 
             fetchedConfig = jsonConfigs.get(
-                    new ResourceDistributor.KeyClass(connectionUriDomain, null, RESOURCE_KEY));
+                    new ResourceDistributor.KeyClass(
+                            new TenantIdentifier(tenant.tenantIdentifier.getConnectionUriDomain(),
+                                    tenant.tenantIdentifier.getAppId(), null),
+                            RESOURCE_KEY));
+            if (fetchedConfig != null) {
+                fetchedConfig.entrySet().forEach(stringJsonElementEntry -> {
+                    if (!finalJson.has(stringJsonElementEntry.getKey())) {
+                        finalJson.add(stringJsonElementEntry.getKey(), stringJsonElementEntry.getValue());
+                    }
+                });
+            }
+
+            // this is the base case config for SaaS users since they will all have a
+            // specific connection uri configured for them, and then can edit the
+            // config for all their apps via our SaaS dashboard.
+            fetchedConfig = jsonConfigs.get(
+                    new ResourceDistributor.KeyClass(
+                            new TenantIdentifier(tenant.tenantIdentifier.getConnectionUriDomain(),
+                                    null, null),
+                            RESOURCE_KEY));
             if (fetchedConfig != null) {
                 fetchedConfig.entrySet().forEach(stringJsonElementEntry -> {
                     if (!finalJson.has(stringJsonElementEntry.getKey())) {
@@ -218,28 +236,28 @@ public class Config extends ResourceDistributor.SingletonResource {
                 }
             });
 
-            result.put(new ResourceDistributor.KeyClass(connectionUriDomain, tenantId, RESOURCE_KEY),
+            result.put(new ResourceDistributor.KeyClass(tenant.tenantIdentifier, RESOURCE_KEY),
                     finalJson);
         }
 
-        result.put(new ResourceDistributor.KeyClass(null, null, RESOURCE_KEY),
+        result.put(new ResourceDistributor.KeyClass(new TenantIdentifier(null, null, null), RESOURCE_KEY),
                 baseConfigJson);
 
         return result;
     }
 
-    public static CoreConfig getConfig(String connectionUriDomain, String tenantId, Main main)
-            throws TenantNotFoundException {
+    public static CoreConfig getConfig(TenantIdentifier tenantIdentifier, Main main)
+            throws TenantOrAppNotFoundException {
         synchronized (lock) {
-            return getInstance(connectionUriDomain, tenantId, main).core;
+            return getInstance(tenantIdentifier, main).core;
         }
     }
 
     public static CoreConfig getBaseConfig(Main main) {
         synchronized (lock) {
             try {
-                return getInstance(null, null, main).core;
-            } catch (TenantNotFoundException ignored) {
+                return getInstance(new TenantIdentifier(null, null, null), main).core;
+            } catch (TenantOrAppNotFoundException ignored) {
                 throw new IllegalStateException("Should never come here");
             }
         }
@@ -248,8 +266,8 @@ public class Config extends ResourceDistributor.SingletonResource {
     @TestOnly
     public static CoreConfig getConfig(Main main) {
         try {
-            return getConfig(null, null, main);
-        } catch (TenantNotFoundException e) {
+            return getConfig(new TenantIdentifier(null, null, null), main);
+        } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException("Should never come here");
         }
     }

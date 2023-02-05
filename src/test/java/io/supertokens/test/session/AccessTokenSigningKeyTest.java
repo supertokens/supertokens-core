@@ -18,7 +18,7 @@ package io.supertokens.test.session;
 
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -60,7 +60,7 @@ public class AccessTokenSigningKeyTest {
 
     @Test
     public void legacySigningKeysAreMigratedProperly() throws InterruptedException, NoSuchAlgorithmException,
-            StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
+            StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
 
@@ -87,7 +87,7 @@ public class AccessTokenSigningKeyTest {
     public void getAllKeysReturnsOrdered()
             throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
             StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException,
-            TenantNotFoundException {
+            TenantOrAppNotFoundException {
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 seconds
 
         String[] args = {"../"};
@@ -137,7 +137,7 @@ public class AccessTokenSigningKeyTest {
     public void getAllKeysFiltersOldKeys()
             throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
             StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException,
-            TenantNotFoundException {
+            TenantOrAppNotFoundException {
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 seconds
         Utils.setValueInConfig("access_token_validity", "1");
 
@@ -168,7 +168,7 @@ public class AccessTokenSigningKeyTest {
     public void migratingStaticSigningKeys()
             throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
             StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException,
-            TenantNotFoundException {
+            TenantOrAppNotFoundException {
         Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
 
         String[] args = {"../"};

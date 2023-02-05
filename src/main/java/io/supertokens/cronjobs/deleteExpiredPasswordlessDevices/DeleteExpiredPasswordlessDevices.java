@@ -22,6 +22,7 @@ import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
@@ -45,7 +46,7 @@ public class DeleteExpiredPasswordlessDevices extends CronTask {
     public static DeleteExpiredPasswordlessDevices init(Main main,
                                                         List<ResourceDistributor.KeyClass> tenantsInfo) {
         return (DeleteExpiredPasswordlessDevices) main.getResourceDistributor()
-                .setResource(null, null, RESOURCE_KEY,
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
                         new DeleteExpiredPasswordlessDevices(main, tenantsInfo));
     }
 
@@ -55,15 +56,15 @@ public class DeleteExpiredPasswordlessDevices extends CronTask {
     }
 
     @Override
-    protected void doTask(String connectionUriDomain, String tenantId) throws Exception {
-        if (StorageLayer.getStorage(connectionUriDomain, tenantId, this.main).getType() != STORAGE_TYPE.SQL) {
+    protected void doTask(TenantIdentifier tenantIdentifier) throws Exception {
+        if (StorageLayer.getStorage(tenantIdentifier, this.main).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId, this.main);
+        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(tenantIdentifier, this.main);
 
         long codeExpirationCutoff = System.currentTimeMillis() -
-                Config.getConfig(connectionUriDomain, tenantId, main).getPasswordlessCodeLifetime();
+                Config.getConfig(tenantIdentifier, main).getPasswordlessCodeLifetime();
         PasswordlessCode[] expiredCodes = storage.getCodesBefore(codeExpirationCutoff);
         Set<String> uniqueDevicesIdHashes = Stream.of(expiredCodes).map(code -> code.deviceIdHash)
                 .collect(Collectors.toSet());

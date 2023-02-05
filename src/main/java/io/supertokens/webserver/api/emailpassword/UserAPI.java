@@ -21,7 +21,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -72,13 +72,11 @@ public class UserAPI extends WebserverAPI {
             if (userId != null) {
                 // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(this.getConnectionUriDomain(req),
-                                this.getTenantId(req), main, userId, UserIdType.ANY);
+                        .getUserIdMapping(this.getTenantIdentifier(req), main, userId, UserIdType.ANY);
                 if (userIdMapping != null) {
                     userId = userIdMapping.superTokensUserId;
                 }
-                user = EmailPassword.getUserUsingId(this.getConnectionUriDomain(req),
-                        this.getTenantId(req), main, userId);
+                user = EmailPassword.getUserUsingId(this.getTenantIdentifier(req), main, userId);
 
                 // if the userIdMapping exists set the userId in the response to the externalUserId
                 if (user != null && userIdMapping != null) {
@@ -87,13 +85,11 @@ public class UserAPI extends WebserverAPI {
 
             } else {
                 String normalisedEmail = Utils.normaliseEmail(email);
-                user = EmailPassword.getUserUsingEmail(this.getConnectionUriDomain(req),
-                        this.getTenantId(req), main, normalisedEmail);
+                user = EmailPassword.getUserUsingEmail(this.getTenantIdentifier(req), main, normalisedEmail);
                 // if a userIdMapping exists, set the userId in the response to the externalUserId
                 if (user != null) {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                            .getUserIdMapping(this.getConnectionUriDomain(req),
-                                    this.getTenantId(req), main, user.id, UserIdType.ANY);
+                            .getUserIdMapping(this.getTenantIdentifier(req), main, user.id, UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
                     }
@@ -115,7 +111,7 @@ public class UserAPI extends WebserverAPI {
                 super.sendJsonResponse(200, result, resp);
             }
 
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
@@ -137,19 +133,17 @@ public class UserAPI extends WebserverAPI {
         try {
             // if a userIdMapping exists, pass the superTokensUserId to the updateUsersEmailOrPassword
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(this.getConnectionUriDomain(req),
-                            this.getTenantId(req), main, userId, UserIdType.ANY);
+                    .getUserIdMapping(this.getTenantIdentifier(req), main, userId, UserIdType.ANY);
             if (userIdMapping != null) {
                 userId = userIdMapping.superTokensUserId;
             }
-            EmailPassword.updateUsersEmailOrPassword(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main, userId, email, password);
+            EmailPassword.updateUsersEmailOrPassword(this.getTenantIdentifier(req), main, userId, email, password);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));

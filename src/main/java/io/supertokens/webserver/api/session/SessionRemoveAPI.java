@@ -20,7 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.Session;
@@ -74,8 +74,8 @@ public class SessionRemoveAPI extends WebserverAPI {
 
         if (userId != null) {
             try {
-                String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(this.getConnectionUriDomain(req),
-                        this.getTenantId(req), main, userId);
+                String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(this.getTenantIdentifier(req), main,
+                        userId);
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();
@@ -84,13 +84,13 @@ public class SessionRemoveAPI extends WebserverAPI {
                 }
                 result.add("sessionHandlesRevoked", sessionHandlesRevokedJSON);
                 super.sendJsonResponse(200, result, resp);
-            } catch (StorageQueryException | TenantNotFoundException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 throw new ServletException(e);
             }
         } else {
             try {
                 String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(
-                        this.getConnectionUriDomain(req), this.getTenantId(req), main, sessionHandles);
+                        this.getTenantIdentifier(req), main, sessionHandles);
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();
@@ -99,7 +99,7 @@ public class SessionRemoveAPI extends WebserverAPI {
                 }
                 result.add("sessionHandlesRevoked", sessionHandlesRevokedJSON);
                 super.sendJsonResponse(200, result, resp);
-            } catch (StorageQueryException | TenantNotFoundException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 throw new ServletException(e);
             }
         }

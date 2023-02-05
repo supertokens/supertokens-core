@@ -18,7 +18,7 @@ package io.supertokens.webserver.api.passwordless;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -61,13 +61,11 @@ public class DeleteCodesAPI extends WebserverAPI {
         }
         try {
             if (email != null) {
-                Passwordless.removeCodesByEmail(this.getConnectionUriDomain(req),
-                        this.getTenantId(req), main, email);
+                Passwordless.removeCodesByEmail(this.getTenantIdentifier(req), main, email);
             } else {
-                Passwordless.removeCodesByPhoneNumber(this.getConnectionUriDomain(req),
-                        this.getTenantId(req), main, phoneNumber);
+                Passwordless.removeCodesByPhoneNumber(this.getTenantIdentifier(req), main, phoneNumber);
             }
-        } catch (StorageTransactionLogicException | StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageTransactionLogicException | StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
         JsonObject result = new JsonObject();

@@ -18,7 +18,7 @@ package io.supertokens.webserver.api.session;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -52,15 +52,14 @@ public class SessionDataAPI extends WebserverAPI {
         assert sessionHandle != null;
 
         try {
-            JsonObject userDataInDatabase = Session.getSessionData(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main, sessionHandle);
+            JsonObject userDataInDatabase = Session.getSessionData(this.getTenantIdentifier(req), main, sessionHandle);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.add("userDataInDatabase", userDataInDatabase);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
@@ -80,14 +79,14 @@ public class SessionDataAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         try {
-            Session.updateSession(this.getConnectionUriDomain(req), this.getTenantId(req), main, sessionHandle,
+            Session.updateSession(this.getTenantIdentifier(req), main, sessionHandle,
                     userDataInDatabase, null, null);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));

@@ -19,7 +19,7 @@ package io.supertokens.webserver.api.emailverification;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
@@ -49,14 +49,14 @@ public class RevokeAllTokensForUserAPI extends WebserverAPI {
         String email = InputParser.parseStringOrThrowError(input, "email", false);
 
         try {
-            EmailVerification.revokeAllTokens(this.getConnectionUriDomain(req), this.getTenantId(req), main, userId,
+            EmailVerification.revokeAllTokens(this.getTenantIdentifier(req), main, userId,
                     email);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
 
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

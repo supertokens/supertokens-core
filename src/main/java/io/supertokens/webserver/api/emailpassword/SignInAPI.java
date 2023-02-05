@@ -22,7 +22,7 @@ import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -64,13 +64,11 @@ public class SignInAPI extends WebserverAPI {
         String normalisedEmail = Utils.normaliseEmail(email);
 
         try {
-            UserInfo user = EmailPassword.signIn(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), super.main, normalisedEmail, password);
+            UserInfo user = EmailPassword.signIn(this.getTenantIdentifier(req), super.main, normalisedEmail, password);
 
             // if a userIdMapping exists, pass the externalUserId to the response
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    this.getConnectionUriDomain(req),
-                    this.getTenantId(req), super.main,
+                    this.getTenantIdentifier(req), super.main,
                     user.id, UserIdType.ANY);
             if (userIdMapping != null) {
                 user.id = userIdMapping.externalUserId;
@@ -87,7 +85,7 @@ public class SignInAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "WRONG_CREDENTIALS_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 

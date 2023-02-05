@@ -20,7 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.thirdparty.ThirdParty;
@@ -68,8 +68,8 @@ public class SignInUpAPI extends WebserverAPI {
             String normalisedEmail = Utils.normaliseEmail(email);
 
             try {
-                ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(this.getConnectionUriDomain(req),
-                        this.getTenantId(req), super.main, thirdPartyId,
+                ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(this.getTenantIdentifier(req), super.main,
+                        thirdPartyId,
                         thirdPartyUserId, normalisedEmail, isEmailVerified);
 
                 JsonObject result = new JsonObject();
@@ -79,7 +79,7 @@ public class SignInUpAPI extends WebserverAPI {
                 result.add("user", userJson);
                 super.sendJsonResponse(200, result, resp);
 
-            } catch (StorageQueryException | TenantNotFoundException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 throw new ServletException(e);
             }
         } else {
@@ -99,13 +99,13 @@ public class SignInUpAPI extends WebserverAPI {
             String normalisedEmail = Utils.normaliseEmail(email);
 
             try {
-                ThirdParty.SignInUpResponse response = ThirdParty.signInUp(this.getConnectionUriDomain(req),
-                        this.getTenantId(req), super.main, thirdPartyId, thirdPartyUserId,
+                ThirdParty.SignInUpResponse response = ThirdParty.signInUp(this.getTenantIdentifier(req), super.main,
+                        thirdPartyId, thirdPartyUserId,
                         normalisedEmail);
 
                 //
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(this.getConnectionUriDomain(req), this.getTenantId(req), main,
+                        .getUserIdMapping(this.getTenantIdentifier(req), main,
                                 response.user.id, UserIdType.ANY);
                 if (userIdMapping != null) {
                     response.user.id = userIdMapping.externalUserId;
@@ -118,7 +118,7 @@ public class SignInUpAPI extends WebserverAPI {
                 result.add("user", userJson);
                 super.sendJsonResponse(200, result, resp);
 
-            } catch (StorageQueryException | TenantNotFoundException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 throw new ServletException(e);
             }
         }

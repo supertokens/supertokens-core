@@ -23,12 +23,13 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpRequestMocking;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.version.Version;
@@ -50,26 +51,27 @@ public class Telemetry extends CronTask {
 
     public static Telemetry getInstance(Main main) {
         try {
-            return (Telemetry) main.getResourceDistributor().getResource(null, null, RESOURCE_KEY);
-        } catch (TenantNotFoundException e) {
+            return (Telemetry) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
             List<ResourceDistributor.KeyClass> tenants = new ArrayList<>();
-            tenants.add(new ResourceDistributor.KeyClass(null, null, StorageLayer.RESOURCE_KEY));
-            return (Telemetry) main.getResourceDistributor().setResource(RESOURCE_KEY, new Telemetry(main, tenants));
+            tenants.add(new ResourceDistributor.KeyClass(new TenantIdentifier(null, null, null),
+                    StorageLayer.RESOURCE_KEY));
+            return (Telemetry) main.getResourceDistributor()
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new Telemetry(main, tenants));
         }
     }
 
     @Override
-    protected void doTask(String connectionUriDomain, String tenantId) throws Exception {
+    protected void doTask(TenantIdentifier tenantIdentifier) throws Exception {
         if (StorageLayer.isInMemDb(main) ||
-                Config.getConfig(connectionUriDomain, tenantId, main).isTelemetryDisabled()) {
+                Config.getConfig(tenantIdentifier, main).isTelemetryDisabled()) {
             // we do not send any info in this case since it's not under development / production env or the user has
             // disabled Telemetry
             return;
         }
 
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENDING_TELEMETRY, null);
-
-        Storage storage = StorageLayer.getStorage(connectionUriDomain, tenantId, main);
 
         KeyValueInfo telemetryId = Telemetry.getTelemetryId(main);
 

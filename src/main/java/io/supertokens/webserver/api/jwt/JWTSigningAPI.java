@@ -18,7 +18,7 @@ package io.supertokens.webserver.api.jwt;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.jwt.JWTSigningFunctions;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -67,7 +67,7 @@ public class JWTSigningAPI extends WebserverAPI {
         }
 
         try {
-            String jwt = JWTSigningFunctions.createJWTToken(this.getConnectionUriDomain(req), this.getTenantId(req),
+            String jwt = JWTSigningFunctions.createJWTToken(this.getTenantIdentifier(req),
                     main, algorithm.toUpperCase(), payload, jwksDomain,
                     validity);
             JsonObject reply = new JsonObject();
@@ -78,7 +78,7 @@ public class JWTSigningAPI extends WebserverAPI {
             JsonObject reply = new JsonObject();
             reply.addProperty("status", UNSUPPORTED_ALGORITHM_ERROR_STATUS);
             super.sendJsonResponse(200, reply, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | InvalidKeySpecException | TenantNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | InvalidKeySpecException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

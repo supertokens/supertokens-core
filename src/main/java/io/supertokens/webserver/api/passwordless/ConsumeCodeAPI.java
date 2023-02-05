@@ -20,7 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
 import io.supertokens.passwordless.exceptions.*;
@@ -78,13 +78,12 @@ public class ConsumeCodeAPI extends WebserverAPI {
         }
 
         try {
-            ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main, deviceId, deviceIdHash,
+            ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(this.getTenantIdentifier(req), main,
+                    deviceId, deviceIdHash,
                     userInputCode, linkCode);
 
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main,
+                    this.getTenantIdentifier(req), main,
                     consumeCodeResponse.user.id, UserIdType.ANY);
             if (userIdMapping != null) {
                 consumeCodeResponse.user.id = userIdMapping.externalUserId;
@@ -117,7 +116,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (DeviceIdHashMismatchException ex) {
             throw new ServletException(new BadRequestException("preAuthSessionId and deviceId doesn't match"));
-        } catch (StorageTransactionLogicException | StorageQueryException | NoSuchAlgorithmException | InvalidKeyException | TenantNotFoundException e) {
+        } catch (StorageTransactionLogicException | StorageQueryException | NoSuchAlgorithmException | InvalidKeyException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (Base64EncodingException ex) {
             throw new ServletException(new BadRequestException("Input encoding error in " + ex.source));

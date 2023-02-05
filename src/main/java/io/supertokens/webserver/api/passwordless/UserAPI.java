@@ -20,7 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.FieldUpdate;
 import io.supertokens.passwordless.exceptions.UserWithoutContactInfoException;
@@ -72,36 +72,30 @@ public class UserAPI extends WebserverAPI {
             UserInfo user;
             if (userId != null) {
                 UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                        this.getConnectionUriDomain(req),
-                        this.getTenantId(req), main, userId,
+                        this.getTenantIdentifier(req), main, userId,
                         UserIdType.ANY);
                 if (userIdMapping != null) {
                     userId = userIdMapping.superTokensUserId;
                 }
-                user = Passwordless.getUserById(this.getConnectionUriDomain(req),
-                        this.getTenantId(req), main, userId);
+                user = Passwordless.getUserById(this.getTenantIdentifier(req), main, userId);
                 if (user != null && userIdMapping != null) {
                     user.id = userIdMapping.externalUserId;
                 }
             } else if (email != null) {
-                user = Passwordless.getUserByEmail(this.getConnectionUriDomain(req),
-                        this.getTenantId(req), main, Utils.normaliseEmail(email));
+                user = Passwordless.getUserByEmail(this.getTenantIdentifier(req), main, Utils.normaliseEmail(email));
                 if (user != null) {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            this.getConnectionUriDomain(req),
-                            this.getTenantId(req), main,
+                            this.getTenantIdentifier(req), main,
                             user.id, UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
                     }
                 }
             } else {
-                user = Passwordless.getUserByPhoneNumber(this.getConnectionUriDomain(req),
-                        this.getTenantId(req), main, phoneNumber);
+                user = Passwordless.getUserByPhoneNumber(this.getTenantIdentifier(req), main, phoneNumber);
                 if (user != null) {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            this.getConnectionUriDomain(req),
-                            this.getTenantId(req), main,
+                            this.getTenantIdentifier(req), main,
                             user.id, UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
@@ -122,7 +116,7 @@ public class UserAPI extends WebserverAPI {
                 result.add("user", userJson);
                 super.sendJsonResponse(200, result, resp);
             }
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }
@@ -144,20 +138,18 @@ public class UserAPI extends WebserverAPI {
         try {
             // if userIdMapping exists, set the externalUserId in the response
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main, userId,
+                    this.getTenantIdentifier(req), main, userId,
                     UserIdType.ANY);
             if (userIdMapping != null) {
                 userId = userIdMapping.superTokensUserId;
             }
 
-            Passwordless.updateUser(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main, userId, emailUpdate, phoneNumberUpdate);
+            Passwordless.updateUser(this.getTenantIdentifier(req), main, userId, emailUpdate, phoneNumberUpdate);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             JsonObject result = new JsonObject();

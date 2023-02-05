@@ -21,7 +21,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.jwt.JWTSigningFunctions;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -51,14 +51,14 @@ public class JWKSAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            List<JsonObject> jwks = JWTSigningFunctions.getJWKS(this.getConnectionUriDomain(req), this.getTenantId(req),
+            List<JsonObject> jwks = JWTSigningFunctions.getJWKS(this.getTenantIdentifier(req),
                     main);
             JsonObject reply = new JsonObject();
             JsonArray jwksJsonArray = new JsonParser().parse(new Gson().toJson(jwks)).getAsJsonArray();
             reply.add("keys", jwksJsonArray);
             reply.addProperty("status", "OK");
             super.sendJsonResponse(200, reply, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | InvalidKeySpecException | TenantNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | InvalidKeySpecException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

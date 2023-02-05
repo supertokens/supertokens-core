@@ -20,7 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.userroles.UserRoles;
@@ -51,7 +51,7 @@ public class GetRolesForUserAPI extends WebserverAPI {
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         try {
 
-            String[] userRoles = UserRoles.getRolesForUser(this.getConnectionUriDomain(req), this.getTenantId(req),
+            String[] userRoles = UserRoles.getRolesForUser(this.getTenantIdentifier(req),
                     main, userId);
             JsonArray arr = new JsonArray();
             for (String s : userRoles) {
@@ -62,7 +62,7 @@ public class GetRolesForUserAPI extends WebserverAPI {
             response.add("roles", arr);
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

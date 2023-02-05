@@ -22,7 +22,8 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -51,17 +52,19 @@ public class CronjobTest {
         public static QuitProgramExceptionCronjob getInstance(Main main) {
             try {
                 return (QuitProgramExceptionCronjob) main.getResourceDistributor()
-                        .getResource(null, null, RESOURCE_ID);
-            } catch (TenantNotFoundException e) {
+                        .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+            } catch (TenantOrAppNotFoundException e) {
                 List<ResourceDistributor.KeyClass> tenants = new ArrayList<>();
-                tenants.add(new ResourceDistributor.KeyClass(null, null, StorageLayer.RESOURCE_KEY));
-                return (QuitProgramExceptionCronjob) main.getResourceDistributor().setResource(null, null, RESOURCE_ID,
-                        new QuitProgramExceptionCronjob(main, tenants));
+                tenants.add(new ResourceDistributor.KeyClass(new TenantIdentifier(null, null, null),
+                        StorageLayer.RESOURCE_KEY));
+                return (QuitProgramExceptionCronjob) main.getResourceDistributor()
+                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID,
+                                new QuitProgramExceptionCronjob(main, tenants));
             }
         }
 
         @Override
-        protected void doTask(String connectionUriDomain, String tenantId) {
+        protected void doTask(TenantIdentifier tenantIdentifier) {
             throw new QuitProgramException("Cronjob Threw QuitProgramException");
 
         }
@@ -88,17 +91,18 @@ public class CronjobTest {
         public static ErrorCronjob getInstance(Main main) {
             try {
                 return (ErrorCronjob) main.getResourceDistributor()
-                        .getResource(null, null, RESOURCE_ID);
-            } catch (TenantNotFoundException e) {
+                        .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+            } catch (TenantOrAppNotFoundException e) {
                 List<ResourceDistributor.KeyClass> tenants = new ArrayList<>();
-                tenants.add(new ResourceDistributor.KeyClass(null, null, StorageLayer.RESOURCE_KEY));
+                tenants.add(new ResourceDistributor.KeyClass(new TenantIdentifier(null, null, null),
+                        StorageLayer.RESOURCE_KEY));
                 return (ErrorCronjob) main.getResourceDistributor()
                         .setResource(RESOURCE_ID, new ErrorCronjob(main, tenants));
             }
         }
 
         @Override
-        protected void doTask(String connectionUriDomain, String tenantId) throws Exception {
+        protected void doTask(TenantIdentifier tenantIdentifier) throws Exception {
             errorCronjobCounter++;
             throw new Exception("ERROR thrown from ErrorCronjobTest");
 
@@ -126,17 +130,19 @@ public class CronjobTest {
         public static NormalCronjob getInstance(Main main) {
             try {
                 return (NormalCronjob) main.getResourceDistributor()
-                        .getResource(null, null, RESOURCE_ID);
-            } catch (TenantNotFoundException e) {
+                        .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+            } catch (TenantOrAppNotFoundException e) {
                 List<ResourceDistributor.KeyClass> tenants = new ArrayList<>();
-                tenants.add(new ResourceDistributor.KeyClass(null, null, StorageLayer.RESOURCE_KEY));
+                tenants.add(new ResourceDistributor.KeyClass(new TenantIdentifier(null, null, null),
+                        StorageLayer.RESOURCE_KEY));
                 return (NormalCronjob) main.getResourceDistributor()
-                        .setResource(null, null, RESOURCE_ID, new NormalCronjob(main, tenants));
+                        .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID,
+                                new NormalCronjob(main, tenants));
             }
         }
 
         @Override
-        protected void doTask(String connectionUriDomain, String tenantId) {
+        protected void doTask(TenantIdentifier tenantIdentifier) {
             normalCronjobCounter++;
         }
 

@@ -20,7 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
@@ -70,21 +70,21 @@ public class UserAPI extends WebserverAPI {
             UserInfo user = null;
             if (userId != null) {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(this.getConnectionUriDomain(req), this.getTenantId(req), main, userId,
+                        .getUserIdMapping(this.getTenantIdentifier(req), main, userId,
                                 UserIdType.ANY);
                 if (userIdMapping != null) {
                     userId = userIdMapping.superTokensUserId;
                 }
-                user = ThirdParty.getUser(this.getConnectionUriDomain(req), this.getTenantId(req), main, userId);
+                user = ThirdParty.getUser(this.getTenantIdentifier(req), main, userId);
                 if (user != null && userIdMapping != null) {
                     user.id = userIdMapping.externalUserId;
                 }
             } else {
-                user = ThirdParty.getUser(this.getConnectionUriDomain(req), this.getTenantId(req), main, thirdPartyId,
+                user = ThirdParty.getUser(this.getTenantIdentifier(req), main, thirdPartyId,
                         thirdPartyUserId);
                 if (user != null) {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                            .getUserIdMapping(this.getConnectionUriDomain(req), this.getTenantId(req), main, user.id,
+                            .getUserIdMapping(this.getTenantIdentifier(req), main, user.id,
                                     UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
@@ -105,7 +105,7 @@ public class UserAPI extends WebserverAPI {
                 super.sendJsonResponse(200, result, resp);
             }
 
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 

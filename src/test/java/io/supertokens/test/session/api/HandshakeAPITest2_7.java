@@ -21,7 +21,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
@@ -180,7 +180,7 @@ public class HandshakeAPITest2_7 {
     }
 
     private static void checkHandshakeAPIResponse(JsonObject response, TestingProcessManager.TestingProcess process)
-            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
         // check status
         assertEquals(response.get("status").getAsString(), "OK");
 

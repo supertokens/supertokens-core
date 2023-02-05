@@ -23,8 +23,9 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.webserver.api.core.UsersAPI;
 import io.supertokens.webserver.api.core.UsersCountAPI;
 import io.supertokens.webserver.api.core.*;
@@ -88,9 +89,11 @@ public class Webserver extends ResourceDistributor.SingletonResource {
 
     public static Webserver getInstance(Main main) {
         try {
-            return (Webserver) main.getResourceDistributor().getResource(null, null, RESOURCE_KEY);
-        } catch (TenantNotFoundException e) {
-            return (Webserver) main.getResourceDistributor().setResource(null, null, RESOURCE_KEY, new Webserver(main));
+            return (Webserver) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            return (Webserver) main.getResourceDistributor()
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new Webserver(main));
         }
     }
 

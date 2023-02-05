@@ -5,8 +5,9 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.ee.EEFeatureFlag;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 
 import java.util.ArrayList;
@@ -22,17 +23,20 @@ public class EELicenseCheck extends CronTask {
 
     public static EELicenseCheck getInstance(Main main) {
         try {
-            return (EELicenseCheck) main.getResourceDistributor().getResource(null, null, RESOURCE_KEY);
-        } catch (TenantNotFoundException e) {
-            List<ResourceDistributor.KeyClass> tenants = new ArrayList<>();
-            tenants.add(new ResourceDistributor.KeyClass(null, null, StorageLayer.RESOURCE_KEY));
             return (EELicenseCheck) main.getResourceDistributor()
-                    .setResource(null, null, RESOURCE_KEY, new EELicenseCheck(main, tenants));
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            List<ResourceDistributor.KeyClass> tenants = new ArrayList<>();
+            tenants.add(new ResourceDistributor.KeyClass(new TenantIdentifier(null, null, null),
+                    StorageLayer.RESOURCE_KEY));
+            return (EELicenseCheck) main.getResourceDistributor()
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                            new EELicenseCheck(main, tenants));
         }
     }
 
     @Override
-    protected void doTask(String connectionUriDomain, String tenantId) throws Exception {
+    protected void doTask(TenantIdentifier tenantIdentifier) throws Exception {
         FeatureFlag.getInstance(main).syncFeatureFlagWithLicenseKey();
     }
 

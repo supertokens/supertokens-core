@@ -20,7 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.DeviceWithCodes;
 import io.supertokens.passwordless.exceptions.Base64EncodingException;
@@ -70,26 +70,25 @@ public class GetCodesAPI extends WebserverAPI {
         }
 
         try {
-            long passwordlessCodeLifetime = Config.getConfig(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main).getPasswordlessCodeLifetime();
+            long passwordlessCodeLifetime = Config.getConfig(this.getTenantIdentifier(req), main)
+                    .getPasswordlessCodeLifetime();
             List<Passwordless.DeviceWithCodes> devicesInfos;
             if (deviceId != null) {
-                DeviceWithCodes deviceWithCodes = Passwordless.getDeviceWithCodesById(this.getConnectionUriDomain(req),
-                        this.getTenantId(req), main, deviceId);
+                DeviceWithCodes deviceWithCodes = Passwordless.getDeviceWithCodesById(this.getTenantIdentifier(req),
+                        main, deviceId);
                 devicesInfos = deviceWithCodes == null ? Collections.emptyList()
                         : Collections.singletonList(deviceWithCodes);
             } else if (deviceIdHash != null) {
                 DeviceWithCodes deviceWithCodes = Passwordless.getDeviceWithCodesByIdHash(
-                        this.getConnectionUriDomain(req),
-                        this.getTenantId(req), main, deviceIdHash);
+                        this.getTenantIdentifier(req), main, deviceIdHash);
                 devicesInfos = deviceWithCodes == null ? Collections.emptyList()
                         : Collections.singletonList(deviceWithCodes);
             } else if (email != null) {
-                devicesInfos = Passwordless.getDevicesWithCodesByEmail(this.getConnectionUriDomain(req),
-                        this.getTenantId(req), main, Utils.normaliseEmail(email));
+                devicesInfos = Passwordless.getDevicesWithCodesByEmail(this.getTenantIdentifier(req), main,
+                        Utils.normaliseEmail(email));
             } else {
-                devicesInfos = Passwordless.getDevicesWithCodesByPhoneNumber(this.getConnectionUriDomain(req),
-                        this.getTenantId(req), main, phoneNumber);
+                devicesInfos = Passwordless.getDevicesWithCodesByPhoneNumber(this.getTenantIdentifier(req), main,
+                        phoneNumber);
             }
 
             JsonObject result = new JsonObject();
@@ -129,7 +128,7 @@ public class GetCodesAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (Base64EncodingException ex) {
             throw new ServletException(new BadRequestException("Input encoding error in " + ex.source));
-        } catch (NoSuchAlgorithmException | StorageTransactionLogicException | StorageQueryException | TenantNotFoundException e) {
+        } catch (NoSuchAlgorithmException | StorageTransactionLogicException | StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

@@ -22,10 +22,11 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.config.Config;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.session.jwt.JWT;
@@ -46,13 +47,13 @@ public class AccessToken {
 
     // TODO: device fingerprint - store hash of this in JWT.
 
-    private static AccessTokenInfo getInfoFromAccessToken(String connectionUriDomain, String tenantId,
+    private static AccessTokenInfo getInfoFromAccessToken(TenantIdentifier tenantIdentifier,
                                                           @Nonnull Main main, @Nonnull String token, boolean retry,
                                                           boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException,
-            TenantNotFoundException {
-        List<AccessTokenSigningKey.KeyInfo> keyInfoList = AccessTokenSigningKey.getInstance(connectionUriDomain,
-                tenantId, main).getAllKeys();
+            TenantOrAppNotFoundException {
+        List<AccessTokenSigningKey.KeyInfo> keyInfoList = AccessTokenSigningKey.getInstance(tenantIdentifier, main)
+                .getAllKeys();
 
         Exception error = null;
         JWT.JWTInfo jwtInfo = null;
@@ -100,9 +101,9 @@ public class AccessToken {
                 ProcessState.getInstance(main).addState(PROCESS_STATE.RETRYING_ACCESS_TOKEN_JWT_VERIFICATION, error);
 
                 // remove key from memory and retry
-                AccessTokenSigningKey.getInstance(connectionUriDomain, tenantId, main)
+                AccessTokenSigningKey.getInstance(tenantIdentifier, main)
                         .removeKeyFromMemoryIfItHasNotChanged(keyInfoList);
-                return AccessToken.getInfoFromAccessToken(connectionUriDomain, tenantId, main, token, false,
+                return AccessToken.getInfoFromAccessToken(tenantIdentifier, main, token, false,
                         doAntiCsrfCheck);
             }
             throw new TryRefreshTokenException(error);
@@ -134,18 +135,18 @@ public class AccessToken {
                                                          boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException {
         try {
-            return getInfoFromAccessToken(null, null, main, token, doAntiCsrfCheck);
-        } catch (TenantNotFoundException e) {
+            return getInfoFromAccessToken(new TenantIdentifier(null, null, null), main, token, doAntiCsrfCheck);
+        } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException("Should never come here");
         }
     }
 
-    public static AccessTokenInfo getInfoFromAccessToken(String connectionUriDomain, String tenantId,
+    public static AccessTokenInfo getInfoFromAccessToken(TenantIdentifier tenantIdentifier,
                                                          @Nonnull Main main, @Nonnull String token,
                                                          boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException,
-            TenantNotFoundException {
-        return getInfoFromAccessToken(connectionUriDomain, tenantId, main, token, true, doAntiCsrfCheck);
+            TenantOrAppNotFoundException {
+        return getInfoFromAccessToken(tenantIdentifier, main, token, true, doAntiCsrfCheck);
     }
 
     public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(@Nonnull String token) {
@@ -162,15 +163,16 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
         try {
-            return createNewAccessToken(null, null, main, sessionHandle, userId, refreshTokenHash1,
+            return createNewAccessToken(new TenantIdentifier(null, null, null), main, sessionHandle, userId,
+                    refreshTokenHash1,
                     parentRefreshTokenHash1,
                     userData, antiCsrfToken, lmrt, expiryTime);
-        } catch (TenantNotFoundException e) {
+        } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException("Should never come here");
         }
     }
 
-    public static TokenInfo createNewAccessToken(String connectionUriDomain, String tenantId, @Nonnull Main main,
+    public static TokenInfo createNewAccessToken(TenantIdentifier tenantIdentifier, @Nonnull Main main,
                                                  @Nonnull String sessionHandle,
                                                  @Nonnull String userId, @Nonnull String refreshTokenHash1,
                                                  @Nullable String parentRefreshTokenHash1,
@@ -178,13 +180,13 @@ public class AccessToken {
                                                  long lmrt, @Nullable Long expiryTime)
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException,
-            TenantNotFoundException {
+            TenantOrAppNotFoundException {
 
         Utils.PubPriKey signingKey = new Utils.PubPriKey(
-                AccessTokenSigningKey.getInstance(connectionUriDomain, tenantId, main).getLatestIssuedKey().value);
+                AccessTokenSigningKey.getInstance(tenantIdentifier, main).getLatestIssuedKey().value);
         long now = System.currentTimeMillis();
         if (expiryTime == null) {
-            expiryTime = now + Config.getConfig(connectionUriDomain, tenantId, main).getAccessTokenValidity();
+            expiryTime = now + Config.getConfig(tenantIdentifier, main).getAccessTokenValidity();
         }
         AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime,
                 parentRefreshTokenHash1, userData, antiCsrfToken, now, lmrt);
@@ -203,28 +205,29 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
         try {
-            return createNewAccessTokenV1(null, null, main, sessionHandle, userId, refreshTokenHash1,
+            return createNewAccessTokenV1(new TenantIdentifier(null, null, null), main, sessionHandle, userId,
+                    refreshTokenHash1,
                     parentRefreshTokenHash1, userData, antiCsrfToken);
-        } catch (TenantNotFoundException e) {
+        } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException("Should never come here");
         }
     }
 
-    public static TokenInfo createNewAccessTokenV1(String connectionUriDomain, String tenantId, @Nonnull Main main,
+    public static TokenInfo createNewAccessTokenV1(TenantIdentifier tenantIdentifier, @Nonnull Main main,
                                                    @Nonnull String sessionHandle,
                                                    @Nonnull String userId, @Nonnull String refreshTokenHash1,
                                                    @Nullable String parentRefreshTokenHash1,
                                                    @Nonnull JsonObject userData, @Nullable String antiCsrfToken)
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException,
-            TenantNotFoundException {
+            TenantOrAppNotFoundException {
 
         Utils.PubPriKey signingKey = new Utils.PubPriKey(
-                AccessTokenSigningKey.getInstance(connectionUriDomain, tenantId, main).getLatestIssuedKey().value);
+                AccessTokenSigningKey.getInstance(tenantIdentifier, main).getLatestIssuedKey().value);
         long now = System.currentTimeMillis();
         AccessTokenInfo accessToken;
 
-        long expiryTime = now + Config.getConfig(connectionUriDomain, tenantId, main).getAccessTokenValidity();
+        long expiryTime = now + Config.getConfig(tenantIdentifier, main).getAccessTokenValidity();
         accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime, parentRefreshTokenHash1,
                 userData, antiCsrfToken, now, null);
 

@@ -20,8 +20,9 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
 
@@ -39,7 +40,7 @@ public class DeleteExpiredEmailVerificationTokens extends CronTask {
     public static DeleteExpiredEmailVerificationTokens init(Main main,
                                                             List<ResourceDistributor.KeyClass> tenantsInfo) {
         return (DeleteExpiredEmailVerificationTokens) main.getResourceDistributor()
-                .setResource(null, null, RESOURCE_KEY,
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
                         new DeleteExpiredEmailVerificationTokens(main, tenantsInfo));
     }
 
@@ -48,18 +49,18 @@ public class DeleteExpiredEmailVerificationTokens extends CronTask {
                                                                    List<ResourceDistributor.KeyClass> tenantsInfo) {
         try {
             return (DeleteExpiredEmailVerificationTokens) main.getResourceDistributor()
-                    .getResource(null, null, RESOURCE_KEY);
-        } catch (TenantNotFoundException e) {
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException("Should never come here");
         }
     }
 
     @Override
-    protected void doTask(String connectionUriDomain, String tenantId) throws Exception {
-        if (StorageLayer.getStorage(connectionUriDomain, tenantId, this.main).getType() != STORAGE_TYPE.SQL) {
+    protected void doTask(TenantIdentifier tenantIdentifier) throws Exception {
+        if (StorageLayer.getStorage(tenantIdentifier, this.main).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, this.main)
+        StorageLayer.getEmailVerificationStorage(tenantIdentifier, this.main)
                 .deleteExpiredEmailVerificationTokens();
     }
 

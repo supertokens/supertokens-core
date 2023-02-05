@@ -23,7 +23,7 @@ import io.supertokens.Main;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -92,8 +92,7 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
 
         try {
             EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(
-                    this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main, email,
+                    this.getTenantIdentifier(req), main, email,
                     passwordHash, passwordHashingAlgorithm);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
@@ -101,7 +100,7 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
             response.add("user", userJson);
             response.addProperty("didUserAlreadyExist", importUserResponse.didUserAlreadyExist);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (UnsupportedPasswordHashingFormatException e) {
             throw new ServletException(new WebserverAPI.BadRequestException(e.getMessage()));

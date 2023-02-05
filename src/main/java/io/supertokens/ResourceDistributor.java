@@ -16,11 +16,11 @@
 
 package io.supertokens;
 
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -34,11 +34,11 @@ public class ResourceDistributor {
     private final Object lock = new Object();
     private Map<KeyClass, SingletonResource> resources = new HashMap<>();
 
-    public SingletonResource getResource(@Nullable String connectionUriDomain, @Nullable String tenantId,
-                                         @Nonnull String key) throws TenantNotFoundException {
+    public SingletonResource getResource(TenantIdentifier tenantIdentifier, @Nonnull String key)
+            throws TenantOrAppNotFoundException {
         synchronized (lock) {
             // first we do exact match
-            SingletonResource resource = resources.get(new KeyClass(connectionUriDomain, tenantId, key));
+            SingletonResource resource = resources.get(new KeyClass(tenantIdentifier, key));
             if (resource != null) {
                 return resource;
             }
@@ -46,21 +46,23 @@ public class ResourceDistributor {
             // then we see if the user has configured anything to do with connectionUriDomain, and if they have,
             // then we must return null cause the user has not specifically added tenantId to it
             for (KeyClass currKey : resources.keySet()) {
-                if ((currKey.getConnectionUriDomain() == null && connectionUriDomain == null) ||
-                        (currKey.getConnectionUriDomain() != null &&
-                                currKey.getConnectionUriDomain().equals(connectionUriDomain))) {
-                    throw new TenantNotFoundException(connectionUriDomain, tenantId);
+                if (currKey.getTenantIdentifier().getConnectionUriDomain()
+                        .equals(tenantIdentifier.getConnectionUriDomain())) {
+                    throw new TenantOrAppNotFoundException(tenantIdentifier);
                 }
             }
 
             // if it comes here, it means that the user has not configured anything to do with
-            // connectionUriDomain, and therefore we fallback on the case where connectionUriDomain is *
-            resource = resources.get(new KeyClass(null, tenantId, key));
+            // connectionUriDomain, and therefore we fallback on the case where connectionUriDomain is the base one.
+            // This is useful when the base connectionuri can be localhost or 127.0.0.1 or anything else that's
+            // not specifically configured by the dev.
+            resource = resources.get(new KeyClass(
+                    new TenantIdentifier(null, tenantIdentifier.getAppId(), tenantIdentifier.getTenantId()), key));
             if (resource != null) {
                 return resource;
             }
 
-            throw new TenantNotFoundException(connectionUriDomain, tenantId);
+            throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
     }
 
@@ -68,19 +70,19 @@ public class ResourceDistributor {
     @TestOnly
     public SingletonResource getResource(@Nonnull String key) {
         synchronized (lock) {
-            return resources.get(new KeyClass(null, null, key));
+            return resources.get(new KeyClass(new TenantIdentifier(null, null, null), key));
         }
     }
 
-    public SingletonResource setResource(@Nullable String connectionUriDomain, @Nullable String tenantId,
+    public SingletonResource setResource(TenantIdentifier tenantIdentifier,
                                          @Nonnull String key,
                                          SingletonResource resource) {
         synchronized (lock) {
-            SingletonResource alreadyExists = resources.get(new KeyClass(connectionUriDomain, tenantId, key));
+            SingletonResource alreadyExists = resources.get(new KeyClass(tenantIdentifier, key));
             if (alreadyExists != null) {
                 return alreadyExists;
             }
-            resources.put(new KeyClass(connectionUriDomain, tenantId, key), resource);
+            resources.put(new KeyClass(tenantIdentifier, key), resource);
             return resource;
         }
     }
@@ -115,7 +117,7 @@ public class ResourceDistributor {
     @TestOnly
     public SingletonResource setResource(@Nonnull String key,
                                          SingletonResource resource) {
-        return setResource(null, null, key, resource);
+        return setResource(new TenantIdentifier(null, null, null), key, resource);
     }
 
     public static class SingletonResource {
@@ -126,32 +128,22 @@ public class ResourceDistributor {
         @Nonnull
         private String key;
 
-        @Nonnull
-        private final String connectionUriDomain;
+        private final TenantIdentifier tenantIdentifier;
 
-        @Nonnull
-        private final String tenantId;
-
-        public KeyClass(@Nullable String connectionUriDomain, @Nullable String tenantId, @Nonnull String key) {
+        public KeyClass(TenantIdentifier tenantIdentifier, @Nonnull String key) {
             this.key = key;
-            this.connectionUriDomain = connectionUriDomain == null ? "" : connectionUriDomain;
-            this.tenantId = tenantId == null ? "" : tenantId;
+            this.tenantIdentifier = tenantIdentifier;
         }
 
-        public String getConnectionUriDomain() {
-            return connectionUriDomain.equals("") ? null : connectionUriDomain;
-        }
-
-        public String getTenantId() {
-            return tenantId.equals("") ? null : tenantId;
+        public TenantIdentifier getTenantIdentifier() {
+            return this.tenantIdentifier;
         }
 
         @Override
         public boolean equals(Object other) {
             if (other instanceof KeyClass) {
                 KeyClass otherKeyClass = (KeyClass) other;
-                return otherKeyClass.tenantId.equals(this.tenantId) &&
-                        otherKeyClass.connectionUriDomain.equals(connectionUriDomain) &&
+                return otherKeyClass.getTenantIdentifier().equals(this.getTenantIdentifier()) &&
                         otherKeyClass.key.equals(key);
             }
             return false;
@@ -159,7 +151,10 @@ public class ResourceDistributor {
 
         @Override
         public int hashCode() {
-            return (this.tenantId + "|" + this.connectionUriDomain + "|" + this.key).hashCode();
+            return (this.getTenantIdentifier().getTenantId() + "|" +
+                    this.getTenantIdentifier().getConnectionUriDomain() + "|" +
+                    this.getTenantIdentifier().getAppId() + "|" +
+                    this.key).hashCode();
         }
     }
 

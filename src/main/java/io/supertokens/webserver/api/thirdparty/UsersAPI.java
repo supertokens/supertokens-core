@@ -22,7 +22,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.UserPaginationToken;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.thirdparty.ThirdParty;
@@ -90,7 +90,7 @@ public class UsersAPI extends WebserverAPI {
         }
 
         try {
-            UserPaginationContainer users = ThirdParty.getUsers(this.getConnectionUriDomain(req), this.getTenantId(req),
+            UserPaginationContainer users = ThirdParty.getUsers(this.getTenantIdentifier(req),
                     super.main, paginationToken, limit, timeJoinedOrder);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -102,7 +102,7 @@ public class UsersAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (UserPaginationToken.InvalidTokenException e) {
             throw new ServletException(new BadRequestException("invalid pagination token"));
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

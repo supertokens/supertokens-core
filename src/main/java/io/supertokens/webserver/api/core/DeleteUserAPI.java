@@ -19,7 +19,7 @@ package io.supertokens.webserver.api.core;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -47,11 +47,11 @@ public class DeleteUserAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         try {
-            AuthRecipe.deleteUser(this.getConnectionUriDomain(req), this.getTenantId(req), super.main, userId);
+            AuthRecipe.deleteUser(this.getTenantIdentifier(req), super.main, userId);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

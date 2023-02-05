@@ -19,7 +19,7 @@ package io.supertokens.webserver.api.core;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
@@ -62,13 +62,13 @@ public class UsersCountAPI extends WebserverAPI {
         }
 
         try {
-            long count = AuthRecipe.getUsersCount(this.getConnectionUriDomain(req), this.getTenantId(req), super.main,
+            long count = AuthRecipe.getUsersCount(this.getTenantIdentifier(req), super.main,
                     recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("count", count);
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

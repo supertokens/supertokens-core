@@ -19,7 +19,7 @@ package io.supertokens.jwt;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.nosqlstorage.JWTRecipeNoSQLStorage_1;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
@@ -43,34 +44,33 @@ import java.util.Map;
 public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     public static final String RESOURCE_KEY = "io.supertokens.jwt.JWTSigningKey";
     private final Main main;
-    private final String connectionUriDomain;
-    private final String tenantId;
+    private final TenantIdentifier tenantIdentifier;
     private static final Object lock = new Object();
 
     public static void initForBaseTenant(Main main) throws UnsupportedJWTSigningAlgorithmException {
         synchronized (lock) {
             try {
-                main.getResourceDistributor().setResource(null, null, RESOURCE_KEY,
-                        new JWTSigningKey(null, null, main));
-            } catch (TenantNotFoundException e) {
+                main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                        new JWTSigningKey(new TenantIdentifier(null, null, null), main));
+            } catch (TenantOrAppNotFoundException e) {
                 throw new IllegalStateException("Should never come here");
             }
         }
     }
 
-    public static JWTSigningKey getInstance(String connectionUriDomain, String tenantId, Main main)
-            throws TenantNotFoundException {
+    public static JWTSigningKey getInstance(TenantIdentifier tenantIdentifier, Main main)
+            throws TenantOrAppNotFoundException {
         synchronized (lock) {
             return (JWTSigningKey) main.getResourceDistributor()
-                    .getResource(connectionUriDomain, tenantId, RESOURCE_KEY);
+                    .getResource(tenantIdentifier, RESOURCE_KEY);
         }
     }
 
     @TestOnly
     public static JWTSigningKey getInstance(Main main) {
         try {
-            return getInstance(null, null, main);
-        } catch (TenantNotFoundException e) {
+            return getInstance(new TenantIdentifier(null, null, null), main);
+        } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException("Should never come here");
         }
     }
@@ -84,23 +84,24 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
             main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
             for (TenantConfig tenant : tenants) {
                 ResourceDistributor.SingletonResource resource = existingResources.get(
-                        new ResourceDistributor.KeyClass(tenant.connectionUriDomain, tenant.tenantId, RESOURCE_KEY));
+                        new ResourceDistributor.KeyClass(tenant.tenantIdentifier, RESOURCE_KEY));
                 if (resource != null) {
-                    main.getResourceDistributor().setResource(tenant.connectionUriDomain, tenant.tenantId, RESOURCE_KEY,
+                    main.getResourceDistributor().setResource(tenant.tenantIdentifier, RESOURCE_KEY,
                             resource);
                 } else {
                     try {
                         main.getResourceDistributor()
-                                .setResource(tenant.connectionUriDomain, tenant.tenantId, RESOURCE_KEY,
-                                        new JWTSigningKey(tenant.connectionUriDomain, tenant.tenantId, main));
-                    } catch (TenantNotFoundException e) {
+                                .setResource(tenant.tenantIdentifier, RESOURCE_KEY,
+                                        new JWTSigningKey(tenant.tenantIdentifier, main));
+                    } catch (TenantOrAppNotFoundException e) {
                         throw new IllegalStateException("Should never come here");
                     }
                 }
             }
             // re add the base config
-            main.getResourceDistributor().setResource(null, null, RESOURCE_KEY,
-                    existingResources.get(new ResourceDistributor.KeyClass(null, null, RESOURCE_KEY)));
+            main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                    existingResources.get(
+                            new ResourceDistributor.KeyClass(new TenantIdentifier(null, null, null), RESOURCE_KEY)));
         }
     }
 
@@ -120,10 +121,9 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         }
     }
 
-    private JWTSigningKey(String connectionUriDomain, String tenantId, Main main)
-            throws UnsupportedJWTSigningAlgorithmException, TenantNotFoundException {
-        this.connectionUriDomain = connectionUriDomain;
-        this.tenantId = tenantId;
+    private JWTSigningKey(TenantIdentifier tenantIdentifier, Main main)
+            throws UnsupportedJWTSigningAlgorithmException, TenantOrAppNotFoundException {
+        this.tenantIdentifier = tenantIdentifier;
         this.main = main;
         for (int i = 0; i < JWTSigningKey.SupportedAlgorithms.values().length; i++) {
             JWTSigningKey.SupportedAlgorithms currentAlgorithm = JWTSigningKey.SupportedAlgorithms.values()[i];
@@ -144,8 +144,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
      * @throws StorageTransactionLogicException If there is an error interacting with the database
      */
     public List<JWTSigningKeyInfo> getAllSigningKeys()
-            throws StorageQueryException, StorageTransactionLogicException, TenantNotFoundException {
-        JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(this.connectionUriDomain, this.tenantId, main);
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
+        JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(this.tenantIdentifier, main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
             JWTRecipeSQLStorage sqlStorage = (JWTRecipeSQLStorage) storage;
@@ -178,8 +178,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
      */
     public JWTSigningKeyInfo getOrCreateAndGetKeyForAlgorithm(SupportedAlgorithms algorithm)
             throws UnsupportedJWTSigningAlgorithmException, StorageQueryException, StorageTransactionLogicException,
-            TenantNotFoundException {
-        JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(this.connectionUriDomain, this.tenantId, main);
+            TenantOrAppNotFoundException {
+        JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(this.tenantIdentifier, main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
             JWTRecipeSQLStorage sqlStorage = (JWTRecipeSQLStorage) storage;

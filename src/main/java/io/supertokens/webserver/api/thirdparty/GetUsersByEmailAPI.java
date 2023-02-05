@@ -21,7 +21,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
@@ -53,7 +53,7 @@ public class GetUsersByEmailAPI extends WebserverAPI {
         try {
             String email = InputParser.getQueryParamOrThrowError(req, "email", false);
 
-            UserInfo[] users = ThirdParty.getUsersByEmail(this.getConnectionUriDomain(req), this.getTenantId(req),
+            UserInfo[] users = ThirdParty.getUsersByEmail(this.getTenantIdentifier(req),
                     super.main, email);
 
             // return the externalUserId if a mapping exists for a user
@@ -61,7 +61,7 @@ public class GetUsersByEmailAPI extends WebserverAPI {
                 // we intentionally do not use the function that accepts an array of user IDs to get the mapping cause
                 // this is simpler to use, and cause there shouldn't be that many userIds per email anyway
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(this.getConnectionUriDomain(req), this.getTenantId(req), super.main,
+                        .getUserIdMapping(this.getTenantIdentifier(req), super.main,
                                 users[i].id, UserIdType.ANY);
                 if (userIdMapping != null) {
                     users[i].id = userIdMapping.externalUserId;
@@ -74,7 +74,7 @@ public class GetUsersByEmailAPI extends WebserverAPI {
             result.add("users", usersJson);
 
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

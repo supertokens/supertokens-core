@@ -16,7 +16,8 @@
 
 package io.supertokens;
 
-import io.supertokens.ResourceDistributor.SingletonResource;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -31,11 +32,13 @@ public class ProcessState extends ResourceDistributor.SingletonResource {
     }
 
     public static ProcessState getInstance(Main main) {
-        SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
-        if (instance == null) {
-            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new ProcessState());
+        try {
+            return (ProcessState) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            return (ProcessState) main.getResourceDistributor()
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new ProcessState());
         }
-        return (ProcessState) instance;
     }
 
     public synchronized EventAndException getLastEventByName(PROCESS_STATE processState) {

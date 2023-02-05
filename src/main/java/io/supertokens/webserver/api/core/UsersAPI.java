@@ -24,7 +24,7 @@ import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.authRecipe.UserPaginationToken;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -109,7 +109,7 @@ public class UsersAPI extends WebserverAPI {
         }
 
         try {
-            UserPaginationContainer users = AuthRecipe.getUsers(this.getConnectionUriDomain(req), this.getTenantId(req),
+            UserPaginationContainer users = AuthRecipe.getUsers(this.getTenantIdentifier(req),
                     super.main, limit, timeJoinedOrder, paginationToken,
                     recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
 
@@ -118,7 +118,7 @@ public class UsersAPI extends WebserverAPI {
                 userIds.add(users.users[i].user.id);
             }
             HashMap<String, String> userIdMapping = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
-                    this.getConnectionUriDomain(req), this.getTenantId(req), super.main,
+                    this.getTenantIdentifier(req), super.main,
                     userIds);
             if (!userIdMapping.isEmpty()) {
                 for (int i = 0; i < users.users.length; i++) {
@@ -142,7 +142,7 @@ public class UsersAPI extends WebserverAPI {
         } catch (UserPaginationToken.InvalidTokenException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
             throw new ServletException(new BadRequestException("invalid pagination token"));
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

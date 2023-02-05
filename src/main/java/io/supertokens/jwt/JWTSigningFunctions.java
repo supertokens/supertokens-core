@@ -21,12 +21,13 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import org.jetbrains.annotations.TestOnly;
 
 import java.math.BigInteger;
@@ -50,8 +51,9 @@ public class JWTSigningFunctions {
             throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
             InvalidKeySpecException, JWTCreationException, UnsupportedJWTSigningAlgorithmException {
         try {
-            return createJWTToken(null, null, main, algorithm, payload, jwksDomain, jwtValidity);
-        } catch (TenantNotFoundException e) {
+            return createJWTToken(new TenantIdentifier(null, null, null), main, algorithm, payload, jwksDomain,
+                    jwtValidity);
+        } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException("Should never come here");
         }
     }
@@ -75,12 +77,12 @@ public class JWTSigningFunctions {
      *                                                 algorithms
      */
     @SuppressWarnings("unchecked")
-    public static String createJWTToken(String connectionUriDomain, String tenantId, Main main, String algorithm,
+    public static String createJWTToken(TenantIdentifier tenantIdentifier, Main main, String algorithm,
                                         JsonObject payload, String jwksDomain,
                                         long jwtValidity)
             throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
             InvalidKeySpecException, JWTCreationException, UnsupportedJWTSigningAlgorithmException,
-            TenantNotFoundException {
+            TenantOrAppNotFoundException {
         // TODO: In the future we will have a way for the user to send a custom key id to use
         JWTSigningKey.SupportedAlgorithms supportedAlgorithm;
 
@@ -91,7 +93,7 @@ public class JWTSigningFunctions {
             throw new UnsupportedJWTSigningAlgorithmException();
         }
 
-        JWTSigningKeyInfo keyToUse = JWTSigningKey.getInstance(connectionUriDomain, tenantId, main)
+        JWTSigningKeyInfo keyToUse = JWTSigningKey.getInstance(tenantIdentifier, main)
                 .getOrCreateAndGetKeyForAlgorithm(supportedAlgorithm);
         // Get an instance of auth0's Algorithm which is needed when signing using auth0's package
         Algorithm signingAlgorithm = getAuth0Algorithm(supportedAlgorithm, keyToUse);
@@ -163,8 +165,8 @@ public class JWTSigningFunctions {
             throws StorageQueryException, StorageTransactionLogicException,
             NoSuchAlgorithmException, InvalidKeySpecException {
         try {
-            return getJWKS(null, null, main);
-        } catch (TenantNotFoundException e) {
+            return getJWKS(new TenantIdentifier(null, null, null), main);
+        } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException("Should never come here");
         }
     }
@@ -180,11 +182,11 @@ public class JWTSigningFunctions {
      * @throws NoSuchAlgorithmException         If there is an error when using Java's cryptography packages
      * @throws InvalidKeySpecException          If there is an error when using Java's cryptography packages
      */
-    public static List<JsonObject> getJWKS(String connectionUriDomain, String tenantId, Main main)
+    public static List<JsonObject> getJWKS(TenantIdentifier tenantIdentifier, Main main)
             throws StorageQueryException, StorageTransactionLogicException,
-            NoSuchAlgorithmException, InvalidKeySpecException, TenantNotFoundException {
+            NoSuchAlgorithmException, InvalidKeySpecException, TenantOrAppNotFoundException {
         // Retrieve all keys in storage
-        List<JWTSigningKeyInfo> keys = JWTSigningKey.getInstance(connectionUriDomain, tenantId, main)
+        List<JWTSigningKeyInfo> keys = JWTSigningKey.getInstance(tenantIdentifier, main)
                 .getAllSigningKeys();
         List<JsonObject> jwks = new ArrayList<>();
 

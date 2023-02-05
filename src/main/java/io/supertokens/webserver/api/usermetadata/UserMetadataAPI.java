@@ -18,7 +18,7 @@ package io.supertokens.webserver.api.usermetadata;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -47,13 +47,13 @@ public class UserMetadataAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         try {
-            JsonObject metadata = UserMetadata.getUserMetadata(this.getConnectionUriDomain(req), this.getTenantId(req),
+            JsonObject metadata = UserMetadata.getUserMetadata(this.getTenantIdentifier(req),
                     main, userId);
             JsonObject response = new JsonObject();
             response.add("metadata", metadata);
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }
@@ -64,13 +64,12 @@ public class UserMetadataAPI extends WebserverAPI {
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         JsonObject update = InputParser.parseJsonObjectOrThrowError(input, "metadataUpdate", false);
         try {
-            JsonObject metadata = UserMetadata.updateUserMetadata(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main, userId, update);
+            JsonObject metadata = UserMetadata.updateUserMetadata(this.getTenantIdentifier(req), main, userId, update);
             JsonObject response = new JsonObject();
             response.add("metadata", metadata);
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

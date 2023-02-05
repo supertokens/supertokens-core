@@ -18,7 +18,7 @@ package io.supertokens.webserver.api.useridmapping;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.useridmapping.UserIdMapping;
@@ -81,13 +81,13 @@ public class RemoveUserIdMappingAPI extends WebserverAPI {
         }
 
         try {
-            boolean didMappingExist = UserIdMapping.deleteUserIdMapping(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main, userId, userIdType, force);
+            boolean didMappingExist = UserIdMapping.deleteUserIdMapping(this.getTenantIdentifier(req), main, userId,
+                    userIdType, force);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("didMappingExist", didMappingExist);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

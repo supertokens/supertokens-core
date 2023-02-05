@@ -21,6 +21,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -57,11 +58,9 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
         ExecutorService service = Executors.newFixedThreadPool(copied.size());
         AtomicBoolean threwQuitProgramException = new AtomicBoolean(false);
         for (ResourceDistributor.KeyClass keyClass : copied) {
-            String connectionUriDomain = keyClass.getConnectionUriDomain();
-            String tenantId = keyClass.getTenantId();
             service.execute(() -> {
                 try {
-                    doTask(connectionUriDomain, tenantId);
+                    doTask(keyClass.getTenantIdentifier());
                 } catch (Exception e) {
                     ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
                     Logging.error(main, "Cronjob threw an exception: " + this.jobName, Main.isTesting, e);
@@ -86,7 +85,7 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
         Logging.info(main, "Cronjob finished: " + jobName, false);
     }
 
-    protected abstract void doTask(String connectionUriDomain, String tenantId) throws Exception;
+    protected abstract void doTask(TenantIdentifier tenantIdentifier) throws Exception;
 
     public abstract int getIntervalTimeSeconds();
 

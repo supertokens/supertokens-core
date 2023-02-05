@@ -20,7 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -74,8 +74,8 @@ public class SessionAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         try {
-            SessionInformationHolder sessionInfo = Session.createNewSession(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main, userId, userDataInJWT,
+            SessionInformationHolder sessionInfo = Session.createNewSession(this.getTenantIdentifier(req), main, userId,
+                    userDataInJWT,
                     userDataInDatabase, enableAntiCsrf);
 
             JsonObject result = sessionInfo.toJsonObject();
@@ -83,21 +83,20 @@ public class SessionAPI extends WebserverAPI {
             result.addProperty("status", "OK");
 
             result.addProperty("jwtSigningPublicKey",
-                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(this.getConnectionUriDomain(req),
-                            this.getTenantId(req), main).getLatestIssuedKey().value).publicKey);
+                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(this.getTenantIdentifier(req), main)
+                            .getLatestIssuedKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(this.getConnectionUriDomain(req),
-                            this.getTenantId(req), main).getKeyExpiryTime());
+                    AccessTokenSigningKey.getInstance(this.getTenantIdentifier(req), main).getKeyExpiryTime());
 
             if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
-                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getConnectionUriDomain(req),
-                        this.getTenantId(req), main).getAllKeys();
+                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getTenantIdentifier(req), main)
+                        .getAllKeys();
                 JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                 result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
             }
 
             super.sendJsonResponse(200, result, resp);
-        } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException | StorageTransactionLogicException | SignatureException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException | TenantNotFoundException e) {
+        } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException | StorageTransactionLogicException | SignatureException | IllegalBlockSizeException | BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }
@@ -108,8 +107,7 @@ public class SessionAPI extends WebserverAPI {
         assert sessionHandle != null;
 
         try {
-            SessionInfo sessionInfo = Session.getSession(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main, sessionHandle);
+            SessionInfo sessionInfo = Session.getSession(this.getTenantIdentifier(req), main, sessionHandle);
 
             JsonObject result = new Gson().toJsonTree(sessionInfo).getAsJsonObject();
             result.add("userDataInJWT", Utils.toJsonTreeWithNulls(sessionInfo.userDataInJWT));
@@ -119,7 +117,7 @@ public class SessionAPI extends WebserverAPI {
 
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));

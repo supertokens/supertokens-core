@@ -17,10 +17,11 @@
 package io.supertokens.authRecipe;
 
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
@@ -34,35 +35,36 @@ public class AuthRecipe {
 
     public static final int USER_PAGINATION_LIMIT = 500;
 
-    public static long getUsersCount(String connectionUriDomain, String tenantId, Main main,
+    public static long getUsersCount(TenantIdentifier tenantIdentifier, Main main,
                                      RECIPE_ID[] includeRecipeIds) throws StorageQueryException,
-            TenantNotFoundException {
-        return StorageLayer.getAuthRecipeStorage(connectionUriDomain, tenantId, main).getUsersCount(includeRecipeIds);
+            TenantOrAppNotFoundException {
+        return StorageLayer.getAuthRecipeStorage(tenantIdentifier, main).getUsersCount(includeRecipeIds);
     }
 
     @TestOnly
     public static long getUsersCount(Main main,
                                      RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
         try {
-            return getUsersCount(null, null, main, includeRecipeIds);
-        } catch (TenantNotFoundException e) {
+            return getUsersCount(new TenantIdentifier(null, null, null), main,
+                    includeRecipeIds);
+        } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException("Should never come here");
         }
     }
 
-    public static UserPaginationContainer getUsers(String connectionUriDomain, String tenantId, Main main,
+    public static UserPaginationContainer getUsers(TenantIdentifier tenantIdentifier, Main main,
                                                    Integer limit, String timeJoinedOrder,
                                                    @Nullable String paginationToken,
                                                    @Nullable RECIPE_ID[] includeRecipeIds)
-            throws StorageQueryException, UserPaginationToken.InvalidTokenException, TenantNotFoundException {
+            throws StorageQueryException, UserPaginationToken.InvalidTokenException, TenantOrAppNotFoundException {
         AuthRecipeUserInfo[] users;
         if (paginationToken == null) {
-            users = StorageLayer.getAuthRecipeStorage(connectionUriDomain, tenantId, main)
+            users = StorageLayer.getAuthRecipeStorage(tenantIdentifier, main)
                     .getUsers(limit + 1, timeJoinedOrder, includeRecipeIds, null,
                             null);
         } else {
             UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
-            users = StorageLayer.getAuthRecipeStorage(connectionUriDomain, tenantId, main)
+            users = StorageLayer.getAuthRecipeStorage(tenantIdentifier, main)
                     .getUsers(limit + 1, timeJoinedOrder, includeRecipeIds,
                             tokenInfo.userId, tokenInfo.timeJoined);
         }
@@ -84,14 +86,15 @@ public class AuthRecipe {
                                                    @Nullable RECIPE_ID[] includeRecipeIds)
             throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         try {
-            return getUsers(null, null, main, limit, timeJoinedOrder, paginationToken, includeRecipeIds);
-        } catch (TenantNotFoundException e) {
+            return getUsers(new TenantIdentifier(null, null, null), main, limit, timeJoinedOrder, paginationToken,
+                    includeRecipeIds);
+        } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException("Should never come here");
         }
     }
 
-    public static void deleteUser(String connectionUriDomain, String tenantId, Main main, String userId)
-            throws StorageQueryException, TenantNotFoundException {
+    public static void deleteUser(TenantIdentifier tenantIdentifier, Main main, String userId)
+            throws StorageQueryException, TenantOrAppNotFoundException {
         // We clean up the user last so that if anything before that throws an error, then that will throw a 500 to the
         // developer. In this case, they expect that the user has not been deleted (which will be true). This is as
         // opposed to deleting the user first, in which case if something later throws an error, then the user has
@@ -103,29 +106,29 @@ public class AuthRecipe {
 
         // If userId mapping exists then delete entries with superTokensUserId from auth related tables and
         // externalUserid from non-auth tables
-        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(connectionUriDomain,
-                tenantId, main, userId, UserIdType.ANY);
+        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(tenantIdentifier,
+                main, userId, UserIdType.ANY);
         if (userIdMapping != null) {
             // We check if the mapped externalId is another SuperTokens UserId, this could come up when migrating
             // recipes.
             // in reference to
             // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
             // we want to check which state the db is in
-            if (StorageLayer.getAuthRecipeStorage(connectionUriDomain, tenantId, main)
+            if (StorageLayer.getAuthRecipeStorage(tenantIdentifier, main)
                     .doesUserIdExist(userIdMapping.externalUserId)) {
                 // db is in state A4
                 // delete only from auth tables
-                deleteAuthRecipeUser(connectionUriDomain, tenantId, main, userId);
+                deleteAuthRecipeUser(tenantIdentifier, main, userId);
             } else {
                 // db is in state A3
                 // delete user from non-auth tables with externalUserId
-                deleteNonAuthRecipeUser(connectionUriDomain, tenantId, main, userIdMapping.externalUserId);
+                deleteNonAuthRecipeUser(tenantIdentifier, main, userIdMapping.externalUserId);
                 // delete user from auth tables with superTokensUserId
-                deleteAuthRecipeUser(connectionUriDomain, tenantId, main, userIdMapping.superTokensUserId);
+                deleteAuthRecipeUser(tenantIdentifier, main, userIdMapping.superTokensUserId);
             }
         } else {
-            deleteNonAuthRecipeUser(connectionUriDomain, tenantId, main, userId);
-            deleteAuthRecipeUser(connectionUriDomain, tenantId, main, userId);
+            deleteNonAuthRecipeUser(tenantIdentifier, main, userId);
+            deleteAuthRecipeUser(tenantIdentifier, main, userId);
         }
     }
 
@@ -133,27 +136,27 @@ public class AuthRecipe {
     public static void deleteUser(Main main, String userId)
             throws StorageQueryException {
         try {
-            deleteUser(null, null, main, userId);
-        } catch (TenantNotFoundException e) {
+            deleteUser(new TenantIdentifier(null, null, null), main, userId);
+        } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException("Should never come here");
         }
     }
 
-    private static void deleteNonAuthRecipeUser(String connectionUriDomain, String tenantId, Main main, String userId)
-            throws StorageQueryException, TenantNotFoundException {
+    private static void deleteNonAuthRecipeUser(TenantIdentifier tenantIdentifier, Main main, String userId)
+            throws StorageQueryException, TenantOrAppNotFoundException {
         // non auth recipe deletion
-        StorageLayer.getUserMetadataStorage(connectionUriDomain, tenantId, main).deleteUserMetadata(userId);
-        StorageLayer.getSessionStorage(connectionUriDomain, tenantId, main).deleteSessionsOfUser(userId);
-        StorageLayer.getEmailVerificationStorage(connectionUriDomain, tenantId, main)
+        StorageLayer.getUserMetadataStorage(tenantIdentifier, main).deleteUserMetadata(userId);
+        StorageLayer.getSessionStorage(tenantIdentifier, main).deleteSessionsOfUser(userId);
+        StorageLayer.getEmailVerificationStorage(tenantIdentifier, main)
                 .deleteEmailVerificationUserInfo(userId);
-        StorageLayer.getUserRolesStorage(connectionUriDomain, tenantId, main).deleteAllRolesForUser(userId);
+        StorageLayer.getUserRolesStorage(tenantIdentifier, main).deleteAllRolesForUser(userId);
     }
 
-    private static void deleteAuthRecipeUser(String connectionUriDomain, String tenantId, Main main, String userId)
-            throws StorageQueryException, TenantNotFoundException {
+    private static void deleteAuthRecipeUser(TenantIdentifier tenantIdentifier, Main main, String userId)
+            throws StorageQueryException, TenantOrAppNotFoundException {
         // auth recipe deletions here only
-        StorageLayer.getEmailPasswordStorage(connectionUriDomain, tenantId, main).deleteEmailPasswordUser(userId);
-        StorageLayer.getThirdPartyStorage(connectionUriDomain, tenantId, main).deleteThirdPartyUser(userId);
-        StorageLayer.getPasswordlessStorage(connectionUriDomain, tenantId, main).deletePasswordlessUser(userId);
+        StorageLayer.getEmailPasswordStorage(tenantIdentifier, main).deleteEmailPasswordUser(userId);
+        StorageLayer.getThirdPartyStorage(tenantIdentifier, main).deleteThirdPartyUser(userId);
+        StorageLayer.getPasswordlessStorage(tenantIdentifier, main).deletePasswordlessUser(userId);
     }
 }

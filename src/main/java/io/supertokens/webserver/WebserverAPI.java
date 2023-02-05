@@ -20,8 +20,9 @@ import com.google.gson.JsonElement;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -128,9 +129,10 @@ public abstract class WebserverAPI extends HttpServlet {
         return true;
     }
 
-    private void assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException, TenantNotFoundException {
+    private void assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException,
+            TenantOrAppNotFoundException {
         String apiKey = req.getHeader("api-key");
-        String[] keys = Config.getConfig(getConnectionUriDomain(req), getTenantId(req), this.main).getAPIKeys();
+        String[] keys = Config.getConfig(getTenantIdentifier(req), this.main).getAPIKeys();
         if (keys != null) {
             if (apiKey == null) {
                 throw new ServletException(new APIKeyUnauthorisedException());
@@ -150,7 +152,7 @@ public abstract class WebserverAPI extends HttpServlet {
         return true;
     }
 
-    protected String getTenantId(HttpServletRequest req) {
+    private String getTenantId(HttpServletRequest req) {
         String path = req.getServletPath().toLowerCase();
         String apiPath = getPath().toLowerCase();
         if (!apiPath.startsWith("/")) {
@@ -174,8 +176,17 @@ public abstract class WebserverAPI extends HttpServlet {
         return null;
     }
 
-    protected String getConnectionUriDomain(HttpServletRequest req) {
+    private String getAppId(HttpServletRequest req) {
+        // TODO:..
+        return null;
+    }
+
+    private String getConnectionUriDomain(HttpServletRequest req) {
         return req.getServerName() + ":" + req.getServerPort();
+    }
+
+    protected TenantIdentifier getTenantIdentifier(HttpServletRequest req) {
+        return new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
     }
 
     @Override
@@ -200,8 +211,11 @@ public abstract class WebserverAPI extends HttpServlet {
 
             if (e instanceof QuitProgramException) {
                 main.wakeUpMainThreadToShutdown();
-            } else if (e instanceof TenantNotFoundException) {
-                sendTextResponse(400, "Tenant not found: " + ((TenantNotFoundException) e).getTenantId(), resp);
+            } else if (e instanceof TenantOrAppNotFoundException) {
+                sendTextResponse(400,
+                        "AppId or tenantId not found => appId: " +
+                                ((TenantOrAppNotFoundException) e).getTenantIdentifier().getAppId() + ", tenantId: " +
+                                ((TenantOrAppNotFoundException) e).getTenantIdentifier().getTenantId(), resp);
             } else if (e instanceof ServletException) {
                 ServletException se = (ServletException) e;
                 Throwable rootCause = se.getRootCause();
@@ -209,8 +223,12 @@ public abstract class WebserverAPI extends HttpServlet {
                     sendTextResponse(400, rootCause.getMessage(), resp);
                 } else if (rootCause instanceof APIKeyUnauthorisedException) {
                     sendTextResponse(401, "Invalid API key", resp);
-                } else if (rootCause instanceof TenantNotFoundException) {
-                    sendTextResponse(400, "Tenant not found: " + ((TenantNotFoundException) rootCause).getTenantId(),
+                } else if (rootCause instanceof TenantOrAppNotFoundException) {
+                    sendTextResponse(400,
+                            "AppId or tenantId not found => appId: " +
+                                    ((TenantOrAppNotFoundException) rootCause).getTenantIdentifier().getAppId() +
+                                    ", tenantId: " +
+                                    ((TenantOrAppNotFoundException) rootCause).getTenantIdentifier().getTenantId(),
                             resp);
                 } else {
                     sendTextResponse(500, "Internal Error", resp);

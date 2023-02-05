@@ -19,6 +19,9 @@ package io.supertokens.emailverification;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import org.jetbrains.annotations.TestOnly;
 
 public class EmailVerificationTest extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_ID = "io.supertokens.emailverification.EmailVerificationTest";
@@ -30,13 +33,16 @@ public class EmailVerificationTest extends ResourceDistributor.SingletonResource
     }
 
     public static EmailVerificationTest getInstance(Main main) {
-        ResourceDistributor.SingletonResource resource = main.getResourceDistributor().getResource(RESOURCE_ID);
-        if (resource == null) {
-            resource = main.getResourceDistributor().setResource(RESOURCE_ID, new EmailVerificationTest(main));
+        try {
+            return (EmailVerificationTest) main.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
+        } catch (TenantOrAppNotFoundException e) {
+            return (EmailVerificationTest) main.getResourceDistributor()
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new EmailVerificationTest(main));
         }
-        return (EmailVerificationTest) resource;
     }
 
+    @TestOnly
     public void setEmailVerificationTokenLifetime(long intervalMS) {
         this.emailVerificationTokenLifetimeMS = intervalMS;
     }

@@ -20,7 +20,8 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
 
@@ -36,22 +37,23 @@ public class DeleteExpiredSessions extends CronTask {
 
     public static DeleteExpiredSessions init(Main main, List<ResourceDistributor.KeyClass> tenantsInfo) {
         return (DeleteExpiredSessions) main.getResourceDistributor()
-                .setResource(null, null, RESOURCE_KEY, new DeleteExpiredSessions(main, tenantsInfo));
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                        new DeleteExpiredSessions(main, tenantsInfo));
     }
 
     @TestOnly
     public static DeleteExpiredSessions getInstance(Main main) {
         try {
             return (DeleteExpiredSessions) main.getResourceDistributor()
-                    .getResource(null, null, RESOURCE_KEY);
-        } catch (TenantNotFoundException e) {
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException("Should never come here");
         }
     }
 
     @Override
-    protected void doTask(String connectionUriDomain, String tenantId) throws Exception {
-        StorageLayer.getSessionStorage(connectionUriDomain, tenantId, this.main).deleteAllExpiredSessions();
+    protected void doTask(TenantIdentifier tenantIdentifier) throws Exception {
+        StorageLayer.getSessionStorage(tenantIdentifier, this.main).deleteAllExpiredSessions();
     }
 
     @Override

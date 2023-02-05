@@ -21,7 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.User;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -64,7 +64,7 @@ public class VerifyEmailAPI extends WebserverAPI {
         }
 
         try {
-            User user = EmailVerification.verifyEmail(this.getConnectionUriDomain(req), this.getTenantId(req),
+            User user = EmailVerification.verifyEmail(this.getTenantIdentifier(req),
                     super.main, token);
 
             JsonObject result = new JsonObject();
@@ -78,7 +78,7 @@ public class VerifyEmailAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_VERIFICATION_INVALID_TOKEN_ERROR");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException | TenantNotFoundException e) {
+        } catch (StorageQueryException | NoSuchAlgorithmException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 
@@ -92,15 +92,15 @@ public class VerifyEmailAPI extends WebserverAPI {
         assert email != null;
 
         try {
-            boolean isVerified = EmailVerification.isEmailVerified(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), super.main, userId, email);
+            boolean isVerified = EmailVerification.isEmailVerified(this.getTenantIdentifier(req), super.main, userId,
+                    email);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("isVerified", isVerified);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
 

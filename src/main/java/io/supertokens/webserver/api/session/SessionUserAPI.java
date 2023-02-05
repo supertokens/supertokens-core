@@ -20,7 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.Session;
@@ -51,8 +51,8 @@ public class SessionUserAPI extends WebserverAPI {
         assert userId != null;
 
         try {
-            String[] sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main, userId);
+            String[] sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(this.getTenantIdentifier(req), main,
+                    userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -63,7 +63,7 @@ public class SessionUserAPI extends WebserverAPI {
             result.add("sessionHandles", arr);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

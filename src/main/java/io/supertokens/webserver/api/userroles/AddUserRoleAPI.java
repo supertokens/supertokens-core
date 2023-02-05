@@ -18,7 +18,7 @@ package io.supertokens.webserver.api.userroles;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
@@ -59,8 +59,8 @@ public class AddUserRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean didUserAlreadyHaveRole = !UserRoles.addRoleToUser(this.getConnectionUriDomain(req),
-                    this.getTenantId(req), main, userId, role);
+            boolean didUserAlreadyHaveRole = !UserRoles.addRoleToUser(this.getTenantIdentifier(req), main, userId,
+                    role);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("didUserAlreadyHaveRole", didUserAlreadyHaveRole);
@@ -69,7 +69,7 @@ public class AddUserRoleAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "UNKNOWN_ROLE_ERROR");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

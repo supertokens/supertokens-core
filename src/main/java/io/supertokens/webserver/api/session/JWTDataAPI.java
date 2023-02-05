@@ -19,7 +19,7 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.exceptions.TenantNotFoundException;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -57,7 +57,7 @@ public class JWTDataAPI extends WebserverAPI {
         assert userDataInJWT != null;
 
         try {
-            Session.updateSession(this.getConnectionUriDomain(req), this.getTenantId(req), main, sessionHandle, null,
+            Session.updateSession(this.getTenantIdentifier(req), main, sessionHandle, null,
                     userDataInJWT, null);
 
             JsonObject result = new JsonObject();
@@ -65,7 +65,7 @@ public class JWTDataAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
@@ -83,7 +83,7 @@ public class JWTDataAPI extends WebserverAPI {
         assert sessionHandle != null;
 
         try {
-            JsonElement jwtPayload = Session.getJWTData(this.getConnectionUriDomain(req), this.getTenantId(req), main,
+            JsonElement jwtPayload = Session.getJWTData(this.getTenantIdentifier(req), main,
                     sessionHandle);
 
             JsonObject result = new JsonObject();
@@ -92,7 +92,7 @@ public class JWTDataAPI extends WebserverAPI {
             result.add("userDataInJWT", jwtPayload);
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
