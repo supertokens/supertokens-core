@@ -150,13 +150,13 @@ public class PathRouterTest extends Mockito {
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/defaulttenantid/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    "http://localhost:3567/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionLatestForTests(), "");
             assertEquals("localhost:3567,null", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/defaultTenantId/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    "http://localhost:3567/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionLatestForTests(), "");
             assertEquals("localhost:3567,null", response);
         }
@@ -285,13 +285,13 @@ public class PathRouterTest extends Mockito {
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/defaulttenantid/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
+                    "http://localhost:3567/public/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionLatestForTests(), "");
             assertEquals("localhost:3567,null", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/defaultTenantId/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
+                    "http://localhost:3567/public/t1/t1?a=b&c=d", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionLatestForTests(), "");
             assertEquals("localhost:3567,null", response);
         }
@@ -421,13 +421,13 @@ public class PathRouterTest extends Mockito {
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/base_path/defaulttenantid/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    "http://localhost:3567/base_path/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionLatestForTests(), "");
             assertEquals("localhost:3567,null", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/base_path/defaultTenantId/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    "http://localhost:3567/base_path/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionLatestForTests(), "");
             assertEquals("localhost:3567,null", response);
         }
@@ -567,13 +567,13 @@ public class PathRouterTest extends Mockito {
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/base/path/defaulttenantid/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    "http://localhost:3567/base/path/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionLatestForTests(), "");
             assertEquals("localhost:3567,null", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/base/path/defaultTenantId/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    "http://localhost:3567/base/path/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionLatestForTests(), "");
             assertEquals("localhost:3567,null", response);
         }
@@ -713,13 +713,13 @@ public class PathRouterTest extends Mockito {
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/t1/defaulttenantid/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    "http://localhost:3567/t1/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionLatestForTests(), "");
             assertEquals("localhost:3567,null", response);
         }
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/t1/defaultTenantId/t1/t1", new HashMap<>(), 1000, 1000, null,
+                    "http://localhost:3567/t1/public/t1/t1", new HashMap<>(), 1000, 1000, null,
                     Utils.getCdiVersionLatestForTests(), "");
             assertEquals("localhost:3567,null", response);
         }
@@ -1109,7 +1109,7 @@ public class PathRouterTest extends Mockito {
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 400);
                 assertEquals(e.getMessage(),
-                        "Http error. Status Code: 400. Message: Tenant not found: defaultTenantId");
+                        "Http error. Status Code: 400. Message: Tenant not found: public");
             }
         }
         {
@@ -1272,7 +1272,7 @@ public class PathRouterTest extends Mockito {
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 400);
                 assertEquals(e.getMessage(),
-                        "Http error. Status Code: 400. Message: Tenant not found: defaultTenantId");
+                        "Http error. Status Code: 400. Message: Tenant not found: public");
             }
         }
 

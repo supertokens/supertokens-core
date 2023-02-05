@@ -29,7 +29,7 @@ public class TenantNotFoundException extends Exception {
 
     public String getTenantId() {
         if (this.tenantId == null || this.tenantId.equals("")) {
-            return "defaultTenantId";
+            return "public";
         }
         return this.tenantId;
     }

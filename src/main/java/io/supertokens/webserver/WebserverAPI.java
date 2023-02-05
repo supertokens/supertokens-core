@@ -163,7 +163,7 @@ public abstract class WebserverAPI extends HttpServlet {
         } else {
             if (path.matches("^/[a-z0-9-]+" + apiPath + "/?$")) {
                 String tenantId = path.split("/")[1].toLowerCase();
-                if (tenantId.equals("defaulttenantid")) {
+                if (tenantId.equals("public")) {
                     return null;
                 }
                 return tenantId;
