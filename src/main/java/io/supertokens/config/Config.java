@@ -102,17 +102,6 @@ public class Config extends ResourceDistributor.SingletonResource {
                 : CLIOptions.get(main).getConfigFilePath();
     }
 
-    public static void loadAllTenantConfig(Main main)
-            throws IOException, InvalidConfigException {
-        // we load up all the json config from the core for each tenant
-        // and then for each tenant, we create merge their jsons from most specific
-        // to least specific and then save the final json as a core config in the
-        // global resource distributor.
-        TenantConfig[] tenants = StorageLayer.getMultitenancyStorage(main).getAllTenants();
-
-        loadAllTenantConfig(main, tenants);
-    }
-
     public static void loadAllTenantConfig(Main main, TenantConfig[] tenants)
             throws IOException, InvalidConfigException {
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG, null);

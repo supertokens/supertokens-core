@@ -283,12 +283,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void loadAllTenantStorage(Main main)
-            throws IOException, InvalidConfigException, DbInitException {
-        TenantConfig[] tenants = StorageLayer.getMultitenancyStorage(main).getAllTenants();
-        loadAllTenantStorage(main, tenants);
-    }
-
     public static Storage getBaseStorage(Main main) {
         synchronized (lock) {
             try {

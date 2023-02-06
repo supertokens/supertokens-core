@@ -34,7 +34,7 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
 
     protected final Main main;
     private final String jobName;
-    protected final List<ResourceDistributor.KeyClass> tenantsInfo;
+    protected List<ResourceDistributor.KeyClass> tenantsInfo;
 
     protected CronTask(String jobName, Main main, List<ResourceDistributor.KeyClass> tenantsInfo) {
         this.jobName = jobName;
@@ -83,6 +83,10 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
             main.wakeUpMainThreadToShutdown();
         }
         Logging.info(main, "Cronjob finished: " + jobName, false);
+    }
+
+    public void setTenantsInfo(List<ResourceDistributor.KeyClass> tenantsInfo) {
+        this.tenantsInfo = tenantsInfo;
     }
 
     protected abstract void doTask(TenantIdentifier tenantIdentifier) throws Exception;

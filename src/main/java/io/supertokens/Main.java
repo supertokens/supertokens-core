@@ -28,10 +28,10 @@ import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -51,7 +51,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 
@@ -75,7 +74,7 @@ public class Main {
 
     private long PROCESS_START_TIME = System.currentTimeMillis();
 
-    private ResourceDistributor resourceDistributor = new ResourceDistributor();
+    private ResourceDistributor resourceDistributor = new ResourceDistributor(this);
 
     private String startedFileName = null;
 
@@ -198,17 +197,16 @@ public class Main {
         }
         FeatureFlag.init(this, CLIOptions.get(this).getInstallationPath() + "ee/");
 
-        if (Arrays.stream(FeatureFlag.getInstance(this).getEnabledFeatures())
-                .anyMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
-            try {
-                // load all configs for each of the tenants.
-                Config.loadAllTenantConfig(this);
+        Multitenancy.init(this);
 
-                // init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
-                StorageLayer.loadAllTenantStorage(this);
-            } catch (InvalidConfigException | DbInitException e) {
-                throw new QuitProgramException(e);
-            }
+        try {
+            // load all configs for each of the tenants.
+            Multitenancy.getInstance(this).loadConfig();
+
+            // init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
+            Multitenancy.getInstance(this).loadStorageLayer();
+        } catch (InvalidConfigException | DbInitException e) {
+            throw new QuitProgramException(e);
         }
 
         // init signing keys
@@ -216,12 +214,7 @@ public class Main {
             AccessTokenSigningKey.initForBaseTenant(this);
             RefreshTokenKey.initForBaseTenant(this);
             JWTSigningKey.initForBaseTenant(this);
-            if (Arrays.stream(FeatureFlag.getInstance(this).getEnabledFeatures())
-                    .anyMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
-                AccessTokenSigningKey.loadForAllTenants(this);
-                RefreshTokenKey.loadForAllTenants(this);
-                JWTSigningKey.loadForAllTenants(this);
-            }
+            Multitenancy.getInstance(this).loadSigningKeys();
         } catch (UnsupportedJWTSigningAlgorithmException e) {
             throw new QuitProgramException(e);
         }

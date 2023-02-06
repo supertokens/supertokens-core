@@ -17,8 +17,10 @@
 package io.supertokens.inmemorydb.config;
 
 import io.supertokens.ResourceDistributor;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.exceptions.QuitProgramFromPluginException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 public class Config extends ResourceDistributor.SingletonResource {
 
@@ -30,11 +32,16 @@ public class Config extends ResourceDistributor.SingletonResource {
     }
 
     private static Config getInstance(Start start) {
-        return (Config) start.getResourceDistributor().getResource(RESOURCE_KEY);
+        try {
+            return (Config) start.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     public static void loadConfig(Start start) {
-        start.getResourceDistributor().setResource(RESOURCE_KEY, new Config());
+        start.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new Config());
     }
 
     public static SQLiteConfig getConfig(Start start) {

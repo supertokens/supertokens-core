@@ -75,8 +75,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void loadForAllTenants(Main main) throws UnsupportedJWTSigningAlgorithmException {
-        TenantConfig[] tenants = StorageLayer.getMultitenancyStorage(main).getAllTenants();
+    public static void loadForAllTenants(Main main, TenantConfig[] tenants)
+            throws UnsupportedJWTSigningAlgorithmException {
         synchronized (lock) {
             Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
                     main.getResourceDistributor()

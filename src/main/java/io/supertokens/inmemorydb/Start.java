@@ -97,11 +97,12 @@ public class Start
     public static boolean isTesting = false;
     private static boolean silent = false;
     boolean enabled = true;
-    private ResourceDistributor resourceDistributor = new ResourceDistributor();
+    private final ResourceDistributor resourceDistributor;
     private String processId;
     private Main main;
 
     public Start(Main main) {
+        this.resourceDistributor = new ResourceDistributor(main);
         this.main = main;
     }
 

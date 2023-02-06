@@ -17,6 +17,8 @@
 package io.supertokens.inmemorydb;
 
 import io.supertokens.ResourceDistributor;
+import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -36,7 +38,8 @@ public class ConnectionPool extends ResourceDistributor.SingletonResource {
     }
 
     static void initPool(Start start) throws SQLException {
-        start.getResourceDistributor().setResource(RESOURCE_KEY, new ConnectionPool());
+        start.getResourceDistributor()
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new ConnectionPool());
     }
 
     public static Connection getConnection(Start start) throws SQLException {
@@ -47,7 +50,12 @@ public class ConnectionPool extends ResourceDistributor.SingletonResource {
     }
 
     private static ConnectionPool getInstance(Start start) {
-        return (ConnectionPool) start.getResourceDistributor().getResource(RESOURCE_KEY);
+        try {
+            return (ConnectionPool) start.getResourceDistributor()
+                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
     }
 
     static void close(Start start) {

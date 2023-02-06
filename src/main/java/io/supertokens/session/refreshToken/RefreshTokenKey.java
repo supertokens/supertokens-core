@@ -86,8 +86,7 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void loadForAllTenants(Main main) {
-        TenantConfig[] tenants = StorageLayer.getMultitenancyStorage(main).getAllTenants();
+    public static void loadForAllTenants(Main main, TenantConfig[] tenants) {
         synchronized (lock) {
             Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
                     main.getResourceDistributor()

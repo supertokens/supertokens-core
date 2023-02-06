@@ -38,7 +38,7 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
         this.executor = Executors.newScheduledThreadPool(5);
     }
 
-    private static Cronjobs getInstance(Main main) {
+    public static Cronjobs getInstance(Main main) {
         try {
             return (Cronjobs) main.getResourceDistributor()
                     .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
@@ -67,6 +67,12 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
                 // ignore any error as app is shutting down.
             }
         }
+    }
+
+    public void setTenantsInfo(List<ResourceDistributor.KeyClass> tenantsInfo) {
+        this.tasks.forEach(cronTask -> {
+            cronTask.setTenantsInfo(tenantsInfo);
+        });
     }
 
     public static void addCronjob(Main main, CronTask task) {
