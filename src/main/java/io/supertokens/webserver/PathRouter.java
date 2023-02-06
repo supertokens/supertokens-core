@@ -75,13 +75,13 @@ public class PathRouter extends WebserverAPI {
             }
         }
 
-        // then we check if tenantId is embedded in the URL.
+        // then we check if tenantId or appId is embedded in the URL.
         for (WebserverAPI api : this.apis) {
             String apiPath = api.getPath().toLowerCase();
             if (!apiPath.startsWith("/")) {
                 apiPath = "/" + apiPath;
             }
-            if (requestPath.matches("^(/[a-z0-9-]+)?" + apiPath + "/?$")) {
+            if (requestPath.matches("^(/appid-[a-z0-9-]+)?(/[a-z0-9-]+)?" + apiPath + "/?$")) {
                 return api;
             }
         }

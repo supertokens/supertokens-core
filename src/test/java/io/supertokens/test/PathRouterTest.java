@@ -45,6 +45,8 @@ import java.util.HashMap;
 
 import static org.junit.Assert.*;
 
+// TODO: appId tests
+// TODO: base path starts with appid-
 
 public class PathRouterTest extends Mockito {
 
