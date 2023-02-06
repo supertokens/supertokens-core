@@ -46,6 +46,12 @@ public class ResourceDistributor {
             return resource;
         }
 
+        if (tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
+            // this means we are looking at base tenant and it's not something that
+            // refreshing tenants will help with (in fact it will cause an infinite loop)
+            throw new TenantOrAppNotFoundException(tenantIdentifier);
+        }
+
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
 
         // we try again..
