@@ -82,13 +82,13 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 }
             }
 
+            // TODO: do we need locking?
+
+            this.tenantConfigs = tenantsFromDb;
             if (!hasChanged) {
                 return;
             }
 
-            this.tenantConfigs = tenantsFromDb;
-
-            // TODO: do we need locking?
             loadConfig();
             loadStorageLayer();
             loadSigningKeys();
