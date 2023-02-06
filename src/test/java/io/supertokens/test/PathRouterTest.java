@@ -1293,7 +1293,7 @@ public class PathRouterTest extends Mockito {
                         "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
                         Utils.getCdiVersionLatestForTests(),
                         "abctijenbogweg=-2438243u98", "");
-                assertEquals("localhost:3567,public", response);
+                fail();
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 400);
                 assertEquals(e.getMessage(),
@@ -1934,5 +1934,290 @@ public class PathRouterTest extends Mockito {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void tenantNotFoundWithAppIdTest()
+            throws InterruptedException, IOException, io.supertokens.httpRequest.HttpResponseException,
+            InvalidConfigException,
+            io.supertokens.test.httpRequest.HttpResponseException {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject tenantConfig = new JsonObject();
+        tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
+        JsonObject tenant2Config = new JsonObject();
+        tenant2Config.add("api_keys", new JsonPrimitive("abcasdfaliojmo3jenbogweg=-9382923"));
+
+        Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
+                new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        tenantConfig),
+                new TenantConfig(new TenantIdentifier("localhost:3567", "app1", "t1"), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        tenantConfig),
+                new TenantConfig(new TenantIdentifier("127.0.0.1:3567", "app1", "t1"), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        tenant2Config)});
+
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+            @Override
+            public String getPath() {
+                return "/test";
+            }
+
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                super.sendTextResponse(200, super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                this.getTenantIdentifier(req).getAppId() + "," + this.getTenantIdentifier(req).getTenantId(),
+                        resp);
+            }
+        });
+
+        {
+            String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(),
+                    "abctijenbogweg=-2438243u98", "");
+            assertEquals("localhost:3567,public,public", response);
+        }
+
+        {
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://127.0.0.1:3567/appid-app1/test", new JsonObject(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(),
+                        "abcasdfaliojmo3jenbogweg=-9382923", "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 400);
+                assertEquals(e.getMessage(),
+                        "Http error. Status Code: 400. Message: AppId or tenantId not found => appId: app1, " +
+                                "tenantId: public");
+            }
+        }
+        {
+            String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/appid-app1/t1/test", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(),
+                    "abctijenbogweg=-2438243u98", "");
+            assertEquals("localhost:3567,app1,t1", response);
+        }
+
+        {
+            String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://127.0.0.1:3567/appid-app1/t1/test", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(),
+                    "abcasdfaliojmo3jenbogweg=-9382923", "");
+            assertEquals("127.0.0.1:3567,app1,t1", response);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void tenantNotFoundWithAppIdTest2()
+            throws InterruptedException, IOException, io.supertokens.httpRequest.HttpResponseException,
+            InvalidConfigException,
+            io.supertokens.test.httpRequest.HttpResponseException {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject tenantConfig = new JsonObject();
+        tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
+
+        Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
+                new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        tenantConfig),
+                new TenantConfig(new TenantIdentifier("localhost:3567", "app1", "t1"), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        tenantConfig),
+                new TenantConfig(new TenantIdentifier(null, "app2", "t2"), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        new JsonObject()),});
+
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+            @Override
+            public String getPath() {
+                return "/test";
+            }
+
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                super.sendTextResponse(200, super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                this.getTenantIdentifier(req).getAppId() + "," + this.getTenantIdentifier(req).getTenantId(),
+                        resp);
+            }
+        });
+
+        {
+            String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(),
+                    "abctijenbogweg=-2438243u98", "");
+            assertEquals("localhost:3567,public,public", response);
+        }
+
+        {
+            String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://127.0.0.1:3567/test", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(),
+                    "abcasdfaliojmo3jenbogweg=-9382923", "");
+            assertEquals("127.0.0.1:3567,public,public", response);
+        }
+        {
+            String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/appid-app1/t1/test", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(),
+                    "abctijenbogweg=-2438243u98", "");
+            assertEquals("localhost:3567,app1,t1", response);
+        }
+
+        {
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://127.0.0.1:3567/t1/test", new JsonObject(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(),
+                        "abcasdfaliojmo3jenbogweg=-9382923", "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 400);
+                assertEquals(e.getMessage(),
+                        "Http error. Status Code: 400. Message: AppId or tenantId not found => appId: public, " +
+                                "tenantId: t1");
+            }
+        }
+        {
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://127.0.0.1:3567/appid-app1/t1/test", new JsonObject(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(),
+                        "abcasdfaliojmo3jenbogweg=-9382923", "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 400);
+                assertEquals(e.getMessage(),
+                        "Http error. Status Code: 400. Message: AppId or tenantId not found => appId: app1, " +
+                                "tenantId: t1");
+            }
+        }
+        {
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://127.0.0.1:3567/t2/test", new JsonObject(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(),
+                        "abcasdfaliojmo3jenbogweg=-9382923", "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 400);
+                assertEquals(e.getMessage(),
+                        "Http error. Status Code: 400. Message: AppId or tenantId not found => appId: public, " +
+                                "tenantId: t2");
+            }
+        }
+        {
+            String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://127.0.0.1:3567/appid-app2/t2/test", new JsonObject(), 1000, 1000, null,
+                    Utils.getCdiVersionLatestForTests(),
+                    "", "");
+            assertEquals("127.0.0.1:3567,app2,t2", response);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void tenantNotFoundWithAppIdTest3()
+            throws InterruptedException, IOException, io.supertokens.httpRequest.HttpResponseException,
+            InvalidConfigException,
+            io.supertokens.test.httpRequest.HttpResponseException {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("host", "\"0.0.0.0\"");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject tenantConfig = new JsonObject();
+        tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
+
+        Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
+                new TenantConfig(new TenantIdentifier("localhost:3567", "app1", "t1"), new EmailPasswordConfig(false),
+                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                        new PasswordlessConfig(false),
+                        tenantConfig)});
+
+        Webserver.getInstance(process.getProcess()).addAPI(new WebserverAPI(process.getProcess(), "") {
+
+            @Override
+            public String getPath() {
+                return "/test";
+            }
+
+            @Override
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+                super.sendTextResponse(200, super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
+                                this.getTenantIdentifier(req).getAppId() + "," + this.getTenantIdentifier(req).getTenantId(),
+                        resp);
+            }
+        });
+
+        {
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(),
+                        "abctijenbogweg=-2438243u98", "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 400);
+                assertEquals(e.getMessage(),
+                        "Http error. Status Code: 400. Message: AppId or tenantId not found => appId: public, " +
+                                "tenantId: public");
+            }
+        }
+
+        {
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/appid-app1/test", new JsonObject(), 1000, 1000, null,
+                        Utils.getCdiVersionLatestForTests(),
+                        "abctijenbogweg=-2438243u98", "");
+                fail();
+            } catch (HttpResponseException e) {
+                assertEquals(e.statusCode, 400);
+                assertEquals(e.getMessage(),
+                        "Http error. Status Code: 400. Message: AppId or tenantId not found => appId: app1, " +
+                                "tenantId: public");
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 }
