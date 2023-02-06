@@ -81,7 +81,7 @@ public class PathRouter extends WebserverAPI {
             if (!apiPath.startsWith("/")) {
                 apiPath = "/" + apiPath;
             }
-            if (requestPath.matches("^(/appid-[a-z0-9-]+)?(/[a-z0-9-]+)?" + apiPath + "/?$")) {
+            if (requestPath.matches("^(/appid-[a-z0-9-]*)?(/[a-z0-9-]+)?" + apiPath + "/?$")) {
                 return api;
             }
         }

@@ -163,13 +163,13 @@ public abstract class WebserverAPI extends HttpServlet {
                 return null;
             }
         } else {
-            if (path.matches("^/appid-[a-z0-9-]+/[a-z0-9-]+" + apiPath + "/?$")) {
+            if (path.matches("^/appid-[a-z0-9-]*/[a-z0-9-]+" + apiPath + "/?$")) {
                 String tenantId = path.split("/")[2].toLowerCase();
                 if (tenantId.equals("public")) {
                     return null;
                 }
                 return tenantId;
-            } else if (path.matches("^/appid-[a-z0-9-]+" + apiPath + "/?$")) {
+            } else if (path.matches("^/appid-[a-z0-9-]*" + apiPath + "/?$")) {
                 return null;
             } else if (path.matches("^/[a-z0-9-]+" + apiPath + "/?$")) {
                 String tenantId = path.split("/")[1].toLowerCase();
@@ -195,12 +195,12 @@ public abstract class WebserverAPI extends HttpServlet {
                 return null;
             }
         } else {
-            if (path.matches("^/appid-[a-z0-9-]+(/[a-z0-9-]+)?" + apiPath + "/?$")) {
+            if (path.matches("^/appid-[a-z0-9-]*(/[a-z0-9-]+)?" + apiPath + "/?$")) {
                 String appId = path.split("/")[1].toLowerCase();
                 if (appId.equals("appid-public")) {
                     return null;
                 }
-                return appId.split("appid-")[1];
+                return appId.substring(6);
             } else {
                 return null;
             }
