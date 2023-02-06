@@ -36,6 +36,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.storageLayer.StorageLayer;
@@ -220,7 +221,7 @@ public class Main {
         }
 
         // starts removing old session cronjob
-        List<ResourceDistributor.KeyClass> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(this);
+        List<TenantIdentifier> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(this);
 
         Cronjobs.addCronjob(this, DeleteExpiredSessions.init(this, uniqueUserPoolIdsTenants));
 

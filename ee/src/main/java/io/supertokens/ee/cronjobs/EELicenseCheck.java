@@ -1,14 +1,12 @@
 package io.supertokens.ee.cronjobs;
 
 import io.supertokens.Main;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.ee.EEFeatureFlag;
 import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.storageLayer.StorageLayer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,7 +15,7 @@ public class EELicenseCheck extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.ee.cronjobs.EELicenseCheck";
 
-    private EELicenseCheck(Main main, List<ResourceDistributor.KeyClass> tenants) {
+    private EELicenseCheck(Main main, List<TenantIdentifier> tenants) {
         super("EELicenseCheck", main, tenants);
     }
 
@@ -26,9 +24,8 @@ public class EELicenseCheck extends CronTask {
             return (EELicenseCheck) main.getResourceDistributor()
                     .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
         } catch (TenantOrAppNotFoundException e) {
-            List<ResourceDistributor.KeyClass> tenants = new ArrayList<>();
-            tenants.add(new ResourceDistributor.KeyClass(new TenantIdentifier(null, null, null),
-                    StorageLayer.RESOURCE_KEY));
+            List<TenantIdentifier> tenants = new ArrayList<>();
+            tenants.add(new TenantIdentifier(null, null, null));
             return (EELicenseCheck) main.getResourceDistributor()
                     .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
                             new EELicenseCheck(main, tenants));

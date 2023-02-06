@@ -34,9 +34,9 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
 
     protected final Main main;
     private final String jobName;
-    protected List<ResourceDistributor.KeyClass> tenantsInfo;
+    protected List<TenantIdentifier> tenantsInfo;
 
-    protected CronTask(String jobName, Main main, List<ResourceDistributor.KeyClass> tenantsInfo) {
+    protected CronTask(String jobName, Main main, List<TenantIdentifier> tenantsInfo) {
         this.jobName = jobName;
         this.main = main;
         this.tenantsInfo = tenantsInfo;
@@ -53,14 +53,14 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
 
         // first we copy over the array so that if it changes while the cronjob runs, it won't affect
         // this run of the cronjob
-        List<ResourceDistributor.KeyClass> copied = new ArrayList<>(tenantsInfo);
+        List<TenantIdentifier> copied = new ArrayList<>(tenantsInfo);
 
         ExecutorService service = Executors.newFixedThreadPool(copied.size());
         AtomicBoolean threwQuitProgramException = new AtomicBoolean(false);
-        for (ResourceDistributor.KeyClass keyClass : copied) {
+        for (TenantIdentifier t : copied) {
             service.execute(() -> {
                 try {
-                    doTask(keyClass.getTenantIdentifier());
+                    doTask(t);
                 } catch (Exception e) {
                     ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
                     Logging.error(main, "Cronjob threw an exception: " + this.jobName, Main.isTesting, e);
@@ -85,7 +85,7 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
         Logging.info(main, "Cronjob finished: " + jobName, false);
     }
 
-    public void setTenantsInfo(List<ResourceDistributor.KeyClass> tenantsInfo) {
+    public void setTenantsInfo(List<TenantIdentifier> tenantsInfo) {
         this.tenantsInfo = tenantsInfo;
     }
 

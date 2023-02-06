@@ -17,7 +17,6 @@
 package io.supertokens.cronjobs.deleteExpiredPasswordResetTokens;
 
 import io.supertokens.Main;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -32,20 +31,19 @@ public class DeleteExpiredPasswordResetTokens extends CronTask {
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredPasswordResetTokens"
             + ".DeleteExpiredPasswordResetTokens";
 
-    private DeleteExpiredPasswordResetTokens(Main main, List<ResourceDistributor.KeyClass> tenantsInfo) {
+    private DeleteExpiredPasswordResetTokens(Main main, List<TenantIdentifier> tenantsInfo) {
         super("RemoveOldPasswordResetTokens", main, tenantsInfo);
     }
 
     public static DeleteExpiredPasswordResetTokens init(Main main,
-                                                        List<ResourceDistributor.KeyClass> tenantsInfo) {
+                                                        List<TenantIdentifier> tenantsInfo) {
         return (DeleteExpiredPasswordResetTokens) main.getResourceDistributor()
                 .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
                         new DeleteExpiredPasswordResetTokens(main, tenantsInfo));
     }
 
     @TestOnly
-    public static DeleteExpiredPasswordResetTokens getInstance(Main main,
-                                                               List<ResourceDistributor.KeyClass> tenantsInfo) {
+    public static DeleteExpiredPasswordResetTokens getInstance(Main main) {
         return (DeleteExpiredPasswordResetTokens) main.getResourceDistributor().getResource(RESOURCE_KEY);
     }
 

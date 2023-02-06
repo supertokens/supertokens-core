@@ -19,7 +19,6 @@ package io.supertokens.cronjobs.telemetry;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
@@ -45,7 +44,7 @@ public class Telemetry extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.telemetry.Telemetry";
 
-    private Telemetry(Main main, List<ResourceDistributor.KeyClass> tenants) {
+    private Telemetry(Main main, List<TenantIdentifier> tenants) {
         super("Telemetry", main, tenants);
     }
 
@@ -54,9 +53,8 @@ public class Telemetry extends CronTask {
             return (Telemetry) main.getResourceDistributor()
                     .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
         } catch (TenantOrAppNotFoundException e) {
-            List<ResourceDistributor.KeyClass> tenants = new ArrayList<>();
-            tenants.add(new ResourceDistributor.KeyClass(new TenantIdentifier(null, null, null),
-                    StorageLayer.RESOURCE_KEY));
+            List<TenantIdentifier> tenants = new ArrayList<>();
+            tenants.add(new TenantIdentifier(null, null, null));
             return (Telemetry) main.getResourceDistributor()
                     .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new Telemetry(main, tenants));
         }

@@ -69,7 +69,7 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public void setTenantsInfo(List<ResourceDistributor.KeyClass> tenantsInfo) {
+    public void setTenantsInfo(List<TenantIdentifier> tenantsInfo) {
         this.tasks.forEach(cronTask -> {
             cronTask.setTenantsInfo(tenantsInfo);
         });

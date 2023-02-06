@@ -17,7 +17,6 @@
 package io.supertokens.cronjobs.deleteExpiredPasswordlessDevices;
 
 import io.supertokens.Main;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
@@ -39,12 +38,12 @@ public class DeleteExpiredPasswordlessDevices extends CronTask {
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredPasswordlessDevices"
             + ".DeleteExpiredPasswordlessDevices";
 
-    private DeleteExpiredPasswordlessDevices(Main main, List<ResourceDistributor.KeyClass> tenantsInfo) {
+    private DeleteExpiredPasswordlessDevices(Main main, List<TenantIdentifier> tenantsInfo) {
         super("DeleteExpiredPasswordlessDevices", main, tenantsInfo);
     }
 
     public static DeleteExpiredPasswordlessDevices init(Main main,
-                                                        List<ResourceDistributor.KeyClass> tenantsInfo) {
+                                                        List<TenantIdentifier> tenantsInfo) {
         return (DeleteExpiredPasswordlessDevices) main.getResourceDistributor()
                 .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
                         new DeleteExpiredPasswordlessDevices(main, tenantsInfo));

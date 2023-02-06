@@ -17,7 +17,6 @@
 package io.supertokens.cronjobs.deleteExpiredSessions;
 
 import io.supertokens.Main;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.exceptions.TenantOrAppNotFoundException;
@@ -31,11 +30,11 @@ public class DeleteExpiredSessions extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions";
 
-    private DeleteExpiredSessions(Main main, List<ResourceDistributor.KeyClass> tenantsInfo) {
+    private DeleteExpiredSessions(Main main, List<TenantIdentifier> tenantsInfo) {
         super("RemoveOldSessions", main, tenantsInfo);
     }
 
-    public static DeleteExpiredSessions init(Main main, List<ResourceDistributor.KeyClass> tenantsInfo) {
+    public static DeleteExpiredSessions init(Main main, List<TenantIdentifier> tenantsInfo) {
         return (DeleteExpiredSessions) main.getResourceDistributor()
                 .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
                         new DeleteExpiredSessions(main, tenantsInfo));

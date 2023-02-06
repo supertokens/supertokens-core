@@ -36,8 +36,7 @@ import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.storageLayer.StorageLayer;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 
 public class Multitenancy extends ResourceDistributor.SingletonResource {
 
@@ -71,7 +70,16 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             if (tenantsFromDb.length != tenantConfigs.length) {
                 hasChanged = true;
             } else {
-                // TODO: compare the two lists..
+                Set<TenantIdentifier> fromDb = new HashSet<>();
+                for (TenantConfig t : tenantsFromDb) {
+                    fromDb.add(t.tenantIdentifier);
+                }
+                for (TenantConfig t : this.tenantConfigs) {
+                    if (!fromDb.contains(t.tenantIdentifier)) {
+                        hasChanged = true;
+                        break;
+                    }
+                }
             }
 
             if (!hasChanged) {
@@ -116,13 +124,16 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         JWTSigningKey.loadForAllTenants(main, this.tenantConfigs);
     }
 
-    public void refreshCronjobs() throws StorageQueryException {
+    private void refreshCronjobs() throws StorageQueryException {
         if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
                 .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             return;
         }
-        // TODO..
-        Cronjobs.getInstance(main).setTenantsInfo(new ArrayList<>());
+        List<TenantIdentifier> list = new ArrayList<>();
+        for (TenantConfig t : this.tenantConfigs) {
+            list.add(t.tenantIdentifier);
+        }
+        Cronjobs.getInstance(main).setTenantsInfo(list);
     }
 
 }
