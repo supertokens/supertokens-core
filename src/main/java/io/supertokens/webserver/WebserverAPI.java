@@ -163,13 +163,16 @@ public abstract class WebserverAPI extends HttpServlet {
                 return null;
             }
         } else {
-            if (path.matches("^(/appid-[a-z0-9-]+)?/[a-z0-9-]+" + apiPath + "/?$")) {
-                String tenantId = "";
-                if (path.startsWith("/appid-")) {
-                    tenantId = path.split("/")[2].toLowerCase();
-                } else {
-                    tenantId = path.split("/")[1].toLowerCase();
+            if (path.matches("^/appid-[a-z0-9-]+/[a-z0-9-]+" + apiPath + "/?$")) {
+                String tenantId = path.split("/")[2].toLowerCase();
+                if (tenantId.equals("public")) {
+                    return null;
                 }
+                return tenantId;
+            } else if (path.matches("^/appid-[a-z0-9-]+" + apiPath + "/?$")) {
+                return null;
+            } else if (path.matches("^/[a-z0-9-]+" + apiPath + "/?$")) {
+                String tenantId = path.split("/")[1].toLowerCase();
                 if (tenantId.equals("public")) {
                     return null;
                 }
