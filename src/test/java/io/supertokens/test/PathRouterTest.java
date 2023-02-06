@@ -47,6 +47,8 @@ import static org.junit.Assert.*;
 
 // TODO: appId tests
 // TODO: base path starts with appid-
+// TODO: test what happens when querying /appid-/tenantid/..
+// TODO: test this /appid-abc/appid-xyz/..
 
 public class PathRouterTest extends Mockito {
 

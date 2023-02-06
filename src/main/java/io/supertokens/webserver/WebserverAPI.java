@@ -192,16 +192,12 @@ public abstract class WebserverAPI extends HttpServlet {
                 return null;
             }
         } else {
-            if (path.matches("^(/appid-[a-z0-9-]+)?/[a-z0-9-]+" + apiPath + "/?$")) {
-                if (path.startsWith("/appid-")) {
-                    String appId = path.split("/")[1].toLowerCase();
-                    if (appId.equals("appid-public")) {
-                        return null;
-                    }
-                    return appId.split("appid-")[1];
-                } else {
+            if (path.matches("^/appid-[a-z0-9-]+(/[a-z0-9-]+)?" + apiPath + "/?$")) {
+                String appId = path.split("/")[1].toLowerCase();
+                if (appId.equals("appid-public")) {
                     return null;
                 }
+                return appId.split("appid-")[1];
             } else {
                 return null;
             }
