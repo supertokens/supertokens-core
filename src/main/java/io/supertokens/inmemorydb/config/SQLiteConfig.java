@@ -93,4 +93,8 @@ public class SQLiteConfig {
     public String getDashboardEmailPasswordUsersTable(){
         return "dashboard_emailpassword_users";
     }
+
+    public String getDashboardSessionsTable(){
+        return "dashboard_user_sessions";
+    }
 }

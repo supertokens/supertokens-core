@@ -8,7 +8,6 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -36,17 +35,12 @@ public class DashboardUserAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
 
         try {
-            if (!Dashboard.isDashboardFeatureFlagEnabled()) {
-                // retrieve current dashboard users
-                DashboardUser[] users = Dashboard.getAllDashboardUsers(main);
-                // Prevent user creation if number of current dashboard users is above the free
-                // limit
-                if (users.length >= Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS) {
-                    JsonObject response = new JsonObject();
-                    response.addProperty("status", "USER_LIMIT_REACHED");
-                    super.sendJsonResponse(200, response, resp);
-                    return;
-                }
+
+            if (!Dashboard.isFeatureFlagEnabledOrUserCountIsUnderThreshold(main)) {
+                JsonObject response = new JsonObject();
+                response.addProperty("status", "USER_LIMIT_REACHED");
+                super.sendJsonResponse(200, response, resp);
+                return;
             }
 
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
@@ -67,7 +61,7 @@ public class DashboardUserAPI extends WebserverAPI {
 
             // normalize password
             password = normalizeStringParam(password, "password");
-            
+
             // check if input password is a strong password
             if (!Dashboard.isStrongPassword(password)) {
                 JsonObject response = new JsonObject();
@@ -159,11 +153,51 @@ public class DashboardUserAPI extends WebserverAPI {
         super.sendJsonResponse(200, response, resp);
     }
 
+    @Override
+    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+
+        String userId = InputParser.parseStringOrThrowError(input, "userId", true);
+        try {
+            if(userId != null){
+                // normalize userId
+                userId = normalizeStringParam(userId, "userId");
+                boolean didUserExist = Dashboard.deleteUserWithUserId(main, userId);
+                JsonObject response = new JsonObject();
+                response.addProperty("status", "OK");
+                response.addProperty("didUserExist", didUserExist);
+                super.sendJsonResponse(200, response, resp);
+                return;
+            }
+
+            String email = InputParser.parseStringOrThrowError(input, "email", true);
+
+            if(email != null){
+                // normalize email
+                email = normalizeStringParam(email, "email");
+                boolean didUserExist = Dashboard.deleteUserWithEmail(main, email);
+                JsonObject response = new JsonObject();
+                response.addProperty("status", "OK");
+                response.addProperty("didUserExist", didUserExist);
+                super.sendJsonResponse(200, response, resp);
+                return;
+            }
+            
+        } catch (StorageQueryException e) {
+            throw new ServletException(e);
+        }
+
+        JsonObject response = new JsonObject();
+        response.addProperty("status", "OK");
+        response.addProperty("didUserExist", false);
+        super.sendJsonResponse(200, response, resp);
+    }
+
     private static String normalizeStringParam(String param, String paramName) throws ServletException {
         param = param.trim();
-        if(param.length() == 0){
+        if (param.length() == 0) {
             throw new ServletException(
-                            new WebserverAPI.BadRequestException("Field name "+paramName+" cannot be an empty String"));
+                    new WebserverAPI.BadRequestException("Field name " + paramName + " cannot be an empty String"));
         }
         return param;
     }

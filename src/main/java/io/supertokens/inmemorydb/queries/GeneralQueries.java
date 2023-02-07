@@ -188,7 +188,12 @@ public class GeneralQueries {
 
         if (!doesTableExists(start, Config.getConfig(start).getDashboardEmailPasswordUsersTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
-            update(start, DashboardQueries.getQueryToCreateUserIdMappingTable(start), NO_OP_SETTER);
+            update(start, DashboardQueries.getQueryToCreateDashboardEmailPasswordTable(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getDashboardSessionsTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, DashboardQueries.getQueryToCreateDashboardUsersSessionTable(start), NO_OP_SETTER);
         }
 
     }

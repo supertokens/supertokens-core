@@ -10,6 +10,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import com.google.gson.JsonArray;
+
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -45,8 +47,8 @@ public class DashboardTest {
         }
 
         // check that no Dashboard users exist
-        DashboardUser[] dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
-        assertTrue(dashboardUsers.length == 0);
+        JsonArray dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
+        assertTrue(dashboardUsers.size() == 0);
 
         String email = "test@example.com";
 
@@ -55,8 +57,8 @@ public class DashboardTest {
 
         // check that Dashboard user was created 
         dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
-        assertTrue(dashboardUsers.length == 1);
-        assertEquals(dashboardUsers[0].email, email);
+        assertTrue(dashboardUsers.size() == 1);
+        assertEquals(dashboardUsers.get(0).getAsJsonObject().get("email").getAsString(), email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -74,8 +76,8 @@ public class DashboardTest {
         }
 
         // check that no Dashboard users exist
-        DashboardUser[] dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
-        assertTrue(dashboardUsers.length == 0);
+        JsonArray dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
+        assertTrue(dashboardUsers.size() == 0);
 
         String email = "test@example.com";
 
@@ -94,8 +96,8 @@ public class DashboardTest {
         
         // check that no duplicate Dashboard user was created 
         dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
-        assertTrue(dashboardUsers.length == 1);
-        assertEquals(dashboardUsers[0].email, email);
+        assertTrue(dashboardUsers.size() == 1);
+        assertEquals(dashboardUsers.get(0).getAsJsonObject().get("email").getAsString(), email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));

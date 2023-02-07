@@ -1,0 +1,49 @@
+package io.supertokens.webserver.api.dashboard;
+
+import java.io.IOException;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
+import io.supertokens.Main;
+import io.supertokens.dashboard.Dashboard;
+import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.dashboard.DashboardUser;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+public class GetDashboardUsersAPI extends WebserverAPI {
+
+    private static final long serialVersionUID = -3243982612116134273L;
+
+    public GetDashboardUsersAPI(Main main) {
+        super(main, RECIPE_ID.DASHBOARD.toString());
+    }
+
+    @Override
+    public String getPath() {
+        return "/recipe/dashboard/users";
+    }
+
+    @Override
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+
+        try {
+            
+            JsonArray arr = Dashboard.getAllDashboardUsers(main);
+            JsonObject response = new JsonObject();
+            
+            response.add("users", arr);
+            super.sendJsonResponse(200, response, resp);
+
+        } catch (StorageQueryException e) {
+            throw new ServletException(e);
+        }
+
+        super.sendJsonResponse(200, null, resp);
+    }
+}

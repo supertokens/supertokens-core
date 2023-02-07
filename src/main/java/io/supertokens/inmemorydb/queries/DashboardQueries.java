@@ -16,38 +16,43 @@ import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 
 public class DashboardQueries {
-    public static String getQueryToCreateUserIdMappingTable(Start start) {
+    public static String getQueryToCreateDashboardEmailPasswordTable(Start start) {
         String tableName = Config.getConfig(start).getDashboardEmailPasswordUsersTable();
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
-                + "id CHAR(36) NOT NULL,"
+                + "user_id CHAR(36) NOT NULL,"
                 + "email VARCHAR(256) NOT NULL UNIQUE,"
                 + "password_hash VARCHAR(256) NOT NULL,"
-                + "is_suspended TINYINT,"
                 + "time_joined BIGINT UNSIGNED NOT NULL,"
-                + "PRIMARY KEY(id));";
+                + "PRIMARY KEY(user_id));";
         // @formatter:on
     }
 
-    public static void createDashboardUser(Start start, String userId, String email, String passwordHash,
-            boolean isSuspended, long timeJoined) throws SQLException, StorageQueryException {
-        // convert boolean to int since sqlite does not support boolean type
-        int isSuspendedAsInt = isSuspended ? 1 : 0;
+    public static String getQueryToCreateDashboardUsersSessionTable(Start start) {
+        String tableName = Config.getConfig(start).getDashboardSessionsTable();
+        // @formatter:off
+        return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
+                + "user_id CHAR(36) NOT NULL,"
+                + "session_id VARCHAR(256) NOT NULL UNIQUE,"
+                + "time_joined BIGINT UNSIGNED NOT NULL,"
+                + "PRIMARY KEY(user_id, email));";
+        // @formatter:on
+    }    
 
+    public static void createDashboardUser(Start start, String userId, String email, String passwordHash, long timeJoined) throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getDashboardEmailPasswordUsersTable()
-                + "(id, email, password_hash, is_suspended, time_joined)" + " VALUES(?, ?, ?, ?, ?)";
+                + "(user_id, email, password_hash, time_joined)" + " VALUES(?, ?, ?, ?)";
         update(start, QUERY, pst -> {
             pst.setString(1, userId);
             pst.setString(2, email);
             pst.setString(3, passwordHash);
-            pst.setInt(4, isSuspendedAsInt);
-            pst.setLong(5, timeJoined);
+            pst.setLong(4, timeJoined);
         });
     }
 
     public static DashboardUser[] getAllDashBoardUsers(Start start) throws SQLException, StorageQueryException {
         String QUERY = "SELECT * FROM "
-                + Config.getConfig(start).getDashboardEmailPasswordUsersTable();
+                + Config.getConfig(start).getDashboardEmailPasswordUsersTable() + " ORDER BY time_joined";
         return execute(start, QUERY, null, new DashboardUserInfoResultExtractor());
     }
 
@@ -63,7 +68,7 @@ public class DashboardQueries {
 
     public static boolean deleteDashboardUserWithUserId(Start start, String userId)
             throws SQLException, StorageQueryException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardEmailPasswordUsersTable() + " WHERE id = ?";
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardEmailPasswordUsersTable() + " WHERE user_id = ?";
         // store the number of rows updated
         int rowUpdatedCount = update(start, QUERY, pst -> pst.setString(1, userId));
 
@@ -99,7 +104,7 @@ public class DashboardQueries {
     }
 
     public static void updateDashboardUsersEmailWithUserId_Transaction(Start start, Connection con, String userId, String newEmail) throws SQLException, StorageQueryException{
-        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET email = ? WHERE id = ?";
+        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET email = ? WHERE user_id = ?";
         update(con, QUERY, pst -> {
             pst.setString(1, newEmail);
             pst.setString(2, userId);
@@ -107,10 +112,20 @@ public class DashboardQueries {
     }
 
     public static void updateDashboardUsersPasswordWithUserId_Transaction(Start start, Connection con, String userId, String newPassword) throws SQLException, StorageQueryException{
-        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET password = ? WHERE id = ?";
+        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET password = ? WHERE user_id = ?";
         update(con, QUERY, pst -> {
             pst.setString(1, newPassword);
             pst.setString(2, userId);
+        });
+    }
+
+    public static void createDashboardSession(Start start, String userId, String sessionId, long timeJoined) throws SQLException, StorageQueryException {
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getDashboardSessionsTable()
+                + "(user_id, session_id,time_joined)" + " VALUES(?, ?, ?)";
+        update(start, QUERY, pst -> {
+            pst.setString(1, userId);
+            pst.setString(2, sessionId);
+            pst.setLong(3, timeJoined);
         });
     }
 
@@ -127,8 +142,8 @@ public class DashboardQueries {
         @Override
         public DashboardUser map(ResultSet rs) throws Exception {
 
-            return new DashboardUser(rs.getString("id"), rs.getString("email"), rs.getString("password_hash"),
-                    rs.getLong("time_joined"), rs.getInt("is_suspended") == 1 ? true : false);
+            return new DashboardUser(rs.getString("user_id"), rs.getString("email"), rs.getString("password_hash"),
+                    rs.getLong("time_joined"));
         }
     }
 

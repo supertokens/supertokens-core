@@ -1,5 +1,10 @@
 package io.supertokens.dashboard;
 
+import java.util.regex.Pattern;
+
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+
 import io.supertokens.Main;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
@@ -25,7 +30,7 @@ public class Dashboard {
             long timeJoined = System.currentTimeMillis();
 
             try {
-                DashboardUser user = new DashboardUser(userId, email, hashedPassword, timeJoined, false);
+                DashboardUser user = new DashboardUser(userId, email, hashedPassword, timeJoined);
                 StorageLayer.getDashboardStorage(main).createNewDashboardUser(user);
                 return;
             } catch (DuplicateUserIdException ignored) {
@@ -34,9 +39,29 @@ public class Dashboard {
         }
     }
 
-    public static DashboardUser[] getAllDashboardUsers(Main main) throws StorageQueryException {
+    public static JsonArray getAllDashboardUsers(Main main) throws StorageQueryException {
 
-        return StorageLayer.getDashboardStorage(main).getAllDashboardUsers();
+        DashboardUser[] dashboardUsers = StorageLayer.getDashboardStorage(main).getAllDashboardUsers();
+        JsonArray jsonArrayOfDashboardUsers = new JsonArray();
+        if (isDashboardFeatureFlagEnabled()) {
+            for (int i = 0; i < dashboardUsers.length; i++) {
+                JsonObject user = new JsonObject();
+                user.addProperty("email", dashboardUsers[i].email);
+                user.addProperty("userId", dashboardUsers[i].id);
+                user.addProperty("isSuspended", false);
+                jsonArrayOfDashboardUsers.add(user);
+            }
+        } else {
+            for (int i = 0; i < dashboardUsers.length; i++) {
+                JsonObject user = new JsonObject();
+                user.addProperty("email", dashboardUsers[i].email);
+                user.addProperty("userId", dashboardUsers[i].id);
+                user.addProperty("isSuspended", !((i + 1) <= Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS));
+                jsonArrayOfDashboardUsers.add(user);
+            }
+        }
+
+        return jsonArrayOfDashboardUsers;
     }
 
     public static String signInDashboardUser(Main main, String email, String password) throws StorageQueryException {
@@ -44,11 +69,19 @@ public class Dashboard {
         if (user != null) {
             String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
             if (user.passwordHash.equals(hashedPassword)) {
-                // TODO: generate JWT
-                return "JWT";
+                // create a new session for the user
+                return createSessionForDashboardUser(user);
             }
         }
         return null;
+    }
+
+    public static boolean deleteUserWithEmail(Main main, String email) throws StorageQueryException {
+        return StorageLayer.getDashboardStorage(main).deleteDashboardUserWithEmail(email);
+    }
+
+    public static boolean deleteUserWithUserId(Main main, String userId) throws StorageQueryException {
+        return StorageLayer.getDashboardStorage(main).deleteDashboardUserWithUserId(userId);
     }
 
     public static void updateUsersCredentialsWithEmail(Main main, String email, @Nullable String newEmail,
@@ -86,7 +119,7 @@ public class Dashboard {
             storage.startTransaction(transaction -> {
                 if (newEmail != null) {
                     try {
-                        storage.updateDashboardUsersEmailWithUserId_Transaction(transaction, userId, newEmail);;
+                        storage.updateDashboardUsersEmailWithUserId_Transaction(transaction, userId, newEmail);
                     } catch (DuplicateEmailException e) {
                         throw new StorageTransactionLogicException(e);
                     }
@@ -107,19 +140,44 @@ public class Dashboard {
         }
     }
 
-    public static boolean isDashboardFeatureFlagEnabled() {
-        // TODO: check that dashboard is enabled in the feature flag
+    public static boolean isFeatureFlagEnabledOrUserCountIsUnderThreshold(Main main) throws StorageQueryException {
+
+        if (!isDashboardFeatureFlagEnabled()) {
+            // retrieve current dashboard users
+            DashboardUser[] users = StorageLayer.getDashboardStorage(main).getAllDashboardUsers();
+            // check if current dashboard users count is under the threshold
+            return users.length >= MAX_NUMBER_OF_FREE_DASHBOARD_USERS;
+        }
+        return true;
+    }
+
+    private static boolean isDashboardFeatureFlagEnabled() {
+        // TODO: check if the feature is enabled
         return false;
+    }
+
+    public static String createSessionForDashboardUser(DashboardUser user) {
+        // TODO:
+        return "";
     }
 
     public static boolean isValidEmail(String email) {
-        // TODO: check that input email is in valid format
-
-        return false;
+        // Regex pattern checks
+        String regexPatternForEmail = "^(.+)@(.+)$";
+        return patternMatcher(email, regexPatternForEmail);
     }
 
     public static boolean isStrongPassword(String password) {
-        // TODO: check that input password is strong
+        String regexPatternForPassowrd = "(?=.*[A-Z])(?=.*[!@#$&*])(?=.*[0-9])(?=.*[a-z]).{8,}";
+        return patternMatcher(password, regexPatternForPassowrd);
+    }
+
+    public static boolean isValidDashboardUserSession(String sessionId) {
+        // TODO: check that the input sessionId is valid
         return false;
+    }
+
+    private static boolean patternMatcher(String input, String pattern) {
+        return Pattern.compile(pattern).matcher(input).matches();
     }
 }
