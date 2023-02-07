@@ -19,7 +19,6 @@ package io.supertokens.inmemorydb.config;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.inmemorydb.Start;
-import io.supertokens.pluginInterface.exceptions.QuitProgramFromPluginException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 public class Config extends ResourceDistributor.SingletonResource {
@@ -46,7 +45,7 @@ public class Config extends ResourceDistributor.SingletonResource {
 
     public static SQLiteConfig getConfig(Start start) {
         if (getInstance(start) == null) {
-            throw new QuitProgramFromPluginException("Please call loadConfig() before calling getConfig()");
+            throw new IllegalStateException("Please call loadConfig() before calling getConfig()");
         }
         return getInstance(start).config;
     }
