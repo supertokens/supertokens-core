@@ -1,5 +1,7 @@
 package io.supertokens.dashboard;
 
+import java.util.Arrays;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 import com.google.gson.JsonArray;
@@ -7,6 +9,8 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.emailpassword.PasswordHashing;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateUserIdException;
@@ -43,11 +47,11 @@ public class Dashboard {
 
         DashboardUser[] dashboardUsers = StorageLayer.getDashboardStorage(main).getAllDashboardUsers();
         JsonArray jsonArrayOfDashboardUsers = new JsonArray();
-        if (isDashboardFeatureFlagEnabled()) {
+        if (isDashboardFeatureFlagEnabled(main)) {
             for (int i = 0; i < dashboardUsers.length; i++) {
                 JsonObject user = new JsonObject();
                 user.addProperty("email", dashboardUsers[i].email);
-                user.addProperty("userId", dashboardUsers[i].id);
+                user.addProperty("userId", dashboardUsers[i].userId);
                 user.addProperty("isSuspended", false);
                 jsonArrayOfDashboardUsers.add(user);
             }
@@ -55,7 +59,7 @@ public class Dashboard {
             for (int i = 0; i < dashboardUsers.length; i++) {
                 JsonObject user = new JsonObject();
                 user.addProperty("email", dashboardUsers[i].email);
-                user.addProperty("userId", dashboardUsers[i].id);
+                user.addProperty("userId", dashboardUsers[i].userId);
                 user.addProperty("isSuspended", !((i + 1) <= Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS));
                 jsonArrayOfDashboardUsers.add(user);
             }
@@ -70,7 +74,7 @@ public class Dashboard {
             String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
             if (user.passwordHash.equals(hashedPassword)) {
                 // create a new session for the user
-                return createSessionForDashboardUser(user);
+                return createSessionForDashboardUser(main, user);
             }
         }
         return null;
@@ -142,7 +146,7 @@ public class Dashboard {
 
     public static boolean isFeatureFlagEnabledOrUserCountIsUnderThreshold(Main main) throws StorageQueryException {
 
-        if (!isDashboardFeatureFlagEnabled()) {
+        if (!isDashboardFeatureFlagEnabled(main)) {
             // retrieve current dashboard users
             DashboardUser[] users = StorageLayer.getDashboardStorage(main).getAllDashboardUsers();
             // check if current dashboard users count is under the threshold
@@ -151,18 +155,19 @@ public class Dashboard {
         return true;
     }
 
-    private static boolean isDashboardFeatureFlagEnabled() {
-        // TODO: check if the feature is enabled
-        return false;
+    private static boolean isDashboardFeatureFlagEnabled(Main main) throws StorageQueryException {
+        return Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
+                .anyMatch(t -> t == EE_FEATURES.DASHBOARD_LOGIN);
     }
 
-    public static String createSessionForDashboardUser(DashboardUser user) {
-        // TODO:
-        return "";
+    private static String createSessionForDashboardUser(Main main, DashboardUser user) throws StorageQueryException {
+        String sessionId = UUID.randomUUID().toString();
+        long timeCreated = System.currentTimeMillis();
+        StorageLayer.getDashboardStorage(main).createNewDashboardUserSession(user.userId, sessionId, timeCreated);
+        return sessionId;
     }
 
     public static boolean isValidEmail(String email) {
-        // Regex pattern checks
         String regexPatternForEmail = "^(.+)@(.+)$";
         return patternMatcher(email, regexPatternForEmail);
     }
@@ -172,9 +177,8 @@ public class Dashboard {
         return patternMatcher(password, regexPatternForPassowrd);
     }
 
-    public static boolean isValidDashboardUserSession(String sessionId) {
-        // TODO: check that the input sessionId is valid
-        return false;
+    public static boolean isValidDashboardUserSession(Main main, String sessionId) throws StorageQueryException {
+        return StorageLayer.getDashboardStorage(main).getSessionInfoWithSessionId(sessionId) != null;
     }
 
     private static boolean patternMatcher(String input, String pattern) {

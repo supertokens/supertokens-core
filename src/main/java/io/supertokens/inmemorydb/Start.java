@@ -30,6 +30,7 @@ import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardStorage;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
@@ -1631,7 +1632,8 @@ public class Start
             throws StorageQueryException, io.supertokens.pluginInterface.dashboard.exceptions.DuplicateUserIdException,
             io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException {
         try {
-            DashboardQueries.createDashboardUser(this, userInfo.id, userInfo.email, userInfo.passwordHash, userInfo.timeJoined);
+            DashboardQueries.createDashboardUser(this, userInfo.userId, userInfo.email, userInfo.passwordHash,
+                    userInfo.timeJoined);
         } catch (SQLException e) {
             if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
@@ -1732,20 +1734,42 @@ public class Start
     }
 
     @Override
-    public String[] getAllSessionsForUserId(String userId) throws StorageQueryException {
-        // TODO Auto-generated method stub
-        return null;
+    public DashboardSessionInfo[] getAllSessionsForUserId(String userId) throws StorageQueryException {
+        try {
+            return DashboardQueries.getAllSessionsForUserId(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
     public void revokeSessionsWithUserId(String userId) throws StorageQueryException {
         // TODO Auto-generated method stub
-        
+
     }
 
     @Override
     public void revokeSessionWithSessionId(String sessionId) throws StorageQueryException {
         // TODO Auto-generated method stub
-        
+
+    }
+
+    @Override
+    public void createNewDashboardUserSession(String userId, String sessionId, long timeJoined)
+            throws StorageQueryException {
+        try {
+            DashboardQueries.createDashboardSession(this, userId, sessionId, timeJoined);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public DashboardSessionInfo getSessionInfoWithSessionId(String sessionId) throws StorageQueryException {
+        try {
+            return DashboardQueries.getSessionInfoWithSessionId(this, sessionId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }

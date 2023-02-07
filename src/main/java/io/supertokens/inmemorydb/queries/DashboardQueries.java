@@ -10,6 +10,7 @@ import io.supertokens.inmemorydb.ResultSetValueExtractor;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
+import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
@@ -129,6 +130,25 @@ public class DashboardQueries {
         });
     }
 
+    public static DashboardSessionInfo getSessionInfoWithSessionId(Start start, String sessionId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM "
+                + Config.getConfig(start).getDashboardSessionsTable() + " WHERE session_id = ?";
+        return execute(start, QUERY, pst -> pst.setString(1, sessionId), result -> {
+            if (result.next()) {
+                return DashboardSessionInfoMapper.getInstance().mapOrThrow(result);
+            }
+            return null;
+        });
+    }
+
+    public static DashboardSessionInfo[] getAllSessionsForUserId(Start start, String userId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM "
+                + Config.getConfig(start).getDashboardSessionsTable() + " WHERE user_id = ?";
+        return execute(start, QUERY, pst -> pst.setString(1, userId), new DashboardSessionInfoResultExtractor());
+    }
+
     private static class DashboardInfoMapper implements RowMapper<DashboardUser, ResultSet> {
         private static final DashboardInfoMapper INSTANCE = new DashboardInfoMapper();
 
@@ -155,6 +175,34 @@ public class DashboardQueries {
                 temp.add(DashboardInfoMapper.getInstance().mapOrThrow(result));
             }
             return temp.toArray(DashboardUser[]::new);
+        }
+    }
+
+    private static class DashboardSessionInfoMapper implements RowMapper<DashboardSessionInfo, ResultSet> {
+        private static final DashboardSessionInfoMapper INSTANCE = new DashboardSessionInfoMapper();
+
+        private DashboardSessionInfoMapper() {
+        }
+
+        private static DashboardSessionInfoMapper getInstance() {
+            return INSTANCE;
+        }
+
+        @Override
+        public DashboardSessionInfo map(ResultSet rs) throws Exception {
+
+            return new DashboardSessionInfo(rs.getString("user_id"), rs.getString("session_id"), rs.getLong("time_created"));
+        }
+    }
+
+    private static class DashboardSessionInfoResultExtractor implements ResultSetValueExtractor<DashboardSessionInfo[]> {
+        @Override
+        public DashboardSessionInfo[] extract(ResultSet result) throws SQLException, StorageQueryException {
+            List<DashboardSessionInfo> temp = new ArrayList<>();
+            while (result.next()) {
+                temp.add(DashboardSessionInfoMapper.getInstance().mapOrThrow(result));
+            }
+            return temp.toArray(DashboardSessionInfo[]::new);
         }
     }
 }
