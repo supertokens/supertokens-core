@@ -173,4 +173,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
     }
 
+    // TODO: add functions to associate users and roles to a tenant (as long as they are in the same tenantId)
+    // TODO: add functions to check if a user is part of a tenant before running their logic for all recipes. For
+    //  example, if an email password user is added for t1, only if that teannt is used should the user id be
+    //  returned, else unknown user ID error.
+
 }
