@@ -31,6 +31,8 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.UnknownTenantException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.storageLayer.StorageLayer;
@@ -134,6 +136,40 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             list.add(t.tenantIdentifier);
         }
         Cronjobs.getInstance(main).setTenantsInfo(list);
+    }
+
+    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig tenant) {
+        try {
+            StorageLayer.getMultitenancyStorage(main).createTenant(tenant);
+            Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
+            return true;
+        } catch (DuplicateTenantException e) {
+            try {
+                StorageLayer.getMultitenancyStorage(main).overwriteTenantConfig(tenant);
+                Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
+                return false;
+            } catch (UnknownTenantException ex) {
+                return addNewOrUpdateAppOrTenant(main, tenant);
+            }
+        }
+    }
+
+    public static void deleteTenant(Main main, TenantIdentifier tenantIdentifier)
+            throws UnknownTenantException {
+        StorageLayer.getMultitenancyStorage(main).deleteTenant(tenantIdentifier);
+        Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
+    }
+
+    public static void deleteApp(Main main, TenantIdentifier tenantIdentifier)
+            throws UnknownTenantException {
+        StorageLayer.getMultitenancyStorage(main).deleteApp(tenantIdentifier);
+        Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
+    }
+
+    public static void deleteConnectionUriDomain(Main main, TenantIdentifier tenantIdentifier)
+            throws UnknownTenantException {
+        StorageLayer.getMultitenancyStorage(main).deleteConnectionUriDomainMapping(tenantIdentifier);
+        Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
     }
 
 }
