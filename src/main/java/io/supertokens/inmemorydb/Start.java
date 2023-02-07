@@ -48,6 +48,11 @@ import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
+import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.UnknownTenantException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.exception.*;
@@ -88,7 +93,8 @@ import java.util.Set;
 
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
-        JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage {
+        JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
+        MultitenancyStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -1655,5 +1661,48 @@ public class Start
     @Override
     public void modifyConfigToAddANewUserPoolForTesting(JsonObject config, int poolNumber) {
         // do nothing cause we have only one in mem db.
+    }
+
+    @Override
+    public void createTenant(TenantConfig config) throws DuplicateTenantException {
+        // TODO:
+    }
+
+    @Override
+    public void overwriteTenantConfig(TenantConfig config) throws UnknownTenantException {
+        // TODO:
+    }
+
+    @Override
+    public void deleteTenant(TenantIdentifier tenantIdentifier) throws UnknownTenantException {
+        // TODO:
+    }
+
+    @Override
+    public void deleteApp(TenantIdentifier tenantIdentifier) throws UnknownTenantException {
+        // TODO:
+    }
+
+    @Override
+    public void deleteConnectionUriDomainMapping(TenantIdentifier tenantIdentifier) throws UnknownTenantException {
+        // TODO:
+    }
+
+    @Override
+    public TenantConfig getTenantConfigForTenantIdentifier(TenantIdentifier tenantIdentifier) {
+        // TODO:
+        return null;
+    }
+
+    @Override
+    public TenantConfig[] getAllTenants() {
+        // TODO:
+        return new TenantConfig[0];
+    }
+
+    @Override
+    public TenantConfig[] getAllTenantsWithThirdPartyId(String thirdPartyId) {
+        // TODO:
+        return new TenantConfig[0];
     }
 }

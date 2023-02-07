@@ -45,6 +45,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     public static final String RESOURCE_KEY = "io.supertokens.multitenancy.Multitenancy";
     private Main main;
     private TenantConfig[] tenantConfigs;
+    private final Object lock = new Object();
 
     private Multitenancy(Main main) {
         this.main = main;
@@ -68,33 +69,33 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     public void refreshTenantsInCoreIfRequired() {
         try {
             TenantConfig[] tenantsFromDb = StorageLayer.getMultitenancyStorage(main).getAllTenants();
-            boolean hasChanged = false;
-            if (tenantsFromDb.length != tenantConfigs.length) {
-                hasChanged = true;
-            } else {
-                Set<TenantIdentifier> fromDb = new HashSet<>();
-                for (TenantConfig t : tenantsFromDb) {
-                    fromDb.add(t.tenantIdentifier);
-                }
-                for (TenantConfig t : this.tenantConfigs) {
-                    if (!fromDb.contains(t.tenantIdentifier)) {
-                        hasChanged = true;
-                        break;
+            synchronized (lock) {
+                boolean hasChanged = false;
+                if (tenantsFromDb.length != tenantConfigs.length) {
+                    hasChanged = true;
+                } else {
+                    Set<TenantIdentifier> fromDb = new HashSet<>();
+                    for (TenantConfig t : tenantsFromDb) {
+                        fromDb.add(t.tenantIdentifier);
+                    }
+                    for (TenantConfig t : this.tenantConfigs) {
+                        if (!fromDb.contains(t.tenantIdentifier)) {
+                            hasChanged = true;
+                            break;
+                        }
                     }
                 }
+
+                this.tenantConfigs = tenantsFromDb;
+                if (!hasChanged) {
+                    return;
+                }
+
+                loadConfig();
+                loadStorageLayer();
+                loadSigningKeys();
+                refreshCronjobs();
             }
-
-            // TODO: do we need locking?
-
-            this.tenantConfigs = tenantsFromDb;
-            if (!hasChanged) {
-                return;
-            }
-
-            loadConfig();
-            loadStorageLayer();
-            loadSigningKeys();
-            refreshCronjobs();
         } catch (Exception e) {
             Logging.error(main, e.getMessage(), false, e);
         }
