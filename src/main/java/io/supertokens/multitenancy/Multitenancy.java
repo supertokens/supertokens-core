@@ -26,6 +26,8 @@ import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -33,6 +35,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.UnknownTenantException;
+import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.storageLayer.StorageLayer;
@@ -173,16 +176,41 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
     }
 
-    public static void associateUserIdWithTenantId(Main main, TenantIdentifier sourceTenantIdentifier, String userId,
-                                                   String newTenantId) {
-        // TODO: We should also have a tenantId list in each of the dbs which is a foreign constraint so that we can
-        // detect if a tenant association is happening cross user pools - which we do not allow.
+    public static void addUserIdToTenant(Main main, TenantIdentifier sourceTenantIdentifier, String userId,
+                                         String newTenantId)
+            throws UnknownTenantException, UnknownUserIdException, TenantOrAppNotFoundException {
+        TenantIdentifier targetTenantIdentifier = new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(),
+                sourceTenantIdentifier.getAppId(), newTenantId);
+
+        Storage targetTenantStorage = StorageLayer.getStorage(targetTenantIdentifier, main);
+        Storage sourceTenantStorage = StorageLayer.getStorage(sourceTenantIdentifier, main);
+        if (!targetTenantStorage.getUserPoolId().equals(sourceTenantStorage.getUserPoolId())) {
+            // TODO: ??
+        }
+
+        if (sourceTenantIdentifier.equals(targetTenantIdentifier)) {
+            // TODO: ??
+        }
+        StorageLayer.getMultitenancyStorage(main).addUserIdToTenant(targetTenantIdentifier, userId);
     }
 
-    public static void associateRoleWithTenantId(Main main, TenantIdentifier sourceTenantIdentifier, String userId,
-                                                 String role) {
-        // TODO: We should also have a tenantId list in each of the dbs which is a foreign constraint so that we can
-        // detect if a tenant association is happening cross user pools - which we do not allow.
+    public static void addRoleToTenant(Main main, TenantIdentifier sourceTenantIdentifier, String role,
+                                       String newTenantId)
+            throws UnknownTenantException, UnknownRoleException, TenantOrAppNotFoundException {
+
+        TenantIdentifier targetTenantIdentifier = new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(),
+                sourceTenantIdentifier.getAppId(), newTenantId);
+
+        Storage targetTenantStorage = StorageLayer.getStorage(targetTenantIdentifier, main);
+        Storage sourceTenantStorage = StorageLayer.getStorage(sourceTenantIdentifier, main);
+        if (!targetTenantStorage.getUserPoolId().equals(sourceTenantStorage.getUserPoolId())) {
+            // TODO: ??
+        }
+
+        if (sourceTenantIdentifier.equals(targetTenantIdentifier)) {
+            // TODO: ??
+        }
+        StorageLayer.getMultitenancyStorage(main).addRoleToTenant(targetTenantIdentifier, role);
     }
 
     public static TenantConfig getTenantInfo(Main main, TenantIdentifier tenantIdentifier) {
@@ -194,6 +222,10 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
         return null;
     }
-    
+
+    public static TenantConfig[] getAllTenants(Main main) {
+        return StorageLayer.getMultitenancyStorage(main).getAllTenants();
+    }
+
 
 }

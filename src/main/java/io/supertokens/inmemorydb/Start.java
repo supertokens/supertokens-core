@@ -1693,4 +1693,16 @@ public class Start
         // TODO:
         return new TenantConfig[0];
     }
+
+    @Override
+    public void addUserIdToTenant(TenantIdentifier tenantIdentifier, String userId)
+            throws UnknownTenantException, UnknownUserIdException {
+        // TODO:
+    }
+
+    @Override
+    public void addRoleToTenant(TenantIdentifier tenantIdentifier, String role)
+            throws UnknownTenantException, UnknownRoleException {
+        // TODO:
+    }
 }
