@@ -11,6 +11,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
 
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
@@ -18,6 +19,8 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 
 public class CreateDashboardUserAPITests {
     @Rule
@@ -44,12 +47,216 @@ public class CreateDashboardUserAPITests {
             return;
         }
 
-        String email = "test@example.com";
-        String password = "testPass123";
+        {
+            // calling API with neither email or password
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/dashboard/user", new JsonObject(), 1000, 1000, null,
+                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                throw new Exception("Should never come here");
 
-        // TODO: conduct bad input tests
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'email' is invalid in JSON input"));
+            }
+        }
+
+        {
+            // calling API with only email
+            JsonObject request = new JsonObject();
+            request.addProperty("email", "test@example.com");
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/dashboard/user", request, 1000, 1000, null,
+                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                throw new Exception("Should never come here");
+
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'password' is invalid in JSON input"));
+            }
+        }
+
+        {
+            // calling API with only password
+            JsonObject request = new JsonObject();
+            request.addProperty("password", "testPass123");
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/dashboard/user", request, 1000, 1000, null,
+                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                throw new Exception("Should never come here");
+
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'email' is invalid in JSON input"));
+            }
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testSuccessfullyCreatingDashboardUser() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String email = "test@example.com";
+        String password = "testPass@123";
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email", email);
+        requestBody.addProperty("password", password);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/dashboard/user", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_18ForTests(), "dashboard");
+        assertEquals(1, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+
+        // check that user exists
+        JsonArray allDashboardUsers = Dashboard.getAllDashboardUsers(process.getProcess());
+        assertEquals(1, allDashboardUsers.size());
+        assertEquals(email, allDashboardUsers.get(0).getAsJsonObject().get("email").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCreatingTheSameUserTwice() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create the user
+
+        String email = "test@example.com";
+        String password = "testPass@123";
+
+        Dashboard.signUpDashboardUser(process.getProcess(), email, password);
+
+        // check that user was successfully created
+        {
+            // check that user exists
+            JsonArray allDashboardUsers = Dashboard.getAllDashboardUsers(process.getProcess());
+            assertEquals(1, allDashboardUsers.size());
+            assertEquals(email, allDashboardUsers.get(0).getAsJsonObject().get("email").getAsString());
+        }
+
+        // try creating the user again
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email", email);
+        requestBody.addProperty("password", password);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/dashboard/user", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_18ForTests(), "dashboard");
+        assertEquals(1, response.entrySet().size());
+        assertEquals("EMAIL_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
+
+        // check that a duplicate user was not created
+        JsonArray allDashboardUsers = Dashboard.getAllDashboardUsers(process.getProcess());
+        assertEquals(1, allDashboardUsers.size());
+        assertEquals(email, allDashboardUsers.get(0).getAsJsonObject().get("email").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCreatingAUserWithAnInvalidEmail() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create the user with an invalid email
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email", "invalidEmail");
+        requestBody.addProperty("password", "testPass123");
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/dashboard/user", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_18ForTests(), "dashboard");
+        assertEquals(1, response.entrySet().size());
+        assertEquals("INVALID_EMAIL_ERROR", response.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCreatingAUserWithAWeakPassword() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create the user with a weak password
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email", "test@example.com");
+        requestBody.addProperty("password", "invalidpassword");
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/dashboard/user", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_18ForTests(), "dashboard");
+        assertEquals(1, response.entrySet().size());
+        assertEquals("PASSWORD_WEAK_ERROR", response.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCreatingAUserWhenThere() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create the user with a weak password
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email", "test@example.com");
+        requestBody.addProperty("password", "invalidpassword");
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/dashboard/user", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_18ForTests(), "dashboard");
+        assertEquals(1, response.entrySet().size());
+        assertEquals("PASSWORD_WEAK_ERROR", response.get("status").getAsString());
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+    
+
 }

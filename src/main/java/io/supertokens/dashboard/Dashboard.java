@@ -150,7 +150,7 @@ public class Dashboard {
             // retrieve current dashboard users
             DashboardUser[] users = StorageLayer.getDashboardStorage(main).getAllDashboardUsers();
             // check if current dashboard users count is under the threshold
-            return users.length >= MAX_NUMBER_OF_FREE_DASHBOARD_USERS;
+            return users.length <= MAX_NUMBER_OF_FREE_DASHBOARD_USERS;
         }
         return true;
     }
@@ -168,13 +168,16 @@ public class Dashboard {
     }
 
     public static boolean isValidEmail(String email) {
-        String regexPatternForEmail = "^(.+)@(.+)$";
+        // We use the same regex as the backend SDK
+        // https://github.com/supertokens/supertokens-node/blob/master/lib/ts/recipe/emailpassword/utils.ts#L250
+        String regexPatternForEmail = "((^<>()[].,;:@]+(.^<>()[].,;:@]+)*)|(.+))@(([[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}])|(([a-zA-Z-0-9]+.)+[a-zA-Z]{2,}))$";
         return patternMatcher(email, regexPatternForEmail);
     }
 
     public static boolean isStrongPassword(String password) {
-        String regexPatternForPassowrd = "(?=.*[A-Z])(?=.*[!@#$&*])(?=.*[0-9])(?=.*[a-z]).{8,}";
-        return patternMatcher(password, regexPatternForPassowrd);
+
+        String regexPatternForPassword = "(?=.*[A-Za-z])(?=.*[0-9]).{8,100}";
+        return patternMatcher(password, regexPatternForPassword);
     }
 
     public static boolean isValidDashboardUserSession(Main main, String sessionId) throws StorageQueryException {

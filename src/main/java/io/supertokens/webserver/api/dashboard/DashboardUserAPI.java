@@ -38,8 +38,10 @@ public class DashboardUserAPI extends WebserverAPI {
 
             if (!Dashboard.isFeatureFlagEnabledOrUserCountIsUnderThreshold(main)) {
                 JsonObject response = new JsonObject();
+                // TODO: The status needs to updated/ a message needs to be added to the
+                // response body stating why a new user cannot be created
                 response.addProperty("status", "USER_LIMIT_REACHED");
-                super.sendJsonResponse(200, response, resp);
+                super.sendJsonResponse(402, response, resp);
                 return;
             }
 
@@ -159,7 +161,7 @@ public class DashboardUserAPI extends WebserverAPI {
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", true);
         try {
-            if(userId != null){
+            if (userId != null) {
                 // normalize userId
                 userId = normalizeStringParam(userId, "userId");
                 boolean didUserExist = Dashboard.deleteUserWithUserId(main, userId);
@@ -172,7 +174,7 @@ public class DashboardUserAPI extends WebserverAPI {
 
             String email = InputParser.parseStringOrThrowError(input, "email", true);
 
-            if(email != null){
+            if (email != null) {
                 // normalize email
                 email = normalizeStringParam(email, "email");
                 boolean didUserExist = Dashboard.deleteUserWithEmail(main, email);
@@ -182,7 +184,7 @@ public class DashboardUserAPI extends WebserverAPI {
                 super.sendJsonResponse(200, response, resp);
                 return;
             }
-            
+
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }

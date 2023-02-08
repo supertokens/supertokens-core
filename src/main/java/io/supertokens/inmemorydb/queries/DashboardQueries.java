@@ -36,7 +36,7 @@ public class DashboardQueries {
                 + "user_id CHAR(36) NOT NULL,"
                 + "session_id VARCHAR(256) NOT NULL UNIQUE,"
                 + "time_joined BIGINT UNSIGNED NOT NULL,"
-                + "PRIMARY KEY(user_id, email));";
+                + "PRIMARY KEY(user_id, session_id));";
         // @formatter:on
     }    
 
