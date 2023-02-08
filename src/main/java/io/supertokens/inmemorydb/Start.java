@@ -1689,19 +1689,7 @@ public class Start
     }
 
     @Override
-    public TenantConfig getTenantConfigForTenantIdentifier(TenantIdentifier tenantIdentifier) {
-        // TODO:
-        return null;
-    }
-
-    @Override
     public TenantConfig[] getAllTenants() {
-        // TODO:
-        return new TenantConfig[0];
-    }
-
-    @Override
-    public TenantConfig[] getAllTenantsWithThirdPartyId(String thirdPartyId) {
         // TODO:
         return new TenantConfig[0];
     }

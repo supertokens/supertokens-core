@@ -173,9 +173,27 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
     }
 
-    // TODO: add functions to associate users and roles to a tenant (as long as they are in the same db)
-    // TODO: add functions to check if a user is part of a tenant before running their logic for all recipes. For
-    //  example, if an email password user is added for t1, only if that teannt is used should the user id be
-    //  returned, else unknown user ID error.
+    public static void associateUserIdWithTenantId(Main main, TenantIdentifier sourceTenantIdentifier, String userId,
+                                                   String newTenantId) {
+        // TODO: We should also have a tenantId list in each of the dbs which is a foreign constraint so that we can
+        // detect if a tenant association is happening cross user pools - which we do not allow.
+    }
+
+    public static void associateRoleWithTenantId(Main main, TenantIdentifier sourceTenantIdentifier, String userId,
+                                                 String role) {
+        // TODO: We should also have a tenantId list in each of the dbs which is a foreign constraint so that we can
+        // detect if a tenant association is happening cross user pools - which we do not allow.
+    }
+
+    public static TenantConfig getTenantInfo(Main main, TenantIdentifier tenantIdentifier) {
+        Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
+        for (TenantConfig t : Multitenancy.getInstance(main).tenantConfigs) {
+            if (t.tenantIdentifier.equals(tenantIdentifier)) {
+                return t;
+            }
+        }
+        return null;
+    }
+    
 
 }
