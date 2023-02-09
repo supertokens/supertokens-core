@@ -18,7 +18,7 @@ package io.supertokens.cronjobs;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
-import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 import java.util.ArrayList;

@@ -20,7 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import org.jetbrains.annotations.TestOnly;

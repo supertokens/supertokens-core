@@ -17,7 +17,7 @@
 package io.supertokens.inmemorydb.config;
 
 import io.supertokens.ResourceDistributor;
-import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 

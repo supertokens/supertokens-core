@@ -18,7 +18,7 @@ package io.supertokens.passwordless;
 
 import io.supertokens.Main;
 import io.supertokens.config.Config;
-import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;

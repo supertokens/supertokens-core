@@ -21,7 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
-import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import org.apache.tomcat.util.codec.binary.Base64;
 

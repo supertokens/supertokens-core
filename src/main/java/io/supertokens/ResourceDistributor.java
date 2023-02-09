@@ -16,9 +16,9 @@
 
 package io.supertokens;
 
-import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;

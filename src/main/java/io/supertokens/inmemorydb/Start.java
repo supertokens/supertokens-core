@@ -52,7 +52,7 @@ import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
-import io.supertokens.pluginInterface.multitenancy.exceptions.UnknownTenantException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
 import io.supertokens.pluginInterface.passwordless.exception.*;
@@ -1674,27 +1674,28 @@ public class Start
     }
 
     @Override
-    public void deleteTenantIdInUserPool(TenantIdentifier tenantIdentifier) throws UnknownTenantException {
+    public void deleteTenantIdInUserPool(TenantIdentifier tenantIdentifier) throws TenantOrAppNotFoundException {
         // TODO:
     }
 
     @Override
-    public void overwriteTenantConfig(TenantConfig config) throws UnknownTenantException {
+    public void overwriteTenantConfig(TenantConfig config) throws TenantOrAppNotFoundException {
         // TODO:
     }
 
     @Override
-    public void deleteTenant(TenantIdentifier tenantIdentifier) throws UnknownTenantException {
+    public void deleteTenant(TenantIdentifier tenantIdentifier) throws TenantOrAppNotFoundException {
         // TODO:
     }
 
     @Override
-    public void deleteApp(TenantIdentifier tenantIdentifier) throws UnknownTenantException {
+    public void deleteApp(TenantIdentifier tenantIdentifier) throws TenantOrAppNotFoundException {
         // TODO:
     }
 
     @Override
-    public void deleteConnectionUriDomainMapping(TenantIdentifier tenantIdentifier) throws UnknownTenantException {
+    public void deleteConnectionUriDomainMapping(TenantIdentifier tenantIdentifier) throws
+            TenantOrAppNotFoundException {
         // TODO:
     }
 
@@ -1706,23 +1707,23 @@ public class Start
 
     @Override
     public void addUserIdToTenant(TenantIdentifier tenantIdentifier, String userId)
-            throws UnknownTenantException, UnknownUserIdException {
+            throws TenantOrAppNotFoundException, UnknownUserIdException {
         // TODO:
     }
 
     @Override
     public void addRoleToTenant(TenantIdentifier tenantIdentifier, String role)
-            throws UnknownTenantException, UnknownRoleException {
+            throws TenantOrAppNotFoundException, UnknownRoleException {
         // TODO:
     }
 
     @Override
-    public void markAppIdAsDeleted(String appId) throws UnknownTenantException {
+    public void markAppIdAsDeleted(String appId) throws TenantOrAppNotFoundException {
         // TODO:
     }
 
     @Override
-    public void markConnectionUriDomainAsDeleted(String connectionUriDomain) throws UnknownTenantException {
+    public void markConnectionUriDomainAsDeleted(String connectionUriDomain) throws TenantOrAppNotFoundException {
         // TODO:
     }
 }

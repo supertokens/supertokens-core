@@ -16,8 +16,8 @@
 
 package io.supertokens;
 
-import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 
 import java.util.ArrayList;
 import java.util.List;

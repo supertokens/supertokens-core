@@ -19,7 +19,7 @@ package io.supertokens.session.refreshToken;
 import com.google.gson.Gson;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
-import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;

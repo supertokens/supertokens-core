@@ -20,7 +20,6 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.Cronjobs;
-import io.supertokens.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.jwt.JWTSigningKey;
@@ -37,7 +36,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
-import io.supertokens.pluginInterface.multitenancy.exceptions.UnknownTenantException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
@@ -210,7 +209,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     StorageLayer.getMultitenancyStorageWithTargetStorage(tenant.tenantIdentifier, main)
                             .addTenantIdInUserPool(tenant.tenantIdentifier);
                     return false;
-                } catch (UnknownTenantException | TenantOrAppNotFoundException ex) {
+                } catch (TenantOrAppNotFoundException ex) {
                     // this can happen cause of a race condition if the tenant was deleted in the middle
                     // of it being recreated.
                     return addNewOrUpdateAppOrTenant(main, tenant);
@@ -228,14 +227,14 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static void deleteTenant(Main main, TenantIdentifier tenantIdentifier)
-            throws UnknownTenantException, CannotDeleteNullTenantException {
+            throws TenantOrAppNotFoundException, CannotDeleteNullTenantException {
         if (tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             throw new CannotDeleteNullTenantException();
         }
         try {
             StorageLayer.getMultitenancyStorageWithTargetStorage(tenantIdentifier, main)
                     .deleteTenantIdInUserPool(tenantIdentifier);
-        } catch (TenantOrAppNotFoundException | UnknownTenantException e) {
+        } catch (TenantOrAppNotFoundException e) {
             // we ignore this since it may have been that past deletion attempt deleted this successfully,
             // but not from the main table.
         }
@@ -244,7 +243,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static void deleteApp(Main main, TenantIdentifier tenantIdentifier)
-            throws UnknownTenantException, CannotDeleteNullAppIdException, BadPermissionException {
+            throws TenantOrAppNotFoundException, CannotDeleteNullAppIdException, BadPermissionException {
         if (tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
             throw new CannotDeleteNullAppIdException();
         }
@@ -258,7 +257,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static void deleteConnectionUriDomain(Main main, TenantIdentifier tenantIdentifier)
-            throws UnknownTenantException, CannotDeleteNulConnectionUriDomainException, BadPermissionException {
+            throws TenantOrAppNotFoundException, CannotDeleteNulConnectionUriDomainException, BadPermissionException {
         if (tenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
             throw new CannotDeleteNulConnectionUriDomainException();
         }
@@ -276,7 +275,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
     public static boolean addUserIdToTenant(Main main, TenantIdentifier sourceTenantIdentifier, String userId,
                                             String newTenantId)
-            throws UnknownTenantException, UnknownUserIdException, TenantOrAppNotFoundException {
+            throws TenantOrAppNotFoundException, UnknownUserIdException {
         TenantIdentifier targetTenantIdentifier = new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(),
                 sourceTenantIdentifier.getAppId(), newTenantId);
         if (sourceTenantIdentifier.equals(targetTenantIdentifier)) {
@@ -289,7 +288,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
     public static boolean addRoleToTenant(Main main, TenantIdentifier sourceTenantIdentifier, String role,
                                           String newTenantId)
-            throws UnknownTenantException, UnknownRoleException, TenantOrAppNotFoundException {
+            throws TenantOrAppNotFoundException, UnknownRoleException {
 
         TenantIdentifier targetTenantIdentifier = new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(),
                 sourceTenantIdentifier.getAppId(), newTenantId);

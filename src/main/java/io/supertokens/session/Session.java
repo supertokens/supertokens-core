@@ -21,7 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
-import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;

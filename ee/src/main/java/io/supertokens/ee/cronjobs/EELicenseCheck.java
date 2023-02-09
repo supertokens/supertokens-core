@@ -4,7 +4,7 @@ import io.supertokens.Main;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.ee.EEFeatureFlag;
-import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 

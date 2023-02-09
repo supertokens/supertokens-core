@@ -21,7 +21,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import org.junit.AfterClass;
 import org.junit.Before;
