@@ -508,6 +508,14 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
+    public static MultitenancyStorage getMultitenancyStorageWithTargetStorage(TenantIdentifier tenantIdentifier,
+                                                                              Main main)
+            throws TenantOrAppNotFoundException {
+        synchronized (lock) {
+            return (MultitenancyStorage) getInstance(tenantIdentifier, main).storage;
+        }
+    }
+
     public static boolean isInMemDb(Main main) {
         try {
             return getInstance(new TenantIdentifier(null, null, null), main).storage instanceof Start;
