@@ -25,6 +25,10 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.multitenancy.exception.CannotDeleteNulConnectionUriDomainException;
+import io.supertokens.multitenancy.exception.CannotDeleteNullAppIdException;
+import io.supertokens.multitenancy.exception.CannotDeleteNullTenantException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
@@ -163,6 +167,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         // TODO: do not allow updating of null, null, null's core config
         // TODO: allow only if connectionuri exists and appid exists (unless this has connectionuri as null or appid
         //  as null)
+        // TODO: only public appId can create tenants
+        // TODO: only public connectionuri can create appId
+        // TODO: Only null, null, null can create a connectionuridomain
         TenantConfig[] unfilteredTenants = MultitenancyUtils.getAllTenantsWithoutFilteringDeletedOnes(main);
         for (TenantConfig t : unfilteredTenants) {
             if (t.tenantIdentifier.getConnectionUriDomain().equals(tenant.tenantIdentifier.getConnectionUriDomain())) {
@@ -221,8 +228,10 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static void deleteTenant(Main main, TenantIdentifier tenantIdentifier)
-            throws UnknownTenantException {
-        // TODO: cannot delete null tenantId
+            throws UnknownTenantException, CannotDeleteNullTenantException {
+        if (tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            throw new CannotDeleteNullTenantException();
+        }
         try {
             StorageLayer.getMultitenancyStorageWithTargetStorage(tenantIdentifier, main)
                     .deleteTenantIdInUserPool(tenantIdentifier);
@@ -235,12 +244,13 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static void deleteApp(Main main, TenantIdentifier tenantIdentifier)
-            throws UnknownTenantException {
-        if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-            // we only allow app to be deleted via the public tenant.
-            // TODO: ??
+            throws UnknownTenantException, CannotDeleteNullAppIdException, BadPermissionException {
+        if (tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
+            throw new CannotDeleteNullAppIdException();
         }
-        // TODO: cannot delete null appId
+        if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            throw new BadPermissionException("Only the public tenantId is allowed to delete this appId");
+        }
         StorageLayer.getMultitenancyStorage(main).markAppIdAsDeleted(tenantIdentifier.getAppId());
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
         // TODO: we need to clear all the tenant and app data -> via a cronjob cause we can have data
@@ -248,13 +258,15 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static void deleteConnectionUriDomain(Main main, TenantIdentifier tenantIdentifier)
-            throws UnknownTenantException {
+            throws UnknownTenantException, CannotDeleteNulConnectionUriDomainException, BadPermissionException {
+        if (tenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+            throw new CannotDeleteNulConnectionUriDomainException();
+        }
         if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) &&
                 !tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
-            // we only allow app to be deleted via the public appId and tenant
-            // TODO: ??
+            throw new BadPermissionException(
+                    "Only the public tenantId and public appId is allowed to delete this connectionUriDomain");
         }
-        // TODO: cannot delete null connection uri
         StorageLayer.getMultitenancyStorage(main)
                 .markConnectionUriDomainAsDeleted(tenantIdentifier.getConnectionUriDomain());
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
@@ -262,29 +274,31 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         // across dbs.
     }
 
-    public static void addUserIdToTenant(Main main, TenantIdentifier sourceTenantIdentifier, String userId,
-                                         String newTenantId)
+    public static boolean addUserIdToTenant(Main main, TenantIdentifier sourceTenantIdentifier, String userId,
+                                            String newTenantId)
             throws UnknownTenantException, UnknownUserIdException, TenantOrAppNotFoundException {
         TenantIdentifier targetTenantIdentifier = new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(),
                 sourceTenantIdentifier.getAppId(), newTenantId);
         if (sourceTenantIdentifier.equals(targetTenantIdentifier)) {
-            // TODO: ??
+            return false;
         }
         StorageLayer.getMultitenancyStorageWithTargetStorage(sourceTenantIdentifier, main)
                 .addUserIdToTenant(targetTenantIdentifier, userId);
+        return true;
     }
 
-    public static void addRoleToTenant(Main main, TenantIdentifier sourceTenantIdentifier, String role,
-                                       String newTenantId)
+    public static boolean addRoleToTenant(Main main, TenantIdentifier sourceTenantIdentifier, String role,
+                                          String newTenantId)
             throws UnknownTenantException, UnknownRoleException, TenantOrAppNotFoundException {
 
         TenantIdentifier targetTenantIdentifier = new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(),
                 sourceTenantIdentifier.getAppId(), newTenantId);
         if (sourceTenantIdentifier.equals(targetTenantIdentifier)) {
-            // TODO: ??
+            return false;
         }
         StorageLayer.getMultitenancyStorageWithTargetStorage(sourceTenantIdentifier, main)
                 .addRoleToTenant(targetTenantIdentifier, role);
+        return true;
     }
 
     public static TenantConfig getTenantInfo(Main main, TenantIdentifier tenantIdentifier) {
@@ -298,9 +312,11 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         return null;
     }
 
-    public static TenantConfig[] getAllTenantsForApp(TenantIdentifier tenantIdentifier, Main main) {
+    public static TenantConfig[] getAllTenantsForApp(TenantIdentifier tenantIdentifier, Main main)
+            throws BadPermissionException {
         if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-            // TODO: ??
+            throw new BadPermissionException(
+                    "Only the public tenantId is allowed to list all tenants associated with this app");
         }
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
         TenantConfig[] tenants = Multitenancy.getInstance(main).tenantConfigs;
@@ -320,10 +336,13 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         return finalResult;
     }
 
-    public static TenantConfig[] getAllTenantsForConnectionUriDomain(TenantIdentifier tenantIdentifier, Main main) {
+    public static TenantConfig[] getAllTenantsForConnectionUriDomain(TenantIdentifier tenantIdentifier, Main main)
+            throws BadPermissionException {
         if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) &&
                 !tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
-            // TODO: ??
+            throw new BadPermissionException(
+                    "Only the public tenantId and public appId is allowed to list all apps associated with this " +
+                            "connectionUriDomain");
         }
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
         TenantConfig[] tenants = Multitenancy.getInstance(main).tenantConfigs;
@@ -343,11 +362,15 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         return finalResult;
     }
 
-    public static TenantConfig[] getAllTenants(TenantIdentifier tenantIdentifier, Main main) {
+    public static TenantConfig[] getAllTenants(TenantIdentifier tenantIdentifier, Main main)
+            throws BadPermissionException {
         if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) &&
                 !tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID) &&
                 !tenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
-            // TODO: ??
+            throw new BadPermissionException(
+                    "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
+                            "connectionUriDomains and appIds associated with this " +
+                            "core");
         }
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
         return Multitenancy.getInstance(main).tenantConfigs;
