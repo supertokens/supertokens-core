@@ -19,12 +19,12 @@ package io.supertokens.featureflag;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
@@ -94,7 +94,7 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
             return (FeatureFlag) main.getResourceDistributor()
                     .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

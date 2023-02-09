@@ -74,7 +74,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
                         new AccessTokenSigningKey(new TenantIdentifier(null, null, null), main));
             } catch (TenantOrAppNotFoundException e) {
-                throw new IllegalStateException("Should never come here");
+                throw new IllegalStateException(e);
             }
         }
     }
@@ -92,7 +92,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         try {
             return getInstance(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -114,7 +114,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                                 .setResource(tenant.tenantIdentifier, RESOURCE_KEY,
                                         new AccessTokenSigningKey(tenant.tenantIdentifier, main));
                     } catch (TenantOrAppNotFoundException e) {
-                        throw new IllegalStateException("Should never come here");
+                        throw new IllegalStateException(e);
                     }
                 }
             }

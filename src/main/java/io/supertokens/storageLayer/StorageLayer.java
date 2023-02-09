@@ -258,7 +258,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                         ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
                     }
                 } catch (TenantOrAppNotFoundException e) {
-                    throw new IllegalStateException("Should never come here");
+                    throw new IllegalStateException(e);
                 }
             }
 
@@ -288,7 +288,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             try {
                 return getInstance(new TenantIdentifier(null, null, null), main).storage;
             } catch (TenantOrAppNotFoundException e) {
-                throw new IllegalStateException("Should never come here");
+                throw new IllegalStateException(e);
             }
         }
     }
@@ -305,7 +305,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         try {
             return getStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -321,7 +321,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         try {
             return getAuthRecipeStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -337,7 +337,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         try {
             return getSessionStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -357,7 +357,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         try {
             return getEmailPasswordStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -378,7 +378,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         try {
             return getEmailVerificationStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -398,7 +398,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         try {
             return getThirdPartyStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -418,7 +418,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         try {
             return getPasswordlessStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -434,7 +434,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         try {
             return getJWTRecipeStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -455,7 +455,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         try {
             return getUserMetadataStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -475,7 +475,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         try {
             return getUserRolesStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -491,7 +491,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         try {
             return getUserIdMappingStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -502,8 +502,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         synchronized (lock) {
             try {
                 return (MultitenancyStorage) getInstance(new TenantIdentifier(null, null, null), main).storage;
-            } catch (TenantOrAppNotFoundException ignored) {
-                throw new IllegalStateException("Should never come here");
+            } catch (TenantOrAppNotFoundException e) {
+                throw new IllegalStateException(e);
             }
         }
     }
@@ -520,7 +520,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         try {
             return getInstance(new TenantIdentifier(null, null, null), main).storage instanceof Start;
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

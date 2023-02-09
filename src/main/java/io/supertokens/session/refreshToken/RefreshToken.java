@@ -47,7 +47,7 @@ public class RefreshToken {
         try {
             return getInfoFromRefreshToken(new TenantIdentifier(null, null, null), main, token);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -92,7 +92,7 @@ public class RefreshToken {
                     parentRefreshTokenHash1,
                     antiCsrfToken);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

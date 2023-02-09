@@ -53,7 +53,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                 main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
                         new JWTSigningKey(new TenantIdentifier(null, null, null), main));
             } catch (TenantOrAppNotFoundException e) {
-                throw new IllegalStateException("Should never come here");
+                throw new IllegalStateException(e);
             }
         }
     }
@@ -71,7 +71,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         try {
             return getInstance(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -94,7 +94,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                                 .setResource(tenant.tenantIdentifier, RESOURCE_KEY,
                                         new JWTSigningKey(tenant.tenantIdentifier, main));
                     } catch (TenantOrAppNotFoundException e) {
-                        throw new IllegalStateException("Should never come here");
+                        throw new IllegalStateException(e);
                     }
                 }
             }

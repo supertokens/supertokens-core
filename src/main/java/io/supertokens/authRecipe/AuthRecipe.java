@@ -48,7 +48,7 @@ public class AuthRecipe {
             return getUsersCount(new TenantIdentifier(null, null, null), main,
                     includeRecipeIds);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -89,7 +89,7 @@ public class AuthRecipe {
             return getUsers(new TenantIdentifier(null, null, null), main, limit, timeJoinedOrder, paginationToken,
                     includeRecipeIds);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -138,7 +138,7 @@ public class AuthRecipe {
         try {
             deleteUser(new TenantIdentifier(null, null, null), main, userId);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

@@ -54,7 +54,7 @@ public class JWTSigningFunctions {
             return createJWTToken(new TenantIdentifier(null, null, null), main, algorithm, payload, jwksDomain,
                     jwtValidity);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -167,7 +167,7 @@ public class JWTSigningFunctions {
         try {
             return getJWKS(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

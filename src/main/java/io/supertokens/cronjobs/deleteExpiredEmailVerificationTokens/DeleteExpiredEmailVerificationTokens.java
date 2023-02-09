@@ -49,7 +49,7 @@ public class DeleteExpiredEmailVerificationTokens extends CronTask {
             return (DeleteExpiredEmailVerificationTokens) main.getResourceDistributor()
                     .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

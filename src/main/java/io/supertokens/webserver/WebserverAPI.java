@@ -216,7 +216,7 @@ public abstract class WebserverAPI extends HttpServlet {
                 return null;
             }
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
         return connectionUriDomain;
     }

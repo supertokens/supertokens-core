@@ -51,7 +51,7 @@ public class UserRoles {
         try {
             return addRoleToUser(new TenantIdentifier(null, null, null), main, userId, role);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -84,7 +84,7 @@ public class UserRoles {
         try {
             return createNewRoleOrModifyItsPermissions(new TenantIdentifier(null, null, null), main, role, permissions);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -100,7 +100,7 @@ public class UserRoles {
         try {
             return doesRoleExist(new TenantIdentifier(null, null, null), main, role);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -138,7 +138,7 @@ public class UserRoles {
         try {
             return removeUserRole(new TenantIdentifier(null, null, null), main, userId, role);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -154,7 +154,7 @@ public class UserRoles {
         try {
             return getRolesForUser(new TenantIdentifier(null, null, null), main, userId);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -178,7 +178,7 @@ public class UserRoles {
         try {
             return getUsersForRole(new TenantIdentifier(null, null, null), main, role);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -203,7 +203,7 @@ public class UserRoles {
         try {
             return getPermissionsForRole(new TenantIdentifier(null, null, null), main, role);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -246,7 +246,7 @@ public class UserRoles {
         try {
             deletePermissionsFromRole(new TenantIdentifier(null, null, null), main, role, permissions);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -264,7 +264,7 @@ public class UserRoles {
         try {
             return getRolesThatHavePermission(new TenantIdentifier(null, null, null), main, permission);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -280,7 +280,7 @@ public class UserRoles {
         try {
             return deleteRole(new TenantIdentifier(null, null, null), main, role);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -296,7 +296,7 @@ public class UserRoles {
         try {
             return getRoles(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -312,7 +312,7 @@ public class UserRoles {
         try {
             return deleteAllRolesForUser(new TenantIdentifier(null, null, null), main, userId);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

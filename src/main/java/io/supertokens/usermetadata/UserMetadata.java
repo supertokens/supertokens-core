@@ -38,7 +38,7 @@ public class UserMetadata {
         try {
             return updateUserMetadata(new TenantIdentifier(null, null, null), main, userId, metadataUpdate);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -64,7 +64,7 @@ public class UserMetadata {
         try {
             return getUserMetadata(new TenantIdentifier(null, null, null), main, userId);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -87,7 +87,7 @@ public class UserMetadata {
         try {
             deleteUserMetadata(new TenantIdentifier(null, null, null), main, userId);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

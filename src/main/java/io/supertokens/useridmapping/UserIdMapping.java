@@ -80,7 +80,7 @@ public class UserIdMapping {
             createUserIdMapping(new TenantIdentifier(null, null, null), main, superTokensUserId, externalUserId,
                     externalUserIdInfo, force);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -126,7 +126,7 @@ public class UserIdMapping {
         try {
             return getUserIdMapping(new TenantIdentifier(null, null, null), main, userId, userIdType);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -183,7 +183,7 @@ public class UserIdMapping {
         try {
             return deleteUserIdMapping(new TenantIdentifier(null, null, null), main, userId, userIdType, force);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -217,7 +217,7 @@ public class UserIdMapping {
             return updateOrDeleteExternalUserIdInfo(new TenantIdentifier(null, null, null), main, userId, userIdType,
                     externalUserIdInfo);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -236,7 +236,7 @@ public class UserIdMapping {
         try {
             return getUserIdMappingForSuperTokensUserIds(new TenantIdentifier(null, null, null), main, userIds);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

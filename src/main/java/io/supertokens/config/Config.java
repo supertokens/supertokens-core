@@ -246,8 +246,8 @@ public class Config extends ResourceDistributor.SingletonResource {
         synchronized (lock) {
             try {
                 return getInstance(new TenantIdentifier(null, null, null), main).core;
-            } catch (TenantOrAppNotFoundException ignored) {
-                throw new IllegalStateException("Should never come here");
+            } catch (TenantOrAppNotFoundException e) {
+                throw new IllegalStateException(e);
             }
         }
     }
@@ -257,7 +257,7 @@ public class Config extends ResourceDistributor.SingletonResource {
         try {
             return getConfig(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

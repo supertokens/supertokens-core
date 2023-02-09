@@ -42,7 +42,7 @@ public class EmailVerification {
         try {
             return getEmailVerificationTokenLifetime(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -61,7 +61,7 @@ public class EmailVerification {
         try {
             return generateEmailVerificationToken(new TenantIdentifier(null, null, null), main, userId, email);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -114,7 +114,7 @@ public class EmailVerification {
         try {
             return verifyEmail(new TenantIdentifier(null, null, null), main, token);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -180,7 +180,7 @@ public class EmailVerification {
         try {
             return isEmailVerified(new TenantIdentifier(null, null, null), main, userId, email);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -196,7 +196,7 @@ public class EmailVerification {
         try {
             revokeAllTokens(new TenantIdentifier(null, null, null), main, userId, email);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -211,7 +211,7 @@ public class EmailVerification {
         try {
             unverifyEmail(new TenantIdentifier(null, null, null), main, userId, email);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

@@ -61,7 +61,7 @@ public class EmailPassword {
         try {
             return getPasswordResetTokenLifetime(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -79,7 +79,7 @@ public class EmailPassword {
         try {
             return signUp(new TenantIdentifier(null, null, null), main, email, password);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -116,7 +116,7 @@ public class EmailPassword {
             return importUserWithPasswordHash(new TenantIdentifier(null, null, null), main, email, passwordHash,
                     hashingAlgorithm);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -165,7 +165,7 @@ public class EmailPassword {
         try {
             return importUserWithPasswordHash(new TenantIdentifier(null, null, null), main, email, passwordHash, null);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -176,7 +176,7 @@ public class EmailPassword {
         try {
             return signIn(new TenantIdentifier(null, null, null), main, email, password);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -217,7 +217,7 @@ public class EmailPassword {
         try {
             return generatePasswordResetToken(new TenantIdentifier(null, null, null), main, userId);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -266,7 +266,7 @@ public class EmailPassword {
         try {
             return resetPassword(new TenantIdentifier(null, null, null), main, token, password);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -336,7 +336,7 @@ public class EmailPassword {
         try {
             updateUsersEmailOrPassword(new TenantIdentifier(null, null, null), main, userId, email, password);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -393,7 +393,7 @@ public class EmailPassword {
         try {
             return getUserUsingId(new TenantIdentifier(null, null, null), main, userId);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -408,7 +408,7 @@ public class EmailPassword {
         try {
             return getUserUsingEmail(new TenantIdentifier(null, null, null), main, email);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -426,7 +426,7 @@ public class EmailPassword {
         try {
             return getUsers(new TenantIdentifier(null, null, null), main, paginationToken, limit, timeJoinedOrder);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -463,7 +463,7 @@ public class EmailPassword {
         try {
             return getUsersCount(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

@@ -18,8 +18,8 @@ package io.supertokens.cronjobs;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,8 +42,8 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
         try {
             return (Cronjobs) main.getResourceDistributor()
                     .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
-        } catch (TenantOrAppNotFoundException ignored) {
-            throw new IllegalStateException("Should never come here");
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
         }
     }
 

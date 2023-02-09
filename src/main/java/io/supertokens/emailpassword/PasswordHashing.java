@@ -62,7 +62,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
             return (PasswordHashing) main.getResourceDistributor()
                     .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -76,7 +76,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         try {
             return createHashWithSalt(new TenantIdentifier(null, null, null), password);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -137,7 +137,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         try {
             return verifyPasswordWithHash(new TenantIdentifier(null, null, null), password, hash);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

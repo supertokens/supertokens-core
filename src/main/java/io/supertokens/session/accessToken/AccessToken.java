@@ -137,7 +137,7 @@ public class AccessToken {
         try {
             return getInfoFromAccessToken(new TenantIdentifier(null, null, null), main, token, doAntiCsrfCheck);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -168,7 +168,7 @@ public class AccessToken {
                     parentRefreshTokenHash1,
                     userData, antiCsrfToken, lmrt, expiryTime);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -209,7 +209,7 @@ public class AccessToken {
                     refreshTokenHash1,
                     parentRefreshTokenHash1, userData, antiCsrfToken);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

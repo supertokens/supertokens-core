@@ -68,7 +68,7 @@ public class Session {
             return createNewSession(tenantIdentifier, main, userId, userDataInJWT, userDataInDatabase,
                     false);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -96,7 +96,7 @@ public class Session {
             return createNewSession(new TenantIdentifier(null, null, null), main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -141,7 +141,7 @@ public class Session {
         try {
             return regenerateToken(new TenantIdentifier(null, null, null), main, token, userDataInJWT);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -209,7 +209,7 @@ public class Session {
             return getSession(new TenantIdentifier(null, null, null), main, token, antiCsrfToken, enableAntiCsrf,
                     doAntiCsrfCheck);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -393,7 +393,7 @@ public class Session {
             return refreshSession(new TenantIdentifier(null, null, null), main, refreshToken, antiCsrfToken,
                     enableAntiCsrf);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -583,7 +583,7 @@ public class Session {
         try {
             return revokeSessionUsingSessionHandles(new TenantIdentifier(null, null, null), main, sessionHandles);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -620,7 +620,7 @@ public class Session {
         try {
             return revokeAllSessionsForUser(new TenantIdentifier(null, null, null), main, userId);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -637,7 +637,7 @@ public class Session {
         try {
             return getAllNonExpiredSessionHandlesForUser(new TenantIdentifier(null, null, null), main, userId);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -656,7 +656,7 @@ public class Session {
         try {
             return getSessionData(new TenantIdentifier(null, null, null), main, sessionHandle);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -680,7 +680,7 @@ public class Session {
         try {
             return getJWTData(new TenantIdentifier(null, null, null), main, sessionHandle);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -703,7 +703,7 @@ public class Session {
         try {
             return getSession(new TenantIdentifier(null, null, null), main, sessionHandle);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -736,7 +736,7 @@ public class Session {
         try {
             updateSession(new TenantIdentifier(null, null, null), main, sessionHandle, sessionData, jwtData, lmrt);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

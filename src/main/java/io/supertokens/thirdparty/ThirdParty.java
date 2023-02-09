@@ -90,7 +90,7 @@ public class ThirdParty {
             return signInUp2_7(new TenantIdentifier(null, null, null), main, thirdPartyId, thirdPartyUserId, email,
                     isEmailVerified);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -100,7 +100,7 @@ public class ThirdParty {
         try {
             return signInUp(new TenantIdentifier(null, null, null), main, thirdPartyId, thirdPartyUserId, email);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -183,7 +183,7 @@ public class ThirdParty {
         try {
             return getUser(new TenantIdentifier(null, null, null), main, userId);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -202,7 +202,7 @@ public class ThirdParty {
         try {
             return getUser(new TenantIdentifier(null, null, null), main, thirdPartyId, thirdPartyUserId);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -241,7 +241,7 @@ public class ThirdParty {
         try {
             return getUsers(new TenantIdentifier(null, null, null), main, paginationToken, limit, timeJoinedOrder);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -264,7 +264,7 @@ public class ThirdParty {
         try {
             return getUsersCount(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 

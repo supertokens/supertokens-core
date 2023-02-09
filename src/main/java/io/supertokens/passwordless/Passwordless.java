@@ -61,7 +61,7 @@ public class Passwordless {
             return createCode(new TenantIdentifier(null, null, null), main, email, phoneNumber, deviceId,
                     userInputCode);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -139,7 +139,7 @@ public class Passwordless {
         try {
             return getDeviceWithCodesById(new TenantIdentifier(null, null, null), main, deviceId);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -150,7 +150,7 @@ public class Passwordless {
         try {
             return getDeviceWithCodesByIdHash(new TenantIdentifier(null, null, null), main, deviceIdHash);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -192,7 +192,7 @@ public class Passwordless {
         try {
             return getDevicesWithCodesByEmail(new TenantIdentifier(null, null, null), main, email);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -218,7 +218,7 @@ public class Passwordless {
         try {
             return getDevicesWithCodesByPhoneNumber(new TenantIdentifier(null, null, null), main, phoneNumber);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -233,7 +233,7 @@ public class Passwordless {
             return consumeCode(new TenantIdentifier(null, null, null), main, deviceId, deviceIdHashFromUser,
                     userInputCode, linkCode);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -385,7 +385,7 @@ public class Passwordless {
         try {
             removeCode(new TenantIdentifier(null, null, null), main, codeId);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -428,7 +428,7 @@ public class Passwordless {
         try {
             removeCodesByEmail(new TenantIdentifier(null, null, null), main, email);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -451,7 +451,7 @@ public class Passwordless {
         try {
             removeCodesByPhoneNumber(new TenantIdentifier(null, null, null), main, phoneNumber);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -474,7 +474,7 @@ public class Passwordless {
         try {
             return getUserById(new TenantIdentifier(null, null, null), main, userId);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -489,7 +489,7 @@ public class Passwordless {
         try {
             return getUserByPhoneNumber(new TenantIdentifier(null, null, null), main, phoneNumber);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -506,7 +506,7 @@ public class Passwordless {
         try {
             return getUserByEmail(new TenantIdentifier(null, null, null), main, email);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
@@ -524,7 +524,7 @@ public class Passwordless {
         try {
             updateUser(new TenantIdentifier(null, null, null), main, userId, emailUpdate, phoneNumberUpdate);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException("Should never come here");
+            throw new IllegalStateException(e);
         }
     }
 
