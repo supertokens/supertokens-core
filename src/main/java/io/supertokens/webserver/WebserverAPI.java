@@ -165,7 +165,7 @@ public abstract class WebserverAPI extends HttpServlet {
         } else {
             if (path.matches("^/appid-[a-z0-9-]*/[a-z0-9-]+" + apiPath + "/?$")) {
                 String tenantId = path.split("/")[2].toLowerCase();
-                if (tenantId.equals("public")) {
+                if (tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                     return null;
                 }
                 return tenantId;
@@ -173,7 +173,7 @@ public abstract class WebserverAPI extends HttpServlet {
                 return null;
             } else if (path.matches("^/[a-z0-9-]+" + apiPath + "/?$")) {
                 String tenantId = path.split("/")[1].toLowerCase();
-                if (tenantId.equals("public")) {
+                if (tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                     return null;
                 }
                 return tenantId;
@@ -209,7 +209,16 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     private String getConnectionUriDomain(HttpServletRequest req) {
-        return req.getServerName() + ":" + req.getServerPort();
+        String connectionUriDomain = req.getServerName() + ":" + req.getServerPort();
+        try {
+            if (Config.getConfig(new TenantIdentifier(connectionUriDomain, null, null), main) ==
+                    Config.getConfig(new TenantIdentifier(null, null, null), main)) {
+                return null;
+            }
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException("Should never come here");
+        }
+        return connectionUriDomain;
     }
 
     protected TenantIdentifier getTenantIdentifier(HttpServletRequest req) {

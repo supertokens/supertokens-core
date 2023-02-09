@@ -160,6 +160,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig tenant) {
+        // TODO: do not allow updating of null, null, null's core config
+        // TODO: allow only if connectionuri exists and appid exists (unless this has connectionuri as null or appid
+        //  as null)
         TenantConfig[] unfilteredTenants = MultitenancyUtils.getAllTenantsWithoutFilteringDeletedOnes(main);
         for (TenantConfig t : unfilteredTenants) {
             if (t.tenantIdentifier.getConnectionUriDomain().equals(tenant.tenantIdentifier.getConnectionUriDomain())) {
@@ -219,6 +222,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
     public static void deleteTenant(Main main, TenantIdentifier tenantIdentifier)
             throws UnknownTenantException {
+        // TODO: cannot delete null tenantId
         try {
             StorageLayer.getMultitenancyStorageWithTargetStorage(tenantIdentifier, main)
                     .deleteTenantIdInUserPool(tenantIdentifier);
@@ -232,10 +236,11 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
     public static void deleteApp(Main main, TenantIdentifier tenantIdentifier)
             throws UnknownTenantException {
-        if (!tenantIdentifier.getTenantId().equals("public")) {
+        if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             // we only allow app to be deleted via the public tenant.
             // TODO: ??
         }
+        // TODO: cannot delete null appId
         StorageLayer.getMultitenancyStorage(main).markAppIdAsDeleted(tenantIdentifier.getAppId());
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
         // TODO: we need to clear all the tenant and app data -> via a cronjob cause we can have data
@@ -244,10 +249,12 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
     public static void deleteConnectionUriDomain(Main main, TenantIdentifier tenantIdentifier)
             throws UnknownTenantException {
-        if (!tenantIdentifier.getTenantId().equals("public") && !tenantIdentifier.getAppId().equals("public")) {
+        if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) &&
+                !tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
             // we only allow app to be deleted via the public appId and tenant
             // TODO: ??
         }
+        // TODO: cannot delete null connection uri
         StorageLayer.getMultitenancyStorage(main)
                 .markConnectionUriDomainAsDeleted(tenantIdentifier.getConnectionUriDomain());
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
@@ -292,7 +299,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static TenantConfig[] getAllTenantsForApp(TenantIdentifier tenantIdentifier, Main main) {
-        if (!tenantIdentifier.getTenantId().equals("public")) {
+        if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             // TODO: ??
         }
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
@@ -314,7 +321,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static TenantConfig[] getAllTenantsForConnectionUriDomain(TenantIdentifier tenantIdentifier, Main main) {
-        if (!tenantIdentifier.getTenantId().equals("public") && !tenantIdentifier.getAppId().equals("public")) {
+        if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) &&
+                !tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
             // TODO: ??
         }
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
@@ -333,5 +341,15 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             finalResult[i] = tenantList.get(i);
         }
         return finalResult;
+    }
+
+    public static TenantConfig[] getAllTenants(TenantIdentifier tenantIdentifier, Main main) {
+        if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) &&
+                !tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID) &&
+                !tenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+            // TODO: ??
+        }
+        Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
+        return Multitenancy.getInstance(main).tenantConfigs;
     }
 }

@@ -85,13 +85,13 @@ public class RequestConnectionUriDomainTest {
         {
             String response = HttpRequest.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/test", null, 1000, 1000, null);
-            assertEquals("localhost:3567", response);
+            assertEquals("", response);
         }
 
         {
             String response = HttpRequest.sendGETRequest(process.getProcess(), "",
                     "http://127.0.0.1:3567/test", null, 1000, 1000, null);
-            assertEquals("127.0.0.1:3567", response);
+            assertEquals("", response);
         }
 
         process.kill();
