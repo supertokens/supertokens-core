@@ -419,7 +419,7 @@ public class LogLevelTest {
 
     @Test
     public void testLogLevelNoneOutputWithConfigErrorShouldLog() throws Exception {
-        {
+        try {
             ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();
             ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
             System.setOut(new PrintStream(stdOutput));
@@ -437,6 +437,9 @@ public class LogLevelTest {
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+        } finally {
+            System.setOut(new PrintStream(new FileOutputStream(FileDescriptor.out)));
+            System.setErr(new PrintStream(new FileOutputStream(FileDescriptor.err)));
         }
     }
 
