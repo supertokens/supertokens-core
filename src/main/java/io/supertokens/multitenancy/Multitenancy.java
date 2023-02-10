@@ -69,21 +69,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     private TenantConfig[] getAllTenants() {
-        TenantConfig[] tenants = MultitenancyUtils.getAllTenantsWithoutFilteringDeletedOnes(main);
-        List<TenantConfig> tenantList = new ArrayList<>();
-
-        for (TenantConfig t : tenants) {
-            if (t.appIdMarkedAsDeleted || t.connectionUriDomainMarkedAsDeleted) {
-                continue;
-            }
-            tenantList.add(t);
-        }
-
-        TenantConfig[] finalResult = new TenantConfig[tenantList.size()];
-        for (int i = 0; i < tenantList.size(); i++) {
-            finalResult[i] = tenantList.get(i);
-        }
-        return finalResult;
+        return StorageLayer.getMultitenancyStorage(main).getAllTenants();
     }
 
     public void refreshTenantsInCoreIfRequired() {
@@ -169,24 +155,6 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             }
         }
 
-        // Then we check if the newTenant is about to be deleted, or is being deleted, and if it is, then we don't
-        // allow it to be created
-        TenantConfig[] unfilteredTenants = MultitenancyUtils.getAllTenantsWithoutFilteringDeletedOnes(main);
-        for (TenantConfig t : unfilteredTenants) {
-            if (t.tenantIdentifier.getConnectionUriDomain()
-                    .equals(newTenant.tenantIdentifier.getConnectionUriDomain())) {
-                if (t.connectionUriDomainMarkedAsDeleted) {
-                    throw new DeletionInProgressException(
-                            "ConnectionUriDomain is being deleted. Please try in sometime");
-                }
-            }
-            if (t.tenantIdentifier.getAppId().equals(newTenant.tenantIdentifier.getAppId())) {
-                if (t.appIdMarkedAsDeleted) {
-                    throw new DeletionInProgressException("AppId is being deleted. Please try in sometime");
-                }
-            }
-        }
-
         // Then we check for permissions based on sourceTenant
         if (!newTenant.tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             // this means that we are creating a new tenant and must use the public tenant for the current app to do
@@ -268,7 +236,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
     }
 
-    public static void deleteApp(Main main, TenantIdentifier tenantIdentifier)
+    public static void deleteApp(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException, CannotDeleteNullAppIdException, BadPermissionException {
         if (tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
             throw new CannotDeleteNullAppIdException();
@@ -276,13 +244,15 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             throw new BadPermissionException("Only the public tenantId is allowed to delete this appId");
         }
+        if (getAllTenantsForApp(tenantIdentifier, main).length > 1) {
+            throw new BadPermissionException(
+                    "Please delete all tenants except the public tenant for this app before calling the delete API");
+        }
         StorageLayer.getMultitenancyStorage(main).markAppIdAsDeleted(tenantIdentifier.getAppId());
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
-        // TODO: we need to clear all the tenant and app data -> via a cronjob cause we can have data
-        // across dbs.
     }
 
-    public static void deleteConnectionUriDomain(Main main, TenantIdentifier tenantIdentifier)
+    public static void deleteConnectionUriDomain(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException, CannotDeleteNulConnectionUriDomainException, BadPermissionException {
         if (tenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
             throw new CannotDeleteNulConnectionUriDomainException();
@@ -292,11 +262,20 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throw new BadPermissionException(
                     "Only the public tenantId and public appId is allowed to delete this connectionUriDomain");
         }
+        TenantConfig[] tenants = getAllAppsAndTenantsForConnectionUriDomain(tenantIdentifier, main);
+        Set<String> uniqueAppIds = new HashSet<>();
+        for (TenantConfig t : tenants) {
+            uniqueAppIds.add(t.tenantIdentifier.getAppId());
+        }
+
+        if (uniqueAppIds.size() > 1) {
+            throw new BadPermissionException(
+                    "Please delete all apps except the public appID for this connectionUriDomain before calling the " +
+                            "delete API.");
+        }
         StorageLayer.getMultitenancyStorage(main)
                 .markConnectionUriDomainAsDeleted(tenantIdentifier.getConnectionUriDomain());
         Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
-        // TODO: we need to clear all the connection uri data -> via a cronjob cause we can have data
-        // across dbs.
     }
 
     public static boolean addUserIdToTenant(Main main, TenantIdentifier sourceTenantIdentifier, String userId,
@@ -361,7 +340,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         return finalResult;
     }
 
-    public static TenantConfig[] getAllTenantsForConnectionUriDomain(TenantIdentifier tenantIdentifier, Main main)
+    public static TenantConfig[] getAllAppsAndTenantsForConnectionUriDomain(TenantIdentifier tenantIdentifier,
+                                                                            Main main)
             throws BadPermissionException {
         if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) &&
                 !tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
