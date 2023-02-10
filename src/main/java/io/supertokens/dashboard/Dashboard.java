@@ -12,6 +12,7 @@ import io.supertokens.dashboard.exceptions.DashboardFeatureFlagException;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateUserIdException;
@@ -76,16 +77,16 @@ public class Dashboard {
         return jsonArrayOfDashboardUsers;
     }
 
-    public static String signInDashboardUser(Main main, String email, String password) throws StorageQueryException, DashboardFeatureFlagException {
-        if(isUserSuspended(main, email)){
+    public static String signInDashboardUser(Main main, String email, String password)
+            throws StorageQueryException, DashboardFeatureFlagException {
+        if (isUserSuspended(main, email)) {
             // TODO: update message
-            throw new DashboardFeatureFlagException("User is suspended, please try signing in with a different user or enable the dashboard feature");
+            throw new DashboardFeatureFlagException(
+                    "User is suspended, please try signing in with a different user or enable the dashboard feature");
         }
         DashboardUser user = StorageLayer.getDashboardStorage(main).getDashboardUserByEmail(email);
         if (user != null) {
-
-            String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
-            if (user.passwordHash.equals(hashedPassword)) {
+            if (PasswordHashing.getInstance(main).verifyPasswordWithHash(password, user.passwordHash)) {
                 // create a new session for the user
                 try {
                     return createSessionForDashboardUser(main, user);
@@ -164,7 +165,6 @@ public class Dashboard {
     }
 
     public static boolean isFeatureFlagEnabledOrUserCountIsUnderThreshold(Main main) throws StorageQueryException {
-
         if (!isDashboardFeatureFlagEnabled(main)) {
             // retrieve current dashboard users
             DashboardUser[] users = StorageLayer.getDashboardStorage(main).getAllDashboardUsers();
@@ -172,6 +172,10 @@ public class Dashboard {
             return users.length <= MAX_NUMBER_OF_FREE_DASHBOARD_USERS;
         }
         return true;
+    }
+
+    public static boolean revokeSessionWithSessionId(Main main, String sessionId) throws StorageQueryException {
+        return StorageLayer.getDashboardStorage(main).revokeSessionWithSessionId(sessionId);
     }
 
     private static boolean isDashboardFeatureFlagEnabled(Main main) throws StorageQueryException {
@@ -201,8 +205,21 @@ public class Dashboard {
         return patternMatcher(password, regexPatternForPassword);
     }
 
-    public static boolean isValidDashboardUserSession(Main main, String sessionId) throws StorageQueryException {
-        return StorageLayer.getDashboardStorage(main).getSessionInfoWithSessionId(sessionId) != null;
+    public static boolean isValidUserSession(Main main, String sessionId)
+            throws StorageQueryException, DashboardFeatureFlagException {
+        DashboardSessionInfo sessionInfo = StorageLayer.getDashboardStorage(main)
+                .getSessionInfoWithSessionId(sessionId);
+        if (sessionInfo != null) {
+            // check if user is suspended
+            DashboardUser user = StorageLayer.getDashboardStorage(main).getDashboardUserByUserId(sessionInfo.userId);
+            if (isUserSuspended(main, user.email)) {
+                // TODO: update message
+                throw new DashboardFeatureFlagException(
+                        "User is suspended, please try signing in with a different user or enable the dashboard feature");
+            }
+            return true;
+        }
+        return false;
     }
 
     private static boolean patternMatcher(String input, String pattern) {

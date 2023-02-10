@@ -27,6 +27,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.webserver.api.core.UsersAPI;
 import io.supertokens.webserver.api.core.UsersCountAPI;
 import io.supertokens.webserver.api.dashboard.DashboardUserAPI;
+import io.supertokens.webserver.api.dashboard.VerifyDashboardUserSessionAPI;
 import io.supertokens.webserver.api.core.*;
 import io.supertokens.webserver.api.emailpassword.UserAPI;
 import io.supertokens.webserver.api.emailpassword.*;
@@ -253,6 +254,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new LicenseKeyAPI(main));
         addAPI(new EEFeatureFlagAPI(main));
         addAPI(new DashboardUserAPI(main));
+        addAPI(new VerifyDashboardUserSessionAPI(main));
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),
                 new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));

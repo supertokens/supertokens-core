@@ -1639,12 +1639,12 @@ public class Start
         } catch (SQLException e) {
             if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                            + Config.getConfig(this).getDashboardEmailPasswordUsersTable() + ".email)")) {
+                            + Config.getConfig(this).getDashboardUsersTable() + ".email)")) {
                 throw new io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException();
             }
             if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                            + Config.getConfig(this).getDashboardEmailPasswordUsersTable() + ".id)")) {
+                            + Config.getConfig(this).getDashboardUsersTable() + ".id)")) {
                 throw new io.supertokens.pluginInterface.dashboard.exceptions.DuplicateUserIdException();
             }
             throw new StorageQueryException(e);
@@ -1713,8 +1713,12 @@ public class Start
     }
 
     @Override
-    public void revokeSessionWithSessionId(String sessionId) throws StorageQueryException {
-        // TODO Auto-generated method stub
+    public boolean revokeSessionWithSessionId(String sessionId) throws StorageQueryException {
+        try {
+            return DashboardQueries.deleteDashboardUserSessionWithSessionId(this, sessionId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
 
     }
 
@@ -1742,5 +1746,14 @@ public class Start
     public void revokeExpiredSessions(long expiry) throws StorageQueryException {
         // TODO Auto-generated method stub
 
+    }
+
+    @Override
+    public DashboardUser getDashboardUserByUserId(String userId) throws StorageQueryException {
+        try {
+            return DashboardQueries.getDashboardUserByUserId(this, userId);
+        } catch (SQLException e) {
+           throw new StorageQueryException(e);
+        }
     }
 }

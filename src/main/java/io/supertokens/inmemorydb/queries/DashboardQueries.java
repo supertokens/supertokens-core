@@ -18,7 +18,7 @@ import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 
 public class DashboardQueries {
     public static String getQueryToCreateDashboardUsersTable(Start start) {
-        String tableName = Config.getConfig(start).getDashboardEmailPasswordUsersTable();
+        String tableName = Config.getConfig(start).getDashboardUsersTable();
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
                 + "user_id CHAR(36) NOT NULL,"
@@ -36,16 +36,16 @@ public class DashboardQueries {
                 + "user_id CHAR(36) NOT NULL,"
                 + "session_id VARCHAR(256) NOT NULL UNIQUE,"
                 + "time_created BIGINT UNSIGNED NOT NULL,"
-                + "expiry BIGINT UNSIGNED NOT NULL"
-                + "PRIMARY KEY(user_id, session_id));"
-                + "FOREIGN KEY(user_id) REFERENCES " + Config.getConfig(start).getDashboardEmailPasswordUsersTable()
-                + "(user_id) ON DELETE CASCADE );";
+                + "expiry BIGINT UNSIGNED NOT NULL,"
+                + "PRIMARY KEY(user_id, session_id),"
+                + "FOREIGN KEY(user_id) REFERENCES " + Config.getConfig(start).getDashboardUsersTable()
+                + "(user_id) ON DELETE CASCADE);";
         // @formatter:on
     }
 
     public static void createDashboardUser(Start start, String userId, String email, String passwordHash,
             long timeJoined) throws SQLException, StorageQueryException {
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getDashboardEmailPasswordUsersTable()
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getDashboardUsersTable()
                 + "(user_id, email, password_hash, time_joined)" + " VALUES(?, ?, ?, ?)";
         update(start, QUERY, pst -> {
             pst.setString(1, userId);
@@ -57,13 +57,13 @@ public class DashboardQueries {
 
     public static DashboardUser[] getAllDashBoardUsers(Start start) throws SQLException, StorageQueryException {
         String QUERY = "SELECT * FROM "
-                + Config.getConfig(start).getDashboardEmailPasswordUsersTable() + " ORDER BY time_joined";
+                + Config.getConfig(start).getDashboardUsersTable() + " ORDER BY time_joined";
         return execute(start, QUERY, null, new DashboardUserInfoResultExtractor());
     }
 
     public static boolean deleteDashboardUserWithEmail(Start start, String email)
             throws SQLException, StorageQueryException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardEmailPasswordUsersTable()
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardUsersTable()
                 + " WHERE email = ?";
         // store the number of rows updated
         int rowUpdatedCount = update(start, QUERY, pst -> pst.setString(1, email));
@@ -73,7 +73,7 @@ public class DashboardQueries {
 
     public static boolean deleteDashboardUserWithUserId(Start start, String userId)
             throws SQLException, StorageQueryException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardEmailPasswordUsersTable()
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardUsersTable()
                 + " WHERE user_id = ?";
         // store the number of rows updated
         int rowUpdatedCount = update(start, QUERY, pst -> pst.setString(1, userId));
@@ -81,11 +81,33 @@ public class DashboardQueries {
         return rowUpdatedCount > 0;
     }
 
+    public static boolean deleteDashboardUserSessionWithSessionId(Start start, String sessionId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardSessionsTable()
+                + " WHERE session_id = ?";
+        // store the number of rows updated
+        int rowUpdatedCount = update(start, QUERY, pst -> pst.setString(1, sessionId));
+
+        return rowUpdatedCount > 0;
+    }
+
     public static DashboardUser getDashboardUserByEmail(Start start, String email)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT * FROM "
-                + Config.getConfig(start).getDashboardEmailPasswordUsersTable() + " WHERE email = ?";
+                + Config.getConfig(start).getDashboardUsersTable() + " WHERE email = ?";
         return execute(start, QUERY, pst -> pst.setString(1, email), result -> {
+            if (result.next()) {
+                return DashboardInfoMapper.getInstance().mapOrThrow(result);
+            }
+            return null;
+        });
+    }
+
+    public static DashboardUser getDashboardUserByUserId(Start start, String userId)
+            throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM "
+                + Config.getConfig(start).getDashboardUsersTable() + " WHERE user_id = ?";
+        return execute(start, QUERY, pst -> pst.setString(1, userId), result -> {
             if (result.next()) {
                 return DashboardInfoMapper.getInstance().mapOrThrow(result);
             }

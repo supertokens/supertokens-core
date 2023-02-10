@@ -186,7 +186,7 @@ public class GeneralQueries {
             update(start, UserIdMappingQueries.getQueryToCreateUserIdMappingTable(start), NO_OP_SETTER);
         }
 
-        if (!doesTableExists(start, Config.getConfig(start).getDashboardEmailPasswordUsersTable())) {
+        if (!doesTableExists(start, Config.getConfig(start).getDashboardUsersTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, DashboardQueries.getQueryToCreateDashboardUsersTable(start), NO_OP_SETTER);
         }
