@@ -1,19 +1,15 @@
 package io.supertokens.inmemorydb.queries;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import io.supertokens.inmemorydb.ConnectionWithLocks;
-import io.supertokens.inmemorydb.PreparedStatementValueSetter;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.sqlStorage.SQLStorage.TransactionIsolationLevel;
 
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
@@ -23,8 +19,6 @@ import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 
 public class TOTPQueries {
     public static String getQueryToCreateUserDevicesTable(Start start) {
-        // Todo: verify if "DEFAULT FALSE" is correct
-        // TODO: Verify all queries using SQLite
         return "CREATE TABLE IF NOT EXISTS" + Config.getConfig(start).getTotpUserDevicesTable() + " ("
                 + "user_id VARCHAR(128) NOT NULL," + "device_name VARCHAR(256) NOT NULL,"
                 + "secret_key VARCHAR(256) NOT NULL,"
@@ -63,8 +57,7 @@ public class TOTPQueries {
     public static void markDeviceAsVerified(Start start, String userId, String deviceName)
             throws StorageTransactionLogicException, StorageQueryException, SQLException {
         String QUERY = "UPDATE " + Config.getConfig(start).getTotpUserDevicesTable()
-                + " SET verified = true WHERE user_id = ? AND device_name = ?;"; // What if device is already
-                                                                                 // verified?
+                + " SET verified = true WHERE user_id = ? AND device_name = ?;";
         update(start, QUERY, pst -> {
             pst.setString(1, userId);
             pst.setString(2, deviceName);
@@ -161,7 +154,7 @@ public class TOTPQueries {
             pst.setBoolean(3, code.isValidCode);
             pst.setLong(4, code.expiryTime);
         });
-        return true; // FIXME: This is not correct. We should check if the code was inserted or not.
+        return true; // FIXME: Count the number of rows inserted OR Check if the code was inserted
     }
 
     public static TOTPUsedCode[] getUsedCodes(Start start, String userId) throws SQLException, StorageQueryException {
