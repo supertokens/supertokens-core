@@ -57,7 +57,7 @@ public class VerifySessionAPITest {
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("sessionId", sessionId);
         JsonObject verifyResponse1 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/dashboard/verify", requestBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/dashboard/session/verify", requestBody, 1000, 1000, null,
                 Utils.getCdiVersion2_18ForTests(), "dashboard");
         assertEquals(1, verifyResponse1.entrySet().size());
         assertEquals("OK", verifyResponse1.get("status").getAsString());
@@ -65,7 +65,7 @@ public class VerifySessionAPITest {
         Dashboard.revokeSessionWithSessionId(process.getProcess(), sessionId);
 
         JsonObject verifyResponse2 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/dashboard/verify", requestBody, 1000, 1000, null,
+                "http://localhost:3567/recipe/dashboard/session/verify", requestBody, 1000, 1000, null,
                 Utils.getCdiVersion2_18ForTests(), "dashboard");
 
         assertEquals(1, verifyResponse2.entrySet().size());
