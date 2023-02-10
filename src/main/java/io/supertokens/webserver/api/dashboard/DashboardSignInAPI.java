@@ -44,10 +44,12 @@ public class DashboardSignInAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
            response.addProperty("status", "OK");
            response.addProperty("sessionId", sessionId);
+           super.sendJsonResponse(200, response, resp);
         } catch (DashboardFeatureFlagException e) {
            JsonObject response = new JsonObject();
            response.addProperty("status", "USER_SUSPENDED_ERROR");
            response.addProperty("message", e.getMessage());
+           super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
