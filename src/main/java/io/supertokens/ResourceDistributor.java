@@ -31,14 +31,14 @@ import java.util.Map;
 // when the main instance dies, those singleton classes die too.
 
 public class ResourceDistributor {
-    private Map<KeyClass, SingletonResource> resources = new HashMap<>();
+    private Map<KeyClass, SingletonResource> resources = new HashMap<>(1);
     private final Main main;
 
     public ResourceDistributor(Main main) {
         this.main = main;
     }
 
-    public SingletonResource getResource(TenantIdentifier tenantIdentifier, @Nonnull String key)
+    public synchronized SingletonResource getResource(TenantIdentifier tenantIdentifier, @Nonnull String key)
             throws TenantOrAppNotFoundException {
         // first we do exact match
         SingletonResource resource = resources.get(new KeyClass(tenantIdentifier, key));
@@ -84,13 +84,13 @@ public class ResourceDistributor {
 
     @Deprecated
     @TestOnly
-    public SingletonResource getResource(@Nonnull String key) {
+    public synchronized SingletonResource getResource(@Nonnull String key) {
         return resources.get(new KeyClass(new TenantIdentifier(null, null, null), key));
     }
 
-    public SingletonResource setResource(TenantIdentifier tenantIdentifier,
-                                         @Nonnull String key,
-                                         SingletonResource resource) {
+    public synchronized SingletonResource setResource(TenantIdentifier tenantIdentifier,
+                                                      @Nonnull String key,
+                                                      SingletonResource resource) {
         SingletonResource alreadyExists = resources.get(new KeyClass(tenantIdentifier, key));
         if (alreadyExists != null) {
             return alreadyExists;
@@ -99,7 +99,7 @@ public class ResourceDistributor {
         return resource;
     }
 
-    public void clearAllResourcesWithResourceKey(String inputKey) {
+    public synchronized void clearAllResourcesWithResourceKey(String inputKey) {
         List<KeyClass> toRemove = new ArrayList<>();
         resources.forEach((key, value) -> {
             if (key.key.equals(inputKey)) {
@@ -111,7 +111,7 @@ public class ResourceDistributor {
         }
     }
 
-    public Map<KeyClass, SingletonResource> getAllResourcesWithResourceKey(String inputKey) {
+    public synchronized Map<KeyClass, SingletonResource> getAllResourcesWithResourceKey(String inputKey) {
         Map<KeyClass, SingletonResource> result = new HashMap<>();
         resources.forEach((key, value) -> {
             if (key.key.equals(inputKey)) {
@@ -123,8 +123,8 @@ public class ResourceDistributor {
 
     @Deprecated
     @TestOnly
-    public SingletonResource setResource(@Nonnull String key,
-                                         SingletonResource resource) {
+    public synchronized SingletonResource setResource(@Nonnull String key,
+                                                      SingletonResource resource) {
         return setResource(new TenantIdentifier(null, null, null), key, resource);
     }
 

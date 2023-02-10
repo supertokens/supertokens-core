@@ -16,6 +16,7 @@
 
 package io.supertokens.multitenancy;
 
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
@@ -30,8 +31,7 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdExce
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
@@ -66,6 +66,17 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     public static void init(Main main) {
         main.getResourceDistributor()
                 .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new Multitenancy(main));
+        if (getTenantInfo(main, new TenantIdentifier(null, null, null)) == null) {
+            // we create the default base tenant
+            try {
+                Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantIdentifier(null, null, null), new TenantConfig(
+                        new TenantIdentifier(null, null, null),
+                        new EmailPasswordConfig(true), new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{}),
+                        new PasswordlessConfig(true), new JsonObject()));
+            } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException e) {
+                throw new IllegalStateException(e);
+            }
+        }
     }
 
     private TenantConfig[] getAllTenants() {
@@ -145,7 +156,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         Cronjobs.getInstance(main).setTenantsInfo(list);
     }
 
-    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig sourceTenant, TenantConfig newTenant)
+    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantIdentifier sourceTenant, TenantConfig newTenant)
             throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException {
 
         // first we don't allow changing of core config for base tenant - since that comes from config.yaml file.
@@ -159,20 +170,20 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         if (!newTenant.tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
             // this means that we are creating a new tenant and must use the public tenant for the current app to do
             // this
-            if (!sourceTenant.tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                 throw new BadPermissionException("You must use the public tenantId to add a new tenant to this app");
             }
         } else if (!newTenant.tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
             // this means that we are creating a new app for this connectionuridomain and must use the public app and
             // public tenant for this
-            if (!sourceTenant.tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) &&
-                    !sourceTenant.tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
+            if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) &&
+                    !sourceTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
                 throw new BadPermissionException("You must use the public tenantId and public appId to add a new app");
             }
         } else if (!newTenant.tenantIdentifier.getConnectionUriDomain()
                 .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
             // this means that we are creating a new connectionuridomain, and must use the base tenant for this
-            if (!sourceTenant.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
+            if (!sourceTenant.equals(new TenantIdentifier(null, null, null))) {
                 throw new BadPermissionException("You must use the base tenant to create a new connectionUriDomain");
             }
         }
