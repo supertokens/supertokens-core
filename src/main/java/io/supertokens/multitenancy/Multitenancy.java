@@ -71,7 +71,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             try {
                 Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantIdentifier(null, null, null), new TenantConfig(
                         new TenantIdentifier(null, null, null),
-                        new EmailPasswordConfig(true), new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{}),
+                        new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true), new JsonObject()));
             } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException e) {
                 throw new IllegalStateException(e);
