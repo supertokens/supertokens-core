@@ -24,10 +24,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
-import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.multitenancy.exception.CannotDeleteNulConnectionUriDomainException;
-import io.supertokens.multitenancy.exception.CannotDeleteNullAppIdException;
-import io.supertokens.multitenancy.exception.CannotDeleteNullTenantException;
+import io.supertokens.multitenancy.exception.*;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
@@ -162,57 +159,86 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         Cronjobs.getInstance(main).setTenantsInfo(list);
     }
 
-    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig tenant) {
-        // TODO: do not allow updating of null, null, null's core config
-        // TODO: allow only if connectionuri exists and appid exists (unless this has connectionuri as null or appid
-        //  as null)
-        // TODO: only public appId can create tenants
-        // TODO: only public connectionuri can create appId
-        // TODO: Only null, null, null can create a connectionuridomain
+    public static boolean addNewOrUpdateAppOrTenant(Main main, TenantConfig sourceTenant, TenantConfig newTenant)
+            throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException {
+
+        // first we don't allow changing of core config for base tenant - since that comes from config.yaml file.
+        if (newTenant.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
+            if (newTenant.coreConfig != null && newTenant.coreConfig.entrySet().size() > 0) {
+                throw new CannotModifyBaseConfigException();
+            }
+        }
+
+        // Then we check if the newTenant is about to be deleted, or is being deleted, and if it is, then we don't
+        // allow it to be created
         TenantConfig[] unfilteredTenants = MultitenancyUtils.getAllTenantsWithoutFilteringDeletedOnes(main);
         for (TenantConfig t : unfilteredTenants) {
-            if (t.tenantIdentifier.getConnectionUriDomain().equals(tenant.tenantIdentifier.getConnectionUriDomain())) {
+            if (t.tenantIdentifier.getConnectionUriDomain()
+                    .equals(newTenant.tenantIdentifier.getConnectionUriDomain())) {
                 if (t.connectionUriDomainMarkedAsDeleted) {
-                    // TODO: ??
+                    throw new DeletionInProgressException(
+                            "ConnectionUriDomain is being deleted. Please try in sometime");
                 }
             }
-            if (t.tenantIdentifier.getAppId().equals(tenant.tenantIdentifier.getAppId())) {
+            if (t.tenantIdentifier.getAppId().equals(newTenant.tenantIdentifier.getAppId())) {
                 if (t.appIdMarkedAsDeleted) {
-                    // TODO: ??
+                    throw new DeletionInProgressException("AppId is being deleted. Please try in sometime");
                 }
+            }
+        }
+
+        // Then we check for permissions based on sourceTenant
+        if (!newTenant.tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            // this means that we are creating a new tenant and must use the public tenant for the current app to do
+            // this
+            if (!sourceTenant.tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                throw new BadPermissionException("You must use the public tenantId to add a new tenant to this app");
+            }
+        } else if (!newTenant.tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
+            // this means that we are creating a new app for this connectionuridomain and must use the public app and
+            // public tenant for this
+            if (!sourceTenant.tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) &&
+                    !sourceTenant.tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
+                throw new BadPermissionException("You must use the public tenantId and public appId to add a new app");
+            }
+        } else if (!newTenant.tenantIdentifier.getConnectionUriDomain()
+                .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+            // this means that we are creating a new connectionuridomain, and must use the base tenant for this
+            if (!sourceTenant.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
+                throw new BadPermissionException("You must use the base tenant to create a new connectionUriDomain");
             }
         }
 
         boolean creationInSharedDbSucceeded = false;
         try {
-            StorageLayer.getMultitenancyStorage(main).createTenant(tenant);
+            StorageLayer.getMultitenancyStorage(main).createTenant(newTenant);
             creationInSharedDbSucceeded = true;
             Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
             try {
-                StorageLayer.getMultitenancyStorageWithTargetStorage(tenant.tenantIdentifier, main)
-                        .addTenantIdInUserPool(tenant.tenantIdentifier);
+                StorageLayer.getMultitenancyStorageWithTargetStorage(newTenant.tenantIdentifier, main)
+                        .addTenantIdInUserPool(newTenant.tenantIdentifier);
             } catch (TenantOrAppNotFoundException e) {
                 // it should never come here, since we just added the tenant above.. but just in case.
-                return addNewOrUpdateAppOrTenant(main, tenant);
+                return addNewOrUpdateAppOrTenant(main, sourceTenant, newTenant);
             }
             return true;
         } catch (DuplicateTenantException e) {
             if (!creationInSharedDbSucceeded) {
                 try {
-                    StorageLayer.getMultitenancyStorage(main).overwriteTenantConfig(tenant);
+                    StorageLayer.getMultitenancyStorage(main).overwriteTenantConfig(newTenant);
                     Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
 
                     // we do this extra step cause if previously an attempt to add a tenant failed midway,
                     // such that the main tenant was added in the user pool, but did not get created
                     // in the tenant specific db (cause it's not happening in a transaction), then we
                     // do this to make it consistent.
-                    StorageLayer.getMultitenancyStorageWithTargetStorage(tenant.tenantIdentifier, main)
-                            .addTenantIdInUserPool(tenant.tenantIdentifier);
+                    StorageLayer.getMultitenancyStorageWithTargetStorage(newTenant.tenantIdentifier, main)
+                            .addTenantIdInUserPool(newTenant.tenantIdentifier);
                     return false;
                 } catch (TenantOrAppNotFoundException ex) {
                     // this can happen cause of a race condition if the tenant was deleted in the middle
                     // of it being recreated.
-                    return addNewOrUpdateAppOrTenant(main, tenant);
+                    return addNewOrUpdateAppOrTenant(main, sourceTenant, newTenant);
                 } catch (DuplicateTenantException ex) {
                     // we treat this as a success
                     return false;
