@@ -166,6 +166,14 @@ public class DashboardQueries {
         return execute(start, QUERY, pst -> pst.setString(1, userId), new DashboardSessionInfoResultExtractor());
     }
 
+    public static void deleteExpiredSessions(Start start) throws SQLException, StorageQueryException{
+        long currentTimeMillis = System.currentTimeMillis();
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardSessionsTable()
+                + " WHERE expiry < ?";
+        // store the number of rows updated
+        update(start, QUERY, pst -> pst.setLong(1, currentTimeMillis));
+    }
+
     private static class DashboardInfoMapper implements RowMapper<DashboardUser, ResultSet> {
         private static final DashboardInfoMapper INSTANCE = new DashboardInfoMapper();
 

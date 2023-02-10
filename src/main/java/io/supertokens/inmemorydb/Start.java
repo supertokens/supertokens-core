@@ -1739,13 +1739,16 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
-        
+
     }
 
     @Override
-    public void revokeExpiredSessions(long expiry) throws StorageQueryException {
-        // TODO Auto-generated method stub
-
+    public void revokeExpiredSessions() throws StorageQueryException {
+        try {
+            DashboardQueries.deleteExpiredSessions(this);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 
     @Override
@@ -1753,7 +1756,7 @@ public class Start
         try {
             return DashboardQueries.getDashboardUserByUserId(this, userId);
         } catch (SQLException e) {
-           throw new StorageQueryException(e);
+            throw new StorageQueryException(e);
         }
     }
 }
