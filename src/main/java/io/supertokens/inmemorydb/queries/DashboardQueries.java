@@ -17,7 +17,7 @@ import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 
 public class DashboardQueries {
-    public static String getQueryToCreateDashboardEmailPasswordTable(Start start) {
+    public static String getQueryToCreateDashboardUsersTable(Start start) {
         String tableName = Config.getConfig(start).getDashboardEmailPasswordUsersTable();
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
@@ -29,18 +29,22 @@ public class DashboardQueries {
         // @formatter:on
     }
 
-    public static String getQueryToCreateDashboardUsersSessionTable(Start start) {
+    public static String getQueryToCreateDashboardUserSessionsTable(Start start) {
         String tableName = Config.getConfig(start).getDashboardSessionsTable();
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
                 + "user_id CHAR(36) NOT NULL,"
                 + "session_id VARCHAR(256) NOT NULL UNIQUE,"
-                + "time_joined BIGINT UNSIGNED NOT NULL,"
-                + "PRIMARY KEY(user_id, session_id));";
+                + "time_created BIGINT UNSIGNED NOT NULL,"
+                + "expiry BIGINT UNSIGNED NOT NULL"
+                + "PRIMARY KEY(user_id, session_id));"
+                + "FOREIGN KEY(user_id) REFERENCES " + Config.getConfig(start).getDashboardEmailPasswordUsersTable()
+                + "(user_id) ON DELETE CASCADE );";
         // @formatter:on
-    }    
+    }
 
-    public static void createDashboardUser(Start start, String userId, String email, String passwordHash, long timeJoined) throws SQLException, StorageQueryException {
+    public static void createDashboardUser(Start start, String userId, String email, String passwordHash,
+            long timeJoined) throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getDashboardEmailPasswordUsersTable()
                 + "(user_id, email, password_hash, time_joined)" + " VALUES(?, ?, ?, ?)";
         update(start, QUERY, pst -> {
@@ -69,7 +73,8 @@ public class DashboardQueries {
 
     public static boolean deleteDashboardUserWithUserId(Start start, String userId)
             throws SQLException, StorageQueryException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardEmailPasswordUsersTable() + " WHERE user_id = ?";
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardEmailPasswordUsersTable()
+                + " WHERE user_id = ?";
         // store the number of rows updated
         int rowUpdatedCount = update(start, QUERY, pst -> pst.setString(1, userId));
 
@@ -88,45 +93,35 @@ public class DashboardQueries {
         });
     }
 
-    public static void updateDashboardUsersEmailWithEmail_Transaction(Start start, Connection con ,String email, String newEmail) throws SQLException, StorageQueryException{
-        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET email = ? WHERE email = ?";
-        update(con, QUERY, pst -> {
-            pst.setString(1, newEmail);
-            pst.setString(2, email);
-        });
-    }
-
-    public static  void updateDashboardUsersPasswordWithEmail_Transaction(Start start, Connection con, String email, String newPassword) throws SQLException, StorageQueryException{
-        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET password = ? WHERE email = ?";
-        update(con, QUERY, pst -> {
-            pst.setString(1, newPassword);
-            pst.setString(2, email);
-        });
-    }
-
-    public static void updateDashboardUsersEmailWithUserId_Transaction(Start start, Connection con, String userId, String newEmail) throws SQLException, StorageQueryException{
-        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET email = ? WHERE user_id = ?";
+    public static void updateDashboardUsersEmailWithUserId_Transaction(Start start, Connection con, String userId,
+            String newEmail) throws SQLException, StorageQueryException {
+        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable()
+                + " SET email = ? WHERE user_id = ?";
         update(con, QUERY, pst -> {
             pst.setString(1, newEmail);
             pst.setString(2, userId);
         });
     }
 
-    public static void updateDashboardUsersPasswordWithUserId_Transaction(Start start, Connection con, String userId, String newPassword) throws SQLException, StorageQueryException{
-        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable() + " SET password = ? WHERE user_id = ?";
+    public static void updateDashboardUsersPasswordWithUserId_Transaction(Start start, Connection con, String userId,
+            String newPassword) throws SQLException, StorageQueryException {
+        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable()
+                + " SET password = ? WHERE user_id = ?";
         update(con, QUERY, pst -> {
             pst.setString(1, newPassword);
             pst.setString(2, userId);
         });
     }
 
-    public static void createDashboardSession(Start start, String userId, String sessionId, long timeJoined) throws SQLException, StorageQueryException {
+    public static void createDashboardSession(Start start, String userId, String sessionId, long timeCreated,
+            long expiry) throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getDashboardSessionsTable()
-                + "(user_id, session_id,time_joined)" + " VALUES(?, ?, ?)";
+                + "(user_id, session_id, time_created, expiry)" + " VALUES(?, ?, ?, ?)";
         update(start, QUERY, pst -> {
             pst.setString(1, userId);
             pst.setString(2, sessionId);
-            pst.setLong(3, timeJoined);
+            pst.setLong(3, timeCreated);
+            pst.setLong(4, expiry);
         });
     }
 
@@ -190,12 +185,13 @@ public class DashboardQueries {
 
         @Override
         public DashboardSessionInfo map(ResultSet rs) throws Exception {
-
-            return new DashboardSessionInfo(rs.getString("user_id"), rs.getString("session_id"), rs.getLong("time_created"));
+            return new DashboardSessionInfo(rs.getString("user_id"), rs.getString("session_id"),
+                    rs.getLong("time_created"), rs.getLong("expiry"));
         }
     }
 
-    private static class DashboardSessionInfoResultExtractor implements ResultSetValueExtractor<DashboardSessionInfo[]> {
+    private static class DashboardSessionInfoResultExtractor
+            implements ResultSetValueExtractor<DashboardSessionInfo[]> {
         @Override
         public DashboardSessionInfo[] extract(ResultSet result) throws SQLException, StorageQueryException {
             List<DashboardSessionInfo> temp = new ArrayList<>();

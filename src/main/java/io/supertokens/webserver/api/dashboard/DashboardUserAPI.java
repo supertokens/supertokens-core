@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
+import io.supertokens.dashboard.exceptions.DashboardFeatureFlagException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -35,15 +36,6 @@ public class DashboardUserAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
 
         try {
-
-            if (!Dashboard.isFeatureFlagEnabledOrUserCountIsUnderThreshold(main)) {
-                JsonObject response = new JsonObject();
-                // TODO: The status needs to updated/ a message needs to be added to the
-                // response body stating why a new user cannot be created
-                response.addProperty("status", "USER_LIMIT_REACHED");
-                super.sendJsonResponse(402, response, resp);
-                return;
-            }
 
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
             String email = InputParser.parseStringOrThrowError(input, "email", false);
@@ -84,6 +76,11 @@ public class DashboardUserAPI extends WebserverAPI {
             super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
+        } catch (DashboardFeatureFlagException e) {
+            JsonObject response = new JsonObject();
+            response.addProperty("status", "USER_LIMIT_REACHED_ERROR");
+            response.addProperty("message", e.getMessage());
+            super.sendJsonResponse(402, response, resp);
         }
     }
 

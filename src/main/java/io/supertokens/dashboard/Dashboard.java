@@ -8,12 +8,14 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
+import io.supertokens.dashboard.exceptions.DashboardFeatureFlagException;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateUserIdException;
+import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -23,9 +25,15 @@ import jakarta.annotation.Nullable;
 
 public class Dashboard {
     public static final int MAX_NUMBER_OF_FREE_DASHBOARD_USERS = 1;
+    public static final long DASHBOARD_SESSION_DURATION = 2592000000L; // 30 days in milliseconds
 
     public static void signUpDashboardUser(Main main, String email, String password)
-            throws StorageQueryException, DuplicateEmailException {
+            throws StorageQueryException, DuplicateEmailException, DashboardFeatureFlagException {
+
+        if (!isFeatureFlagEnabledOrUserCountIsUnderThreshold(main)) {
+            // TODO: update message
+            throw new DashboardFeatureFlagException("Free user limit reached, please enable the dashboard feature");
+        }
 
         String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
         while (true) {
@@ -68,51 +76,62 @@ public class Dashboard {
         return jsonArrayOfDashboardUsers;
     }
 
-    public static String signInDashboardUser(Main main, String email, String password) throws StorageQueryException {
+    public static String signInDashboardUser(Main main, String email, String password) throws StorageQueryException, DashboardFeatureFlagException {
+        if(isUserSuspended(main, email)){
+            // TODO: update message
+            throw new DashboardFeatureFlagException("User is suspended, please try signing in with a different user or enable the dashboard feature");
+        }
         DashboardUser user = StorageLayer.getDashboardStorage(main).getDashboardUserByEmail(email);
         if (user != null) {
+
             String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
             if (user.passwordHash.equals(hashedPassword)) {
                 // create a new session for the user
-                return createSessionForDashboardUser(main, user);
+                try {
+                    return createSessionForDashboardUser(main, user);
+                } catch (UserIdNotFoundException ignore) {
+                    // should not come here since user exists
+                }
             }
         }
         return null;
-    }
-
-    public static boolean deleteUserWithEmail(Main main, String email) throws StorageQueryException {
-        return StorageLayer.getDashboardStorage(main).deleteDashboardUserWithEmail(email);
     }
 
     public static boolean deleteUserWithUserId(Main main, String userId) throws StorageQueryException {
         return StorageLayer.getDashboardStorage(main).deleteDashboardUserWithUserId(userId);
     }
 
+    private static boolean isUserSuspended(Main main, String email) throws StorageQueryException {
+        if (!isFeatureFlagEnabledOrUserCountIsUnderThreshold(main)) {
+            DashboardUser[] users = StorageLayer.getDashboardStorage(main).getAllDashboardUsers();
+            for (int i = 0; i < MAX_NUMBER_OF_FREE_DASHBOARD_USERS; i++) {
+                if (email.equals(users[i].email)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        return false;
+    }
+
+    public static boolean deleteUserWithEmail(Main main, String email) throws StorageQueryException {
+        DashboardUser user = StorageLayer.getDashboardStorage(main).getDashboardUserByEmail(email);
+        if (user != null) {
+            return deleteUserWithUserId(main, user.userId);
+        }
+        return false;
+    }
+
     public static void updateUsersCredentialsWithEmail(Main main, String email, @Nullable String newEmail,
             @Nullable String newPassword)
             throws StorageQueryException, DuplicateEmailException, StorageTransactionLogicException {
-        DashboardSQLStorage storage = StorageLayer.getDashboardStorage(main);
-        try {
-            storage.startTransaction(transaction -> {
-                if (newEmail != null) {
-                    try {
-                        storage.updateDashboardUsersEmailWithEmail_Transaction(transaction, email, newEmail);
-                    } catch (DuplicateEmailException e) {
-                        throw new StorageTransactionLogicException(e);
-                    }
-                }
 
-                if (newPassword != null) {
-                    storage.updateDashboardUsersPasswordWithEmail_Transaction(transaction, email, newPassword);
-                }
-                storage.commitTransaction(transaction);
-                return null;
-            });
-        } catch (StorageTransactionLogicException e) {
-            if (e.actualException instanceof DuplicateEmailException) {
-                throw (DuplicateEmailException) e.actualException;
-            }
-            throw e;
+        DashboardSQLStorage storage = StorageLayer.getDashboardStorage(main);
+
+        DashboardUser user = storage.getDashboardUserByEmail(email);
+        if (user != null) {
+            updateUsersCredentialsWithUserId(main, user.userId, newEmail, newPassword);
         }
     }
 
@@ -160,10 +179,13 @@ public class Dashboard {
                 .anyMatch(t -> t == EE_FEATURES.DASHBOARD_LOGIN);
     }
 
-    private static String createSessionForDashboardUser(Main main, DashboardUser user) throws StorageQueryException {
+    private static String createSessionForDashboardUser(Main main, DashboardUser user)
+            throws StorageQueryException, UserIdNotFoundException {
         String sessionId = UUID.randomUUID().toString();
         long timeCreated = System.currentTimeMillis();
-        StorageLayer.getDashboardStorage(main).createNewDashboardUserSession(user.userId, sessionId, timeCreated);
+        long expiry = timeCreated + DASHBOARD_SESSION_DURATION;
+        StorageLayer.getDashboardStorage(main).createNewDashboardUserSession(user.userId, sessionId, timeCreated,
+                expiry);
         return sessionId;
     }
 
@@ -175,7 +197,6 @@ public class Dashboard {
     }
 
     public static boolean isStrongPassword(String password) {
-
         String regexPatternForPassword = "(?=.*[A-Za-z])(?=.*[0-9]).{8,100}";
         return patternMatcher(password, regexPatternForPassword);
     }

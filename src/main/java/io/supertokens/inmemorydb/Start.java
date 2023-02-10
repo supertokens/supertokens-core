@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.dashboard.Dashboard;
+import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.inmemorydb.config.Config;
@@ -33,6 +34,7 @@ import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardStorage;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
+import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -1661,16 +1663,6 @@ public class Start
     }
 
     @Override
-    public boolean deleteDashboardUserWithEmail(String email) throws StorageQueryException {
-        try {
-            return DashboardQueries.deleteDashboardUserWithEmail(this, email);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-
-    }
-
-    @Override
     public boolean deleteDashboardUserWithUserId(String userId) throws StorageQueryException {
         try {
             return DashboardQueries.deleteDashboardUserWithUserId(this, userId);
@@ -1683,28 +1675,6 @@ public class Start
     public DashboardUser getDashboardUserByEmail(String email) throws StorageQueryException {
         try {
             return DashboardQueries.getDashboardUserByEmail(this, email);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public void updateDashboardUsersEmailWithEmail_Transaction(TransactionConnection con, String email, String newEmail)
-            throws StorageQueryException, io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException {
-        Connection sqlCon = (Connection) con.getConnection();
-        try {
-            DashboardQueries.updateDashboardUsersEmailWithEmail_Transaction(this, sqlCon, email, newEmail);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public void updateDashboardUsersPasswordWithEmail_Transaction(TransactionConnection con, String email,
-            String newPassword) throws StorageQueryException {
-        Connection sqlCon = (Connection) con.getConnection();
-        try {
-            DashboardQueries.updateDashboardUsersPasswordWithEmail_Transaction(this, sqlCon, email, newPassword);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1743,25 +1713,9 @@ public class Start
     }
 
     @Override
-    public void revokeSessionsWithUserId(String userId) throws StorageQueryException {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
     public void revokeSessionWithSessionId(String sessionId) throws StorageQueryException {
         // TODO Auto-generated method stub
 
-    }
-
-    @Override
-    public void createNewDashboardUserSession(String userId, String sessionId, long timeJoined)
-            throws StorageQueryException {
-        try {
-            DashboardQueries.createDashboardSession(this, userId, sessionId, timeJoined);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
     }
 
     @Override
@@ -1771,5 +1725,22 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
+    }
+
+    @Override
+    public void createNewDashboardUserSession(String userId, String sessionId, long timeCreated, long expiry)
+            throws StorageQueryException, UserIdNotFoundException {
+        try {
+            DashboardQueries.createDashboardSession(this, userId, sessionId, timeCreated, expiry);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+        
+    }
+
+    @Override
+    public void revokeExpiredSessions(long expiry) throws StorageQueryException {
+        // TODO Auto-generated method stub
+
     }
 }
