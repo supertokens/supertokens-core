@@ -186,6 +186,19 @@ public class GeneralQueries {
             update(start, UserIdMappingQueries.getQueryToCreateUserIdMappingTable(start), NO_OP_SETTER);
         }
 
+
+        if (!doesTableExists(start, Config.getConfig(start).getTotpUserDevicesTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, TOTPQueries.getQueryToCreateUserDevicesTable(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getTotpUsedCodesTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, TOTPQueries.getQueryToCreateUsedCodesTable(start), NO_OP_SETTER);
+            // index:
+            update(start, TOTPQueries.getQueryToCreateUsedCodesIndex(start), NO_OP_SETTER);
+        }
+
     }
 
     public static void setKeyValue_Transaction(Start start, Connection con, String key, KeyValueInfo info)
