@@ -89,4 +89,12 @@ public class SQLiteConfig {
     public String getUserIdMappingTable() {
         return "userid_mapping";
     }
+
+    public String getTotpUserDevicesTable() {
+        return "totp_user_devices";
+    }
+
+    public String getTotpUsedCodesTable() {
+        return "totp_used_codes";
+    }
 }

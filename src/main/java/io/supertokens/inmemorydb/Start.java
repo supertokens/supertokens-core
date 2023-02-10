@@ -59,6 +59,12 @@ import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUs
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
+import io.supertokens.pluginInterface.totp.TOTPDevice;
+import io.supertokens.pluginInterface.totp.TOTPUsedCode;
+import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
+import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
+import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
+import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
 import io.supertokens.pluginInterface.usermetadata.UserMetadataStorage;
@@ -87,7 +93,8 @@ import java.util.Set;
 
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
-        JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage {
+        JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
+        TOTPSQLStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -1455,7 +1462,8 @@ public class Start
             @Nullable String externalUserIdInfo)
             throws StorageQueryException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException {
 
-        // SQLite is not compiled with foreign key constraint, so we need an explicit check to see if superTokensUserId
+        // SQLite is not compiled with foreign key constraint, so we need an explicit
+        // check to see if superTokensUserId
         // is a valid
         // userId.
         if (!doesUserIdExist(superTokensUserId)) {
@@ -1617,6 +1625,88 @@ public class Start
             /* Since JWT recipe tables do not store userId we do not add any data to them */
         } else {
             throw new IllegalStateException("ClassName: " + className + " is not part of NonAuthRecipeStorage");
+        }
+    }
+
+    // TOTP recipe: 
+
+    @Override
+    public void createDevice(TOTPDevice device) throws StorageQueryException {
+        try {
+            TOTPQueries.createDevice(this, device);
+        } catch (Exception e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void markDeviceAsVerified(String userId, String deviceName)
+            throws StorageQueryException, TotpNotEnabledException, UnknownDeviceException {
+        try {
+            TOTPQueries.markDeviceAsVerified(this, userId, deviceName);
+        } catch (Exception e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteDevice(String userId, String deviceName)
+            throws StorageQueryException, TotpNotEnabledException, UnknownDeviceException {
+        try {
+            TOTPQueries.deleteDevice(this, userId, deviceName);
+        } catch (Exception e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void updateDeviceName(String userId, String oldDeviceName, String newDeviceName)
+            throws StorageQueryException, TotpNotEnabledException, DeviceAlreadyExistsException,
+            UnknownDeviceException {
+        try {
+            TOTPQueries.updateDeviceName(this, userId, oldDeviceName, newDeviceName);
+        } catch (Exception e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public TOTPDevice[] getDevices(String userId)
+            throws StorageQueryException {
+        try {
+            return TOTPQueries.getDevices(this, userId);
+        } catch (Exception e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public boolean insertUsedCode(TOTPUsedCode code)
+            throws StorageQueryException, TotpNotEnabledException {
+        try {
+            return TOTPQueries.insertUsedCode(this, code);
+        } catch (Exception e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public TOTPUsedCode[] getUsedCodes(String userId)
+            throws StorageQueryException, TotpNotEnabledException {
+        try {
+            return TOTPQueries.getUsedCodes(this, userId);
+        } catch (Exception e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void removeExpiredCodes()
+            throws StorageQueryException {
+        try {
+            TOTPQueries.removeExpiredCodes(this);
+        } catch (Exception e) {
+            throw new StorageQueryException(e);
         }
     }
 }
