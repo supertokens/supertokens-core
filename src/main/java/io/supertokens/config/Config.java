@@ -171,7 +171,7 @@ public class Config extends ResourceDistributor.SingletonResource {
         for (TenantConfig tenant : tenants) {
             jsonConfigs.put(
                     new ResourceDistributor.KeyClass(tenant.tenantIdentifier, RESOURCE_KEY),
-                    tenant.coreConfig);
+                    tenant.getCoreConfig());
         }
         for (TenantConfig tenant : tenants) {
             if (tenant.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
