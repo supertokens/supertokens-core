@@ -23,6 +23,7 @@ import io.supertokens.config.Config;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.*;
@@ -73,7 +74,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                         new TenantIdentifier(null, null, null),
                         new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
                         new PasswordlessConfig(true), new JsonObject()));
-            } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException e) {
+            } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException | FeatureNotEnabledException e) {
                 throw new IllegalStateException(e);
             }
         }
@@ -118,37 +119,21 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public void loadConfig() throws IOException, InvalidConfigException, StorageQueryException {
-        if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
-                .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
-            return;
-        }
+    public void loadConfig() throws IOException, InvalidConfigException {
         Config.loadAllTenantConfig(main, this.tenantConfigs);
     }
 
-    public void loadStorageLayer() throws DbInitException, IOException, InvalidConfigException, StorageQueryException {
-        if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
-                .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
-            return;
-        }
+    public void loadStorageLayer() throws DbInitException, IOException, InvalidConfigException {
         StorageLayer.loadAllTenantStorage(main, this.tenantConfigs);
     }
 
-    public void loadSigningKeys() throws UnsupportedJWTSigningAlgorithmException, StorageQueryException {
-        if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
-                .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
-            return;
-        }
+    public void loadSigningKeys() throws UnsupportedJWTSigningAlgorithmException {
         AccessTokenSigningKey.loadForAllTenants(main, this.tenantConfigs);
         RefreshTokenKey.loadForAllTenants(main, this.tenantConfigs);
         JWTSigningKey.loadForAllTenants(main, this.tenantConfigs);
     }
 
-    private void refreshCronjobs() throws StorageQueryException {
-        if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
-                .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
-            return;
-        }
+    private void refreshCronjobs() {
         List<TenantIdentifier> list = new ArrayList<>();
         for (TenantConfig t : this.tenantConfigs) {
             list.add(t.tenantIdentifier);
@@ -158,7 +143,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
     public static boolean addNewOrUpdateAppOrTenant(Main main, TenantIdentifier sourceTenant, TenantConfig newTenant)
             throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException,
-            StorageQueryException {
+            StorageQueryException, FeatureNotEnabledException {
 
         // first we don't allow changing of core config for base tenant - since that comes from config.yaml file.
         if (newTenant.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
@@ -168,7 +153,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         } else {
             if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
                     .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
-                // TODO: ?? throw LicenseKeyException
+                throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
             }
         }
 
@@ -297,11 +282,16 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
     public static boolean addUserIdToTenant(Main main, TenantIdentifier sourceTenantIdentifier, String userId,
                                             String newTenantId)
-            throws TenantOrAppNotFoundException, UnknownUserIdException {
+            throws TenantOrAppNotFoundException, UnknownUserIdException, StorageQueryException,
+            FeatureNotEnabledException {
         TenantIdentifier targetTenantIdentifier = new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(),
                 sourceTenantIdentifier.getAppId(), newTenantId);
         if (sourceTenantIdentifier.equals(targetTenantIdentifier)) {
             return false;
+        }
+        if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
+                .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
+            throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
         }
         StorageLayer.getMultitenancyStorageWithTargetStorage(sourceTenantIdentifier, main)
                 .addUserIdToTenant(targetTenantIdentifier, userId);
@@ -310,12 +300,17 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
     public static boolean addRoleToTenant(Main main, TenantIdentifier sourceTenantIdentifier, String role,
                                           String newTenantId)
-            throws TenantOrAppNotFoundException, UnknownRoleException {
+            throws TenantOrAppNotFoundException, UnknownRoleException, StorageQueryException,
+            FeatureNotEnabledException {
 
         TenantIdentifier targetTenantIdentifier = new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(),
                 sourceTenantIdentifier.getAppId(), newTenantId);
         if (sourceTenantIdentifier.equals(targetTenantIdentifier)) {
             return false;
+        }
+        if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
+                .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
+            throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
         }
         StorageLayer.getMultitenancyStorageWithTargetStorage(sourceTenantIdentifier, main)
                 .addRoleToTenant(targetTenantIdentifier, role);
