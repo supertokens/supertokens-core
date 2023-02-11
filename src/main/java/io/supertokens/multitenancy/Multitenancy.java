@@ -63,7 +63,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void init(Main main) {
+    public static void init(Main main) throws StorageQueryException {
         main.getResourceDistributor()
                 .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new Multitenancy(main));
         if (getTenantInfo(main, new TenantIdentifier(null, null, null)) == null) {
@@ -157,12 +157,18 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static boolean addNewOrUpdateAppOrTenant(Main main, TenantIdentifier sourceTenant, TenantConfig newTenant)
-            throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException {
+            throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException,
+            StorageQueryException {
 
         // first we don't allow changing of core config for base tenant - since that comes from config.yaml file.
         if (newTenant.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
             if (newTenant.getCoreConfig().entrySet().size() > 0) {
                 throw new CannotModifyBaseConfigException();
+            }
+        } else {
+            if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
+                    .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
+                // TODO: ?? throw LicenseKeyException
             }
         }
 
