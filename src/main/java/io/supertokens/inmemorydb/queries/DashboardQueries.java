@@ -34,10 +34,10 @@ public class DashboardQueries {
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
                 + "user_id CHAR(36) NOT NULL,"
-                + "session_id VARCHAR(256) NOT NULL UNIQUE,"
+                + "session_id CHAR(36) NOT NULL UNIQUE,"
                 + "time_created BIGINT UNSIGNED NOT NULL,"
                 + "expiry BIGINT UNSIGNED NOT NULL,"
-                + "PRIMARY KEY(user_id, session_id),"
+                + "PRIMARY KEY(session_id),"
                 + "FOREIGN KEY(user_id) REFERENCES " + Config.getConfig(start).getDashboardUsersTable()
                 + "(user_id) ON DELETE CASCADE);";
         // @formatter:on
