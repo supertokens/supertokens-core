@@ -16,130 +16,24 @@
 
 package io.supertokens.multitenancy;
 
-import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
-import io.supertokens.config.Config;
-import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
-import io.supertokens.jwt.JWTSigningKey;
-import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.*;
-import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
-import io.supertokens.pluginInterface.exceptions.DbInitException;
-import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
-import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.storageLayer.StorageLayer;
 
-import java.io.IOException;
 import java.util.*;
 
 public class Multitenancy extends ResourceDistributor.SingletonResource {
-
-    public static final String RESOURCE_KEY = "io.supertokens.multitenancy.Multitenancy";
-    private Main main;
-    private TenantConfig[] tenantConfigs;
-    private final Object lock = new Object();
-
-    private Multitenancy(Main main) {
-        this.main = main;
-        this.tenantConfigs = getAllTenants();
-    }
-
-    public static Multitenancy getInstance(Main main) {
-        try {
-            return (Multitenancy) main.getResourceDistributor()
-                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    public static void init(Main main) throws StorageQueryException {
-        main.getResourceDistributor()
-                .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new Multitenancy(main));
-        if (getTenantInfo(main, new TenantIdentifier(null, null, null)) == null) {
-            // we create the default base tenant
-            try {
-                Multitenancy.addNewOrUpdateAppOrTenant(main, new TenantIdentifier(null, null, null), new TenantConfig(
-                        new TenantIdentifier(null, null, null),
-                        new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
-                        new PasswordlessConfig(true), new JsonObject()));
-            } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException | FeatureNotEnabledException e) {
-                throw new IllegalStateException(e);
-            }
-        }
-    }
-
-    private TenantConfig[] getAllTenants() {
-        return StorageLayer.getMultitenancyStorage(main).getAllTenants();
-    }
-
-    public void refreshTenantsInCoreIfRequired() {
-        try {
-            TenantConfig[] tenantsFromDb = getAllTenants();
-            synchronized (lock) {
-                boolean hasChanged = false;
-                if (tenantsFromDb.length != tenantConfigs.length) {
-                    hasChanged = true;
-                } else {
-                    Set<TenantIdentifier> fromDb = new HashSet<>();
-                    for (TenantConfig t : tenantsFromDb) {
-                        fromDb.add(t.tenantIdentifier);
-                    }
-                    for (TenantConfig t : this.tenantConfigs) {
-                        if (!fromDb.contains(t.tenantIdentifier)) {
-                            hasChanged = true;
-                            break;
-                        }
-                    }
-                }
-
-                this.tenantConfigs = tenantsFromDb;
-                if (!hasChanged) {
-                    return;
-                }
-
-                loadConfig();
-                loadStorageLayer();
-                loadSigningKeys();
-                refreshCronjobs();
-            }
-        } catch (Exception e) {
-            Logging.error(main, e.getMessage(), false, e);
-        }
-    }
-
-    public void loadConfig() throws IOException, InvalidConfigException {
-        Config.loadAllTenantConfig(main, this.tenantConfigs);
-    }
-
-    public void loadStorageLayer() throws DbInitException, IOException, InvalidConfigException {
-        StorageLayer.loadAllTenantStorage(main, this.tenantConfigs);
-    }
-
-    public void loadSigningKeys() throws UnsupportedJWTSigningAlgorithmException {
-        AccessTokenSigningKey.loadForAllTenants(main, this.tenantConfigs);
-        RefreshTokenKey.loadForAllTenants(main, this.tenantConfigs);
-        JWTSigningKey.loadForAllTenants(main, this.tenantConfigs);
-    }
-
-    private void refreshCronjobs() {
-        List<TenantIdentifier> list = new ArrayList<>();
-        for (TenantConfig t : this.tenantConfigs) {
-            list.add(t.tenantIdentifier);
-        }
-        Cronjobs.getInstance(main).setTenantsInfo(list);
-    }
 
     public static boolean addNewOrUpdateAppOrTenant(Main main, TenantIdentifier sourceTenant, TenantConfig newTenant)
             throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException,
@@ -183,7 +77,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         try {
             StorageLayer.getMultitenancyStorage(main).createTenant(newTenant);
             creationInSharedDbSucceeded = true;
-            Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
+            MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
             try {
                 StorageLayer.getMultitenancyStorageWithTargetStorage(newTenant.tenantIdentifier, main)
                         .addTenantIdInUserPool(newTenant.tenantIdentifier);
@@ -196,7 +90,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             if (!creationInSharedDbSucceeded) {
                 try {
                     StorageLayer.getMultitenancyStorage(main).overwriteTenantConfig(newTenant);
-                    Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
+                    MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
 
                     // we do this extra step cause if previously an attempt to add a tenant failed midway,
                     // such that the main tenant was added in the user pool, but did not get created
@@ -235,7 +129,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             // but not from the main table.
         }
         StorageLayer.getMultitenancyStorage(main).deleteTenant(tenantIdentifier);
-        Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
     }
 
     public static void deleteApp(TenantIdentifier tenantIdentifier, Main main)
@@ -251,7 +145,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     "Please delete all tenants except the public tenant for this app before calling the delete API");
         }
         StorageLayer.getMultitenancyStorage(main).markAppIdAsDeleted(tenantIdentifier.getAppId());
-        Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
     }
 
     public static void deleteConnectionUriDomain(TenantIdentifier tenantIdentifier, Main main)
@@ -277,7 +171,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
         StorageLayer.getMultitenancyStorage(main)
                 .markConnectionUriDomainAsDeleted(tenantIdentifier.getConnectionUriDomain());
-        Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
     }
 
     public static boolean addUserIdToTenant(Main main, TenantIdentifier sourceTenantIdentifier, String userId,
@@ -318,8 +212,10 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     }
 
     public static TenantConfig getTenantInfo(Main main, TenantIdentifier tenantIdentifier) {
-        Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
-        TenantConfig[] tenants = Multitenancy.getInstance(main).tenantConfigs;
+        // we do not refresh the tenant list here cause this function is called
+        // often from all the APIs and anyway, we have a cronjob that refreshes this list
+        // regularly.
+        TenantConfig[] tenants = MultitenancyHelper.getInstance(main).getAllTenants();
         for (TenantConfig t : tenants) {
             if (t.tenantIdentifier.equals(tenantIdentifier)) {
                 return t;
@@ -334,8 +230,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throw new BadPermissionException(
                     "Only the public tenantId is allowed to list all tenants associated with this app");
         }
-        Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
-        TenantConfig[] tenants = Multitenancy.getInstance(main).tenantConfigs;
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
+        TenantConfig[] tenants = MultitenancyHelper.getInstance(main).getAllTenants();
         List<TenantConfig> tenantList = new ArrayList<>();
 
         for (TenantConfig t : tenants) {
@@ -361,8 +257,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     "Only the public tenantId and public appId is allowed to list all apps associated with this " +
                             "connectionUriDomain");
         }
-        Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
-        TenantConfig[] tenants = Multitenancy.getInstance(main).tenantConfigs;
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
+        TenantConfig[] tenants = MultitenancyHelper.getInstance(main).getAllTenants();
         List<TenantConfig> tenantList = new ArrayList<>();
 
         for (TenantConfig t : tenants) {
@@ -389,7 +285,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                             "connectionUriDomains and appIds associated with this " +
                             "core");
         }
-        Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
-        return Multitenancy.getInstance(main).tenantConfigs;
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
+        return MultitenancyHelper.getInstance(main).getAllTenants();
     }
 }

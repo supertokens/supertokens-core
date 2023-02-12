@@ -31,7 +31,7 @@ import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
-import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -198,14 +198,14 @@ public class Main {
         }
         FeatureFlag.init(this, CLIOptions.get(this).getInstallationPath() + "ee/");
 
-        Multitenancy.init(this);
+        MultitenancyHelper.init(this);
 
         try {
             // load all configs for each of the tenants.
-            Multitenancy.getInstance(this).loadConfig();
+            MultitenancyHelper.getInstance(this).loadConfig();
 
             // init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
-            Multitenancy.getInstance(this).loadStorageLayer();
+            MultitenancyHelper.getInstance(this).loadStorageLayer();
         } catch (InvalidConfigException | DbInitException e) {
             throw new QuitProgramException(e);
         }
@@ -215,7 +215,7 @@ public class Main {
             AccessTokenSigningKey.initForBaseTenant(this);
             RefreshTokenKey.initForBaseTenant(this);
             JWTSigningKey.initForBaseTenant(this);
-            Multitenancy.getInstance(this).loadSigningKeys();
+            MultitenancyHelper.getInstance(this).loadSigningKeys();
         } catch (UnsupportedJWTSigningAlgorithmException e) {
             throw new QuitProgramException(e);
         }

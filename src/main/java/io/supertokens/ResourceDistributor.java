@@ -16,7 +16,7 @@
 
 package io.supertokens;
 
-import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import org.jetbrains.annotations.TestOnly;
@@ -52,7 +52,7 @@ public class ResourceDistributor {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
 
-        Multitenancy.getInstance(main).refreshTenantsInCoreIfRequired();
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
 
         // we try again..
         resource = resources.get(new KeyClass(tenantIdentifier, key));
