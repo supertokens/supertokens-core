@@ -74,6 +74,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
 
         // TODO: need to validate core config
+        // TODO: validate third party config
 
         boolean creationInSharedDbSucceeded = false;
         try {

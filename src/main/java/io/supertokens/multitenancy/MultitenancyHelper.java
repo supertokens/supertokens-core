@@ -39,9 +39,9 @@ import io.supertokens.storageLayer.StorageLayer;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 
 import static io.supertokens.multitenancy.Multitenancy.getTenantInfo;
 
@@ -92,18 +92,17 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                 try {
                     TenantConfig[] tenantsFromDb = getAllTenantsFromDb();
 
-                    // TODO: do deep equals cause if something like core config changes, that needs to
-                    //  be reflected in the config class as well.
                     boolean hasChanged = false;
                     if (tenantsFromDb.length != tenantConfigs.length) {
                         hasChanged = true;
                     } else {
-                        Set<TenantIdentifier> fromDb = new HashSet<>();
+                        Map<TenantIdentifier, TenantConfig> fromDb = new HashMap<>();
                         for (TenantConfig t : tenantsFromDb) {
-                            fromDb.add(t.tenantIdentifier);
+                            fromDb.put(t.tenantIdentifier, t);
                         }
                         for (TenantConfig t : this.tenantConfigs) {
-                            if (!fromDb.contains(t.tenantIdentifier)) {
+                            TenantConfig fromDbConfig = fromDb.get(t.tenantIdentifier);
+                            if (!t.deepEquals(fromDbConfig)) {
                                 hasChanged = true;
                                 break;
                             }
