@@ -41,7 +41,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
         // first we don't allow changing of core config for base tenant - since that comes from config.yaml file.
         if (newTenant.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
-            if (newTenant.getCoreConfig().entrySet().size() > 0) {
+            if (newTenant.coreConfig.entrySet().size() > 0) {
                 throw new CannotModifyBaseConfigException();
             }
         } else {
