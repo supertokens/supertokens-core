@@ -44,10 +44,6 @@ public class Config extends ResourceDistributor.SingletonResource {
     private final Main main;
     private final CoreConfig core;
 
-    // this lock is used to synchronise changes in the config
-    // when we are reloading all tenant configs.
-    private static final Object lock = new Object();
-
     private Config(Main main, String configFilePath) throws InvalidConfigException, IOException {
         this.main = main;
         final ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
@@ -71,20 +67,18 @@ public class Config extends ResourceDistributor.SingletonResource {
 
     public static void loadBaseConfig(Main main)
             throws InvalidConfigException, IOException {
-        synchronized (lock) {
-            main.getResourceDistributor()
-                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
-                            new Config(main, getConfigFilePath(main)));
+        main.getResourceDistributor()
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                        new Config(main, getConfigFilePath(main)));
 
-            // this function is only called for the base config since we only want one logging file(s) for all tenants
-            try {
-                getInstance(new TenantIdentifier(null, null, null), main).core.createLoggingFile(main);
-            } catch (TenantOrAppNotFoundException ignored) {
-                // should never come here..
-            }
-
-            Logging.info(main, "Loading supertokens config.", true);
+        // this function is only called for the base config since we only want one logging file(s) for all tenants
+        try {
+            getInstance(new TenantIdentifier(null, null, null), main).core.createLoggingFile(main);
+        } catch (TenantOrAppNotFoundException ignored) {
+            // should never come here..
         }
+
+        Logging.info(main, "Loading supertokens config.", true);
     }
 
     public static JsonObject getBaseConfigAsJsonObject(Main main) throws IOException {
@@ -105,20 +99,31 @@ public class Config extends ResourceDistributor.SingletonResource {
     public static void loadAllTenantConfig(Main main, TenantConfig[] tenants)
             throws IOException, InvalidConfigException {
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG, null);
-        synchronized (lock) {
-            Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = getNormalisedConfigsForAllTenants(
-                    tenants,
-                    getBaseConfigAsJsonObject(main));
+        Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = getNormalisedConfigsForAllTenants(
+                tenants,
+                getBaseConfigAsJsonObject(main));
 
-            assertAllTenantConfigsAreValid(main, normalisedConfigs);
+        assertAllTenantConfigsAreValid(main, normalisedConfigs);
 
-            // At this point, we know that all configs are valid.
-            main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
-            for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
-                main.getResourceDistributor()
-                        .setResource(key.getTenantIdentifier(), RESOURCE_KEY,
-                                new Config(main, normalisedConfigs.get(key)));
+        // At this point, we know that all configs are valid.
+        try {
+            main.getResourceDistributor().withResourceDistributorLock(() -> {
+                main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
+                try {
+                    for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
+                        main.getResourceDistributor()
+                                .setResource(key.getTenantIdentifier(), RESOURCE_KEY,
+                                        new Config(main, normalisedConfigs.get(key)));
+                    }
+                } catch (InvalidConfigException | IOException e) {
+                    throw new ResourceDistributor.FuncException(e);
+                }
+            });
+        } catch (ResourceDistributor.FuncException e) {
+            if (e.getCause() instanceof InvalidConfigException) {
+                throw (InvalidConfigException) e.getCause();
             }
+            throw new RuntimeException(e);
         }
     }
 
@@ -237,18 +242,14 @@ public class Config extends ResourceDistributor.SingletonResource {
 
     public static CoreConfig getConfig(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
-        synchronized (lock) {
-            return getInstance(tenantIdentifier, main).core;
-        }
+        return getInstance(tenantIdentifier, main).core;
     }
 
     public static CoreConfig getBaseConfig(Main main) {
-        synchronized (lock) {
-            try {
-                return getInstance(new TenantIdentifier(null, null, null), main).core;
-            } catch (TenantOrAppNotFoundException e) {
-                throw new IllegalStateException(e);
-            }
+        try {
+            return getInstance(new TenantIdentifier(null, null, null), main).core;
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
         }
     }
 

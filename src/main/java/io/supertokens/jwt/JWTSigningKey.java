@@ -19,7 +19,6 @@ package io.supertokens.jwt;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -33,6 +32,7 @@ import io.supertokens.pluginInterface.jwt.nosqlstorage.JWTRecipeNoSQLStorage_1;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
@@ -45,25 +45,20 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     public static final String RESOURCE_KEY = "io.supertokens.jwt.JWTSigningKey";
     private final Main main;
     private final TenantIdentifier tenantIdentifier;
-    private static final Object lock = new Object();
 
     public static void initForBaseTenant(Main main) throws UnsupportedJWTSigningAlgorithmException {
-        synchronized (lock) {
-            try {
-                main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
-                        new JWTSigningKey(new TenantIdentifier(null, null, null), main));
-            } catch (TenantOrAppNotFoundException e) {
-                throw new IllegalStateException(e);
-            }
+        try {
+            main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                    new JWTSigningKey(new TenantIdentifier(null, null, null), main));
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
         }
     }
 
     public static JWTSigningKey getInstance(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
-        synchronized (lock) {
-            return (JWTSigningKey) main.getResourceDistributor()
-                    .getResource(tenantIdentifier, RESOURCE_KEY);
-        }
+        return (JWTSigningKey) main.getResourceDistributor()
+                .getResource(tenantIdentifier, RESOURCE_KEY);
     }
 
     @TestOnly
@@ -77,31 +72,43 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
     public static void loadForAllTenants(Main main, TenantConfig[] tenants)
             throws UnsupportedJWTSigningAlgorithmException {
-        synchronized (lock) {
-            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
-                    main.getResourceDistributor()
-                            .getAllResourcesWithResourceKey(RESOURCE_KEY);
-            main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
-            for (TenantConfig tenant : tenants) {
-                ResourceDistributor.SingletonResource resource = existingResources.get(
-                        new ResourceDistributor.KeyClass(tenant.tenantIdentifier, RESOURCE_KEY));
-                if (resource != null) {
-                    main.getResourceDistributor().setResource(tenant.tenantIdentifier, RESOURCE_KEY,
-                            resource);
-                } else {
-                    try {
-                        main.getResourceDistributor()
-                                .setResource(tenant.tenantIdentifier, RESOURCE_KEY,
-                                        new JWTSigningKey(tenant.tenantIdentifier, main));
-                    } catch (TenantOrAppNotFoundException e) {
-                        throw new IllegalStateException(e);
+        try {
+            main.getResourceDistributor().withResourceDistributorLock(() -> {
+                try {
+                    Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
+                            main.getResourceDistributor()
+                                    .getAllResourcesWithResourceKey(RESOURCE_KEY);
+                    main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
+                    for (TenantConfig tenant : tenants) {
+                        ResourceDistributor.SingletonResource resource = existingResources.get(
+                                new ResourceDistributor.KeyClass(tenant.tenantIdentifier, RESOURCE_KEY));
+                        if (resource != null) {
+                            main.getResourceDistributor().setResource(tenant.tenantIdentifier, RESOURCE_KEY,
+                                    resource);
+                        } else {
+                            try {
+                                main.getResourceDistributor()
+                                        .setResource(tenant.tenantIdentifier, RESOURCE_KEY,
+                                                new JWTSigningKey(tenant.tenantIdentifier, main));
+                            } catch (TenantOrAppNotFoundException e) {
+                                throw new IllegalStateException(e);
+                            }
+                        }
                     }
+                    // re add the base config
+                    main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                            existingResources.get(
+                                    new ResourceDistributor.KeyClass(new TenantIdentifier(null, null, null),
+                                            RESOURCE_KEY)));
+                } catch (UnsupportedJWTSigningAlgorithmException e) {
+                    throw new ResourceDistributor.FuncException(e);
                 }
+            });
+        } catch (ResourceDistributor.FuncException e) {
+            if (e.getCause() instanceof UnsupportedJWTSigningAlgorithmException) {
+                throw (UnsupportedJWTSigningAlgorithmException) e.getCause();
             }
-            // re add the base config
-            main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
-                    existingResources.get(
-                            new ResourceDistributor.KeyClass(new TenantIdentifier(null, null, null), RESOURCE_KEY)));
+            throw new RuntimeException(e);
         }
     }
 

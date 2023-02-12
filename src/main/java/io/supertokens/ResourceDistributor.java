@@ -128,6 +128,28 @@ public class ResourceDistributor {
         return setResource(new TenantIdentifier(null, null, null), key, resource);
     }
 
+    public interface Func {
+        void performTask() throws FuncException;
+    }
+
+    public synchronized void withResourceDistributorLock(Func func) throws FuncException {
+        func.performTask();
+    }
+
+    public interface FuncWithReturn<T> {
+        T performTask() throws FuncException;
+    }
+
+    public synchronized <T> T withResourceDistributorLockWithReturn(FuncWithReturn<T> func) throws FuncException {
+        return func.performTask();
+    }
+
+    public static class FuncException extends Exception {
+        public FuncException(Exception e) {
+            super(e);
+        }
+    }
+
     public static class SingletonResource {
 
     }

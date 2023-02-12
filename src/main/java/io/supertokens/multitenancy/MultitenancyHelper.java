@@ -82,61 +82,67 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         }
     }
 
-    private synchronized TenantConfig[] getAllTenantsFromDb() {
+    private TenantConfig[] getAllTenantsFromDb() {
         return StorageLayer.getMultitenancyStorage(main).getAllTenants();
     }
 
-    public synchronized void refreshTenantsInCoreIfRequired() {
+    public void refreshTenantsInCoreIfRequired() {
         try {
-            TenantConfig[] tenantsFromDb = getAllTenantsFromDb();
+            main.getResourceDistributor().withResourceDistributorLock(() -> {
+                try {
+                    TenantConfig[] tenantsFromDb = getAllTenantsFromDb();
 
-            // TODO: do deep equals cause if something like core config changes, that needs to
-            //  be reflected in the config class as well.
-            boolean hasChanged = false;
-            if (tenantsFromDb.length != tenantConfigs.length) {
-                hasChanged = true;
-            } else {
-                Set<TenantIdentifier> fromDb = new HashSet<>();
-                for (TenantConfig t : tenantsFromDb) {
-                    fromDb.add(t.tenantIdentifier);
-                }
-                for (TenantConfig t : this.tenantConfigs) {
-                    if (!fromDb.contains(t.tenantIdentifier)) {
+                    // TODO: do deep equals cause if something like core config changes, that needs to
+                    //  be reflected in the config class as well.
+                    boolean hasChanged = false;
+                    if (tenantsFromDb.length != tenantConfigs.length) {
                         hasChanged = true;
-                        break;
+                    } else {
+                        Set<TenantIdentifier> fromDb = new HashSet<>();
+                        for (TenantConfig t : tenantsFromDb) {
+                            fromDb.add(t.tenantIdentifier);
+                        }
+                        for (TenantConfig t : this.tenantConfigs) {
+                            if (!fromDb.contains(t.tenantIdentifier)) {
+                                hasChanged = true;
+                                break;
+                            }
+                        }
                     }
+
+                    this.tenantConfigs = tenantsFromDb;
+                    if (!hasChanged) {
+                        return;
+                    }
+
+                    loadConfig();
+                    loadStorageLayer();
+                    loadSigningKeys();
+                    refreshCronjobs();
+                } catch (Exception e) {
+                    Logging.error(main, e.getMessage(), false, e);
                 }
-            }
-
-            this.tenantConfigs = tenantsFromDb;
-            if (!hasChanged) {
-                return;
-            }
-
-            loadConfig();
-            loadStorageLayer();
-            loadSigningKeys();
-            refreshCronjobs();
-        } catch (Exception e) {
-            Logging.error(main, e.getMessage(), false, e);
+            });
+        } catch (ResourceDistributor.FuncException e) {
+            throw new IllegalStateException(e);
         }
     }
 
-    public synchronized void loadConfig() throws IOException, InvalidConfigException {
+    public void loadConfig() throws IOException, InvalidConfigException {
         Config.loadAllTenantConfig(main, this.tenantConfigs);
     }
 
-    public synchronized void loadStorageLayer() throws DbInitException, IOException, InvalidConfigException {
+    public void loadStorageLayer() throws DbInitException, IOException, InvalidConfigException {
         StorageLayer.loadAllTenantStorage(main, this.tenantConfigs);
     }
 
-    public synchronized void loadSigningKeys() throws UnsupportedJWTSigningAlgorithmException {
+    public void loadSigningKeys() throws UnsupportedJWTSigningAlgorithmException {
         AccessTokenSigningKey.loadForAllTenants(main, this.tenantConfigs);
         RefreshTokenKey.loadForAllTenants(main, this.tenantConfigs);
         JWTSigningKey.loadForAllTenants(main, this.tenantConfigs);
     }
 
-    private synchronized void refreshCronjobs() {
+    private void refreshCronjobs() {
         List<TenantIdentifier> list = new ArrayList<>();
         for (TenantConfig t : this.tenantConfigs) {
             list.add(t.tenantIdentifier);
@@ -144,7 +150,11 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         Cronjobs.getInstance(main).setTenantsInfo(list);
     }
 
-    public synchronized TenantConfig[] getAllTenants() {
-        return this.tenantConfigs;
+    public TenantConfig[] getAllTenants() {
+        try {
+            return main.getResourceDistributor().withResourceDistributorLockWithReturn(() -> this.tenantConfigs);
+        } catch (ResourceDistributor.FuncException e) {
+            throw new IllegalStateException(e);
+        }
     }
 }

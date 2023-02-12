@@ -68,7 +68,7 @@ public class StorageTest {
 
     @Test
     public void transactionIsolationWithoutAnInitialRowTesting() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -179,7 +179,7 @@ public class StorageTest {
     @Test
     public void transactionIsolationWithAnInitialRowTesting()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -269,7 +269,7 @@ public class StorageTest {
     @Test
     public void transactionIsolationTesting()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -483,7 +483,7 @@ public class StorageTest {
 
     @Test
     public void transactionTest() throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -530,7 +530,7 @@ public class StorageTest {
     @Test
     public void transactionDoNotCommitButStillCommitsTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -555,7 +555,7 @@ public class StorageTest {
 
     @Test
     public void transactionDoNotInsertIfAlreadyExistsForNoSQL() throws InterruptedException, StorageQueryException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -585,7 +585,7 @@ public class StorageTest {
     @Test
     public void transactionThrowCompileTimeErrorAndExpectRollbackTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -617,7 +617,7 @@ public class StorageTest {
     @Test
     public void transactionThrowRunTimeErrorAndExpectRollbackTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -648,7 +648,7 @@ public class StorageTest {
 
     @Test
     public void storageDeadAndAlive() throws InterruptedException, IOException, HttpResponseException {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
@@ -712,7 +712,7 @@ public class StorageTest {
 
     @Test
     public void multipleParallelTransactionTest() throws InterruptedException, IOException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00005");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

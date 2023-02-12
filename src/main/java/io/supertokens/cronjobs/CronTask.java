@@ -35,6 +35,7 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
     protected final Main main;
     private final String jobName;
     protected List<TenantIdentifier> tenantsInfo;
+    private final Object lock = new Object();
 
     protected CronTask(String jobName, Main main, List<TenantIdentifier> tenantsInfo) {
         this.jobName = jobName;
@@ -53,7 +54,10 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
 
         // first we copy over the array so that if it changes while the cronjob runs, it won't affect
         // this run of the cronjob
-        List<TenantIdentifier> copied = new ArrayList<>(tenantsInfo);
+        List<TenantIdentifier> copied = null;
+        synchronized (lock) {
+            copied = new ArrayList<>(tenantsInfo);
+        }
 
         ExecutorService service = Executors.newFixedThreadPool(copied.size());
         AtomicBoolean threwQuitProgramException = new AtomicBoolean(false);
@@ -86,7 +90,9 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
     }
 
     public void setTenantsInfo(List<TenantIdentifier> tenantsInfo) {
-        this.tenantsInfo = tenantsInfo;
+        synchronized (lock) {
+            this.tenantsInfo = tenantsInfo;
+        }
     }
 
     protected abstract void doTask(TenantIdentifier tenantIdentifier) throws Exception;

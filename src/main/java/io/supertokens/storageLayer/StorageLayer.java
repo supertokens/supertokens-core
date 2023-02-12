@@ -58,7 +58,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     public static final String RESOURCE_KEY = "io.supertokens.storageLayer.StorageLayer";
     private final Storage storage;
     private static URLClassLoader ucl = null;
-    private static final Object lock = new Object();
 
     public static Storage getNewStorageInstance(Main main, JsonObject config) throws InvalidConfigException {
         Storage result;
@@ -181,10 +180,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static void initPrimary(Main main, String pluginFolderPath, JsonObject configJson)
             throws MalformedURLException, InvalidConfigException {
-        synchronized (lock) {
-            main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
-                    new StorageLayer(main, pluginFolderPath, configJson));
-        }
+        main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                new StorageLayer(main, pluginFolderPath, configJson));
     }
 
     public static void loadAllTenantStorage(Main main, TenantConfig[] tenants)
@@ -219,85 +216,91 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
         // now we loop through existing storage objects in the main resource distributor and reuse them
         // if the unique ID is the same as the storage objects created above.
-        synchronized (lock) {
-            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorageMap =
-                    main.getResourceDistributor()
-                            .getAllResourcesWithResourceKey(RESOURCE_KEY);
-            Map<String, StorageLayer> idToExistingStorageLayerMap = new HashMap<>();
-            for (ResourceDistributor.SingletonResource resource : existingStorageMap.values()) {
-                StorageLayer currStorageLayer = (StorageLayer) resource;
-                String userPoolId = currStorageLayer.storage.getUserPoolId();
-                String connectionPoolId = currStorageLayer.storage.getConnectionPoolId();
-                String uniqueId = userPoolId + "~" + connectionPoolId;
-                idToExistingStorageLayerMap.put(uniqueId, currStorageLayer);
-            }
-            main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
-
-            for (ResourceDistributor.KeyClass key : resourceKeyToStorageMap.keySet()) {
-                Storage currStorage = resourceKeyToStorageMap.get(key);
-                String userPoolId = currStorage.getUserPoolId();
-                String connectionPoolId = currStorage.getConnectionPoolId();
-                String uniqueId = userPoolId + "~" + connectionPoolId;
-                if (idToExistingStorageLayerMap.containsKey(uniqueId)) {
-                    // we reuse the existing storage layer
-                    resourceKeyToStorageMap.put(key, idToExistingStorageLayerMap.get(uniqueId).storage);
+        try {
+            main.getResourceDistributor().withResourceDistributorLock(() -> {
+                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingStorageMap =
+                        main.getResourceDistributor()
+                                .getAllResourcesWithResourceKey(RESOURCE_KEY);
+                Map<String, StorageLayer> idToExistingStorageLayerMap = new HashMap<>();
+                for (ResourceDistributor.SingletonResource resource : existingStorageMap.values()) {
+                    StorageLayer currStorageLayer = (StorageLayer) resource;
+                    String userPoolId = currStorageLayer.storage.getUserPoolId();
+                    String connectionPoolId = currStorageLayer.storage.getConnectionPoolId();
+                    String uniqueId = userPoolId + "~" + connectionPoolId;
+                    idToExistingStorageLayerMap.put(uniqueId, currStorageLayer);
                 }
+                main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
 
-                main.getResourceDistributor().setResource(key.getTenantIdentifier(), RESOURCE_KEY,
-                        new StorageLayer(resourceKeyToStorageMap.get(key)));
-            }
-
-            // we remove storage layers that are no longer being used
-            for (ResourceDistributor.KeyClass key : existingStorageMap.keySet()) {
-                try {
-                    if (((StorageLayer) main.getResourceDistributor()
-                            .getResource(key.getTenantIdentifier(), RESOURCE_KEY)).storage !=
-                            ((StorageLayer) existingStorageMap.get(key)).storage) {
-                        // this means that this storage layer is no longer being used, so we close it
-                        ((StorageLayer) existingStorageMap.get(key)).storage.close();
-                        ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
+                for (ResourceDistributor.KeyClass key : resourceKeyToStorageMap.keySet()) {
+                    Storage currStorage = resourceKeyToStorageMap.get(key);
+                    String userPoolId = currStorage.getUserPoolId();
+                    String connectionPoolId = currStorage.getConnectionPoolId();
+                    String uniqueId = userPoolId + "~" + connectionPoolId;
+                    if (idToExistingStorageLayerMap.containsKey(uniqueId)) {
+                        // we reuse the existing storage layer
+                        resourceKeyToStorageMap.put(key, idToExistingStorageLayerMap.get(uniqueId).storage);
                     }
-                } catch (TenantOrAppNotFoundException e) {
-                    throw new IllegalStateException(e);
-                }
-            }
 
-            // we call init on all the newly saved storage objects.
-            DbInitException lastError = null;
-            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
-                    main.getResourceDistributor()
-                            .getAllResourcesWithResourceKey(RESOURCE_KEY);
-            for (ResourceDistributor.SingletonResource resource : resources.values()) {
-                try {
-                    ((StorageLayer) resource).storage.initStorage();
-                    ((StorageLayer) resource).storage.initFileLogging(
-                            Config.getBaseConfig(main).getInfoLogPath(main),
-                            Config.getBaseConfig(main).getErrorLogPath(main));
-                } catch (DbInitException e) {
-                    lastError = e;
+                    main.getResourceDistributor().setResource(key.getTenantIdentifier(), RESOURCE_KEY,
+                            new StorageLayer(resourceKeyToStorageMap.get(key)));
                 }
+
+                // TODO: should the below code be outside of this locked code cause it takes time
+                //  and any other thread that will want access to the resource distributor will have
+                //  to wait for this?
+                // we remove storage layers that are no longer being used
+                for (ResourceDistributor.KeyClass key : existingStorageMap.keySet()) {
+                    try {
+                        if (((StorageLayer) main.getResourceDistributor()
+                                .getResource(key.getTenantIdentifier(), RESOURCE_KEY)).storage !=
+                                ((StorageLayer) existingStorageMap.get(key)).storage) {
+                            // this means that this storage layer is no longer being used, so we close it
+                            ((StorageLayer) existingStorageMap.get(key)).storage.close();
+                            ((StorageLayer) existingStorageMap.get(key)).storage.stopLogging();
+                        }
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new IllegalStateException(e);
+                    }
+                }
+
+                // we call init on all the newly saved storage objects.
+                DbInitException lastError = null;
+                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                        main.getResourceDistributor()
+                                .getAllResourcesWithResourceKey(RESOURCE_KEY);
+                for (ResourceDistributor.SingletonResource resource : resources.values()) {
+                    try {
+                        ((StorageLayer) resource).storage.initStorage();
+                        ((StorageLayer) resource).storage.initFileLogging(
+                                Config.getBaseConfig(main).getInfoLogPath(main),
+                                Config.getBaseConfig(main).getErrorLogPath(main));
+                    } catch (DbInitException e) {
+                        lastError = e;
+                    }
+                }
+                if (lastError != null) {
+                    throw new ResourceDistributor.FuncException(lastError);
+                }
+            });
+        } catch (ResourceDistributor.FuncException e) {
+            if (e.getCause() instanceof DbInitException) {
+                throw (DbInitException) e.getCause();
             }
-            if (lastError != null) {
-                throw lastError;
-            }
+            throw new RuntimeException(e);
         }
     }
 
     public static Storage getBaseStorage(Main main) {
-        synchronized (lock) {
-            try {
-                return getInstance(new TenantIdentifier(null, null, null), main).storage;
-            } catch (TenantOrAppNotFoundException e) {
-                throw new IllegalStateException(e);
-            }
+        try {
+            return getInstance(new TenantIdentifier(null, null, null), main).storage;
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
         }
     }
 
     public static Storage getStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
-        synchronized (lock) {
-            return getInstance(tenantIdentifier, main).storage;
-        }
+        return getInstance(tenantIdentifier, main).storage;
     }
 
     @TestOnly
@@ -311,9 +314,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static AuthRecipeStorage getAuthRecipeStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
-        synchronized (lock) {
-            return (AuthRecipeStorage) getInstance(tenantIdentifier, main).storage;
-        }
+        return (AuthRecipeStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     @TestOnly
@@ -327,9 +328,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static SessionStorage getSessionStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
-        synchronized (lock) {
-            return (SessionStorage) getInstance(tenantIdentifier, main).storage;
-        }
+        return (SessionStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     @TestOnly
@@ -343,13 +342,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static EmailPasswordSQLStorage getEmailPasswordStorage(TenantIdentifier tenantIdentifier,
                                                                   Main main) throws TenantOrAppNotFoundException {
-        synchronized (lock) {
-            if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
-                // we only support SQL for now
-                throw new UnsupportedOperationException("");
-            }
-            return (EmailPasswordSQLStorage) getInstance(tenantIdentifier, main).storage;
+        if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
+            // we only support SQL for now
+            throw new UnsupportedOperationException("");
         }
+        return (EmailPasswordSQLStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     @TestOnly
@@ -364,13 +361,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     public static EmailVerificationSQLStorage getEmailVerificationStorage(TenantIdentifier tenantIdentifier,
                                                                           Main main) throws
             TenantOrAppNotFoundException {
-        synchronized (lock) {
-            if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
-                // we only support SQL for now
-                throw new UnsupportedOperationException("");
-            }
-            return (EmailVerificationSQLStorage) getInstance(tenantIdentifier, main).storage;
+        if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
+            // we only support SQL for now
+            throw new UnsupportedOperationException("");
         }
+        return (EmailVerificationSQLStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     @TestOnly
@@ -384,13 +379,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static ThirdPartySQLStorage getThirdPartyStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
-        synchronized (lock) {
-            if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
-                // we only support SQL for now
-                throw new UnsupportedOperationException("");
-            }
-            return (ThirdPartySQLStorage) getInstance(tenantIdentifier, main).storage;
+        if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
+            // we only support SQL for now
+            throw new UnsupportedOperationException("");
         }
+        return (ThirdPartySQLStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     @TestOnly
@@ -404,13 +397,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static PasswordlessSQLStorage getPasswordlessStorage(TenantIdentifier tenantIdentifier,
                                                                 Main main) throws TenantOrAppNotFoundException {
-        synchronized (lock) {
-            if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
-                // we only support SQL for now
-                throw new UnsupportedOperationException("");
-            }
-            return (PasswordlessSQLStorage) getInstance(tenantIdentifier, main).storage;
+        if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
+            // we only support SQL for now
+            throw new UnsupportedOperationException("");
         }
+        return (PasswordlessSQLStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     @TestOnly
@@ -424,9 +415,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static JWTRecipeStorage getJWTRecipeStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
-        synchronized (lock) {
-            return (JWTRecipeStorage) getInstance(tenantIdentifier, main).storage;
-        }
+        return (JWTRecipeStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     @TestOnly
@@ -440,14 +429,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static UserMetadataSQLStorage getUserMetadataStorage(TenantIdentifier tenantIdentifier,
                                                                 Main main) throws TenantOrAppNotFoundException {
-        synchronized (lock) {
-            if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
-                // we only support SQL for now
-                throw new UnsupportedOperationException("");
-            }
-
-            return (UserMetadataSQLStorage) getInstance(tenantIdentifier, main).storage;
+        if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
+            // we only support SQL for now
+            throw new UnsupportedOperationException("");
         }
+
+        return (UserMetadataSQLStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     @TestOnly
@@ -461,13 +448,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static UserRolesSQLStorage getUserRolesStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
-        synchronized (lock) {
-            if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
-                // we only support SQL for now
-                throw new UnsupportedOperationException("");
-            }
-            return (UserRolesSQLStorage) getInstance(tenantIdentifier, main).storage;
+        if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
+            // we only support SQL for now
+            throw new UnsupportedOperationException("");
         }
+        return (UserRolesSQLStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     @TestOnly
@@ -481,9 +466,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static UserIdMappingStorage getUserIdMappingStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
-        synchronized (lock) {
-            return (UserIdMappingStorage) getInstance(tenantIdentifier, main).storage;
-        }
+        return (UserIdMappingStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     @TestOnly
@@ -499,21 +482,17 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     // This function intentionally doesn't take connectionUriDomain and tenantId
     // cause the data for this is only going to be in the primary db of the core.
     public static MultitenancyStorage getMultitenancyStorage(Main main) {
-        synchronized (lock) {
-            try {
-                return (MultitenancyStorage) getInstance(new TenantIdentifier(null, null, null), main).storage;
-            } catch (TenantOrAppNotFoundException e) {
-                throw new IllegalStateException(e);
-            }
+        try {
+            return (MultitenancyStorage) getInstance(new TenantIdentifier(null, null, null), main).storage;
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
         }
     }
 
     public static MultitenancyStorage getMultitenancyStorageWithTargetStorage(TenantIdentifier tenantIdentifier,
                                                                               Main main)
             throws TenantOrAppNotFoundException {
-        synchronized (lock) {
-            return (MultitenancyStorage) getInstance(tenantIdentifier, main).storage;
-        }
+        return (MultitenancyStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     public static boolean isInMemDb(Main main) {

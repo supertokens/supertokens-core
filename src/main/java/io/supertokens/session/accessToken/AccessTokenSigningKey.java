@@ -22,7 +22,6 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.KeyValueInfoWithLastUpdated;
@@ -32,6 +31,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
@@ -52,7 +52,6 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     private final Main main;
     private List<KeyInfo> validKeys;
     private final TenantIdentifier tenantIdentifier;
-    private static final Object lock = new Object();
 
     private AccessTokenSigningKey(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
@@ -69,22 +68,18 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     }
 
     public static void initForBaseTenant(Main main) {
-        synchronized (lock) {
-            try {
-                main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
-                        new AccessTokenSigningKey(new TenantIdentifier(null, null, null), main));
-            } catch (TenantOrAppNotFoundException e) {
-                throw new IllegalStateException(e);
-            }
+        try {
+            main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                    new AccessTokenSigningKey(new TenantIdentifier(null, null, null), main));
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
         }
     }
 
     public static AccessTokenSigningKey getInstance(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
-        synchronized (lock) {
-            return (AccessTokenSigningKey) main.getResourceDistributor()
-                    .getResource(tenantIdentifier, RESOURCE_KEY);
-        }
+        return (AccessTokenSigningKey) main.getResourceDistributor()
+                .getResource(tenantIdentifier, RESOURCE_KEY);
     }
 
     @TestOnly
@@ -97,31 +92,36 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     }
 
     public static void loadForAllTenants(Main main, TenantConfig[] tenants) {
-        synchronized (lock) {
-            Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
-                    main.getResourceDistributor()
-                            .getAllResourcesWithResourceKey(RESOURCE_KEY);
-            main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
-            for (TenantConfig tenant : tenants) {
-                ResourceDistributor.SingletonResource resource = existingResources.get(
-                        new ResourceDistributor.KeyClass(tenant.tenantIdentifier, RESOURCE_KEY));
-                if (resource != null) {
-                    main.getResourceDistributor().setResource(tenant.tenantIdentifier, RESOURCE_KEY,
-                            resource);
-                } else {
-                    try {
+        try {
+            main.getResourceDistributor().withResourceDistributorLock(() -> {
+                Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
                         main.getResourceDistributor()
-                                .setResource(tenant.tenantIdentifier, RESOURCE_KEY,
-                                        new AccessTokenSigningKey(tenant.tenantIdentifier, main));
-                    } catch (TenantOrAppNotFoundException e) {
-                        throw new IllegalStateException(e);
+                                .getAllResourcesWithResourceKey(RESOURCE_KEY);
+                main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
+                for (TenantConfig tenant : tenants) {
+                    ResourceDistributor.SingletonResource resource = existingResources.get(
+                            new ResourceDistributor.KeyClass(tenant.tenantIdentifier, RESOURCE_KEY));
+                    if (resource != null) {
+                        main.getResourceDistributor().setResource(tenant.tenantIdentifier, RESOURCE_KEY,
+                                resource);
+                    } else {
+                        try {
+                            main.getResourceDistributor()
+                                    .setResource(tenant.tenantIdentifier, RESOURCE_KEY,
+                                            new AccessTokenSigningKey(tenant.tenantIdentifier, main));
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new IllegalStateException(e);
+                        }
                     }
                 }
-            }
-            // re add the base config
-            main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
-                    existingResources.get(
-                            new ResourceDistributor.KeyClass(new TenantIdentifier(null, null, null), RESOURCE_KEY)));
+                // re add the base config
+                main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                        existingResources.get(
+                                new ResourceDistributor.KeyClass(new TenantIdentifier(null, null, null),
+                                        RESOURCE_KEY)));
+            });
+        } catch (ResourceDistributor.FuncException e) {
+            throw new RuntimeException(e);
         }
     }
 
