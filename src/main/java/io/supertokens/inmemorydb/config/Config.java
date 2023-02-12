@@ -16,10 +16,8 @@
 
 package io.supertokens.inmemorydb.config;
 
-import io.supertokens.ResourceDistributor;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.inmemorydb.ResourceDistributor;
 import io.supertokens.inmemorydb.Start;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 
 public class Config extends ResourceDistributor.SingletonResource {
 
@@ -31,16 +29,12 @@ public class Config extends ResourceDistributor.SingletonResource {
     }
 
     private static Config getInstance(Start start) {
-        try {
-            return (Config) start.getResourceDistributor()
-                    .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        return (Config) start.getResourceDistributor()
+                .getResource(RESOURCE_KEY);
     }
 
     public static void loadConfig(Start start) {
-        start.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new Config());
+        start.getResourceDistributor().setResource(RESOURCE_KEY, new Config());
     }
 
     public static SQLiteConfig getConfig(Start start) {

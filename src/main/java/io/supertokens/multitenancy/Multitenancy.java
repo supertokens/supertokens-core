@@ -73,6 +73,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             }
         }
 
+        // TODO: need to validate core config
+
         boolean creationInSharedDbSucceeded = false;
         try {
             StorageLayer.getMultitenancyStorage(main).createTenant(newTenant);

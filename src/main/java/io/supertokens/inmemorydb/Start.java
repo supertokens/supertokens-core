@@ -19,7 +19,6 @@ package io.supertokens.inmemorydb;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.inmemorydb.config.Config;
@@ -108,7 +107,7 @@ public class Start
     private Main main;
 
     public Start(Main main) {
-        this.resourceDistributor = new ResourceDistributor(main);
+        this.resourceDistributor = new ResourceDistributor();
         this.main = main;
     }
 
@@ -166,6 +165,9 @@ public class Start
 
     @Override
     public void initStorage() throws DbInitException {
+        if (ConnectionPool.isAlreadyInitialised(this)) {
+            return;
+        }
         try {
             ConnectionPool.initPool(this);
             GeneralQueries.createTablesIfNotExists(this, this.main);
