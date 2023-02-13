@@ -17,7 +17,6 @@
 package io.supertokens.emailpassword;
 
 import io.supertokens.Main;
-import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.exceptions.ResetPasswordInvalidTokenException;
@@ -97,7 +96,7 @@ public class EmailPassword {
 
             try {
                 UserInfo user = new UserInfo(userId, email, hashedPassword, timeJoined);
-                StorageLayer.getEmailPasswordStorage(tenantIdentifier, main).signUp(user);
+                StorageLayer.getEmailPasswordStorage(tenantIdentifier, main).signUp(tenantIdentifier, user);
 
                 return user;
 
@@ -138,13 +137,13 @@ public class EmailPassword {
             EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(tenantIdentifier, main);
 
             try {
-                StorageLayer.getEmailPasswordStorage(tenantIdentifier, main).signUp(userInfo);
+                StorageLayer.getEmailPasswordStorage(tenantIdentifier, main).signUp(tenantIdentifier, userInfo);
                 return new ImportUserResponse(false, userInfo);
             } catch (DuplicateUserIdException e) {
                 // we retry with a new userId
             } catch (DuplicateEmailException e) {
                 UserInfo userInfoToBeUpdated = StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
-                        .getUserInfoUsingEmail(email);
+                        .getUserInfoUsingEmail(tenantIdentifier, email);
                 // if user does not exist we retry signup
                 if (userInfoToBeUpdated != null) {
                     String finalPasswordHash = passwordHash;
@@ -185,7 +184,7 @@ public class EmailPassword {
             throws StorageQueryException, WrongCredentialsException, TenantOrAppNotFoundException {
 
         UserInfo user = StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
-                .getUserInfoUsingEmail(email);
+                .getUserInfoUsingEmail(tenantIdentifier, email);
 
         if (user == null) {
             throw new WrongCredentialsException();
@@ -249,7 +248,7 @@ public class EmailPassword {
 
             try {
                 StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
-                        .addPasswordResetToken(new PasswordResetTokenInfo(userId,
+                        .addPasswordResetToken(tenantIdentifier, new PasswordResetTokenInfo(userId,
                                 hashedToken, System.currentTimeMillis() +
                                 getPasswordResetTokenLifetime(tenantIdentifier, main)));
                 return token;
@@ -281,7 +280,7 @@ public class EmailPassword {
 
         EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(tenantIdentifier, main);
 
-        PasswordResetTokenInfo resetInfo = storage.getPasswordResetTokenInfo(hashedToken);
+        PasswordResetTokenInfo resetInfo = storage.getPasswordResetTokenInfo(tenantIdentifier, hashedToken);
 
         if (resetInfo == null) {
             throw new ResetPasswordInvalidTokenException();
@@ -399,7 +398,8 @@ public class EmailPassword {
 
     public static UserInfo getUserUsingId(TenantIdentifier tenantIdentifier, Main main, String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getEmailPasswordStorage(tenantIdentifier, main).getUserInfoUsingId(userId);
+        return StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
+                .getUserInfoUsingId(tenantIdentifier, userId);
     }
 
     @TestOnly
@@ -414,62 +414,7 @@ public class EmailPassword {
 
     public static UserInfo getUserUsingEmail(TenantIdentifier tenantIdentifier, Main main, String email)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getEmailPasswordStorage(tenantIdentifier, main).getUserInfoUsingEmail(email);
-    }
-
-    @Deprecated
-    @TestOnly
-    public static UserPaginationContainer getUsers(Main main,
-                                                   @Nullable String paginationToken, Integer limit,
-                                                   String timeJoinedOrder)
-            throws StorageQueryException, UserPaginationToken.InvalidTokenException {
-        try {
-            return getUsers(new TenantIdentifier(null, null, null), main, paginationToken, limit, timeJoinedOrder);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    @Deprecated
-    public static UserPaginationContainer getUsers(TenantIdentifier tenantIdentifier, Main main,
-                                                   @Nullable String paginationToken, Integer limit,
-                                                   String timeJoinedOrder)
-            throws StorageQueryException, UserPaginationToken.InvalidTokenException, TenantOrAppNotFoundException {
-        UserInfo[] users;
-        if (paginationToken == null) {
-            users = StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
-                    .getUsers(limit + 1, timeJoinedOrder);
-        } else {
-            UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
-            users = StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
-                    .getUsers(tokenInfo.userId, tokenInfo.timeJoined,
-                            limit + 1, timeJoinedOrder);
-        }
-        String nextPaginationToken = null;
-        int maxLoop = users.length;
-        if (users.length == limit + 1) {
-            maxLoop = limit;
-            nextPaginationToken = new UserPaginationToken(users[limit].id, users[limit].timeJoined).generateToken();
-        }
-        UserInfo[] resultUsers = new UserInfo[maxLoop];
-        System.arraycopy(users, 0, resultUsers, 0, maxLoop);
-        return new UserPaginationContainer(resultUsers, nextPaginationToken);
-    }
-
-    @TestOnly
-    @Deprecated
-    public static long getUsersCount(Main main)
-            throws StorageQueryException {
-        try {
-            return getUsersCount(new TenantIdentifier(null, null, null), main);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
-    @Deprecated
-    public static long getUsersCount(TenantIdentifier tenantIdentifier, Main main)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getEmailPasswordStorage(tenantIdentifier, main).getUsersCount();
+        return StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
+                .getUserInfoUsingEmail(tenantIdentifier, email);
     }
 }

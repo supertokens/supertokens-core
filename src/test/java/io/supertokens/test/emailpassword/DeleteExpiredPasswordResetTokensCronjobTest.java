@@ -23,6 +23,7 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -50,7 +51,7 @@ public class DeleteExpiredPasswordResetTokensCronjobTest {
 
     @Test
     public void checkingCronJob() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         CronTaskTest.getInstance(process.getProcess())
@@ -73,12 +74,12 @@ public class DeleteExpiredPasswordResetTokensCronjobTest {
         EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
 
         assert (StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getAllPasswordResetTokenInfoForUser(user.id).length == 4);
+                .getAllPasswordResetTokenInfoForUser(new TenantIdentifier(null, null, null), user.id).length == 4);
 
         Thread.sleep(3000);
 
         PasswordResetTokenInfo[] tokens = StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getAllPasswordResetTokenInfoForUser(user.id);
+                .getAllPasswordResetTokenInfoForUser(new TenantIdentifier(null, null, null), user.id);
 
         assert (tokens.length == 2);
 

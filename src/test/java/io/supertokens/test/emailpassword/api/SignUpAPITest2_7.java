@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -59,7 +60,7 @@ public class SignUpAPITest2_7 {
     // Check for bad input (missing fields)
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -114,7 +115,7 @@ public class SignUpAPITest2_7 {
     // Check good input works and that user is there in db (and then call sign in)
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -132,7 +133,7 @@ public class SignUpAPITest2_7 {
         assertNotNull(signUpUser.get("id"));
 
         UserInfo user = StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getUserInfoUsingEmail("random@gmail.com");
+                .getUserInfoUsingEmail(new TenantIdentifier(null, null, null), "random@gmail.com");
         assertEquals(user.email, signUpUser.get("email").getAsString());
         assertEquals(user.id, signUpUser.get("id").getAsString());
 
@@ -163,7 +164,7 @@ public class SignUpAPITest2_7 {
     // Failure condition: If the email retrieved from the data is not normalised the test will fail
     @Test
     public void testTheNormaliseEmailFunction() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -181,7 +182,7 @@ public class SignUpAPITest2_7 {
         assertNotNull(signUpUser.get("id"));
 
         UserInfo userInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getUserInfoUsingId(signUpUser.get("id").getAsString());
+                .getUserInfoUsingId(new TenantIdentifier(null, null, null), signUpUser.get("id").getAsString());
 
         assertEquals(userInfo.email, "random@gmail.com");
 
@@ -192,7 +193,7 @@ public class SignUpAPITest2_7 {
     // Test that giving an empty password throws a bad input error
     @Test
     public void testEmptyPasswordThrowsBadInputError() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -215,7 +216,7 @@ public class SignUpAPITest2_7 {
 
     @Test
     public void testSignUpWithDupicateEMail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

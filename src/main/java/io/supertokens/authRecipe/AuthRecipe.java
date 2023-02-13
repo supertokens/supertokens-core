@@ -17,11 +17,12 @@
 package io.supertokens.authRecipe;
 
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
@@ -36,9 +37,19 @@ public class AuthRecipe {
     public static final int USER_PAGINATION_LIMIT = 500;
 
     public static long getUsersCount(TenantIdentifier tenantIdentifier, Main main,
-                                     RECIPE_ID[] includeRecipeIds) throws StorageQueryException,
-            TenantOrAppNotFoundException {
-        return StorageLayer.getAuthRecipeStorage(tenantIdentifier, main).getUsersCount(includeRecipeIds);
+                                     RECIPE_ID[] includeRecipeIds, boolean includeAllTenants)
+            throws StorageQueryException,
+            TenantOrAppNotFoundException, BadPermissionException {
+        if (!includeAllTenants) {
+            return StorageLayer.getAuthRecipeStorage(tenantIdentifier, main)
+                    .getUsersCount(tenantIdentifier, includeRecipeIds);
+        } else {
+            if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                throw new BadPermissionException("Only public tenantId can query across tenants");
+            }
+            // TODO:..
+            throw new UnsupportedOperationException("TODO");
+        }
     }
 
     @TestOnly
@@ -46,8 +57,8 @@ public class AuthRecipe {
                                      RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
         try {
             return getUsersCount(new TenantIdentifier(null, null, null), main,
-                    includeRecipeIds);
-        } catch (TenantOrAppNotFoundException e) {
+                    includeRecipeIds, false);
+        } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -60,12 +71,12 @@ public class AuthRecipe {
         AuthRecipeUserInfo[] users;
         if (paginationToken == null) {
             users = StorageLayer.getAuthRecipeStorage(tenantIdentifier, main)
-                    .getUsers(limit + 1, timeJoinedOrder, includeRecipeIds, null,
+                    .getUsers(tenantIdentifier, limit + 1, timeJoinedOrder, includeRecipeIds, null,
                             null);
         } else {
             UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
             users = StorageLayer.getAuthRecipeStorage(tenantIdentifier, main)
-                    .getUsers(limit + 1, timeJoinedOrder, includeRecipeIds,
+                    .getUsers(tenantIdentifier, limit + 1, timeJoinedOrder, includeRecipeIds,
                             tokenInfo.userId, tokenInfo.timeJoined);
         }
         String nextPaginationToken = null;
@@ -115,7 +126,7 @@ public class AuthRecipe {
             // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
             // we want to check which state the db is in
             if (StorageLayer.getAuthRecipeStorage(tenantIdentifier, main)
-                    .doesUserIdExist(userIdMapping.externalUserId)) {
+                    .doesUserIdExist(tenantIdentifier, userIdMapping.externalUserId)) {
                 // db is in state A4
                 // delete only from auth tables
                 deleteAuthRecipeUser(tenantIdentifier, main, userId);
@@ -155,7 +166,7 @@ public class AuthRecipe {
     private static void deleteAuthRecipeUser(TenantIdentifier tenantIdentifier, Main main, String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
         // auth recipe deletions here only
-        StorageLayer.getEmailPasswordStorage(tenantIdentifier, main).deleteEmailPasswordUser(userId);
+        StorageLayer.getEmailPasswordStorage(tenantIdentifier, main).deleteEmailPasswordUser(tenantIdentifier, userId);
         StorageLayer.getThirdPartyStorage(tenantIdentifier, main).deleteThirdPartyUser(userId);
         StorageLayer.getPasswordlessStorage(tenantIdentifier, main).deletePasswordlessUser(userId);
     }

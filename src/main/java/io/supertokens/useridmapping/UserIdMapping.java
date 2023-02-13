@@ -17,12 +17,12 @@
 package io.supertokens.useridmapping;
 
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
@@ -58,7 +58,7 @@ public class UserIdMapping {
 
             {
                 if (StorageLayer.getAuthRecipeStorage(tenantIdentifier, main)
-                        .doesUserIdExist(externalUserId)) {
+                        .doesUserIdExist(tenantIdentifier, externalUserId)) {
                     throw new ServletException(new WebserverAPI.BadRequestException(
                             "Cannot create a userId mapping where the externalId is also a SuperTokens userID"));
                 }
@@ -66,7 +66,7 @@ public class UserIdMapping {
         }
 
         StorageLayer.getUserIdMappingStorage(tenantIdentifier, main)
-                .createUserIdMapping(superTokensUserId, externalUserId,
+                .createUserIdMapping(tenantIdentifier, superTokensUserId, externalUserId,
                         externalUserIdInfo);
     }
 
@@ -91,13 +91,14 @@ public class UserIdMapping {
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(tenantIdentifier, main);
 
         if (userIdType == UserIdType.SUPERTOKENS) {
-            return storage.getUserIdMapping(userId, true);
+            return storage.getUserIdMapping(tenantIdentifier, userId, true);
         }
         if (userIdType == UserIdType.EXTERNAL) {
-            return storage.getUserIdMapping(userId, false);
+            return storage.getUserIdMapping(tenantIdentifier, userId, false);
         }
 
-        io.supertokens.pluginInterface.useridmapping.UserIdMapping[] userIdMappings = storage.getUserIdMapping(userId);
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping[] userIdMappings = storage.getUserIdMapping(
+                tenantIdentifier, userId);
 
         if (userIdMappings.length == 0) {
             return null;
@@ -144,9 +145,9 @@ public class UserIdMapping {
                 UserIdType.ANY);
         if (mapping != null) {
             if (StorageLayer.getAuthRecipeStorage(tenantIdentifier, main)
-                    .doesUserIdExist(mapping.externalUserId)) {
+                    .doesUserIdExist(tenantIdentifier, mapping.externalUserId)) {
                 // this means that the db is in state A4
-                return storage.deleteUserIdMapping(mapping.superTokensUserId, true);
+                return storage.deleteUserIdMapping(tenantIdentifier, mapping.superTokensUserId, true);
             }
         } else {
             return false;
@@ -162,18 +163,18 @@ public class UserIdMapping {
 
         // db is in state A3
         if (userIdType == UserIdType.SUPERTOKENS) {
-            return storage.deleteUserIdMapping(userId, true);
+            return storage.deleteUserIdMapping(tenantIdentifier, userId, true);
         }
         if (userIdType == UserIdType.EXTERNAL) {
-            return storage.deleteUserIdMapping(userId, false);
+            return storage.deleteUserIdMapping(tenantIdentifier, userId, false);
         }
 
         AuthRecipeStorage authRecipeStorage = StorageLayer.getAuthRecipeStorage(tenantIdentifier, main);
-        if (authRecipeStorage.doesUserIdExist(userId)) {
-            return storage.deleteUserIdMapping(userId, true);
+        if (authRecipeStorage.doesUserIdExist(tenantIdentifier, userId)) {
+            return storage.deleteUserIdMapping(tenantIdentifier, userId, true);
         }
 
-        return storage.deleteUserIdMapping(userId, false);
+        return storage.deleteUserIdMapping(tenantIdentifier, userId, false);
     }
 
     @TestOnly
@@ -194,18 +195,18 @@ public class UserIdMapping {
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(tenantIdentifier, main);
 
         if (userIdType == UserIdType.SUPERTOKENS) {
-            return storage.updateOrDeleteExternalUserIdInfo(userId, true, externalUserIdInfo);
+            return storage.updateOrDeleteExternalUserIdInfo(tenantIdentifier, userId, true, externalUserIdInfo);
         }
         if (userIdType == UserIdType.EXTERNAL) {
-            return storage.updateOrDeleteExternalUserIdInfo(userId, false, externalUserIdInfo);
+            return storage.updateOrDeleteExternalUserIdInfo(tenantIdentifier, userId, false, externalUserIdInfo);
         }
 
         AuthRecipeStorage authRecipeStorage = StorageLayer.getAuthRecipeStorage(tenantIdentifier, main);
-        if (authRecipeStorage.doesUserIdExist(userId)) {
-            return storage.updateOrDeleteExternalUserIdInfo(userId, true, externalUserIdInfo);
+        if (authRecipeStorage.doesUserIdExist(tenantIdentifier, userId)) {
+            return storage.updateOrDeleteExternalUserIdInfo(tenantIdentifier, userId, true, externalUserIdInfo);
         }
 
-        return storage.updateOrDeleteExternalUserIdInfo(userId, false, externalUserIdInfo);
+        return storage.updateOrDeleteExternalUserIdInfo(tenantIdentifier, userId, false, externalUserIdInfo);
     }
 
     @TestOnly
@@ -226,7 +227,7 @@ public class UserIdMapping {
                                                                                 ArrayList<String> userIds)
             throws StorageQueryException, TenantOrAppNotFoundException {
         return StorageLayer.getUserIdMappingStorage(tenantIdentifier, main)
-                .getUserIdMappingForSuperTokensIds(userIds);
+                .getUserIdMappingForSuperTokensIds(tenantIdentifier, userIds);
     }
 
     @TestOnly

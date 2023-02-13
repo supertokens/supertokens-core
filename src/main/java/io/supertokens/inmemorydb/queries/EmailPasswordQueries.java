@@ -17,8 +17,6 @@
 package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.ConnectionWithLocks;
-import io.supertokens.inmemorydb.PreparedStatementValueSetter;
-import io.supertokens.inmemorydb.QueryExecutorTemplate;
 import io.supertokens.inmemorydb.ResultSetValueExtractor;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
@@ -36,7 +34,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static io.supertokens.inmemorydb.PreparedStatementValueSetter.NO_OP_SETTER;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 import static io.supertokens.inmemorydb.config.Config.getConfig;
@@ -118,7 +115,8 @@ public class EmailPasswordQueries {
     }
 
     public static PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser_Transaction(Start start, Connection con,
-            String userId) throws SQLException, StorageQueryException {
+                                                                                           String userId)
+            throws SQLException, StorageQueryException {
 
         ((ConnectionWithLocks) con).lock(userId + getConfig(start).getPasswordResetTokensTable());
 
@@ -302,44 +300,6 @@ public class EmailPasswordQueries {
                 return UserInfoRowMapper.getInstance().mapOrThrow(result);
             }
             return null;
-        });
-    }
-
-    @Deprecated
-    public static UserInfo[] getUsersInfo(Start start, @NotNull Integer limit, @NotNull String timeJoinedOrder)
-            throws SQLException, StorageQueryException {
-        String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
-                + getConfig(start).getEmailPasswordUsersTable() + " ORDER BY time_joined " + timeJoinedOrder
-                + ", user_id DESC LIMIT ?";
-        return execute(start, QUERY, pst -> pst.setInt(1, limit), new UserInfoResultExtractor());
-    }
-
-    @Deprecated
-    public static UserInfo[] getUsersInfo(Start start, @NotNull String userId, @NotNull Long timeJoined,
-            @NotNull Integer limit, @NotNull String timeJoinedOrder) throws SQLException, StorageQueryException {
-        String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
-        String QUERY = "SELECT user_id, email, password_hash, time_joined FROM "
-                + getConfig(start).getEmailPasswordUsersTable() + " WHERE time_joined " + timeJoinedOrderSymbol
-                + " ? OR (time_joined = ? AND user_id <= ?) ORDER BY time_joined " + timeJoinedOrder
-                + ", user_id DESC LIMIT ?";
-        final PreparedStatementValueSetter preparedStatementValueSetter = pst -> {
-            pst.setLong(1, timeJoined);
-            pst.setLong(2, timeJoined);
-            pst.setString(3, userId);
-            pst.setInt(4, limit);
-        };
-
-        return execute(start, QUERY, preparedStatementValueSetter, new UserInfoResultExtractor());
-    }
-
-    @Deprecated
-    public static long getUsersCount(Start start) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT COUNT(*) as total FROM " + getConfig(start).getEmailPasswordUsersTable();
-        return execute(start, QUERY, NO_OP_SETTER, result -> {
-            if (result.next()) {
-                return result.getLong("total");
-            }
-            return 0L;
         });
     }
 

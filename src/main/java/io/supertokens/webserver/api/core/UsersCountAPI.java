@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.core;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -49,6 +50,8 @@ public class UsersCountAPI extends WebserverAPI {
         String[] recipeIds = InputParser.getCommaSeparatedStringArrayQueryParamOrThrowError(req, "includeRecipeIds",
                 true);
 
+        String includeAllTenantsStr = InputParser.getQueryParamOrThrowError(req, "includeAllTenants", true);
+
         Stream.Builder<RECIPE_ID> recipeIdsEnumBuilder = Stream.<RECIPE_ID>builder();
 
         if (recipeIds != null) {
@@ -61,15 +64,22 @@ public class UsersCountAPI extends WebserverAPI {
             }
         }
 
+        boolean includeAllTenants = true;
+        if (includeAllTenantsStr == null || !includeAllTenantsStr.equalsIgnoreCase("true")) {
+            includeAllTenants = false;
+        }
+
         try {
             long count = AuthRecipe.getUsersCount(this.getTenantIdentifier(req), super.main,
-                    recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
+                    recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new), includeAllTenants);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("count", count);
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
+        } catch (BadPermissionException e) {
+            throw new ServletException(new BadRequestException(e.getMessage()));
         }
     }
 }
