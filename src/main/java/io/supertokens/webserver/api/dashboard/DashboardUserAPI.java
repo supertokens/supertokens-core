@@ -80,7 +80,7 @@ public class DashboardUserAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "USER_LIMIT_REACHED_ERROR");
             response.addProperty("message", e.getMessage());
-            super.sendJsonResponse(402, response, resp);
+            super.sendJsonResponse(200, response, resp);
         }
     }
 
