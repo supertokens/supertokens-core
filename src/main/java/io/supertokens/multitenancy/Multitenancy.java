@@ -46,6 +46,11 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
             InvalidProviderConfigException {
 
+        // TODO: adding a new tenant is not thread safe here - for example, one can add a new connectionuridomain
+        //  such that they both point to the same user pool ID by trying to add them in parallel. This is not such
+        //  a big issue at the moment, but we want to solve this by taking appropriate database locks on
+        //  connectionuridomain, appid and tenantid.
+
         // first we don't allow changing of core config for base tenant - since that comes from config.yaml file.
         {
             if (newTenant.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {

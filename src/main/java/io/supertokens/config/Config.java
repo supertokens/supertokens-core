@@ -132,7 +132,8 @@ public class Config extends ResourceDistributor.SingletonResource {
                                                       Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs)
             throws InvalidConfigException, IOException {
         Map<String, Storage> userPoolIdToStorage = new HashMap<>();
-        Map<String, Config> userPoolIdToConfigArray = new HashMap<>();
+        Map<String, Config> userPoolIdToConfigMap = new HashMap<>();
+        Map<String, String> userPoolIdToConnectionUriDomain = new HashMap<>();
         for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
             JsonObject currentConfig = normalisedConfigs.get(key);
             // this also checks for the validity of the config from the db's point
@@ -141,6 +142,21 @@ public class Config extends ResourceDistributor.SingletonResource {
             // the validate function.
             Storage storage = StorageLayer.getNewStorageInstance(main, currentConfig);
             final String userPoolId = storage.getUserPoolId();
+
+            // we enforce that each connectiondomainurl has a unique user pool ID
+            if (userPoolIdToConnectionUriDomain.get(userPoolId) != null) {
+                if (!userPoolIdToConnectionUriDomain.get(userPoolId)
+                        .equals(key.getTenantIdentifier().getConnectionUriDomain())) {
+                    throw new InvalidConfigException(
+                            "ConnectionUriDomain: " + userPoolIdToConnectionUriDomain.get(userPoolId) +
+                                    " cannot be mapped to the same user pool as " +
+                                    key.getTenantIdentifier().getConnectionUriDomain());
+                }
+            } else {
+                userPoolIdToConnectionUriDomain.put(userPoolId, key.getTenantIdentifier().getConnectionUriDomain());
+            }
+
+            // we check that conflicting configs for the same user pool ID doesn't exist
             {
                 Storage storageForCurrentUserPoolId = userPoolIdToStorage.get(userPoolId);
                 if (storageForCurrentUserPoolId == null) {
@@ -155,10 +171,10 @@ public class Config extends ResourceDistributor.SingletonResource {
                 // now we check conflicting configs for core related configs.
                 // this also checks for the validity of currentConfig itself cause
                 // it creates a new Config object, and the constructor calls the validate function.
-                Config configForCurrentUserPoolId = userPoolIdToConfigArray.get(userPoolId);
+                Config configForCurrentUserPoolId = userPoolIdToConfigMap.get(userPoolId);
                 if (configForCurrentUserPoolId == null) {
                     configForCurrentUserPoolId = new Config(main, currentConfig);
-                    userPoolIdToConfigArray.put(userPoolId, configForCurrentUserPoolId);
+                    userPoolIdToConfigMap.put(userPoolId, configForCurrentUserPoolId);
                 } else {
                     configForCurrentUserPoolId.assertThatConfigFromSameUserPoolIsNotConflicting(
                             new Config(main, currentConfig).core);
