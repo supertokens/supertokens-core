@@ -221,7 +221,7 @@ public class Main {
         }
 
         // starts removing old session cronjob
-        List<TenantIdentifier> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(this);
+        List<List<TenantIdentifier>> uniqueUserPoolIdsTenants = StorageLayer.getTenantsWithUniqueUserPoolId(this);
 
         Cronjobs.addCronjob(this, DeleteExpiredSessions.init(this, uniqueUserPoolIdsTenants));
 

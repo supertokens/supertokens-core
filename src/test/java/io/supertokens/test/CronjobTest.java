@@ -21,8 +21,8 @@ import io.supertokens.ProcessState;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.exceptions.QuitProgramException;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,7 +43,7 @@ public class CronjobTest {
 
         private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest" + ".QuitProgramExceptionCronjob";
 
-        private QuitProgramExceptionCronjob(Main main, List<TenantIdentifier> tenants) {
+        private QuitProgramExceptionCronjob(Main main, List<List<TenantIdentifier>> tenants) {
             super("QuitProgramExceptionCronjob", main, tenants);
         }
 
@@ -54,14 +54,16 @@ public class CronjobTest {
             } catch (TenantOrAppNotFoundException e) {
                 List<TenantIdentifier> tenants = new ArrayList<>();
                 tenants.add(new TenantIdentifier(null, null, null));
+                List<List<TenantIdentifier>> finalList = new ArrayList<>();
+                finalList.add(tenants);
                 return (QuitProgramExceptionCronjob) main.getResourceDistributor()
                         .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID,
-                                new QuitProgramExceptionCronjob(main, tenants));
+                                new QuitProgramExceptionCronjob(main, finalList));
             }
         }
 
         @Override
-        protected void doTask(TenantIdentifier tenantIdentifier) {
+        protected void doTask(List<TenantIdentifier> tenantIdentifier) {
             throw new QuitProgramException("Cronjob Threw QuitProgramException");
 
         }
@@ -81,7 +83,7 @@ public class CronjobTest {
 
         private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest.ErrorCronjob";
 
-        private ErrorCronjob(Main main, List<TenantIdentifier> tenants) {
+        private ErrorCronjob(Main main, List<List<TenantIdentifier>> tenants) {
             super("ErrorCronjob", main, tenants);
         }
 
@@ -92,13 +94,15 @@ public class CronjobTest {
             } catch (TenantOrAppNotFoundException e) {
                 List<TenantIdentifier> tenants = new ArrayList<>();
                 tenants.add(new TenantIdentifier(null, null, null));
+                List<List<TenantIdentifier>> finalList = new ArrayList<>();
+                finalList.add(tenants);
                 return (ErrorCronjob) main.getResourceDistributor()
-                        .setResource(RESOURCE_ID, new ErrorCronjob(main, tenants));
+                        .setResource(RESOURCE_ID, new ErrorCronjob(main, finalList));
             }
         }
 
         @Override
-        protected void doTask(TenantIdentifier tenantIdentifier) throws Exception {
+        protected void doTask(List<TenantIdentifier> tenantIdentifier) throws Exception {
             errorCronjobCounter++;
             throw new Exception("ERROR thrown from ErrorCronjobTest");
 
@@ -119,7 +123,7 @@ public class CronjobTest {
 
         private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest.NormalCronjob";
 
-        private NormalCronjob(Main main, List<TenantIdentifier> tenants) {
+        private NormalCronjob(Main main, List<List<TenantIdentifier>> tenants) {
             super("NormalCronjob", main, tenants);
         }
 
@@ -130,14 +134,16 @@ public class CronjobTest {
             } catch (TenantOrAppNotFoundException e) {
                 List<TenantIdentifier> tenants = new ArrayList<>();
                 tenants.add(new TenantIdentifier(null, null, null));
+                List<List<TenantIdentifier>> finalList = new ArrayList<>();
+                finalList.add(tenants);
                 return (NormalCronjob) main.getResourceDistributor()
                         .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID,
-                                new NormalCronjob(main, tenants));
+                                new NormalCronjob(main, finalList));
             }
         }
 
         @Override
-        protected void doTask(TenantIdentifier tenantIdentifier) {
+        protected void doTask(List<TenantIdentifier> tenantIdentifier) {
             normalCronjobCounter++;
         }
 

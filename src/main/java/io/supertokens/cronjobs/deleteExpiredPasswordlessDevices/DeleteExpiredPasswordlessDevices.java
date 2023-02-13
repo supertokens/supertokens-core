@@ -38,12 +38,12 @@ public class DeleteExpiredPasswordlessDevices extends CronTask {
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredPasswordlessDevices"
             + ".DeleteExpiredPasswordlessDevices";
 
-    private DeleteExpiredPasswordlessDevices(Main main, List<TenantIdentifier> tenantsInfo) {
+    private DeleteExpiredPasswordlessDevices(Main main, List<List<TenantIdentifier>> tenantsInfo) {
         super("DeleteExpiredPasswordlessDevices", main, tenantsInfo);
     }
 
     public static DeleteExpiredPasswordlessDevices init(Main main,
-                                                        List<TenantIdentifier> tenantsInfo) {
+                                                        List<List<TenantIdentifier>> tenantsInfo) {
         return (DeleteExpiredPasswordlessDevices) main.getResourceDistributor()
                 .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
                         new DeleteExpiredPasswordlessDevices(main, tenantsInfo));
@@ -55,35 +55,37 @@ public class DeleteExpiredPasswordlessDevices extends CronTask {
     }
 
     @Override
-    protected void doTask(TenantIdentifier tenantIdentifier) throws Exception {
-        if (StorageLayer.getStorage(tenantIdentifier, this.main).getType() != STORAGE_TYPE.SQL) {
+    protected void doTask(List<TenantIdentifier> tenantIdentifier) throws Exception {
+        if (StorageLayer.getStorage(tenantIdentifier.get(0), this.main).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(tenantIdentifier, this.main);
+        for (TenantIdentifier t : tenantIdentifier) {
+            PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(t, this.main);
 
-        long codeExpirationCutoff = System.currentTimeMillis() -
-                Config.getConfig(tenantIdentifier, main).getPasswordlessCodeLifetime();
-        PasswordlessCode[] expiredCodes = storage.getCodesBefore(codeExpirationCutoff);
-        Set<String> uniqueDevicesIdHashes = Stream.of(expiredCodes).map(code -> code.deviceIdHash)
-                .collect(Collectors.toSet());
+            long codeExpirationCutoff = System.currentTimeMillis() -
+                    Config.getConfig(t, main).getPasswordlessCodeLifetime();
+            PasswordlessCode[] expiredCodes = storage.getCodesBefore(codeExpirationCutoff);
+            Set<String> uniqueDevicesIdHashes = Stream.of(expiredCodes).map(code -> code.deviceIdHash)
+                    .collect(Collectors.toSet());
 
-        for (String deviceIdHash : uniqueDevicesIdHashes) {
-            storage.startTransaction(con -> {
-                PasswordlessDevice device = storage.getDevice_Transaction(con, deviceIdHash);
-                if (device == null) {
+            for (String deviceIdHash : uniqueDevicesIdHashes) {
+                storage.startTransaction(con -> {
+                    PasswordlessDevice device = storage.getDevice_Transaction(con, deviceIdHash);
+                    if (device == null) {
+                        return null;
+                    }
+                    PasswordlessCode[] codes = storage.getCodesOfDevice_Transaction(con, deviceIdHash);
+
+                    if (Stream.of(codes).allMatch(code -> code.createdAt < codeExpirationCutoff)) {
+                        storage.deleteDevice_Transaction(con, deviceIdHash);
+                    }
+                    // We don't delete expired codes without the device because we want to detect if the submitted
+                    // user input code belongs to an expired code or if it's just incorrect.
+
                     return null;
-                }
-                PasswordlessCode[] codes = storage.getCodesOfDevice_Transaction(con, deviceIdHash);
-
-                if (Stream.of(codes).allMatch(code -> code.createdAt < codeExpirationCutoff)) {
-                    storage.deleteDevice_Transaction(con, deviceIdHash);
-                }
-                // We don't delete expired codes without the device because we want to detect if the submitted
-                // user input code belongs to an expired code or if it's just incorrect.
-
-                return null;
-            });
+                });
+            }
         }
 
     }

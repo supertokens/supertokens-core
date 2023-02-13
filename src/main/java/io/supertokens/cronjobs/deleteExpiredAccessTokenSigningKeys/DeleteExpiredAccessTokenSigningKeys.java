@@ -20,8 +20,8 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import org.jetbrains.annotations.TestOnly;
 
@@ -32,11 +32,11 @@ public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys" +
             ".DeleteExpiredAccessTokenSigningKeys";
 
-    private DeleteExpiredAccessTokenSigningKeys(Main main, List<TenantIdentifier> tenantsInfo) {
+    private DeleteExpiredAccessTokenSigningKeys(Main main, List<List<TenantIdentifier>> tenantsInfo) {
         super("DeleteExpiredAccessTokenSigningKeys", main, tenantsInfo);
     }
 
-    public static DeleteExpiredAccessTokenSigningKeys init(Main main, List<TenantIdentifier> tenantsInfo) {
+    public static DeleteExpiredAccessTokenSigningKeys init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
         return (DeleteExpiredAccessTokenSigningKeys) main.getResourceDistributor()
                 .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
                         new DeleteExpiredAccessTokenSigningKeys(main, tenantsInfo));
@@ -53,9 +53,11 @@ public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
     }
 
     @Override
-    protected void doTask(TenantIdentifier tenantIdentifier) throws Exception {
-        if (Config.getConfig(tenantIdentifier, main).getAccessTokenSigningKeyDynamic()) {
-            AccessTokenSigningKey.getInstance(tenantIdentifier, main).cleanExpiredAccessTokenSigningKeys();
+    protected void doTask(List<TenantIdentifier> tenantIdentifier) throws Exception {
+        for (TenantIdentifier t : tenantIdentifier) {
+            if (Config.getConfig(t, main).getAccessTokenSigningKeyDynamic()) {
+                AccessTokenSigningKey.getInstance(t, main).cleanExpiredAccessTokenSigningKeys();
+            }
         }
     }
 

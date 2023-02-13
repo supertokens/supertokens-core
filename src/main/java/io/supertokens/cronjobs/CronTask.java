@@ -34,10 +34,13 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
 
     protected final Main main;
     private final String jobName;
-    protected List<TenantIdentifier> tenantsInfo;
+
+    // this is a 2d list where the 1st dimension is per use pool ID
+    // and the 2nd dimension is all tenants in that same user pool ID
+    protected List<List<TenantIdentifier>> tenantsInfo;
     private final Object lock = new Object();
 
-    protected CronTask(String jobName, Main main, List<TenantIdentifier> tenantsInfo) {
+    protected CronTask(String jobName, Main main, List<List<TenantIdentifier>> tenantsInfo) {
         this.jobName = jobName;
         this.main = main;
         this.tenantsInfo = tenantsInfo;
@@ -54,14 +57,14 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
 
         // first we copy over the array so that if it changes while the cronjob runs, it won't affect
         // this run of the cronjob
-        List<TenantIdentifier> copied = null;
+        List<List<TenantIdentifier>> copied = null;
         synchronized (lock) {
             copied = new ArrayList<>(tenantsInfo);
         }
 
         ExecutorService service = Executors.newFixedThreadPool(copied.size());
         AtomicBoolean threwQuitProgramException = new AtomicBoolean(false);
-        for (TenantIdentifier t : copied) {
+        for (List<TenantIdentifier> t : copied) {
             service.execute(() -> {
                 try {
                     doTask(t);
@@ -89,13 +92,14 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
         Logging.info(main, "Cronjob finished: " + jobName, false);
     }
 
-    public void setTenantsInfo(List<TenantIdentifier> tenantsInfo) {
+    public void setTenantsInfo(List<List<TenantIdentifier>> tenantsInfo) {
         synchronized (lock) {
             this.tenantsInfo = tenantsInfo;
         }
     }
 
-    protected abstract void doTask(TenantIdentifier tenantIdentifier) throws Exception;
+    // the list belongs to tenants that are a part of the same user pool ID
+    protected abstract void doTask(List<TenantIdentifier> tenantIdentifier) throws Exception;
 
     public abstract int getIntervalTimeSeconds();
 

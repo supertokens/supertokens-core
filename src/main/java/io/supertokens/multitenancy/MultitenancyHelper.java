@@ -145,7 +145,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     }
 
     private void refreshCronjobs() {
-        List<TenantIdentifier> list = StorageLayer.getTenantsWithUniqueUserPoolId(main);
+        List<List<TenantIdentifier>> list = StorageLayer.getTenantsWithUniqueUserPoolId(main);
         Cronjobs.getInstance(main).setTenantsInfo(list);
     }
 

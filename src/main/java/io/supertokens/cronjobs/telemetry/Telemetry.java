@@ -22,13 +22,13 @@ import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpRequestMocking;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import io.supertokens.version.Version;
@@ -44,7 +44,7 @@ public class Telemetry extends CronTask {
 
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.telemetry.Telemetry";
 
-    private Telemetry(Main main, List<TenantIdentifier> tenants) {
+    private Telemetry(Main main, List<List<TenantIdentifier>> tenants) {
         super("Telemetry", main, tenants);
     }
 
@@ -55,15 +55,17 @@ public class Telemetry extends CronTask {
         } catch (TenantOrAppNotFoundException e) {
             List<TenantIdentifier> tenants = new ArrayList<>();
             tenants.add(new TenantIdentifier(null, null, null));
+            List<List<TenantIdentifier>> finalList = new ArrayList<>();
+            finalList.add(tenants);
             return (Telemetry) main.getResourceDistributor()
-                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new Telemetry(main, tenants));
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new Telemetry(main, finalList));
         }
     }
 
     @Override
-    protected void doTask(TenantIdentifier tenantIdentifier) throws Exception {
+    protected void doTask(List<TenantIdentifier> tenantIdentifier) throws Exception {
         if (StorageLayer.isInMemDb(main) ||
-                Config.getConfig(tenantIdentifier, main).isTelemetryDisabled()) {
+                Config.getConfig(tenantIdentifier.get(0), main).isTelemetryDisabled()) {
             // we do not send any info in this case since it's not under development / production env or the user has
             // disabled Telemetry
             return;

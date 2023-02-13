@@ -524,20 +524,24 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return false;
     }
 
-    public static List<TenantIdentifier> getTenantsWithUniqueUserPoolId(Main main) {
-        List<TenantIdentifier> result = new ArrayList<TenantIdentifier>();
-        Set<String> usedIds = new HashSet<>();
+    public static List<List<TenantIdentifier>> getTenantsWithUniqueUserPoolId(Main main) {
+        List<List<TenantIdentifier>> result = new ArrayList<>();
+        Map<String, List<TenantIdentifier>> uniquePoolList = new HashMap<>();
 
         Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
                 main.getResourceDistributor()
                         .getAllResourcesWithResourceKey(RESOURCE_KEY);
         for (ResourceDistributor.KeyClass key : resources.keySet()) {
             Storage storage = ((StorageLayer) resources.get(key)).storage;
-            if (usedIds.contains(storage.getUserPoolId())) {
-                continue;
+            if (uniquePoolList.get(storage.getUserPoolId()) != null) {
+                uniquePoolList.get(storage.getUserPoolId()).add(key.getTenantIdentifier());
+            } else {
+                uniquePoolList.put(storage.getUserPoolId(), new ArrayList<>());
+                uniquePoolList.get(storage.getUserPoolId()).add(key.getTenantIdentifier());
             }
-            usedIds.add(storage.getUserPoolId());
-            result.add(key.getTenantIdentifier());
+        }
+        for (String s : uniquePoolList.keySet()) {
+            result.add(uniquePoolList.get(s));
         }
         return result;
     }
