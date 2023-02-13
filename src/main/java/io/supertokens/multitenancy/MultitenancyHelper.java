@@ -39,7 +39,6 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -116,6 +115,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                         return;
                     }
 
+                    // this order is important. For example, storageLayer depends on config, and cronjobs depends on
+                    // storageLayer
                     loadConfig();
                     loadStorageLayer();
                     loadSigningKeys();
@@ -144,10 +145,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     }
 
     private void refreshCronjobs() {
-        List<TenantIdentifier> list = new ArrayList<>();
-        for (TenantConfig t : this.tenantConfigs) {
-            list.add(t.tenantIdentifier);
-        }
+        List<TenantIdentifier> list = StorageLayer.getTenantsWithUniqueUserPoolId(main);
         Cronjobs.getInstance(main).setTenantsInfo(list);
     }
 
