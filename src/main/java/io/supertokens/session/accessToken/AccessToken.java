@@ -16,7 +16,6 @@
 
 package io.supertokens.session.accessToken;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
@@ -26,12 +25,13 @@ import io.supertokens.config.Config;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.jwt.JWTSigningFunctions;
-import io.supertokens.jwt.JWTSigningKey;
+import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
+import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
-import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.session.jwt.JWT;
 import io.supertokens.session.jwt.JWT.JWTException;
@@ -39,7 +39,6 @@ import io.supertokens.utils.Utils;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.swing.text.html.Option;
 import java.io.UnsupportedEncodingException;
 import java.security.InvalidKeyException;
 import java.security.KeyException;
@@ -55,8 +54,8 @@ public class AccessToken {
     private static AccessTokenInfo getInfoFromAccessToken(@Nonnull Main main, @Nonnull String token, boolean retry,
             boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException {
-        List<AccessTokenSigningKey.KeyInfo> keyInfoList = AccessTokenSigningKey.getInstance(main).getAllKeys();
 
+        List<JWTSigningKeyInfo> keyInfoList = SigningKeys.getInstance(main).getAllKeys();
         Exception error = null;
         JWT.JWTInfo jwtInfo = null;
         JWT.JWTPreParseInfo preParseJWTInfo = null;
@@ -68,28 +67,15 @@ public class AccessToken {
         }
 
         if (preParseJWTInfo.version == VERSION.V3) {
-            Utils.PubPriKey signingKey = null;
             String kid = preParseJWTInfo.kid;
-            Optional<KeyInfo> dynamicKeyInfo = keyInfoList.stream().filter((KeyInfo k) -> Objects.equals(String.valueOf(k.createdAtTime), kid)).findFirst();
-            if (dynamicKeyInfo.isEmpty()) {
-                Optional<JWTSigningKeyInfo> staticKeyInfo = JWTSigningKey.getInstance(main).getAllSigningKeys().stream()
-                        .filter(k -> Objects.equals(k.keyId, kid)).findFirst();
-                if (staticKeyInfo.isPresent()) {
-                    signingKey = new Utils.PubPriKey(staticKeyInfo.get().keyString.split("\\|"));
-                } else {
-                    // This means that the requested key was not found in memory.
-                    // In this case we want to refresh the list from the database and retry the whole operation
-                    error = new TryRefreshTokenException("Key not found");
-                }
-            } else {
-                signingKey = new Utils.PubPriKey(dynamicKeyInfo.get().value);
-            }
 
-            if (signingKey == null) {
+            JWTSigningKeyInfo keyInfo = SigningKeys.getInstance(main).getSigningKeyById(kid);
+
+            if (keyInfo == null) {
                 error = new TryRefreshTokenException("Key not found");
             } else {
                 try {
-                    jwtInfo = JWT.verifyJWTAndGetPayload(preParseJWTInfo, signingKey.publicKey);
+                    jwtInfo = JWT.verifyJWTAndGetPayload(preParseJWTInfo, ((JWTAsymmetricSigningKeyInfo) keyInfo).publicKey);
                 } catch (NoSuchAlgorithmException e) {
                     // This basically should never happen, but it means, that can't verify any tokens, no need to retry
                     throw new TryRefreshTokenException(e);
@@ -102,12 +88,9 @@ public class AccessToken {
                 }
             }
         } else {
-            for (KeyInfo keyInfo : keyInfoList) {
+            for (JWTSigningKeyInfo keyInfo : keyInfoList) {
                 try {
-                    // getAllKeys already filters out expired keys, so we do not need to check it here.
-
-                    Utils.PubPriKey signingKey = new Utils.PubPriKey(keyInfo.value);
-                    jwtInfo = JWT.verifyJWTAndGetPayload(preParseJWTInfo, signingKey.publicKey);
+                    jwtInfo = JWT.verifyJWTAndGetPayload(preParseJWTInfo, ((JWTAsymmetricSigningKeyInfo) keyInfo).publicKey);
                     error = null;
                     break;
                 } catch (NoSuchAlgorithmException e) {
@@ -147,7 +130,7 @@ public class AccessToken {
                 ProcessState.getInstance(main).addState(PROCESS_STATE.RETRYING_ACCESS_TOKEN_JWT_VERIFICATION, error);
 
                 // remove key from memory and retry
-                AccessTokenSigningKey.getInstance(main).removeKeyFromMemoryIfItHasNotChanged(keyInfoList);
+                SigningKeys.getInstance(main).removeKeyFromMemoryIfItHasNotChanged(keyInfoList);
                 return AccessToken.getInfoFromAccessToken(main, token, false, doAntiCsrfCheck);
             }
             throw new TryRefreshTokenException(error);
@@ -184,34 +167,36 @@ public class AccessToken {
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException, UnauthorisedException,
             UnsupportedJWTSigningAlgorithmException {
 
-        String kid;
         Utils.PubPriKey signingKey;
 
-        long now = System.currentTimeMillis();
-        if (expiryTime == null) {
-            expiryTime = now + Config.getConfig(main).getAccessTokenValidity();
+        Date now = new Date();
+        Date expires;
+        if (expiryTime != null) {
+            expires = new Date(expiryTime);
+        } else {
+            expires = new Date(now.getTime() + Config.getConfig(main).getAccessTokenValidity());
         }
-        AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime,
-                parentRefreshTokenHash1, userData, antiCsrfToken, now, version);
+        AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expires.getTime(),
+                parentRefreshTokenHash1, userData, antiCsrfToken, now.getTime(), version);
+
+        JWTSigningKeyInfo keyToUse;
+        if (useStaticKey) {
+            keyToUse = JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
+        } else {
+            keyToUse = SigningKeys.getJWTSigningKeyInfoFromKeyInfo(SigningKeys.getInstance(main).getLatestIssuedDynamicKey());
+        }
 
         String token;
-        if (!useStaticKey) {
-            KeyInfo keyInfo = AccessTokenSigningKey.getInstance(main).getLatestIssuedKey();
-            kid = keyInfo.id;
-            signingKey = new Utils.PubPriKey(keyInfo.value);
-            token = JWT.createJWT(accessToken.toJSON(), signingKey.privateKey, version, String.valueOf(kid));
-        } else {
-            if (version != VERSION.V3) {
-                // TODO:
-                throw new UnauthorisedException("");
-            }
-
+        if (version == VERSION.V3) {
             HashMap<String, Object> headers = new HashMap<>();
             headers.put("version", "3");
-            token = JWTSigningFunctions.createJWTToken(main, JWTSigningKey.SupportedAlgorithms.RS256, headers, accessToken.toJSON(), null, expiryTime / 1000, now / 1000);
+            token = JWTSigningFunctions.createJWTToken(JWTSigningKey.SupportedAlgorithms.RS256, headers, accessToken.toJSON(), null, expires, now, keyToUse);
+        } else {
+            signingKey = new Utils.PubPriKey(keyToUse.keyString);
+            token = JWT.createAndSignLegacyAccessToken(accessToken.toJSON(), signingKey.privateKey, version);
         }
 
-        return new TokenInfo(token, expiryTime, now);
+        return new TokenInfo(token, expires.getTime(), now.getTime());
     }
 
     public static TokenInfo createNewAccessTokenV1(@Nonnull Main main, @Nonnull String sessionHandle,
@@ -220,8 +205,7 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
 
-        Utils.PubPriKey signingKey = new Utils.PubPriKey(
-                AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value);
+        Utils.PubPriKey signingKey = new Utils.PubPriKey(SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value);
         long now = System.currentTimeMillis();
         AccessTokenInfo accessToken;
 
@@ -229,7 +213,7 @@ public class AccessToken {
         accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime, parentRefreshTokenHash1,
                 userData, antiCsrfToken, now, VERSION.V1);
 
-        String token = JWT.createJWT(Utils.toJsonTreeWithNulls(accessToken), signingKey.privateKey, VERSION.V1, null);
+        String token = JWT.createAndSignLegacyAccessToken(Utils.toJsonTreeWithNulls(accessToken), signingKey.privateKey, VERSION.V1);
         return new TokenInfo(token, expiryTime, now);
 
     }
@@ -363,10 +347,8 @@ public class AccessToken {
             if (this.version == VERSION.V3) {
                 for (Map.Entry<String, JsonElement> element : this.userData.entrySet()) {
                     if (res.has(element.getKey())) {
-                        // This should never happen:
-                        // 1. We either allowed a user to add a protected prop into the payload (userId, etc) in V3 (this should be blocked by validation)
-                        // 2. We are trying to serialize a V2 payload as V3 (access tokens shouldn't change version during regenerate/refresh)
-                        throw new UnauthorisedException("user payload overriding default field");
+                        // The use is trying to add a protected prop into the payload (userId, etc) in V3 (this should be blocked by validation)
+                        throw new UnauthorisedException("The user payload contains protected field");
                     }
                     res.add(element.getKey(), element.getValue());
                 }

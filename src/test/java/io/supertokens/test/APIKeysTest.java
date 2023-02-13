@@ -370,21 +370,5 @@ public class APIKeysTest {
         assertTrue(response.get("refreshToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("refreshToken").getAsJsonObject().has("createdTime"));
         assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 3);
-
-        assertTrue(response.get("idRefreshToken").getAsJsonObject().has("token"));
-        assertTrue(response.get("idRefreshToken").getAsJsonObject().has("expiry"));
-        assertTrue(response.get("idRefreshToken").getAsJsonObject().has("createdTime"));
-        assertEquals(response.get("idRefreshToken").getAsJsonObject().entrySet().size(), 3);
-
-        assertTrue(response.has("jwtSigningPublicKey"));
-        assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));
-        assertTrue(response.has("jwtSigningPublicKeyList"));
-        JsonArray respPubKeyList = response.get("jwtSigningPublicKeyList").getAsJsonArray();
-        for (int i = 0; i < respPubKeyList.size(); ++i) {
-            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("publicKey"));
-            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("expiryTime"));
-            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("createdAt"));
-            assertEquals(respPubKeyList.get(i).getAsJsonObject().entrySet().size(), 3);
-        }
     }
 }

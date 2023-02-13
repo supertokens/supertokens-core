@@ -62,8 +62,12 @@ public class RefreshSessionAPI extends WebserverAPI {
         String version = super.getVersionFromRequest(req);
         try {
             SessionInformationHolder sessionInfo = Session.refreshSession(main, refreshToken, antiCsrfToken,
-                    enableAntiCsrf,  version.equals(("2.14")));
+                    enableAntiCsrf,  version.equals(("2.18")));
             JsonObject result = sessionInfo.toJsonObject();
+
+            if (super.getVersionFromRequest(req).equals("2.18")) {
+                result.remove("idRefreshToken");
+            }
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {

@@ -23,8 +23,9 @@ import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
-import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
+import io.supertokens.signingkeys.SigningKeys.KeyInfo;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -160,7 +161,7 @@ public class HandshakeAPITest2_9 {
 
         assertEquals(response.entrySet().size(), 7);
 
-        List<String> keys = AccessTokenSigningKey.getInstance(process.main).getAllKeys().stream()
+        List<String> keys = SigningKeys.getInstance(process.main).getDynamicKeys().stream()
                 .map(key -> new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey).collect(Collectors.toList());
 
         assertEquals(response.get("jwtSigningPublicKey").getAsString(), keys.get(0));
@@ -183,7 +184,7 @@ public class HandshakeAPITest2_9 {
         // check that changed response has the same signing key as the current signing key and it is different from
         // the previous signing key
 
-        List<String> changedPubKeys = AccessTokenSigningKey.getInstance(process.main).getAllKeys().stream()
+        List<String> changedPubKeys = SigningKeys.getInstance(process.main).getDynamicKeys().stream()
                 .map(key -> new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey).collect(Collectors.toList());
 
         JsonArray changedRespPubKeyList = changedResponse.get("jwtSigningPublicKeyList").getAsJsonArray();
@@ -191,7 +192,6 @@ public class HandshakeAPITest2_9 {
         boolean hasChangedKey = changedRespPubKeyList.size() != respPubKeyList.size();
         for (int i = 0; i < changedRespPubKeyList.size(); ++i) {
             String pubKey = changedRespPubKeyList.get(i).getAsJsonObject().get("publicKey").getAsString();
-
             assertEquals(changedPubKeys.get(i), pubKey);
             hasChangedKey = hasChangedKey || !keys.contains(pubKey);
         }
@@ -210,7 +210,7 @@ public class HandshakeAPITest2_9 {
         // check status
         assertEquals(response.get("status").getAsString(), "OK");
 
-        List<KeyInfo> allKeys = AccessTokenSigningKey.getInstance(process.main).getAllKeys();
+        List<KeyInfo> allKeys = SigningKeys.getInstance(process.main).getDynamicKeys();
         List<String> pubKeys = allKeys.stream()
                 .map(key -> new io.supertokens.utils.Utils.PubPriKey(key.value).publicKey).collect(Collectors.toList());
 
@@ -232,7 +232,7 @@ public class HandshakeAPITest2_9 {
 
         // check jwtSigningPublicKeyExpiryTime
         assertEquals(response.get("jwtSigningPublicKeyExpiryTime").getAsLong(),
-                AccessTokenSigningKey.getInstance(process.getProcess()).getKeyExpiryTime());
+                SigningKeys.getInstance(process.getProcess()).getDynamicSigningKeyExpiryTime());
 
         // check accessTokenBlacklistingEnabled
         assertEquals(response.get("accessTokenBlacklistingEnabled").getAsBoolean(),

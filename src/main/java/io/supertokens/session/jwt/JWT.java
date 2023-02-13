@@ -20,7 +20,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
-import io.supertokens.output.Logging;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.utils.Utils;
 
@@ -52,24 +51,13 @@ public class JWT {
         }
     }
 
-    public static String createJWT(JsonElement jsonObj, String privateSigningKey, AccessToken.VERSION version, String kid)
+    public static String createAndSignLegacyAccessToken(JsonElement jsonObj, String privateSigningKey, AccessToken.VERSION version)
             throws InvalidKeyException, NoSuchAlgorithmException, InvalidKeySpecException, SignatureException {
         initHeader();
         String payload;
         String header;
-        if (version == AccessToken.VERSION.V3) {
-            assert kid != null;
-            JsonObject headerJson = new JsonObject();
-            headerJson.addProperty("alg", "RS256");
-            headerJson.addProperty("typ", "JWT");
-            headerJson.addProperty("version", "3");
-            headerJson.addProperty("kid", kid);
-            header = Utils.convertToBase64Url(headerJson.toString());
-            payload = Utils.convertToBase64Url(jsonObj.toString());
-        } else {
-            header = version == AccessToken.VERSION.V1 ? JWT.HEADERv1 : JWT.HEADERv2;
-            payload = Utils.convertToBase64(jsonObj.toString());
-        }
+        header = version == AccessToken.VERSION.V1 ? JWT.HEADERv1 : JWT.HEADERv2;
+        payload = Utils.convertToBase64(jsonObj.toString());
         String signature = Utils.signWithPrivateKey(header + "." + payload, privateSigningKey, version == AccessToken.VERSION.V3);
         return header + "." + payload + "." + signature;
     }

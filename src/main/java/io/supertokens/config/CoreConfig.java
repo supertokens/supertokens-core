@@ -297,8 +297,7 @@ public class CoreConfig {
     }
 
     public long getAccessTokenDynamicSigningKeyUpdateInterval() {
-        return access_token_signing_key_dynamic ? (long) (access_token_dynamic_signing_key_update_interval * 3600 * 1000)
-                : (10L * 365 * 24 * 3600 * 1000);
+        return (long) (access_token_dynamic_signing_key_update_interval * 3600 * 1000);
     }
 
     public String[] getAPIKeys() {

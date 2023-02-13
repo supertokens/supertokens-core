@@ -20,16 +20,16 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.exceptions.TryRefreshTokenException;
-import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.accessToken.AccessToken.AccessTokenInfo;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.session.jwt.JWT;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.test.Retry;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
@@ -268,7 +268,6 @@ public class AccessTokenTest {
         JWT.JWTPreParseInfo jwtInfo = JWT.preParseJWTInfo(newToken.token);
         assertNotNull(jwtInfo.kid);
         assertEquals(jwtInfo.version, AccessToken.VERSION.V3);
-        System.out.println(jwtInfo.kid);
 
         process.kill();
     }
@@ -297,7 +296,6 @@ public class AccessTokenTest {
         JWT.JWTPreParseInfo jwtInfo = JWT.preParseJWTInfo(newToken.token);
         assertNotNull(jwtInfo.kid);
         assertEquals(jwtInfo.version, AccessToken.VERSION.V3);
-        System.out.println(jwtInfo.kid);
         process.kill();
     }
 
@@ -359,11 +357,11 @@ public class AccessTokenTest {
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
         assertNotNull(e);
-        String keyBefore = AccessTokenSigningKey.getInstance(process.getProcess()).getLatestIssuedKey().toString();
+        String keyBefore = SigningKeys.getInstance(process.getProcess()).getLatestIssuedDynamicKey().toString();
         Thread.sleep(1500);
-        String keyAfter = AccessTokenSigningKey.getInstance(process.getProcess()).getLatestIssuedKey().toString();
+        String keyAfter = SigningKeys.getInstance(process.getProcess()).getLatestIssuedDynamicKey().toString();
         assertNotEquals(keyBefore, keyAfter);
-        assertTrue(AccessTokenSigningKey.getInstance(process.getProcess()).getKeyExpiryTime() != Long.MAX_VALUE);
+        assertTrue(SigningKeys.getInstance(process.getProcess()).getDynamicSigningKeyExpiryTime() != Long.MAX_VALUE);
         process.kill();
     }
 

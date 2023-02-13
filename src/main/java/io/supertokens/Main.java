@@ -30,12 +30,13 @@ import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.inmemorydb.Start;
-import io.supertokens.jwt.JWTSigningKey;
+import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
 import io.supertokens.webserver.Webserver;
@@ -191,6 +192,7 @@ public class Main {
         AccessTokenSigningKey.init(this);
         RefreshTokenKey.init(this);
         JWTSigningKey.init(this);
+        SigningKeys.init(this);
 
         // starts removing old session cronjob
         Cronjobs.addCronjob(this, DeleteExpiredSessions.getInstance(this));

@@ -16,10 +16,8 @@
 
 package io.supertokens.webserver.api.session;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
@@ -29,8 +27,8 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
-import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
+import io.supertokens.signingkeys.SigningKeys;
+import io.supertokens.signingkeys.SigningKeys.KeyInfo;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -73,15 +71,18 @@ public class VerifySessionAPI extends WebserverAPI {
             JsonObject result = sessionInfo.toJsonObject();
             result.addProperty("status", "OK");
 
-            result.addProperty("jwtSigningPublicKey",
-                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value).publicKey);
-            result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
+            if (!super.getVersionFromRequest(req).equals("2.18") ) {
+                result.addProperty("jwtSigningPublicKey",
+                        new Utils.PubPriKey(SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
+                result.addProperty("jwtSigningPublicKeyExpiryTime",
+                        SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
 
-            if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
-                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getAllKeys();
-                JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
-                result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
+                if (!super.getVersionFromRequest(req).equals("2.7") &&
+                        !super.getVersionFromRequest(req).equals("2.8")) {
+                    List<KeyInfo> keys = SigningKeys.getInstance(main).getDynamicKeys();
+                    JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
+                    result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
+                }
             }
 
             super.sendJsonResponse(200, result, resp);
@@ -99,16 +100,20 @@ public class VerifySessionAPI extends WebserverAPI {
                 JsonObject reply = new JsonObject();
                 reply.addProperty("status", "TRY_REFRESH_TOKEN");
 
-                reply.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(
-                        AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value).publicKey);
-                reply.addProperty("jwtSigningPublicKeyExpiryTime",
-                        AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
+                if (!super.getVersionFromRequest(req).equals("2.18")) {
+                    reply.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(
+                            SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
+                    reply.addProperty("jwtSigningPublicKeyExpiryTime",
+                            SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
 
-                if (!super.getVersionFromRequest(req).equals("2.7")
-                        && !super.getVersionFromRequest(req).equals("2.8")) {
-                    List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getAllKeys();
-                    JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
-                    reply.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
+
+                    if (!super.getVersionFromRequest(req).equals("2.7")
+                            && !super.getVersionFromRequest(req).equals("2.8")
+                            && !super.getVersionFromRequest(req).equals("2.18")) {
+                        List<KeyInfo> keys = SigningKeys.getInstance(main).getDynamicKeys();
+                        JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
+                        reply.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
+                    }
                 }
 
                 reply.addProperty("message", e.getMessage());

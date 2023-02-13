@@ -17,33 +17,23 @@
 package io.supertokens.test.session;
 
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import io.supertokens.ProcessState;
-import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
-import io.supertokens.session.info.SessionInfo;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
 import io.supertokens.session.info.SessionInformationHolder;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-import javax.crypto.NoSuchPaddingException;
 import java.io.IOException;
-import java.security.InvalidAlgorithmParameterException;
-import java.security.InvalidKeyException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SignatureException;
-import java.security.spec.InvalidKeySpecException;
 
 import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotNull;
@@ -291,23 +281,6 @@ public class SessionTest4 {
             Assert.fail();
         } catch (UnauthorisedException ignored) {
         }
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void noSigningKeyRotationShouldYieldFarAwayExpiry()
-            throws InterruptedException, StorageQueryException, IOException, StorageTransactionLogicException {
-
-        Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
-
-        String[] args = { "../" };
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        assert (AccessTokenSigningKey.getInstance(process.getProcess()).getKeyExpiryTime() > System.currentTimeMillis()
-                + (9L * 365 * 24 * 3600 * 1000));
-
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

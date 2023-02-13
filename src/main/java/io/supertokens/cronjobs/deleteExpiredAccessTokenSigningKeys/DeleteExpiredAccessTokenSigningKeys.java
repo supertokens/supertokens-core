@@ -22,7 +22,7 @@ import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
 
 public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
 

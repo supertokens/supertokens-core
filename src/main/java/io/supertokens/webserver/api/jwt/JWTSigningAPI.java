@@ -18,6 +18,7 @@ package io.supertokens.webserver.api.jwt;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.config.Config;
 import io.supertokens.jwt.JWTSigningFunctions;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -48,6 +49,8 @@ public class JWTSigningAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        String version = super.getVersionFromRequest(req);
+
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String algorithm = InputParser.parseStringOrThrowError(input, "algorithm", false);
         assert algorithm != null;
@@ -65,9 +68,11 @@ public class JWTSigningAPI extends WebserverAPI {
                     new WebserverAPI.BadRequestException("validity must be greater than or equal to 0"));
         }
 
+        boolean useDynamicKey = version.equals("2.18") &&
+                Boolean.FALSE.equals(InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true));
         try {
             String jwt = JWTSigningFunctions.createJWTToken(main, algorithm.toUpperCase(), payload, jwksDomain,
-                    validity);
+                    validity, useDynamicKey);
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "OK");
             reply.addProperty("jwt", jwt);

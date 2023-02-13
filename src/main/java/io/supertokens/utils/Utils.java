@@ -26,7 +26,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
-import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
+import io.supertokens.signingkeys.SigningKeys.KeyInfo;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -272,12 +272,12 @@ public class Utils {
             this.privateKey = parts[1];
         }
         public PubPriKey(String s) {
-            this(s.split(";"));
+            this(s.split("[|;]"));
         }
 
         @Override
         public String toString() {
-            return publicKey + ";" + privateKey;
+            return publicKey + "|" + privateKey;
         }
     }
 
