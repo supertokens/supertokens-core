@@ -29,6 +29,15 @@ public class Totp {
         return new CreateDeviceResponse("deviceName", secret);
     }
 
+    public static void markDeviceAsVerified(Main main, String userId, String deviceName) throws IOException {
+        TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
+        try {
+            totpStorage.markDeviceAsVerified(userId, deviceName);
+        } catch (Exception e) {
+            throw new IOException(e);
+        }
+    }
+
     private static class GenerateDeviceSecret {
         // private final String secret;
 

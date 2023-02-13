@@ -1628,44 +1628,66 @@ public class Start
         }
     }
 
-    // TOTP recipe: 
+    // TOTP recipe:
 
     @Override
-    public void createDevice(TOTPDevice device) throws StorageQueryException {
+    public void createDevice(TOTPDevice device) throws StorageQueryException, DeviceAlreadyExistsException {
         try {
             TOTPQueries.createDevice(this, device);
-        } catch (Exception e) {
+        } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getTotpUserDevicesTable() + ".user_id, "
+                            + Config.getConfig(this).getTotpUserDevicesTable() + ".device_name" + ")")) {
+                throw new DeviceAlreadyExistsException();
+            }
+
             throw new StorageQueryException(e);
         }
     }
 
     @Override
     public void markDeviceAsVerified(String userId, String deviceName)
-            throws StorageQueryException, TotpNotEnabledException, UnknownDeviceException {
+            throws StorageQueryException, UnknownDeviceException {
         try {
-            TOTPQueries.markDeviceAsVerified(this, userId, deviceName);
-        } catch (Exception e) {
+            int updatedCount = TOTPQueries.markDeviceAsVerified(this, userId, deviceName);
+            if (updatedCount == 0) {
+                throw new UnknownDeviceException();
+            }
+        } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
     public void deleteDevice(String userId, String deviceName)
-            throws StorageQueryException, TotpNotEnabledException, UnknownDeviceException {
+            throws StorageQueryException, UnknownDeviceException {
         try {
-            TOTPQueries.deleteDevice(this, userId, deviceName);
-        } catch (Exception e) {
+            int deletedCount = TOTPQueries.deleteDevice(this, userId, deviceName);
+            if (deletedCount == 0) {
+                throw new UnknownDeviceException();
+            }
+        } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
     public void updateDeviceName(String userId, String oldDeviceName, String newDeviceName)
-            throws StorageQueryException, TotpNotEnabledException, DeviceAlreadyExistsException,
+            throws StorageQueryException, DeviceAlreadyExistsException,
             UnknownDeviceException {
         try {
-            TOTPQueries.updateDeviceName(this, userId, oldDeviceName, newDeviceName);
-        } catch (Exception e) {
+            int updatedCount = TOTPQueries.updateDeviceName(this, userId, oldDeviceName, newDeviceName);
+            if (updatedCount == 0) {
+                throw new UnknownDeviceException();
+            }
+        } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getTotpUserDevicesTable() + ".user_id, "
+                            + Config.getConfig(this).getTotpUserDevicesTable() + ".device_name" + ")")) {
+                throw new DeviceAlreadyExistsException();
+            }
             throw new StorageQueryException(e);
         }
     }
@@ -1675,27 +1697,33 @@ public class Start
             throws StorageQueryException {
         try {
             return TOTPQueries.getDevices(this, userId);
-        } catch (Exception e) {
+        } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public boolean insertUsedCode(TOTPUsedCode code)
+    public boolean insertUsedCode(TOTPUsedCode usedCodeObj)
             throws StorageQueryException, TotpNotEnabledException {
         try {
-            return TOTPQueries.insertUsedCode(this, code);
+            int insertCount = TOTPQueries.insertUsedCode(this, usedCodeObj);
+            return insertCount == 1;
         } catch (Exception e) {
+            // FIXME: Not working without `PRAGMA foreign_keys = ON;` but unable to setup it in tests.
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (FOREIGN KEY constraint failed)")) {
+                throw new TotpNotEnabledException();
+            }
             throw new StorageQueryException(e);
         }
     }
 
     @Override
     public TOTPUsedCode[] getUsedCodes(String userId)
-            throws StorageQueryException, TotpNotEnabledException {
+            throws StorageQueryException {
         try {
             return TOTPQueries.getUsedCodes(this, userId);
-        } catch (Exception e) {
+        } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }

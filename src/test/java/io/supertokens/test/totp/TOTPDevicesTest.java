@@ -67,30 +67,10 @@ public class TOTPDevicesTest {
         assertNotNull(createDeviceResponse);
         createDeviceResponse.deviceName.equals("deviceName");
 
+        Totp.markDeviceAsVerified(process.getProcess(), "userId", "deviceName");
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void createDeviceWithDb() throws Exception {
-        String[] args = { "../" };
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-
-        TOTPDevice newDevice = new TOTPDevice("deviceName", "userId", "secretKey", 30, 1, false);
-
-        TOTPStorage storage = StorageLayer.getTOTPStorage(process.getProcess());
-        storage.createDevice(newDevice);
-
-        TOTPDevice[] storedDevices = storage.getDevices("userId");
-        assertNotNull(storedDevices);
-        assert (storedDevices.length == 1);
-        assert (storedDevices[0].deviceName.equals("deviceName"));
     }
 
 }

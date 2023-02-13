@@ -19,19 +19,19 @@ import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 
 public class TOTPQueries {
     public static String getQueryToCreateUserDevicesTable(Start start) {
-        return "CREATE TABLE IF NOT EXISTS" + Config.getConfig(start).getTotpUserDevicesTable() + " ("
+        return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getTotpUserDevicesTable() + " ("
                 + "user_id VARCHAR(128) NOT NULL," + "device_name VARCHAR(256) NOT NULL,"
                 + "secret_key VARCHAR(256) NOT NULL,"
                 + "period INTEGER NOT NULL," + "skew INTEGER NOT NULL," + "verified BOOLEAN NOT NULL,"
-                + "PRIMARY KEY (user_id, device_name)";
+                + "PRIMARY KEY (user_id, device_name))";
     }
 
     public static String getQueryToCreateUsedCodesTable(Start start) {
-        return "CREATE TABLE IF NOT EXISTS" + Config.getConfig(start).getTotpUsedCodesTable() + " ("
+        return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getTotpUsedCodesTable() + " ("
                 + "user_id VARCHAR(128) NOT NULL," + "code VARCHAR(6) NOT NULL," + "is_valid_code BOOLEAN NOT NULL,"
-                + "expiry_time BIGINT NOT NULL," + "PRIMARY KEY (user_id, code),"
-                + "FOREIGN KEY (user_id) REFERENCES" + Config.getConfig(start).getTotpUserDevicesTable()
-                + "(user_id) ON DELETE CASCADE";
+                + "expiry_time BIGINT NOT NULL,"
+                + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getTotpUserDevicesTable()
+                + "(user_id) ON DELETE CASCADE)";
     }
 
     public static String getQueryToCreateUsedCodesIndex(Start start) {
@@ -40,9 +40,9 @@ public class TOTPQueries {
     }
 
     public static void createDevice(Start start, TOTPDevice device)
-            throws StorageQueryException, StorageTransactionLogicException, SQLException {
+            throws StorageQueryException, SQLException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getTotpUserDevicesTable()
-                + " (deviceName, userId, secretKey, period, skew, verified) VALUES (?, ?, ?, ?, ?, ?)";
+                + " (device_name, user_id, secret_key, period, skew, verified) VALUES (?, ?, ?, ?, ?, ?)";
 
         update(start, QUERY, pst -> {
             pst.setString(1, device.deviceName);
@@ -54,33 +54,33 @@ public class TOTPQueries {
         });
     }
 
-    public static void markDeviceAsVerified(Start start, String userId, String deviceName)
-            throws StorageTransactionLogicException, StorageQueryException, SQLException {
+    public static int markDeviceAsVerified(Start start, String userId, String deviceName)
+            throws StorageQueryException, SQLException {
         String QUERY = "UPDATE " + Config.getConfig(start).getTotpUserDevicesTable()
                 + " SET verified = true WHERE user_id = ? AND device_name = ?;";
-        update(start, QUERY, pst -> {
+        return update(start, QUERY, pst -> {
             pst.setString(1, userId);
             pst.setString(2, deviceName);
         });
     }
 
-    public static void deleteDevice(Start start, String userId, String deviceName)
-            throws StorageTransactionLogicException, StorageQueryException, SQLException {
+    public static int deleteDevice(Start start, String userId, String deviceName)
+            throws StorageQueryException, SQLException {
         String QUERY = "DELETE FROM " + Config.getConfig(start).getTotpUserDevicesTable()
                 + " WHERE user_id = ? AND device_name = ?;";
 
-        update(start, QUERY, pst -> {
+        return update(start, QUERY, pst -> {
             pst.setString(1, userId);
             pst.setString(2, deviceName);
         });
     }
 
-    public static void updateDeviceName(Start start, String userId, String oldDeviceName, String newDeviceName)
-            throws StorageTransactionLogicException, StorageQueryException, SQLException {
+    public static int updateDeviceName(Start start, String userId, String oldDeviceName, String newDeviceName)
+            throws StorageQueryException, SQLException {
         String QUERY = "UPDATE " + Config.getConfig(start).getTotpUserDevicesTable()
                 + " SET device_name = ? WHERE user_id = ? AND device_name = ?;";
 
-        update(start, QUERY, pst -> {
+        return update(start, QUERY, pst -> {
             pst.setString(1, newDeviceName);
             pst.setString(2, userId);
             pst.setString(3, oldDeviceName);
@@ -88,7 +88,7 @@ public class TOTPQueries {
     }
 
     public static TOTPDevice[] getDevices(Start start, String userId)
-            throws StorageTransactionLogicException, StorageQueryException, SQLException {
+            throws StorageQueryException, SQLException {
         String QUERY = "SELECT * FROM " + Config.getConfig(start).getTotpUserDevicesTable()
                 + " WHERE user_id = ?;";
 
@@ -144,17 +144,16 @@ public class TOTPQueries {
         }
     }
 
-    public static boolean insertUsedCode(Start start, TOTPUsedCode code) throws SQLException, StorageQueryException {
+    public static int insertUsedCode(Start start, TOTPUsedCode code) throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getTotpUsedCodesTable()
                 + " (user_id, code, is_valid_code, expiry_time) VALUES (?, ?, ?, ?);";
 
-        update(start, QUERY, pst -> {
+        return update(start, QUERY, pst -> {
             pst.setString(1, code.userId);
             pst.setString(2, code.code);
             pst.setBoolean(3, code.isValidCode);
             pst.setLong(4, code.expiryTime);
         });
-        return true; // FIXME: Count the number of rows inserted OR Check if the code was inserted
     }
 
     public static TOTPUsedCode[] getUsedCodes(Start start, String userId) throws SQLException, StorageQueryException {
