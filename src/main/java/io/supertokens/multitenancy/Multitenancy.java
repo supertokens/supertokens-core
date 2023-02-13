@@ -16,13 +16,16 @@
 
 package io.supertokens.multitenancy;
 
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.*;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -30,51 +33,92 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantExc
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.thirdparty.ThirdParty;
 
+import java.io.IOException;
 import java.util.*;
 
 public class Multitenancy extends ResourceDistributor.SingletonResource {
 
     public static boolean addNewOrUpdateAppOrTenant(Main main, TenantIdentifier sourceTenant, TenantConfig newTenant)
             throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException,
-            StorageQueryException, FeatureNotEnabledException {
+            StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
+            InvalidProviderConfigException {
 
         // first we don't allow changing of core config for base tenant - since that comes from config.yaml file.
-        if (newTenant.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
-            if (newTenant.coreConfig.entrySet().size() > 0) {
-                throw new CannotModifyBaseConfigException();
-            }
-        } else {
-            if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
-                    .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
-                throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
+        {
+            if (newTenant.tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
+                if (newTenant.coreConfig.entrySet().size() > 0) {
+                    throw new CannotModifyBaseConfigException();
+                }
+            } else {
+                if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
+                        .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
+                    throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
+                }
             }
         }
 
         // Then we check for permissions based on sourceTenant
-        if (!newTenant.tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-            // this means that we are creating a new tenant and must use the public tenant for the current app to do
-            // this
-            if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-                throw new BadPermissionException("You must use the public tenantId to add a new tenant to this app");
-            }
-        } else if (!newTenant.tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
-            // this means that we are creating a new app for this connectionuridomain and must use the public app and
-            // public tenant for this
-            if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) &&
-                    !sourceTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
-                throw new BadPermissionException("You must use the public tenantId and public appId to add a new app");
-            }
-        } else if (!newTenant.tenantIdentifier.getConnectionUriDomain()
-                .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
-            // this means that we are creating a new connectionuridomain, and must use the base tenant for this
-            if (!sourceTenant.equals(new TenantIdentifier(null, null, null))) {
-                throw new BadPermissionException("You must use the base tenant to create a new connectionUriDomain");
+        {
+            if (!newTenant.tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                // this means that we are creating a new tenant and must use the public tenant for the current app to do
+                // this
+                if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                    throw new BadPermissionException(
+                            "You must use the public tenantId to add a new tenant to this app");
+                }
+            } else if (!newTenant.tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
+                // this means that we are creating a new app for this connectionuridomain and must use the public app
+                // and
+                // public tenant for this
+                if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) &&
+                        !sourceTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
+                    throw new BadPermissionException(
+                            "You must use the public tenantId and public appId to add a new app");
+                }
+            } else if (!newTenant.tenantIdentifier.getConnectionUriDomain()
+                    .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+                // this means that we are creating a new connectionuridomain, and must use the base tenant for this
+                if (!sourceTenant.equals(new TenantIdentifier(null, null, null))) {
+                    throw new BadPermissionException(
+                            "You must use the base tenant to create a new connectionUriDomain");
+                }
             }
         }
 
-        // TODO: need to validate core config
-        // TODO: validate third party config
+        // we check if the core config provided is correct
+        {
+            TenantConfig[] existingTenants = getAllTenants(new TenantIdentifier(null, null, null), main);
+            boolean added = false;
+            for (int i = 0; i < existingTenants.length; i++) {
+                if (existingTenants[i].tenantIdentifier.equals(newTenant.tenantIdentifier)) {
+                    existingTenants[i] = newTenant;
+                    added = true;
+                    break;
+                }
+            }
+            if (!added) {
+                TenantConfig[] oldTenants = existingTenants;
+                existingTenants = new TenantConfig[oldTenants.length + 1];
+                for (int i = 0; i < oldTenants.length; i++) {
+                    existingTenants[i] = oldTenants[i];
+                }
+                existingTenants[existingTenants.length - 1] = newTenant;
+            }
+            Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
+                    existingTenants,
+                    Config.getBaseConfigAsJsonObject(main));
+            Config.assertAllTenantConfigsAreValid(main, normalisedConfigs);
+        }
+
+        // validate third party config
+        {
+            if (newTenant.thirdPartyConfig.providers.length > 0) {
+                ThirdParty.verifyThirdPartyProvidersArray(newTenant.thirdPartyConfig.providers);
+            }
+        }
 
         boolean creationInSharedDbSucceeded = false;
         try {

@@ -128,8 +128,8 @@ public class Config extends ResourceDistributor.SingletonResource {
     }
 
     // this function will check for conflicting configs across all tenants, including the base config.
-    private static void assertAllTenantConfigsAreValid(Main main,
-                                                       Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs)
+    public static void assertAllTenantConfigsAreValid(Main main,
+                                                      Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs)
             throws InvalidConfigException, IOException {
         Map<String, Storage> userPoolIdToStorage = new HashMap<>();
         Map<String, Config> userPoolIdToConfigArray = new HashMap<>();

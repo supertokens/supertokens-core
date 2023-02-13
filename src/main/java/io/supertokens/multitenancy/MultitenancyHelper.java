@@ -36,6 +36,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.thirdparty.InvalidProviderConfigException;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -65,7 +66,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static void init(Main main) throws StorageQueryException {
+    public static void init(Main main) throws StorageQueryException, IOException {
         main.getResourceDistributor()
                 .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new MultitenancyHelper(main));
         if (getTenantInfo(main, new TenantIdentifier(null, null, null)) == null) {
@@ -76,7 +77,8 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                                 new TenantIdentifier(null, null, null),
                                 new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
                                 new PasswordlessConfig(true), new JsonObject()));
-            } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException | FeatureNotEnabledException e) {
+            } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException |
+                    FeatureNotEnabledException | InvalidConfigException | InvalidProviderConfigException e) {
                 throw new IllegalStateException(e);
             }
         }

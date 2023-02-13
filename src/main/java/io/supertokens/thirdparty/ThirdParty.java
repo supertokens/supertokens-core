@@ -18,10 +18,11 @@ package io.supertokens.thirdparty;
 
 import io.supertokens.Main;
 import io.supertokens.authRecipe.UserPaginationToken;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
@@ -266,6 +267,11 @@ public class ThirdParty {
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
+    }
+
+    public static void verifyThirdPartyProvidersArray(ThirdPartyConfig.Provider[] providers)
+            throws InvalidProviderConfigException {
+        // TODO:
     }
 
 }
