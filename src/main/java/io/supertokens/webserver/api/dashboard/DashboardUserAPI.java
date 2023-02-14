@@ -81,7 +81,6 @@ public class DashboardUserAPI extends WebserverAPI {
             if (passwordErrorMessage != null) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "PASSWORD_WEAK_ERROR");
-                // TODO: add message for why password is weak
                 response.addProperty("message", passwordErrorMessage);
                 super.sendJsonResponse(200, response, resp);
                 return;
@@ -130,7 +129,6 @@ public class DashboardUserAPI extends WebserverAPI {
             if (passwordErrorMessage != null) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "PASSWORD_WEAK_ERROR");
-                // TODO: add message for why password is weak
                 response.addProperty("message", passwordErrorMessage);
                 super.sendJsonResponse(200, response, resp);
                 return;
