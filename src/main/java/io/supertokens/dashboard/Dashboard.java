@@ -54,12 +54,12 @@ public class Dashboard {
             throw new DuplicateEmailException();
         }
 
-        DashboardUser[] users = StorageLayer.getDashboardStorage(main).getAllDashboardUsers();
-
-        if (!isFeatureFlagEnabledOrUserCountIsUnderThreshold(main, users)) {
-            // TODO: update message
-            throw new FeatureNotEnabledException(
-                    "Free user limit reached. Please subscribe to a SuperTokens core license key to allow more users to access the dashboard.");
+        if (!isDashboardFeatureFlagEnabled(main)) {
+            DashboardUser[] users = StorageLayer.getDashboardStorage(main).getAllDashboardUsers();
+            if (users.length >= MAX_NUMBER_OF_FREE_DASHBOARD_USERS) {
+                throw new FeatureNotEnabledException(
+                        "Free user limit reached. Please subscribe to a SuperTokens core license key to allow more users to access the dashboard.");
+            }
         }
 
         String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
@@ -94,7 +94,7 @@ public class Dashboard {
 
     public static String signInDashboardUser(Main main, String email, String password)
             throws StorageQueryException, UserSuspendedException {
-        if (isUserSuspendedCheckWithEmailCheck(main, email)) {
+        if (isUserSuspended(main, email, null)) {
             throw new UserSuspendedException();
 
         }
@@ -116,31 +116,28 @@ public class Dashboard {
         return StorageLayer.getDashboardStorage(main).deleteDashboardUserWithUserId(userId);
     }
 
-    private static boolean isUserSuspendedCheckWithEmailCheck(Main main, String email) throws StorageQueryException {
-        DashboardUser[] users = StorageLayer.getDashboardStorage(main).getAllDashboardUsers();
-        if (!isFeatureFlagEnabledOrUserCountIsUnderThreshold(main, users)) {
-            for (int i = 0; i < MAX_NUMBER_OF_FREE_DASHBOARD_USERS; i++) {
-                if (email.equals(users[i].email)) {
-                    return false;
+    private static boolean isUserSuspended(Main main, @Nullable String email, @Nullable String userId)
+            throws StorageQueryException {
+        if (!isDashboardFeatureFlagEnabled(main)) {
+            DashboardUser[] users = StorageLayer.getDashboardStorage(main).getAllDashboardUsers();
+            if (email != null) {
+                for (int i = 0; i < MAX_NUMBER_OF_FREE_DASHBOARD_USERS; i++) {
+                    if (email.equals(users[i].email)) {
+                        return false;
+                    }
                 }
+            } else if (userId != null) {
+                for (int i = 0; i < MAX_NUMBER_OF_FREE_DASHBOARD_USERS; i++) {
+                    if (userId.equals(users[i].userId)) {
+                        return false;
+                    }
+                }
+            } else {
+                throw new IllegalStateException("Should never come here");
             }
+
             return true;
         }
-
-        return false;
-    }
-
-    private static boolean isUserSuspendedCheckWithUserIdCheck(Main main, String userId) throws StorageQueryException {
-        DashboardUser[] users = StorageLayer.getDashboardStorage(main).getAllDashboardUsers();
-        if (!isFeatureFlagEnabledOrUserCountIsUnderThreshold(main, users)) {
-            for (int i = 0; i < MAX_NUMBER_OF_FREE_DASHBOARD_USERS; i++) {
-                if (userId.equals(users[i].userId)) {
-                    return false;
-                }
-            }
-            return true;
-        }
-
         return false;
     }
 
@@ -204,13 +201,8 @@ public class Dashboard {
         }
     }
 
-    public static boolean isFeatureFlagEnabledOrUserCountIsUnderThreshold(Main main, DashboardUser[] users)
-            throws StorageQueryException {
-        if (!isDashboardFeatureFlagEnabled(main)) {
-            // check if current dashboard users count is under the threshold
-            return users.length < MAX_NUMBER_OF_FREE_DASHBOARD_USERS;
-        }
-        return true;
+    public static boolean isUserCountUnderThreshold(DashboardUser[] users) {
+        return users.length < MAX_NUMBER_OF_FREE_DASHBOARD_USERS;
     }
 
     public static boolean revokeSessionWithSessionId(Main main, String sessionId) throws StorageQueryException {
@@ -269,7 +261,7 @@ public class Dashboard {
                 .getSessionInfoWithSessionId(sessionId);
         if (sessionInfo != null) {
             // check if user is suspended
-            if (isUserSuspendedCheckWithUserIdCheck(main, sessionInfo.userId)) {
+            if (isUserSuspended(main, null, sessionInfo.userId)) {
                 throw new UserSuspendedException();
             }
             return true;
