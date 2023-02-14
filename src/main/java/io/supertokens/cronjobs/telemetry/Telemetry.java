@@ -95,16 +95,21 @@ public class Telemetry extends CronTask {
     }
 
     public static KeyValueInfo getTelemetryId(Main main) throws StorageQueryException {
-        if (StorageLayer.isInMemDb(main)) {
-            return null;
+        try {
+            if (StorageLayer.isInMemDb(main) ||
+                    Config.getConfig(new TenantIdentifier(null, null, null), main).isTelemetryDisabled()) {
+                return null;
+            }
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
         }
         Storage storage = StorageLayer.getBaseStorage(main);
 
-        KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
+        KeyValueInfo telemetryId = storage.getKeyValue(new TenantIdentifier(null, null, null), TELEMETRY_ID_DB_KEY);
 
         if (telemetryId == null) {
             telemetryId = new KeyValueInfo(Utils.getUUID());
-            storage.setKeyValue(TELEMETRY_ID_DB_KEY, telemetryId);
+            storage.setKeyValue(new TenantIdentifier(null, null, null), TELEMETRY_ID_DB_KEY, telemetryId);
         }
         return telemetryId;
     }

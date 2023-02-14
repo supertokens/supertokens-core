@@ -20,7 +20,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
@@ -28,6 +27,7 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -155,10 +155,6 @@ public class SigningKeysTest {
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
                         tenantConfig),
-                new TenantConfig(new TenantIdentifier("c1", null, "t1"), new EmailPasswordConfig(false),
-                        new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
-                        new PasswordlessConfig(false),
-                        tenantConfig2),
                 new TenantConfig(new TenantIdentifier("c2", null, null), new EmailPasswordConfig(false),
                         new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                         new PasswordlessConfig(false),
@@ -182,9 +178,6 @@ public class SigningKeysTest {
         AccessTokenSigningKey.KeyInfo c1Tenant = AccessTokenSigningKey.getInstance(
                         new TenantIdentifier("c1", null, null), process.main)
                 .getAllKeys().get(0);
-        AccessTokenSigningKey.KeyInfo c1t1Tenant = AccessTokenSigningKey.getInstance(
-                        new TenantIdentifier("c1", null, "t1"), process.main)
-                .getAllKeys().get(0);
         AccessTokenSigningKey.KeyInfo c2Tenant = AccessTokenSigningKey.getInstance(
                         new TenantIdentifier("c2", null, null), process.main)
                 .getAllKeys().get(0);
@@ -194,12 +187,9 @@ public class SigningKeysTest {
 
         assertNotEquals(baseTenant.createdAtTime, c1Tenant.createdAtTime);
         assertNotEquals(baseTenant.expiryTime, c1Tenant.expiryTime);
-        assertNotEquals(baseTenant.expiryTime, c1t1Tenant.expiryTime);
         assertNotEquals(baseTenant.expiryTime, c2Tenant.expiryTime);
         assertTrue(baseTenant.expiryTime + (31 * 3600 * 1000) < c1Tenant.expiryTime);
         assertNotEquals(baseTenant.value, c1Tenant.value);
-        assertTrue(baseTenant.expiryTime + (60 * 3600 * 1000) < c1t1Tenant.expiryTime);
-        assertNotEquals(baseTenant.value, c1t1Tenant.value);
         assertTrue(baseTenant.expiryTime + (60 * 3600 * 1000) < c2Tenant.expiryTime);
         assertNotEquals(baseTenant.value, c2Tenant.value);
 

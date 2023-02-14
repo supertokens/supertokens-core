@@ -246,7 +246,7 @@ public class UserIdMapping {
             throws StorageQueryException, ServletException, TenantOrAppNotFoundException {
         {
             if (StorageLayer.getStorage(tenantIdentifier, main)
-                    .isUserIdBeingUsedInNonAuthRecipe(SessionStorage.class.getName(),
+                    .isUserIdBeingUsedInNonAuthRecipe(tenantIdentifier, SessionStorage.class.getName(),
                             userId)) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("UserId is already in use in Session recipe"));
@@ -254,7 +254,7 @@ public class UserIdMapping {
         }
         {
             if (StorageLayer.getStorage(tenantIdentifier, main)
-                    .isUserIdBeingUsedInNonAuthRecipe(UserMetadataStorage.class.getName(),
+                    .isUserIdBeingUsedInNonAuthRecipe(tenantIdentifier, UserMetadataStorage.class.getName(),
                             userId)) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("UserId is already in use in UserMetadata recipe"));
@@ -262,7 +262,7 @@ public class UserIdMapping {
         }
         {
             if (StorageLayer.getStorage(tenantIdentifier, main)
-                    .isUserIdBeingUsedInNonAuthRecipe(UserRolesStorage.class.getName(),
+                    .isUserIdBeingUsedInNonAuthRecipe(tenantIdentifier, UserRolesStorage.class.getName(),
                             userId)) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("UserId is already in use in UserRoles recipe"));
@@ -270,7 +270,7 @@ public class UserIdMapping {
         }
         {
             if (StorageLayer.getStorage(tenantIdentifier, main)
-                    .isUserIdBeingUsedInNonAuthRecipe(EmailVerificationStorage.class.getName(),
+                    .isUserIdBeingUsedInNonAuthRecipe(tenantIdentifier, EmailVerificationStorage.class.getName(),
                             userId)) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("UserId is already in use in EmailVerification recipe"));
@@ -278,7 +278,7 @@ public class UserIdMapping {
         }
         {
             if (StorageLayer.getStorage(tenantIdentifier, main)
-                    .isUserIdBeingUsedInNonAuthRecipe(JWTRecipeStorage.class.getName(),
+                    .isUserIdBeingUsedInNonAuthRecipe(tenantIdentifier, JWTRecipeStorage.class.getName(),
                             userId)) {
                 throw new ServletException(new WebserverAPI.BadRequestException("Should never come here"));
             }

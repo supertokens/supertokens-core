@@ -23,13 +23,13 @@ import io.supertokens.ProcessState;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfigTestContent;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -124,6 +124,8 @@ public class ConfigTest {
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("refresh_token_validity", new JsonPrimitive(144002));
         tenantConfig.add("password_reset_token_lifetime", new JsonPrimitive(3600001));
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
 
         Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
                 new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
@@ -210,7 +212,7 @@ public class ConfigTest {
 
         try {
             Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
-                    new TenantConfig(new TenantIdentifier("abc", null, null), new EmailPasswordConfig(false),
+                    new TenantConfig(new TenantIdentifier(null, "abc", null), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
                             tenantConfig)});
@@ -290,7 +292,10 @@ public class ConfigTest {
 
         {
             JsonObject tenantConfig = new JsonObject();
+
             tenantConfig.add("refresh_token_validity", new JsonPrimitive(144002));
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
             tenants[0] = new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
@@ -299,6 +304,8 @@ public class ConfigTest {
 
         {
             JsonObject tenantConfig = new JsonObject();
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
             tenantConfig.add("refresh_token_validity", new JsonPrimitive(144003));
             tenants[1] = new TenantConfig(new TenantIdentifier("c1", null, "t1"), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),

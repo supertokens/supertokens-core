@@ -15,6 +15,7 @@ import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
 import org.junit.*;
@@ -315,7 +316,8 @@ public class EETest extends Mockito {
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             StorageLayer.getStorage(process.main)
-                    .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB, new KeyValueInfo(STATELESS_INVALID_LICENSE_KEY));
+                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
+                            new KeyValueInfo(STATELESS_INVALID_LICENSE_KEY));
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -355,7 +357,8 @@ public class EETest extends Mockito {
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
             StorageLayer.getStorage(process.main)
-                    .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB, new KeyValueInfo(OPAQUE_INVALID_LICENSE_KEY));
+                    .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
+                            new KeyValueInfo(OPAQUE_INVALID_LICENSE_KEY));
 
             process.kill();
             Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -972,7 +975,8 @@ public class EETest extends Mockito {
                 Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
 
                 StorageLayer.getStorage(process.main)
-                        .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB, new KeyValueInfo(OPAQUE_INVALID_LICENSE_KEY));
+                        .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
+                                new KeyValueInfo(OPAQUE_INVALID_LICENSE_KEY));
             }
 
             process.kill();
@@ -1020,7 +1024,8 @@ public class EETest extends Mockito {
                 Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
 
                 StorageLayer.getStorage(process.main)
-                        .setKeyValue(EEFeatureFlag.LICENSE_KEY_IN_DB, new KeyValueInfo(STATELESS_INVALID_LICENSE_KEY));
+                        .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.LICENSE_KEY_IN_DB,
+                                new KeyValueInfo(STATELESS_INVALID_LICENSE_KEY));
             }
 
             process.kill();
@@ -1057,7 +1062,8 @@ public class EETest extends Mockito {
         Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
 
         StorageLayer.getStorage(process.main)
-                .setKeyValue(EEFeatureFlag.FEATURE_FLAG_KEY_IN_DB, new KeyValueInfo(""));
+                .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.FEATURE_FLAG_KEY_IN_DB,
+                        new KeyValueInfo(""));
 
         Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures().length, 1);
         Assert.assertEquals(FeatureFlag.getInstance(process.main).getEnabledFeatures()[0], EE_FEATURES.TEST);
@@ -1083,7 +1089,8 @@ public class EETest extends Mockito {
         JsonArray json = new JsonArray();
         Arrays.stream(features).forEach(ee_features -> json.add(new JsonPrimitive(ee_features.toString())));
         StorageLayer.getStorage(process.main)
-                .setKeyValue(EEFeatureFlag.FEATURE_FLAG_KEY_IN_DB, new KeyValueInfo(json.toString()));
+                .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.FEATURE_FLAG_KEY_IN_DB,
+                        new KeyValueInfo(json.toString()));
 
         FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance()
                 .updateEnabledFeaturesValueReadFromDbTime(System.currentTimeMillis() - (1000 * 3600 * 5));
@@ -1106,7 +1113,8 @@ public class EETest extends Mockito {
         JsonArray json = new JsonArray();
         Arrays.stream(features).forEach(ee_features -> json.add(new JsonPrimitive(ee_features.toString())));
         StorageLayer.getStorage(process.main)
-                .setKeyValue(EEFeatureFlag.FEATURE_FLAG_KEY_IN_DB, new KeyValueInfo(json.toString()));
+                .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.FEATURE_FLAG_KEY_IN_DB,
+                        new KeyValueInfo(json.toString()));
 
         FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance()
                 .updateEnabledFeaturesValueReadFromDbTime(System.currentTimeMillis() - (1000 * 3600 * 5));
@@ -1146,7 +1154,8 @@ public class EETest extends Mockito {
         json.add(new JsonPrimitive("random"));
         json.add(new JsonPrimitive("test"));
         StorageLayer.getStorage(process.main)
-                .setKeyValue(EEFeatureFlag.FEATURE_FLAG_KEY_IN_DB, new KeyValueInfo(json.toString()));
+                .setKeyValue(new TenantIdentifier(null, null, null), EEFeatureFlag.FEATURE_FLAG_KEY_IN_DB,
+                        new KeyValueInfo(json.toString()));
 
         FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance()
                 .updateEnabledFeaturesValueReadFromDbTime(System.currentTimeMillis() - (1000 * 3600 * 5));

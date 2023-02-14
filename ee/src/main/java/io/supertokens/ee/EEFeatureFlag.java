@@ -23,6 +23,7 @@ import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
 import org.jetbrains.annotations.TestOnly;
@@ -255,7 +256,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         Arrays.stream(features).forEach(ee_features -> json.add(new JsonPrimitive(ee_features.toString())));
         Logging.debug(main, "Saving new feature flag in database: " + json);
         StorageLayer.getBaseStorage(main)
-                .setKeyValue(FEATURE_FLAG_KEY_IN_DB, new KeyValueInfo(json.toString()));
+                .setKeyValue(new TenantIdentifier(null, null, null), FEATURE_FLAG_KEY_IN_DB,
+                        new KeyValueInfo(json.toString()));
         this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
         this.enabledFeaturesFromDb = features;
     }
@@ -266,7 +268,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                 || (System.currentTimeMillis()
                 - this.enabledFeaturesValueReadFromDbTime > INTERVAL_BETWEEN_DB_READS)) {
             Logging.debug(main, "Reading feature flag from database");
-            KeyValueInfo keyValueInfo = StorageLayer.getBaseStorage(main).getKeyValue(FEATURE_FLAG_KEY_IN_DB);
+            KeyValueInfo keyValueInfo = StorageLayer.getBaseStorage(main)
+                    .getKeyValue(new TenantIdentifier(null, null, null), FEATURE_FLAG_KEY_IN_DB);
             if (keyValueInfo == null) {
                 Logging.debug(main, "No feature flag set in db");
                 return new EE_FEATURES[]{};
@@ -289,19 +292,22 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
     private void setLicenseKeyInDb(String key) throws StorageQueryException {
         Logging.debug(main, "Setting license key in db: " + key);
-        StorageLayer.getBaseStorage(main).setKeyValue(LICENSE_KEY_IN_DB, new KeyValueInfo(key));
+        StorageLayer.getBaseStorage(main)
+                .setKeyValue(new TenantIdentifier(null, null, null), LICENSE_KEY_IN_DB, new KeyValueInfo(key));
     }
 
     private void removeLicenseKeyFromDb() throws StorageQueryException {
         Logging.debug(main, "Removing license key from db");
         StorageLayer.getBaseStorage(main)
-                .setKeyValue(LICENSE_KEY_IN_DB, new KeyValueInfo(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE));
+                .setKeyValue(new TenantIdentifier(null, null, null), LICENSE_KEY_IN_DB,
+                        new KeyValueInfo(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE));
     }
 
     @Override
     public String getLicenseKeyFromDb() throws NoLicenseKeyFoundException, StorageQueryException {
         Logging.debug(main, "Attempting to fetch license key from db");
-        KeyValueInfo info = StorageLayer.getBaseStorage(main).getKeyValue(LICENSE_KEY_IN_DB);
+        KeyValueInfo info = StorageLayer.getBaseStorage(main)
+                .getKeyValue(new TenantIdentifier(null, null, null), LICENSE_KEY_IN_DB);
         if (info == null || info.value.equals(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE)) {
             Logging.debug(main, "No license key found in db");
             throw new NoLicenseKeyFoundException();

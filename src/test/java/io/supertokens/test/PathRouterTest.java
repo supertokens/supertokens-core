@@ -25,6 +25,8 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
@@ -1069,7 +1071,7 @@ public class PathRouterTest extends Mockito {
     public void tenantNotFoundTest()
             throws InterruptedException, IOException, io.supertokens.httpRequest.HttpResponseException,
             InvalidConfigException,
-            io.supertokens.test.httpRequest.HttpResponseException {
+            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
@@ -1082,7 +1084,11 @@ public class PathRouterTest extends Mockito {
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
         JsonObject tenant2Config = new JsonObject();
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
         tenant2Config.add("api_keys", new JsonPrimitive("abcasdfaliojmo3jenbogweg=-9382923"));
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(tenant2Config, 3);
 
         Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
                 new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
@@ -1162,7 +1168,7 @@ public class PathRouterTest extends Mockito {
     public void tenantNotFoundTest2()
             throws InterruptedException, IOException, io.supertokens.httpRequest.HttpResponseException,
             InvalidConfigException,
-            io.supertokens.test.httpRequest.HttpResponseException {
+            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
@@ -1174,6 +1180,8 @@ public class PathRouterTest extends Mockito {
 
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
 
         Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
                 new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
@@ -1257,7 +1265,7 @@ public class PathRouterTest extends Mockito {
     public void tenantNotFoundTest3()
             throws InterruptedException, IOException, io.supertokens.httpRequest.HttpResponseException,
             InvalidConfigException,
-            io.supertokens.test.httpRequest.HttpResponseException {
+            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
@@ -1269,6 +1277,8 @@ public class PathRouterTest extends Mockito {
 
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
 
         Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
                 new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
@@ -1948,7 +1958,7 @@ public class PathRouterTest extends Mockito {
     public void tenantNotFoundWithAppIdTest()
             throws InterruptedException, IOException, io.supertokens.httpRequest.HttpResponseException,
             InvalidConfigException,
-            io.supertokens.test.httpRequest.HttpResponseException {
+            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
@@ -1960,8 +1970,12 @@ public class PathRouterTest extends Mockito {
 
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
         JsonObject tenant2Config = new JsonObject();
         tenant2Config.add("api_keys", new JsonPrimitive("abcasdfaliojmo3jenbogweg=-9382923"));
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(tenant2Config, 3);
 
         Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
                 new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
@@ -2042,7 +2056,7 @@ public class PathRouterTest extends Mockito {
     public void tenantNotFoundWithAppIdTest2()
             throws InterruptedException, IOException, io.supertokens.httpRequest.HttpResponseException,
             InvalidConfigException,
-            io.supertokens.test.httpRequest.HttpResponseException {
+            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
@@ -2054,6 +2068,8 @@ public class PathRouterTest extends Mockito {
 
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
 
         Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
                 new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
@@ -2165,7 +2181,7 @@ public class PathRouterTest extends Mockito {
     public void tenantNotFoundWithAppIdTest3()
             throws InterruptedException, IOException, io.supertokens.httpRequest.HttpResponseException,
             InvalidConfigException,
-            io.supertokens.test.httpRequest.HttpResponseException {
+            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
@@ -2177,6 +2193,8 @@ public class PathRouterTest extends Mockito {
 
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
 
         Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
                 new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),

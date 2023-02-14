@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.core;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -73,10 +74,10 @@ public class HelloAPI extends WebserverAPI {
     }
 
     private void handleRequest(HttpServletResponse resp) throws IOException, ServletException {
-
+        // TODO: need to get the right storage based on TenantIdentifier input.
         Storage storage = StorageLayer.getBaseStorage(main);
         try {
-            storage.getKeyValue("Test");
+            storage.getKeyValue(new TenantIdentifier(null, null, null), "Test");
             super.sendTextResponse(200, "Hello", resp);
         } catch (StorageQueryException e) {
             // we send 500 status code

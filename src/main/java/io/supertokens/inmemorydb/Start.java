@@ -381,7 +381,8 @@ public class Start
     }
 
     @Override
-    public KeyValueInfo getKeyValue(String key) throws StorageQueryException {
+    public KeyValueInfo getKeyValue(TenantIdentifier tenantIdentifier, String key) throws StorageQueryException {
+        // TODO..
         try {
             return GeneralQueries.getKeyValue(this, key);
         } catch (SQLException e) {
@@ -390,7 +391,9 @@ public class Start
     }
 
     @Override
-    public void setKeyValue(String key, KeyValueInfo info) throws StorageQueryException {
+    public void setKeyValue(TenantIdentifier tenantIdentifier, String key, KeyValueInfo info)
+            throws StorageQueryException {
+        // TODO..
         try {
             GeneralQueries.setKeyValue(this, key, info);
         } catch (SQLException e) {
@@ -485,8 +488,10 @@ public class Start
     }
 
     @Override
-    public void setKeyValue_Transaction(TransactionConnection con, String key, KeyValueInfo info)
+    public void setKeyValue_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con, String key,
+                                        KeyValueInfo info)
             throws StorageQueryException {
+        // TODO:..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             GeneralQueries.setKeyValue_Transaction(this, sqlCon, key, info);
@@ -496,7 +501,9 @@ public class Start
     }
 
     @Override
-    public KeyValueInfo getKeyValue_Transaction(TransactionConnection con, String key) throws StorageQueryException {
+    public KeyValueInfo getKeyValue_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
+                                                String key) throws StorageQueryException {
+        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return GeneralQueries.getKeyValue_Transaction(this, sqlCon, key);
@@ -1586,8 +1593,9 @@ public class Start
     }
 
     @Override
-    public boolean isUserIdBeingUsedInNonAuthRecipe(String className, String userId) throws StorageQueryException {
-
+    public boolean isUserIdBeingUsedInNonAuthRecipe(TenantIdentifier tenantIdentifier, String className, String userId)
+            throws StorageQueryException {
+        // TODO..
         // check if the input userId is being used in nonAuthRecipes.
         if (className.equals(SessionStorage.class.getName())) {
             String[] sessionHandlesForUser = getAllNonExpiredSessionHandlesForUser(userId);

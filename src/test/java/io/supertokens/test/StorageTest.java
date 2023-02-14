@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.noSqlStorage.NoSQLStorage_1;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -103,7 +104,8 @@ public class StorageTest {
                         sqlStorage.startTransaction(con -> {
                             numberOfIterations.getAndIncrement();
 
-                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(con, key);
+                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(
+                                    new TenantIdentifier(null, null, null), con, key);
 
                             try {
                                 Thread.sleep(300);
@@ -111,7 +113,8 @@ public class StorageTest {
                             }
 
                             if (info == null) {
-                                sqlStorage.setKeyValue_Transaction(con, key, new KeyValueInfo("Value1"));
+                                sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, key,
+                                        new KeyValueInfo("Value1"));
                             } else {
                                 endValueOfCon1.set(info.value);
                                 return null;
@@ -129,7 +132,8 @@ public class StorageTest {
                         sqlStorage.startTransaction(con -> {
                             numberOfIterations.getAndIncrement();
 
-                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(con, key);
+                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(
+                                    new TenantIdentifier(null, null, null), con, key);
 
                             if (numberOfIterations.get() != 1) {
                                 assert (info == null);
@@ -143,7 +147,8 @@ public class StorageTest {
                             }
 
                             if (info == null) {
-                                sqlStorage.setKeyValue_Transaction(con, key, new KeyValueInfo("Value2"));
+                                sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, key,
+                                        new KeyValueInfo("Value2"));
                             } else {
                                 endValueOfCon2.set(info.value);
                                 return null;
@@ -189,7 +194,8 @@ public class StorageTest {
             if (storage.getType() == STORAGE_TYPE.SQL) {
                 SQLStorage sqlStorage = (SQLStorage) storage;
                 sqlStorage.startTransaction(con -> {
-                    sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                    sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                            new KeyValueInfo("Value"));
                     sqlStorage.commitTransaction(con);
                     return null;
                 });
@@ -203,10 +209,12 @@ public class StorageTest {
                         sqlStorage.startTransaction(con -> {
                             numberOfIterations.getAndIncrement();
 
-                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(con, "Key");
+                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(
+                                    new TenantIdentifier(null, null, null), con, "Key");
 
                             if (info.value.equals("Value")) {
-                                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value1"));
+                                sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                                        new KeyValueInfo("Value1"));
                             } else {
                                 endValueOfCon1.set(info.value);
                                 return null;
@@ -224,10 +232,12 @@ public class StorageTest {
                         sqlStorage.startTransaction(con -> {
                             numberOfIterations.getAndIncrement();
 
-                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(con, "Key");
+                            KeyValueInfo info = sqlStorage.getKeyValue_Transaction(
+                                    new TenantIdentifier(null, null, null), con, "Key");
 
                             if (info.value.equals("Value")) {
-                                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value2"));
+                                sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                                        new KeyValueInfo("Value2"));
                             } else {
                                 endValueOfCon2.set(info.value);
                                 return null;
@@ -277,7 +287,8 @@ public class StorageTest {
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SQLStorage sqlStorage = (SQLStorage) storage;
             sqlStorage.startTransaction(con -> {
-                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                        new KeyValueInfo("Value"));
                 sqlStorage.commitTransaction(con);
                 return null;
             });
@@ -293,14 +304,15 @@ public class StorageTest {
                 try {
                     sqlStorage.startTransaction(con -> {
 
-                        sqlStorage.getKeyValue_Transaction(con, "Key");
+                        sqlStorage.getKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key");
 
                         synchronized (syncObject) {
                             t1State.set("read");
                             syncObject.notifyAll();
                         }
 
-                        sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value2"));
+                        sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                                new KeyValueInfo("Value2"));
 
                         try {
                             Thread.sleep(1500);
@@ -344,7 +356,8 @@ public class StorageTest {
                             t2State.set("before_read");
                         }
 
-                        KeyValueInfo val = sqlStorage.getKeyValue_Transaction(con, "Key");
+                        KeyValueInfo val = sqlStorage.getKeyValue_Transaction(new TenantIdentifier(null, null, null),
+                                con, "Key");
 
                         synchronized (syncObject) {
                             t2State.set("after_read");
@@ -491,32 +504,33 @@ public class StorageTest {
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SQLStorage sqlStorage = (SQLStorage) storage;
             String returnedValue = sqlStorage.startTransaction(con -> {
-                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                        new KeyValueInfo("Value"));
                 sqlStorage.commitTransaction(con);
                 return "returned value";
             });
             assertEquals(returnedValue, "returned value");
-            KeyValueInfo value = storage.getKeyValue("Key");
+            KeyValueInfo value = storage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
             assertEquals(value.value, "Value");
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             NoSQLStorage_1 noSqlStorage = (NoSQLStorage_1) storage;
             {
                 noSqlStorage.setKeyValue_Transaction("Key", new KeyValueInfoWithLastUpdated("Value", null));
-                KeyValueInfo value = noSqlStorage.getKeyValue("Key");
+                KeyValueInfo value = noSqlStorage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
                 assertEquals(value.value, "Value");
             }
             {
                 KeyValueInfoWithLastUpdated newKey = noSqlStorage.getKeyValue_Transaction("Key");
                 noSqlStorage.setKeyValue_Transaction("Key",
                         new KeyValueInfoWithLastUpdated("Value2", newKey.lastUpdatedSign));
-                KeyValueInfo value = noSqlStorage.getKeyValue("Key");
+                KeyValueInfo value = noSqlStorage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
                 assertEquals(value.value, "Value2");
             }
             {
                 KeyValueInfoWithLastUpdated newKey = noSqlStorage.getKeyValue_Transaction("Key");
                 noSqlStorage.setKeyValue_Transaction("Key",
                         new KeyValueInfoWithLastUpdated("Value3", "someRandomLastUpdatedSign"));
-                KeyValueInfo value = noSqlStorage.getKeyValue("Key");
+                KeyValueInfo value = noSqlStorage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
                 assertEquals(value.value, "Value2");
             }
         } else {
@@ -538,10 +552,11 @@ public class StorageTest {
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SQLStorage sqlStorage = (SQLStorage) storage;
             sqlStorage.startTransaction(con -> {
-                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                        new KeyValueInfo("Value"));
                 return null;
             });
-            KeyValueInfo value = storage.getKeyValue("Key");
+            KeyValueInfo value = storage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
             assertEquals(value.value, "Value");
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             // not applicable
@@ -594,7 +609,8 @@ public class StorageTest {
             SQLStorage sqlStorage = (SQLStorage) storage;
             try {
                 sqlStorage.startTransaction(con -> {
-                    sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                    sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                            new KeyValueInfo("Value"));
                     throw new StorageTransactionLogicException(new Exception("error message"));
                 });
             } catch (StorageTransactionLogicException e) {
@@ -602,7 +618,7 @@ public class StorageTest {
                     throw e;
                 }
             }
-            KeyValueInfo value = storage.getKeyValue("Key");
+            KeyValueInfo value = storage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
             assertNull(value);
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             // not applicable
@@ -626,7 +642,8 @@ public class StorageTest {
             SQLStorage sqlStorage = (SQLStorage) storage;
             try {
                 sqlStorage.startTransaction(con -> {
-                    sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                    sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                            new KeyValueInfo("Value"));
                     throw new RuntimeException("error message");
                 });
             } catch (RuntimeException e) {
@@ -634,7 +651,7 @@ public class StorageTest {
                     throw e;
                 }
             }
-            KeyValueInfo value = storage.getKeyValue("Key");
+            KeyValueInfo value = storage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
             assertNull(value);
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             // not applicable

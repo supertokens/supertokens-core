@@ -26,6 +26,8 @@ import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -101,7 +103,7 @@ public class RequestConnectionUriDomainTest {
     @Test
     public void basicTestingWithDifferentAPIKey()
             throws InterruptedException, IOException, HttpResponseException, InvalidConfigException,
-            io.supertokens.test.httpRequest.HttpResponseException {
+            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
@@ -113,8 +115,12 @@ public class RequestConnectionUriDomainTest {
 
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
         JsonObject tenant2Config = new JsonObject();
         tenant2Config.add("api_keys", new JsonPrimitive("abcasdfaliojmo3jenbogweg=-9382923"));
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(tenant2Config, 3);
 
         Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
                 new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),
@@ -189,7 +195,7 @@ public class RequestConnectionUriDomainTest {
     @Test
     public void basicTestingWithDifferentAPIKeyAndTenantId()
             throws InterruptedException, IOException, HttpResponseException, InvalidConfigException,
-            io.supertokens.test.httpRequest.HttpResponseException {
+            io.supertokens.test.httpRequest.HttpResponseException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         Utils.setValueInConfig("host", "\"0.0.0.0\"");
@@ -201,8 +207,12 @@ public class RequestConnectionUriDomainTest {
 
         JsonObject tenantConfig = new JsonObject();
         tenantConfig.add("api_keys", new JsonPrimitive("abctijenbogweg=-2438243u98"));
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
         JsonObject tenant2Config = new JsonObject();
         tenant2Config.add("api_keys", new JsonPrimitive("abcasdfaliojmo3jenbogweg=-9382923"));
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(tenant2Config, 3);
 
         Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
                 new TenantConfig(new TenantIdentifier("localhost:3567", null, null), new EmailPasswordConfig(false),

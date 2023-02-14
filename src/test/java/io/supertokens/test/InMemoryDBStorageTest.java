@@ -21,6 +21,7 @@ import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
@@ -62,7 +63,7 @@ public class InMemoryDBStorageTest {
     @Test
     public void transactionIsolationTesting()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -71,7 +72,8 @@ public class InMemoryDBStorageTest {
         Storage storage = StorageLayer.getStorage(process.getProcess());
         SQLStorage sqlStorage = (SQLStorage) storage;
         sqlStorage.startTransaction(con -> {
-            sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+            sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                    new KeyValueInfo("Value"));
             sqlStorage.commitTransaction(con);
             return null;
         });
@@ -87,14 +89,15 @@ public class InMemoryDBStorageTest {
             try {
                 sqlStorage.startTransaction(con -> {
 
-                    sqlStorage.getKeyValue_Transaction(con, "Key");
+                    sqlStorage.getKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key");
 
                     synchronized (syncObject) {
                         t1State.set("read");
                         syncObject.notifyAll();
                     }
 
-                    sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value2"));
+                    sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                            new KeyValueInfo("Value2"));
 
                     try {
                         Thread.sleep(1500);
@@ -140,7 +143,8 @@ public class InMemoryDBStorageTest {
                         t2State.set("before_read");
                     }
 
-                    KeyValueInfo val = sqlStorage.getKeyValue_Transaction(con, "Key");
+                    KeyValueInfo val = sqlStorage.getKeyValue_Transaction(new TenantIdentifier(null, null, null), con,
+                            "Key");
 
                     synchronized (syncObject) {
                         t2State.set("after_read");
@@ -172,7 +176,7 @@ public class InMemoryDBStorageTest {
 
     @Test
     public void transactionTest() throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -181,12 +185,13 @@ public class InMemoryDBStorageTest {
         Storage storage = StorageLayer.getStorage(process.getProcess());
         SQLStorage sqlStorage = (SQLStorage) storage;
         String returnedValue = sqlStorage.startTransaction(con -> {
-            sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+            sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                    new KeyValueInfo("Value"));
             sqlStorage.commitTransaction(con);
             return "returned value";
         });
         assertEquals(returnedValue, "returned value");
-        KeyValueInfo value = storage.getKeyValue("Key");
+        KeyValueInfo value = storage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
         assertEquals(value.value, "Value");
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -195,7 +200,7 @@ public class InMemoryDBStorageTest {
     @Test
     public void transactionDoNotCommitButStillCommitsTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -205,10 +210,11 @@ public class InMemoryDBStorageTest {
 
         SQLStorage sqlStorage = (SQLStorage) storage;
         sqlStorage.startTransaction(con -> {
-            sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+            sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                    new KeyValueInfo("Value"));
             return null;
         });
-        KeyValueInfo value = storage.getKeyValue("Key");
+        KeyValueInfo value = storage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
         assertEquals(value.value, "Value");
 
         process.kill();
@@ -218,7 +224,7 @@ public class InMemoryDBStorageTest {
     @Test
     public void transactionThrowCompileTimeErrorAndExpectRollbackTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -229,7 +235,8 @@ public class InMemoryDBStorageTest {
         SQLStorage sqlStorage = (SQLStorage) storage;
         try {
             sqlStorage.startTransaction(con -> {
-                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                        new KeyValueInfo("Value"));
                 throw new StorageTransactionLogicException(new Exception("error message"));
             });
         } catch (StorageTransactionLogicException e) {
@@ -237,7 +244,7 @@ public class InMemoryDBStorageTest {
                 throw e;
             }
         }
-        KeyValueInfo value = storage.getKeyValue("Key");
+        KeyValueInfo value = storage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
         assertNull(value);
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -246,7 +253,7 @@ public class InMemoryDBStorageTest {
     @Test
     public void transactionThrowRunTimeErrorAndExpectRollbackTest()
             throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -257,7 +264,8 @@ public class InMemoryDBStorageTest {
         SQLStorage sqlStorage = (SQLStorage) storage;
         try {
             sqlStorage.startTransaction(con -> {
-                sqlStorage.setKeyValue_Transaction(con, "Key", new KeyValueInfo("Value"));
+                sqlStorage.setKeyValue_Transaction(new TenantIdentifier(null, null, null), con, "Key",
+                        new KeyValueInfo("Value"));
                 throw new RuntimeException("error message");
             });
         } catch (RuntimeException e) {
@@ -265,7 +273,7 @@ public class InMemoryDBStorageTest {
                 throw e;
             }
         }
-        KeyValueInfo value = storage.getKeyValue("Key");
+        KeyValueInfo value = storage.getKeyValue(new TenantIdentifier(null, null, null), "Key");
         assertNull(value);
 
         process.kill();
@@ -274,7 +282,7 @@ public class InMemoryDBStorageTest {
 
     @Test
     public void multipleParallelTransactionTest() throws InterruptedException, IOException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00005");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();

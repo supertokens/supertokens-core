@@ -18,10 +18,11 @@ package io.supertokens.test.session;
 
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
@@ -71,14 +72,15 @@ public class AccessTokenSigningKeyTest {
         String signingKey = rsaKeys.toString();
         KeyValueInfo newKey = new KeyValueInfo(signingKey, System.currentTimeMillis());
         SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
-        sessionStorage.setKeyValue("access_token_signing_key", newKey);
+        sessionStorage.setKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key", newKey);
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
         accessTokenSigningKeyInstance.transferLegacyKeyToNewTable();
         assertEquals(accessTokenSigningKeyInstance.getAllKeys().size(), 1);
         AccessTokenSigningKey.KeyInfo key = accessTokenSigningKeyInstance.getLatestIssuedKey();
         assertEquals(key.createdAtTime, newKey.createdAtTime);
         assertEquals(key.value, newKey.value);
-        assertEquals(sessionStorage.getKeyValue("access_token_signing_key"), null);
+        assertEquals(sessionStorage.getKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key"),
+                null);
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
@@ -102,7 +104,7 @@ public class AccessTokenSigningKeyTest {
         // past
 
         SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
-        sessionStorage.setKeyValue("access_token_signing_key", legacyKey);
+        sessionStorage.setKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key", legacyKey);
 
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
         accessTokenSigningKeyInstance.transferLegacyKeyToNewTable();
@@ -182,7 +184,7 @@ public class AccessTokenSigningKeyTest {
         KeyValueInfo legacyKey = new KeyValueInfo(signingKey, System.currentTimeMillis() - 2629743830l); // 1 month old
 
         SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
-        sessionStorage.setKeyValue("access_token_signing_key", legacyKey);
+        sessionStorage.setKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key", legacyKey);
 
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
         accessTokenSigningKeyInstance.transferLegacyKeyToNewTable();

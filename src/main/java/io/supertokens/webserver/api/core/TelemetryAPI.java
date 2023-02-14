@@ -18,18 +18,15 @@ package io.supertokens.webserver.api.core;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.pluginInterface.KeyValueInfo;
-import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-
-import static io.supertokens.cronjobs.telemetry.Telemetry.TELEMETRY_ID_DB_KEY;
 
 public class TelemetryAPI extends WebserverAPI {
     private static final long serialVersionUID = -5175334869851577653L;
@@ -46,8 +43,7 @@ public class TelemetryAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            Storage storage = StorageLayer.getBaseStorage(main);
-            KeyValueInfo telemetryId = storage.getKeyValue(TELEMETRY_ID_DB_KEY);
+            KeyValueInfo telemetryId = Telemetry.getTelemetryId(main);
 
             JsonObject result = new JsonObject();
             if (telemetryId == null) {
