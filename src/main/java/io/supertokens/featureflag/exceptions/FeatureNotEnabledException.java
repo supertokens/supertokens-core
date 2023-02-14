@@ -14,8 +14,17 @@
  *    under the License.
  */
 
-package io.supertokens.test.dashboard.apis;
+ package io.supertokens.featureflag.exceptions;
 
-public class SignInAPITest {
-    
-}
+ import io.supertokens.featureflag.EE_FEATURES;
+ 
+ public class FeatureNotEnabledException extends Exception {
+     public FeatureNotEnabledException(EE_FEATURES feature) {
+         super("Cannot use feature: " + feature.toString() +
+                 ", because the license key is missing, or doesn't have this feature enabled.");
+     }
+ 
+     public FeatureNotEnabledException(String message) {
+         super(message);
+     }
+ }
