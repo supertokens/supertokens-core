@@ -239,11 +239,28 @@ public class Dashboard {
         return patternMatcher(email, regexPatternForEmail);
     }
 
-    public static boolean isStrongPassword(String password) {
-        // TODO: this function should be updated to return null if it passes the regex,
-        // or a string depending on which part of the regex fails
-        String regexPatternForPassword = "(?=.*[A-Za-z])(?=.*[0-9]).{8,100}";
-        return patternMatcher(password, regexPatternForPassword);
+    public static String validatePassword(String password) {
+
+        // as per
+        // https://github.com/supertokens/supertokens-auth-react/issues/5#issuecomment-709512438
+
+        if (password.length() < 8) {
+            return "Password must contain at least 8 characters, including a number";
+        }
+
+        if (password.length() >= 100) {
+            return "Password's length must be lesser than 100 characters";
+        }
+
+        if (patternMatcher("(?=.*[A-Za-z])", password)) {
+            return "Password must contain at least one alphabet";
+        }
+
+        if (patternMatcher("(?=.*[0-9])", password)) {
+            return "Password must contain at least one number";
+        }
+
+        return null;
     }
 
     public static boolean isValidUserSession(Main main, String sessionId)

@@ -74,11 +74,12 @@ public class DashboardUserAPI extends WebserverAPI {
             password = normalizeStringParam(password, "password");
 
             // check if input password is a strong password
-            if (!Dashboard.isStrongPassword(password)) {
+            String passwordErrorMessage = Dashboard.validatePassword(password);
+            if (passwordErrorMessage != null) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "PASSWORD_WEAK_ERROR");
                 // TODO: add message for why password is weak
-                response.addProperty("message", "");
+                response.addProperty("message", passwordErrorMessage);
                 super.sendJsonResponse(200, response, resp);
                 return;
             }
@@ -122,11 +123,12 @@ public class DashboardUserAPI extends WebserverAPI {
             // normalize new password
             newPassword = normalizeStringParam(newPassword, "newPassword");
             // check if the new password is strong
-            if (Dashboard.isStrongPassword(newPassword)) {
+            String passwordErrorMessage = Dashboard.validatePassword(newPassword);
+            if (passwordErrorMessage != null) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "PASSWORD_WEAK_ERROR");
                 // TODO: add message for why password is weak
-                response.addProperty("message", "");
+                response.addProperty("message", passwordErrorMessage);
                 super.sendJsonResponse(200, response, resp);
                 return;
             }
