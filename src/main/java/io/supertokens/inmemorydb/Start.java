@@ -1666,7 +1666,7 @@ public class Start
     public boolean deleteDashboardUserWithUserId(String userId) throws StorageQueryException {
         try {
             return DashboardQueries.deleteDashboardUserWithUserId(this, userId);
-        } catch (SQLException e) {
+        } catch (StorageTransactionLogicException e) {
             throw new StorageQueryException(e);
         }
     }
@@ -1734,6 +1734,11 @@ public class Start
     @Override
     public void createNewDashboardUserSession(String userId, String sessionId, long timeCreated, long expiry)
             throws StorageQueryException, UserIdNotFoundException {
+        // SQLite is not compiled with foreign key constraint and so we must check if
+        // the user exists
+        if (this.getDashboardUserByUserId(userId) == null) {
+            throw new UserIdNotFoundException();
+        }
         try {
             DashboardQueries.createDashboardSession(this, userId, sessionId, timeCreated, expiry);
         } catch (SQLException e) {

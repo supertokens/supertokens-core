@@ -13,6 +13,7 @@ import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 
@@ -61,24 +62,37 @@ public class DashboardQueries {
         return execute(start, QUERY, null, new DashboardUserInfoResultExtractor());
     }
 
-    public static boolean deleteDashboardUserWithEmail(Start start, String email)
-            throws SQLException, StorageQueryException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardUsersTable()
-                + " WHERE email = ?";
-        // store the number of rows updated
-        int rowUpdatedCount = update(start, QUERY, pst -> pst.setString(1, email));
-
-        return rowUpdatedCount > 0;
-    }
-
     public static boolean deleteDashboardUserWithUserId(Start start, String userId)
-            throws SQLException, StorageQueryException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardUsersTable()
-                + " WHERE user_id = ?";
-        // store the number of rows updated
-        int rowUpdatedCount = update(start, QUERY, pst -> pst.setString(1, userId));
+            throws StorageTransactionLogicException, StorageQueryException {
 
-        return rowUpdatedCount > 0;
+        return start.startTransaction(con -> {
+            Connection sqlCon = (Connection) con.getConnection();
+            int rowUpdatedCount = 0;
+            try {
+                {
+                    // delete the user from the dashboard_users table
+                    String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardUsersTable()
+                            + " WHERE user_id = ?";
+                    // store the number of rows updated
+                    rowUpdatedCount = update(start, QUERY, pst -> pst.setString(1, userId));
+                }
+
+                {
+                    // since SQLite does not support foreign key constraints with delete cascade we
+                    // will need to manually delete the sessions associated with the user
+                    String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardSessionsTable()
+                            + " WHERE user_id = ?";
+                    update(sqlCon, QUERY, pst -> {
+                        pst.setString(1, userId);
+                    });
+                }
+
+                sqlCon.commit();
+            } catch (SQLException throwables) {
+                throw new StorageTransactionLogicException(throwables);
+            }
+            return rowUpdatedCount > 0;
+        });
     }
 
     public static boolean deleteDashboardUserSessionWithSessionId(Start start, String sessionId)
@@ -166,7 +180,7 @@ public class DashboardQueries {
         return execute(start, QUERY, pst -> pst.setString(1, userId), new DashboardSessionInfoResultExtractor());
     }
 
-    public static void deleteExpiredSessions(Start start) throws SQLException, StorageQueryException{
+    public static void deleteExpiredSessions(Start start) throws SQLException, StorageQueryException {
         long currentTimeMillis = System.currentTimeMillis();
         String QUERY = "DELETE FROM " + Config.getConfig(start).getDashboardSessionsTable()
                 + " WHERE expiry < ?";
