@@ -19,16 +19,19 @@ package io.supertokens.webserver.api.dashboard;
 import java.io.IOException;
 import java.io.Serial;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -141,8 +144,12 @@ public class DashboardUserAPI extends WebserverAPI {
                 userId = normalizeStringParam(userId, "userId");
 
                 Dashboard.updateUsersCredentialsWithUserId(main, userId, newEmail, newPassword);
+                // retrieve updated user details
+                DashboardUser user = StorageLayer.getDashboardStorage(main).getDashboardUserByUserId(userId);
+                JsonObject userJsonObject = new com.google.gson.JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
+                response.add("user", userJsonObject);
                 // TODO: add user object in response if it was updated
                 super.sendJsonResponse(200, response, resp);
                 return;
@@ -153,10 +160,13 @@ public class DashboardUserAPI extends WebserverAPI {
                 // normalize userId
                 email = normalizeStringParam(email, "email");
                 Dashboard.updateUsersCredentialsWithEmail(main, email, newEmail, newPassword);
+                // retrieve updated user details
+                DashboardUser user = StorageLayer.getDashboardStorage(main).getDashboardUserByEmail(email);
+                JsonObject userJsonObject = new com.google.gson.JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
 
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
-                // TODO: add user object in response if it was updated
+                response.add("user", userJsonObject);
                 super.sendJsonResponse(200, response, resp);
                 return;
             }
