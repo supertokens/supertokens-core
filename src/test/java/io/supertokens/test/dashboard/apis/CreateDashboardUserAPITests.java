@@ -32,6 +32,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -138,9 +139,9 @@ public class CreateDashboardUserAPITests {
         assertEquals("OK", response.get("status").getAsString());
 
         // check that user exists
-        JsonArray allDashboardUsers = Dashboard.getAllDashboardUsers(process.getProcess());
-        assertEquals(1, allDashboardUsers.size());
-        assertEquals(email, allDashboardUsers.get(0).getAsJsonObject().get("email").getAsString());
+        DashboardUser[] allDashboardUsers = Dashboard.getAllDashboardUsers(process.getProcess());
+        assertEquals(1, allDashboardUsers.length);
+        assertEquals(email, allDashboardUsers[0].email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -167,9 +168,9 @@ public class CreateDashboardUserAPITests {
         // check that user was successfully created
         {
             // check that user exists
-            JsonArray allDashboardUsers = Dashboard.getAllDashboardUsers(process.getProcess());
-            assertEquals(1, allDashboardUsers.size());
-            assertEquals(email, allDashboardUsers.get(0).getAsJsonObject().get("email").getAsString());
+            DashboardUser[] allDashboardUsers = Dashboard.getAllDashboardUsers(process.getProcess());
+            assertEquals(1, allDashboardUsers.length);
+            assertEquals(email, allDashboardUsers[0].email);
         }
 
         // try creating the user again
@@ -185,9 +186,9 @@ public class CreateDashboardUserAPITests {
         assertEquals("EMAIL_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
 
         // check that a duplicate user was not created
-        JsonArray allDashboardUsers = Dashboard.getAllDashboardUsers(process.getProcess());
-        assertEquals(1, allDashboardUsers.size());
-        assertEquals(email, allDashboardUsers.get(0).getAsJsonObject().get("email").getAsString());
+        DashboardUser[] allDashboardUsers = Dashboard.getAllDashboardUsers(process.getProcess());
+        assertEquals(1, allDashboardUsers.length);
+        assertEquals(email, allDashboardUsers[0].email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));

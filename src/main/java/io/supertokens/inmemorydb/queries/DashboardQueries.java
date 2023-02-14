@@ -60,6 +60,11 @@ public class DashboardQueries {
         // @formatter:on
     }
 
+    static String getQueryToCreateDashboardUserSessionsExpiryIndex(Start start) {
+        return "CREATE INDEX dashboard_user_sessions_expiry_index ON "
+                + Config.getConfig(start).getDashboardSessionsTable() + "(expiry);";
+    }
+
     public static void createDashboardUser(Start start, String userId, String email, String passwordHash,
             long timeJoined) throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getDashboardUsersTable()
@@ -74,7 +79,7 @@ public class DashboardQueries {
 
     public static DashboardUser[] getAllDashBoardUsers(Start start) throws SQLException, StorageQueryException {
         String QUERY = "SELECT * FROM "
-                + Config.getConfig(start).getDashboardUsersTable() + " ORDER BY time_joined";
+                + Config.getConfig(start).getDashboardUsersTable() + " ORDER BY time_joined ASC";
         return execute(start, QUERY, null, new DashboardUserInfoResultExtractor());
     }
 
@@ -145,24 +150,28 @@ public class DashboardQueries {
         });
     }
 
-    public static void updateDashboardUsersEmailWithUserId_Transaction(Start start, Connection con, String userId,
+    public static boolean updateDashboardUsersEmailWithUserId_Transaction(Start start, Connection con, String userId,
             String newEmail) throws SQLException, StorageQueryException {
         String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable()
                 + " SET email = ? WHERE user_id = ?";
-        update(con, QUERY, pst -> {
+        int rowsUpdated = update(con, QUERY, pst -> {
             pst.setString(1, newEmail);
             pst.setString(2, userId);
         });
+
+        return rowsUpdated > 0;
     }
 
-    public static void updateDashboardUsersPasswordWithUserId_Transaction(Start start, Connection con, String userId,
+    public static boolean updateDashboardUsersPasswordWithUserId_Transaction(Start start, Connection con, String userId,
             String newPassword) throws SQLException, StorageQueryException {
         String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable()
-                + " SET password = ? WHERE user_id = ?";
-        update(con, QUERY, pst -> {
+                + " SET password_hash = ? WHERE user_id = ?";
+        int rowsUpdated = update(con, QUERY, pst -> {
             pst.setString(1, newPassword);
             pst.setString(2, userId);
         });
+        
+        return rowsUpdated > 0;
     }
 
     public static void createDashboardSession(Start start, String userId, String sessionId, long timeCreated,

@@ -63,8 +63,8 @@ public class DashboardTest {
         }
 
         // check that no Dashboard users exist
-        JsonArray dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
-        assertTrue(dashboardUsers.size() == 0);
+        DashboardUser[] dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
+        assertTrue(dashboardUsers.length == 0);
 
         String email = "test@example.com";
 
@@ -73,8 +73,8 @@ public class DashboardTest {
 
         // check that Dashboard user was created 
         dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
-        assertTrue(dashboardUsers.size() == 1);
-        assertEquals(dashboardUsers.get(0).getAsJsonObject().get("email").getAsString(), email);
+        assertTrue(dashboardUsers.length == 1);
+        assertEquals(dashboardUsers[0].email, email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -92,8 +92,8 @@ public class DashboardTest {
         }
 
         // check that no Dashboard users exist
-        JsonArray dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
-        assertTrue(dashboardUsers.size() == 0);
+        DashboardUser[] dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
+        assertTrue(dashboardUsers.length == 0);
 
         String email = "test@example.com";
 
@@ -112,8 +112,8 @@ public class DashboardTest {
         
         // check that no duplicate Dashboard user was created 
         dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
-        assertTrue(dashboardUsers.size() == 1);
-        assertEquals(dashboardUsers.get(0).getAsJsonObject().get("email").getAsString(), email);
+        assertTrue(dashboardUsers.length == 1);
+        assertEquals(dashboardUsers[0].email, email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));

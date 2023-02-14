@@ -26,6 +26,7 @@ import io.supertokens.dashboard.Dashboard;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.webserver.InputParser;
@@ -163,6 +164,10 @@ public class DashboardUserAPI extends WebserverAPI {
             super.sendJsonResponse(200, response, resp);
             return;
 
+        } catch (UserIdNotFoundException e) {
+            JsonObject response = new JsonObject();
+            response.addProperty("status", "UNKNOWN_USER_ERROR");
+            super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             throw new ServletException(e);
         }

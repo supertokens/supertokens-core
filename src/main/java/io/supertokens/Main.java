@@ -204,6 +204,8 @@ public class Main {
         // removes passwordless devices with only expired codes
         Cronjobs.addCronjob(this, DeleteExpiredPasswordlessDevices.getInstance(this));
 
+        Cronjobs.addCronjob(this, DeleteExpiredSessions.getInstance(this));
+
         // starts Telemetry cronjob if the user has not disabled it
         if (!Config.getConfig(this).isTelemetryDisabled()) {
             Cronjobs.addCronjob(this, Telemetry.getInstance(this));

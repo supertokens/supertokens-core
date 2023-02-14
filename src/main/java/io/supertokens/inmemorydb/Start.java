@@ -1683,21 +1683,30 @@ public class Start
     @Override
     public void updateDashboardUsersEmailWithUserId_Transaction(TransactionConnection con, String userId,
             String newEmail)
-            throws StorageQueryException, io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException {
+            throws StorageQueryException, io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException, UserIdNotFoundException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            DashboardQueries.updateDashboardUsersEmailWithUserId_Transaction(this, sqlCon, userId, newEmail);
+            if(!DashboardQueries.updateDashboardUsersEmailWithUserId_Transaction(this, sqlCon, userId, newEmail)){
+                throw new UserIdNotFoundException();
+            }
         } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getDashboardUsersTable() + ".email)")) {
+                throw new io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException();
+            }
             throw new StorageQueryException(e);
         }
     }
 
     @Override
     public void updateDashboardUsersPasswordWithUserId_Transaction(TransactionConnection con, String userId,
-            String newPassword) throws StorageQueryException {
+            String newPassword) throws StorageQueryException, UserIdNotFoundException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            DashboardQueries.updateDashboardUsersEmailWithUserId_Transaction(this, sqlCon, userId, newPassword);
+            if(!DashboardQueries.updateDashboardUsersEmailWithUserId_Transaction(this, sqlCon, userId, newPassword)){
+                throw new UserIdNotFoundException();
+            }
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

@@ -17,6 +17,7 @@ package io.supertokens.webserver.api.dashboard;
 
 import java.io.IOException;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
@@ -49,7 +50,7 @@ public class GetDashboardUsersAPI extends WebserverAPI {
 
         try {
             
-            JsonArray arr = Dashboard.getAllDashboardUsers(main);
+            JsonArray arr = new com.google.gson.JsonParser().parse(new Gson().toJson(Dashboard.getAllDashboardUsers(main))).getAsJsonArray();
             JsonObject response = new JsonObject();
             
             response.add("users", arr);

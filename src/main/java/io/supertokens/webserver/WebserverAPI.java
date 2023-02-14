@@ -173,11 +173,13 @@ public abstract class WebserverAPI extends HttpServlet {
                 main.wakeUpMainThreadToShutdown();
             } else if (e instanceof FeatureNotEnabledException) {
                 sendTextResponse(402, e.getMessage(), resp);
-            }else if (e instanceof ServletException) {
+            } else if (e instanceof ServletException) {
                 ServletException se = (ServletException) e;
                 Throwable rootCause = se.getRootCause();
                 if (rootCause instanceof BadRequestException) {
                     sendTextResponse(400, rootCause.getMessage(), resp);
+                } else if (rootCause instanceof FeatureNotEnabledException) {
+                    sendTextResponse(402, rootCause.getMessage(), resp);
                 } else if (rootCause instanceof APIKeyUnauthorisedException) {
                     sendTextResponse(401, "Invalid API key", resp);
                 } else {
