@@ -50,8 +50,8 @@ public class DashboardQueries {
         String tableName = Config.getConfig(start).getDashboardSessionsTable();
         // @formatter:off
         return "CREATE TABLE IF NOT EXISTS " + tableName + " ("
+                + "session_id CHAR(36) NOT NULL,"
                 + "user_id CHAR(36) NOT NULL,"
-                + "session_id CHAR(36) NOT NULL UNIQUE,"
                 + "time_created BIGINT UNSIGNED NOT NULL,"
                 + "expiry BIGINT UNSIGNED NOT NULL,"
                 + "PRIMARY KEY(session_id),"

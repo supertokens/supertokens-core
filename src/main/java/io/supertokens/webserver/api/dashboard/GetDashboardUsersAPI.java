@@ -54,11 +54,10 @@ public class GetDashboardUsersAPI extends WebserverAPI {
             
             response.add("users", arr);
             super.sendJsonResponse(200, response, resp);
+            return;
 
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
-
-        super.sendJsonResponse(200, null, resp);
     }
 }

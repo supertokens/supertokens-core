@@ -217,12 +217,14 @@ public class Dashboard {
     }
 
     public static boolean isStrongPassword(String password) {
+        // TODO: this function should be updated to return null if it passes the regex,
+        // or a string depending on which part of the regex fails
         String regexPatternForPassword = "(?=.*[A-Za-z])(?=.*[0-9]).{8,100}";
         return patternMatcher(password, regexPatternForPassword);
     }
 
     public static boolean isValidUserSession(Main main, String sessionId)
-            throws StorageQueryException, UserSuspendedException  {
+            throws StorageQueryException, UserSuspendedException {
         DashboardSessionInfo sessionInfo = StorageLayer.getDashboardStorage(main)
                 .getSessionInfoWithSessionId(sessionId);
         if (sessionInfo != null) {

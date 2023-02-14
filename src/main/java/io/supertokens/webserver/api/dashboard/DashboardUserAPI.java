@@ -76,6 +76,8 @@ public class DashboardUserAPI extends WebserverAPI {
             if (!Dashboard.isStrongPassword(password)) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "PASSWORD_WEAK_ERROR");
+                // TODO: add message for why password is weak
+                response.addProperty("message", "");
                 super.sendJsonResponse(200, response, resp);
                 return;
             }
@@ -84,6 +86,7 @@ public class DashboardUserAPI extends WebserverAPI {
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
+            // TODO: add created user in response
             super.sendJsonResponse(200, response, resp);
 
         } catch (DuplicateEmailException e) {
@@ -121,6 +124,8 @@ public class DashboardUserAPI extends WebserverAPI {
             if (Dashboard.isStrongPassword(newPassword)) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "PASSWORD_WEAK_ERROR");
+                // TODO: add message for why password is weak
+                response.addProperty("message", "");
                 super.sendJsonResponse(200, response, resp);
                 return;
             }
@@ -134,9 +139,10 @@ public class DashboardUserAPI extends WebserverAPI {
 
                 Dashboard.updateUsersCredentialsWithUserId(main, userId, newEmail, newPassword);
                 JsonObject response = new JsonObject();
-
                 response.addProperty("status", "OK");
+                // TODO: add user object in response if it was updated
                 super.sendJsonResponse(200, response, resp);
+                return;
             }
 
             String email = InputParser.parseStringOrThrowError(input, "email", true);
@@ -147,20 +153,22 @@ public class DashboardUserAPI extends WebserverAPI {
 
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
+                // TODO: add user object in response if it was updated
                 super.sendJsonResponse(200, response, resp);
+                return;
             }
         } catch (DuplicateEmailException e) {
             JsonObject response = new JsonObject();
             response.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, response, resp);
+            return;
 
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             throw new ServletException(e);
         }
-
-        JsonObject response = new JsonObject();
-        response.addProperty("status", "OK");
-        super.sendJsonResponse(200, response, resp);
+        // Both email and userId are null
+        throw new ServletException(
+                new WebserverAPI.BadRequestException("Either field email or userId must be present"));
     }
 
     @Override
