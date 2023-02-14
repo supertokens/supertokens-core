@@ -135,7 +135,7 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
             // start transaction
             return sqlStorage.startTransaction(con -> {
                 String key = null;
-                KeyValueInfo keyFromStorage = sqlStorage.getRefreshTokenSigningKey_Transaction(con);
+                KeyValueInfo keyFromStorage = sqlStorage.getRefreshTokenSigningKey_Transaction(tenantIdentifier, con);
                 if (keyFromStorage != null) {
                     key = keyFromStorage.value;
                 }
@@ -146,7 +146,7 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
                     } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
                         throw new StorageTransactionLogicException(e);
                     }
-                    sqlStorage.setRefreshTokenSigningKey_Transaction(con,
+                    sqlStorage.setRefreshTokenSigningKey_Transaction(tenantIdentifier, con,
                             new KeyValueInfo(key, System.currentTimeMillis()));
                 }
 

@@ -226,6 +226,9 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
     }
 
+    // TODO: removeUserIdFromTenant
+    // TODO: removeRoleFromTenant
+
     public static boolean addUserIdToTenant(Main main, TenantIdentifier sourceTenantIdentifier, String userId,
                                             String newTenantId)
             throws TenantOrAppNotFoundException, UnknownUserIdException, StorageQueryException,

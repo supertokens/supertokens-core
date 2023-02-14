@@ -104,6 +104,8 @@ public class AuthRecipe {
         }
     }
 
+    // TODO: we should probably not use tenantIdentifier here and delete the user across all tenants.
+    // But we should verify that the 
     public static void deleteUser(TenantIdentifier tenantIdentifier, Main main, String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
         // We clean up the user last so that if anything before that throws an error, then that will throw a 500 to the
@@ -157,7 +159,9 @@ public class AuthRecipe {
             throws StorageQueryException, TenantOrAppNotFoundException {
         // non auth recipe deletion
         StorageLayer.getUserMetadataStorage(tenantIdentifier, main).deleteUserMetadata(userId);
-        StorageLayer.getSessionStorage(tenantIdentifier, main).deleteSessionsOfUser(userId);
+        // TODO: is this the correct thing to do given that we are deleting the user entirely? Shouldn't we delete
+        //  across the appId?
+        StorageLayer.getSessionStorage(tenantIdentifier, main).deleteSessionsOfUser(tenantIdentifier, userId);
         StorageLayer.getEmailVerificationStorage(tenantIdentifier, main)
                 .deleteEmailVerificationUserInfo(userId);
         StorageLayer.getUserRolesStorage(tenantIdentifier, main).deleteAllRolesForUser(userId);

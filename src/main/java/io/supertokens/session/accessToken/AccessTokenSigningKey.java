@@ -152,11 +152,11 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
 
             // start transaction
             sqlStorage.startTransaction(con -> {
-                KeyValueInfo legacyKey = sqlStorage.getLegacyAccessTokenSigningKey_Transaction(con);
+                KeyValueInfo legacyKey = sqlStorage.getLegacyAccessTokenSigningKey_Transaction(tenantIdentifier, con);
 
                 if (legacyKey != null) {
-                    sqlStorage.addAccessTokenSigningKey_Transaction(con, legacyKey);
-                    sqlStorage.removeLegacyAccessTokenSigningKey_Transaction(con);
+                    sqlStorage.addAccessTokenSigningKey_Transaction(tenantIdentifier, con, legacyKey);
+                    sqlStorage.removeLegacyAccessTokenSigningKey_Transaction(tenantIdentifier, con);
                     sqlStorage.commitTransaction(con);
                 }
                 return legacyKey;
@@ -187,7 +187,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
             final long signingKeyLifetime = config.getAccessTokenSigningKeyUpdateInterval()
                     + SIGNING_KEY_VALIDITY_OVERLAP * config.getAccessTokenValidity();
 
-            storage.removeAccessTokenSigningKeysBefore(System.currentTimeMillis() - signingKeyLifetime);
+            storage.removeAccessTokenSigningKeysBefore(tenantIdentifier,
+                    System.currentTimeMillis() - signingKeyLifetime);
         }
     }
 
@@ -250,7 +251,8 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 // We have to generate a new key if we couldn't find one we can use for signing
                 boolean generateNewKey = true;
 
-                KeyValueInfo[] keysFromStorage = sqlStorage.getAccessTokenSigningKeys_Transaction(con);
+                KeyValueInfo[] keysFromStorage = sqlStorage.getAccessTokenSigningKeys_Transaction(tenantIdentifier,
+                        con);
 
                 for (KeyValueInfo key : keysFromStorage) {
                     if (keysCreatedAfterCanVerify <= key.createdAtTime) {
@@ -270,7 +272,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                         throw new StorageTransactionLogicException(e);
                     }
                     KeyInfo newKey = new KeyInfo(signingKey, System.currentTimeMillis(), signingKeyLifetime);
-                    sqlStorage.addAccessTokenSigningKey_Transaction(con,
+                    sqlStorage.addAccessTokenSigningKey_Transaction(tenantIdentifier, con,
                             new KeyValueInfo(newKey.value, newKey.createdAtTime));
                     validKeysFromSQL.add(newKey);
                 }

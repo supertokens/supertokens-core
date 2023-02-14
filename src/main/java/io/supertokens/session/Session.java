@@ -21,7 +21,6 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
@@ -29,6 +28,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.session.accessToken.AccessToken;
@@ -120,7 +120,7 @@ public class Session {
                 Utils.hashSHA256(refreshToken.token), null, userDataInJWT, antiCsrfToken, System.currentTimeMillis(),
                 null);
 
-        StorageLayer.getSessionStorage(tenantIdentifier, main).createNewSession(sessionHandle, userId,
+        StorageLayer.getSessionStorage(tenantIdentifier, main).createNewSession(tenantIdentifier, sessionHandle, userId,
                 Utils.hashSHA256(Utils.hashSHA256(refreshToken.token)), userDataInDatabase, refreshToken.expiry,
                 userDataInJWT, refreshToken.createdTime); // TODO: add lmrt to database
 
@@ -232,7 +232,7 @@ public class Session {
         io.supertokens.pluginInterface.session.SessionInfo sessionInfoForBlacklisting = null;
         if (Config.getConfig(tenantIdentifier, main).getAccessTokenBlacklisting()) {
             sessionInfoForBlacklisting = StorageLayer.getSessionStorage(tenantIdentifier, main)
-                    .getSession(accessToken.sessionHandle);
+                    .getSession(tenantIdentifier, accessToken.sessionHandle);
             if (sessionInfoForBlacklisting == null) {
                 throw new UnauthorisedException("Either the session has ended or has been blacklisted");
             }
@@ -258,7 +258,7 @@ public class Session {
                     try {
 
                         io.supertokens.pluginInterface.session.SessionInfo sessionInfo = storage
-                                .getSessionInfo_Transaction(con, accessToken.sessionHandle);
+                                .getSessionInfo_Transaction(tenantIdentifier, con, accessToken.sessionHandle);
 
                         if (sessionInfo == null) {
                             storage.commitTransaction(con);
@@ -271,7 +271,7 @@ public class Session {
                                 || sessionInfo.refreshTokenHash2.equals(Utils.hashSHA256(accessToken.refreshTokenHash1))
                                 || JWTPayloadNeedsUpdating) {
                             if (promote) {
-                                storage.updateSessionInfo_Transaction(con, accessToken.sessionHandle,
+                                storage.updateSessionInfo_Transaction(tenantIdentifier, con, accessToken.sessionHandle,
                                         Utils.hashSHA256(accessToken.refreshTokenHash1),
                                         System.currentTimeMillis() +
                                                 config.getRefreshTokenValidity());
@@ -436,7 +436,7 @@ public class Session {
                     try {
                         String sessionHandle = refreshTokenInfo.sessionHandle;
                         io.supertokens.pluginInterface.session.SessionInfo sessionInfo = storage
-                                .getSessionInfo_Transaction(con, sessionHandle);
+                                .getSessionInfo_Transaction(tenantIdentifier, con, sessionHandle);
 
                         if (sessionInfo == null || sessionInfo.expiry < System.currentTimeMillis()) {
                             storage.commitTransaction(con);
@@ -471,7 +471,7 @@ public class Session {
                                 || (refreshTokenInfo.parentRefreshTokenHash1 != null
                                 && Utils.hashSHA256(refreshTokenInfo.parentRefreshTokenHash1)
                                 .equals(sessionInfo.refreshTokenHash2))) {
-                            storage.updateSessionInfo_Transaction(con, sessionHandle,
+                            storage.updateSessionInfo_Transaction(tenantIdentifier, con, sessionHandle,
                                     Utils.hashSHA256(Utils.hashSHA256(refreshToken)),
                                     System.currentTimeMillis() + config.getRefreshTokenValidity());
 
@@ -591,7 +591,7 @@ public class Session {
                                                             String[] sessionHandles)
             throws StorageQueryException, TenantOrAppNotFoundException {
         int numberOfSessionsRevoked = StorageLayer.getSessionStorage(tenantIdentifier, main)
-                .deleteSession(sessionHandles);
+                .deleteSession(tenantIdentifier, sessionHandles);
 
         // most of the time we will enter the below if statement
         if (numberOfSessionsRevoked == sessionHandles.length) {
@@ -605,7 +605,8 @@ public class Session {
                 break;
             }
 
-            if (StorageLayer.getSessionStorage(tenantIdentifier, main).getSession(sessionHandle) == null) {
+            if (StorageLayer.getSessionStorage(tenantIdentifier, main).getSession(tenantIdentifier, sessionHandle) ==
+                    null) {
                 result[indexIntoResult] = sessionHandle;
                 indexIntoResult++;
             }
@@ -645,7 +646,7 @@ public class Session {
                                                                  String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
         return StorageLayer.getSessionStorage(tenantIdentifier, main)
-                .getAllNonExpiredSessionHandlesForUser(userId);
+                .getAllNonExpiredSessionHandlesForUser(tenantIdentifier, userId);
     }
 
     @TestOnly
@@ -666,7 +667,7 @@ public class Session {
             throws StorageQueryException, UnauthorisedException, TenantOrAppNotFoundException {
         io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(tenantIdentifier,
                         main)
-                .getSession(sessionHandle);
+                .getSession(tenantIdentifier, sessionHandle);
         if (session == null || session.expiry <= System.currentTimeMillis()) {
             throw new UnauthorisedException("Session does not exist.");
         }
@@ -689,7 +690,7 @@ public class Session {
             throws StorageQueryException, UnauthorisedException, TenantOrAppNotFoundException {
         io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(tenantIdentifier,
                         main)
-                .getSession(sessionHandle);
+                .getSession(tenantIdentifier, sessionHandle);
         if (session == null || session.expiry <= System.currentTimeMillis()) {
             throw new UnauthorisedException("Session does not exist.");
         }
@@ -718,7 +719,7 @@ public class Session {
             throws StorageQueryException, UnauthorisedException, TenantOrAppNotFoundException {
         io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(tenantIdentifier,
                         main)
-                .getSession(sessionHandle);
+                .getSession(tenantIdentifier, sessionHandle);
 
         // If there is no session, or session is expired
         if (session == null || session.expiry <= System.currentTimeMillis()) {
@@ -746,14 +747,14 @@ public class Session {
             throws StorageQueryException, UnauthorisedException, TenantOrAppNotFoundException {
         io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(tenantIdentifier,
                         main)
-                .getSession(sessionHandle);
+                .getSession(tenantIdentifier, sessionHandle);
         // If there is no session, or session is expired
         if (session == null || session.expiry <= System.currentTimeMillis()) {
             throw new UnauthorisedException("Session does not exist.");
         }
 
         int numberOfRowsAffected = StorageLayer.getSessionStorage(tenantIdentifier, main)
-                .updateSession(sessionHandle, sessionData,
+                .updateSession(tenantIdentifier, sessionHandle, sessionData,
                         jwtData); // TODO: update lmrt as well
         if (numberOfRowsAffected != 1) {
             throw new UnauthorisedException("Session does not exist.");
