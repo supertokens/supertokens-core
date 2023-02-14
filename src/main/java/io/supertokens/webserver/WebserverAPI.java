@@ -20,6 +20,7 @@ import com.google.gson.JsonElement;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.output.Logging;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
@@ -170,7 +171,9 @@ public abstract class WebserverAPI extends HttpServlet {
 
             if (e instanceof QuitProgramException) {
                 main.wakeUpMainThreadToShutdown();
-            } else if (e instanceof ServletException) {
+            } else if (e instanceof FeatureNotEnabledException) {
+                sendTextResponse(402, e.getMessage(), resp);
+            }else if (e instanceof ServletException) {
                 ServletException se = (ServletException) e;
                 Throwable rootCause = se.getRootCause();
                 if (rootCause instanceof BadRequestException) {

@@ -23,7 +23,7 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
-import io.supertokens.dashboard.exceptions.DashboardFeatureFlagException;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -90,13 +90,8 @@ public class DashboardUserAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | FeatureNotEnabledException e) {
             throw new ServletException(e);
-        } catch (DashboardFeatureFlagException e) {
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "USER_LIMIT_REACHED_ERROR");
-            response.addProperty("message", e.getMessage());
-            super.sendJsonResponse(200, response, resp);
         }
     }
 

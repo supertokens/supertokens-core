@@ -1,3 +1,19 @@
+/*
+ *    Copyright (c) 2023, VRAI Labs and/or its affiliates. All rights reserved.
+ *
+ *    This software is licensed under the Apache License, Version 2.0 (the
+ *    "License") as published by the Apache Software Foundation.
+ *
+ *    You may not use this file except in compliance with the License. You may
+ *    obtain a copy of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *    Unless required by applicable law or agreed to in writing, software
+ *    distributed under the License is distributed on an "AS IS" BASIS, WITHOUT
+ *    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
+ *    License for the specific language governing permissions and limitations
+ *    under the License.
+ */
+
 package io.supertokens.dashboard;
 
 import java.util.Arrays;
@@ -8,10 +24,11 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
-import io.supertokens.dashboard.exceptions.DashboardFeatureFlagException;
+import io.supertokens.dashboard.exceptions.UserSuspendedException;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
@@ -29,11 +46,11 @@ public class Dashboard {
     public static final long DASHBOARD_SESSION_DURATION = 2592000000L; // 30 days in milliseconds
 
     public static void signUpDashboardUser(Main main, String email, String password)
-            throws StorageQueryException, DuplicateEmailException, DashboardFeatureFlagException {
+            throws StorageQueryException, DuplicateEmailException, FeatureNotEnabledException {
 
         if (!isFeatureFlagEnabledOrUserCountIsUnderThreshold(main)) {
             // TODO: update message
-            throw new DashboardFeatureFlagException("Free user limit reached, please enable the dashboard feature");
+            throw new FeatureNotEnabledException("Free user limit reached, please enable the dashboard feature");
         }
 
         String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(password);
@@ -78,11 +95,10 @@ public class Dashboard {
     }
 
     public static String signInDashboardUser(Main main, String email, String password)
-            throws StorageQueryException, DashboardFeatureFlagException {
+            throws StorageQueryException, UserSuspendedException {
         if (isUserSuspended(main, email)) {
-            // TODO: update message
-            throw new DashboardFeatureFlagException(
-                    "User is suspended, please try signing in with a different user or enable the dashboard feature");
+            throw new UserSuspendedException();
+
         }
         DashboardUser user = StorageLayer.getDashboardStorage(main).getDashboardUserByEmail(email);
         if (user != null) {
@@ -206,16 +222,14 @@ public class Dashboard {
     }
 
     public static boolean isValidUserSession(Main main, String sessionId)
-            throws StorageQueryException, DashboardFeatureFlagException {
+            throws StorageQueryException, UserSuspendedException  {
         DashboardSessionInfo sessionInfo = StorageLayer.getDashboardStorage(main)
                 .getSessionInfoWithSessionId(sessionId);
         if (sessionInfo != null) {
             // check if user is suspended
             DashboardUser user = StorageLayer.getDashboardStorage(main).getDashboardUserByUserId(sessionInfo.userId);
             if (isUserSuspended(main, user.email)) {
-                // TODO: update message
-                throw new DashboardFeatureFlagException(
-                        "User is suspended, please try signing in with a different user or enable the dashboard feature");
+                throw new UserSuspendedException();
             }
             return true;
         }

@@ -22,7 +22,7 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
-import io.supertokens.dashboard.exceptions.DashboardFeatureFlagException;
+import io.supertokens.dashboard.exceptions.UserSuspendedException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
@@ -58,14 +58,16 @@ public class DashboardSignInAPI extends WebserverAPI {
         try {
             String sessionId = Dashboard.signInDashboardUser(main, email, password);
             JsonObject response = new JsonObject();
-           response.addProperty("status", "OK");
-           response.addProperty("sessionId", sessionId);
-           super.sendJsonResponse(200, response, resp);
-        } catch (DashboardFeatureFlagException e) {
-           JsonObject response = new JsonObject();
-           response.addProperty("status", "USER_SUSPENDED_ERROR");
-           response.addProperty("message", e.getMessage());
-           super.sendJsonResponse(200, response, resp);
+            response.addProperty("status", "OK");
+            response.addProperty("sessionId", sessionId);
+            super.sendJsonResponse(200, response, resp);
+        } catch (UserSuspendedException e) {
+            JsonObject response = new JsonObject();
+            response.addProperty("status", "USER_SUSPENDED_ERROR");
+            // TODO: update message
+            response.addProperty("message",
+                    "User is currently suspended, please signin with a valid account or purchase the dashboard feature");
+            super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }

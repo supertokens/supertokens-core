@@ -23,7 +23,7 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
-import io.supertokens.dashboard.exceptions.DashboardFeatureFlagException;
+import io.supertokens.dashboard.exceptions.UserSuspendedException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.webserver.InputParser;
@@ -64,10 +64,11 @@ public class VerifyDashboardUserSessionAPI extends WebserverAPI {
                 super.sendJsonResponse(200, response, resp);
             }
 
-        } catch (DashboardFeatureFlagException e) {
+        } catch (UserSuspendedException e) {
             JsonObject response = new JsonObject();
             response.addProperty("status", "USER_SUSPENDED_ERROR");
-            response.addProperty("message", e.getMessage());
+            response.addProperty("message",
+                    "User is suspended, please sign in with a valid account or purchase the dashboard feature");
             super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
