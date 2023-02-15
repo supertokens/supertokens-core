@@ -88,7 +88,7 @@ public class Dashboard {
             for (int i = 0; i < dashboardUsers.length && i < Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS; i++) {
                 validDashboardUsers.add(dashboardUsers[i]);
             }
-            return (DashboardUser[]) validDashboardUsers.toArray();
+            return validDashboardUsers.toArray(DashboardUser[]::new);
         }
     }
 
@@ -233,6 +233,8 @@ public class Dashboard {
 
     public static String validatePassword(String password) {
 
+        // length >= 8 && < 100
+        // must have a number and a character
         // as per
         // https://github.com/supertokens/supertokens-auth-react/issues/5#issuecomment-709512438
 
@@ -244,11 +246,11 @@ public class Dashboard {
             return "Password's length must be lesser than 100 characters";
         }
 
-        if (patternMatcher("(?=.*[A-Za-z])", password)) {
+        if (!patternMatcher(password, "(.*[A-Za-z]+.*)")) {
             return "Password must contain at least one alphabet";
         }
 
-        if (patternMatcher("(?=.*[0-9])", password)) {
+        if (!patternMatcher(password, "(.*[0-9]+.*)")) {
             return "Password must contain at least one number";
         }
 

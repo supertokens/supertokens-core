@@ -126,7 +126,7 @@ public class CreateDashboardUserAPITests {
         }
 
         String email = "test@example.com";
-        String password = "testPass@123";
+        String password = "testPass123";
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("email", email);
@@ -232,24 +232,58 @@ public class CreateDashboardUserAPITests {
             return;
         }
 
-        // create the user with a weak password
+        {
+            // Password must have at least 8 characters
 
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("email", "test@example.com");
-        requestBody.addProperty("password", "invalidpassword");
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", "test@example.com");
+            requestBody.addProperty("password", "invalid");
 
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/dashboard/user", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_18ForTests(), "dashboard");
-        assertEquals(1, response.entrySet().size());
-        assertEquals("PASSWORD_WEAK_ERROR", response.get("status").getAsString());
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/dashboard/user", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("PASSWORD_WEAK_ERROR", response.get("status").getAsString());
+            assertEquals("Password must contain at least 8 characters, including a number",
+                    response.get("message").getAsString());
+        }
+
+        {
+            // password must contain an alphabet
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", "test@example.com");
+            requestBody.addProperty("password", "123456789");
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/dashboard/user", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("PASSWORD_WEAK_ERROR", response.get("status").getAsString());
+            assertEquals("Password must contain at least one alphabet",
+                    response.get("message").getAsString());
+        }
+
+        {
+            // password must contain 1 number
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", "test@example.com");
+            requestBody.addProperty("password", "invalidpassword");
+
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/dashboard/user", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("PASSWORD_WEAK_ERROR", response.get("status").getAsString());
+            assertEquals("Password must contain at least one number",
+                    response.get("message").getAsString());
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
     @Test
-    public void testCreatingAUserWhenThere() throws Exception {
+    public void testCreatingAUserAfterCrossingTheFreeUserThreshold() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -259,21 +293,38 @@ public class CreateDashboardUserAPITests {
             return;
         }
 
-        // create the user with a weak password
+        // Create a User
 
-        JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("email", "test@example.com");
-        requestBody.addProperty("password", "invalidpassword");
+        {
+            String email = "test@example.com";
+            String password = "testPass@123";
 
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/dashboard/user", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_18ForTests(), "dashboard");
-        assertEquals(1, response.entrySet().size());
-        assertEquals("PASSWORD_WEAK_ERROR", response.get("status").getAsString());
+            Dashboard.signUpDashboardUser(process.getProcess(), email, password);
+        }
+
+        // try creating another user
+        {
+            String email = "test2@example.com";
+            String password = "testPass123";
+
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", email);
+            requestBody.addProperty("password", password);
+
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/dashboard/user", requestBody, 5000, 1000, null,
+                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                throw new Exception("Should never come here");
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 402 && e.getMessage().equals(
+                        "Http error. Status Code: 402. Message:"
+                                + " Free user limit reached. Please subscribe to a SuperTokens core license key to allow more users to access the dashboard."));
+            }
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
-    
 
 }
