@@ -153,4 +153,43 @@ public class DashboardStorageTest {
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
+
+    @Test
+    public void testGetAllDashboardUsers() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a dashboard user
+        String userId = "testUserId";
+        String email = "test@example.com";
+        String passwordHash = "testPasswordHash";
+
+        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+
+        // create a dashboardUser
+        DashboardUser user = new DashboardUser(userId, email, passwordHash, System.currentTimeMillis());
+        dashboardSQLStorage.createNewDashboardUser(user);
+
+        {
+            // retrieve user with email
+            DashboardUser retrievedUser = dashboardSQLStorage.getDashboardUserByEmail(email);
+            assertEquals(user, retrievedUser);
+        }
+
+        {
+            // retrieve user with userId
+            DashboardUser retrievedUser = dashboardSQLStorage.getDashboardUserByUserId(userId);
+            assertEquals(user, retrievedUser);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
 }
