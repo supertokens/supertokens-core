@@ -171,7 +171,8 @@ public class AuthRecipe {
             throws StorageQueryException, TenantOrAppNotFoundException {
         // TODO: all these will change to using tenantIdentifier.toAppIdentifier() for the actual delete operation
         // non auth recipe deletion
-        StorageLayer.getUserMetadataStorage(tenantIdentifier, main).deleteUserMetadata(userId);
+        StorageLayer.getUserMetadataStorage(tenantIdentifier, main)
+                .deleteUserMetadata(tenantIdentifier.toAppIdentifier(), userId);
         StorageLayer.getSessionStorage(tenantIdentifier, main)
                 .deleteSessionsOfUser(tenantIdentifier.toAppIdentifier(), userId);
         StorageLayer.getEmailVerificationStorage(tenantIdentifier, main)

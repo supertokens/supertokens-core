@@ -21,6 +21,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -64,7 +65,7 @@ public class UserMetadataTest {
      */
     @Test
     public void getEmptyMetadata() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -90,7 +91,7 @@ public class UserMetadataTest {
      */
     @Test
     public void createMetadata() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -123,7 +124,7 @@ public class UserMetadataTest {
      */
     @Test
     public void updateMetadata() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -178,7 +179,7 @@ public class UserMetadataTest {
     @Test
     public void testUserMetadataEmptyRowLocking() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -213,7 +214,8 @@ public class UserMetadataTest {
             try {
                 sqlStorage.startTransaction(con -> {
                     tryCount1.incrementAndGet();
-                    JsonObject originalMetadata = sqlStorage.getUserMetadata_Transaction(con, userId);
+                    JsonObject originalMetadata = sqlStorage.getUserMetadata_Transaction(new AppIdentifier(null, null),
+                            con, userId);
 
                     synchronized (syncObject) {
                         t1State.set("read");
@@ -232,7 +234,7 @@ public class UserMetadataTest {
                     JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
                     MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, update1);
 
-                    sqlStorage.setUserMetadata_Transaction(con, userId, updatedMetadata);
+                    sqlStorage.setUserMetadata_Transaction(new AppIdentifier(null, null), con, userId, updatedMetadata);
                     sqlStorage.commitTransaction(con);
                     success1.set(true); // it should come here because we will try three times.
                     return null;
@@ -246,7 +248,8 @@ public class UserMetadataTest {
                 sqlStorage.startTransaction(con -> {
                     tryCount2.incrementAndGet();
 
-                    JsonObject originalMetadata = sqlStorage.getUserMetadata_Transaction(con, userId);
+                    JsonObject originalMetadata = sqlStorage.getUserMetadata_Transaction(new AppIdentifier(null, null),
+                            con, userId);
 
                     synchronized (syncObject) {
                         t2State.set("read");
@@ -265,7 +268,7 @@ public class UserMetadataTest {
                     JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
                     MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, update2);
 
-                    sqlStorage.setUserMetadata_Transaction(con, userId, updatedMetadata);
+                    sqlStorage.setUserMetadata_Transaction(new AppIdentifier(null, null), con, userId, updatedMetadata);
 
                     sqlStorage.commitTransaction(con);
                     success2.set(true); // it should come here because we will try three times.
@@ -294,7 +297,7 @@ public class UserMetadataTest {
         // assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.DEADLOCK_FOUND));
 
         // The end result is as expected
-        assertEquals(expected, sqlStorage.getUserMetadata(userId));
+        assertEquals(expected, sqlStorage.getUserMetadata(new AppIdentifier(null, null), userId));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

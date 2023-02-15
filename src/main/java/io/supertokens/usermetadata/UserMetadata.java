@@ -18,10 +18,10 @@ package io.supertokens.usermetadata;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.MetadataUtils;
@@ -48,12 +48,13 @@ public class UserMetadata {
         UserMetadataSQLStorage storage = StorageLayer.getUserMetadataStorage(tenantIdentifier, main);
 
         return storage.startTransaction((con) -> {
-            JsonObject originalMetadata = storage.getUserMetadata_Transaction(con, userId);
+            JsonObject originalMetadata = storage.getUserMetadata_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                    userId);
 
             JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
             MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, metadataUpdate);
 
-            storage.setUserMetadata_Transaction(con, userId, updatedMetadata);
+            storage.setUserMetadata_Transaction(tenantIdentifier.toAppIdentifier(), con, userId, updatedMetadata);
 
             return updatedMetadata;
         });
@@ -73,7 +74,7 @@ public class UserMetadata {
             throws StorageQueryException, TenantOrAppNotFoundException {
         UserMetadataSQLStorage storage = StorageLayer.getUserMetadataStorage(tenantIdentifier, main);
 
-        JsonObject metadata = storage.getUserMetadata(userId);
+        JsonObject metadata = storage.getUserMetadata(tenantIdentifier.toAppIdentifier(), userId);
 
         if (metadata == null) {
             return new JsonObject();
@@ -94,6 +95,7 @@ public class UserMetadata {
     public static void deleteUserMetadata(TenantIdentifier tenantIdentifier, Main main,
                                           @Nonnull String userId) throws StorageQueryException,
             TenantOrAppNotFoundException {
-        StorageLayer.getUserMetadataStorage(tenantIdentifier, main).deleteUserMetadata(userId);
+        StorageLayer.getUserMetadataStorage(tenantIdentifier, main)
+                .deleteUserMetadata(tenantIdentifier.toAppIdentifier(), userId);
     }
 }
