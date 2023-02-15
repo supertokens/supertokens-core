@@ -27,6 +27,7 @@ import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
@@ -76,7 +77,7 @@ public class InMemoryDBTest {
     @Test
     public void testCodeCreationRapidly() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -118,7 +119,7 @@ public class InMemoryDBTest {
      */
     @Test
     public void testConcurrentMetadataUpdates() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
@@ -162,7 +163,7 @@ public class InMemoryDBTest {
             IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
             process.getProcess().setForceInMemoryDB();
             process.startProcess();
@@ -180,19 +181,21 @@ public class InMemoryDBTest {
             assert sessionInfo.accessToken != null;
             assert sessionInfo.refreshToken != null;
 
-            assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+            assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
         }
         {
-            String[] args = { "../" };
+            String[] args = {"../"};
             TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
             process.getProcess().setForceInMemoryDB();
             process.startProcess();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-            assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 0);
+            assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 0);
 
             process.kill();
             assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -205,7 +208,7 @@ public class InMemoryDBTest {
             TryRefreshTokenException, UnauthorisedException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -222,7 +225,8 @@ public class InMemoryDBTest {
 
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
         assert sessionInfo.idRefreshToken != null;
@@ -245,7 +249,7 @@ public class InMemoryDBTest {
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException, SignatureException,
             IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -262,7 +266,8 @@ public class InMemoryDBTest {
 
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -286,7 +291,7 @@ public class InMemoryDBTest {
 
         Utils.setValueInConfig("access_token_validity", "1");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -322,7 +327,7 @@ public class InMemoryDBTest {
             StorageTransactionLogicException, UnauthorisedException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -339,7 +344,8 @@ public class InMemoryDBTest {
 
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -367,7 +373,7 @@ public class InMemoryDBTest {
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException, SignatureException,
             IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -382,7 +388,8 @@ public class InMemoryDBTest {
 
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -404,7 +411,7 @@ public class InMemoryDBTest {
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException, SignatureException,
             IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -429,7 +436,8 @@ public class InMemoryDBTest {
 
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
         assert sessionInfo.accessToken != null;
         assertNull(sessionInfo.antiCsrfToken);
 
@@ -455,7 +463,7 @@ public class InMemoryDBTest {
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 second
         Utils.setValueInConfig("access_token_validity", "1"); // 1 second
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -516,7 +524,7 @@ public class InMemoryDBTest {
 
         Utils.setValueInConfig("access_token_validity", "1");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -555,7 +563,8 @@ public class InMemoryDBTest {
         assertEquals(refreshedSession.session.handle, sessionInfo.session.handle);
         assertEquals(refreshedSession.session.userId, sessionInfo.session.userId);
         assertEquals(refreshedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
         SessionInformationHolder newSession = Session.getSession(process.getProcess(),
                 refreshedSession.accessToken.token, refreshedSession.antiCsrfToken, true, true);
@@ -581,7 +590,8 @@ public class InMemoryDBTest {
 
         SessionInformationHolder refreshedSession2 = Session.refreshSession(process.getProcess(),
                 refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, true);
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
         assert refreshedSession2.accessToken != null;
         assertNotEquals(refreshedSession2.accessToken.token, newSession.accessToken.token);
@@ -607,7 +617,7 @@ public class InMemoryDBTest {
 
         Utils.setValueInConfig("access_token_validity", "1");
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -646,7 +656,8 @@ public class InMemoryDBTest {
         assertEquals(refreshedSession.session.handle, sessionInfo.session.handle);
         assertEquals(refreshedSession.session.userId, sessionInfo.session.userId);
         assertEquals(refreshedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
         SessionInformationHolder newSession = Session.getSession(process.getProcess(),
                 refreshedSession.accessToken.token, null, false, true);
@@ -671,7 +682,8 @@ public class InMemoryDBTest {
 
         SessionInformationHolder refreshedSession2 = Session.refreshSession(process.getProcess(),
                 refreshedSession.refreshToken.token, refreshedSession.antiCsrfToken, false);
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
         assert refreshedSession2.accessToken != null;
         assertNotEquals(refreshedSession2.accessToken.token, newSession.accessToken.token);
@@ -694,7 +706,7 @@ public class InMemoryDBTest {
             BadPaddingException, IOException, InvalidKeySpecException, IllegalBlockSizeException,
             StorageTransactionLogicException, UnauthorisedException, SignatureException {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -730,7 +742,7 @@ public class InMemoryDBTest {
 
         Utils.setValueInConfig("refresh_token_validity", "" + 1.5 / 60.0);
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -755,7 +767,8 @@ public class InMemoryDBTest {
                     sessionInfo.antiCsrfToken, false);
             assert newRefreshedSession.refreshToken != null;
 
-            assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+            assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
             Session.getSession(main, sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
 
@@ -768,7 +781,8 @@ public class InMemoryDBTest {
             } catch (UnauthorisedException ignored) {
 
             }
-            assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+            assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
         }
 
         // Part 2
@@ -777,7 +791,8 @@ public class InMemoryDBTest {
                     userDataInDatabase, false);
             assert sessionInfo.refreshToken != null;
             assert sessionInfo.accessToken != null;
-            assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 2);
+            assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 2);
 
             SessionInformationHolder newRefreshedSession = Session.refreshSession(main, sessionInfo.refreshToken.token,
                     sessionInfo.antiCsrfToken, false);
@@ -785,7 +800,8 @@ public class InMemoryDBTest {
             assert newRefreshedSession.accessToken != null;
             assertNotEquals(newRefreshedSession.accessToken.token, sessionInfo.accessToken.token);
             assertNotEquals(newRefreshedSession.refreshToken.token, sessionInfo.refreshToken.token);
-            assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 2);
+            assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 2);
 
             Thread.sleep(500);
 
@@ -795,7 +811,8 @@ public class InMemoryDBTest {
             assert newRefreshedSession2.accessToken != null;
             assertNotEquals(newRefreshedSession.accessToken.token, newRefreshedSession2.accessToken.token);
             assertNotEquals(newRefreshedSession.refreshToken.token, newRefreshedSession2.refreshToken.token);
-            assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 2);
+            assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 2);
 
             Thread.sleep(500);
 
@@ -805,7 +822,8 @@ public class InMemoryDBTest {
             assert newRefreshedSession3.accessToken != null;
             assertNotEquals(newRefreshedSession3.accessToken.token, newRefreshedSession2.accessToken.token);
             assertNotEquals(newRefreshedSession3.refreshToken.token, newRefreshedSession2.refreshToken.token);
-            assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 2);
+            assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 2);
         }
 
         process.kill();
@@ -815,7 +833,7 @@ public class InMemoryDBTest {
 
     @Test
     public void forceInMemDBIsTrueIfSetToTrue() throws InterruptedException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();
@@ -829,7 +847,7 @@ public class InMemoryDBTest {
 
     @Test
     public void forceInMemDBIsFalseByDefault() throws InterruptedException {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.startProcess();
         assertFalse(process.getProcess().isForceInMemoryDB());

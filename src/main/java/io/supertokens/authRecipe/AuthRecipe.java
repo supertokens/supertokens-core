@@ -104,10 +104,8 @@ public class AuthRecipe {
         }
     }
 
-    // TODO: we should probably not use tenantIdentifier here and delete the user across all tenants.
-    //  But we should verify that the input tenantIdentifier is one in which the user belongs to?
     public static void deleteUser(TenantIdentifier tenantIdentifier, Main main, String userId)
-            throws StorageQueryException, TenantOrAppNotFoundException {
+            throws StorageQueryException, TenantOrAppNotFoundException, BadPermissionException {
         // We clean up the user last so that if anything before that throws an error, then that will throw a 500 to the
         // developer. In this case, they expect that the user has not been deleted (which will be true). This is as
         // opposed to deleting the user first, in which case if something later throws an error, then the user has
@@ -121,6 +119,17 @@ public class AuthRecipe {
         // externalUserid from non-auth tables
         UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(tenantIdentifier,
                 main, userId, UserIdType.ANY);
+
+        // we check if the current user is a part of the tenant
+        String toCheckUserId = userId;
+        if (userIdMapping != null) {
+            toCheckUserId = userIdMapping.superTokensUserId;
+        }
+        if (!StorageLayer.getAuthRecipeStorage(tenantIdentifier, main)
+                .doesUserIdExist(tenantIdentifier, toCheckUserId)) {
+            throw new BadPermissionException("The input user does not belong to this tenant or app");
+        }
+
         if (userIdMapping != null) {
             // We check if the mapped externalId is another SuperTokens UserId, this could come up when migrating
             // recipes.
@@ -150,18 +159,18 @@ public class AuthRecipe {
             throws StorageQueryException {
         try {
             deleteUser(new TenantIdentifier(null, null, null), main, userId);
-        } catch (TenantOrAppNotFoundException e) {
+        } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
     }
 
     private static void deleteNonAuthRecipeUser(TenantIdentifier tenantIdentifier, Main main, String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
+        // TODO: all these will change to using tenantIdentifier.toAppIdentifier() for the actual delete operation
         // non auth recipe deletion
         StorageLayer.getUserMetadataStorage(tenantIdentifier, main).deleteUserMetadata(userId);
-        // TODO: is this the correct thing to do given that we are deleting the user entirely? Shouldn't we delete
-        //  across the appId?
-        StorageLayer.getSessionStorage(tenantIdentifier, main).deleteSessionsOfUser(tenantIdentifier, userId);
+        StorageLayer.getSessionStorage(tenantIdentifier, main)
+                .deleteSessionsOfUser(tenantIdentifier.toAppIdentifier(), userId);
         StorageLayer.getEmailVerificationStorage(tenantIdentifier, main)
                 .deleteEmailVerificationUserInfo(userId);
         StorageLayer.getUserRolesStorage(tenantIdentifier, main).deleteAllRolesForUser(userId);

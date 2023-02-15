@@ -22,7 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -300,7 +300,7 @@ public class CreateUserIdMappingAPITest {
 
         // check that userIdMapping was created
 
-        UserIdMapping userIdMapping = storage.getUserIdMapping(new TenantIdentifier(null, null, null),
+        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
                 superTokensUserId, true);
 
         assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
@@ -365,7 +365,7 @@ public class CreateUserIdMappingAPITest {
 
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
 
-        UserIdMapping userIdMapping = storage.getUserIdMapping(new TenantIdentifier(null, null, null), userInfo.id,
+        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), userInfo.id,
                 true);
 
         assertNotNull(userIdMapping);

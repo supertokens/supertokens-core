@@ -18,12 +18,13 @@ package io.supertokens.test.session;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.info.SessionInformationHolder;
@@ -106,7 +107,8 @@ public class SessionTest4 {
         }
         assertTrue(revokedAll);
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 2);
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 2);
 
         Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
         Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
@@ -114,11 +116,13 @@ public class SessionTest4 {
 
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), userId).length, 4);
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), "userId2").length, 1);
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 0);
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 0);
 
         assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(), handles).length, 0);
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), "userId2").length, 0);
@@ -180,7 +184,8 @@ public class SessionTest4 {
                 userDataInDatabase, false);
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
         assert sessionInfo.accessToken != null;
         assert sessionInfo.refreshToken != null;
         assertNull(sessionInfo.antiCsrfToken);
@@ -214,7 +219,8 @@ public class SessionTest4 {
             assert sessionInfo.refreshToken != null;
             assert sessionInfo.accessToken != null;
 
-            assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+            assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                    .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
         }
 
         process.kill();
@@ -242,7 +248,8 @@ public class SessionTest4 {
                 userDataInDatabase, false);
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
         assert sessionInfo.accessToken != null;
         assert sessionInfo.refreshToken != null;
         assertNull(sessionInfo.antiCsrfToken);

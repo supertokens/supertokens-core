@@ -39,6 +39,8 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import static org.junit.Assert.*;
 
@@ -71,7 +73,7 @@ public class SigningKeysTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG));
 
         assertEquals(
-                AccessTokenSigningKey.getInstance(new TenantIdentifier(null, null, null), process.main).getAllKeys()
+                AccessTokenSigningKey.getInstance(new AppIdentifier(null, null), process.main).getAllKeys()
                         .size(), 1);
 
         process.kill();
@@ -105,19 +107,21 @@ public class SigningKeysTest {
 
         StorageLayer.loadAllTenantStorage(process.getProcess(), tenants);
 
-        AccessTokenSigningKey.loadForAllTenants(process.getProcess(), tenants);
+        List<AppIdentifier> apps = new ArrayList<>();
+        apps.add(tenants[0].tenantIdentifier.toAppIdentifier());
+        AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps);
 
         assertEquals(
-                AccessTokenSigningKey.getInstance(new TenantIdentifier(null, null, null), process.main).getAllKeys()
+                AccessTokenSigningKey.getInstance(new AppIdentifier(null, null), process.main).getAllKeys()
                         .size(), 1);
         assertEquals(
-                AccessTokenSigningKey.getInstance(new TenantIdentifier("c1", null, null), process.main).getAllKeys()
+                AccessTokenSigningKey.getInstance(new AppIdentifier("c1", null), process.main).getAllKeys()
                         .size(), 1);
         AccessTokenSigningKey.KeyInfo baseTenant = AccessTokenSigningKey.getInstance(
-                        new TenantIdentifier(null, null, null), process.main)
+                        new AppIdentifier(null, null), process.main)
                 .getAllKeys().get(0);
         AccessTokenSigningKey.KeyInfo c1Tenant = AccessTokenSigningKey.getInstance(
-                        new TenantIdentifier("c1", null, null), process.main)
+                        new AppIdentifier("c1", null), process.main)
                 .getAllKeys().get(0);
 
         assertNotEquals(baseTenant.createdAtTime, c1Tenant.createdAtTime);
@@ -164,25 +168,27 @@ public class SigningKeysTest {
 
         StorageLayer.loadAllTenantStorage(process.getProcess(), tenants);
 
-        AccessTokenSigningKey.loadForAllTenants(process.getProcess(), tenants);
+        List<AppIdentifier> apps = new ArrayList<>();
+        apps.add(tenants[0].tenantIdentifier.toAppIdentifier());
+        AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps);
 
         assertEquals(
-                AccessTokenSigningKey.getInstance(new TenantIdentifier(null, null, null), process.main).getAllKeys()
+                AccessTokenSigningKey.getInstance(new AppIdentifier(null, null), process.main).getAllKeys()
                         .size(), 1);
         assertEquals(
-                AccessTokenSigningKey.getInstance(new TenantIdentifier("c1", null, null), process.main).getAllKeys()
+                AccessTokenSigningKey.getInstance(new AppIdentifier("c1", null), process.main).getAllKeys()
                         .size(), 1);
         AccessTokenSigningKey.KeyInfo baseTenant = AccessTokenSigningKey.getInstance(
-                        new TenantIdentifier(null, null, null), process.main)
+                        new AppIdentifier(null, null), process.main)
                 .getAllKeys().get(0);
         AccessTokenSigningKey.KeyInfo c1Tenant = AccessTokenSigningKey.getInstance(
-                        new TenantIdentifier("c1", null, null), process.main)
+                        new AppIdentifier("c1", null), process.main)
                 .getAllKeys().get(0);
         AccessTokenSigningKey.KeyInfo c2Tenant = AccessTokenSigningKey.getInstance(
-                        new TenantIdentifier("c2", null, null), process.main)
+                        new AppIdentifier("c2", null), process.main)
                 .getAllKeys().get(0);
         AccessTokenSigningKey.KeyInfo c3Tenant = AccessTokenSigningKey.getInstance(
-                        new TenantIdentifier("c3", null, null), process.main)
+                        new AppIdentifier("c3", null), process.main)
                 .getAllKeys().get(0);
 
         assertNotEquals(baseTenant.createdAtTime, c1Tenant.createdAtTime);

@@ -25,6 +25,7 @@ import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
@@ -70,7 +71,7 @@ public class SessionTest2 {
             TryRefreshTokenException, UnauthorisedException, TokenTheftDetectedException, SignatureException,
             IllegalBlockSizeException, BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -115,7 +116,7 @@ public class SessionTest2 {
             UnauthorisedException, TokenTheftDetectedException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -160,7 +161,7 @@ public class SessionTest2 {
             UnauthorisedException, SignatureException, IllegalBlockSizeException, BadPaddingException,
             InvalidAlgorithmParameterException, NoSuchPaddingException {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -200,7 +201,7 @@ public class SessionTest2 {
             TryRefreshTokenException, UnauthorisedException, SignatureException, IllegalBlockSizeException,
             BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -217,10 +218,12 @@ public class SessionTest2 {
 
         Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 2);
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 2);
 
-        Session.revokeSessionUsingSessionHandles(process.getProcess(), new String[] { sessionInfo.session.handle });
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
+        Session.revokeSessionUsingSessionHandles(process.getProcess(), new String[]{sessionInfo.session.handle});
+        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+                .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
         try {
             Session.refreshSession(process.getProcess(), sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken,

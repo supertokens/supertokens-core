@@ -22,7 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -75,7 +75,7 @@ public class GetUsersAPIWithUserIdMappingTest {
             externalUserIdList.add(externalUserId);
 
             // create a userId mapping
-            storage.createUserIdMapping(new TenantIdentifier(null, null, null), superTokensUserId, externalUserId,
+            storage.createUserIdMapping(new AppIdentifier(null, null), superTokensUserId, externalUserId,
                     null);
         }
 
@@ -115,7 +115,7 @@ public class GetUsersAPIWithUserIdMappingTest {
             externalUserIdList.add(externalUserId);
 
             // create a userId mapping
-            storage.createUserIdMapping(new TenantIdentifier(null, null, null), superTokensUserId, externalUserId,
+            storage.createUserIdMapping(new AppIdentifier(null, null), superTokensUserId, externalUserId,
                     null);
         }
 

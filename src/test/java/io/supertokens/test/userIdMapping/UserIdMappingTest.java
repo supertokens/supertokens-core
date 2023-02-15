@@ -22,7 +22,7 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.nonAuthRecipe.NonAuthRecipeStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
@@ -187,7 +187,7 @@ public class UserIdMappingTest {
 
         // check that the mapping exists
         io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = storage.getUserIdMapping(
-                new TenantIdentifier(null, null, null), userInfo.id,
+                new AppIdentifier(null, null), userInfo.id,
                 true);
         assertEquals(userInfo.id, userIdMapping.superTokensUserId);
         assertEquals(externalUserId, userIdMapping.externalUserId);
@@ -304,7 +304,7 @@ public class UserIdMappingTest {
             // query with the storage layer and check that the db returns two entries
             UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
             io.supertokens.pluginInterface.useridmapping.UserIdMapping[] storageResponse = storage
-                    .getUserIdMapping(new TenantIdentifier(null, null, null), newExternalUserId);
+                    .getUserIdMapping(new AppIdentifier(null, null), newExternalUserId);
             assertEquals(2, storageResponse.length);
 
             assertNotNull(response);

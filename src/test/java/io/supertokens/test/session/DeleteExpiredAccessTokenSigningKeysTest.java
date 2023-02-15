@@ -22,6 +22,7 @@ import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -71,23 +72,28 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
 
         SessionSQLStorage sqlStorage = (SessionSQLStorage) sessionStorage;
         sqlStorage.startTransaction(con -> {
-            sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("clean!", 100));
-            sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("clean!",
-                    System.currentTimeMillis() - signingKeyUpdateInterval - 3 * accessTokenValidity));
-            sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("clean!",
-                    System.currentTimeMillis() - signingKeyUpdateInterval - 2 * accessTokenValidity));
-            sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("keep!",
-                    System.currentTimeMillis() - signingKeyUpdateInterval - 1 * accessTokenValidity));
-            sqlStorage.addAccessTokenSigningKey_Transaction(con,
+            sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                    new KeyValueInfo("clean!", 100));
+            sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                    new KeyValueInfo("clean!",
+                            System.currentTimeMillis() - signingKeyUpdateInterval - 3 * accessTokenValidity));
+            sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                    new KeyValueInfo("clean!",
+                            System.currentTimeMillis() - signingKeyUpdateInterval - 2 * accessTokenValidity));
+            sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                    new KeyValueInfo("keep!",
+                            System.currentTimeMillis() - signingKeyUpdateInterval - 1 * accessTokenValidity));
+            sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
                     new KeyValueInfo("keep!", System.currentTimeMillis() - signingKeyUpdateInterval));
-            sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("keep!", System.currentTimeMillis()));
+            sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                    new KeyValueInfo("keep!", System.currentTimeMillis()));
             return true;
         });
 
         Thread.sleep(1500);
 
         sqlStorage.startTransaction(con -> {
-            KeyValueInfo[] keys = sqlStorage.getAccessTokenSigningKeys_Transaction(con);
+            KeyValueInfo[] keys = sqlStorage.getAccessTokenSigningKeys_Transaction(new AppIdentifier(null, null), con);
             assertEquals(keys.length, 3);
             for (KeyValueInfo key : keys) {
                 assertEquals("keep!", key.value);
@@ -122,23 +128,28 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
 
         SessionSQLStorage sqlStorage = (SessionSQLStorage) sessionStorage;
         sqlStorage.startTransaction(con -> {
-            sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("clean!", 100));
-            sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("clean!",
-                    System.currentTimeMillis() - signingKeyUpdateInterval - 3 * accessTokenValidity));
-            sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("clean!",
-                    System.currentTimeMillis() - signingKeyUpdateInterval - 2 * accessTokenValidity));
-            sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("keep!",
-                    System.currentTimeMillis() - signingKeyUpdateInterval - 1 * accessTokenValidity));
-            sqlStorage.addAccessTokenSigningKey_Transaction(con,
+            sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                    new KeyValueInfo("clean!", 100));
+            sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                    new KeyValueInfo("clean!",
+                            System.currentTimeMillis() - signingKeyUpdateInterval - 3 * accessTokenValidity));
+            sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                    new KeyValueInfo("clean!",
+                            System.currentTimeMillis() - signingKeyUpdateInterval - 2 * accessTokenValidity));
+            sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                    new KeyValueInfo("keep!",
+                            System.currentTimeMillis() - signingKeyUpdateInterval - 1 * accessTokenValidity));
+            sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
                     new KeyValueInfo("keep!", System.currentTimeMillis() - signingKeyUpdateInterval));
-            sqlStorage.addAccessTokenSigningKey_Transaction(con, new KeyValueInfo("keep!", System.currentTimeMillis()));
+            sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
+                    new KeyValueInfo("keep!", System.currentTimeMillis()));
             return true;
         });
 
         Thread.sleep(1500);
 
         sqlStorage.startTransaction(con -> {
-            KeyValueInfo[] keys = sqlStorage.getAccessTokenSigningKeys_Transaction(con);
+            KeyValueInfo[] keys = sqlStorage.getAccessTokenSigningKeys_Transaction(new AppIdentifier(null, null), con);
             assertEquals(keys.length, 6);
             return true;
         });

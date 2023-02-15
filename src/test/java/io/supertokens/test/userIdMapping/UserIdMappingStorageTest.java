@@ -21,7 +21,7 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
@@ -69,7 +69,7 @@ public class UserIdMappingStorageTest {
         Exception error = null;
 
         try {
-            storage.createUserIdMapping(new TenantIdentifier(null, null, null), "unknownSuperTokensUserId",
+            storage.createUserIdMapping(new AppIdentifier(null, null), "unknownSuperTokensUserId",
                     "externalUserId", null);
 
         } catch (Exception e) {
@@ -102,11 +102,11 @@ public class UserIdMappingStorageTest {
         String externalUserIdInfo = "external-info";
 
         // create a userId mapping
-        storage.createUserIdMapping(new TenantIdentifier(null, null, null), userInfo.id, externalUserId,
+        storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.id, externalUserId,
                 externalUserIdInfo);
 
         // check that the mapping exists
-        UserIdMapping userIdMapping = storage.getUserIdMapping(new TenantIdentifier(null, null, null), userInfo.id,
+        UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), userInfo.id,
                 true);
         assertEquals(userInfo.id, userIdMapping.superTokensUserId);
         assertEquals(externalUserId, userIdMapping.externalUserId);
@@ -132,13 +132,13 @@ public class UserIdMappingStorageTest {
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
         String externalUserId = "external-test";
 
-        storage.createUserIdMapping(new TenantIdentifier(null, null, null), userInfo.id, externalUserId, null);
+        storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.id, externalUserId, null);
 
         {
             // duplicate exception with both supertokensUserId and externalUserId
             Exception error = null;
             try {
-                storage.createUserIdMapping(new TenantIdentifier(null, null, null), userInfo.id, externalUserId, null);
+                storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.id, externalUserId, null);
             } catch (Exception e) {
                 error = e;
             }
@@ -155,7 +155,7 @@ public class UserIdMappingStorageTest {
             // duplicate exception with superTokensUserId
             Exception error = null;
             try {
-                storage.createUserIdMapping(new TenantIdentifier(null, null, null), userInfo.id, "newExternalId", null);
+                storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.id, "newExternalId", null);
             } catch (Exception e) {
                 error = e;
             }
@@ -175,7 +175,7 @@ public class UserIdMappingStorageTest {
             UserInfo newUser = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
             Exception error = null;
             try {
-                storage.createUserIdMapping(new TenantIdentifier(null, null, null), newUser.id, externalUserId, null);
+                storage.createUserIdMapping(new AppIdentifier(null, null), newUser.id, externalUserId, null);
             } catch (Exception e) {
                 error = e;
             }
@@ -210,12 +210,12 @@ public class UserIdMappingStorageTest {
         String externalUserId = "externalUserId";
 
         // create a userId mapping
-        storage.createUserIdMapping(new TenantIdentifier(null, null, null), userInfo.id, externalUserId, null);
+        storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.id, externalUserId, null);
 
         // create a new mapping with unknown superTokensUserId and existing externalUserId
         Exception error = null;
         try {
-            storage.createUserIdMapping(new TenantIdentifier(null, null, null), "unknownUserId", externalUserId, null);
+            storage.createUserIdMapping(new AppIdentifier(null, null), "unknownUserId", externalUserId, null);
         } catch (Exception e) {
             error = e;
         }
@@ -245,19 +245,19 @@ public class UserIdMappingStorageTest {
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
 
         {
-            UserIdMapping userIdMapping = storage.getUserIdMapping(new TenantIdentifier(null, null, null), "unknownId",
+            UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), "unknownId",
                     true);
             assertNull(userIdMapping);
         }
 
         {
-            UserIdMapping userIdMapping = storage.getUserIdMapping(new TenantIdentifier(null, null, null), "unknownId",
+            UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), "unknownId",
                     false);
             assertNull(userIdMapping);
         }
 
         {
-            UserIdMapping[] userIdMappings = storage.getUserIdMapping(new TenantIdentifier(null, null, null),
+            UserIdMapping[] userIdMappings = storage.getUserIdMapping(new AppIdentifier(null, null),
                     "unknownUd");
             assertEquals(0, userIdMappings.length);
         }
@@ -285,12 +285,12 @@ public class UserIdMappingStorageTest {
         String externalUserIdInfo = "externalUserIdInfo";
 
         // create the mapping
-        storage.createUserIdMapping(new TenantIdentifier(null, null, null), userInfo.id, externalUserId,
+        storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.id, externalUserId,
                 externalUserIdInfo);
 
         // check that the mapping exists with supertokensUserId
         {
-            UserIdMapping userIdMapping = storage.getUserIdMapping(new TenantIdentifier(null, null, null), userInfo.id,
+            UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), userInfo.id,
                     true);
 
             assertNotNull(userIdMapping);
@@ -301,7 +301,7 @@ public class UserIdMappingStorageTest {
 
         // check that the mapping exists with externalUserId
         {
-            UserIdMapping userIdMapping = storage.getUserIdMapping(new TenantIdentifier(null, null, null),
+            UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
                     externalUserId, false);
 
             assertNotNull(userIdMapping);
@@ -312,7 +312,7 @@ public class UserIdMappingStorageTest {
 
         // check that the mapping exists with either
         {
-            UserIdMapping[] userIdMappings = storage.getUserIdMapping(new TenantIdentifier(null, null, null),
+            UserIdMapping[] userIdMappings = storage.getUserIdMapping(new AppIdentifier(null, null),
                     userInfo.id);
             assertEquals(1, userIdMappings.length);
             assertEquals(userInfo.id, userIdMappings[0].superTokensUserId);
@@ -320,7 +320,7 @@ public class UserIdMappingStorageTest {
             assertEquals(externalUserIdInfo, userIdMappings[0].externalUserIdInfo);
         }
         {
-            UserIdMapping[] userIdMappings = storage.getUserIdMapping(new TenantIdentifier(null, null, null),
+            UserIdMapping[] userIdMappings = storage.getUserIdMapping(new AppIdentifier(null, null),
                     externalUserId);
             assertEquals(1, userIdMappings.length);
             assertEquals(userInfo.id, userIdMappings[0].superTokensUserId);
@@ -336,9 +336,9 @@ public class UserIdMappingStorageTest {
             UserInfo newUserInfo = EmailPassword.signUp(process.main, "test2@example.com", "testPass123");
             String externalUserId2 = userInfo.id;
 
-            storage.createUserIdMapping(new TenantIdentifier(null, null, null), newUserInfo.id, externalUserId2, null);
+            storage.createUserIdMapping(new AppIdentifier(null, null), newUserInfo.id, externalUserId2, null);
 
-            UserIdMapping[] userIdMappings = storage.getUserIdMapping(new TenantIdentifier(null, null, null),
+            UserIdMapping[] userIdMappings = storage.getUserIdMapping(new AppIdentifier(null, null),
                     externalUserId2);
             assertEquals(2, userIdMappings.length);
 
@@ -377,9 +377,9 @@ public class UserIdMappingStorageTest {
 
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
 
-        assertFalse(storage.deleteUserIdMapping(new TenantIdentifier(null, null, null), "unknownUserId", true));
+        assertFalse(storage.deleteUserIdMapping(new AppIdentifier(null, null), "unknownUserId", true));
 
-        assertFalse(storage.deleteUserIdMapping(new TenantIdentifier(null, null, null), "unknownUserId", false));
+        assertFalse(storage.deleteUserIdMapping(new AppIdentifier(null, null), "unknownUserId", false));
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -403,11 +403,11 @@ public class UserIdMappingStorageTest {
         String externalUserId = "externalUserId";
         {
             // create a new userId mapping
-            storage.createUserIdMapping(new TenantIdentifier(null, null, null), superTokensUserId, externalUserId,
+            storage.createUserIdMapping(new AppIdentifier(null, null), superTokensUserId, externalUserId,
                     null);
 
             // retrieve mapping and check that it exists
-            UserIdMapping userIdMapping = storage.getUserIdMapping(new TenantIdentifier(null, null, null),
+            UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
                     superTokensUserId, true);
             assertNotNull(userIdMapping);
             assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
@@ -415,20 +415,20 @@ public class UserIdMappingStorageTest {
             assertNull(userIdMapping.externalUserIdInfo);
 
             // delete mapping with a supertokensUserId
-            assertTrue(storage.deleteUserIdMapping(new TenantIdentifier(null, null, null), superTokensUserId, true));
+            assertTrue(storage.deleteUserIdMapping(new AppIdentifier(null, null), superTokensUserId, true));
 
             // check that the mapping does not exist
-            assertNull(storage.getUserIdMapping(new TenantIdentifier(null, null, null), superTokensUserId, true));
+            assertNull(storage.getUserIdMapping(new AppIdentifier(null, null), superTokensUserId, true));
 
         }
 
         {
             // create a new userId mapping
             String newExternalUserId = "externalUserIdNew";
-            storage.createUserIdMapping(new TenantIdentifier(null, null, null), superTokensUserId, newExternalUserId,
+            storage.createUserIdMapping(new AppIdentifier(null, null), superTokensUserId, newExternalUserId,
                     null);
             // retrieve mapping and check that it exists
-            UserIdMapping userIdMapping = storage.getUserIdMapping(new TenantIdentifier(null, null, null),
+            UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
                     newExternalUserId, false);
             assertNotNull(userIdMapping);
             assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
@@ -436,10 +436,10 @@ public class UserIdMappingStorageTest {
             assertNull(userIdMapping.externalUserIdInfo);
 
             // delete mapping with externalUserId
-            assertTrue(storage.deleteUserIdMapping(new TenantIdentifier(null, null, null), newExternalUserId, false));
+            assertTrue(storage.deleteUserIdMapping(new AppIdentifier(null, null), newExternalUserId, false));
 
             // check that the mapping does not exist
-            assertNull(storage.getUserIdMapping(new TenantIdentifier(null, null, null), newExternalUserId, false));
+            assertNull(storage.getUserIdMapping(new AppIdentifier(null, null), newExternalUserId, false));
 
         }
 
@@ -463,15 +463,15 @@ public class UserIdMappingStorageTest {
 
         // update with unknown supertokensUserId
         assertFalse(
-                storage.updateOrDeleteExternalUserIdInfo(new TenantIdentifier(null, null, null), userId, true, null));
+                storage.updateOrDeleteExternalUserIdInfo(new AppIdentifier(null, null), userId, true, null));
 
         // update with unknown externalUserId
         assertFalse(
-                storage.updateOrDeleteExternalUserIdInfo(new TenantIdentifier(null, null, null), userId, false, null));
+                storage.updateOrDeleteExternalUserIdInfo(new AppIdentifier(null, null), userId, false, null));
 
         // check that there are no mappings with the userId
 
-        UserIdMapping[] userIdMappings = storage.getUserIdMapping(new TenantIdentifier(null, null, null), userId);
+        UserIdMapping[] userIdMappings = storage.getUserIdMapping(new AppIdentifier(null, null), userId);
 
         assertEquals(0, userIdMappings.length);
 
@@ -499,9 +499,9 @@ public class UserIdMappingStorageTest {
         String externalUserIdInfo = "externalUserIdInfo";
 
         // create a userId mapping
-        storage.createUserIdMapping(new TenantIdentifier(null, null, null), superTokensUserId, externalUserId, null);
+        storage.createUserIdMapping(new AppIdentifier(null, null), superTokensUserId, externalUserId, null);
         {
-            UserIdMapping userIdMapping = storage.getUserIdMapping(new TenantIdentifier(null, null, null),
+            UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
                     superTokensUserId, true);
             assertNotNull(userIdMapping);
             assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
@@ -510,12 +510,12 @@ public class UserIdMappingStorageTest {
         }
 
         // update from null to externalUserIdInfo
-        assertTrue(storage.updateOrDeleteExternalUserIdInfo(new TenantIdentifier(null, null, null), superTokensUserId,
+        assertTrue(storage.updateOrDeleteExternalUserIdInfo(new AppIdentifier(null, null), superTokensUserId,
                 true, externalUserIdInfo));
 
         // retrieve mapping and validate
         {
-            UserIdMapping userIdMapping = storage.getUserIdMapping(new TenantIdentifier(null, null, null),
+            UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
                     superTokensUserId, true);
             assertNotNull(userIdMapping);
             assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
@@ -525,12 +525,12 @@ public class UserIdMappingStorageTest {
 
         // update externalUserIdInfo
         String newExternalUserIdInfo = "newExternalUserIdInfo";
-        assertTrue(storage.updateOrDeleteExternalUserIdInfo(new TenantIdentifier(null, null, null), superTokensUserId,
+        assertTrue(storage.updateOrDeleteExternalUserIdInfo(new AppIdentifier(null, null), superTokensUserId,
                 true, newExternalUserIdInfo));
 
         // retrieve mapping and validate with the new externalUserIdInfo
         {
-            UserIdMapping userIdMapping = storage.getUserIdMapping(new TenantIdentifier(null, null, null),
+            UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
                     superTokensUserId, true);
             assertNotNull(userIdMapping);
             assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
@@ -540,12 +540,12 @@ public class UserIdMappingStorageTest {
 
         // delete externalUserIdInfo by passing null
         assertTrue(
-                storage.updateOrDeleteExternalUserIdInfo(new TenantIdentifier(null, null, null), externalUserId, false,
+                storage.updateOrDeleteExternalUserIdInfo(new AppIdentifier(null, null), externalUserId, false,
                         null));
 
         // retrieve mapping and check that externalUserIdInfo is null
         {
-            UserIdMapping userIdMapping = storage.getUserIdMapping(new TenantIdentifier(null, null, null),
+            UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null),
                     externalUserId, false);
             assertNotNull(userIdMapping);
             assertEquals(superTokensUserId, userIdMapping.superTokensUserId);
@@ -580,11 +580,11 @@ public class UserIdMappingStorageTest {
             externalUserIdList.add(externalUserId);
 
             // create a userId mapping
-            storage.createUserIdMapping(new TenantIdentifier(null, null, null), superTokensUserId, externalUserId,
+            storage.createUserIdMapping(new AppIdentifier(null, null), superTokensUserId, externalUserId,
                     null);
         }
         HashMap<String, String> response = storage.getUserIdMappingForSuperTokensIds(
-                new TenantIdentifier(null, null, null), superTokensUserIdList);
+                new AppIdentifier(null, null), superTokensUserIdList);
         assertEquals(AuthRecipe.USER_PAGINATION_LIMIT, response.size());
         for (int i = 0; i < response.size(); i++) {
             assertEquals(externalUserIdList.get(i), response.get(superTokensUserIdList.get(i)));
@@ -608,7 +608,7 @@ public class UserIdMappingStorageTest {
         ArrayList<String> emptyList = new ArrayList<>();
 
         HashMap<String, String> response = storage.getUserIdMappingForSuperTokensIds(
-                new TenantIdentifier(null, null, null), emptyList);
+                new AppIdentifier(null, null), emptyList);
         assertEquals(0, response.size());
 
         process.kill();
@@ -634,7 +634,7 @@ public class UserIdMappingStorageTest {
         }
 
         HashMap<String, String> userIdMapping = storage.getUserIdMappingForSuperTokensIds(
-                new TenantIdentifier(null, null, null), superTokensUserIdList);
+                new AppIdentifier(null, null), superTokensUserIdList);
         assertEquals(0, userIdMapping.size());
 
         process.kill();
@@ -666,13 +666,13 @@ public class UserIdMappingStorageTest {
                 // create userIdMapping for the last 5 users
                 String externalUserId = "externalId" + i;
                 userIdList.add(externalUserId);
-                storage.createUserIdMapping(new TenantIdentifier(null, null, null), userInfo.id, externalUserId, null);
+                storage.createUserIdMapping(new AppIdentifier(null, null), userInfo.id, externalUserId, null);
             }
         }
 
         // retrieve UserIDMapping
         HashMap<String, String> response = storage.getUserIdMappingForSuperTokensIds(
-                new TenantIdentifier(null, null, null), superTokensUserIdList);
+                new AppIdentifier(null, null), superTokensUserIdList);
         assertEquals(5, response.size());
 
         // check that the last 5 users have their ids mapped
