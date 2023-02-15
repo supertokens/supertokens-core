@@ -105,7 +105,7 @@ public class AuthRecipe {
     }
 
     // TODO: we should probably not use tenantIdentifier here and delete the user across all tenants.
-    // But we should verify that the 
+    //  But we should verify that the input tenantIdentifier is one in which the user belongs to?
     public static void deleteUser(TenantIdentifier tenantIdentifier, Main main, String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
         // We clean up the user last so that if anything before that throws an error, then that will throw a 500 to the
