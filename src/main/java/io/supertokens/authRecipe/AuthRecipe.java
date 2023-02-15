@@ -126,7 +126,10 @@ public class AuthRecipe {
             toCheckUserId = userIdMapping.superTokensUserId;
         }
         if (!StorageLayer.getAuthRecipeStorage(tenantIdentifier, main)
-                .doesUserIdExist(tenantIdentifier, toCheckUserId)) {
+                .doesUserIdExist(tenantIdentifier, toCheckUserId) &&
+                StorageLayer.getAuthRecipeStorage(tenantIdentifier, main)
+                        .doesUserIdExist(tenantIdentifier.toAppIdentifier(), toCheckUserId)) {
+            // this means that the user exists in the app, but is not associated with this tenant.
             throw new BadPermissionException("The input user does not belong to this tenant or app");
         }
 

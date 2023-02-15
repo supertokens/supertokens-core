@@ -32,7 +32,7 @@ import java.util.Map;
 // when the main instance dies, those singleton classes die too.
 
 public class ResourceDistributor {
-    private Map<KeyClass, SingletonResource> resources = new HashMap<>(1);
+    private final Map<KeyClass, SingletonResource> resources = new HashMap<>(1);
     private final Main main;
 
     public ResourceDistributor(Main main) {
@@ -108,7 +108,7 @@ public class ResourceDistributor {
     public synchronized SingletonResource setResource(AppIdentifier appIdentifier,
                                                       @Nonnull String key,
                                                       SingletonResource resource) {
-        return setResource(appIdentifier, key, resource);
+        return setResource(appIdentifier.getAsPublicTenantIdentifier(), key, resource);
     }
 
     public synchronized void clearAllResourcesWithResourceKey(String inputKey) {
@@ -168,7 +168,7 @@ public class ResourceDistributor {
 
     public static class KeyClass {
         @Nonnull
-        private String key;
+        private final String key;
 
         private final TenantIdentifier tenantIdentifier;
 

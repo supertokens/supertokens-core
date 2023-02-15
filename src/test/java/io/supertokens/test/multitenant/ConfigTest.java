@@ -212,7 +212,7 @@ public class ConfigTest {
 
         try {
             Config.loadAllTenantConfig(process.getProcess(), new TenantConfig[]{
-                    new TenantConfig(new TenantIdentifier(null, "abc", null), new EmailPasswordConfig(false),
+                    new TenantConfig(new TenantIdentifier(null, null, "abc"), new EmailPasswordConfig(false),
                             new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                             new PasswordlessConfig(false),
                             tenantConfig)});

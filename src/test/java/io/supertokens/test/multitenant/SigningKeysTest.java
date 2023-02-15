@@ -108,7 +108,9 @@ public class SigningKeysTest {
         StorageLayer.loadAllTenantStorage(process.getProcess(), tenants);
 
         List<AppIdentifier> apps = new ArrayList<>();
-        apps.add(tenants[0].tenantIdentifier.toAppIdentifier());
+        for (TenantConfig t : tenants) {
+            apps.add(t.tenantIdentifier.toAppIdentifier());
+        }
         AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps);
 
         assertEquals(
@@ -169,7 +171,9 @@ public class SigningKeysTest {
         StorageLayer.loadAllTenantStorage(process.getProcess(), tenants);
 
         List<AppIdentifier> apps = new ArrayList<>();
-        apps.add(tenants[0].tenantIdentifier.toAppIdentifier());
+        for (TenantConfig t : tenants) {
+            apps.add(t.tenantIdentifier.toAppIdentifier());
+        }
         AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps);
 
         assertEquals(

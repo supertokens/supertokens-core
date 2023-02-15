@@ -131,7 +131,7 @@ public class Config extends ResourceDistributor.SingletonResource {
     public static void assertAllTenantConfigsAreValid(Main main,
                                                       Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs)
             throws InvalidConfigException, IOException {
-        Map<String, Storage> userPoolAndAppIdToStorage = new HashMap<>();
+        Map<String, Storage> userPoolToStorage = new HashMap<>();
         Map<String, Config> userPoolIdAndAppIdToConfigMap = new HashMap<>();
         Map<String, String> userPoolIdToConnectionUriDomain = new HashMap<>();
         for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
@@ -158,11 +158,11 @@ public class Config extends ResourceDistributor.SingletonResource {
                 userPoolIdToConnectionUriDomain.put(userPoolId, key.getTenantIdentifier().getConnectionUriDomain());
             }
 
-            // we check that conflicting configs for the same user pool ID and appId combination doesn't exist
+            // we check that conflicting configs for the same user pool ID doesn't exist
             {
-                Storage storageForCurrentUserPoolId = userPoolAndAppIdToStorage.get(userPoolIdAndAppIdKey);
+                Storage storageForCurrentUserPoolId = userPoolToStorage.get(userPoolId);
                 if (storageForCurrentUserPoolId == null) {
-                    userPoolAndAppIdToStorage.put(userPoolIdAndAppIdKey, storage);
+                    userPoolToStorage.put(userPoolId, storage);
                 } else {
                     // this will check conflicting configs for db plugin related configs..
                     storageForCurrentUserPoolId.assertThatConfigFromSameUserPoolIsNotConflicting(currentConfig);
