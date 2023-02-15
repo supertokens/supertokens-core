@@ -27,6 +27,8 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
+import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
@@ -284,6 +286,15 @@ public class Utils {
         e.printStackTrace(ps);
         ps.close();
         return baos.toString();
+    }
+
+    public static String normalizeStringParam(String param, String paramName) throws ServletException {
+        param = param.trim();
+        if (param.length() == 0) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("Field name " + paramName + " cannot be an empty String"));
+        }
+        return param;
     }
 
     public static JsonArray keyListToJson(List<KeyInfo> keys) {

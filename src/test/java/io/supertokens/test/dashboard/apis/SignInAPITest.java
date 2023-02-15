@@ -16,6 +16,74 @@
 
 package io.supertokens.test.dashboard.apis;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
+import com.google.gson.JsonObject;
+
+import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.dashboard.Dashboard;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.test.TestingProcessManager;
+import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+
 public class SignInAPITest {
+    @Rule
+    public TestRule watchman = Utils.getOnFailure();
+
+    @AfterClass
+    public static void afterTesting() {
+        Utils.afterTesting();
+    }
+
+    @Before
+    public void beforeEach() {
+        Utils.reset();
+    }
+
+    @Test
+    public void testSigningInAUserAndVerifyingTheirSession() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create dashboard user, create session and verify session
+        String email = "test@example.com";
+        String password = "testPass123";
+
+        Dashboard.signUpDashboardUser(process.getProcess(), email, password);
+
+        // signin user
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email", email);
+        requestBody.addProperty("password", password);
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/dashboard/signin", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_18ForTests(), "dashboard");
+        assertEquals(2, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+        assertNotNull(response.get("sessionId").getAsString());
+
+        // check that session created is a valid session
+        String sessionId = response.get("sessionId").getAsString();
+        assertTrue(Dashboard.isValidUserSession(process.getProcess(), sessionId));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
     
 }

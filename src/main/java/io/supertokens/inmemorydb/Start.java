@@ -1644,7 +1644,7 @@ public class Start
             }
             if (e.getMessage()
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                            + Config.getConfig(this).getDashboardUsersTable() + ".id)")) {
+                            + Config.getConfig(this).getDashboardUsersTable() + ".user_id)")) {
                 throw new io.supertokens.pluginInterface.dashboard.exceptions.DuplicateUserIdException();
             }
             throw new StorageQueryException(e);

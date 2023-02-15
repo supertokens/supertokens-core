@@ -24,6 +24,7 @@ import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -48,7 +49,7 @@ public class RevokeSessionAPI extends WebserverAPI{
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String sessionId = InputParser.parseStringOrThrowError(input, "sessionId", false);
-        sessionId = normalizeStringParam(sessionId, "sessionId");
+        sessionId = Utils.normalizeStringParam(sessionId, "sessionId");
 
         try {
             Dashboard.revokeSessionWithSessionId(main, sessionId);
@@ -58,15 +59,5 @@ public class RevokeSessionAPI extends WebserverAPI{
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
-    }
-
-    private static String normalizeStringParam(String param, String paramName) throws ServletException {
-        param = param.trim();
-        if (param.length() == 0) {
-            throw new ServletException(
-                    new WebserverAPI.BadRequestException("Field name " + paramName + " cannot be an empty String"));
-        }
-        return param;
-    }
-    
+    }    
 }

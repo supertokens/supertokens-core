@@ -32,6 +32,7 @@ import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundExcepti
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -61,7 +62,7 @@ public class DashboardUserAPI extends WebserverAPI {
             String email = InputParser.parseStringOrThrowError(input, "email", false);
 
             // normalize email
-            email = normalizeStringParam(email, "email");
+            email = Utils.normalizeStringParam(email, "email");
 
             // check if input email is invalid
             if (!Dashboard.isValidEmail(email)) {
@@ -74,7 +75,7 @@ public class DashboardUserAPI extends WebserverAPI {
             String password = InputParser.parseStringOrThrowError(input, "password", false);
 
             // normalize password
-            password = normalizeStringParam(password, "password");
+            password = Utils.normalizeStringParam(password, "password");
 
             // check if input password is a strong password
             String passwordErrorMessage = Dashboard.validatePassword(password);
@@ -109,7 +110,7 @@ public class DashboardUserAPI extends WebserverAPI {
         String newEmail = InputParser.parseStringOrThrowError(input, "newEmail", true);
         if (newEmail != null) {
             // normalize new email
-            newEmail = normalizeStringParam(newEmail, "newEmail");
+            newEmail = Utils.normalizeStringParam(newEmail, "newEmail");
 
             // check if the newEmail is in valid format
             if (!Dashboard.isValidEmail(newEmail)) {
@@ -123,7 +124,7 @@ public class DashboardUserAPI extends WebserverAPI {
         String newPassword = InputParser.parseStringOrThrowError(input, "newPassword", true);
         if (newPassword != null) {
             // normalize new password
-            newPassword = normalizeStringParam(newPassword, "newPassword");
+            newPassword = Utils.normalizeStringParam(newPassword, "newPassword");
             // check if the new password is strong
             String passwordErrorMessage = Dashboard.validatePassword(newPassword);
             if (passwordErrorMessage != null) {
@@ -139,7 +140,7 @@ public class DashboardUserAPI extends WebserverAPI {
             String userId = InputParser.parseStringOrThrowError(input, "userId", true);
             if (userId != null) {
                 // normalize userId
-                userId = normalizeStringParam(userId, "userId");
+                userId = Utils.normalizeStringParam(userId, "userId");
 
                 Dashboard.updateUsersCredentialsWithUserId(main, userId, newEmail, newPassword);
                 // retrieve updated user details
@@ -156,7 +157,7 @@ public class DashboardUserAPI extends WebserverAPI {
             String email = InputParser.parseStringOrThrowError(input, "email", true);
             if (email != null) {
                 // normalize userId
-                email = normalizeStringParam(email, "email");
+                email = Utils.normalizeStringParam(email, "email");
                 Dashboard.updateUsersCredentialsWithEmail(main, email, newEmail, newPassword);
                 // retrieve updated user details
                 DashboardUser user = StorageLayer.getDashboardStorage(main).getDashboardUserByEmail(email);
@@ -194,7 +195,7 @@ public class DashboardUserAPI extends WebserverAPI {
         try {
             if (userId != null) {
                 // normalize userId
-                userId = normalizeStringParam(userId, "userId");
+                userId = Utils.normalizeStringParam(userId, "userId");
                 boolean didUserExist = Dashboard.deleteUserWithUserId(main, userId);
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
@@ -207,7 +208,7 @@ public class DashboardUserAPI extends WebserverAPI {
 
             if (email != null) {
                 // normalize email
-                email = normalizeStringParam(email, "email");
+                email = Utils.normalizeStringParam(email, "email");
                 boolean didUserExist = Dashboard.deleteUserWithEmail(main, email);
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
@@ -224,15 +225,6 @@ public class DashboardUserAPI extends WebserverAPI {
         response.addProperty("status", "OK");
         response.addProperty("didUserExist", false);
         super.sendJsonResponse(200, response, resp);
-    }
-
-    private static String normalizeStringParam(String param, String paramName) throws ServletException {
-        param = param.trim();
-        if (param.length() == 0) {
-            throw new ServletException(
-                    new WebserverAPI.BadRequestException("Field name " + paramName + " cannot be an empty String"));
-        }
-        return param;
     }
 
 }

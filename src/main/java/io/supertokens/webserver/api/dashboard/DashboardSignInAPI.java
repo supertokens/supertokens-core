@@ -25,6 +25,7 @@ import io.supertokens.dashboard.Dashboard;
 import io.supertokens.dashboard.exceptions.UserSuspendedException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -48,12 +49,12 @@ public class DashboardSignInAPI extends WebserverAPI {
         String email = InputParser.parseStringOrThrowError(input, "email", false);
 
         // normalize email
-        email = normalizeStringParam(email, "email");
+        email = Utils.normalizeStringParam(email, "email");
 
         String password = InputParser.parseStringOrThrowError(input, "password", false);
 
         // normalize password
-        password = normalizeStringParam(password, "password");
+        password = Utils.normalizeStringParam(password, "password");
 
         try {
             String sessionId = Dashboard.signInDashboardUser(main, email, password);
@@ -73,14 +74,4 @@ public class DashboardSignInAPI extends WebserverAPI {
         }
 
     }
-
-    private static String normalizeStringParam(String param, String paramName) throws ServletException {
-        param = param.trim();
-        if (param.length() == 0) {
-            throw new ServletException(
-                    new WebserverAPI.BadRequestException("Field name " + paramName + " cannot be an empty String"));
-        }
-        return param;
-    }
-
 }
