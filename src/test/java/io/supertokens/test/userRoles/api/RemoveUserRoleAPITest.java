@@ -19,6 +19,7 @@ package io.supertokens.test.userRoles.api;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -50,7 +51,7 @@ public class RemoveUserRoleAPITest {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -157,7 +158,7 @@ public class RemoveUserRoleAPITest {
 
     @Test
     public void testRemovingARoleFromAUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -166,7 +167,7 @@ public class RemoveUserRoleAPITest {
             return;
         }
 
-        String[] roles = new String[] { "role1" };
+        String[] roles = new String[]{"role1"};
         String userId = "userId";
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
 
@@ -178,7 +179,7 @@ public class RemoveUserRoleAPITest {
 
         {
             // check that the user has the role
-            String[] userRoles = storage.getRolesForUser(userId);
+            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
             Utils.checkThatArraysAreEqual(roles, userRoles);
         }
 
@@ -195,7 +196,7 @@ public class RemoveUserRoleAPITest {
         assertTrue(response.get("didUserHaveRole").getAsBoolean());
 
         // check that user doesnt have any role
-        String[] userRoles = storage.getRolesForUser(userId);
+        String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
         assertEquals(0, userRoles.length);
 
         process.kill();
@@ -204,7 +205,7 @@ public class RemoveUserRoleAPITest {
 
     @Test
     public void testRemovingARoleFromAUserWhereTheUserDoesNotHaveTheRole() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -213,7 +214,7 @@ public class RemoveUserRoleAPITest {
             return;
         }
 
-        String[] roles = new String[] { "role1" };
+        String[] roles = new String[]{"role1"};
         String userId = "userId";
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
 
@@ -238,7 +239,7 @@ public class RemoveUserRoleAPITest {
 
     @Test
     public void testRemovingAnUnknownRoleFromAUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

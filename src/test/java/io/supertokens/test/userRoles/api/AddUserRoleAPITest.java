@@ -18,8 +18,8 @@ package io.supertokens.test.userRoles.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.emailverification.User;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -52,7 +52,7 @@ public class AddUserRoleAPITest {
     @Test
     public void badInputTest() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -155,7 +155,7 @@ public class AddUserRoleAPITest {
 
     @Test
     public void testAddingARoleToAUserTwice() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -167,7 +167,7 @@ public class AddUserRoleAPITest {
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
 
         // create a role
-        String[] role = new String[] { "role" };
+        String[] role = new String[]{"role"};
         String userId = "userId";
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role[0], null);
 
@@ -186,7 +186,7 @@ public class AddUserRoleAPITest {
             assertFalse(response.get("didUserAlreadyHaveRole").getAsBoolean());
 
             // check that the user actually has only that role
-            String[] userRoles = storage.getRolesForUser(userId);
+            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
             Utils.checkThatArraysAreEqual(role, userRoles);
         }
 
@@ -206,7 +206,7 @@ public class AddUserRoleAPITest {
             assertTrue(response.get("didUserAlreadyHaveRole").getAsBoolean());
 
             // check the users roles havent changed
-            String[] userRoles = storage.getRolesForUser(userId);
+            String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
             Utils.checkThatArraysAreEqual(role, userRoles);
         }
 
@@ -216,7 +216,7 @@ public class AddUserRoleAPITest {
 
     @Test
     public void testAddingARoleToAUserByCallingAddUserRoleAPI() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -228,7 +228,7 @@ public class AddUserRoleAPITest {
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
 
         // create a role
-        String[] role = new String[] { "role" };
+        String[] role = new String[]{"role"};
         String userId = "userId";
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, role[0], null);
 
@@ -246,7 +246,7 @@ public class AddUserRoleAPITest {
         assertFalse(response.get("didUserAlreadyHaveRole").getAsBoolean());
 
         // check that the user actually has only that role
-        String[] userRoles = storage.getRolesForUser(userId);
+        String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
         Utils.checkThatArraysAreEqual(role, userRoles);
 
         process.kill();
@@ -255,7 +255,7 @@ public class AddUserRoleAPITest {
 
     @Test
     public void testAddingAnUnknownRoleToAUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -279,7 +279,7 @@ public class AddUserRoleAPITest {
 
         // check that user has no role associated with them
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
-        String[] userRoles = storage.getRolesForUser(userId);
+        String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
         assertEquals(0, userRoles.length);
 
         process.kill();
