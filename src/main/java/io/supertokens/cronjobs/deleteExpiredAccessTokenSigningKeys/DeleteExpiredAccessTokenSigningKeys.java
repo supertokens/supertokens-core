@@ -20,12 +20,15 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import org.jetbrains.annotations.TestOnly;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
 
@@ -54,9 +57,15 @@ public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
 
     @Override
     protected void doTask(List<TenantIdentifier> tenantIdentifier) throws Exception {
+        Set<AppIdentifier> seenApps = new HashSet<>();
         for (TenantIdentifier t : tenantIdentifier) {
-            if (Config.getConfig(t, main).getAccessTokenSigningKeyDynamic()) {
-                AccessTokenSigningKey.getInstance(t, main).cleanExpiredAccessTokenSigningKeys();
+            if (seenApps.contains(t.toAppIdentifier())) {
+                continue;
+            }
+            seenApps.add(t.toAppIdentifier());
+            if (Config.getConfig(t, main)
+                    .getAccessTokenSigningKeyDynamic()) {
+                AccessTokenSigningKey.getInstance(t.toAppIdentifier(), main).cleanExpiredAccessTokenSigningKeys();
             }
         }
     }

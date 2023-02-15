@@ -20,10 +20,10 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 import io.supertokens.utils.Utils;
@@ -55,14 +55,15 @@ public class HandshakeAPI extends WebserverAPI {
 
             result.addProperty("jwtSigningPublicKey",
                     new Utils.PubPriKey(
-                            AccessTokenSigningKey.getInstance(this.getTenantIdentifier(req),
+                            AccessTokenSigningKey.getInstance(this.getTenantIdentifier(req).toAppIdentifier(),
                                     main).getLatestIssuedKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(this.getTenantIdentifier(req), main)
+                    AccessTokenSigningKey.getInstance(this.getTenantIdentifier(req).toAppIdentifier(), main)
                             .getKeyExpiryTime());
 
             if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
-                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getTenantIdentifier(req), main)
+                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getTenantIdentifier(req).toAppIdentifier(),
+                                main)
                         .getAllKeys();
                 JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                 result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);

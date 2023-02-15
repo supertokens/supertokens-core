@@ -182,6 +182,10 @@ public class Config extends ResourceDistributor.SingletonResource {
                             new Config(main, currentConfig).core);
                 }
             }
+
+            // TODO: some configs must be same app wide
+            //      - access token signing key update
+            //      - access and refresh token validity
         }
     }
 

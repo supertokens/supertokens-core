@@ -25,8 +25,7 @@ import io.supertokens.pluginInterface.KeyValueInfoWithLastUpdated;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
@@ -37,6 +36,7 @@ import org.jetbrains.annotations.TestOnly;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.List;
 import java.util.Map;
 
 public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
@@ -44,12 +44,12 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_KEY = "io.supertokens.session.refreshToken.RefreshTokenKey";
     private final Main main;
     private String key;
-    private final TenantIdentifier tenantIdentifier;
+    private final AppIdentifier appIdentifier;
 
-    private RefreshTokenKey(TenantIdentifier tenantIdentifier, Main main) throws
+    private RefreshTokenKey(AppIdentifier appIdentifier, Main main) throws
             TenantOrAppNotFoundException {
         this.main = main;
-        this.tenantIdentifier = tenantIdentifier;
+        this.appIdentifier = appIdentifier;
         try {
             this.getKey();
         } catch (StorageQueryException | StorageTransactionLogicException e) {
@@ -59,55 +59,55 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
 
     public static void initForBaseTenant(Main main) {
         try {
-            main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
-                    new RefreshTokenKey(new TenantIdentifier(null, null, null), main));
+            main.getResourceDistributor().setResource(new AppIdentifier(null, null), RESOURCE_KEY,
+                    new RefreshTokenKey(new AppIdentifier(null, null), main));
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static RefreshTokenKey getInstance(TenantIdentifier tenantIdentifier, Main main)
+    public static RefreshTokenKey getInstance(AppIdentifier appIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         return (RefreshTokenKey) main.getResourceDistributor()
-                .getResource(tenantIdentifier, RESOURCE_KEY);
+                .getResource(appIdentifier, RESOURCE_KEY);
     }
 
     @TestOnly
     public static RefreshTokenKey getInstance(Main main) {
         try {
-            return getInstance(new TenantIdentifier(null, null, null), main);
+            return getInstance(new AppIdentifier(null, null), main);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static void loadForAllTenants(Main main, TenantConfig[] tenants) {
+    public static void loadForAllTenants(Main main, List<AppIdentifier> apps) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> existingResources =
                         main.getResourceDistributor()
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
                 main.getResourceDistributor().clearAllResourcesWithResourceKey(RESOURCE_KEY);
-                for (TenantConfig tenant : tenants) {
+                for (AppIdentifier app : apps) {
                     ResourceDistributor.SingletonResource resource = existingResources.get(
-                            new ResourceDistributor.KeyClass(tenant.tenantIdentifier, RESOURCE_KEY));
+                            new ResourceDistributor.KeyClass(app, RESOURCE_KEY));
                     if (resource != null) {
-                        main.getResourceDistributor().setResource(tenant.tenantIdentifier, RESOURCE_KEY,
+                        main.getResourceDistributor().setResource(app, RESOURCE_KEY,
                                 resource);
                     } else {
                         try {
                             main.getResourceDistributor()
-                                    .setResource(tenant.tenantIdentifier, RESOURCE_KEY,
-                                            new RefreshTokenKey(tenant.tenantIdentifier, main));
+                                    .setResource(app, RESOURCE_KEY,
+                                            new RefreshTokenKey(app, main));
                         } catch (TenantOrAppNotFoundException e) {
                             throw new IllegalStateException(e);
                         }
                     }
                 }
                 // re add the base config
-                main.getResourceDistributor().setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY,
+                main.getResourceDistributor().setResource(new AppIdentifier(null, null), RESOURCE_KEY,
                         existingResources.get(
-                                new ResourceDistributor.KeyClass(new TenantIdentifier(null, null, null),
+                                new ResourceDistributor.KeyClass(new AppIdentifier(null, null),
                                         RESOURCE_KEY)));
             });
         } catch (ResourceDistributor.FuncException e) {
@@ -126,7 +126,7 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
 
     private String maybeGenerateNewKeyAndUpdateInDb()
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        SessionStorage storage = StorageLayer.getSessionStorage(this.tenantIdentifier, main);
+        SessionStorage storage = StorageLayer.getSessionStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
 
@@ -135,7 +135,7 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
             // start transaction
             return sqlStorage.startTransaction(con -> {
                 String key = null;
-                KeyValueInfo keyFromStorage = sqlStorage.getRefreshTokenSigningKey_Transaction(tenantIdentifier, con);
+                KeyValueInfo keyFromStorage = sqlStorage.getRefreshTokenSigningKey_Transaction(appIdentifier, con);
                 if (keyFromStorage != null) {
                     key = keyFromStorage.value;
                 }
@@ -146,7 +146,7 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
                     } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
                         throw new StorageTransactionLogicException(e);
                     }
-                    sqlStorage.setRefreshTokenSigningKey_Transaction(tenantIdentifier, con,
+                    sqlStorage.setRefreshTokenSigningKey_Transaction(appIdentifier, con,
                             new KeyValueInfo(key, System.currentTimeMillis()));
                 }
 

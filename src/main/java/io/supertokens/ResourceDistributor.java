@@ -17,6 +17,7 @@
 package io.supertokens;
 
 import io.supertokens.multitenancy.MultitenancyHelper;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import org.jetbrains.annotations.TestOnly;
@@ -36,6 +37,11 @@ public class ResourceDistributor {
 
     public ResourceDistributor(Main main) {
         this.main = main;
+    }
+
+    public synchronized SingletonResource getResource(AppIdentifier appIdentifier, @Nonnull String key)
+            throws TenantOrAppNotFoundException {
+        return getResource(appIdentifier.getAsPublicTenantIdentifier(), key);
     }
 
     public synchronized SingletonResource getResource(TenantIdentifier tenantIdentifier, @Nonnull String key)
@@ -97,6 +103,12 @@ public class ResourceDistributor {
         }
         resources.put(new KeyClass(tenantIdentifier, key), resource);
         return resource;
+    }
+
+    public synchronized SingletonResource setResource(AppIdentifier appIdentifier,
+                                                      @Nonnull String key,
+                                                      SingletonResource resource) {
+        return setResource(appIdentifier, key, resource);
     }
 
     public synchronized void clearAllResourcesWithResourceKey(String inputKey) {
@@ -163,6 +175,11 @@ public class ResourceDistributor {
         public KeyClass(TenantIdentifier tenantIdentifier, @Nonnull String key) {
             this.key = key;
             this.tenantIdentifier = tenantIdentifier;
+        }
+
+        public KeyClass(AppIdentifier appIdentifier, @Nonnull String key) {
+            this.key = key;
+            this.tenantIdentifier = appIdentifier.getAsPublicTenantIdentifier();
         }
 
         public TenantIdentifier getTenantIdentifier() {

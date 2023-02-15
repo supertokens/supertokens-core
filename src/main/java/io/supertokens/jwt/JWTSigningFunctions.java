@@ -21,13 +21,13 @@ import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import org.jetbrains.annotations.TestOnly;
 
 import java.math.BigInteger;
@@ -51,7 +51,7 @@ public class JWTSigningFunctions {
             throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
             InvalidKeySpecException, JWTCreationException, UnsupportedJWTSigningAlgorithmException {
         try {
-            return createJWTToken(new TenantIdentifier(null, null, null), main, algorithm, payload, jwksDomain,
+            return createJWTToken(new AppIdentifier(null, null), main, algorithm, payload, jwksDomain,
                     jwtValidity);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -77,7 +77,7 @@ public class JWTSigningFunctions {
      *                                                 algorithms
      */
     @SuppressWarnings("unchecked")
-    public static String createJWTToken(TenantIdentifier tenantIdentifier, Main main, String algorithm,
+    public static String createJWTToken(AppIdentifier appIdentifier, Main main, String algorithm,
                                         JsonObject payload, String jwksDomain,
                                         long jwtValidity)
             throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
@@ -93,7 +93,7 @@ public class JWTSigningFunctions {
             throw new UnsupportedJWTSigningAlgorithmException();
         }
 
-        JWTSigningKeyInfo keyToUse = JWTSigningKey.getInstance(tenantIdentifier, main)
+        JWTSigningKeyInfo keyToUse = JWTSigningKey.getInstance(appIdentifier, main)
                 .getOrCreateAndGetKeyForAlgorithm(supportedAlgorithm);
         // Get an instance of auth0's Algorithm which is needed when signing using auth0's package
         Algorithm signingAlgorithm = getAuth0Algorithm(supportedAlgorithm, keyToUse);
@@ -165,7 +165,7 @@ public class JWTSigningFunctions {
             throws StorageQueryException, StorageTransactionLogicException,
             NoSuchAlgorithmException, InvalidKeySpecException {
         try {
-            return getJWKS(new TenantIdentifier(null, null, null), main);
+            return getJWKS(new AppIdentifier(null, null), main);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -182,11 +182,11 @@ public class JWTSigningFunctions {
      * @throws NoSuchAlgorithmException         If there is an error when using Java's cryptography packages
      * @throws InvalidKeySpecException          If there is an error when using Java's cryptography packages
      */
-    public static List<JsonObject> getJWKS(TenantIdentifier tenantIdentifier, Main main)
+    public static List<JsonObject> getJWKS(AppIdentifier appIdentifier, Main main)
             throws StorageQueryException, StorageTransactionLogicException,
             NoSuchAlgorithmException, InvalidKeySpecException, TenantOrAppNotFoundException {
         // Retrieve all keys in storage
-        List<JWTSigningKeyInfo> keys = JWTSigningKey.getInstance(tenantIdentifier, main)
+        List<JWTSigningKeyInfo> keys = JWTSigningKey.getInstance(appIdentifier, main)
                 .getAllSigningKeys();
         List<JsonObject> jwks = new ArrayList<>();
 

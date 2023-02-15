@@ -128,7 +128,7 @@ public class AuthRecipe {
             // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
             // we want to check which state the db is in
             if (StorageLayer.getAuthRecipeStorage(tenantIdentifier, main)
-                    .doesUserIdExist(tenantIdentifier, userIdMapping.externalUserId)) {
+                    .doesUserIdExist(tenantIdentifier.toAppIdentifier(), userIdMapping.externalUserId)) {
                 // db is in state A4
                 // delete only from auth tables
                 deleteAuthRecipeUser(tenantIdentifier, main, userId);

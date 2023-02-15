@@ -22,11 +22,11 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.config.Config;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.session.jwt.JWT;
@@ -47,12 +47,12 @@ public class AccessToken {
 
     // TODO: device fingerprint - store hash of this in JWT.
 
-    private static AccessTokenInfo getInfoFromAccessToken(TenantIdentifier tenantIdentifier,
+    private static AccessTokenInfo getInfoFromAccessToken(AppIdentifier appIdentifier,
                                                           @Nonnull Main main, @Nonnull String token, boolean retry,
                                                           boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException,
             TenantOrAppNotFoundException {
-        List<AccessTokenSigningKey.KeyInfo> keyInfoList = AccessTokenSigningKey.getInstance(tenantIdentifier, main)
+        List<AccessTokenSigningKey.KeyInfo> keyInfoList = AccessTokenSigningKey.getInstance(appIdentifier, main)
                 .getAllKeys();
 
         Exception error = null;
@@ -101,9 +101,9 @@ public class AccessToken {
                 ProcessState.getInstance(main).addState(PROCESS_STATE.RETRYING_ACCESS_TOKEN_JWT_VERIFICATION, error);
 
                 // remove key from memory and retry
-                AccessTokenSigningKey.getInstance(tenantIdentifier, main)
+                AccessTokenSigningKey.getInstance(appIdentifier, main)
                         .removeKeyFromMemoryIfItHasNotChanged(keyInfoList);
-                return AccessToken.getInfoFromAccessToken(tenantIdentifier, main, token, false,
+                return AccessToken.getInfoFromAccessToken(appIdentifier, main, token, false,
                         doAntiCsrfCheck);
             }
             throw new TryRefreshTokenException(error);
@@ -135,18 +135,18 @@ public class AccessToken {
                                                          boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException {
         try {
-            return getInfoFromAccessToken(new TenantIdentifier(null, null, null), main, token, doAntiCsrfCheck);
+            return getInfoFromAccessToken(new AppIdentifier(null, null), main, token, doAntiCsrfCheck);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static AccessTokenInfo getInfoFromAccessToken(TenantIdentifier tenantIdentifier,
+    public static AccessTokenInfo getInfoFromAccessToken(AppIdentifier appIdentifier,
                                                          @Nonnull Main main, @Nonnull String token,
                                                          boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException,
             TenantOrAppNotFoundException {
-        return getInfoFromAccessToken(tenantIdentifier, main, token, true, doAntiCsrfCheck);
+        return getInfoFromAccessToken(appIdentifier, main, token, true, doAntiCsrfCheck);
     }
 
     public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(@Nonnull String token) {
@@ -163,7 +163,7 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
         try {
-            return createNewAccessToken(new TenantIdentifier(null, null, null), main, sessionHandle, userId,
+            return createNewAccessToken(new AppIdentifier(null, null), main, sessionHandle, userId,
                     refreshTokenHash1,
                     parentRefreshTokenHash1,
                     userData, antiCsrfToken, lmrt, expiryTime);
@@ -172,7 +172,7 @@ public class AccessToken {
         }
     }
 
-    public static TokenInfo createNewAccessToken(TenantIdentifier tenantIdentifier, @Nonnull Main main,
+    public static TokenInfo createNewAccessToken(AppIdentifier appIdentifier, @Nonnull Main main,
                                                  @Nonnull String sessionHandle,
                                                  @Nonnull String userId, @Nonnull String refreshTokenHash1,
                                                  @Nullable String parentRefreshTokenHash1,
@@ -183,10 +183,11 @@ public class AccessToken {
             TenantOrAppNotFoundException {
 
         Utils.PubPriKey signingKey = new Utils.PubPriKey(
-                AccessTokenSigningKey.getInstance(tenantIdentifier, main).getLatestIssuedKey().value);
+                AccessTokenSigningKey.getInstance(appIdentifier, main).getLatestIssuedKey().value);
         long now = System.currentTimeMillis();
         if (expiryTime == null) {
-            expiryTime = now + Config.getConfig(tenantIdentifier, main).getAccessTokenValidity();
+            expiryTime =
+                    now + Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getAccessTokenValidity();
         }
         AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime,
                 parentRefreshTokenHash1, userData, antiCsrfToken, now, lmrt);
@@ -205,7 +206,7 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
         try {
-            return createNewAccessTokenV1(new TenantIdentifier(null, null, null), main, sessionHandle, userId,
+            return createNewAccessTokenV1(new AppIdentifier(null, null), main, sessionHandle, userId,
                     refreshTokenHash1,
                     parentRefreshTokenHash1, userData, antiCsrfToken);
         } catch (TenantOrAppNotFoundException e) {
@@ -213,7 +214,7 @@ public class AccessToken {
         }
     }
 
-    public static TokenInfo createNewAccessTokenV1(TenantIdentifier tenantIdentifier, @Nonnull Main main,
+    public static TokenInfo createNewAccessTokenV1(AppIdentifier appIdentifier, @Nonnull Main main,
                                                    @Nonnull String sessionHandle,
                                                    @Nonnull String userId, @Nonnull String refreshTokenHash1,
                                                    @Nullable String parentRefreshTokenHash1,
@@ -223,11 +224,12 @@ public class AccessToken {
             TenantOrAppNotFoundException {
 
         Utils.PubPriKey signingKey = new Utils.PubPriKey(
-                AccessTokenSigningKey.getInstance(tenantIdentifier, main).getLatestIssuedKey().value);
+                AccessTokenSigningKey.getInstance(appIdentifier, main).getLatestIssuedKey().value);
         long now = System.currentTimeMillis();
         AccessTokenInfo accessToken;
 
-        long expiryTime = now + Config.getConfig(tenantIdentifier, main).getAccessTokenValidity();
+        long expiryTime =
+                now + Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getAccessTokenValidity();
         accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime, parentRefreshTokenHash1,
                 userData, antiCsrfToken, now, null);
 

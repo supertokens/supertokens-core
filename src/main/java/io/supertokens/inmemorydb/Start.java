@@ -47,6 +47,7 @@ import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -240,7 +241,7 @@ public class Start
     }
 
     @Override
-    public KeyValueInfo getLegacyAccessTokenSigningKey_Transaction(TenantIdentifier tenantIdentifier,
+    public KeyValueInfo getLegacyAccessTokenSigningKey_Transaction(AppIdentifier appIdentifier,
                                                                    TransactionConnection con)
             throws StorageQueryException {
         // TODO..
@@ -253,7 +254,7 @@ public class Start
     }
 
     @Override
-    public void removeLegacyAccessTokenSigningKey_Transaction(TenantIdentifier tenantIdentifier,
+    public void removeLegacyAccessTokenSigningKey_Transaction(AppIdentifier appIdentifier,
                                                               TransactionConnection con) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         // TODO..
@@ -265,7 +266,7 @@ public class Start
     }
 
     @Override
-    public KeyValueInfo[] getAccessTokenSigningKeys_Transaction(TenantIdentifier tenantIdentifier,
+    public KeyValueInfo[] getAccessTokenSigningKeys_Transaction(AppIdentifier appIdentifier,
                                                                 TransactionConnection con)
             throws StorageQueryException {
         // TODO..
@@ -278,7 +279,7 @@ public class Start
     }
 
     @Override
-    public void addAccessTokenSigningKey_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
+    public void addAccessTokenSigningKey_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
                                                      KeyValueInfo info)
             throws StorageQueryException {
         // TODO..
@@ -291,7 +292,7 @@ public class Start
     }
 
     @Override
-    public void removeAccessTokenSigningKeysBefore(TenantIdentifier tenantIdentifier, long time)
+    public void removeAccessTokenSigningKeysBefore(AppIdentifier appIdentifier, long time)
             throws StorageQueryException {
         try {
             // TODO..
@@ -302,7 +303,7 @@ public class Start
     }
 
     @Override
-    public KeyValueInfo getRefreshTokenSigningKey_Transaction(TenantIdentifier tenantIdentifier,
+    public KeyValueInfo getRefreshTokenSigningKey_Transaction(AppIdentifier appIdentifier,
                                                               TransactionConnection con) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         // TODO..
@@ -314,7 +315,7 @@ public class Start
     }
 
     @Override
-    public void setRefreshTokenSigningKey_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
+    public void setRefreshTokenSigningKey_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
                                                       KeyValueInfo info)
             throws StorageQueryException {
         // TODO..
@@ -383,6 +384,16 @@ public class Start
 
     @Override
     public String[] getAllNonExpiredSessionHandlesForUser(TenantIdentifier tenantIdentifier, String userId)
+            throws StorageQueryException {
+        try {
+            // TODO..
+            return SessionQueries.getAllNonExpiredSessionHandlesForUser(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    private String[] getAllNonExpiredSessionHandlesForUser(AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
         try {
             // TODO..
@@ -481,7 +492,7 @@ public class Start
     }
 
     @Override
-    public boolean doesUserIdExist(TenantIdentifier tenantIdentifier, String userId) throws StorageQueryException {
+    public boolean doesUserIdExist(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
         // TODO..
         try {
             return GeneralQueries.doesUserIdExist(this, userId);
@@ -963,8 +974,9 @@ public class Start
     }
 
     @Override
-    public List<JWTSigningKeyInfo> getJWTSigningKeys_Transaction(TransactionConnection con)
+    public List<JWTSigningKeyInfo> getJWTSigningKeys_Transaction(AppIdentifier appIdentifier, TransactionConnection con)
             throws StorageQueryException {
+        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return JWTSigningQueries.getJWTSigningKeys_Transaction(this, sqlCon);
@@ -974,8 +986,10 @@ public class Start
     }
 
     @Override
-    public void setJWTSigningKey_Transaction(TransactionConnection con, JWTSigningKeyInfo info)
+    public void setJWTSigningKey_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                             JWTSigningKeyInfo info)
             throws StorageQueryException, DuplicateKeyIdException {
+        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             JWTSigningQueries.setJWTSigningKeyInfo_Transaction(this, sqlCon, info);
@@ -1511,14 +1525,14 @@ public class Start
     }
 
     @Override
-    public void createUserIdMapping(TenantIdentifier tenantIdentifier, String superTokensUserId, String externalUserId,
+    public void createUserIdMapping(AppIdentifier appIdentifier, String superTokensUserId, String externalUserId,
                                     @Nullable String externalUserIdInfo)
             throws StorageQueryException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException {
         // TODO..
         // SQLite is not compiled with foreign key constraint, so we need an explicit check to see if superTokensUserId
         // is a valid
         // userId.
-        if (!doesUserIdExist(tenantIdentifier, superTokensUserId)) {
+        if (!doesUserIdExist(appIdentifier, superTokensUserId)) {
             throw new UnknownSuperTokensUserIdException();
         }
 
@@ -1548,7 +1562,7 @@ public class Start
     }
 
     @Override
-    public boolean deleteUserIdMapping(TenantIdentifier tenantIdentifier, String userId, boolean isSuperTokensUserId)
+    public boolean deleteUserIdMapping(AppIdentifier appIdentifier, String userId, boolean isSuperTokensUserId)
             throws StorageQueryException {
         // TODO..
         try {
@@ -1563,7 +1577,7 @@ public class Start
     }
 
     @Override
-    public UserIdMapping getUserIdMapping(TenantIdentifier tenantIdentifier, String userId, boolean isSuperTokensUserId)
+    public UserIdMapping getUserIdMapping(AppIdentifier appIdentifier, String userId, boolean isSuperTokensUserId)
             throws StorageQueryException {
         // TODO..
         try {
@@ -1580,7 +1594,7 @@ public class Start
     }
 
     @Override
-    public UserIdMapping[] getUserIdMapping(TenantIdentifier tenantIdentifier, String userId)
+    public UserIdMapping[] getUserIdMapping(AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
         // TODO..
         try {
@@ -1591,7 +1605,7 @@ public class Start
     }
 
     @Override
-    public boolean updateOrDeleteExternalUserIdInfo(TenantIdentifier tenantIdentifier, String userId,
+    public boolean updateOrDeleteExternalUserIdInfo(AppIdentifier appIdentifier, String userId,
                                                     boolean isSuperTokensUserId,
                                                     @Nullable String externalUserIdInfo) throws StorageQueryException {
         // TODO..
@@ -1610,7 +1624,7 @@ public class Start
     }
 
     @Override
-    public HashMap<String, String> getUserIdMappingForSuperTokensIds(TenantIdentifier tenantIdentifier,
+    public HashMap<String, String> getUserIdMappingForSuperTokensIds(AppIdentifier appIdentifier,
                                                                      ArrayList<String> userIds)
             throws StorageQueryException {
         // TODO..
@@ -1622,12 +1636,12 @@ public class Start
     }
 
     @Override
-    public boolean isUserIdBeingUsedInNonAuthRecipe(TenantIdentifier tenantIdentifier, String className, String userId)
+    public boolean isUserIdBeingUsedInNonAuthRecipe(AppIdentifier appIdentifier, String className, String userId)
             throws StorageQueryException {
         // TODO..
         // check if the input userId is being used in nonAuthRecipes.
         if (className.equals(SessionStorage.class.getName())) {
-            String[] sessionHandlesForUser = getAllNonExpiredSessionHandlesForUser(tenantIdentifier, userId);
+            String[] sessionHandlesForUser = getAllNonExpiredSessionHandlesForUser(appIdentifier, userId);
             return sessionHandlesForUser.length > 0;
         } else if (className.equals(UserRolesStorage.class.getName())) {
             String[] roles = getRolesForUser(userId);

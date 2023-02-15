@@ -39,9 +39,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static io.supertokens.multitenancy.Multitenancy.getTenantInfo;
 
@@ -139,9 +137,18 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     }
 
     public void loadSigningKeys() throws UnsupportedJWTSigningAlgorithmException {
-        AccessTokenSigningKey.loadForAllTenants(main, this.tenantConfigs);
-        RefreshTokenKey.loadForAllTenants(main, this.tenantConfigs);
-        JWTSigningKey.loadForAllTenants(main, this.tenantConfigs);
+        List<AppIdentifier> apps = new ArrayList<>();
+        Set<AppIdentifier> appsSet = new HashSet<>();
+        for (TenantConfig t : tenantConfigs) {
+            if (appsSet.contains(t.tenantIdentifier.toAppIdentifier())) {
+                continue;
+            }
+            apps.add(t.tenantIdentifier.toAppIdentifier());
+            appsSet.add(t.tenantIdentifier.toAppIdentifier());
+        }
+        AccessTokenSigningKey.loadForAllTenants(main, apps);
+        RefreshTokenKey.loadForAllTenants(main, apps);
+        JWTSigningKey.loadForAllTenants(main, apps);
     }
 
     private void refreshCronjobs() {
