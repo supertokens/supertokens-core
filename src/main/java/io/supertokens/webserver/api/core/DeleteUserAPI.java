@@ -52,10 +52,8 @@ public class DeleteUserAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
-        } catch (BadPermissionException e) {
-            throw new ServletException(new BadRequestException(e.getMessage()));
         }
     }
 }

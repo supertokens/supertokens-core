@@ -76,10 +76,8 @@ public class UsersCountAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             result.addProperty("count", count);
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
-        } catch (BadPermissionException e) {
-            throw new ServletException(new BadRequestException(e.getMessage()));
         }
     }
 }

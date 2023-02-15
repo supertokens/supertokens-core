@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -255,6 +256,8 @@ public abstract class WebserverAPI extends HttpServlet {
                                 ((TenantOrAppNotFoundException) e).getTenantIdentifier().getTenantId(), resp);
             } else if (e instanceof FeatureNotEnabledException) {
                 sendTextResponse(402, e.getMessage(), resp);
+            } else if (e instanceof BadPermissionException) {
+                sendTextResponse(403, e.getMessage(), resp);
             } else if (e instanceof ServletException) {
                 ServletException se = (ServletException) e;
                 Throwable rootCause = se.getRootCause();
@@ -271,6 +274,8 @@ public abstract class WebserverAPI extends HttpServlet {
                             resp);
                 } else if (rootCause instanceof FeatureNotEnabledException) {
                     sendTextResponse(402, rootCause.getMessage(), resp);
+                } else if (rootCause instanceof BadPermissionException) {
+                    sendTextResponse(403, e.getMessage(), resp);
                 } else {
                     sendTextResponse(500, "Internal Error", resp);
                 }
