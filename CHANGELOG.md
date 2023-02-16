@@ -7,6 +7,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+### Added
+
+- Dashboard Recipe
+
+### Database Changes
+
+- Adds `dashboard_users` table
+- Adds `dashboard_user_sessions` table
+
 ## [4.3.0] - 2023-01-05
 
 - Adds feature flag, ee folder and APIs to add / remove license keys for enterprise features.
