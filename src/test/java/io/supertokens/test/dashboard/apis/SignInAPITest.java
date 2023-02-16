@@ -30,7 +30,9 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
+import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -85,5 +87,64 @@ public class SignInAPITest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
-    
+
+    @Test
+    public void testSigningInASuspendedUser() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // signUp multiple users to the free limit
+        {
+            for (int i = 0; i < Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS; i++) {
+                Dashboard.signUpDashboardUser(process.getProcess(), "test" + i + "@example.com", "password123");
+            }
+
+        }
+        // create a user above the free limit
+        String email = "suspended@example.com";
+        String password = "testPass123";
+
+        DashboardUser user = new DashboardUser(io.supertokens.utils.Utils.getUUID(), email,
+                PasswordHashing.getInstance(process.getProcess()).createHashWithSalt(password),
+                System.currentTimeMillis());
+        StorageLayer.getDashboardStorage(process.getProcess()).createNewDashboardUser(user);
+
+        // try signing in with the valid user
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", "test0@example.com");
+            requestBody.addProperty("password", "password123");
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/dashboard/signin", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertNotNull(response.get("sessionId").getAsString());
+        }
+
+        // try signing in with the suspended user
+
+        {
+            JsonObject requestBody = new JsonObject();
+            requestBody.addProperty("email", email);
+            requestBody.addProperty("password", password);
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/dashboard/signin", requestBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("USER_SUSPENDED_ERROR", response.get("status").getAsString());
+            assertEquals("User is currently suspended, please sign in with a valid account",
+                    response.get("message").getAsString());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
 }
