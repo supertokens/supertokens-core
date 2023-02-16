@@ -1,6 +1,7 @@
 package io.supertokens.test.totp;
 
 import static org.junit.Assert.assertNotNull; // Not sure about this
+import static org.junit.Assert.assertThrows;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -19,6 +20,8 @@ import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
+import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
+import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
 
 public class TOTPStorageTest {
 
@@ -84,12 +87,7 @@ public class TOTPStorageTest {
         storedDevices = storage.getDevices("user");
         assert (storedDevices.length == 2);
 
-        try {
-            storage.createDevice(device2Duplicate);
-            assert (false);
-        } catch (DeviceAlreadyExistsException e) {
-            assert (true);
-        }
+        assertThrows(DeviceAlreadyExistsException.class, () -> storage.createDevice(device2Duplicate));
 
         result.process.kill();
         assertNotNull(result.process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -115,12 +113,7 @@ public class TOTPStorageTest {
         assert (storedDevices[0].verified);
 
         // Try to verify a device that doesn't exist:
-        try {
-            storage.markDeviceAsVerified("user", "non-existent-device");
-            assert (false);
-        } catch (Exception e) {
-            assert (true);
-        }
+        assertThrows(UnknownDeviceException.class, () -> storage.markDeviceAsVerified("user", "non-existent-device"));
     }
 
     @Test
@@ -135,12 +128,7 @@ public class TOTPStorageTest {
         assert (storedDevices.length == 1);
 
         // Try to delete a device that doesn't exist:
-        try {
-            storage.deleteDevice("user", "non-existent-device");
-            assert (false);
-        } catch (Exception e) {
-            assert (true);
-        }
+        assertThrows(UnknownDeviceException.class, () -> storage.deleteDevice("user", "non-existent-device"));
 
         // Delete the device:
         storage.deleteDevice("user", "device");
@@ -162,19 +150,26 @@ public class TOTPStorageTest {
         assert (storedDevices[0].deviceName.equals("device"));
 
         // Try to update a device that doesn't exist:
-        try {
-            storage.updateDeviceName("user", "non-existent-device", "new-device-name");
-            assert (false);
-        } catch (Exception e) {
-            assert (true);
-        }
+        assertThrows(UnknownDeviceException.class,
+                () -> storage.updateDeviceName("user", "non-existent-device", "new-device-name"));
 
         // Update the device name:
-        storage.updateDeviceName("user", "device", "new-device-name");
+        storage.updateDeviceName("user", "device", "updated-device-name");
 
         storedDevices = storage.getDevices("user");
         assert (storedDevices.length == 1);
-        assert (storedDevices[0].deviceName.equals("new-device-name"));
+        assert (storedDevices[0].deviceName.equals("updated-device-name"));
+
+        // Try to create a new device and rename it to the same name as an existing
+        // device:
+        TOTPDevice newDevice = new TOTPDevice("new-device", "user", "secretKey", 30, 1, false);
+        storage.createDevice(newDevice);
+
+        assertThrows(DeviceAlreadyExistsException.class,
+                () -> storage.updateDeviceName("user", "new-device", "updated-device-name"));
+
+        // Try to rename the device the same name (Should work at database level):
+        storage.updateDeviceName("user", "updated-device-name", "updated-device-name");
     }
 
     @Test
@@ -222,15 +217,12 @@ public class TOTPStorageTest {
         usedCodes = storage.getUsedCodes("user");
         assert (usedCodes.length == 0);
 
+        // Need to run `PRAGMA foreign_keys = ON;` then only will throws exception. But
+        // unable to setup that also in tests.
+
         // Try to insert code when device (userId) doesn't exist:
-        try {
-            // Need to run `PRAGMA foreign_keys = ON;` then only will throws exception. But
-            // unable to setup that also in tests.
-            storage.insertUsedCode(new TOTPUsedCode("non-existent-user", "1234", true, 1));
-            assert (false);
-        } catch (Exception e) {
-            assert (true);
-        }
+        assertThrows(TotpNotEnabledException.class,
+                () -> storage.insertUsedCode(new TOTPUsedCode("non-existent-user", "1234", true, 1)));
     }
 
     @Test
