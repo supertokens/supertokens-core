@@ -38,6 +38,7 @@ import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailExcepti
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -373,6 +374,105 @@ public class DashboardStorageTest {
             } else {
                 assertNotNull(dashboardSQLStorage.getSessionInfoWithSessionId(sessionIds.get(i)));
             }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUpdatingUsersEmail() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+
+        {
+            // try updating the email for a user that does not exist
+            Exception error = null;
+            try {
+                dashboardSQLStorage.startTransaction(transaction -> {
+                    try {
+                        dashboardSQLStorage.updateDashboardUsersEmailWithUserId_Transaction(transaction,
+                                "unknownUserId", "test@example.com");
+                        return null;
+                    } catch (Exception e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                });
+            } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof UserIdNotFoundException) {
+                    error = (UserIdNotFoundException) e.actualException;
+                }
+            }
+            assertNotNull(error);
+            assertTrue(error instanceof UserIdNotFoundException);
+        }
+
+        // create a user
+        DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), "test@example.com", "password123");
+
+        // update the users email
+        String newEmail = "updatedTest@example.com";
+        try {
+            dashboardSQLStorage.startTransaction(transaction -> {
+                try {
+                    dashboardSQLStorage.updateDashboardUsersEmailWithUserId_Transaction(transaction,
+                            user.userId, newEmail);
+                    return null;
+                } catch (Exception e) {
+                    throw new StorageTransactionLogicException(e);
+                }
+            });
+        } catch (StorageTransactionLogicException e) {
+            throw new Exception(e);
+        }
+
+        // check that the retrieving the user with the original email does not work
+        assertNull(dashboardSQLStorage.getDashboardUserByEmail(user.email));
+
+        // check that retrieving the user with the new email works
+        DashboardUser updatedUser = dashboardSQLStorage.getDashboardUserByEmail(newEmail);
+        assertNotNull(updatedUser);
+
+        // check that the userIds are the same
+        assertEquals(user.userId, updatedUser.userId);
+
+        // check that no additional users have been created.
+        assertEquals(1, dashboardSQLStorage.getAllDashboardUsers().length);
+
+        // create another user 
+        DashboardUser user2 = new DashboardUser(io.supertokens.utils.Utils.getUUID(), "test2@example.com", "testpassword", System.currentTimeMillis());
+        dashboardSQLStorage.createNewDashboardUser(user2);
+
+        // try updating user2s email with the user1s email
+
+        {
+            // try updating the email for a user that does not exist
+            Exception error = null;
+            try {
+                dashboardSQLStorage.startTransaction(transaction -> {
+                    try {
+                        dashboardSQLStorage.updateDashboardUsersEmailWithUserId_Transaction(transaction,
+                                user2.userId, newEmail);
+                        return null;
+                    } catch (Exception e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                });
+            } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof DuplicateEmailException) {
+                    error = (DuplicateEmailException) e.actualException;
+                }
+            }
+            assertNotNull(error);
+            assertTrue(error instanceof DuplicateEmailException);
         }
 
         process.kill();
