@@ -293,18 +293,18 @@ public class CreateDashboardUserAPITests {
             return;
         }
 
-        // Create a User
-
+        // Create users under the max limit
         {
-            String email = "test@example.com";
             String password = "testPass@123";
 
-            Dashboard.signUpDashboardUser(process.getProcess(), email, password);
+            for (int i = 0; i < Dashboard.MAX_NUMBER_OF_FREE_DASHBOARD_USERS; i++) {
+                Dashboard.signUpDashboardUser(process.getProcess(), "test" + i + "@example.com", password);
+            }
         }
 
-        // try creating another user
+        // try creating another user when max number of free users is set to 1
         {
-            String email = "test2@example.com";
+            String email = "newUser@example.com";
             String password = "testPass123";
 
             JsonObject requestBody = new JsonObject();
