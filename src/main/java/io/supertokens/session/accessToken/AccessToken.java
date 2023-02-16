@@ -154,8 +154,20 @@ public class AccessToken {
         return getInfoFromAccessToken(appIdentifier, main, token, true, doAntiCsrfCheck);
     }
 
+    @TestOnly
     public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(@Nonnull String token) {
-        return new Gson().fromJson(JWT.getPayloadWithoutVerifying(token).payload, AccessTokenInfo.class);
+        return getInfoFromAccessTokenWithoutVerifying(new AppIdentifier(null, null), token);
+    }
+
+    public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(AppIdentifier appIdentifier,
+                                                                         @Nonnull String token) {
+        AccessTokenPayload tokenInfo = new Gson().fromJson(JWT.getPayloadWithoutVerifying(token).payload,
+                AccessTokenPayload.class);
+        return new AccessTokenInfo(tokenInfo.sessionHandle, tokenInfo.userId, tokenInfo.refreshTokenHash1,
+                tokenInfo.expiryTime, tokenInfo.parentRefreshTokenHash1, tokenInfo.userData, tokenInfo.antiCsrfToken,
+                tokenInfo.timeCreated, tokenInfo.lmrt,
+                new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
+                        tokenInfo.tenantId));
     }
 
     @TestOnly

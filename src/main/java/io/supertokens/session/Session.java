@@ -171,7 +171,7 @@ public class Session {
 
         // We assume the token has already been verified at this point. It may be expired or JWT signing key may have
         // changed for it...
-        AccessTokenInfo accessToken = AccessToken.getInfoFromAccessTokenWithoutVerifying(token);
+        AccessTokenInfo accessToken = AccessToken.getInfoFromAccessTokenWithoutVerifying(appIdentifier, token);
         TenantIdentifier tenantIdentifier = accessToken.tenantIdentifier;
         if (!tenantIdentifier.toAppIdentifier().equals(appIdentifier)) {
             throw new UnauthorisedException("Access token is from an incorrect app");
