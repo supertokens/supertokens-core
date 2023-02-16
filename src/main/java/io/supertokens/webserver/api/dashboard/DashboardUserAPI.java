@@ -21,6 +21,7 @@ import java.io.Serial;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
@@ -29,6 +30,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
+import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -145,7 +147,8 @@ public class DashboardUserAPI extends WebserverAPI {
                 Dashboard.updateUsersCredentialsWithUserId(main, userId, newEmail, newPassword);
                 // retrieve updated user details
                 DashboardUser user = StorageLayer.getDashboardStorage(main).getDashboardUserByUserId(userId);
-                JsonObject userJsonObject = new com.google.gson.JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
+                JsonObject userJsonObject = new JsonParser().parse(new Gson().toJson(user))
+                        .getAsJsonObject();
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 response.add("user", userJsonObject);
@@ -155,12 +158,22 @@ public class DashboardUserAPI extends WebserverAPI {
 
             String email = InputParser.parseStringOrThrowError(input, "email", true);
             if (email != null) {
-                // normalize userId
+                // normalize email
                 email = Utils.normalizeStringParam(email, "email");
-                Dashboard.updateUsersCredentialsWithEmail(main, email, newEmail, newPassword);
+
+                // retrieve user
+                DashboardSQLStorage storage = StorageLayer.getDashboardStorage(main);
+
+                DashboardUser user = storage.getDashboardUserByEmail(email);
+                if (user == null) {
+                    throw new UserIdNotFoundException();
+                }
+
+                Dashboard.updateUsersCredentialsWithUserId(main, user.userId, newEmail, newPassword);
                 // retrieve updated user details
-                DashboardUser user = StorageLayer.getDashboardStorage(main).getDashboardUserByEmail(email);
-                JsonObject userJsonObject = new com.google.gson.JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
+                DashboardUser updatedUser = StorageLayer.getDashboardStorage(main)
+                        .getDashboardUserByUserId(user.userId);
+                JsonObject userJsonObject = new JsonParser().parse(new Gson().toJson(updatedUser)).getAsJsonObject();
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 response.add("user", userJsonObject);
@@ -177,6 +190,7 @@ public class DashboardUserAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "UNKNOWN_USER_ERROR");
             super.sendJsonResponse(200, response, resp);
+            return;
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             throw new ServletException(e);
         }
@@ -219,10 +233,9 @@ public class DashboardUserAPI extends WebserverAPI {
             throw new ServletException(e);
         }
 
-        JsonObject response = new JsonObject();
-        response.addProperty("status", "OK");
-        response.addProperty("didUserExist", false);
-        super.sendJsonResponse(200, response, resp);
+        // Both email and userId are null
+        throw new ServletException(
+                new WebserverAPI.BadRequestException("Either field 'email' or 'userId' must be present"));
     }
 
 }

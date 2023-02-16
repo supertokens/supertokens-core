@@ -18,6 +18,7 @@ package io.supertokens.test.dashboard.apis;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import org.junit.AfterClass;
@@ -29,7 +30,9 @@ import org.junit.rules.TestRule;
 import com.google.gson.JsonObject;
 
 import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.dashboard.Dashboard;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -72,7 +75,8 @@ public class UpdateUserAPITest {
 
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
-                        "Http error. Status Code: 400. Message:" + " Either field 'email' or 'userId' must be present"));
+                        "Http error. Status Code: 400. Message:"
+                                + " Either field 'email' or 'userId' must be present"));
             }
         }
 
@@ -105,7 +109,7 @@ public class UpdateUserAPITest {
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
                         "Http error. Status Code: 400. Message:" + " Field name 'userId' cannot be an empty String"));
-            }   
+            }
         }
 
         {
@@ -137,7 +141,7 @@ public class UpdateUserAPITest {
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
                         "Http error. Status Code: 400. Message:" + " Field name 'email' cannot be an empty String"));
-            }   
+            }
         }
 
         {
@@ -153,7 +157,79 @@ public class UpdateUserAPITest {
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
                         "Http error. Status Code: 400. Message:" + " Field name 'newEmail' is invalid in JSON input"));
-            }   
+            }
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testSuccessfullyUpdatingUserDataWithUserId() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a user
+        String email = "test@example.com";
+        String password = "password123";
+
+        Dashboard.signUpDashboardUser(process.getProcess(), email, password);
+
+        DashboardUser user = StorageLayer.getDashboardStorage(process.getProcess()).getDashboardUserByEmail(email);
+        assertNotNull(user);
+
+        // update the user's email and password
+
+        String newEmail = "newTest@example.com";
+        String newPassword = "newPassword123";
+
+        JsonObject requestBody = new JsonObject();
+        requestBody.addProperty("email", email);
+        requestBody.addProperty("newEmail", newEmail);
+        requestBody.addProperty("newPassword", newPassword);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/dashboard/user", requestBody, 1000, 1000, null,
+                Utils.getCdiVersion2_18ForTests(), "dashboard");
+
+        assertEquals(2, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+        JsonObject retrievedUser = response.get("user").getAsJsonObject();
+        assertEquals(3, retrievedUser.entrySet().size());
+        assertEquals(user.userId, retrievedUser.get("userId").getAsString());
+        assertEquals(newEmail, retrievedUser.get("email").getAsString());
+
+        // signing in with the old credentials should give invalid credentials
+        {
+            JsonObject signInResponseObject = new JsonObject();
+            signInResponseObject.addProperty("email", email);
+            signInResponseObject.addProperty("password", password);
+
+            JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/dashboard/signin", signInResponseObject, 1000, 1000, null,
+                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+            assertEquals(1, signInResponse.entrySet().size());
+            assertEquals("INVALID_CREDENTIALS_ERROR", signInResponse.get("status").getAsString());
+        }
+
+        // signing in with the new credentials should result in a success
+        {
+            JsonObject signInResponseObject = new JsonObject();
+            signInResponseObject.addProperty("email", newEmail);
+            signInResponseObject.addProperty("password", newPassword);
+
+            JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/dashboard/signin", signInResponseObject, 1000, 1000, null,
+                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+            assertEquals(2, signInResponse.entrySet().size());
+            assertEquals("OK", signInResponse.get("status").getAsString());
+            assertNotNull(signInResponse.get("sessionId").getAsString());
         }
 
         process.kill();

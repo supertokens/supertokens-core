@@ -152,7 +152,7 @@ public class DashboardQueries {
 
     public static boolean updateDashboardUsersEmailWithUserId_Transaction(Start start, Connection con, String userId,
             String newEmail) throws SQLException, StorageQueryException {
-        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable()
+        String QUERY = "UPDATE " + Config.getConfig(start).getDashboardUsersTable()
                 + " SET email = ? WHERE user_id = ?";
         int rowsUpdated = update(con, QUERY, pst -> {
             pst.setString(1, newEmail);
@@ -164,7 +164,7 @@ public class DashboardQueries {
 
     public static boolean updateDashboardUsersPasswordWithUserId_Transaction(Start start, Connection con, String userId,
             String newPassword) throws SQLException, StorageQueryException {
-        String QUERY = "UPDATE " + Config.getConfig(start).getEmailPasswordUsersTable()
+        String QUERY = "UPDATE " + Config.getConfig(start).getDashboardUsersTable()
                 + " SET password_hash = ? WHERE user_id = ?";
         int rowsUpdated = update(con, QUERY, pst -> {
             pst.setString(1, newPassword);

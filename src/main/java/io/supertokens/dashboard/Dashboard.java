@@ -94,12 +94,11 @@ public class Dashboard {
 
     public static String signInDashboardUser(Main main, String email, String password)
             throws StorageQueryException, UserSuspendedException {
-        if (isUserSuspended(main, email, null)) {
-            throw new UserSuspendedException();
-
-        }
         DashboardUser user = StorageLayer.getDashboardStorage(main).getDashboardUserByEmail(email);
         if (user != null) {
+            if (isUserSuspended(main, email, null)) {
+                throw new UserSuspendedException();
+            }
             if (PasswordHashing.getInstance(main).verifyPasswordWithHash(password, user.passwordHash)) {
                 // create a new session for the user
                 try {
@@ -120,6 +119,7 @@ public class Dashboard {
             throws StorageQueryException {
         if (!isDashboardFeatureFlagEnabled(main)) {
             DashboardUser[] users = StorageLayer.getDashboardStorage(main).getAllDashboardUsers();
+
             if (email != null) {
                 for (int i = 0; i < MAX_NUMBER_OF_FREE_DASHBOARD_USERS; i++) {
                     if (email.equals(users[i].email)) {
@@ -147,20 +147,6 @@ public class Dashboard {
             return deleteUserWithUserId(main, user.userId);
         }
         return false;
-    }
-
-    public static void updateUsersCredentialsWithEmail(Main main, String email, @Nullable String newEmail,
-            @Nullable String newPassword)
-            throws StorageQueryException, DuplicateEmailException, StorageTransactionLogicException,
-            UserIdNotFoundException {
-
-        DashboardSQLStorage storage = StorageLayer.getDashboardStorage(main);
-
-        DashboardUser user = storage.getDashboardUserByEmail(email);
-        if (user != null) {
-            updateUsersCredentialsWithUserId(main, user.userId, newEmail, newPassword);
-        }
-        throw new UserIdNotFoundException();
     }
 
     public static void updateUsersCredentialsWithUserId(Main main, String userId, String newEmail, String newPassword)

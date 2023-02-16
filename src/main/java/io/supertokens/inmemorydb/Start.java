@@ -1704,7 +1704,7 @@ public class Start
             String newPassword) throws StorageQueryException, UserIdNotFoundException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            if(!DashboardQueries.updateDashboardUsersEmailWithUserId_Transaction(this, sqlCon, userId, newPassword)){
+            if(!DashboardQueries.updateDashboardUsersPasswordWithUserId_Transaction(this, sqlCon, userId, newPassword)){
                 throw new UserIdNotFoundException();
             }
         } catch (SQLException e) {

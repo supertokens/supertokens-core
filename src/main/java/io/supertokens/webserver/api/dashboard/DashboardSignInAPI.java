@@ -58,6 +58,12 @@ public class DashboardSignInAPI extends WebserverAPI {
 
         try {
             String sessionId = Dashboard.signInDashboardUser(main, email, password);
+            if(sessionId == null){
+                JsonObject response = new JsonObject();
+                response.addProperty("status", "INVALID_CREDENTIALS_ERROR");
+                super.sendJsonResponse(200, response, resp);
+                return;
+            }
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("sessionId", sessionId);
@@ -67,7 +73,7 @@ public class DashboardSignInAPI extends WebserverAPI {
             response.addProperty("status", "USER_SUSPENDED_ERROR");
             // TODO: update message
             response.addProperty("message",
-                    "User is currently suspended, please signin with a valid account or purchase the dashboard feature");
+                    "User is currently suspended, please sign in with a valid account");
             super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
