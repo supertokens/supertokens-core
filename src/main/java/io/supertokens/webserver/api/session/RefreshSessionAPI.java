@@ -18,13 +18,13 @@ package io.supertokens.webserver.api.session;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.utils.Utils;
@@ -58,7 +58,8 @@ public class RefreshSessionAPI extends WebserverAPI {
         assert refreshToken != null;
 
         try {
-            SessionInformationHolder sessionInfo = Session.refreshSession(this.getTenantIdentifier(req), main,
+            SessionInformationHolder sessionInfo = Session.refreshSession(
+                    this.getTenantIdentifier(req).toAppIdentifier(), main,
                     refreshToken, antiCsrfToken,
                     enableAntiCsrf);
             JsonObject result = sessionInfo.toJsonObject();

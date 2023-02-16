@@ -26,6 +26,7 @@ import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 import io.supertokens.session.info.TokenInfo;
@@ -108,7 +109,7 @@ public class AccessToken {
             }
             throw new TryRefreshTokenException(error);
         }
-        AccessTokenInfo tokenInfo = new Gson().fromJson(jwtInfo.payload, AccessTokenInfo.class);
+        AccessTokenPayload tokenInfo = new Gson().fromJson(jwtInfo.payload, AccessTokenPayload.class);
         if (jwtInfo.version == VERSION.V1) {
             if (tokenInfo.sessionHandle == null || tokenInfo.userId == null || tokenInfo.refreshTokenHash1 == null
                     || tokenInfo.userData == null || (doAntiCsrfCheck && tokenInfo.antiCsrfToken == null)) {
@@ -127,7 +128,11 @@ public class AccessToken {
             throw new TryRefreshTokenException("Access token expired");
         }
 
-        return tokenInfo;
+        return new AccessTokenInfo(tokenInfo.sessionHandle, tokenInfo.userId, tokenInfo.refreshTokenHash1,
+                tokenInfo.expiryTime, tokenInfo.parentRefreshTokenHash1, tokenInfo.userData, tokenInfo.antiCsrfToken,
+                tokenInfo.timeCreated, tokenInfo.lmrt,
+                new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
+                        tokenInfo.tenantId));
     }
 
     @TestOnly
@@ -163,7 +168,7 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
         try {
-            return createNewAccessToken(new AppIdentifier(null, null), main, sessionHandle, userId,
+            return createNewAccessToken(new TenantIdentifier(null, null, null), main, sessionHandle, userId,
                     refreshTokenHash1,
                     parentRefreshTokenHash1,
                     userData, antiCsrfToken, lmrt, expiryTime);
@@ -172,7 +177,7 @@ public class AccessToken {
         }
     }
 
-    public static TokenInfo createNewAccessToken(AppIdentifier appIdentifier, @Nonnull Main main,
+    public static TokenInfo createNewAccessToken(TenantIdentifier tenantIdentifier, @Nonnull Main main,
                                                  @Nonnull String sessionHandle,
                                                  @Nonnull String userId, @Nonnull String refreshTokenHash1,
                                                  @Nullable String parentRefreshTokenHash1,
@@ -183,14 +188,14 @@ public class AccessToken {
             TenantOrAppNotFoundException {
 
         Utils.PubPriKey signingKey = new Utils.PubPriKey(
-                AccessTokenSigningKey.getInstance(appIdentifier, main).getLatestIssuedKey().value);
+                AccessTokenSigningKey.getInstance(tenantIdentifier.toAppIdentifier(), main).getLatestIssuedKey().value);
         long now = System.currentTimeMillis();
         if (expiryTime == null) {
             expiryTime =
-                    now + Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getAccessTokenValidity();
+                    now + Config.getConfig(tenantIdentifier, main).getAccessTokenValidity();
         }
-        AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime,
-                parentRefreshTokenHash1, userData, antiCsrfToken, now, lmrt);
+        AccessTokenPayload accessToken = new AccessTokenPayload(sessionHandle, userId, refreshTokenHash1, expiryTime,
+                parentRefreshTokenHash1, userData, antiCsrfToken, now, lmrt, tenantIdentifier.getTenantId());
 
         String token = JWT.createJWT(Utils.toJsonTreeWithNulls(accessToken), signingKey.privateKey, VERSION.V2);
         return new TokenInfo(token, expiryTime, now);
@@ -206,7 +211,7 @@ public class AccessToken {
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
             NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
         try {
-            return createNewAccessTokenV1(new AppIdentifier(null, null), main, sessionHandle, userId,
+            return createNewAccessTokenV1(new TenantIdentifier(null, null, null), main, sessionHandle, userId,
                     refreshTokenHash1,
                     parentRefreshTokenHash1, userData, antiCsrfToken);
         } catch (TenantOrAppNotFoundException e) {
@@ -214,7 +219,7 @@ public class AccessToken {
         }
     }
 
-    public static TokenInfo createNewAccessTokenV1(AppIdentifier appIdentifier, @Nonnull Main main,
+    public static TokenInfo createNewAccessTokenV1(TenantIdentifier tenantIdentifier, @Nonnull Main main,
                                                    @Nonnull String sessionHandle,
                                                    @Nonnull String userId, @Nonnull String refreshTokenHash1,
                                                    @Nullable String parentRefreshTokenHash1,
@@ -224,14 +229,15 @@ public class AccessToken {
             TenantOrAppNotFoundException {
 
         Utils.PubPriKey signingKey = new Utils.PubPriKey(
-                AccessTokenSigningKey.getInstance(appIdentifier, main).getLatestIssuedKey().value);
+                AccessTokenSigningKey.getInstance(tenantIdentifier.toAppIdentifier(), main).getLatestIssuedKey().value);
         long now = System.currentTimeMillis();
-        AccessTokenInfo accessToken;
+        AccessTokenPayload accessToken;
 
         long expiryTime =
-                now + Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getAccessTokenValidity();
-        accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expiryTime, parentRefreshTokenHash1,
-                userData, antiCsrfToken, now, null);
+                now + Config.getConfig(tenantIdentifier, main).getAccessTokenValidity();
+        accessToken = new AccessTokenPayload(sessionHandle, userId, refreshTokenHash1, expiryTime,
+                parentRefreshTokenHash1,
+                userData, antiCsrfToken, now, null, tenantIdentifier.getTenantId());
 
         String token = JWT.createJWT(Utils.toJsonTreeWithNulls(accessToken), signingKey.privateKey, VERSION.V1);
         return new TokenInfo(token, expiryTime, now);
@@ -243,6 +249,43 @@ public class AccessToken {
             return VERSION.V1;
         }
         return VERSION.V2;
+    }
+
+    public static class AccessTokenPayload {
+        @Nonnull
+        public final String sessionHandle;
+        @Nonnull
+        public final String userId;
+        @Nonnull
+        public final String refreshTokenHash1;
+        @Nullable
+        public final String parentRefreshTokenHash1;
+        @Nonnull
+        public final JsonObject userData;
+        @Nullable
+        public final String antiCsrfToken;
+        public final long expiryTime;
+        final long timeCreated;
+        @Nullable
+        public final Long lmrt; // lastManualRegenerationTime - nullable since v1 of JWT does not have this
+        @Nullable
+        public final String tenantId;
+
+        AccessTokenPayload(@Nonnull String sessionHandle, @Nonnull String userId, @Nonnull String refreshTokenHash1,
+                           long expiryTime, @Nullable String parentRefreshTokenHash1, @Nonnull JsonObject userData,
+                           @Nullable String antiCsrfToken, long timeCreated, @Nullable Long lmrt,
+                           @Nullable String tenantId) {
+            this.sessionHandle = sessionHandle;
+            this.userId = userId;
+            this.refreshTokenHash1 = refreshTokenHash1;
+            this.expiryTime = expiryTime;
+            this.parentRefreshTokenHash1 = parentRefreshTokenHash1;
+            this.userData = userData;
+            this.antiCsrfToken = antiCsrfToken;
+            this.timeCreated = timeCreated;
+            this.lmrt = lmrt;
+            this.tenantId = tenantId == null || tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID) ? null : tenantId;
+        }
     }
 
     public static class AccessTokenInfo {
@@ -262,10 +305,13 @@ public class AccessToken {
         final long timeCreated;
         @Nullable
         public final Long lmrt; // lastManualRegenerationTime - nullable since v1 of JWT does not have this
+        @Nonnull
+        public TenantIdentifier tenantIdentifier;
 
         AccessTokenInfo(@Nonnull String sessionHandle, @Nonnull String userId, @Nonnull String refreshTokenHash1,
                         long expiryTime, @Nullable String parentRefreshTokenHash1, @Nonnull JsonObject userData,
-                        @Nullable String antiCsrfToken, long timeCreated, @Nullable Long lmrt) {
+                        @Nullable String antiCsrfToken, long timeCreated, @Nullable Long lmrt,
+                        @Nonnull TenantIdentifier tenantIdentifier) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.refreshTokenHash1 = refreshTokenHash1;
@@ -275,6 +321,7 @@ public class AccessToken {
             this.antiCsrfToken = antiCsrfToken;
             this.timeCreated = timeCreated;
             this.lmrt = lmrt;
+            this.tenantIdentifier = tenantIdentifier;
         }
     }
 

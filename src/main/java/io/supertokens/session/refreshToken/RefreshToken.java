@@ -23,6 +23,7 @@ import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.utils.Utils;
@@ -73,7 +74,9 @@ public class RefreshToken {
                 throw new UnauthorisedException("Invalid refresh token");
             }
             return new RefreshTokenInfo(tokenPayload.sessionHandle, tokenPayload.userId,
-                    tokenPayload.parentRefreshTokenHash1, null, tokenPayload.antiCsrfToken, tokenType);
+                    tokenPayload.parentRefreshTokenHash1, null, tokenPayload.antiCsrfToken, tokenType,
+                    new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
+                            tokenPayload.tenantId));
 
         } catch (Exception e) {
             throw new UnauthorisedException(e);
@@ -88,7 +91,7 @@ public class RefreshToken {
             IllegalBlockSizeException, BadPaddingException, StorageTransactionLogicException,
             InvalidAlgorithmParameterException, InvalidKeySpecException {
         try {
-            return createNewRefreshToken(new AppIdentifier(null, null), main, sessionHandle, userId,
+            return createNewRefreshToken(new TenantIdentifier(null, null, null), main, sessionHandle, userId,
                     parentRefreshTokenHash1,
                     antiCsrfToken);
         } catch (TenantOrAppNotFoundException e) {
@@ -96,23 +99,23 @@ public class RefreshToken {
         }
     }
 
-    public static TokenInfo createNewRefreshToken(AppIdentifier appIdentifier, @Nonnull Main main,
+    public static TokenInfo createNewRefreshToken(TenantIdentifier tenantIdentifier, @Nonnull Main main,
                                                   @Nonnull String sessionHandle,
                                                   @Nonnull String userId, @Nullable String parentRefreshTokenHash1,
                                                   @Nullable String antiCsrfToken)
             throws NoSuchAlgorithmException, StorageQueryException, NoSuchPaddingException, InvalidKeyException,
             IllegalBlockSizeException, BadPaddingException, StorageTransactionLogicException,
             InvalidAlgorithmParameterException, InvalidKeySpecException, TenantOrAppNotFoundException {
-        String key = RefreshTokenKey.getInstance(appIdentifier, main).getKey();
+        String key = RefreshTokenKey.getInstance(tenantIdentifier.toAppIdentifier(), main).getKey();
         String nonce = Utils.hashSHA256(UUID.randomUUID().toString());
         RefreshTokenPayload payload = new RefreshTokenPayload(sessionHandle, userId, parentRefreshTokenHash1, nonce,
-                antiCsrfToken);
+                antiCsrfToken, tenantIdentifier.getTenantId());
         String payloadSerialised = new Gson().toJson(payload);
         String encryptedPayload = Utils.encrypt(payloadSerialised, key);
         String token = encryptedPayload + "." + nonce + "." + TYPE.FREE_OPTIMISED.toString();
         long now = System.currentTimeMillis();
         return new TokenInfo(token,
-                now + Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main).getRefreshTokenValidity(),
+                now + Config.getConfig(tenantIdentifier, main).getRefreshTokenValidity(),
                 now);
     }
 
@@ -166,15 +169,18 @@ public class RefreshToken {
         final String nonce;
         @Nullable
         public final String antiCsrfToken;
+        @Nullable
+        public final String tenantId;
 
         RefreshTokenPayload(@Nonnull String sessionHandle, @Nonnull String userId,
                             @Nullable String parentRefreshTokenHash1, @Nonnull String nonce,
-                            @Nullable String antiCsrfToken) {
+                            @Nullable String antiCsrfToken, @Nullable String tenantId) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.parentRefreshTokenHash1 = parentRefreshTokenHash1;
             this.nonce = nonce;
             this.antiCsrfToken = antiCsrfToken;
+            this.tenantId = tenantId == null || tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID) ? null : tenantId;
         }
     }
 
@@ -191,16 +197,20 @@ public class RefreshToken {
         public final TYPE type;
         @Nullable
         public final String antiCsrfToken;
+        @Nonnull
+        public final TenantIdentifier tenantIdentifier;
 
         RefreshTokenInfo(@Nonnull String sessionHandle, @Nullable String userId,
                          @Nullable String parentRefreshTokenHash1, @Nullable String parentRefreshTokenHash2,
-                         @Nullable String antiCsrfToken, @Nonnull TYPE type) {
+                         @Nullable String antiCsrfToken, @Nonnull TYPE type,
+                         @Nullable TenantIdentifier tenantIdentifier) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.parentRefreshTokenHash1 = parentRefreshTokenHash1;
             this.parentRefreshTokenHash2 = parentRefreshTokenHash2;
             this.antiCsrfToken = antiCsrfToken;
             this.type = type;
+            this.tenantIdentifier = tenantIdentifier;
         }
     }
 

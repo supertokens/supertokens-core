@@ -24,9 +24,11 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
@@ -111,11 +113,11 @@ public class Session {
             TenantOrAppNotFoundException {
         String sessionHandle = UUID.randomUUID().toString();
         String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
-        final TokenInfo refreshToken = RefreshToken.createNewRefreshToken(tenantIdentifier.toAppIdentifier(), main,
+        final TokenInfo refreshToken = RefreshToken.createNewRefreshToken(tenantIdentifier, main,
                 sessionHandle, userId, null,
                 antiCsrfToken);
 
-        TokenInfo accessToken = AccessToken.createNewAccessToken(tenantIdentifier.toAppIdentifier(), main,
+        TokenInfo accessToken = AccessToken.createNewAccessToken(tenantIdentifier, main,
                 sessionHandle,
                 userId,
                 Utils.hashSHA256(refreshToken.token), null, userDataInJWT, antiCsrfToken, System.currentTimeMillis(),
@@ -140,8 +142,8 @@ public class Session {
             UnauthorisedException, InvalidKeySpecException, SignatureException, NoSuchAlgorithmException,
             InvalidKeyException, UnsupportedEncodingException {
         try {
-            return regenerateToken(new TenantIdentifier(null, null, null), main, token, userDataInJWT);
-        } catch (TenantOrAppNotFoundException e) {
+            return regenerateToken(new AppIdentifier(null, null), main, token, userDataInJWT);
+        } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -161,17 +163,20 @@ public class Session {
      *
      *
      */
-    public static SessionInformationHolder regenerateToken(TenantIdentifier tenantIdentifier, Main main,
+    public static SessionInformationHolder regenerateToken(AppIdentifier appIdentifier, Main main,
                                                            @Nonnull String token,
                                                            @Nullable JsonObject userDataInJWT)
             throws StorageQueryException, StorageTransactionLogicException,
             UnauthorisedException, InvalidKeySpecException, SignatureException, NoSuchAlgorithmException,
-            InvalidKeyException, UnsupportedEncodingException, TenantOrAppNotFoundException {
+            InvalidKeyException, UnsupportedEncodingException, TenantOrAppNotFoundException, BadPermissionException {
 
         // We assume the token has already been verified at this point. It may be expired or JWT signing key may have
         // changed for it...
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessTokenWithoutVerifying(token);
-
+        TenantIdentifier tenantIdentifier = accessToken.tenantIdentifier;
+        if (!tenantIdentifier.toAppIdentifier().equals(appIdentifier)) {
+            throw new BadPermissionException("Access token is from an incorrect app");
+        }
         JsonObject newJWTUserPayload = userDataInJWT == null ?
                 getSession(tenantIdentifier, main, accessToken.sessionHandle).userDataInJWT
                 : userDataInJWT;
@@ -190,7 +195,7 @@ public class Session {
                     null);
         }
 
-        TokenInfo newAccessToken = AccessToken.createNewAccessToken(tenantIdentifier.toAppIdentifier(), main,
+        TokenInfo newAccessToken = AccessToken.createNewAccessToken(tenantIdentifier, main,
                 accessToken.sessionHandle, accessToken.userId,
                 accessToken.refreshTokenHash1, accessToken.parentRefreshTokenHash1, newJWTUserPayload,
                 accessToken.antiCsrfToken, lmrt, accessToken.expiryTime);
@@ -207,7 +212,7 @@ public class Session {
             throws StorageQueryException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException {
         try {
-            return getSession(new TenantIdentifier(null, null, null), main, token, antiCsrfToken, enableAntiCsrf,
+            return getSession(new AppIdentifier(null, null), main, token, antiCsrfToken, enableAntiCsrf,
                     doAntiCsrfCheck);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -215,16 +220,17 @@ public class Session {
     }
 
     // pass antiCsrfToken to disable csrf check for this request
-    public static SessionInformationHolder getSession(TenantIdentifier tenantIdentifier, Main main,
+    public static SessionInformationHolder getSession(AppIdentifier appIdentifier, Main main,
                                                       @Nonnull String token, @Nullable String antiCsrfToken,
                                                       boolean enableAntiCsrf, Boolean doAntiCsrfCheck)
             throws StorageQueryException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException,
             TenantOrAppNotFoundException {
 
-        AccessTokenInfo accessToken = AccessToken.getInfoFromAccessToken(tenantIdentifier.toAppIdentifier(), main,
+        AccessTokenInfo accessToken = AccessToken.getInfoFromAccessToken(appIdentifier, main,
                 token,
                 doAntiCsrfCheck && enableAntiCsrf);
+        TenantIdentifier tenantIdentifier = accessToken.tenantIdentifier;
 
         if (enableAntiCsrf && doAntiCsrfCheck
                 && (antiCsrfToken == null || !antiCsrfToken.equals(accessToken.antiCsrfToken))) {
@@ -282,14 +288,14 @@ public class Session {
 
                             TokenInfo newAccessToken;
                             if (AccessToken.getAccessTokenVersion(accessToken) == AccessToken.VERSION.V1) {
-                                newAccessToken = AccessToken.createNewAccessTokenV1(tenantIdentifier.toAppIdentifier(),
+                                newAccessToken = AccessToken.createNewAccessTokenV1(tenantIdentifier,
                                         main,
                                         accessToken.sessionHandle,
                                         accessToken.userId, accessToken.refreshTokenHash1, null,
                                         sessionInfo.userDataInJWT, accessToken.antiCsrfToken);
                             } else {
                                 assert accessToken.lmrt != null;
-                                newAccessToken = AccessToken.createNewAccessToken(tenantIdentifier.toAppIdentifier(),
+                                newAccessToken = AccessToken.createNewAccessToken(tenantIdentifier,
                                         main,
                                         accessToken.sessionHandle,
                                         accessToken.userId, accessToken.refreshTokenHash1, null,
@@ -354,14 +360,14 @@ public class Session {
 
                         TokenInfo newAccessToken;
                         if (AccessToken.getAccessTokenVersion(accessToken) == AccessToken.VERSION.V1) {
-                            newAccessToken = AccessToken.createNewAccessTokenV1(tenantIdentifier.toAppIdentifier(),
+                            newAccessToken = AccessToken.createNewAccessTokenV1(tenantIdentifier,
                                     main,
                                     accessToken.sessionHandle,
                                     accessToken.userId, accessToken.refreshTokenHash1, null, sessionInfo.userDataInJWT,
                                     accessToken.antiCsrfToken);
                         } else {
                             assert accessToken.lmrt != null;
-                            newAccessToken = AccessToken.createNewAccessToken(tenantIdentifier.toAppIdentifier(), main,
+                            newAccessToken = AccessToken.createNewAccessToken(tenantIdentifier, main,
                                     accessToken.sessionHandle,
                                     accessToken.userId, accessToken.refreshTokenHash1, null, sessionInfo.userDataInJWT,
                                     accessToken.antiCsrfToken, accessToken.lmrt, null);
@@ -395,20 +401,20 @@ public class Session {
             throws StorageTransactionLogicException,
             UnauthorisedException, StorageQueryException, TokenTheftDetectedException {
         try {
-            return refreshSession(new TenantIdentifier(null, null, null), main, refreshToken, antiCsrfToken,
+            return refreshSession(new AppIdentifier(null, null), main, refreshToken, antiCsrfToken,
                     enableAntiCsrf);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static SessionInformationHolder refreshSession(TenantIdentifier tenantIdentifier, Main main,
+    public static SessionInformationHolder refreshSession(AppIdentifier appIdentifier, Main main,
                                                           @Nonnull String refreshToken,
                                                           @Nullable String antiCsrfToken, boolean enableAntiCsrf)
             throws StorageTransactionLogicException,
             UnauthorisedException, StorageQueryException, TokenTheftDetectedException, TenantOrAppNotFoundException {
         RefreshToken.RefreshTokenInfo refreshTokenInfo = RefreshToken.getInfoFromRefreshToken(
-                tenantIdentifier.toAppIdentifier(), main,
+                appIdentifier, main,
                 refreshToken);
 
         if (enableAntiCsrf && refreshTokenInfo.antiCsrfToken != null) {
@@ -418,7 +424,7 @@ public class Session {
             }
         }
 
-        return refreshSessionHelper(tenantIdentifier, main, refreshToken, refreshTokenInfo,
+        return refreshSessionHelper(refreshTokenInfo.tenantIdentifier, main, refreshToken, refreshTokenInfo,
                 enableAntiCsrf);
     }
 
@@ -454,12 +460,12 @@ public class Session {
                             storage.commitTransaction(con);
                             String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
                             final TokenInfo newRefreshToken = RefreshToken.createNewRefreshToken(
-                                    tenantIdentifier.toAppIdentifier(), main,
+                                    tenantIdentifier, main,
                                     sessionHandle,
                                     sessionInfo.userId, Utils.hashSHA256(refreshToken), antiCsrfToken);
 
                             TokenInfo newAccessToken = AccessToken.createNewAccessToken(
-                                    tenantIdentifier.toAppIdentifier(),
+                                    tenantIdentifier,
                                     main, sessionHandle,
                                     sessionInfo.userId, Utils.hashSHA256(newRefreshToken.token),
                                     Utils.hashSHA256(refreshToken), sessionInfo.userDataInJWT, antiCsrfToken,
@@ -536,10 +542,10 @@ public class Session {
                         String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
 
                         final TokenInfo newRefreshToken = RefreshToken.createNewRefreshToken(
-                                tenantIdentifier.toAppIdentifier(), main,
+                                tenantIdentifier, main,
                                 sessionHandle,
                                 sessionInfo.userId, Utils.hashSHA256(refreshToken), antiCsrfToken);
-                        TokenInfo newAccessToken = AccessToken.createNewAccessToken(tenantIdentifier.toAppIdentifier(),
+                        TokenInfo newAccessToken = AccessToken.createNewAccessToken(tenantIdentifier,
                                 main,
                                 sessionHandle,
                                 sessionInfo.userId, Utils.hashSHA256(newRefreshToken.token),
