@@ -19,7 +19,6 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.exceptions.UnauthorisedException;
-import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -72,7 +71,7 @@ public class SessionRegenerateAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | InvalidKeyException | SignatureException | InvalidKeySpecException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException | InvalidKeyException | SignatureException | InvalidKeySpecException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));

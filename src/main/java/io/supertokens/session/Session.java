@@ -24,7 +24,6 @@ import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
-import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -143,7 +142,7 @@ public class Session {
             InvalidKeyException, UnsupportedEncodingException {
         try {
             return regenerateToken(new AppIdentifier(null, null), main, token, userDataInJWT);
-        } catch (TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
@@ -168,14 +167,14 @@ public class Session {
                                                            @Nullable JsonObject userDataInJWT)
             throws StorageQueryException, StorageTransactionLogicException,
             UnauthorisedException, InvalidKeySpecException, SignatureException, NoSuchAlgorithmException,
-            InvalidKeyException, UnsupportedEncodingException, TenantOrAppNotFoundException, BadPermissionException {
+            InvalidKeyException, UnsupportedEncodingException, TenantOrAppNotFoundException {
 
         // We assume the token has already been verified at this point. It may be expired or JWT signing key may have
         // changed for it...
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessTokenWithoutVerifying(token);
         TenantIdentifier tenantIdentifier = accessToken.tenantIdentifier;
         if (!tenantIdentifier.toAppIdentifier().equals(appIdentifier)) {
-            throw new BadPermissionException("Access token is from an incorrect app");
+            throw new UnauthorisedException("Access token is from an incorrect app");
         }
         JsonObject newJWTUserPayload = userDataInJWT == null ?
                 getSession(tenantIdentifier, main, accessToken.sessionHandle).userDataInJWT
