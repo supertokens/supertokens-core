@@ -295,23 +295,84 @@ public class DashboardStorageTest {
         assertEquals(5, sessionInfoArray.length);
 
         // test retrieving sessions
-        for(int i = 0; i < 2; i++){
-            DashboardSessionInfo sessionInfo =  dashboardSQLStorage.getSessionInfoWithSessionId(sessionIds.get(i));
+        for (int i = 0; i < 2; i++) {
+            DashboardSessionInfo sessionInfo = dashboardSQLStorage.getSessionInfoWithSessionId(sessionIds.get(i));
             assertNotNull(sessionInfo);
             assertEquals(user.userId, sessionInfo.userId);
         }
-        
+
         // delete some user sessions
         dashboardSQLStorage.revokeSessionWithSessionId(sessionIds.get(0));
         dashboardSQLStorage.revokeSessionWithSessionId(sessionIds.get(1));
 
         // retrieve all sessions
         DashboardSessionInfo[] dashboardSessionInfo = dashboardSQLStorage.getAllSessionsForUserId(user.userId);
-        assertEquals(3, dashboardSessionInfo.length); 
-        
+        assertEquals(3, dashboardSessionInfo.length);
+
         // check that two sessions were deleted
-        for(int i = 0; i < 2; i++){
+        for (int i = 0; i < 2; i++) {
             assertNull(dashboardSQLStorage.getSessionInfoWithSessionId(sessionIds.get(i)));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRevokeExpiredSessionsFunction() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+
+        // create a user
+        DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), "test@example.com", "password123");
+        ArrayList<String> sessionIds = new ArrayList<>();
+
+        // create 3 sessions for the user with expiry in 3 seconds after creation
+        for (int i = 0; i < 3; i++) {
+            String sessionId = io.supertokens.utils.Utils.getUUID();
+            sessionIds.add(sessionId);
+            dashboardSQLStorage.createNewDashboardUserSession(user.userId, sessionId, System.currentTimeMillis(),
+                    System.currentTimeMillis() + 3000);
+        }
+
+        // create 3 sessions for the user with the regular expiry time
+        for (int i = 0; i < 3; i++) {
+            String sessionId = io.supertokens.utils.Utils.getUUID();
+            sessionIds.add(sessionId);
+            dashboardSQLStorage.createNewDashboardUserSession(user.userId, sessionId, System.currentTimeMillis(),
+                    System.currentTimeMillis() + Dashboard.DASHBOARD_SESSION_DURATION);
+        }
+
+        // check that sessions were successfully created
+        assertEquals(6, dashboardSQLStorage.getAllSessionsForUserId(user.userId).length);
+
+        // wait for 5 seconds so sessions expire
+        try {
+            Thread.sleep(5000);
+        } catch (InterruptedException e) {
+            // Ignored
+        }
+
+        // revoke expired sessions
+        dashboardSQLStorage.revokeExpiredSessions();
+
+        // check that half the sessions were revoked
+        assertEquals(3, dashboardSQLStorage.getAllSessionsForUserId(user.userId).length);
+
+        for (int i = 0; i < sessionIds.size(); i++) {
+            if (i < 3) {
+                assertNull(dashboardSQLStorage.getSessionInfoWithSessionId(sessionIds.get(i)));
+            } else {
+                assertNotNull(dashboardSQLStorage.getSessionInfoWithSessionId(sessionIds.get(i)));
+            }
         }
 
         process.kill();
