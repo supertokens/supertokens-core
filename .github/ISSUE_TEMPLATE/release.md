@@ -67,6 +67,7 @@ labels:
  - [ ] Test on vercel (with-emailpassword-vercel app) 
  - [ ] SuperTokens Jackson SAML example update
  - [ ] Supabase docs
+ - [ ] Capacitor template app: https://github.com/RobSchilderr/capacitor-supertokens-nextjs-turborepo
 
 ### 📚 Documentation (test site)
 
