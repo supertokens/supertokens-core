@@ -47,7 +47,7 @@ public class Dashboard {
     public static final int MAX_NUMBER_OF_FREE_DASHBOARD_USERS = 1;
     public static final long DASHBOARD_SESSION_DURATION = 2592000000L; // 30 days in milliseconds
 
-    public static void signUpDashboardUser(Main main, String email, String password)
+    public static DashboardUser signUpDashboardUser(Main main, String email, String password)
             throws StorageQueryException, DuplicateEmailException, FeatureNotEnabledException {
 
         if (StorageLayer.getDashboardStorage(main).getDashboardUserByEmail(email) != null) {
@@ -71,7 +71,7 @@ public class Dashboard {
             try {
                 DashboardUser user = new DashboardUser(userId, email, hashedPassword, timeJoined);
                 StorageLayer.getDashboardStorage(main).createNewDashboardUser(user);
-                return;
+                return user;
             } catch (DuplicateUserIdException ignored) {
                 // we retry with a new userId (while loop)
             }

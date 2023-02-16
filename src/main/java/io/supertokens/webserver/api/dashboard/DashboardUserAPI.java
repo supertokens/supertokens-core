@@ -89,11 +89,12 @@ public class DashboardUserAPI extends WebserverAPI {
                 return;
             }
 
-            Dashboard.signUpDashboardUser(main, email, password);
+            DashboardUser user = Dashboard.signUpDashboardUser(main, email, password);
+            JsonObject userAsJsonObject = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject(); 
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
-            // TODO: add created user in response
+            response.add("user", userAsJsonObject);
             super.sendJsonResponse(200, response, resp);
 
         } catch (DuplicateEmailException e) {

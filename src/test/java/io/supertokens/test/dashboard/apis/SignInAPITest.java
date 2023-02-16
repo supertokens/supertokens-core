@@ -129,7 +129,6 @@ public class SignInAPITest {
         }
 
         // try signing in with the suspended user
-
         {
             JsonObject requestBody = new JsonObject();
             requestBody.addProperty("email", email);
