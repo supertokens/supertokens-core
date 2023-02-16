@@ -1706,14 +1706,14 @@ public class Start
     public boolean insertUsedCode(TOTPUsedCode usedCodeObj)
             throws StorageQueryException, TotpNotEnabledException {
         try {
+            TOTPDevice[] devices = TOTPQueries.getDevices(this, usedCodeObj.userId);
+            if (devices.length == 0) {
+                throw new TotpNotEnabledException();
+            }
+
             int insertCount = TOTPQueries.insertUsedCode(this, usedCodeObj);
             return insertCount == 1;
         } catch (Exception e) {
-            // FIXME: Not working without `PRAGMA foreign_keys = ON;` but unable to setup it in tests.
-            if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (FOREIGN KEY constraint failed)")) {
-                throw new TotpNotEnabledException();
-            }
             throw new StorageQueryException(e);
         }
     }

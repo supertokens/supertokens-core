@@ -1,63 +1,209 @@
 package io.supertokens.totp;
 
-import java.io.IOException;
-
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
+import io.supertokens.pluginInterface.totp.TOTPUsedCode;
+import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
+import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
+import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.totp.exceptions.InvalidTotpException;
+import io.supertokens.totp.exceptions.LimitReachedException;
 
 public class Totp {
 
+    public static String generateSecret() {
+        return "XXXX";
+    }
+
+    public static boolean checkCode(TOTPDevice device, String code) {
+        return true;
+    }
+
     public static CreateDeviceResponse createDevice(Main main, String userId, String deviceName, int skew, int period)
-            throws IOException {
+            throws StorageQueryException, DeviceAlreadyExistsException {
 
         TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
-        String secret = GenerateDeviceSecret.generate();
+        String secret = generateSecret();
 
-        if (userId == null || deviceName == null || secret == null) {
-            throw new IllegalArgumentException("userId, deviceName and secret cannot be null");
-        }
+        TOTPDevice device = new TOTPDevice(userId, deviceName, secret, skew, period, false);
+        totpStorage.createDevice(device);
 
-        try {
-            TOTPDevice device = new TOTPDevice(userId, deviceName, secret, skew, period, false);
-            totpStorage.createDevice(device);
-        } catch (Exception e) {
-            throw new IOException(e);
-        }
-
-        return new CreateDeviceResponse("deviceName", secret);
+        // TODO: Should we just return the secret as a string?
+        return new CreateDeviceResponse(secret);
     }
 
-    public static void markDeviceAsVerified(Main main, String userId, String deviceName) throws IOException {
+    public static VerifyDeviceResponse verifyDevice(Main main, String userId, String deviceName, String code)
+            throws StorageQueryException, TotpNotEnabledException, UnknownDeviceException, InvalidTotpException {
+        TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
+
+        TOTPDevice[] devices = totpStorage.getDevices(userId);
+        if (devices.length == 0) {
+            throw new TotpNotEnabledException();
+        }
+
+        // Find the device:
+        TOTPDevice matchingDevice = null;
+        for (TOTPDevice device : devices) {
+            if (device.deviceName.equals(deviceName)) {
+                if (device.verified) {
+                    // TODO: Should we just return a boolean here?
+                    return new VerifyDeviceResponse(true);
+                } else {
+                    matchingDevice = device;
+                    break;
+                }
+            }
+        }
+        if (matchingDevice == null) {
+            throw new UnknownDeviceException();
+        }
+
+        // // Insert the code into the list of used codes:
+        TOTPUsedCode newCode = new TOTPUsedCode(userId, code, true, System.currentTimeMillis() + 1000 * 60 * 5);
+        totpStorage.insertUsedCode(newCode);
+
+        // Check if the code is valid:
+        if (!checkCode(matchingDevice, code)) {
+            throw new InvalidTotpException();
+        }
+
+        // Check if the code is unused:
+        TOTPUsedCode[] usedCodes = totpStorage.getUsedCodes(userId);
+        for (TOTPUsedCode usedCode : usedCodes) {
+            if (usedCode.code.equals(code) && usedCode.isValidCode) {
+                throw new InvalidTotpException();
+            }
+        }
+
+        totpStorage.markDeviceAsVerified(userId, deviceName);
+        return new VerifyDeviceResponse(false);
+    }
+
+    public static void verifyCode(Main main, String userId, String code, boolean allowUnverifiedDevices)
+            throws StorageQueryException, TotpNotEnabledException, InvalidTotpException,
+            LimitReachedException {
+        TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
+
+        // Check if the user has any devices:
+        TOTPDevice[] devices = totpStorage.getDevices(userId);
+        if (devices.length == 0) {
+            throw new TotpNotEnabledException();
+        }
+
+        // FIXME: Every unused_code should be linked to the device it was used for.
+        // Otherwise, if a user has multiple devices, and they use the same code for
+        // both,
+        // then the code will be considered as used for both devices. This could cause
+        // UX
+        // issues.
+        // If we do this, then it also means that we need to assign a device ID to each
+        // device (OR use
+        // (userId, deviceName) as the ID)
+
+        // Check if the code has been successfully used by the user (for any device):
+        TOTPUsedCode[] usedCodes = totpStorage.getUsedCodes(userId);
+        for (TOTPUsedCode usedCode : usedCodes) {
+            if (usedCode.code.equals(code) && usedCode.isValidCode) {
+                throw new InvalidTotpException();
+            }
+        }
+
+        // Try different devices until we find one that works:
+        boolean isValid = false;
+        for (TOTPDevice device : devices) {
+            // Check if the code is valid for this device:
+            if (checkCode(device, code)) {
+                isValid = true;
+                break;
+            }
+        }
+
+        // Insert the code into the list of used codes:
+        TOTPUsedCode newCode = new TOTPUsedCode(userId, code, isValid, System.currentTimeMillis() + 1000 * 60 * 5);
+        totpStorage.insertUsedCode(newCode);
+
+        if (isValid) {
+            return;
+        }
+
+        // Check if last 5 codes are all invalid:
+        int WINDOW_SIZE = 5;
+        int invalidCodes = 0;
+        for (int i = usedCodes.length - 1; i >= 0 && i >= usedCodes.length - WINDOW_SIZE; i--) {
+            if (!usedCodes[i].isValidCode) {
+                invalidCodes++;
+            }
+        }
+        if (invalidCodes == WINDOW_SIZE) {
+            throw new LimitReachedException();
+        }
+
+        // Code is invalid and the user has not exceeded the limit:
+        throw new InvalidTotpException();
+    }
+
+    public static void deleteDevice(Main main, String userId, String deviceName)
+            throws StorageQueryException, UnknownDeviceException, TotpNotEnabledException {
+        TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
+
+        try {
+            totpStorage.deleteDevice(userId, deviceName);
+        } catch (UnknownDeviceException e) {
+            // See if any device exists for the user:
+            TOTPDevice[] devices = totpStorage.getDevices(userId);
+            if (devices.length == 0) {
+                throw new TotpNotEnabledException();
+            } else {
+                throw e;
+            }
+        }
+    }
+
+    public static void updateDeviceName(Main main, String userId, String oldDeviceName, String newDeviceName)
+            throws StorageQueryException, DeviceAlreadyExistsException, UnknownDeviceException,
+            TotpNotEnabledException {
         TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
         try {
-            totpStorage.markDeviceAsVerified(userId, deviceName);
-        } catch (Exception e) {
-            throw new IOException(e);
+            totpStorage.updateDeviceName(userId, oldDeviceName, newDeviceName);
+        } catch (UnknownDeviceException e) {
+            // See if any device exists for the user:
+            TOTPDevice[] devices = totpStorage.getDevices(userId);
+            if (devices.length == 0) {
+                throw new TotpNotEnabledException();
+            } else {
+                throw e;
+            }
         }
     }
 
-    private static class GenerateDeviceSecret {
-        // private final String secret;
+    public static TOTPDevice[] getDevices(Main main, String userId)
+            throws StorageQueryException, TotpNotEnabledException {
+        TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
 
-        // private GenerateDeviceSecret(String secret) {
-        // this.secret = secret;
-        // }
-
-        public static String generate() {
-            return "XXXX";
+        TOTPDevice[] devices = totpStorage.getDevices(userId);
+        if (devices.length == 0) {
+            throw new TotpNotEnabledException();
         }
+        return devices;
     }
 
     public static class CreateDeviceResponse {
-        public String deviceName;
-        public String secret;
+        public final String secret;
 
-        public CreateDeviceResponse(String deviceName, String secret) {
-            this.deviceName = deviceName;
+        public CreateDeviceResponse(String secret) {
             this.secret = secret;
         }
-
     }
+
+    public static class VerifyDeviceResponse {
+        public final boolean deviceWasAlreadyVerified;
+
+        public VerifyDeviceResponse(boolean deviceWasAlreadyVerified) {
+            this.deviceWasAlreadyVerified = deviceWasAlreadyVerified;
+        }
+    }
+
 }

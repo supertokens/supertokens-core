@@ -98,8 +98,42 @@ public class TOTPQueries {
                 devices.add(TOTPDeviceRowMapper.getInstance().map(result));
             }
 
-            return devices.toArray(new TOTPDevice[0]);
+            return devices.toArray(TOTPDevice[]::new);
         });
+    }
+
+    public static int insertUsedCode(Start start, TOTPUsedCode code) throws SQLException, StorageQueryException {
+        String QUERY = "INSERT INTO " + Config.getConfig(start).getTotpUsedCodesTable()
+                + " (user_id, code, is_valid_code, expiry_time) VALUES (?, ?, ?, ?);";
+
+        return update(start, QUERY, pst -> {
+            pst.setString(1, code.userId);
+            pst.setString(2, code.code);
+            pst.setBoolean(3, code.isValidCode);
+            pst.setLong(4, code.expiryTime);
+        });
+    }
+
+    public static TOTPUsedCode[] getUsedCodes(Start start, String userId) throws SQLException, StorageQueryException {
+        String QUERY = "SELECT * FROM " +
+                Config.getConfig(start).getTotpUsedCodesTable()
+                + " WHERE user_id = ?;";
+        return execute(start, QUERY, pst -> pst.setString(1, userId), result -> {
+            List<TOTPUsedCode> codes = new ArrayList<>();
+            while (result.next()) {
+                codes.add(TOTPUsedCodeRowMapper.getInstance().map(result));
+            }
+
+            return codes.toArray(TOTPUsedCode[]::new);
+        });
+    }
+
+    public static int removeExpiredCodes(Start start)
+            throws StorageTransactionLogicException, StorageQueryException, SQLException {
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getTotpUsedCodesTable()
+                + " WHERE expiry_time < ?;";
+
+        return update(start, QUERY, pst -> pst.setLong(1, System.currentTimeMillis()));
     }
 
     private static class TOTPDeviceRowMapper implements RowMapper<TOTPDevice, ResultSet> {
@@ -142,39 +176,5 @@ public class TOTPQueries {
                     result.getBoolean("is_valid_code"),
                     result.getLong("expiry_time"));
         }
-    }
-
-    public static int insertUsedCode(Start start, TOTPUsedCode code) throws SQLException, StorageQueryException {
-        String QUERY = "INSERT INTO " + Config.getConfig(start).getTotpUsedCodesTable()
-                + " (user_id, code, is_valid_code, expiry_time) VALUES (?, ?, ?, ?);";
-
-        return update(start, QUERY, pst -> {
-            pst.setString(1, code.userId);
-            pst.setString(2, code.code);
-            pst.setBoolean(3, code.isValidCode);
-            pst.setLong(4, code.expiryTime);
-        });
-    }
-
-    public static TOTPUsedCode[] getUsedCodes(Start start, String userId) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT * FROM " +
-                Config.getConfig(start).getTotpUsedCodesTable()
-                + " WHERE user_id = ?;";
-        return execute(start, QUERY, pst -> pst.setString(1, userId), result -> {
-            List<TOTPUsedCode> codes = new ArrayList<>();
-            while (result.next()) {
-                codes.add(TOTPUsedCodeRowMapper.getInstance().map(result));
-            }
-
-            return codes.toArray(new TOTPUsedCode[0]);
-        });
-    }
-
-    public static void removeExpiredCodes(Start start)
-            throws StorageTransactionLogicException, StorageQueryException, SQLException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getTotpUsedCodesTable()
-                + " WHERE expiry_time < ?;";
-
-        update(start, QUERY, pst -> pst.setLong(1, System.currentTimeMillis()));
     }
 }
