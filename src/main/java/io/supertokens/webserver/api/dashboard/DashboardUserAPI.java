@@ -149,7 +149,6 @@ public class DashboardUserAPI extends WebserverAPI {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 response.add("user", userJsonObject);
-                // TODO: add user object in response if it was updated
                 super.sendJsonResponse(200, response, resp);
                 return;
             }
@@ -162,7 +161,6 @@ public class DashboardUserAPI extends WebserverAPI {
                 // retrieve updated user details
                 DashboardUser user = StorageLayer.getDashboardStorage(main).getDashboardUserByEmail(email);
                 JsonObject userJsonObject = new com.google.gson.JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
-
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 response.add("user", userJsonObject);
@@ -184,7 +182,7 @@ public class DashboardUserAPI extends WebserverAPI {
         }
         // Both email and userId are null
         throw new ServletException(
-                new WebserverAPI.BadRequestException("Either field email or userId must be present"));
+                new WebserverAPI.BadRequestException("Either field 'email' or 'userId' must be present"));
     }
 
     @Override

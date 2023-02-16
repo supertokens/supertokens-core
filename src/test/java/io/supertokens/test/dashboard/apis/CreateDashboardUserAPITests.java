@@ -95,6 +95,40 @@ public class CreateDashboardUserAPITests {
         }
 
         {
+            // calling API with email as an invalid type
+            JsonObject request = new JsonObject();
+            request.addProperty("email", 123);
+            request.addProperty("password", "password123");
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/dashboard/user", request, 1000, 1000, null,
+                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                throw new Exception("Should never come here");
+
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'email' is invalid in JSON input"));
+            }
+        }
+
+        {
+            // calling API with email as an empty string
+            JsonObject request = new JsonObject();
+            request.addProperty("email", "  ");
+            request.addProperty("password", "password123");
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/dashboard/user", request, 1000, 1000, null,
+                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                throw new Exception("Should never come here");
+
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'email' cannot be an empty String"));
+            }
+        }
+
+        {
             // calling API with only password
             JsonObject request = new JsonObject();
             request.addProperty("password", "testPass123");
@@ -107,6 +141,40 @@ public class CreateDashboardUserAPITests {
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
                         "Http error. Status Code: 400. Message:" + " Field name 'email' is invalid in JSON input"));
+            }
+        }
+
+        {
+            // calling API with password as an invalid type
+            JsonObject request = new JsonObject();
+            request.addProperty("email", "test@example.com");
+            request.addProperty("password", 123);
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/dashboard/user", request, 1000, 1000, null,
+                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                throw new Exception("Should never come here");
+
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'password' is invalid in JSON input"));
+            }
+        }
+
+        {
+            // calling API with password as an empty string
+            JsonObject request = new JsonObject();
+            request.addProperty("email", "test@example.com");
+            request.addProperty("password", "  ");
+            try {
+                HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                        "http://localhost:3567/recipe/dashboard/user", request, 1000, 1000, null,
+                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                throw new Exception("Should never come here");
+
+            } catch (HttpResponseException e) {
+                assertTrue(e.statusCode == 400 && e.getMessage().equals(
+                        "Http error. Status Code: 400. Message:" + " Field name 'password' cannot be an empty String"));
             }
         }
 

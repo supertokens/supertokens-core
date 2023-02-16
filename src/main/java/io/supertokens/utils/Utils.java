@@ -292,7 +292,7 @@ public class Utils {
         param = param.trim();
         if (param.length() == 0) {
             throw new ServletException(
-                    new WebserverAPI.BadRequestException("Field name " + paramName + " cannot be an empty String"));
+                    new WebserverAPI.BadRequestException("Field name '" + paramName + "' cannot be an empty String"));
         }
         return param;
     }
