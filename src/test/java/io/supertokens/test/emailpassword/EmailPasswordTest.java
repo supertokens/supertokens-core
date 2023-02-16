@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailExc
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -196,7 +197,7 @@ public class EmailPasswordTest {
 
         String resetToken = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
         PasswordResetTokenInfo resetTokenInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getPasswordResetTokenInfo(new TenantIdentifier(null, null, null),
+                .getPasswordResetTokenInfo(new AppIdentifier(null, null),
                         io.supertokens.utils.Utils.hashSHA256(resetToken));
 
         assertNotEquals(resetToken, resetTokenInfo.token);
@@ -256,7 +257,7 @@ public class EmailPasswordTest {
         String tok = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
 
         assert (StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getAllPasswordResetTokenInfoForUser(new TenantIdentifier(null, null, null), user.id).length == 1);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 1);
 
         Thread.sleep(20);
 
@@ -268,7 +269,7 @@ public class EmailPasswordTest {
         }
 
         assert (StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getAllPasswordResetTokenInfoForUser(new TenantIdentifier(null, null, null), user.id).length == 0);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -292,14 +293,14 @@ public class EmailPasswordTest {
         EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
 
         PasswordResetTokenInfo[] tokens = StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getAllPasswordResetTokenInfoForUser(new TenantIdentifier(null, null, null), user.id);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id);
 
         assert (tokens.length == 3);
 
         EmailPassword.resetPassword(process.getProcess(), tok, "newPassword");
 
         tokens = StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getAllPasswordResetTokenInfoForUser(new TenantIdentifier(null, null, null), user.id);
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id);
         assert (tokens.length == 0);
 
         try {
@@ -328,7 +329,7 @@ public class EmailPasswordTest {
             return;
         }
         PasswordResetTokenInfo[] tokens = StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getAllPasswordResetTokenInfoForUser(new TenantIdentifier(null, null, null),
+                .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null),
                         "8ed86166-bfd8-4234-9dfe-abca9606dbd5");
 
         assert (tokens.length == 0);
@@ -374,14 +375,14 @@ public class EmailPasswordTest {
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .addPasswordResetToken(new TenantIdentifier(null, null, null), new PasswordResetTokenInfo(
+                .addPasswordResetToken(new AppIdentifier(null, null), new PasswordResetTokenInfo(
                         user.id, "token",
                         System.currentTimeMillis() +
                                 Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime()));
 
         try {
             StorageLayer.getEmailPasswordStorage(process.getProcess())
-                    .addPasswordResetToken(new TenantIdentifier(null, null, null),
+                    .addPasswordResetToken(new AppIdentifier(null, null),
                             new PasswordResetTokenInfo(user.id, "token", System.currentTimeMillis()
                                     + Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime()));
             assert (false);

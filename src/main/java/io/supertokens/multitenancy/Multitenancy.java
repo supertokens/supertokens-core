@@ -229,40 +229,33 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     // TODO: removeUserIdFromTenant
     // TODO: removeRoleFromTenant
 
-    public static boolean addUserIdToTenant(Main main, TenantIdentifier sourceTenantIdentifier, String userId,
-                                            String newTenantId)
+    public static boolean addUserIdToTenant(Main main, TenantIdentifier tenantIdentifier, String userId)
             throws TenantOrAppNotFoundException, UnknownUserIdException, StorageQueryException,
             FeatureNotEnabledException {
-        TenantIdentifier targetTenantIdentifier = new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(),
-                sourceTenantIdentifier.getAppId(), newTenantId);
-        if (sourceTenantIdentifier.equals(targetTenantIdentifier)) {
-            return false;
-        }
+        // TODO: this will also require copying the emailpassword / thirdparty / passwordless user row with a
+        //  different tenant ID cause we allow same email to exist for different userID across tenants, so we
+        //  needed to add tenantId to the user tables.
         if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
                 .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
         }
-        StorageLayer.getMultitenancyStorageWithTargetStorage(sourceTenantIdentifier, main)
-                .addUserIdToTenant(targetTenantIdentifier, userId);
+
+        StorageLayer.getMultitenancyStorageWithTargetStorage(tenantIdentifier, main)
+                .addUserIdToTenant(tenantIdentifier, userId);
         return true;
     }
 
-    public static boolean addRoleToTenant(Main main, TenantIdentifier sourceTenantIdentifier, String role,
-                                          String newTenantId)
+    public static boolean addRoleToTenant(Main main, TenantIdentifier tenantIdentifier, String role)
             throws TenantOrAppNotFoundException, UnknownRoleException, StorageQueryException,
             FeatureNotEnabledException {
 
-        TenantIdentifier targetTenantIdentifier = new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(),
-                sourceTenantIdentifier.getAppId(), newTenantId);
-        if (sourceTenantIdentifier.equals(targetTenantIdentifier)) {
-            return false;
-        }
         if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
                 .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
         }
-        StorageLayer.getMultitenancyStorageWithTargetStorage(sourceTenantIdentifier, main)
-                .addRoleToTenant(targetTenantIdentifier, role);
+
+        StorageLayer.getMultitenancyStorageWithTargetStorage(tenantIdentifier, main)
+                .addRoleToTenant(tenantIdentifier, role);
         return true;
     }
 

@@ -588,7 +588,7 @@ public class Start
     }
 
     @Override
-    public void deleteEmailPasswordUser(TenantIdentifier tenantIdentifier, String userId) throws StorageQueryException {
+    public void deleteEmailPasswordUser(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
         // TODO..
         try {
             EmailPasswordQueries.deleteUser(this, userId);
@@ -619,13 +619,14 @@ public class Start
     }
 
     @Override
-    public void addPasswordResetToken(TenantIdentifier tenantIdentifier, PasswordResetTokenInfo passwordResetTokenInfo)
+    public void addPasswordResetToken(AppIdentifier appIdentifier, PasswordResetTokenInfo passwordResetTokenInfo)
             throws StorageQueryException, UnknownUserIdException, DuplicatePasswordResetTokenException {
         // TODO..
         try {
             // SQLite is not compiled with foreign key constraint and so we must check for
             // the userId manually
-            if (this.getUserInfoUsingId(tenantIdentifier, passwordResetTokenInfo.userId) == null) {
+            if (this.getUserInfoUsingId(appIdentifier.getAsPublicTenantIdentifier(), passwordResetTokenInfo.userId) ==
+                    null) {
                 throw new UnknownUserIdException();
             }
 
@@ -643,7 +644,7 @@ public class Start
     }
 
     @Override
-    public PasswordResetTokenInfo getPasswordResetTokenInfo(TenantIdentifier tenantIdentifier, String token)
+    public PasswordResetTokenInfo getPasswordResetTokenInfo(AppIdentifier appIdentifier, String token)
             throws StorageQueryException {
         // TODO..
         try {
@@ -654,7 +655,7 @@ public class Start
     }
 
     @Override
-    public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser(TenantIdentifier tenantIdentifier,
+    public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser(AppIdentifier appIdentifier,
                                                                         String userId) throws StorageQueryException {
         // TODO..
         try {
@@ -665,9 +666,11 @@ public class Start
     }
 
     @Override
-    public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser_Transaction(TransactionConnection con,
+    public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser_Transaction(AppIdentifier appIdentifier,
+                                                                                    TransactionConnection con,
                                                                                     String userId)
             throws StorageQueryException {
+        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return EmailPasswordQueries.getAllPasswordResetTokenInfoForUser_Transaction(this, sqlCon, userId);
@@ -677,8 +680,10 @@ public class Start
     }
 
     @Override
-    public void deleteAllPasswordResetTokensForUser_Transaction(TransactionConnection con, String userId)
+    public void deleteAllPasswordResetTokensForUser_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
+                                                                String userId)
             throws StorageQueryException {
+        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             EmailPasswordQueries.deleteAllPasswordResetTokensForUser_Transaction(this, sqlCon, userId);
@@ -688,8 +693,10 @@ public class Start
     }
 
     @Override
-    public void updateUsersPassword_Transaction(TransactionConnection con, String userId, String newPassword)
+    public void updateUsersPassword_Transaction(AppIdentifier appIdentifier, TransactionConnection con, String userId,
+                                                String newPassword)
             throws StorageQueryException {
+        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             EmailPasswordQueries.updateUsersPassword_Transaction(this, sqlCon, userId, newPassword);
@@ -699,8 +706,10 @@ public class Start
     }
 
     @Override
-    public void updateUsersEmail_Transaction(TransactionConnection conn, String userId, String email)
+    public void updateUsersEmail_Transaction(AppIdentifier appIdentifier, TransactionConnection conn, String userId,
+                                             String email)
             throws StorageQueryException, DuplicateEmailException {
+        // TODO..
         Connection sqlConn = (Connection) conn.getConnection();
 
         try {
@@ -716,8 +725,10 @@ public class Start
     }
 
     @Override
-    public UserInfo getUserInfoUsingId_Transaction(TransactionConnection con, String userId)
+    public UserInfo getUserInfoUsingId_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
+                                                   String userId)
             throws StorageQueryException {
+        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return EmailPasswordQueries.getUserInfoUsingId_Transaction(this, sqlCon, userId);

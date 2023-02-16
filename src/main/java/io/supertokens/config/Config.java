@@ -186,6 +186,7 @@ public class Config extends ResourceDistributor.SingletonResource {
             // TODO: some configs must be same app wide
             //      - access token signing key update
             //      - access and refresh token validity
+            //      - everything related to password hashing algorithm stuff
         }
     }
 

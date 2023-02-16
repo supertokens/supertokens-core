@@ -169,8 +169,6 @@ public class AuthRecipe {
 
     private static void deleteNonAuthRecipeUser(TenantIdentifier tenantIdentifier, Main main, String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        // TODO: all these will change to using tenantIdentifier.toAppIdentifier() for the actual delete operation
-        // non auth recipe deletion
         StorageLayer.getUserMetadataStorage(tenantIdentifier, main)
                 .deleteUserMetadata(tenantIdentifier.toAppIdentifier(), userId);
         StorageLayer.getSessionStorage(tenantIdentifier, main)
@@ -184,7 +182,8 @@ public class AuthRecipe {
     private static void deleteAuthRecipeUser(TenantIdentifier tenantIdentifier, Main main, String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
         // auth recipe deletions here only
-        StorageLayer.getEmailPasswordStorage(tenantIdentifier, main).deleteEmailPasswordUser(tenantIdentifier, userId);
+        StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
+                .deleteEmailPasswordUser(tenantIdentifier.toAppIdentifier(), userId);
         StorageLayer.getThirdPartyStorage(tenantIdentifier, main).deleteThirdPartyUser(userId);
         StorageLayer.getPasswordlessStorage(tenantIdentifier, main).deletePasswordlessUser(userId);
     }

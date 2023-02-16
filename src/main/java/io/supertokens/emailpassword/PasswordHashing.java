@@ -24,6 +24,7 @@ import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import org.jetbrains.annotations.TestOnly;
@@ -74,17 +75,18 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     @TestOnly
     public String createHashWithSalt(String password) {
         try {
-            return createHashWithSalt(new TenantIdentifier(null, null, null), password);
+            return createHashWithSalt(new AppIdentifier(null, null), password);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public String createHashWithSalt(TenantIdentifier tenantIdentifier, String password)
+    public String createHashWithSalt(AppIdentifier appIdentifier, String password)
             throws TenantOrAppNotFoundException {
 
         String passwordHash = "";
 
+        TenantIdentifier tenantIdentifier = appIdentifier.getAsPublicTenantIdentifier();
         if (Config.getConfig(tenantIdentifier, main).getPasswordHashingAlg() ==
                 CoreConfig.PASSWORD_HASHING_ALG.BCRYPT) {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_HASH_BCRYPT, null);
@@ -101,7 +103,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
         }
 
         try {
-            PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(tenantIdentifier, main,
+            PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(appIdentifier, main,
                     passwordHash, null);
         } catch (UnsupportedPasswordHashingFormatException e) {
             throw new IllegalStateException(e);
@@ -135,13 +137,13 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
     @TestOnly
     public boolean verifyPasswordWithHash(String password, String hash) {
         try {
-            return verifyPasswordWithHash(new TenantIdentifier(null, null, null), password, hash);
+            return verifyPasswordWithHash(new AppIdentifier(null, null), password, hash);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public boolean verifyPasswordWithHash(TenantIdentifier tenantIdentifier, String password, String hash)
+    public boolean verifyPasswordWithHash(AppIdentifier appIdentifier, String password, String hash)
             throws TenantOrAppNotFoundException {
 
         if (PasswordHashingUtils.isInputHashInArgon2Format(hash)) {
@@ -169,7 +171,7 @@ public class PasswordHashing extends ResourceDistributor.SingletonResource {
             ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.PASSWORD_VERIFY_FIREBASE_SCRYPT, null);
             return withConcurrencyLimited(
                     () -> PasswordHashingUtils.verifyFirebaseSCryptPasswordHash(password, hash,
-                            Config.getConfig(tenantIdentifier, main)
+                            Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
                                     .getFirebase_password_hashing_signer_key()),
                     this.firebaseSCryptBoundedQueue);
         }

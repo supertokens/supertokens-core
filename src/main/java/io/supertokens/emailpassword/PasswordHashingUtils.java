@@ -21,8 +21,8 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import org.apache.tomcat.util.codec.binary.Base64;
 
 import javax.annotation.Nullable;
@@ -48,7 +48,7 @@ public class PasswordHashingUtils {
         return hash;
     }
 
-    public static void assertSuperTokensSupportInputPasswordHashFormat(TenantIdentifier tenantIdentifier,
+    public static void assertSuperTokensSupportInputPasswordHashFormat(AppIdentifier appIdentifier,
                                                                        Main main, String passwordHash,
                                                                        @Nullable
                                                                                CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
@@ -56,7 +56,8 @@ public class PasswordHashingUtils {
         if (hashingAlgorithm == null) {
             if (ParsedFirebaseSCryptResponse.fromHashString(passwordHash) != null) {
                 // since input hash is in firebase scrypt format we check if firebase scrypt signer key is set
-                Config.getConfig(tenantIdentifier, main).getFirebase_password_hashing_signer_key();
+                Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
+                        .getFirebase_password_hashing_signer_key();
                 return;
             }
 
@@ -80,7 +81,8 @@ public class PasswordHashingUtils {
 
         if (hashingAlgorithm.equals(CoreConfig.PASSWORD_HASHING_ALG.FIREBASE_SCRYPT)) {
             // since input hash is in firebase scrypt format we check if firebase scrypt signer key is set
-            Config.getConfig(tenantIdentifier, main).getFirebase_password_hashing_signer_key();
+            Config.getConfig(appIdentifier.getAsPublicTenantIdentifier(), main)
+                    .getFirebase_password_hashing_signer_key();
             if (ParsedFirebaseSCryptResponse.fromHashString(passwordHash) == null) {
                 throw new UnsupportedPasswordHashingFormatException(
                         "Password hash is in invalid Firebase SCrypt format");

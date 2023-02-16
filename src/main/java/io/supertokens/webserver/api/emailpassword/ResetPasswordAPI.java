@@ -70,6 +70,7 @@ public class ResetPasswordAPI extends WebserverAPI {
         }
 
         try {
+
             String userId = EmailPassword.resetPassword(this.getTenantIdentifier(req), super.main, token, newPassword);
 
             // if userIdMapping exists, pass the externalUserId to the response
