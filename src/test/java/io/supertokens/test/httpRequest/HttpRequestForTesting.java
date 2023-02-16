@@ -222,4 +222,73 @@ public class HttpRequestForTesting {
         return sendJsonRequest(main, requestID, url, requestBody, connectionTimeoutMS, readTimeoutMS, version,
                 cdiVersion, "DELETE", null, rid);
     }
+
+    @SuppressWarnings("unchecked")
+    public static <T> T sendJsonDELETERequestWithQueryParams(Main main, String requestID, String url, Map<String, String> params,
+            int connectionTimeoutMS, int readTimeoutMS, Integer version, String cdiVersion, String rid)
+            throws IOException, HttpResponseException {
+                StringBuilder paramBuilder = new StringBuilder();
+
+                if (params != null) {
+                    for (Map.Entry<String, String> entry : params.entrySet()) {
+                        paramBuilder.append(entry.getKey()).append("=")
+                                .append(URLEncoder.encode(entry.getValue(), StandardCharsets.UTF_8)).append("&");
+                    }
+                }
+                String paramsStr = paramBuilder.toString();
+                if (!paramsStr.equals("")) {
+                    paramsStr = paramsStr.substring(0, paramsStr.length() - 1);
+                    url = url + "?" + paramsStr;
+                }
+                URL obj = getURL(main, requestID, url);
+                InputStream inputStream = null;
+                HttpURLConnection con = null;
+        
+                try {
+                    con = (HttpURLConnection) obj.openConnection();
+                    con.setRequestMethod("DELETE");
+                    con.setConnectTimeout(connectionTimeoutMS);
+                    con.setReadTimeout(readTimeoutMS);
+                    if (version != null) {
+                        con.setRequestProperty("api-version", version + "");
+                    }
+                    if (cdiVersion != null) {
+                        con.setRequestProperty("cdi-version", cdiVersion);
+                    }
+                    if (rid != null) {
+                        con.setRequestProperty("rId", rid);
+                    }
+        
+                    int responseCode = con.getResponseCode();
+        
+                    if (responseCode < STATUS_CODE_ERROR_THRESHOLD) {
+                        inputStream = con.getInputStream();
+                    } else {
+                        inputStream = con.getErrorStream();
+                    }
+        
+                    StringBuilder response = new StringBuilder();
+                    try (BufferedReader in = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8))) {
+                        String inputLine;
+                        while ((inputLine = in.readLine()) != null) {
+                            response.append(inputLine);
+                        }
+                    }
+                    if (responseCode < STATUS_CODE_ERROR_THRESHOLD) {
+                        if (!isJsonValid(response.toString())) {
+                            return (T) response.toString();
+                        }
+                        return (T) (new JsonParser().parse(response.toString()));
+                    }
+                    throw new io.supertokens.test.httpRequest.HttpResponseException(responseCode, response.toString());
+                } finally {
+                    if (inputStream != null) {
+                        inputStream.close();
+                    }
+        
+                    if (con != null) {
+                        con.disconnect();
+                    }
+                }
+    }
 }

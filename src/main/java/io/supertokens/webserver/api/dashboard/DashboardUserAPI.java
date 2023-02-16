@@ -202,9 +202,8 @@ public class DashboardUserAPI extends WebserverAPI {
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String userId = InputParser.parseStringOrThrowError(input, "userId", true);
+        String userId = InputParser.getQueryParamOrThrowError(req, "userId", true);
         try {
             if (userId != null) {
                 // normalize userId
@@ -217,7 +216,7 @@ public class DashboardUserAPI extends WebserverAPI {
                 return;
             }
 
-            String email = InputParser.parseStringOrThrowError(input, "email", true);
+            String email = InputParser.getQueryParamOrThrowError(req, "email", true);
 
             if (email != null) {
                 // normalize email
