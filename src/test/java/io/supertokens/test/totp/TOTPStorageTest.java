@@ -209,20 +209,14 @@ public class TOTPStorageTest {
         assert (usedCodes[0].isValidCode);
         assert (usedCodes[0].expiryTime == 1);
 
-        // FIXME: Next two features aren't working because foreign key constraint is not
-        // working in tests:
-
-        // Deleting the device should delete the used codes:
-        storage.deleteDevice("user", "device");
-        usedCodes = storage.getUsedCodes("user");
-        assert (usedCodes.length == 0);
-
-        // Need to run `PRAGMA foreign_keys = ON;` then only will throws exception. But
-        // unable to setup that also in tests.
-
         // Try to insert code when device (userId) doesn't exist:
         assertThrows(TotpNotEnabledException.class,
                 () -> storage.insertUsedCode(new TOTPUsedCode("non-existent-user", "1234", true, 1)));
+
+        // FIXME: Deleting the device should delete the used codes
+        storage.deleteDevice("user", "device");
+        usedCodes = storage.getUsedCodes("user");
+        assert (usedCodes.length == 0);
     }
 
     @Test

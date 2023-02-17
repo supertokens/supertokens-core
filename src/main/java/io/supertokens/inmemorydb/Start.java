@@ -1669,11 +1669,13 @@ public class Start
             }
 
             // FIXME: Should delete all the codes associated with this device.
-            // But problem is that we store all the codes whether they are valid (i.e. matching device found) or not.
-            // So we can't just delete all the codes for the user. We need to delete only the codes that are associated
+            // But problem is that we store all the codes whether they are valid (i.e.
+            // matching device found) or not.
+            // So we can't just delete all the codes for the user. We need to delete only
+            // the codes that are associated
             // with this device. But we don't store that information.
 
-            // One way is only delete the valid codes.
+            // One way is only delete the valid codes?
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1720,7 +1722,7 @@ public class Start
 
             int insertCount = TOTPQueries.insertUsedCode(this, usedCodeObj);
             return insertCount == 1;
-        } catch (Exception e) {
+        } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
@@ -1740,7 +1742,7 @@ public class Start
             throws StorageQueryException {
         try {
             TOTPQueries.removeExpiredCodes(this);
-        } catch (Exception e) {
+        } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }

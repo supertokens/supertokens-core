@@ -129,7 +129,7 @@ public class TOTPQueries {
     }
 
     public static int removeExpiredCodes(Start start)
-            throws StorageTransactionLogicException, StorageQueryException, SQLException {
+            throws StorageQueryException, SQLException {
         String QUERY = "DELETE FROM " + Config.getConfig(start).getTotpUsedCodesTable()
                 + " WHERE expiry_time < ?;";
 
