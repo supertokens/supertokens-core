@@ -17,6 +17,7 @@
 package io.supertokens.test.dashboard.apis;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 import java.util.ArrayList;
@@ -99,6 +100,51 @@ public class GetDashboardUsersAPITests {
             assertEquals(createdUsers.get(i).userId,
                     retrievedUsers.get(i).getAsJsonObject().get("userId").getAsString());
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRetrievingDashboardUsersOnlyReturnsUnsuspendedUsers() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // enable dashboard feature
+        FeatureFlagTestContent.getInstance(process.getProcess()).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.DASHBOARD_LOGIN });
+
+        // create multiple users
+        ArrayList<DashboardUser> createdUsers = new ArrayList<>();
+
+        for (int i = 0; i < 3; i++) {
+            DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), "test" + i + "@example.com",
+                    "testPasswordHash");
+            createdUsers.add(user);
+        }
+
+        // remove dashboard feature
+        FeatureFlagTestContent.getInstance(process.getProcess()).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] {});
+
+        // retrieve users and check that there were correctly created
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/dashboard/users", new HashMap<>(), 1000, 1000, null,
+                Utils.getCdiVersion2_18ForTests(), "dashboard");
+        assertEquals(2, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+
+        JsonArray retrievedUsers = response.get("users").getAsJsonArray();
+
+        assertEquals(1, retrievedUsers.size());
+        assertEquals(createdUsers.get(0).userId, retrievedUsers.get(0).getAsJsonObject().get("userId").getAsString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));

@@ -53,7 +53,7 @@ public class VerifyDashboardUserSessionAPI extends WebserverAPI {
 
         String sessionId = InputParser.parseStringOrThrowError(input, "sessionId", false);
 
-        sessionId = Utils.normalizeStringParam(sessionId, "sessionId");
+        sessionId = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(sessionId, "sessionId");
         try {
             if (Dashboard.isValidUserSession(main, sessionId)) {
                 JsonObject response = new JsonObject();
@@ -69,7 +69,7 @@ public class VerifyDashboardUserSessionAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "USER_SUSPENDED_ERROR");
             response.addProperty("message",
-                    "User is suspended, please sign in with a valid account or purchase the dashboard feature");
+                    "User is suspended.");
             super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);

@@ -288,15 +288,6 @@ public class Utils {
         return baos.toString();
     }
 
-    public static String normalizeStringParam(String param, String paramName) throws ServletException {
-        param = param.trim();
-        if (param.length() == 0) {
-            throw new ServletException(
-                    new WebserverAPI.BadRequestException("Field name '" + paramName + "' cannot be an empty String"));
-        }
-        return param;
-    }
-
     public static JsonArray keyListToJson(List<KeyInfo> keys) {
         JsonArray jwtSigningPublicKeyListJSON = new JsonArray();
         for (KeyInfo keyInfo : keys) {

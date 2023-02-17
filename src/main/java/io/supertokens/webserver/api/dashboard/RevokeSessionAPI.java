@@ -49,7 +49,7 @@ public class RevokeSessionAPI extends WebserverAPI{
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String sessionId = InputParser.parseStringOrThrowError(input, "sessionId", false);
-        sessionId = Utils.normalizeStringParam(sessionId, "sessionId");
+        sessionId = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(sessionId, "sessionId");
 
         try {
             Dashboard.revokeSessionWithSessionId(main, sessionId);

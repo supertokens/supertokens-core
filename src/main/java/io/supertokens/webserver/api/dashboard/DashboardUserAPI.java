@@ -64,7 +64,7 @@ public class DashboardUserAPI extends WebserverAPI {
             String email = InputParser.parseStringOrThrowError(input, "email", false);
 
             // normalize email
-            email = Utils.normalizeStringParam(email, "email");
+            email = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(email, "email");
 
             // check if input email is invalid
             if (!Dashboard.isValidEmail(email)) {
@@ -77,7 +77,7 @@ public class DashboardUserAPI extends WebserverAPI {
             String password = InputParser.parseStringOrThrowError(input, "password", false);
 
             // normalize password
-            password = Utils.normalizeStringParam(password, "password");
+            password = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(password, "password");
 
             // check if input password is a strong password
             String passwordErrorMessage = Dashboard.validatePassword(password);
@@ -113,7 +113,7 @@ public class DashboardUserAPI extends WebserverAPI {
         String newEmail = InputParser.parseStringOrThrowError(input, "newEmail", true);
         if (newEmail != null) {
             // normalize new email
-            newEmail = Utils.normalizeStringParam(newEmail, "newEmail");
+            newEmail = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(newEmail, "newEmail");
 
             // check if the newEmail is in valid format
             if (!Dashboard.isValidEmail(newEmail)) {
@@ -127,7 +127,7 @@ public class DashboardUserAPI extends WebserverAPI {
         String newPassword = InputParser.parseStringOrThrowError(input, "newPassword", true);
         if (newPassword != null) {
             // normalize new password
-            newPassword = Utils.normalizeStringParam(newPassword, "newPassword");
+            newPassword = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(newPassword, "newPassword");
             // check if the new password is strong
             String passwordErrorMessage = Dashboard.validatePassword(newPassword);
             if (passwordErrorMessage != null) {
@@ -143,7 +143,7 @@ public class DashboardUserAPI extends WebserverAPI {
             String userId = InputParser.parseStringOrThrowError(input, "userId", true);
             if (userId != null) {
                 // normalize userId
-                userId = Utils.normalizeStringParam(userId, "userId");
+                userId = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(userId, "userId");
 
                 Dashboard.updateUsersCredentialsWithUserId(main, userId, newEmail, newPassword);
                 // retrieve updated user details
@@ -160,7 +160,7 @@ public class DashboardUserAPI extends WebserverAPI {
             String email = InputParser.parseStringOrThrowError(input, "email", true);
             if (email != null) {
                 // normalize email
-                email = Utils.normalizeStringParam(email, "email");
+                email = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(email, "email");
 
                 // retrieve user
                 DashboardSQLStorage storage = StorageLayer.getDashboardStorage(main);
@@ -207,7 +207,7 @@ public class DashboardUserAPI extends WebserverAPI {
         try {
             if (userId != null) {
                 // normalize userId
-                userId = Utils.normalizeStringParam(userId, "userId");
+                userId = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(userId, "userId");
                 boolean didUserExist = Dashboard.deleteUserWithUserId(main, userId);
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
@@ -220,7 +220,7 @@ public class DashboardUserAPI extends WebserverAPI {
 
             if (email != null) {
                 // normalize email
-                email = Utils.normalizeStringParam(email, "email");
+                email = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(email, "email");
                 boolean didUserExist = Dashboard.deleteUserWithEmail(main, email);
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");

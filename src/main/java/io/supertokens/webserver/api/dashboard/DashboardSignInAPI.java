@@ -49,12 +49,12 @@ public class DashboardSignInAPI extends WebserverAPI {
         String email = InputParser.parseStringOrThrowError(input, "email", false);
 
         // normalize email
-        email = Utils.normalizeStringParam(email, "email");
+        email = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(email, "email");
 
         String password = InputParser.parseStringOrThrowError(input, "password", false);
 
         // normalize password
-        password = Utils.normalizeStringParam(password, "password");
+        password = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(password, "password");
 
         try {
             String sessionId = Dashboard.signInDashboardUser(main, email, password);
@@ -73,7 +73,7 @@ public class DashboardSignInAPI extends WebserverAPI {
             response.addProperty("status", "USER_SUSPENDED_ERROR");
             // TODO: update message
             response.addProperty("message",
-                    "User is currently suspended, please sign in with a valid account");
+                    "User is currently suspended, please sign in with another account, or reactivate the SuperTokens core license key");
             super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
