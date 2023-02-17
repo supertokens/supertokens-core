@@ -214,7 +214,7 @@ public class DashboardUserAPI extends WebserverAPI {
 
             if (email != null) {
                 // normalize email
-                email = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(email, "email");
+                email = Utils.normalizeAndValidateStringParam(email, "email");
                 boolean didUserExist = Dashboard.deleteUserWithEmail(main, email);
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
