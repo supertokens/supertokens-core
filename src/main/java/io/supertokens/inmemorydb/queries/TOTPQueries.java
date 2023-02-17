@@ -9,7 +9,6 @@ import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
@@ -28,15 +27,15 @@ public class TOTPQueries {
 
     public static String getQueryToCreateUsedCodesTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getTotpUsedCodesTable() + " ("
-                + "user_id VARCHAR(128) NOT NULL," + "code VARCHAR(6) NOT NULL," + "is_valid_code BOOLEAN NOT NULL,"
-                + "expiry_time BIGINT NOT NULL,"
+                + "user_id VARCHAR(128) NOT NULL," + "code CHAR(6) NOT NULL," + "is_valid_code BOOLEAN NOT NULL,"
+                + "expiry_time_ms BIGINT UNSIGNED NOT NULL,"
                 + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getTotpUserDevicesTable()
                 + "(user_id) ON DELETE CASCADE)";
     }
 
     public static String getQueryToCreateUsedCodesIndex(Start start) {
-        return "CREATE INDEX IF NOT EXISTS totp_used_codes_expiry_time_index ON "
-                + Config.getConfig(start).getTotpUsedCodesTable() + " (expiry_time)";
+        return "CREATE INDEX IF NOT EXISTS totp_used_codes_expiry_time_ms_index ON "
+                + Config.getConfig(start).getTotpUsedCodesTable() + " (expiry_time_ms)";
     }
 
     public static void createDevice(Start start, TOTPDevice device)
@@ -104,7 +103,7 @@ public class TOTPQueries {
 
     public static int insertUsedCode(Start start, TOTPUsedCode code) throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getTotpUsedCodesTable()
-                + " (user_id, code, is_valid_code, expiry_time) VALUES (?, ?, ?, ?);";
+                + " (user_id, code, is_valid_code, expiry_time_ms) VALUES (?, ?, ?, ?);";
 
         return update(start, QUERY, pst -> {
             pst.setString(1, code.userId);
@@ -131,7 +130,7 @@ public class TOTPQueries {
     public static int removeExpiredCodes(Start start)
             throws StorageQueryException, SQLException {
         String QUERY = "DELETE FROM " + Config.getConfig(start).getTotpUsedCodesTable()
-                + " WHERE expiry_time < ?;";
+                + " WHERE expiry_time_ms < ?;";
 
         return update(start, QUERY, pst -> pst.setLong(1, System.currentTimeMillis()));
     }
@@ -174,7 +173,7 @@ public class TOTPQueries {
                     result.getString("user_id"),
                     result.getString("code"),
                     result.getBoolean("is_valid_code"),
-                    result.getLong("expiry_time"));
+                    result.getLong("expiry_time_ms"));
         }
     }
 }
