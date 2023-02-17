@@ -25,8 +25,8 @@ import io.supertokens.dashboard.Dashboard;
 import io.supertokens.dashboard.exceptions.UserSuspendedException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -49,12 +49,12 @@ public class DashboardSignInAPI extends WebserverAPI {
         String email = InputParser.parseStringOrThrowError(input, "email", false);
 
         // normalize email
-        email = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(email, "email");
+        email = Utils.normalizeAndValidateStringParam(email, "email");
 
         String password = InputParser.parseStringOrThrowError(input, "password", false);
 
         // normalize password
-        password = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(password, "password");
+        password = Utils.normalizeAndValidateStringParam(password, "password");
 
         try {
             String sessionId = Dashboard.signInDashboardUser(main, email, password);

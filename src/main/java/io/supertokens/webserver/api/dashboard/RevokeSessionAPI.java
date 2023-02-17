@@ -24,8 +24,8 @@ import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -49,7 +49,7 @@ public class RevokeSessionAPI extends WebserverAPI{
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String sessionId = InputParser.parseStringOrThrowError(input, "sessionId", false);
-        sessionId = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(sessionId, "sessionId");
+        sessionId = Utils.normalizeAndValidateStringParam(sessionId, "sessionId");
 
         try {
             Dashboard.revokeSessionWithSessionId(main, sessionId);

@@ -149,7 +149,7 @@ public class Dashboard {
         return false;
     }
 
-    public static void updateUsersCredentialsWithUserId(Main main, String userId, String newEmail, String newPassword)
+    public static DashboardUser updateUsersCredentialsWithUserId(Main main, String userId, String newEmail, String newPassword)
             throws StorageQueryException, DuplicateEmailException, UserIdNotFoundException,
             StorageTransactionLogicException {
         DashboardSQLStorage storage = StorageLayer.getDashboardStorage(main);
@@ -185,6 +185,12 @@ public class Dashboard {
             }
             throw e;
         }
+        return StorageLayer.getDashboardStorage(main).getDashboardUserByUserId(userId);
+    }
+
+    public static DashboardUser getDashboardUserByEmail(Main main, String email) throws StorageQueryException{
+
+        return StorageLayer.getDashboardStorage(main).getDashboardUserByEmail(email);
     }
 
     public static boolean isUserCountUnderThreshold(DashboardUser[] users) {

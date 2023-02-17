@@ -30,12 +30,10 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
-import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.Utils;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -64,7 +62,7 @@ public class DashboardUserAPI extends WebserverAPI {
             String email = InputParser.parseStringOrThrowError(input, "email", false);
 
             // normalize email
-            email = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(email, "email");
+            email = Utils.normalizeAndValidateStringParam(email, "email");
 
             // check if input email is invalid
             if (!Dashboard.isValidEmail(email)) {
@@ -77,7 +75,7 @@ public class DashboardUserAPI extends WebserverAPI {
             String password = InputParser.parseStringOrThrowError(input, "password", false);
 
             // normalize password
-            password = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(password, "password");
+            password = Utils.normalizeAndValidateStringParam(password, "password");
 
             // check if input password is a strong password
             String passwordErrorMessage = Dashboard.validatePassword(password);
@@ -90,7 +88,7 @@ public class DashboardUserAPI extends WebserverAPI {
             }
 
             DashboardUser user = Dashboard.signUpDashboardUser(main, email, password);
-            JsonObject userAsJsonObject = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject(); 
+            JsonObject userAsJsonObject = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
@@ -113,7 +111,7 @@ public class DashboardUserAPI extends WebserverAPI {
         String newEmail = InputParser.parseStringOrThrowError(input, "newEmail", true);
         if (newEmail != null) {
             // normalize new email
-            newEmail = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(newEmail, "newEmail");
+            newEmail = Utils.normalizeAndValidateStringParam(newEmail, "newEmail");
 
             // check if the newEmail is in valid format
             if (!Dashboard.isValidEmail(newEmail)) {
@@ -127,7 +125,7 @@ public class DashboardUserAPI extends WebserverAPI {
         String newPassword = InputParser.parseStringOrThrowError(input, "newPassword", true);
         if (newPassword != null) {
             // normalize new password
-            newPassword = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(newPassword, "newPassword");
+            newPassword = Utils.normalizeAndValidateStringParam(newPassword, "newPassword");
             // check if the new password is strong
             String passwordErrorMessage = Dashboard.validatePassword(newPassword);
             if (passwordErrorMessage != null) {
@@ -143,11 +141,10 @@ public class DashboardUserAPI extends WebserverAPI {
             String userId = InputParser.parseStringOrThrowError(input, "userId", true);
             if (userId != null) {
                 // normalize userId
-                userId = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(userId, "userId");
+                userId = Utils.normalizeAndValidateStringParam(userId, "userId");
 
-                Dashboard.updateUsersCredentialsWithUserId(main, userId, newEmail, newPassword);
                 // retrieve updated user details
-                DashboardUser user = StorageLayer.getDashboardStorage(main).getDashboardUserByUserId(userId);
+                DashboardUser user = Dashboard.updateUsersCredentialsWithUserId(main, userId, newEmail, newPassword);
                 JsonObject userJsonObject = new JsonParser().parse(new Gson().toJson(user))
                         .getAsJsonObject();
                 JsonObject response = new JsonObject();
@@ -160,20 +157,17 @@ public class DashboardUserAPI extends WebserverAPI {
             String email = InputParser.parseStringOrThrowError(input, "email", true);
             if (email != null) {
                 // normalize email
-                email = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(email, "email");
+                email = Utils.normalizeAndValidateStringParam(email, "email");
 
-                // retrieve user
-                DashboardSQLStorage storage = StorageLayer.getDashboardStorage(main);
-
-                DashboardUser user = storage.getDashboardUserByEmail(email);
+                // check if the user exists
+                DashboardUser user = Dashboard.getDashboardUserByEmail(main, email);
                 if (user == null) {
                     throw new UserIdNotFoundException();
                 }
 
-                Dashboard.updateUsersCredentialsWithUserId(main, user.userId, newEmail, newPassword);
                 // retrieve updated user details
-                DashboardUser updatedUser = StorageLayer.getDashboardStorage(main)
-                        .getDashboardUserByUserId(user.userId);
+                DashboardUser updatedUser = Dashboard.updateUsersCredentialsWithUserId(main, user.userId, newEmail,
+                        newPassword);
                 JsonObject userJsonObject = new JsonParser().parse(new Gson().toJson(updatedUser)).getAsJsonObject();
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
@@ -207,7 +201,7 @@ public class DashboardUserAPI extends WebserverAPI {
         try {
             if (userId != null) {
                 // normalize userId
-                userId = io.supertokens.webserver.Utils.normalizeAndValidateStringParam(userId, "userId");
+                userId = Utils.normalizeAndValidateStringParam(userId, "userId");
                 boolean didUserExist = Dashboard.deleteUserWithUserId(main, userId);
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
