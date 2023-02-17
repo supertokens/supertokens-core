@@ -24,6 +24,7 @@ import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -51,7 +52,7 @@ public class DeleteExpiredEmailVerificationTokensCronjobTest {
 
     @Test
     public void checkingCronJob() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         CronTaskTest.getInstance(process.getProcess())
@@ -74,12 +75,13 @@ public class DeleteExpiredEmailVerificationTokensCronjobTest {
         EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
 
         assert (StorageLayer.getEmailVerificationStorage(process.getProcess())
-                .getAllEmailVerificationTokenInfoForUser(user.id, user.email).length == 4);
+                .getAllEmailVerificationTokenInfoForUser(new AppIdentifier(null, null), user.id, user.email).length ==
+                4);
 
         Thread.sleep(3000);
 
         EmailVerificationTokenInfo[] tokens = StorageLayer.getEmailVerificationStorage(process.getProcess())
-                .getAllEmailVerificationTokenInfoForUser(user.id, user.email);
+                .getAllEmailVerificationTokenInfoForUser(new AppIdentifier(null, null), user.id, user.email);
 
         assert (tokens.length == 2);
 

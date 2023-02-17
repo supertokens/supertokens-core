@@ -174,7 +174,7 @@ public class AuthRecipe {
         StorageLayer.getSessionStorage(tenantIdentifier, main)
                 .deleteSessionsOfUser(tenantIdentifier.toAppIdentifier(), userId);
         StorageLayer.getEmailVerificationStorage(tenantIdentifier, main)
-                .deleteEmailVerificationUserInfo(userId);
+                .deleteEmailVerificationUserInfo(tenantIdentifier.toAppIdentifier(), userId);
         StorageLayer.getUserRolesStorage(tenantIdentifier, main)
                 .deleteAllRolesForUser(tenantIdentifier.toAppIdentifier(), userId);
     }

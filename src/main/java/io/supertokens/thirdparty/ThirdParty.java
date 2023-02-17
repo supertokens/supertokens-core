@@ -62,7 +62,7 @@ public class ThirdParty {
                 StorageLayer.getEmailVerificationStorage(tenantIdentifier, main).startTransaction(con -> {
                     try {
                         StorageLayer.getEmailVerificationStorage(tenantIdentifier, main)
-                                .updateIsEmailVerified_Transaction(con,
+                                .updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
                                         response.user.id, response.user.email, true);
                         StorageLayer.getEmailVerificationStorage(tenantIdentifier, main)
                                 .commitTransaction(con);

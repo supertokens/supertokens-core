@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -82,7 +83,7 @@ public class EmailVerificationTest {
         assertNotEquals(token1, token2);
 
         EmailVerificationTokenInfo[] tokenInfo = StorageLayer.getEmailVerificationStorage(process.getProcess())
-                .getAllEmailVerificationTokenInfoForUser(user.id, user.email);
+                .getAllEmailVerificationTokenInfoForUser(new AppIdentifier(null, null), user.id, user.email);
 
         assertEquals(tokenInfo.length, 2);
         assertTrue((tokenInfo[0].token.equals(io.supertokens.utils.Utils.hashSHA256(token1)))
@@ -249,17 +250,20 @@ public class EmailVerificationTest {
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         StorageLayer.getEmailVerificationStorage(process.getProcess())
-                .addEmailVerificationToken(new EmailVerificationTokenInfo(user.id, "token",
-                        System.currentTimeMillis()
-                                + Config.getConfig(process.getProcess()).getEmailVerificationTokenLifetime(),
-                        "test1@example.com"));
+                .addEmailVerificationToken(new AppIdentifier(null, null),
+                        new EmailVerificationTokenInfo(user.id, "token",
+                                System.currentTimeMillis()
+                                        + Config.getConfig(process.getProcess()).getEmailVerificationTokenLifetime(),
+                                "test1@example.com"));
 
         try {
             StorageLayer.getEmailVerificationStorage(process.getProcess())
-                    .addEmailVerificationToken(new EmailVerificationTokenInfo(user.id, "token",
-                            System.currentTimeMillis()
-                                    + Config.getConfig(process.getProcess()).getEmailVerificationTokenLifetime(),
-                            "test1@example.com"));
+                    .addEmailVerificationToken(new AppIdentifier(null, null),
+                            new EmailVerificationTokenInfo(user.id, "token",
+                                    System.currentTimeMillis()
+                                            +
+                                            Config.getConfig(process.getProcess()).getEmailVerificationTokenLifetime(),
+                                    "test1@example.com"));
             assert (false);
         } catch (DuplicateEmailVerificationTokenException ignored) {
 
@@ -315,8 +319,9 @@ public class EmailVerificationTest {
         assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.id, user.email));
 
         StorageLayer.getEmailVerificationStorage(process.getProcess()).startTransaction(con -> {
-            StorageLayer.getEmailVerificationStorage(process.getProcess()).updateIsEmailVerified_Transaction(con,
-                    user.id, user.email, false);
+            StorageLayer.getEmailVerificationStorage(process.getProcess())
+                    .updateIsEmailVerified_Transaction(new AppIdentifier(null, null), con,
+                            user.id, user.email, false);
             return null;
         });
 
@@ -345,8 +350,9 @@ public class EmailVerificationTest {
         assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.id, user.email));
 
         StorageLayer.getEmailVerificationStorage(process.getProcess()).startTransaction(con -> {
-            StorageLayer.getEmailVerificationStorage(process.getProcess()).updateIsEmailVerified_Transaction(con,
-                    user.id, user.email, true);
+            StorageLayer.getEmailVerificationStorage(process.getProcess())
+                    .updateIsEmailVerified_Transaction(new AppIdentifier(null, null), con,
+                            user.id, user.email, true);
             return null;
         });
 
