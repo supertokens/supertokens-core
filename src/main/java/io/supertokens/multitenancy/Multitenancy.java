@@ -232,9 +232,6 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     public static boolean addUserIdToTenant(Main main, TenantIdentifier tenantIdentifier, String userId)
             throws TenantOrAppNotFoundException, UnknownUserIdException, StorageQueryException,
             FeatureNotEnabledException {
-        // TODO: this will also require copying the emailpassword / thirdparty / passwordless user row with a
-        //  different tenant ID cause we allow same email to exist for different userID across tenants, so we
-        //  needed to add tenantId to the user tables.
         if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
                 .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);

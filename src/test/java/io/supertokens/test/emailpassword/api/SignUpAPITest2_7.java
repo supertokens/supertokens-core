@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -182,7 +183,7 @@ public class SignUpAPITest2_7 {
         assertNotNull(signUpUser.get("id"));
 
         UserInfo userInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getUserInfoUsingId(new TenantIdentifier(null, null, null), signUpUser.get("id").getAsString());
+                .getUserInfoUsingId(new AppIdentifier(null, null), signUpUser.get("id").getAsString());
 
         assertEquals(userInfo.email, "random@gmail.com");
 

@@ -598,7 +598,7 @@ public class Start
     }
 
     @Override
-    public UserInfo getUserInfoUsingId(TenantIdentifier tenantIdentifier, String id) throws StorageQueryException {
+    public UserInfo getUserInfoUsingId(AppIdentifier appIdentifier, String id) throws StorageQueryException {
         // TODO..
         try {
             return EmailPasswordQueries.getUserInfoUsingId(this, id);
@@ -625,7 +625,7 @@ public class Start
         try {
             // SQLite is not compiled with foreign key constraint and so we must check for
             // the userId manually
-            if (this.getUserInfoUsingId(appIdentifier.getAsPublicTenantIdentifier(), passwordResetTokenInfo.userId) ==
+            if (this.getUserInfoUsingId(appIdentifier, passwordResetTokenInfo.userId) ==
                     null) {
                 throw new UnknownUserIdException();
             }
@@ -725,7 +725,7 @@ public class Start
     }
 
     @Override
-    public UserInfo getUserInfoUsingId_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
+    public UserInfo getUserInfoUsingId_Transaction(AppIdentifier appIdentifier, TransactionConnection con,
                                                    String userId)
             throws StorageQueryException {
         // TODO..

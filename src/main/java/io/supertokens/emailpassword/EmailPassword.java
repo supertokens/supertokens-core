@@ -388,7 +388,7 @@ public class EmailPassword {
         try {
             storage.startTransaction(transaction -> {
                 try {
-                    UserInfo userInfo = storage.getUserInfoUsingId_Transaction(tenantIdentifier,
+                    UserInfo userInfo = storage.getUserInfoUsingId_Transaction(tenantIdentifier.toAppIdentifier(),
                             transaction, userId);
 
                     if (userInfo == null) {
@@ -442,7 +442,7 @@ public class EmailPassword {
     public static UserInfo getUserUsingId(TenantIdentifier tenantIdentifier, Main main, String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
         return StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
-                .getUserInfoUsingId(tenantIdentifier, userId);
+                .getUserInfoUsingId(tenantIdentifier.toAppIdentifier(), userId);
     }
 
     public static UserInfo getUserUsingEmail(TenantIdentifier tenantIdentifier, Main main, String email)
