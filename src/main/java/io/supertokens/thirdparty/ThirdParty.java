@@ -17,9 +17,11 @@
 package io.supertokens.thirdparty;
 
 import io.supertokens.Main;
-import io.supertokens.authRecipe.UserPaginationToken;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -32,7 +34,6 @@ import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 public class ThirdParty {
 
@@ -100,14 +101,23 @@ public class ThirdParty {
             throws StorageQueryException {
         try {
             return signInUp(new TenantIdentifier(null, null, null), main, thirdPartyId, thirdPartyUserId, email);
-        } catch (TenantOrAppNotFoundException e) {
+        } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
     }
 
     public static SignInUpResponse signInUp(TenantIdentifier tenantIdentifier, Main main, String thirdPartyId,
                                             String thirdPartyUserId, String email)
-            throws StorageQueryException, TenantOrAppNotFoundException {
+            throws StorageQueryException, TenantOrAppNotFoundException, BadPermissionException {
+
+        TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
+        if (config == null) {
+            throw new TenantOrAppNotFoundException(tenantIdentifier);
+        }
+        if (!config.emailPasswordConfig.enabled) {
+            throw new BadPermissionException("Email password not enabled for tenant");
+        }
+
         return signInUpHelper(tenantIdentifier, main, thirdPartyId, thirdPartyUserId, email);
     }
 
@@ -128,7 +138,7 @@ public class ThirdParty {
                     UserInfo user = new UserInfo(userId, email, new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId),
                             timeJoined);
 
-                    storage.signUp(user);
+                    storage.signUp(tenantIdentifier, user);
 
                     return new SignInUpResponse(true, user);
                 } catch (DuplicateUserIdException e) {
@@ -143,7 +153,8 @@ public class ThirdParty {
             SignInUpResponse response = null;
             try {
                 response = storage.startTransaction(con -> {
-                    UserInfo user = storage.getUserInfoUsingId_Transaction(con, thirdPartyId, thirdPartyUserId);
+                    UserInfo user = storage.getUserInfoUsingId_Transaction(tenantIdentifier, con, thirdPartyId,
+                            thirdPartyUserId);
 
                     if (user == null) {
                         // we retry everything..
@@ -152,7 +163,8 @@ public class ThirdParty {
                     }
 
                     if (!email.equals(user.email)) {
-                        storage.updateUserEmail_Transaction(con, thirdPartyId, thirdPartyUserId, email);
+                        storage.updateUserEmail_Transaction(tenantIdentifier, con, thirdPartyId, thirdPartyUserId,
+                                email);
 
                         user = new UserInfo(user.id, email,
                                 new UserInfo.ThirdParty(user.thirdParty.id, user.thirdParty.userId), user.timeJoined);
@@ -175,7 +187,7 @@ public class ThirdParty {
     public static UserInfo getUser(TenantIdentifier tenantIdentifier, Main main, String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
         return StorageLayer.getThirdPartyStorage(tenantIdentifier, main)
-                .getThirdPartyUserInfoUsingId(userId);
+                .getThirdPartyUserInfoUsingId(tenantIdentifier.toAppIdentifier(), userId);
     }
 
     @TestOnly
@@ -193,7 +205,7 @@ public class ThirdParty {
                                    String thirdPartyUserId)
             throws StorageQueryException, TenantOrAppNotFoundException {
         return StorageLayer.getThirdPartyStorage(tenantIdentifier, main)
-                .getThirdPartyUserInfoUsingId(thirdPartyId, thirdPartyUserId);
+                .getThirdPartyUserInfoUsingId(tenantIdentifier, thirdPartyId, thirdPartyUserId);
     }
 
     @TestOnly
@@ -207,66 +219,11 @@ public class ThirdParty {
         }
     }
 
-    @Deprecated
-    public static UserPaginationContainer getUsers(TenantIdentifier tenantIdentifier, Main main,
-                                                   @Nullable String paginationToken, Integer limit,
-                                                   String timeJoinedOrder)
-            throws StorageQueryException, UserPaginationToken.InvalidTokenException, TenantOrAppNotFoundException {
-        UserInfo[] users;
-        if (paginationToken == null) {
-            users = StorageLayer.getThirdPartyStorage(tenantIdentifier, main)
-                    .getThirdPartyUsers(limit + 1, timeJoinedOrder);
-        } else {
-            UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
-            users = StorageLayer.getThirdPartyStorage(tenantIdentifier, main)
-                    .getThirdPartyUsers(tokenInfo.userId, tokenInfo.timeJoined,
-                            limit + 1, timeJoinedOrder);
-        }
-        String nextPaginationToken = null;
-        int maxLoop = users.length;
-        if (users.length == limit + 1) {
-            maxLoop = limit;
-            nextPaginationToken = new UserPaginationToken(users[limit].id, users[limit].timeJoined).generateToken();
-        }
-        UserInfo[] resultUsers = new UserInfo[maxLoop];
-        System.arraycopy(users, 0, resultUsers, 0, maxLoop);
-        return new UserPaginationContainer(resultUsers, nextPaginationToken);
-    }
-
-    @TestOnly
-    @Deprecated
-    public static UserPaginationContainer getUsers(Main main,
-                                                   @Nullable String paginationToken, Integer limit,
-                                                   String timeJoinedOrder)
-            throws StorageQueryException, UserPaginationToken.InvalidTokenException {
-        try {
-            return getUsers(new TenantIdentifier(null, null, null), main, paginationToken, limit, timeJoinedOrder);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     public static UserInfo[] getUsersByEmail(TenantIdentifier tenantIdentifier, Main main,
                                              @Nonnull String email)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getThirdPartyStorage(tenantIdentifier, main).getThirdPartyUsersByEmail(email);
-    }
-
-    @Deprecated
-    public static long getUsersCount(TenantIdentifier tenantIdentifier, Main main)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getThirdPartyStorage(tenantIdentifier, main).getThirdPartyUsersCount();
-    }
-
-    @TestOnly
-    @Deprecated
-    public static long getUsersCount(Main main)
-            throws StorageQueryException {
-        try {
-            return getUsersCount(new TenantIdentifier(null, null, null), main);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        return StorageLayer.getThirdPartyStorage(tenantIdentifier, main)
+                .getThirdPartyUsersByEmail(tenantIdentifier, email);
     }
 
     public static void verifyThirdPartyProvidersArray(ThirdPartyConfig.Provider[] providers)

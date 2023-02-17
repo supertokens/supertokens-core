@@ -20,9 +20,10 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -118,7 +119,7 @@ public class SignInUpAPI extends WebserverAPI {
                 result.add("user", userJson);
                 super.sendJsonResponse(200, result, resp);
 
-            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+            } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
                 throw new ServletException(e);
             }
         }

@@ -888,10 +888,12 @@ public class Start
     }
 
     @Override
-    public io.supertokens.pluginInterface.thirdparty.UserInfo getUserInfoUsingId_Transaction(TransactionConnection con,
-                                                                                             String thirdPartyId,
-                                                                                             String thirdPartyUserId)
+    public io.supertokens.pluginInterface.thirdparty.UserInfo getUserInfoUsingId_Transaction(
+            TenantIdentifier tenantIdentifier, TransactionConnection con,
+            String thirdPartyId,
+            String thirdPartyUserId)
             throws StorageQueryException {
+        // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return ThirdPartyQueries.getUserInfoUsingId_Transaction(this, sqlCon, thirdPartyId, thirdPartyUserId);
@@ -901,10 +903,12 @@ public class Start
     }
 
     @Override
-    public void updateUserEmail_Transaction(TransactionConnection con, String thirdPartyId, String thirdPartyUserId,
+    public void updateUserEmail_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
+                                            String thirdPartyId, String thirdPartyUserId,
                                             String newEmail) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
+            // TODO..
             ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon, thirdPartyId, thirdPartyUserId, newEmail);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
@@ -912,10 +916,11 @@ public class Start
     }
 
     @Override
-    public void signUp(io.supertokens.pluginInterface.thirdparty.UserInfo userInfo)
+    public void signUp(TenantIdentifier tenantIdentifier, io.supertokens.pluginInterface.thirdparty.UserInfo userInfo)
             throws StorageQueryException, io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException,
             DuplicateThirdPartyUserException {
         try {
+            // TODO..
             ThirdPartyQueries.signUp(this, userInfo);
         } catch (StorageTransactionLogicException eTemp) {
             Exception e = eTemp.actualException;
@@ -937,8 +942,9 @@ public class Start
     }
 
     @Override
-    public void deleteThirdPartyUser(String userId) throws StorageQueryException {
+    public void deleteThirdPartyUser(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
         try {
+            // TODO..
             ThirdPartyQueries.deleteUser(this, userId);
         } catch (StorageTransactionLogicException e) {
             throw new StorageQueryException(e.actualException);
@@ -946,9 +952,11 @@ public class Start
     }
 
     @Override
-    public io.supertokens.pluginInterface.thirdparty.UserInfo getThirdPartyUserInfoUsingId(String thirdPartyId,
-                                                                                           String thirdPartyUserId)
+    public io.supertokens.pluginInterface.thirdparty.UserInfo getThirdPartyUserInfoUsingId(
+            TenantIdentifier tenantIdentifier, String thirdPartyId,
+            String thirdPartyUserId)
             throws StorageQueryException {
+        // TODO..
         try {
             return ThirdPartyQueries.getThirdPartyUserInfoUsingId(this, thirdPartyId, thirdPartyUserId);
         } catch (SQLException e) {
@@ -957,9 +965,11 @@ public class Start
     }
 
     @Override
-    public io.supertokens.pluginInterface.thirdparty.UserInfo getThirdPartyUserInfoUsingId(String id)
+    public io.supertokens.pluginInterface.thirdparty.UserInfo getThirdPartyUserInfoUsingId(AppIdentifier appIdentifier,
+                                                                                           String id)
             throws StorageQueryException {
         try {
+            // TODO..
             return ThirdPartyQueries.getThirdPartyUserInfoUsingId(this, id);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
@@ -967,46 +977,12 @@ public class Start
     }
 
     @Override
-    @Deprecated
-    public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsers(@NotNull String userId,
-                                                                                   @NotNull Long timeJoined,
-                                                                                   @NotNull Integer limit,
-                                                                                   @NotNull String timeJoinedOrder)
+    public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsersByEmail(
+            TenantIdentifier tenantIdentifier, @NotNull String email)
             throws StorageQueryException {
         try {
-            return ThirdPartyQueries.getThirdPartyUsers(this, userId, timeJoined, limit, timeJoinedOrder);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    @Deprecated
-    public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsers(@NotNull Integer limit,
-                                                                                   @NotNull String timeJoinedOrder)
-            throws StorageQueryException {
-        try {
-            return ThirdPartyQueries.getThirdPartyUsers(this, limit, timeJoinedOrder);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsersByEmail(@NotNull String email)
-            throws StorageQueryException {
-        try {
+            // TODO..
             return ThirdPartyQueries.getThirdPartyUsersByEmail(this, email);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    @Deprecated
-    public long getThirdPartyUsersCount() throws StorageQueryException {
-        try {
-            return ThirdPartyQueries.getUsersCount(this);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

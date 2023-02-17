@@ -17,14 +17,12 @@
 package io.supertokens.inmemorydb.queries;
 
 import io.supertokens.inmemorydb.ConnectionWithLocks;
-import io.supertokens.inmemorydb.QueryExecutorTemplate;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
-import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nonnull;
 import java.sql.Connection;
@@ -34,7 +32,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static io.supertokens.inmemorydb.PreparedStatementValueSetter.NO_OP_SETTER;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 import static io.supertokens.inmemorydb.config.Config.getConfig;
@@ -186,7 +183,8 @@ public class ThirdPartyQueries {
     }
 
     public static void updateUserEmail_Transaction(Start start, Connection con, String thirdPartyId,
-            String thirdPartyUserId, String newEmail) throws SQLException, StorageQueryException {
+                                                   String thirdPartyUserId, String newEmail)
+            throws SQLException, StorageQueryException {
         String QUERY = "UPDATE " + getConfig(start).getThirdPartyUsersTable()
                 + " SET email = ? WHERE third_party_id = ? AND third_party_user_id = ?";
 
@@ -198,7 +196,8 @@ public class ThirdPartyQueries {
     }
 
     public static UserInfo getUserInfoUsingId_Transaction(Start start, Connection con, String thirdPartyId,
-            String thirdPartyUserId) throws SQLException, StorageQueryException {
+                                                          String thirdPartyUserId)
+            throws SQLException, StorageQueryException {
 
         ((ConnectionWithLocks) con)
                 .lock(thirdPartyId + "," + thirdPartyUserId + getConfig(start).getThirdPartyUsersTable());
@@ -216,50 +215,6 @@ public class ThirdPartyQueries {
         });
     }
 
-    @Deprecated
-    public static UserInfo[] getThirdPartyUsers(Start start, @NotNull Integer limit, @NotNull String timeJoinedOrder)
-            throws SQLException, StorageQueryException {
-        String QUERY = "SELECT user_id, third_party_id, third_party_user_id, email, time_joined FROM "
-                + Config.getConfig(start).getThirdPartyUsersTable() + " ORDER BY time_joined " + timeJoinedOrder
-                + ", user_id DESC LIMIT ?";
-
-        return execute(start, QUERY, pst -> pst.setInt(1, limit), result -> {
-            List<UserInfo> users = new ArrayList<>();
-
-            while (result.next()) {
-                users.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
-            }
-
-            return users.toArray(UserInfo[]::new);
-        });
-    }
-
-    @Deprecated
-    public static UserInfo[] getThirdPartyUsers(Start start, @NotNull String userId, @NotNull Long timeJoined,
-            @NotNull Integer limit, @NotNull String timeJoinedOrder) throws SQLException, StorageQueryException {
-        String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
-        String QUERY = "SELECT user_id, third_party_id, third_party_user_id, email, time_joined FROM "
-                + Config.getConfig(start).getThirdPartyUsersTable() + " WHERE time_joined " + timeJoinedOrderSymbol
-                + " ? OR (time_joined = ? AND user_id <= ?) ORDER BY time_joined " + timeJoinedOrder
-                + ", user_id DESC LIMIT ?";
-
-        return execute(start, QUERY, pst -> {
-            pst.setLong(1, timeJoined);
-            pst.setLong(2, timeJoined);
-            pst.setString(3, userId);
-            pst.setInt(4, limit);
-
-        }, result -> {
-            List<UserInfo> users = new ArrayList<>();
-
-            while (result.next()) {
-                users.add(UserInfoRowMapper.getInstance().mapOrThrow(result));
-            }
-
-            return users.toArray(UserInfo[]::new);
-        });
-    }
-
     public static UserInfo[] getThirdPartyUsersByEmail(Start start, @Nonnull String email)
             throws SQLException, StorageQueryException {
 
@@ -274,17 +229,6 @@ public class ThirdPartyQueries {
             }
 
             return users.toArray(UserInfo[]::new);
-        });
-    }
-
-    @Deprecated
-    public static long getUsersCount(Start start) throws SQLException, StorageQueryException {
-        String QUERY = "SELECT COUNT(*) as total FROM " + getConfig(start).getThirdPartyUsersTable();
-        return execute(start, QUERY, NO_OP_SETTER, result -> {
-            if (result.next()) {
-                return result.getLong("total");
-            }
-            return 0L;
         });
     }
 
