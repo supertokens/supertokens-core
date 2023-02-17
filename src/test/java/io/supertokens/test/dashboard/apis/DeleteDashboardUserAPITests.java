@@ -16,6 +16,8 @@
 
 package io.supertokens.test.dashboard.apis;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -30,7 +32,9 @@ import org.junit.rules.TestRule;
 import com.google.gson.JsonObject;
 
 import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.dashboard.Dashboard;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -104,6 +108,52 @@ public class DeleteDashboardUserAPITests {
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage().equals(
                     "Http error. Status Code: 400. Message:" + " Field name 'email' cannot be an empty String"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testSuccessfullyDeletingAUserWithUserId() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a user
+        DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), "test@example.com", "password123");
+
+        // check that user exists
+        assertEquals(1, Dashboard.getAllDashboardUsers(process.getProcess()).length);
+
+        // delete user
+
+        {
+            HashMap<String, String> inputParams = new HashMap<>();
+            inputParams.put("userId", user.userId);
+            JsonObject response = HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
+                    "http://localhost:3567/recipe/dashboard/user", inputParams, 1000, 1000, null,
+                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertTrue(response.get("didUserExist").getAsBoolean());            
+        }
+
+        // try deleting user again
+        {
+            HashMap<String, String> inputParams = new HashMap<>();
+            inputParams.put("userId", user.userId);
+            JsonObject response = HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
+                    "http://localhost:3567/recipe/dashboard/user", inputParams, 1000, 1000, null,
+                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertFalse(response.get("didUserExist").getAsBoolean());  
         }
 
         process.kill();
