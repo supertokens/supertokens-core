@@ -203,8 +203,14 @@ public class CreateDashboardUserAPITests {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/dashboard/user", requestBody, 1000, 1000, null,
                 Utils.getCdiVersion2_18ForTests(), "dashboard");
-        assertEquals(1, response.entrySet().size());
+        assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
+
+        JsonObject createdUser = response.get("user").getAsJsonObject();
+        assertEquals(3, createdUser.entrySet().size());
+        assertNotNull(createdUser.get("userId").getAsString());
+        assertNotNull(createdUser.get("timeJoined").getAsLong());
+        assertEquals(email, createdUser.get("email").getAsString());
 
         // check that user exists
         DashboardUser[] allDashboardUsers = Dashboard.getAllDashboardUsers(process.getProcess());
