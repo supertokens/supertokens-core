@@ -196,8 +196,13 @@ public class Dashboard {
     }
 
     private static boolean isDashboardFeatureFlagEnabled(Main main) throws StorageQueryException {
-        return Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
+        try {
+            return Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
                 .anyMatch(t -> t == EE_FEATURES.DASHBOARD_LOGIN);
+        } catch (Exception e) {
+           System.out.println(e);
+           return false;
+        }
     }
 
     private static String createSessionForDashboardUser(Main main, DashboardUser user)

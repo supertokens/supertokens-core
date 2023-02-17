@@ -16,7 +16,11 @@
 
 package io.supertokens.test.dashboard.apis;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+
+import java.util.ArrayList;
+import java.util.HashMap;
 
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -24,16 +28,20 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.dashboard.Dashboard;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-
 
 public class GetDashboardUsersAPITests {
     @Rule
@@ -50,7 +58,7 @@ public class GetDashboardUsersAPITests {
     }
 
     @Test
-    public void testCreatingDashboardUsers() throws Exception {
+    public void testRetrievingDashboardUsers() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -60,7 +68,37 @@ public class GetDashboardUsersAPITests {
             return;
         }
 
-        // TODO:
+        // enable dashboard feature
+        FeatureFlagTestContent.getInstance(process.getProcess()).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
+                new EE_FEATURES[] { EE_FEATURES.DASHBOARD_LOGIN });
+        ;
+
+        // create multiple users
+        ArrayList<DashboardUser> createdUsers = new ArrayList<>();
+
+        for (int i = 0; i < 3; i++) {
+            DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), "test" + i + "@example.com",
+                    "testPasswordHash");
+            createdUsers.add(user);
+        }
+
+        // retrieve users and check that there were correctly created
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/dashboard/users", new HashMap<>(), 1000, 1000, null,
+                Utils.getCdiVersion2_18ForTests(), "dashboard");
+        assertEquals(2, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+
+        JsonArray retrievedUsers = response.get("users").getAsJsonArray();
+
+        assertEquals(createdUsers.size(), retrievedUsers.size());
+
+        // check that the correct users were returned and in the correct order
+        for (int i = 0; i < createdUsers.size(); i++) {
+            assertEquals(createdUsers.get(i).userId,
+                    retrievedUsers.get(i).getAsJsonObject().get("userId").getAsString());
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
