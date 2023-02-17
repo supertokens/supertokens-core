@@ -19,13 +19,13 @@ package io.supertokens.test.passwordless.api;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-
 import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -51,7 +51,7 @@ public class PasswordlessDeleteCodeAPITest2_11 {
 
     @Test
     public void testDeleteCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -68,7 +68,7 @@ public class PasswordlessDeleteCodeAPITest2_11 {
         String deviceIdHash = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkFiNtJGqc";
         String linkCodeHash = "wo5UcFFVSblZEd1KOUOl-dpJ5zpSr_Qsor1Eg4TzDRE";
 
-        storage.createDeviceWithCode(null, phoneNumber, "linkCodeSalt",
+        storage.createDeviceWithCode(new TenantIdentifier(null, null, null), null, phoneNumber, "linkCodeSalt",
                 new PasswordlessCode(codeId, deviceIdHash, linkCodeHash, System.currentTimeMillis()));
 
         JsonObject createCodeRequestBody = new JsonObject();
@@ -80,15 +80,15 @@ public class PasswordlessDeleteCodeAPITest2_11 {
 
         assertEquals("OK", response.get("status").getAsString());
 
-        assertNull(storage.getCode(codeId));
-        assertNull(storage.getDevice(deviceIdHash));
+        assertNull(storage.getCode(new TenantIdentifier(null, null, null), codeId));
+        assertNull(storage.getDevice(new TenantIdentifier(null, null, null), deviceIdHash));
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
     public void testDeleteNonExistentCode() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -114,12 +114,12 @@ public class PasswordlessDeleteCodeAPITest2_11 {
 
     /**
      * empty request body -> BadRequest
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void testEmptyRequestBody() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

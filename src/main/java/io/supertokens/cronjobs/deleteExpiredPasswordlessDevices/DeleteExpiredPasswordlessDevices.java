@@ -65,20 +65,20 @@ public class DeleteExpiredPasswordlessDevices extends CronTask {
 
             long codeExpirationCutoff = System.currentTimeMillis() -
                     Config.getConfig(t, main).getPasswordlessCodeLifetime();
-            PasswordlessCode[] expiredCodes = storage.getCodesBefore(codeExpirationCutoff);
+            PasswordlessCode[] expiredCodes = storage.getCodesBefore(t, codeExpirationCutoff);
             Set<String> uniqueDevicesIdHashes = Stream.of(expiredCodes).map(code -> code.deviceIdHash)
                     .collect(Collectors.toSet());
 
             for (String deviceIdHash : uniqueDevicesIdHashes) {
                 storage.startTransaction(con -> {
-                    PasswordlessDevice device = storage.getDevice_Transaction(con, deviceIdHash);
+                    PasswordlessDevice device = storage.getDevice_Transaction(t, con, deviceIdHash);
                     if (device == null) {
                         return null;
                     }
-                    PasswordlessCode[] codes = storage.getCodesOfDevice_Transaction(con, deviceIdHash);
+                    PasswordlessCode[] codes = storage.getCodesOfDevice_Transaction(t, con, deviceIdHash);
 
                     if (Stream.of(codes).allMatch(code -> code.createdAt < codeExpirationCutoff)) {
-                        storage.deleteDevice_Transaction(con, deviceIdHash);
+                        storage.deleteDevice_Transaction(t, con, deviceIdHash);
                     }
                     // We don't delete expired codes without the device because we want to detect if the submitted
                     // user input code belongs to an expired code or if it's just incorrect.

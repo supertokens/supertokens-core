@@ -493,13 +493,8 @@ public class CoreConfig {
 
         // passwordless_max_code_input_attempts: can be different cause we don't store this in the db anywhere
 
-        // passwordless_code_lifetime: we do not allow different values because the DeleteExpiredPasswordlessDevices
-        // cron job deleteds codes based on created time, so we do not want to delete codes of a different
-        // tenantId
-        if (other.getPasswordlessCodeLifetime() != this.getPasswordlessCodeLifetime()) {
-            throw new InvalidConfigException(
-                    "You cannot set different values for passwordless_code_lifetime for the same user pool");
-        }
+        // passwordless_code_lifetime: can be different cause devices and codes are all scoped to tenantIds
+
         // we do not allow different values for this in the same user pool cause this affects sessions
         // created by other tenants as well
         if (other.getAccessTokenSigningKeyDynamic() != this.getAccessTokenSigningKeyDynamic()) {

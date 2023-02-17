@@ -114,8 +114,8 @@ public class ThirdParty {
         if (config == null) {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
-        if (!config.emailPasswordConfig.enabled) {
-            throw new BadPermissionException("Email password not enabled for tenant");
+        if (!config.thirdPartyConfig.enabled) {
+            throw new BadPermissionException("Third Party login not enabled for tenant");
         }
 
         return signInUpHelper(tenantIdentifier, main, thirdPartyId, thirdPartyUserId, email);

@@ -20,13 +20,14 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
 import io.supertokens.passwordless.exceptions.*;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
@@ -116,7 +117,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (DeviceIdHashMismatchException ex) {
             throw new ServletException(new BadRequestException("preAuthSessionId and deviceId doesn't match"));
-        } catch (StorageTransactionLogicException | StorageQueryException | NoSuchAlgorithmException | InvalidKeyException | TenantOrAppNotFoundException e) {
+        } catch (StorageTransactionLogicException | StorageQueryException | NoSuchAlgorithmException | InvalidKeyException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         } catch (Base64EncodingException ex) {
             throw new ServletException(new BadRequestException("Input encoding error in " + ex.source));

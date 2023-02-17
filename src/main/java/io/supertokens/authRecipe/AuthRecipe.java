@@ -186,6 +186,7 @@ public class AuthRecipe {
                 .deleteEmailPasswordUser(tenantIdentifier.toAppIdentifier(), userId);
         StorageLayer.getThirdPartyStorage(tenantIdentifier, main)
                 .deleteThirdPartyUser(tenantIdentifier.toAppIdentifier(), userId);
-        StorageLayer.getPasswordlessStorage(tenantIdentifier, main).deletePasswordlessUser(userId);
+        StorageLayer.getPasswordlessStorage(tenantIdentifier, main)
+                .deletePasswordlessUser(tenantIdentifier.toAppIdentifier(), userId);
     }
 }

@@ -95,7 +95,7 @@ public class EmailPassword {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
         if (!config.emailPasswordConfig.enabled) {
-            throw new BadPermissionException("Email password not enabled for tenant");
+            throw new BadPermissionException("Email password login not enabled for tenant");
         }
 
         String hashedPassword = PasswordHashing.getInstance(main)
@@ -143,7 +143,7 @@ public class EmailPassword {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
         if (!config.emailPasswordConfig.enabled) {
-            throw new BadPermissionException("Email password not enabled for tenant");
+            throw new BadPermissionException("Email password login not enabled for tenant");
         }
 
         PasswordHashingUtils.assertSuperTokensSupportInputPasswordHashFormat(tenantIdentifier.toAppIdentifier(), main,
@@ -210,7 +210,7 @@ public class EmailPassword {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
         if (!config.emailPasswordConfig.enabled) {
-            throw new BadPermissionException("Email password not enabled for tenant");
+            throw new BadPermissionException("Email password login not enabled for tenant");
         }
 
         UserInfo user = StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
@@ -260,7 +260,7 @@ public class EmailPassword {
             throw new TenantOrAppNotFoundException(tenantIdentifier);
         }
         if (!config.emailPasswordConfig.enabled) {
-            throw new BadPermissionException("Email password not enabled for tenant");
+            throw new BadPermissionException("Email password login not enabled for tenant");
         }
 
         while (true) {
