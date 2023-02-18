@@ -103,7 +103,7 @@ public class Config extends ResourceDistributor.SingletonResource {
                 tenants,
                 getBaseConfigAsJsonObject(main));
 
-        assertAllTenantConfigsAreValid(main, normalisedConfigs);
+        assertAllTenantConfigsAreValid(main, normalisedConfigs, tenants);
 
         // At this point, we know that all configs are valid.
         try {
@@ -129,10 +129,11 @@ public class Config extends ResourceDistributor.SingletonResource {
 
     // this function will check for conflicting configs across all tenants, including the base config.
     public static void assertAllTenantConfigsAreValid(Main main,
-                                                      Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs)
+                                                      Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs,
+                                                      TenantConfig[] tenants)
             throws InvalidConfigException, IOException {
         Map<String, Storage> userPoolToStorage = new HashMap<>();
-        Map<String, Config> userPoolIdAndAppIdToConfigMap = new HashMap<>();
+        Map<String, Config> appIdToConfigMap = new HashMap<>();
         Map<String, String> userPoolIdToConnectionUriDomain = new HashMap<>();
         for (ResourceDistributor.KeyClass key : normalisedConfigs.keySet()) {
             JsonObject currentConfig = normalisedConfigs.get(key);
@@ -143,7 +144,6 @@ public class Config extends ResourceDistributor.SingletonResource {
             Storage storage = StorageLayer.getNewStorageInstance(main, currentConfig);
             final String userPoolId = storage.getUserPoolId();
             final String appId = key.getTenantIdentifier().getAppId();
-            final String userPoolIdAndAppIdKey = userPoolId + "||" + appId;
 
             // we enforce that each connectiondomainurl has a unique user pool ID
             if (userPoolIdToConnectionUriDomain.get(userPoolId) != null) {
@@ -173,20 +173,20 @@ public class Config extends ResourceDistributor.SingletonResource {
                 // now we check conflicting configs for core related configs.
                 // this also checks for the validity of currentConfig itself cause
                 // it creates a new Config object, and the constructor calls the validate function.
-                Config configForCurrentUserPoolId = userPoolIdAndAppIdToConfigMap.get(userPoolIdAndAppIdKey);
-                if (configForCurrentUserPoolId == null) {
-                    configForCurrentUserPoolId = new Config(main, currentConfig);
-                    userPoolIdAndAppIdToConfigMap.put(userPoolIdAndAppIdKey, configForCurrentUserPoolId);
+                Config configForCurrentAppId = appIdToConfigMap.get(appId);
+                if (configForCurrentAppId == null) {
+                    configForCurrentAppId = new Config(main, currentConfig);
+                    appIdToConfigMap.put(appId, configForCurrentAppId);
                 } else {
-                    configForCurrentUserPoolId.assertThatConfigFromSameUserPoolIsNotConflicting(
+                    configForCurrentAppId.core.assertThatConfigFromSameAppIdAreNotConflicting(
                             new Config(main, currentConfig).core);
                 }
             }
+        }
 
-            // TODO: some configs must be same app wide
-            //      - access token signing key update
-            //      - access and refresh token validity
-            //      - everything related to password hashing algorithm stuff
+        for (TenantConfig t : tenants) {
+            // here we check that non base config doesn't have settings that are only applicable per core.
+            CoreConfig.assertThatCertainConfigIsNotSetForAppOrTenants(t.coreConfig);
         }
     }
 
@@ -283,11 +283,6 @@ public class Config extends ResourceDistributor.SingletonResource {
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
-    }
-
-    private void assertThatConfigFromSameUserPoolIsNotConflicting(CoreConfig otherConfig)
-            throws InvalidConfigException {
-        core.assertThatConfigFromSameUserPoolIsNotConflicting(otherConfig);
     }
 
 }

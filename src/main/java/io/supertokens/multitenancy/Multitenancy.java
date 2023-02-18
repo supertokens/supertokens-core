@@ -115,7 +115,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
                     existingTenants,
                     Config.getBaseConfigAsJsonObject(main));
-            Config.assertAllTenantConfigsAreValid(main, normalisedConfigs);
+            Config.assertAllTenantConfigsAreValid(main, normalisedConfigs, existingTenants);
         }
 
         // validate third party config

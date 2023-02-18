@@ -18,6 +18,7 @@ package io.supertokens.config;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.pluginInterface.LOG_LEVEL;
@@ -479,97 +480,108 @@ public class CoreConfig {
         }
     }
 
-    void assertThatConfigFromSameUserPoolIsNotConflicting(CoreConfig other) throws InvalidConfigException {
-        // access_token_validity: can be different per tenant in the same user pool cause we directly store the
-        //  calculated expiry time of the access token in the db.
+    static void assertThatCertainConfigIsNotSetForAppOrTenants(JsonObject config) throws InvalidConfigException {
+        // these are all configs that are per core. So we do not allow the developer to set these dynamically.
+        if (config.has("argon2_hashing_pool_size")) {
+            throw new InvalidConfigException(
+                    "argon2_hashing_pool_size can only be set via the core's base config setting");
+        }
 
-        // access_token_blacklisting: can be different cause we don't store this in the db anywhere
+        if (config.has("firebase_password_hashing_pool_size")) {
+            throw new InvalidConfigException(
+                    "firebase_password_hashing_pool_size can only be set via the core's base config setting");
+        }
 
-        // refresh_token_validity: can be different cause we don't store this in the db anywhere
+        if (config.has("base_path")) {
+            throw new InvalidConfigException(
+                    "base_path can only be set via the core's base config setting");
+        }
 
-        // password_reset_token_lifetime: can be different cause we don't store this in the db anywhere
+        if (config.has("log_level")) {
+            throw new InvalidConfigException(
+                    "log_level can only be set via the core's base config setting");
+        }
 
-        // email_verification_token_lifetime: can be different cause we don't store this in the db anywhere
+        if (config.has("host")) {
+            throw new InvalidConfigException(
+                    "host can only be set via the core's base config setting");
+        }
 
-        // passwordless_max_code_input_attempts: can be different cause we don't store this in the db anywhere
+        if (config.has("port")) {
+            throw new InvalidConfigException(
+                    "port can only be set via the core's base config setting");
+        }
 
-        // passwordless_code_lifetime: can be different cause devices and codes are all scoped to tenantIds
+        if (config.has("info_log_path")) {
+            throw new InvalidConfigException(
+                    "info_log_path can only be set via the core's base config setting");
+        }
 
-        // we do not allow different values for this in the same user pool cause this affects sessions
-        // created by other tenants as well
+        if (config.has("error_log_path")) {
+            throw new InvalidConfigException(
+                    "error_log_path can only be set via the core's base config setting");
+        }
+
+        if (config.has("webserver_https_enabled")) {
+            throw new InvalidConfigException(
+                    "webserver_https_enabled can only be set via the core's base config setting");
+        }
+    }
+
+    void assertThatConfigFromSameAppIdAreNotConflicting(CoreConfig other) throws InvalidConfigException {
+        // we do not allow different values for this across tenants in the same app cause the keys are shared
+        // across all tenants
         if (other.getAccessTokenSigningKeyDynamic() != this.getAccessTokenSigningKeyDynamic()) {
             throw new InvalidConfigException(
-                    "You cannot set different values for access_token_signing_key_dynamic for the same user pool");
+                    "You cannot set different values for access_token_signing_key_dynamic for the same appId");
         }
 
-        // we do not allow this cause clearing tokens based on this config may affect other tenant's
-        // tokens as well - since we do not store the explicit expiry time in the table, but instead
-        // clear based on createdTime and the current time.
+        // we do not allow different values for this across tenants in the same app cause the keys are shared
+        // across all tenants
         if (other.getAccessTokenSigningKeyUpdateInterval() != this.getAccessTokenSigningKeyUpdateInterval()) {
             throw new InvalidConfigException(
-                    "You cannot set different values for access_token_signing_key_update_interval for the same user " +
-                            "pool");
+                    "You cannot set different values for access_token_signing_key_update_interval for the same appId");
         }
 
-        // max_server_pool_size: can be different cause it affects only the storage layer created for that tenant
-
-        // api_keys: can be different cause it has nothing to do with a user pool
-
-        // password_hashing_alg and argon2, bcrypt and other hash settings: can be different cause we don't store
-        // this in db
-
-        // the settings below are per core and should only be changed in the base config.yaml file,
-        // therefore, they shouldn't be reflected in the dynamic tenant config
-        if (other.argon2_hashing_pool_size != this.argon2_hashing_pool_size) {
+        if (other.getAccessTokenValidity() != this.getAccessTokenValidity()) {
             throw new InvalidConfigException(
-                    "You cannot set different values for argon2_hashing_pool_size for the same user " +
-                            "pool");
+                    "You cannot set different values for access_token_validity for the same appId");
         }
-        if (!other.getBasePath().equals(this.getBasePath())) {
+
+        if (other.getRefreshTokenValidity() != this.getRefreshTokenValidity()) {
             throw new InvalidConfigException(
-                    "You cannot set different values for base_path for the same user " +
-                            "pool");
+                    "You cannot set different values for refresh_token_validity for the same appId");
         }
 
-        if (!other.log_level.equals(this.log_level)) {
+        if (other.getAccessTokenBlacklisting() != this.getAccessTokenBlacklisting()) {
             throw new InvalidConfigException(
-                    "You cannot set different values for log_level for the same user " +
-                            "pool");
+                    "You cannot set different values for access_token_blacklisting for the same appId");
         }
 
-        if (!other.host.equals(this.host)) {
+        if (!other.getPasswordHashingAlg().equals(this.getPasswordHashingAlg())) {
             throw new InvalidConfigException(
-                    "You cannot set different values for host for the same user " +
-                            "pool");
+                    "You cannot set different values for password_hashing_alg for the same appId");
         }
 
-        if (other.port != this.port) {
+        if (other.getArgon2Iterations() != this.getArgon2Iterations()) {
             throw new InvalidConfigException(
-                    "You cannot set different values for port for the same user " +
-                            "pool");
+                    "You cannot set different values for argon2_iterations for the same appId");
         }
 
-        if (!other.info_log_path.equals(this.info_log_path)) {
+        if (other.getArgon2MemoryKb() != this.getArgon2MemoryKb()) {
             throw new InvalidConfigException(
-                    "You cannot set different values for info_log_path for the same user " +
-                            "pool");
+                    "You cannot set different values for argon2_memory_kb for the same appId");
         }
 
-        if (!other.error_log_path.equals(this.error_log_path)) {
+        if (other.getArgon2Parallelism() != this.getArgon2Parallelism()) {
             throw new InvalidConfigException(
-                    "You cannot set different values for error_log_path for the same user " +
-                            "pool");
+                    "You cannot set different values for argon2_parallelism for the same appId");
         }
 
-        if (other.webserver_https_enabled != this.webserver_https_enabled) {
+        if (other.getBcryptLogRounds() != this.getBcryptLogRounds()) {
             throw new InvalidConfigException(
-                    "You cannot set different values for webserver_https_enabled for the same user " +
-                            "pool");
+                    "You cannot set different values for bcrypt_log_rounds for the same appId");
         }
-
-        // ip_allow_regex: can be different cause it has nothing to do with a user pool
-
-        // ip_deny_regex: can be different cause it has nothing to do with a user pool
     }
 
 }
