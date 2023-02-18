@@ -219,8 +219,7 @@ public class ConfigTest {
             fail();
         } catch (InvalidConfigException e) {
             assert (e.getMessage()
-                    .equals("You cannot set different values for access_token_signing_key_dynamic for the same user " +
-                            "pool"));
+                    .equals("You cannot set different values for access_token_signing_key_dynamic for the same appId"));
         }
 
         process.kill();
@@ -281,7 +280,7 @@ public class ConfigTest {
             throws InterruptedException, IOException, InvalidConfigException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
-        Utils.setValueInConfig("refresh_token_validity", "144001");
+        Utils.setValueInConfig("email_verification_token_lifetime", "144001");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
@@ -293,7 +292,7 @@ public class ConfigTest {
         {
             JsonObject tenantConfig = new JsonObject();
 
-            tenantConfig.add("refresh_token_validity", new JsonPrimitive(144002));
+            tenantConfig.add("email_verification_token_lifetime", new JsonPrimitive(144002));
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
             tenants[0] = new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
@@ -306,7 +305,7 @@ public class ConfigTest {
             JsonObject tenantConfig = new JsonObject();
             StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
                     .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
-            tenantConfig.add("refresh_token_validity", new JsonPrimitive(144003));
+            tenantConfig.add("email_verification_token_lifetime", new JsonPrimitive(144003));
             tenants[1] = new TenantConfig(new TenantIdentifier("c1", null, "t1"), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
@@ -315,7 +314,7 @@ public class ConfigTest {
 
         {
             JsonObject tenantConfig = new JsonObject();
-            tenantConfig.add("refresh_token_validity", new JsonPrimitive(144004));
+            tenantConfig.add("email_verification_token_lifetime", new JsonPrimitive(144004));
             tenants[2] = new TenantConfig(new TenantIdentifier(null, null, "t2"), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
@@ -324,7 +323,7 @@ public class ConfigTest {
 
         {
             JsonObject tenantConfig = new JsonObject();
-            tenantConfig.add("refresh_token_validity", new JsonPrimitive(144005));
+            tenantConfig.add("email_verification_token_lifetime", new JsonPrimitive(144005));
             tenants[3] = new TenantConfig(new TenantIdentifier(null, null, "t1"), new EmailPasswordConfig(false),
                     new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
                     new PasswordlessConfig(false),
@@ -334,29 +333,29 @@ public class ConfigTest {
         Config.loadAllTenantConfig(process.getProcess(), tenants);
 
         Assert.assertEquals(Config.getConfig(new TenantIdentifier(null, null, null), process.getProcess())
-                        .getRefreshTokenValidity(),
-                (long) 144001 * 60 * 1000);
+                        .getEmailVerificationTokenLifetime(),
+                (long) 144001);
         Assert.assertEquals(Config.getConfig(new TenantIdentifier("c1", null, null), process.getProcess())
-                        .getRefreshTokenValidity(),
-                (long) 144002 * 60 * 1000);
+                        .getEmailVerificationTokenLifetime(),
+                (long) 144002);
         Assert.assertEquals(Config.getConfig(new TenantIdentifier("c1", null, "t1"), process.getProcess())
-                        .getRefreshTokenValidity(),
-                (long) 144003 * 60 * 1000);
+                        .getEmailVerificationTokenLifetime(),
+                (long) 144003);
         Assert.assertEquals(Config.getConfig(new TenantIdentifier(null, null, "t1"), process.getProcess())
-                        .getRefreshTokenValidity(),
-                (long) 144005 * 60 * 1000);
+                        .getEmailVerificationTokenLifetime(),
+                (long) 144005);
         Assert.assertEquals(Config.getConfig(new TenantIdentifier("c2", null, null), process.getProcess())
-                        .getRefreshTokenValidity(),
-                (long) 144001 * 60 * 1000);
+                        .getEmailVerificationTokenLifetime(),
+                (long) 144001);
         Assert.assertEquals(Config.getConfig(new TenantIdentifier("c2", null, "t1"), process.getProcess())
-                        .getRefreshTokenValidity(),
-                (long) 144005 * 60 * 1000);
+                        .getEmailVerificationTokenLifetime(),
+                (long) 144005);
         Assert.assertEquals(Config.getConfig(new TenantIdentifier("c3", null, "t2"), process.getProcess())
-                        .getRefreshTokenValidity(),
-                (long) 144004 * 60 * 1000);
+                        .getEmailVerificationTokenLifetime(),
+                (long) 144004);
         Assert.assertEquals(Config.getConfig(new TenantIdentifier(null, null, "t2"), process.getProcess())
-                        .getRefreshTokenValidity(),
-                (long) 144004 * 60 * 1000);
+                        .getEmailVerificationTokenLifetime(),
+                (long) 144004);
 
 
         process.kill();

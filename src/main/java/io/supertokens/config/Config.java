@@ -143,7 +143,8 @@ public class Config extends ResourceDistributor.SingletonResource {
             // the validate function.
             Storage storage = StorageLayer.getNewStorageInstance(main, currentConfig);
             final String userPoolId = storage.getUserPoolId();
-            final String appId = key.getTenantIdentifier().getAppId();
+            final String connectionUriAndAppId =
+                    key.getTenantIdentifier().getConnectionUriDomain() + "|" + key.getTenantIdentifier().getAppId();
 
             // we enforce that each connectiondomainurl has a unique user pool ID
             if (userPoolIdToConnectionUriDomain.get(userPoolId) != null) {
@@ -173,10 +174,10 @@ public class Config extends ResourceDistributor.SingletonResource {
                 // now we check conflicting configs for core related configs.
                 // this also checks for the validity of currentConfig itself cause
                 // it creates a new Config object, and the constructor calls the validate function.
-                Config configForCurrentAppId = appIdToConfigMap.get(appId);
+                Config configForCurrentAppId = appIdToConfigMap.get(connectionUriAndAppId);
                 if (configForCurrentAppId == null) {
                     configForCurrentAppId = new Config(main, currentConfig);
-                    appIdToConfigMap.put(appId, configForCurrentAppId);
+                    appIdToConfigMap.put(connectionUriAndAppId, configForCurrentAppId);
                 } else {
                     configForCurrentAppId.core.assertThatConfigFromSameAppIdAreNotConflicting(
                             new Config(main, currentConfig).core);
