@@ -200,6 +200,9 @@ Mihály Lengyel</b></sub></a></td>
 <td align="center"><a href="https://github.com/wallstromsimon"><img src="https://avatars.githubusercontent.com/u/3397398?v=4" width="100px;" alt=""/><br /><sub><b>Simon Kihlberg Wallstrom</b></sub></a></td>
 <td align="center"><a href="https://github.com/AreebKhan619"><img src="https://avatars.githubusercontent.com/u/39133435?v=4" width="100px;" alt=""/><br /><sub><b>Areeb Khan</b></sub></a></td>
   </tr>
+  <tr>
+<td align="center"><a href="https://github.com/sublimator"><img src="https://avatars.githubusercontent.com/u/525211?v=4" width="100px;" alt=""/><br /><sub><b>Nicholas Dudfield</b></sub></a></td>
+  </tr>
 </table>
 
 ## 👩‍💻 Contributing

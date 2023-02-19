@@ -46,6 +46,8 @@ labels:
     - [ ] check FDI list 
  - [ ] [supertokens-ios:X.Y](https://github.com/supertokens/supertokens-ios/X.Y)
     - [ ] check FDI list   
+ - [ ] [supertokens-flutter:X.Y](https://github.com/supertokens/supertokens-flutter/X.Y)
+    - [ ] check FDI list   
 
 ### Others
 
@@ -58,6 +60,7 @@ labels:
  - [ ] Examples apps in supertokens-node
  - [ ] Examples apps in android
  - [ ] Example apps in ios 
+ - [ ] Example apps in flutter 
  - [ ] [next.js:canary](https://github.com/supertokens/next.js/tree/canary/examples/with-supertokens)
  - [ ] RedwoodJS and playground-auth
  - [ ] Run on netlify (and hence AWS lambda) to check if it works fine there
@@ -114,6 +117,7 @@ labels:
  - [ ] [supertokens-react-native:X.Y](https://github.com/supertokens/supertokens-react-native/X.Y)
  - [ ] [supertokens-android:X.Y](https://github.com/supertokens/supertokens-android/X.Y)
  - [ ] [supertokens-ios:X.Y](https://github.com/supertokens/supertokens-ios/X.Y)
+ - [ ] [supertokens-flutter:X.Y](https://github.com/supertokens/supertokens-flutter/X.Y)
 
 
 ### 📚 Documentation
@@ -144,3 +148,4 @@ labels:
    - [ ] supertokens-react-native
    - [ ] supertokens-android
    - [ ] supertokens-ios
+   - [ ] supertokens-flutter
