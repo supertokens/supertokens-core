@@ -1,6 +1,5 @@
 package io.supertokens.inmemorydb.queries;
 
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -10,10 +9,8 @@ import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
-import jakarta.annotation.Nullable;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
@@ -31,7 +28,7 @@ public class TOTPQueries {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getTotpUsedCodesTable() + " ("
                 + "user_id VARCHAR(128) NOT NULL, " + "device_name VARCHAR(256), "
                 + "code CHAR(6) NOT NULL," + "is_valid_code BOOLEAN NOT NULL,"
-                + "expiry_time_ms BIGINT UNSIGNED NOT NULL,"
+                + "expiry_time_ms BIGINT UNSIGNED NOT NULL," // Note: UNSIGNED won't work in Postgres
                 + "FOREIGN KEY (user_id, device_name) REFERENCES " + Config.getConfig(start).getTotpUserDevicesTable()
                 + "(user_id, device_name) ON DELETE CASCADE);";
     }
@@ -106,13 +103,14 @@ public class TOTPQueries {
 
     public static int insertUsedCode(Start start, TOTPUsedCode code) throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getTotpUsedCodesTable()
-                + " (user_id, code, is_valid_code, expiry_time_ms) VALUES (?, ?, ?, ?);";
+                + " (user_id, device_name, code, is_valid_code, expiry_time_ms) VALUES (?, ?, ?, ?, ?);";
 
         return update(start, QUERY, pst -> {
             pst.setString(1, code.userId);
-            pst.setString(2, code.code);
-            pst.setBoolean(3, code.isValidCode);
-            pst.setLong(4, code.expiryTime);
+            pst.setString(2, code.deviceName);
+            pst.setString(3, code.code);
+            pst.setBoolean(4, code.isValidCode);
+            pst.setLong(5, code.expiryTime);
         });
     }
 
@@ -138,7 +136,7 @@ public class TOTPQueries {
         return update(start, QUERY, pst -> pst.setLong(1, System.currentTimeMillis()));
     }
 
-    public static int removeUsedCodesForUser(Start start, String userId, String deviceName)
+    public static int removeUsedCodes(Start start, String userId, String deviceName)
             throws StorageQueryException, SQLException {
         // Remove codes where userId matches the given userId
         // ONLY required for inmemorydb, as it does not support foreign key constraints.
@@ -187,6 +185,7 @@ public class TOTPQueries {
         public TOTPUsedCode map(ResultSet result) throws SQLException {
             return new TOTPUsedCode(
                     result.getString("user_id"),
+                    result.getString("device_name"),
                     result.getString("code"),
                     result.getBoolean("is_valid_code"),
                     result.getLong("expiry_time_ms"));

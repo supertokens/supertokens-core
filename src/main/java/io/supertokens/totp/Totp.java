@@ -72,7 +72,7 @@ public class Totp {
         }
 
         // Insert the code into the list of used codes:
-        TOTPUsedCode newCode = new TOTPUsedCode(userId, code, true, System.currentTimeMillis() + 1000 * 60 * 5);
+        TOTPUsedCode newCode = new TOTPUsedCode(userId, matchingDevice.deviceName, code, true, System.currentTimeMillis() + 1000 * 60 * 5);
         totpStorage.insertUsedCode(newCode);
 
         // Check if the code is valid:
@@ -115,16 +115,18 @@ public class Totp {
 
         // Try different devices until we find one that works:
         boolean isValid = false;
+        TOTPDevice matchingDevice = null;
         for (TOTPDevice device : devices) {
             // Check if the code is valid for this device:
             if (checkCode(device, code)) {
                 isValid = true;
+                matchingDevice = device;
                 break;
             }
         }
 
         // Insert the code into the list of used codes:
-        TOTPUsedCode newCode = new TOTPUsedCode(userId, code, isValid, System.currentTimeMillis() + 1000 * 60 * 5);
+        TOTPUsedCode newCode = new TOTPUsedCode(userId, matchingDevice.deviceName, code, isValid, System.currentTimeMillis() + 1000 * 60 * 5);
         totpStorage.insertUsedCode(newCode);
 
         if (isValid) {

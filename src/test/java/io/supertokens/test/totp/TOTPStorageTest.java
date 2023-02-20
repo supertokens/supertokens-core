@@ -199,7 +199,7 @@ public class TOTPStorageTest {
         TOTPStorage storage = result.storage;
 
         TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
-        TOTPUsedCode code = new TOTPUsedCode("user", "1234", true, 1);
+        TOTPUsedCode code = new TOTPUsedCode("user", "device", "1234", true, 1);
 
         storage.createDevice(device);
         boolean isInserted = storage.insertUsedCode(code);
@@ -212,15 +212,28 @@ public class TOTPStorageTest {
         assert (usedCodes[0].isValidCode);
         assert (usedCodes[0].expiryTime == 1);
 
-        // Try to insert code when device (userId) doesn't exist:
-        assertThrows(TotpNotEnabledException.class,
-                () -> storage.insertUsedCode(new TOTPUsedCode("non-existent-user", "1234", true, 1)));
-
-        // FIXME: Deleting last device of the user should delete all used codes of the
-        // user
+        // Deleting a device of the user should delete all related valid codes (coz they
+        // have deviceName != null)
+        TOTPUsedCode invalidCode = new TOTPUsedCode("user", null, "invalid-code", false, 1);
+        storage.insertUsedCode(invalidCode);
+        // Delete the device and check if the only the valid code is deleted:
         storage.deleteDevice("user", "device");
-        usedCodes = storage.getUsedCodes("user");
-        assert (usedCodes.length == 0);
+        TOTPUsedCode[] newUsedCodes = storage.getUsedCodes("user");
+        assert (newUsedCodes.length == 1);
+        assert (newUsedCodes[0].code.equals("invalid-code"));
+
+        // Try to insert code when device doesn't exist and user doesn't have any device (i.e. TOTP not enabled)
+        assertThrows(TotpNotEnabledException.class,
+                () -> storage.insertUsedCode(new TOTPUsedCode("user", "non-existent-device", "1234", true, 1)));
+
+        // Try to insert code when device doesn't exist and user already has a device (i.e. TOTP enabled)
+        TOTPDevice newDevice = new TOTPDevice("user", "new-device", "secretKey", 30, 1, false);
+        storage.createDevice(newDevice);
+        storage.insertUsedCode(new TOTPUsedCode("user", "non-existent-device", "1234", true, 1));
+
+        // Try to insert code when user doesn't exist:
+        assertThrows(TotpNotEnabledException.class,
+                () -> storage.insertUsedCode(new TOTPUsedCode("non-existent-user", "device", "1234", true, 1)));
     }
 
     @Test
@@ -228,9 +241,9 @@ public class TOTPStorageTest {
         TestSetupResult result = setup();
         TOTPStorage storage = result.storage;
 
-        TOTPDevice device = new TOTPDevice("device", "user", "secretKey", 30, 1, false);
-        TOTPUsedCode code1 = new TOTPUsedCode("user", "code1", true, 1);
-        TOTPUsedCode code2 = new TOTPUsedCode("user", "code2", false, 1);
+        TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
+        TOTPUsedCode code1 = new TOTPUsedCode("user", "device", "code1", true, 1);
+        TOTPUsedCode code2 = new TOTPUsedCode("user", null, "code2", false, 1);
 
         storage.createDevice(device);
         storage.insertUsedCode(code1);
@@ -249,9 +262,9 @@ public class TOTPStorageTest {
         TestSetupResult result = setup();
         TOTPStorage storage = result.storage;
 
-        TOTPDevice device = new TOTPDevice("device", "user", "secretKey", 30, 1, false);
-        TOTPUsedCode codeToDelete = new TOTPUsedCode("user", "codeToDelete", true, 1);
-        TOTPUsedCode codeToKeep = new TOTPUsedCode("user", "codeToKeep", false, 1);
+        TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
+        TOTPUsedCode codeToDelete = new TOTPUsedCode("user", "device", "codeToDelete", true, System.currentTimeMillis() - 1000);
+        TOTPUsedCode codeToKeep = new TOTPUsedCode("user", null, "codeToKeep", false, System.currentTimeMillis() + 10000);
 
         storage.createDevice(device);
         storage.insertUsedCode(codeToDelete);

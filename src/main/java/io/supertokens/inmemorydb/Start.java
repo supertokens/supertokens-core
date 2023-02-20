@@ -1670,7 +1670,7 @@ public class Start
 
             // Note: This step is only required for in-memory databases.
             // They don't have cascading deletes, so we need to manually delete the codes
-            TOTPQueries.removeUsedCodesForUser(this, userId, deviceName);
+            TOTPQueries.removeUsedCodes(this, userId, deviceName);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
