@@ -361,4 +361,53 @@ public class ConfigTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testMappingSameUserPoolToDifferentConnectionURIThrowsError()
+            throws InterruptedException, IOException, InvalidConfigException, TenantOrAppNotFoundException {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("email_verification_token_lifetime", "144001");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        TenantConfig[] tenants = new TenantConfig[2];
+
+        {
+            JsonObject tenantConfig = new JsonObject();
+
+            tenantConfig.add("email_verification_token_lifetime", new JsonPrimitive(144002));
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
+            tenants[0] = new TenantConfig(new TenantIdentifier("c1", null, null), new EmailPasswordConfig(false),
+                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                    new PasswordlessConfig(false),
+                    tenantConfig);
+        }
+
+        {
+            JsonObject tenantConfig = new JsonObject();
+            StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                    .modifyConfigToAddANewUserPoolForTesting(tenantConfig, 2);
+            tenantConfig.add("email_verification_token_lifetime", new JsonPrimitive(144003));
+            tenants[1] = new TenantConfig(new TenantIdentifier("c2", null, null), new EmailPasswordConfig(false),
+                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+                    new PasswordlessConfig(false),
+                    tenantConfig);
+        }
+
+        try {
+            Config.loadAllTenantConfig(process.getProcess(), tenants);
+            fail();
+        } catch (InvalidConfigException e) {
+            assert (e.getMessage()
+                    .equals("ConnectionUriDomain: c2 cannot be mapped to the same user pool as c1"));
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }
