@@ -1,5 +1,6 @@
 package io.supertokens.inmemorydb.queries;
 
+import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
@@ -9,9 +10,10 @@ import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
+import jakarta.annotation.Nullable;
 
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.execute;
 import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
@@ -27,10 +29,11 @@ public class TOTPQueries {
 
     public static String getQueryToCreateUsedCodesTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getTotpUsedCodesTable() + " ("
-                + "user_id VARCHAR(128) NOT NULL," + "code CHAR(6) NOT NULL," + "is_valid_code BOOLEAN NOT NULL,"
+                + "user_id VARCHAR(128) NOT NULL, " + "device_name VARCHAR(256), "
+                + "code CHAR(6) NOT NULL," + "is_valid_code BOOLEAN NOT NULL,"
                 + "expiry_time_ms BIGINT UNSIGNED NOT NULL,"
-                + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getTotpUserDevicesTable()
-                + "(user_id) ON DELETE CASCADE)";
+                + "FOREIGN KEY (user_id, device_name) REFERENCES " + Config.getConfig(start).getTotpUserDevicesTable()
+                + "(user_id, device_name) ON DELETE CASCADE);";
     }
 
     public static String getQueryToCreateUsedCodesIndex(Start start) {
@@ -41,11 +44,11 @@ public class TOTPQueries {
     public static void createDevice(Start start, TOTPDevice device)
             throws StorageQueryException, SQLException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getTotpUserDevicesTable()
-                + " (device_name, user_id, secret_key, period, skew, verified) VALUES (?, ?, ?, ?, ?, ?)";
+                + " (user_id, device_name, secret_key, period, skew, verified) VALUES (?, ?, ?, ?, ?, ?)";
 
         update(start, QUERY, pst -> {
-            pst.setString(1, device.deviceName);
-            pst.setString(2, device.userId);
+            pst.setString(1, device.userId);
+            pst.setString(2, device.deviceName);
             pst.setString(3, device.secretKey);
             pst.setInt(4, device.period);
             pst.setInt(5, device.skew);
@@ -135,6 +138,19 @@ public class TOTPQueries {
         return update(start, QUERY, pst -> pst.setLong(1, System.currentTimeMillis()));
     }
 
+    public static int removeUsedCodesForUser(Start start, String userId, String deviceName)
+            throws StorageQueryException, SQLException {
+        // Remove codes where userId matches the given userId
+        // ONLY required for inmemorydb, as it does not support foreign key constraints.
+        String QUERY = "DELETE FROM " + Config.getConfig(start).getTotpUsedCodesTable()
+                + " WHERE user_id = ? AND device_name = ?;";
+
+        return update(start, QUERY, pst -> {
+            pst.setString(1, userId);
+            pst.setString(2, deviceName);
+        });
+    }
+
     private static class TOTPDeviceRowMapper implements RowMapper<TOTPDevice, ResultSet> {
         private static final TOTPDeviceRowMapper INSTANCE = new TOTPDeviceRowMapper();
 
@@ -148,8 +164,8 @@ public class TOTPQueries {
         @Override
         public TOTPDevice map(ResultSet result) throws SQLException {
             return new TOTPDevice(
-                    result.getString("device_name"),
                     result.getString("user_id"),
+                    result.getString("device_name"),
                     result.getString("secret_key"),
                     result.getInt("period"),
                     result.getInt("skew"),

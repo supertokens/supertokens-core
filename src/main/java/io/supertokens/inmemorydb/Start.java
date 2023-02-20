@@ -1668,14 +1668,9 @@ public class Start
                 throw new UnknownDeviceException();
             }
 
-            // FIXME: Should delete all the codes associated with this device.
-            // But problem is that we store all the codes whether they are valid (i.e.
-            // matching device found) or not.
-            // So we can't just delete all the codes for the user. We need to delete only
-            // the codes that are associated
-            // with this device. But we don't store that information.
-
-            // One way is only delete the valid codes?
+            // Note: This step is only required for in-memory databases.
+            // They don't have cascading deletes, so we need to manually delete the codes
+            TOTPQueries.removeUsedCodesForUser(this, userId, deviceName);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

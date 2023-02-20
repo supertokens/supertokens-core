@@ -67,9 +67,9 @@ public class TOTPStorageTest {
         TestSetupResult result = setup();
         TOTPStorage storage = result.storage;
 
-        TOTPDevice device1 = new TOTPDevice("d1", "user", "secretKey", 30, 1, false);
-        TOTPDevice device2 = new TOTPDevice("d2", "user", "secretKey", 30, 1, false);
-        TOTPDevice device2Duplicate = new TOTPDevice("d2", "user", "secretKey", 30, 1, false);
+        TOTPDevice device1 = new TOTPDevice("user", "d1", "secretKey", 30, 1, false);
+        TOTPDevice device2 = new TOTPDevice("user", "d2", "secretKey", 30, 1, false);
+        TOTPDevice device2Duplicate = new TOTPDevice("user", "d2", "secretKey", 30, 1, false);
 
         storage.createDevice(device1);
 
@@ -98,7 +98,7 @@ public class TOTPStorageTest {
         TestSetupResult result = setup();
         TOTPStorage storage = result.storage;
 
-        TOTPDevice device = new TOTPDevice("device", "user", "secretKey", 30, 1, false);
+        TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
         storage.createDevice(device);
 
         TOTPDevice[] storedDevices = storage.getDevices("user");
@@ -121,7 +121,7 @@ public class TOTPStorageTest {
         TestSetupResult result = setup();
         TOTPStorage storage = result.storage;
 
-        TOTPDevice device = new TOTPDevice("device", "user", "secretKey", 30, 1, false);
+        TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
         storage.createDevice(device);
 
         TOTPDevice[] storedDevices = storage.getDevices("user");
@@ -142,7 +142,7 @@ public class TOTPStorageTest {
         TestSetupResult result = setup();
         TOTPStorage storage = result.storage;
 
-        TOTPDevice device = new TOTPDevice("device", "user", "secretKey", 30, 1, false);
+        TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
         storage.createDevice(device);
 
         TOTPDevice[] storedDevices = storage.getDevices("user");
@@ -162,7 +162,7 @@ public class TOTPStorageTest {
 
         // Try to create a new device and rename it to the same name as an existing
         // device:
-        TOTPDevice newDevice = new TOTPDevice("new-device", "user", "secretKey", 30, 1, false);
+        TOTPDevice newDevice = new TOTPDevice("user", "new-device", "secretKey", 30, 1, false);
         storage.createDevice(newDevice);
 
         assertThrows(DeviceAlreadyExistsException.class,
@@ -177,8 +177,8 @@ public class TOTPStorageTest {
         TestSetupResult result = setup();
         TOTPStorage storage = result.storage;
 
-        TOTPDevice device1 = new TOTPDevice("d1", "user", "secretKey", 30, 1, false);
-        TOTPDevice device2 = new TOTPDevice("d2", "user", "secretKey", 30, 1, false);
+        TOTPDevice device1 = new TOTPDevice("user", "d1", "secretKey", 30, 1, false);
+        TOTPDevice device2 = new TOTPDevice("user", "d2", "secretKey", 30, 1, false);
 
         storage.createDevice(device1);
         storage.createDevice(device2);
@@ -188,6 +188,9 @@ public class TOTPStorageTest {
         assert (storedDevices.length == 2);
         assert (storedDevices[0].deviceName.equals("d1"));
         assert (storedDevices[1].deviceName.equals("d2"));
+
+        storedDevices = storage.getDevices("non-existent-user");
+        assert (storedDevices.length == 0);
     }
 
     @Test
@@ -195,7 +198,7 @@ public class TOTPStorageTest {
         TestSetupResult result = setup();
         TOTPStorage storage = result.storage;
 
-        TOTPDevice device = new TOTPDevice("device", "user", "secretKey", 30, 1, false);
+        TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
         TOTPUsedCode code = new TOTPUsedCode("user", "1234", true, 1);
 
         storage.createDevice(device);
@@ -213,7 +216,8 @@ public class TOTPStorageTest {
         assertThrows(TotpNotEnabledException.class,
                 () -> storage.insertUsedCode(new TOTPUsedCode("non-existent-user", "1234", true, 1)));
 
-        // FIXME: Deleting the device should delete the used codes
+        // FIXME: Deleting last device of the user should delete all used codes of the
+        // user
         storage.deleteDevice("user", "device");
         usedCodes = storage.getUsedCodes("user");
         assert (usedCodes.length == 0);

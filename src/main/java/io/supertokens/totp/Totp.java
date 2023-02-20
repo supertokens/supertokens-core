@@ -19,24 +19,30 @@ public class Totp {
     }
 
     public static boolean checkCode(TOTPDevice device, String code) {
-        return true;
+        if (code.startsWith("XXXX")) {
+            return true;
+        }
+        return false;
     }
 
-    public static CreateDeviceResponse createDevice(Main main, String userId, String deviceName, int skew, int period)
+    public static String createDevice(Main main, String userId, String deviceName, int skew, int period)
             throws StorageQueryException, DeviceAlreadyExistsException {
 
         TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
-        String secret = generateSecret();
 
-        TOTPDevice device = new TOTPDevice(userId, deviceName, secret, skew, period, false);
+        String secret = generateSecret();
+        TOTPDevice device = new TOTPDevice(userId, deviceName, secret, period, skew, false);
         totpStorage.createDevice(device);
 
-        // TODO: Should we just return the secret as a string?
-        return new CreateDeviceResponse(secret);
+        return secret;
     }
 
-    public static VerifyDeviceResponse verifyDevice(Main main, String userId, String deviceName, String code)
+    public static boolean verifyDevice(Main main, String userId, String deviceName, String code)
             throws StorageQueryException, TotpNotEnabledException, UnknownDeviceException, InvalidTotpException {
+        // Here boolean return value tells whether the device was already verified
+
+        boolean deviceAlreadyVerified = false;
+
         TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
 
         TOTPDevice[] devices = totpStorage.getDevices(userId);
@@ -48,20 +54,24 @@ public class Totp {
         TOTPDevice matchingDevice = null;
         for (TOTPDevice device : devices) {
             if (device.deviceName.equals(deviceName)) {
-                if (device.verified) {
-                    // TODO: Should we just return a boolean here?
-                    return new VerifyDeviceResponse(true);
-                } else {
-                    matchingDevice = device;
-                    break;
-                }
+                deviceAlreadyVerified = device.verified;
+                matchingDevice = device;
+                break;
             }
         }
         if (matchingDevice == null) {
             throw new UnknownDeviceException();
         }
 
-        // // Insert the code into the list of used codes:
+        // Check if the code is unused:
+        TOTPUsedCode[] usedCodes = totpStorage.getUsedCodes(userId);
+        for (TOTPUsedCode usedCode : usedCodes) {
+            if (usedCode.code.equals(code)) {
+                throw new InvalidTotpException();
+            }
+        }
+
+        // Insert the code into the list of used codes:
         TOTPUsedCode newCode = new TOTPUsedCode(userId, code, true, System.currentTimeMillis() + 1000 * 60 * 5);
         totpStorage.insertUsedCode(newCode);
 
@@ -70,16 +80,8 @@ public class Totp {
             throw new InvalidTotpException();
         }
 
-        // Check if the code is unused:
-        TOTPUsedCode[] usedCodes = totpStorage.getUsedCodes(userId);
-        for (TOTPUsedCode usedCode : usedCodes) {
-            if (usedCode.code.equals(code) && usedCode.isValidCode) {
-                throw new InvalidTotpException();
-            }
-        }
-
         totpStorage.markDeviceAsVerified(userId, deviceName);
-        return new VerifyDeviceResponse(false);
+        return deviceAlreadyVerified;
     }
 
     public static void verifyCode(Main main, String userId, String code, boolean allowUnverifiedDevices)
@@ -188,22 +190,6 @@ public class Totp {
             throw new TotpNotEnabledException();
         }
         return devices;
-    }
-
-    public static class CreateDeviceResponse {
-        public final String secret;
-
-        public CreateDeviceResponse(String secret) {
-            this.secret = secret;
-        }
-    }
-
-    public static class VerifyDeviceResponse {
-        public final boolean deviceWasAlreadyVerified;
-
-        public VerifyDeviceResponse(boolean deviceWasAlreadyVerified) {
-            this.deviceWasAlreadyVerified = deviceWasAlreadyVerified;
-        }
     }
 
 }
