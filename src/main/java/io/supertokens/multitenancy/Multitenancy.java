@@ -74,6 +74,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     throw new BadPermissionException(
                             "You must use the public tenantId to add a new tenant to this app");
                 }
+                // TODO: app of the newTenant and sourceTenant is the same
+                // TODO: connectionuridomain of the newTenant and sourceTenant is the same.
             } else if (!newTenant.tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
                 // this means that we are creating a new app for this connectionuridomain and must use the public app
                 // and
@@ -83,6 +85,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     throw new BadPermissionException(
                             "You must use the public tenantId and public appId to add a new app");
                 }
+                // TODO: connectionuridomain of the newTenant and sourceTenant is the same.
             } else if (!newTenant.tenantIdentifier.getConnectionUriDomain()
                     .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
                 // this means that we are creating a new connectionuridomain, and must use the base tenant for this
@@ -96,15 +99,15 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         // we check if the core config provided is correct
         {
             TenantConfig[] existingTenants = getAllTenants(new TenantIdentifier(null, null, null), main);
-            boolean added = false;
+            boolean updated = false;
             for (int i = 0; i < existingTenants.length; i++) {
                 if (existingTenants[i].tenantIdentifier.equals(newTenant.tenantIdentifier)) {
                     existingTenants[i] = newTenant;
-                    added = true;
+                    updated = true;
                     break;
                 }
             }
-            if (!added) {
+            if (!updated) {
                 TenantConfig[] oldTenants = existingTenants;
                 existingTenants = new TenantConfig[oldTenants.length + 1];
                 for (int i = 0; i < oldTenants.length; i++) {
@@ -196,7 +199,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throw new BadPermissionException(
                     "Please delete all tenants except the public tenant for this app before calling the delete API");
         }
-        StorageLayer.getMultitenancyStorage(main).markAppIdAsDeleted(tenantIdentifier.getAppId());
+        StorageLayer.getMultitenancyStorage(main).deleteAppId(tenantIdentifier.getAppId());
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
     }
 
@@ -222,7 +225,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                             "delete API.");
         }
         StorageLayer.getMultitenancyStorage(main)
-                .markConnectionUriDomainAsDeleted(tenantIdentifier.getConnectionUriDomain());
+                .deleteConnectionUriDomain(tenantIdentifier.getConnectionUriDomain());
         MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
     }
 
@@ -280,7 +283,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         List<TenantConfig> tenantList = new ArrayList<>();
 
         for (TenantConfig t : tenants) {
-            if (!t.tenantIdentifier.getAppId().equals(tenantIdentifier.getAppId())) {
+            if (!t.tenantIdentifier.toAppIdentifier().equals(tenantIdentifier.toAppIdentifier())) {
                 continue;
             }
             tenantList.add(t);
@@ -322,9 +325,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
     public static TenantConfig[] getAllTenants(TenantIdentifier tenantIdentifier, Main main)
             throws BadPermissionException {
-        if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) &&
-                !tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID) &&
-                !tenantIdentifier.getConnectionUriDomain().equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
+        if (!tenantIdentifier.equals(new TenantIdentifier(null, null, null))) {
             throw new BadPermissionException(
                     "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
                             "connectionUriDomains and appIds associated with this " +

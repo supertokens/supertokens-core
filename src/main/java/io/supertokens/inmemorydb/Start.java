@@ -1894,12 +1894,12 @@ public class Start
     }
 
     @Override
-    public void markAppIdAsDeleted(String appId) throws TenantOrAppNotFoundException {
+    public void deleteAppId(String appId) throws TenantOrAppNotFoundException {
         // TODO:
     }
 
     @Override
-    public void markConnectionUriDomainAsDeleted(String connectionUriDomain) throws TenantOrAppNotFoundException {
+    public void deleteConnectionUriDomain(String connectionUriDomain) throws TenantOrAppNotFoundException {
         // TODO:
     }
 }
