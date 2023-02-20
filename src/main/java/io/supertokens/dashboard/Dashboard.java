@@ -201,6 +201,10 @@ public class Dashboard {
         return StorageLayer.getDashboardStorage(main).revokeSessionWithSessionId(sessionId);
     }
 
+    public static DashboardSessionInfo [] getAllDashboardSessionsForUser(Main main, String userId) throws StorageQueryException {
+        return StorageLayer.getDashboardStorage(main).getAllSessionsForUserId(userId);
+    }
+
     private static boolean isDashboardFeatureFlagEnabled(Main main) throws StorageQueryException {
         try {
             return Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())

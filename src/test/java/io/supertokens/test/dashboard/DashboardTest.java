@@ -17,6 +17,7 @@
 package io.supertokens.test.dashboard;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -31,6 +32,7 @@ import com.google.gson.JsonArray;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -63,7 +65,7 @@ public class DashboardTest {
         }
 
         // check that no Dashboard users exist
-        DashboardUser[] dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
+        DashboardUser[] dashboardUsers = Dashboard.getAllDashboardUsers(process.getProcess());
         assertTrue(dashboardUsers.length == 0);
 
         String email = "test@example.com";
@@ -71,8 +73,8 @@ public class DashboardTest {
         // create Dashboard user
         Dashboard.signUpDashboardUser(process.getProcess(), email, "testPass123");
 
-        // check that Dashboard user was created 
-        dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
+        // check that Dashboard user was created
+        dashboardUsers = Dashboard.getAllDashboardUsers(process.getProcess());
         assertTrue(dashboardUsers.length == 1);
         assertEquals(dashboardUsers[0].email, email);
 
@@ -92,7 +94,7 @@ public class DashboardTest {
         }
 
         // check that no Dashboard users exist
-        DashboardUser[] dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
+        DashboardUser[] dashboardUsers = Dashboard.getAllDashboardUsers(process.getProcess());
         assertTrue(dashboardUsers.length == 0);
 
         String email = "test@example.com";
@@ -109,13 +111,52 @@ public class DashboardTest {
         }
         assertNotNull(error);
         assertTrue(error instanceof DuplicateEmailException);
-        
-        // check that no duplicate Dashboard user was created 
-        dashboardUsers =  Dashboard.getAllDashboardUsers(process.getProcess());
+
+        // check that no duplicate Dashboard user was created
+        dashboardUsers = Dashboard.getAllDashboardUsers(process.getProcess());
         assertTrue(dashboardUsers.length == 1);
         assertEquals(dashboardUsers[0].email, email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-    } 
+    }
+
+    @Test
+    public void testCreatingAUserAndSessionAndDeletingTheUserDeletesTheSession() throws Exception {
+
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        String email = "test@example.com";
+        String password = "password123";
+
+        // create Dashboard user
+        DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), email, password);
+
+        // create dashboard user session
+        String sessionId = Dashboard.signInDashboardUser(process.getProcess(), email, password);
+
+        // check that session exists
+        {
+            DashboardSessionInfo[] sessionInfo =  Dashboard.getAllDashboardSessionsForUser(process.getProcess(), user.userId);
+            assertEquals(1, sessionInfo.length);
+            assertEquals(sessionId, sessionInfo[0].sessionId);
+        }
+
+        // delete user
+        assertTrue(Dashboard.deleteUserWithUserId(process.getProcess(), user.userId));
+
+        // check that session no longer exists
+        assertFalse(Dashboard.isValidUserSession(process.getProcess(), sessionId));
+        assertEquals(0, Dashboard.getAllDashboardSessionsForUser(process.getProcess(), user.userId).length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
 }

@@ -18,6 +18,8 @@ package io.supertokens.webserver.api.dashboard;
 
 import java.io.IOException;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
@@ -31,32 +33,34 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-public class RevokeSessionAPI extends WebserverAPI{
+public class GetDashboardSessionsForUserAPI extends WebserverAPI{
 
-    private static final long serialVersionUID = -3243982612346134273L;
-
-    public RevokeSessionAPI(Main main) {
+    public GetDashboardSessionsForUserAPI(Main main) {
         super(main, RECIPE_ID.DASHBOARD.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/dashboard/session";
+        return "/recipe/dashboard/user/sessions";
     }
 
+
     @Override
-    protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
 
-        String sessionId = InputParser.getQueryParamOrThrowError(req, "sessionId", false);
-        sessionId = Utils.normalizeAndValidateStringParam(sessionId, "sessionId");
-
+        String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
+        userId = Utils.normalizeAndValidateStringParam(userId, "userId");
+        
         try {
-            Dashboard.revokeSessionWithSessionId(main, sessionId);
+            
+            JsonArray arr = new com.google.gson.JsonParser().parse(new Gson().toJson(Dashboard.getAllDashboardSessionsForUser(main, userId))).getAsJsonArray();
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
+            response.add("sessions", arr);
             super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
-    }    
+    }
+    
 }
