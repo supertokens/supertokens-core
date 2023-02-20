@@ -56,7 +56,7 @@ public class TOTPQueries {
     public static int markDeviceAsVerified(Start start, String userId, String deviceName)
             throws StorageQueryException, SQLException {
         String QUERY = "UPDATE " + Config.getConfig(start).getTotpUserDevicesTable()
-                + " SET verified = true WHERE user_id = ? AND device_name = ?;";
+                + " SET verified = true WHERE user_id = ? AND device_name = ? WHERE verified = false;";
         return update(start, QUERY, pst -> {
             pst.setString(1, userId);
             pst.setString(2, deviceName);
@@ -117,8 +117,11 @@ public class TOTPQueries {
     public static TOTPUsedCode[] getUsedCodes(Start start, String userId) throws SQLException, StorageQueryException {
         String QUERY = "SELECT * FROM " +
                 Config.getConfig(start).getTotpUsedCodesTable()
-                + " WHERE user_id = ?;";
-        return execute(start, QUERY, pst -> pst.setString(1, userId), result -> {
+                + " WHERE user_id = ? AND expiry_time_ms > ?;";
+        return execute(start, QUERY, pst -> {
+            pst.setString(1, userId);
+            pst.setLong(2, System.currentTimeMillis());
+        }, result -> {
             List<TOTPUsedCode> codes = new ArrayList<>();
             while (result.next()) {
                 codes.add(TOTPUsedCodeRowMapper.getInstance().map(result));

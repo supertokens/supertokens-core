@@ -41,47 +41,19 @@ public class Totp {
             throws StorageQueryException, TotpNotEnabledException, UnknownDeviceException, InvalidTotpException {
         // Here boolean return value tells whether the device was already verified
 
-        boolean deviceAlreadyVerified = false;
-
         TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
 
-        TOTPDevice[] devices = totpStorage.getDevices(userId);
-        if (devices.length == 0) {
-            throw new TotpNotEnabledException();
-        }
+        boolean deviceAlreadyVerified = totpStorage.markDeviceAsVerified(userId, deviceName);
 
-        // Find the device:
-        TOTPDevice matchingDevice = null;
-        for (TOTPDevice device : devices) {
-            if (device.deviceName.equals(deviceName)) {
-                deviceAlreadyVerified = device.verified;
-                matchingDevice = device;
-                break;
-            }
-        }
-        if (matchingDevice == null) {
-            throw new UnknownDeviceException();
-        }
+        if (deviceAlreadyVerified)
+            return true;
 
-        // Check if the code is unused:
-        TOTPUsedCode[] usedCodes = totpStorage.getUsedCodes(userId);
-        for (TOTPUsedCode usedCode : usedCodes) {
-            if (usedCode.code.equals(code)) {
-                throw new InvalidTotpException();
-            }
-        }
-
-        // Insert the code into the list of used codes:
-        TOTPUsedCode newCode = new TOTPUsedCode(userId, matchingDevice.deviceName, code, true, System.currentTimeMillis() + 1000 * 60 * 5);
-        totpStorage.insertUsedCode(newCode);
-
-        // Check if the code is valid:
-        if (!checkCode(matchingDevice, code)) {
+        try {
+            verifyCode(main, userId, code, true);
+            return false;
+        } catch (LimitReachedException e) {
             throw new InvalidTotpException();
         }
-
-        totpStorage.markDeviceAsVerified(userId, deviceName);
-        return deviceAlreadyVerified;
     }
 
     public static void verifyCode(Main main, String userId, String code, boolean allowUnverifiedDevices)
@@ -95,22 +67,26 @@ public class Totp {
             throw new TotpNotEnabledException();
         }
 
-        // FIXME: Every unused_code should be linked to the device it was used for.
-        // Otherwise, if a user has multiple devices, and they use the same code for
-        // both,
-        // then the code will be considered as used for both devices. This could cause
-        // UX
-        // issues.
-        // If we do this, then it also means that we need to assign a device ID to each
-        // device (OR use
-        // (userId, deviceName) as the ID)
-
-        // Check if the code has been successfully used by the user (for any device):
-        TOTPUsedCode[] usedCodes = totpStorage.getUsedCodes(userId);
-        for (TOTPUsedCode usedCode : usedCodes) {
-            if (usedCode.code.equals(code) && usedCode.isValidCode) {
-                throw new InvalidTotpException();
+        // If allowUnverifiedDevices is false, then remove all unverified devices from
+        // the list:
+        if (!allowUnverifiedDevices) {
+            int verifiedDeviceCount = 0;
+            for (TOTPDevice device : devices) {
+                if (device.verified) {
+                    verifiedDeviceCount++;
+                }
             }
+
+            TOTPDevice[] verifiedDevices = new TOTPDevice[verifiedDeviceCount];
+            int index = 0;
+            for (TOTPDevice device : devices) {
+                if (device.verified) {
+                    verifiedDevices[index] = device;
+                    index++;
+                }
+            }
+
+            devices = verifiedDevices;
         }
 
         // Try different devices until we find one that works:
@@ -125,16 +101,40 @@ public class Totp {
             }
         }
 
+        // Check if the code has been successfully used by the user (for any of their
+        // devices):
+        TOTPUsedCode[] usedCodes = totpStorage.getUsedCodes(userId);
+        for (TOTPUsedCode usedCode : usedCodes) {
+            if (usedCode.code.equals(code)) { // FIXME: Only check for the same device for better UX?
+                throw new InvalidTotpException();
+            }
+        }
+
         // Insert the code into the list of used codes:
-        TOTPUsedCode newCode = new TOTPUsedCode(userId, matchingDevice.deviceName, code, isValid, System.currentTimeMillis() + 1000 * 60 * 5);
+        TOTPUsedCode newCode = null;
+        if (matchingDevice == null) {
+            // TODO: Verify that this doesn't pile up OR gets deleted very quickly:
+            int expireAfterSeconds = 60 * 5; // 5 minutes
+            newCode = new TOTPUsedCode(userId, null, code, isValid,
+                    System.currentTimeMillis() + 1000 * expireAfterSeconds);
+        } else {
+            int expireAfterSeconds = matchingDevice.period * (2 * matchingDevice.period + 1);
+            newCode = new TOTPUsedCode(userId, matchingDevice.deviceName, code, isValid,
+                    System.currentTimeMillis() + 1000 * expireAfterSeconds);
+        }
         totpStorage.insertUsedCode(newCode);
 
         if (isValid) {
             return;
         }
 
-        // Check if last 5 codes are all invalid:
-        int WINDOW_SIZE = 5;
+        // Now we know that the code is invalid.
+
+        // Check if last N codes are all invalid:
+        // Note that usedCodes will get updated when:
+        // - A valid code is used: It will break the chain of invalid codes.
+        // - Cron job runs: deletes expired codes every 1 hour
+        int WINDOW_SIZE = 3;
         int invalidCodes = 0;
         for (int i = usedCodes.length - 1; i >= 0 && i >= usedCodes.length - WINDOW_SIZE; i--) {
             if (!usedCodes[i].isValidCode) {

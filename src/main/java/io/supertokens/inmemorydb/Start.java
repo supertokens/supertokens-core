@@ -1647,13 +1647,21 @@ public class Start
     }
 
     @Override
-    public void markDeviceAsVerified(String userId, String deviceName)
+    public boolean markDeviceAsVerified(String userId, String deviceName)
             throws StorageQueryException, UnknownDeviceException {
         try {
             int updatedCount = TOTPQueries.markDeviceAsVerified(this, userId, deviceName);
             if (updatedCount == 0) {
+                TOTPDevice[] devices = TOTPQueries.getDevices(this, userId);
+                for (TOTPDevice device : devices) {
+                    if (device.deviceName.equals(deviceName) && device.verified) {
+                        return true; // Device was already verified
+                    }
+                }
+                // Device was not found:
                 throw new UnknownDeviceException();
             }
+            return false; // Device was marked as verified
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

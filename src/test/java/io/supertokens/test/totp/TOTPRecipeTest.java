@@ -26,7 +26,6 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import io.supertokens.test.Utils;
-import io.supertokens.test.totp.TOTPStorageTest.TestSetupResult;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -35,7 +34,6 @@ import io.supertokens.test.TestingProcessManager;
 
 import io.supertokens.totp.Totp;
 import io.supertokens.totp.exceptions.InvalidTotpException;
-import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
@@ -81,7 +79,7 @@ public class TOTPRecipeTest {
     }
 
     @Test
-    public void createAndVerifyDevice() throws Exception {
+    public void createDevice() throws Exception {
         TestSetupResult result = setup();
         Main main = result.process.getProcess();
 
@@ -91,6 +89,72 @@ public class TOTPRecipeTest {
 
         // Create same device again (should fail)
         assertThrows(DeviceAlreadyExistsException.class, () -> Totp.createDevice(main, "userId", "deviceName", 1, 30));
+    }
+
+    public void triggerRateLimit(Main main) throws Exception {
+        for (int i = 0; i < 4; i++) {
+            assertThrows(
+                    InvalidTotpException.class,
+                    () -> Totp.verifyCode(main, "user", "wrong-code", true));
+        }
+
+        // 5th attempt should fail with rate limiting error:
+        assertThrows(
+                InvalidTotpException.class,
+                () -> Totp.verifyCode(main, "user", "XXXX-code", true));
+    }
+
+    @Test
+    public void createDeviceAndVerifyCode() throws Exception {
+        TestSetupResult result = setup();
+        Main main = result.process.getProcess();
+
+        // Create device
+        String secret = Totp.createDevice(main, "userId", "deviceName", 1, 30);
+
+        // Try login with non-existent user:
+        assertThrows(TotpNotEnabledException.class,
+                () -> Totp.verifyCode(main, "non-existent-user", "XXXX-code", true));
+
+        // Try login with invalid code:
+        assertThrows(InvalidTotpException.class,
+                () -> Totp.verifyCode(main, "user", "invalid-code", true));
+
+        // Try login with with unverified device:
+        assertThrows(InvalidTotpException.class,
+                () -> Totp.verifyCode(main, "user", "XXXX-code", false));
+
+        // Successfully login:
+        Totp.verifyCode(main, "user", "XXXX-code", true);
+        // Now try again with same code:
+        assertThrows(
+                InvalidTotpException.class,
+                () -> Totp.verifyCode(main, "user", "XXXX-code", true));
+
+        // Trigger rate limiting and fix it with a correct code:
+        {
+            triggerRateLimit(main);
+            // Using a correct code should fix the rate limiting:
+            Totp.verifyCode(main, "user", "XXXX-code", true);
+        }
+
+        // Trigger rate limiting and fix it with cronjob (runs every 1 hour)
+        {
+            triggerRateLimit(main);
+            // Run cronjob:
+            // Totp.runCron(main);
+            Totp.verifyCode(main, "user", "XXXX-code", true);
+        }
+    }
+
+    @Test
+    public void createAndVerifyDevice() throws Exception {
+        TestSetupResult result = setup();
+        Main main = result.process.getProcess();
+
+        // Create device
+        // FIXME: Use secret to generate actual TOTP code
+        String secret = Totp.createDevice(main, "userId", "deviceName", 1, 30);
 
         // Try verify non-existent user:
         assertThrows(TotpNotEnabledException.class,
