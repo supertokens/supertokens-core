@@ -69,7 +69,7 @@ public class DashboardStorageTest {
         }
 
         // create a dashboard user
-        String userId = "testUserId";
+        String userId = io.supertokens.utils.Utils.getUUID();
         String email = "test@example.com";
         String passwordHash = "testPasswordHash";
 
@@ -134,7 +134,7 @@ public class DashboardStorageTest {
         }
 
         // create a dashboard user
-        String userId = "testUserId";
+        String userId = io.supertokens.utils.Utils.getUUID();
         String email = "test@example.com";
         String passwordHash = "testPasswordHash";
 
