@@ -138,7 +138,7 @@ public class SignInAPITest {
                     Utils.getCdiVersion2_18ForTests(), "dashboard");
             assertEquals(2, response.entrySet().size());
             assertEquals("USER_SUSPENDED_ERROR", response.get("status").getAsString());
-            assertEquals("User is currently suspended, please sign in with a valid account",
+            assertEquals("User is currently suspended, please sign in with another account, or reactivate the SuperTokens core license key",
                     response.get("message").getAsString());
         }
 

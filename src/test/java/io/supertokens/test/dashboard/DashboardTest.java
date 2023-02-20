@@ -30,6 +30,8 @@ import org.junit.rules.TestRule;
 import com.google.gson.JsonArray;
 
 import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.cronjobs.deleteExpiredDashboardSessions.DeleteExpiredDashboardSessions;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
@@ -155,6 +157,46 @@ public class DashboardTest {
         // check that session no longer exists
         assertFalse(Dashboard.isValidUserSession(process.getProcess(), sessionId));
         assertEquals(0, Dashboard.getAllDashboardSessionsForUser(process.getProcess(), user.userId).length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testDashboardCronjob() throws Exception {
+
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeleteExpiredDashboardSessions.RESOURCE_KEY, 1);
+
+        String email = "test@example.com";
+        String password = "password123";
+
+        // create Dashboard user
+        DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), email, password);
+        assertNotNull(user);
+
+        String sessionId = "test";
+
+        // create a session with low expiry
+        StorageLayer.getDashboardStorage(process.getProcess()).createNewDashboardUserSession(user.userId, sessionId, System.currentTimeMillis(), 0);
+
+        // check that session exists
+        assertEquals(1, Dashboard.getAllDashboardSessionsForUser(process.getProcess(), user.userId).length);
+
+        // wait for cronjob to run
+        Thread.sleep(3000);
+
+        // check that session exists
+        assertEquals(1, Dashboard.getAllDashboardSessionsForUser(process.getProcess(), user.userId).length);
+        
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
