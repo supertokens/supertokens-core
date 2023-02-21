@@ -27,8 +27,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
-import io.supertokens.webserver.WebserverAPI;
-import jakarta.servlet.ServletException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
