@@ -178,15 +178,16 @@ public class DashboardTest {
 
         String[] args = { "../" };
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeleteExpiredDashboardSessions.RESOURCE_KEY,
+                1);
+        process.startProcess();
+
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-
-        CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeleteExpiredDashboardSessions.RESOURCE_KEY,
-                1);
 
         String email = "test@example.com";
         String password = "password123";
@@ -207,8 +208,8 @@ public class DashboardTest {
         // wait for cronjob to run
         Thread.sleep(3000);
 
-        // check that session exists
-        assertEquals(1, Dashboard.getAllDashboardSessionsForUser(process.getProcess(), user.userId).length);
+        // check that session does not exist
+        assertEquals(0, Dashboard.getAllDashboardSessionsForUser(process.getProcess(), user.userId).length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));

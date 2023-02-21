@@ -21,6 +21,7 @@ import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys.DeleteExpiredAccessTokenSigningKeys;
+import io.supertokens.cronjobs.deleteExpiredDashboardSessions.DeleteExpiredDashboardSessions;
 import io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpiredEmailVerificationTokens;
 import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens;
 import io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPasswordlessDevices;
@@ -204,7 +205,8 @@ public class Main {
         // removes passwordless devices with only expired codes
         Cronjobs.addCronjob(this, DeleteExpiredPasswordlessDevices.getInstance(this));
 
-        Cronjobs.addCronjob(this, DeleteExpiredSessions.getInstance(this));
+        // removes expired dashboard session
+        Cronjobs.addCronjob(this, DeleteExpiredDashboardSessions.getInstance(this));
 
         // starts Telemetry cronjob if the user has not disabled it
         if (!Config.getConfig(this).isTelemetryDisabled()) {
