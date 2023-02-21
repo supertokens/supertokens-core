@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 
 public class DeleteExpiredDashboardSessions extends CronTask {
@@ -41,6 +42,9 @@ public class DeleteExpiredDashboardSessions extends CronTask {
 
     @Override
     protected void doTask() throws Exception {
+        if (StorageLayer.getStorage(this.main).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
         StorageLayer.getDashboardStorage(this.main).revokeExpiredSessions();
         
     }
