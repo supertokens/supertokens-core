@@ -12,6 +12,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - Dashboard Recipe
+- Support with CDI version `2.20`
 
 ### Database Changes
 
