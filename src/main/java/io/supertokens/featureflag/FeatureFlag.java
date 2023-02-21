@@ -38,8 +38,10 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_KEY = "io.supertokens.featureflag.FeatureFlag";
     private final EEFeatureFlagInterface eeFeatureFlag;
     private static URLClassLoader ucl = null;
+    private Main main;
 
     private FeatureFlag(Main main, String eeFolderPath) throws MalformedURLException {
+        this.main = main;
         String locationForTest = FeatureFlagTestContent.getInstance(main)
                 .getValue(FeatureFlagTestContent.EE_FOLDER_LOCATION);
         if (locationForTest != null) {
@@ -98,6 +100,9 @@ public class FeatureFlag extends ResourceDistributor.SingletonResource {
     }
 
     public EE_FEATURES[] getEnabledFeatures() throws StorageQueryException {
+        if (FeatureFlagTestContent.getInstance(main).getValue(FeatureFlagTestContent.ENABLED_FEATURES) != null) {
+            return FeatureFlagTestContent.getInstance(main).getValue(FeatureFlagTestContent.ENABLED_FEATURES);
+        }
         if (this.eeFeatureFlag == null) {
             return new EE_FEATURES[]{};
         }

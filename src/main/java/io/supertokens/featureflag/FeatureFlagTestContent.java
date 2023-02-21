@@ -22,9 +22,12 @@ import io.supertokens.ResourceDistributor;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jetbrains.annotations.TestOnly;
+
 public class FeatureFlagTestContent extends ResourceDistributor.SingletonResource {
 
     public static final String EE_FOLDER_LOCATION = "validityTesting";
+    public static final String ENABLED_FEATURES = "enabledFeatures";
     private static final String RESOURCE_ID = "io.supertokens.featureflag.FeatureFlagTestContent";
     private Map<String, Object> keyValue = new HashMap<String, Object>();
 
@@ -40,8 +43,11 @@ public class FeatureFlagTestContent extends ResourceDistributor.SingletonResourc
         return (FeatureFlagTestContent) resource;
     }
 
+    @TestOnly
     public void setKeyValue(String key, Object value) {
-        this.keyValue.put(key, value);
+        if (Main.isTesting) {
+            this.keyValue.put(key, value);
+        }
     }
 
     @SuppressWarnings("unchecked")
