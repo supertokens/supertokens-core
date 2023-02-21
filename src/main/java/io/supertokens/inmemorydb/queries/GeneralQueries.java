@@ -186,6 +186,10 @@ public class GeneralQueries {
             update(start, UserIdMappingQueries.getQueryToCreateUserIdMappingTable(start), NO_OP_SETTER);
         }
 
+        if (!doesTableExists(start, Config.getConfig(start).getTotpUsersTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, TOTPQueries.getQueryToCreateUsersTable(start), NO_OP_SETTER);
+        }
 
         if (!doesTableExists(start, Config.getConfig(start).getTotpUserDevicesTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);

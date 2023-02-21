@@ -103,7 +103,7 @@ public class Totp {
 
         // Check if the code has been successfully used by the user (for any of their
         // devices):
-        TOTPUsedCode[] usedCodes = totpStorage.getUsedCodes(userId);
+        TOTPUsedCode[] usedCodes = totpStorage.getNonExpiredUsedCodes(userId);
         for (TOTPUsedCode usedCode : usedCodes) {
             if (usedCode.code.equals(code)) { // FIXME: Only check for the same device for better UX?
                 throw new InvalidTotpException();
@@ -115,11 +115,11 @@ public class Totp {
         if (matchingDevice == null) {
             // TODO: Verify that this doesn't pile up OR gets deleted very quickly:
             int expireAfterSeconds = 60 * 5; // 5 minutes
-            newCode = new TOTPUsedCode(userId, null, code, isValid,
+            newCode = new TOTPUsedCode(userId, code, isValid,
                     System.currentTimeMillis() + 1000 * expireAfterSeconds);
         } else {
             int expireAfterSeconds = matchingDevice.period * (2 * matchingDevice.period + 1);
-            newCode = new TOTPUsedCode(userId, matchingDevice.deviceName, code, isValid,
+            newCode = new TOTPUsedCode(userId, code, isValid,
                     System.currentTimeMillis() + 1000 * expireAfterSeconds);
         }
         totpStorage.insertUsedCode(newCode);
@@ -160,9 +160,8 @@ public class Totp {
             TOTPDevice[] devices = totpStorage.getDevices(userId);
             if (devices.length == 0) {
                 throw new TotpNotEnabledException();
-            } else {
-                throw e;
             }
+            throw e;
         }
     }
 

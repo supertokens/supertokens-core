@@ -1633,16 +1633,16 @@ public class Start
     @Override
     public void createDevice(TOTPDevice device) throws StorageQueryException, DeviceAlreadyExistsException {
         try {
-            TOTPQueries.createDevice(this, device);
-        } catch (SQLException e) {
-            if (e.getMessage()
-                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                            + Config.getConfig(this).getTotpUserDevicesTable() + ".user_id, "
-                            + Config.getConfig(this).getTotpUserDevicesTable() + ".device_name" + ")")) {
+            TOTPQueries.createDeviceAndUser(this, device);
+        } catch (StorageTransactionLogicException e) {
+            String message = e.actualException.getMessage();
+            if (message.equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                    + Config.getConfig(this).getTotpUserDevicesTable() + ".user_id, "
+                    + Config.getConfig(this).getTotpUserDevicesTable() + ".device_name" + ")")) {
                 throw new DeviceAlreadyExistsException();
             }
 
-            throw new StorageQueryException(e);
+            throw new StorageQueryException(e.actualException);
         }
     }
 
@@ -1675,12 +1675,8 @@ public class Start
             if (deletedCount == 0) {
                 throw new UnknownDeviceException();
             }
-
-            // Note: This step is only required for in-memory databases.
-            // They don't have cascading deletes, so we need to manually delete the codes
-            TOTPQueries.removeUsedCodes(this, userId, deviceName);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e.actualException);
         }
     }
 
@@ -1731,7 +1727,7 @@ public class Start
     }
 
     @Override
-    public TOTPUsedCode[] getUsedCodes(String userId)
+    public TOTPUsedCode[] getNonExpiredUsedCodes(String userId)
             throws StorageQueryException {
         try {
             return TOTPQueries.getUsedCodes(this, userId);
