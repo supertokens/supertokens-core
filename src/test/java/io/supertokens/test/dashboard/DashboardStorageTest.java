@@ -16,19 +16,6 @@
 
 package io.supertokens.test.dashboard;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-
-import java.util.ArrayList;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -42,6 +29,15 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
+import java.util.ArrayList;
+
+import static org.junit.Assert.*;
 
 public class DashboardStorageTest {
     @Rule
@@ -59,7 +55,7 @@ public class DashboardStorageTest {
 
     @Test
     public void testCreateNewDashboardUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -124,7 +120,7 @@ public class DashboardStorageTest {
 
     @Test
     public void testGetDashboardUserFunctions() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -162,7 +158,7 @@ public class DashboardStorageTest {
 
     @Test
     public void testGetAllDashboardUsers() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -178,6 +174,7 @@ public class DashboardStorageTest {
             DashboardUser user = new DashboardUser(io.supertokens.utils.Utils.getUUID(), "test" + i + "@example.com",
                     "testPasswordHash", System.currentTimeMillis());
             StorageLayer.getDashboardStorage(process.getProcess()).createNewDashboardUser(user);
+            Thread.sleep(2);
         }
 
         // retrieve all dashboard users, check that correctly created and returned in
@@ -197,7 +194,7 @@ public class DashboardStorageTest {
     // test the deleteDashboardUserWithUserId function
     @Test
     public void testTheDeleteDashboardUserWithUserIdFunction() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -230,7 +227,7 @@ public class DashboardStorageTest {
 
     @Test
     public void testTheCreateNewDashboardUserSession() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -269,7 +266,7 @@ public class DashboardStorageTest {
 
     @Test
     public void testCreatingMultipleSessionsForAUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -321,7 +318,7 @@ public class DashboardStorageTest {
 
     @Test
     public void testRevokeExpiredSessionsFunction() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -382,7 +379,7 @@ public class DashboardStorageTest {
 
     @Test
     public void testUpdatingUsersEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -448,7 +445,8 @@ public class DashboardStorageTest {
         assertEquals(1, dashboardSQLStorage.getAllDashboardUsers().length);
 
         // create another user 
-        DashboardUser user2 = new DashboardUser(io.supertokens.utils.Utils.getUUID(), "test2@example.com", "testpassword", System.currentTimeMillis());
+        DashboardUser user2 = new DashboardUser(io.supertokens.utils.Utils.getUUID(), "test2@example.com",
+                "testpassword", System.currentTimeMillis());
         dashboardSQLStorage.createNewDashboardUser(user2);
 
         // try updating user2s email with the user1s email
