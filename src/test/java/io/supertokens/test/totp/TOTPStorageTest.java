@@ -74,18 +74,15 @@ public class TOTPStorageTest {
         storage.createDevice(device1);
 
         TOTPDevice[] storedDevices = storage.getDevices("user");
-        TOTPDevice storedDevice = storedDevices[0];
         assert (storedDevices.length == 1);
-        assert (storedDevice.deviceName.equals("d1"));
-        assert (storedDevice.userId.equals("user"));
-        assert (storedDevice.secretKey.equals("secretKey"));
-        assert (storedDevice.period == 30);
-        assert (storedDevice.skew == 1);
-        assert (storedDevice.verified == false);
+        assert storedDevices[0].equals(device1);
 
         storage.createDevice(device2);
         storedDevices = storage.getDevices("user");
+
         assert (storedDevices.length == 2);
+        assert storedDevices[0].equals(device1);
+        assert storedDevices[1].equals(device2);
 
         assertThrows(DeviceAlreadyExistsException.class, () -> storage.createDevice(device2Duplicate));
 
