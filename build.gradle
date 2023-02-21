@@ -65,6 +65,9 @@ dependencies {
     // https://mvnrepository.com/artifact/com.lambdaworks/scrypt
     implementation group: 'com.lambdaworks', name: 'scrypt', version: '1.4.0'
 
+    // https://mvnrepository.com/artifact/com.eatthepath/java-otp
+    implementation group: 'com.eatthepath', name: 'java-otp', version: '0.4.0'
+
     compileOnly project(":supertokens-plugin-interface")
     testImplementation project(":supertokens-plugin-interface")
 
@@ -159,4 +162,3 @@ tasks.withType(Test) {
         }
     }
 }
-  

@@ -16,7 +16,7 @@
 
 package io.supertokens.test.totp;
 
-import static org.junit.Assert.assertNotNull; // Not sure about this
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
 import org.junit.AfterClass;
