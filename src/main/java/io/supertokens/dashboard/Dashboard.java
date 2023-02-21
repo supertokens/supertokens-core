@@ -185,6 +185,13 @@ public class Dashboard {
             }
             throw e;
         }
+        
+        // revoke sessions for the user
+        DashboardSessionInfo[] sessionInfo = Dashboard.getAllDashboardSessionsForUser(main, userId);
+        for(int i = 0; i < sessionInfo.length; i ++){
+            StorageLayer.getDashboardStorage(main).revokeSessionWithSessionId(sessionInfo[i].sessionId);
+        }
+
         return StorageLayer.getDashboardStorage(main).getDashboardUserByUserId(userId);
     }
 
@@ -210,7 +217,6 @@ public class Dashboard {
             return Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
                 .anyMatch(t -> t == EE_FEATURES.DASHBOARD_LOGIN);
         } catch (Exception e) {
-           System.out.println(e);
            return false;
         }
     }

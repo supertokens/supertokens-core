@@ -72,7 +72,6 @@ public class GetDashboardUsersAPITests {
         // enable dashboard feature
         FeatureFlagTestContent.getInstance(process.getProcess()).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES,
                 new EE_FEATURES[] { EE_FEATURES.DASHBOARD_LOGIN });
-        ;
 
         // create multiple users
         ArrayList<DashboardUser> createdUsers = new ArrayList<>();

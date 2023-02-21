@@ -149,7 +149,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         if (Arrays.stream(features).anyMatch(t -> t == EE_FEATURES.DASHBOARD_LOGIN)) {
             JsonObject stats = new JsonObject();
             int userCount = StorageLayer.getDashboardStorage(main).getAllDashboardUsers().length;
-            stats.addProperty("userCount", userCount);
+            stats.addProperty("user_count", userCount);
             result.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), stats);
         }
         return result;
