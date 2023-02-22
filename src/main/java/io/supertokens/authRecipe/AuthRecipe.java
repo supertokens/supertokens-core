@@ -103,6 +103,7 @@ public class AuthRecipe {
         StorageLayer.getSessionStorage(main).deleteSessionsOfUser(userId);
         StorageLayer.getEmailVerificationStorage(main).deleteEmailVerificationUserInfo(userId);
         StorageLayer.getUserRolesStorage(main).deleteAllRolesForUser(userId);
+        StorageLayer.getTOTPStorage(main).deleteAllDataForUser(userId);
     }
 
     private static void deleteAuthRecipeUser(Main main, String userId) throws StorageQueryException {

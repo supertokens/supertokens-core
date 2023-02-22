@@ -34,6 +34,7 @@ import io.supertokens.test.TestingProcessManager;
 
 import io.supertokens.totp.Totp;
 import io.supertokens.totp.exceptions.InvalidTotpException;
+import io.supertokens.totp.exceptions.LimitReachedException;
 import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
@@ -84,24 +85,32 @@ public class TOTPRecipeTest {
         Main main = result.process.getProcess();
 
         // Create device
-        String secret = Totp.createDevice(main, "userId", "deviceName", 1, 30);
+        String secret = Totp.registerDevice(main, "user", "device1", 1, 30);
         assert secret != "";
 
         // Create same device again (should fail)
-        assertThrows(DeviceAlreadyExistsException.class, () -> Totp.createDevice(main, "userId", "deviceName", 1, 30));
+        assertThrows(DeviceAlreadyExistsException.class,
+                () -> Totp.registerDevice(main, "user", "device1", 1, 30));
     }
 
     public void triggerRateLimit(Main main) throws Exception {
-        for (int i = 0; i < 4; i++) {
-            assertThrows(
-                    InvalidTotpException.class,
-                    () -> Totp.verifyCode(main, "user", "wrong-code", true));
-        }
-
-        // 5th attempt should fail with rate limiting error:
+        // First 2 attempts should fail with invalid code:
         assertThrows(
                 InvalidTotpException.class,
-                () -> Totp.verifyCode(main, "user", "XXXX-code", true));
+                () -> Totp.verifyCode(main, "user", "wrong-code-1", true));
+        assertThrows(
+                InvalidTotpException.class,
+                () -> Totp.verifyCode(main, "user", "wrong-code-2", true));
+
+        // 3th attempt should fail with rate limiting error:
+        assertThrows(
+                LimitReachedException.class,
+                () -> Totp.verifyCode(main, "user", "wrong-code-3", true));
+    }
+
+    @Test
+    public void createDeviceAndVerifyCodeAgainstUnverifiedDevices() throws Exception {
+
     }
 
     @Test
@@ -110,7 +119,7 @@ public class TOTPRecipeTest {
         Main main = result.process.getProcess();
 
         // Create device
-        String secret = Totp.createDevice(main, "userId", "deviceName", 1, 30);
+        String secret = Totp.registerDevice(main, "user", "deviceName", 1, 30);
 
         // Try login with non-existent user:
         assertThrows(TotpNotEnabledException.class,
@@ -124,12 +133,16 @@ public class TOTPRecipeTest {
         assertThrows(InvalidTotpException.class,
                 () -> Totp.verifyCode(main, "user", "XXXX-code", false));
 
+        // Try logging in with same again code but allowUnverifiedDevice = true:
+        // TODO: Think if this is correct
+        assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "XXXX-code", true));
+
         // Successfully login:
-        Totp.verifyCode(main, "user", "XXXX-code", true);
+        Totp.verifyCode(main, "user", "XXXX-code2", true);
         // Now try again with same code:
         assertThrows(
                 InvalidTotpException.class,
-                () -> Totp.verifyCode(main, "user", "XXXX-code", true));
+                () -> Totp.verifyCode(main, "user", "XXXX-code2", true));
 
         // Trigger rate limiting and fix it with a correct code:
         {
@@ -154,7 +167,7 @@ public class TOTPRecipeTest {
 
         // Create device
         // FIXME: Use secret to generate actual TOTP code
-        String secret = Totp.createDevice(main, "userId", "deviceName", 1, 30);
+        String secret = Totp.registerDevice(main, "userId", "deviceName", 1, 30);
 
         // Try verify non-existent user:
         assertThrows(TotpNotEnabledException.class,
@@ -168,7 +181,7 @@ public class TOTPRecipeTest {
         assertThrows(InvalidTotpException.class, () -> Totp.verifyDevice(main, "userId", "deviceName", "wrong-code"));
 
         // Verify device with correct code
-        boolean deviceAlreadyVerified = Totp.verifyDevice(main, "userId", "deviceName", "XXXX");
+        boolean deviceAlreadyVerified = Totp.verifyDevice(main, "userId", "deviceName", "XXXX-correct");
         assert !deviceAlreadyVerified;
 
         // Verify again with same correct code:

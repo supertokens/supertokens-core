@@ -140,11 +140,11 @@ public class TOTPStorageTest {
         assert (storedDevices.length == 1); // device2 should still be there
 
         long nextDay = System.currentTimeMillis() + 1000 * 60 * 60 * 24; // 1 day from now
-
+        long now = System.currentTimeMillis();
         // Deleting all devices of a user should delete all related codes:
         {
-            TOTPUsedCode validCode = new TOTPUsedCode("user", "valid-code", true, nextDay);
-            TOTPUsedCode invalidCode = new TOTPUsedCode("user", "invalid-code", false, nextDay);
+            TOTPUsedCode validCode = new TOTPUsedCode("user", "valid-code", true, nextDay, now);
+            TOTPUsedCode invalidCode = new TOTPUsedCode("user", "invalid-code", false, nextDay, now);
             storage.insertUsedCode(validCode);
             storage.insertUsedCode(invalidCode);
 
@@ -220,13 +220,12 @@ public class TOTPStorageTest {
         // Insert a long lasting valid code and check that it's returned when queried:
         {
             TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
-            TOTPUsedCode code = new TOTPUsedCode("user", "1234", true, nextDay);
+            TOTPUsedCode code = new TOTPUsedCode("user", "1234", true, nextDay, System.currentTimeMillis());
 
             storage.createDevice(device);
-            boolean isInserted = storage.insertUsedCode(code);
+            storage.insertUsedCode(code);
             TOTPUsedCode[] usedCodes = storage.getNonExpiredUsedCodes("user");
 
-            assert (isInserted);
             assert (usedCodes.length == 1);
             assert usedCodes[0].equals(code);
         }
@@ -235,19 +234,21 @@ public class TOTPStorageTest {
         {
             storage.deleteDevice("user", "device");
             assertThrows(TotpNotEnabledException.class,
-                    () -> storage.insertUsedCode(new TOTPUsedCode("user", "1234", true, nextDay)));
+                    () -> storage.insertUsedCode(
+                            new TOTPUsedCode("user", "1234", true, nextDay, System.currentTimeMillis())));
         }
 
         // Try to insert code after user has atleast one device (i.e. TOTP enabled)
         {
             TOTPDevice newDevice = new TOTPDevice("user", "new-device", "secretKey", 30, 1, false);
             storage.createDevice(newDevice);
-            storage.insertUsedCode(new TOTPUsedCode("user", "1234", true, nextDay));
+            storage.insertUsedCode(new TOTPUsedCode("user", "1234", true, nextDay, System.currentTimeMillis()));
         }
 
         // Try to insert code when user doesn't exist:
         assertThrows(TotpNotEnabledException.class,
-                () -> storage.insertUsedCode(new TOTPUsedCode("non-existent-user", "1234", true, nextDay)));
+                () -> storage.insertUsedCode(
+                        new TOTPUsedCode("non-existent-user", "1234", true, nextDay, System.currentTimeMillis())));
     }
 
     @Test
@@ -260,12 +261,13 @@ public class TOTPStorageTest {
 
         long nextDay = System.currentTimeMillis() + 1000 * 60 * 60 * 24; // 1 day from now
         long prevDay = System.currentTimeMillis() - 1000 * 60 * 60 * 24; // 1 day ago
+        long now = System.currentTimeMillis();
 
         TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
-        TOTPUsedCode validCode = new TOTPUsedCode("user", "code1", true, nextDay);
-        TOTPUsedCode invalidCode = new TOTPUsedCode("user", "code2", false, nextDay);
-        TOTPUsedCode expiredCode = new TOTPUsedCode("user", "expired-code", true, prevDay);
-        TOTPUsedCode expiredInvalidCode = new TOTPUsedCode("user", "expired-invalid-code", false, prevDay);
+        TOTPUsedCode validCode = new TOTPUsedCode("user", "code1", true, nextDay, now);
+        TOTPUsedCode invalidCode = new TOTPUsedCode("user", "code2", false, nextDay, now);
+        TOTPUsedCode expiredCode = new TOTPUsedCode("user", "expired-code", true, prevDay, now);
+        TOTPUsedCode expiredInvalidCode = new TOTPUsedCode("user", "expired-invalid-code", false, prevDay, now);
 
         storage.createDevice(device);
         storage.insertUsedCode(validCode);
@@ -284,14 +286,15 @@ public class TOTPStorageTest {
         TestSetupResult result = setup();
         TOTPStorage storage = result.storage;
 
+        long now = System.currentTimeMillis();
         long nextDay = System.currentTimeMillis() + 1000 * 60 * 60 * 24; // 1 day from now
         long halfSecond = System.currentTimeMillis() + 500; // 500ms from now
 
         TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
-        TOTPUsedCode validCodeToLive = new TOTPUsedCode("user", "valid-code", true, nextDay);
-        TOTPUsedCode invalidCodeToLive = new TOTPUsedCode("user", "invalid-code", false, nextDay);
-        TOTPUsedCode validCodeToExpire = new TOTPUsedCode("user", "valid-code", true, halfSecond);
-        TOTPUsedCode invalidCodeToExpire = new TOTPUsedCode("user", "invalid-code", false, halfSecond);
+        TOTPUsedCode validCodeToLive = new TOTPUsedCode("user", "valid-code", true, nextDay, now);
+        TOTPUsedCode invalidCodeToLive = new TOTPUsedCode("user", "invalid-code", false, nextDay, now);
+        TOTPUsedCode validCodeToExpire = new TOTPUsedCode("user", "valid-code", true, halfSecond, now);
+        TOTPUsedCode invalidCodeToExpire = new TOTPUsedCode("user", "invalid-code", false, halfSecond, now);
 
         storage.createDevice(device);
         storage.insertUsedCode(validCodeToLive);
@@ -311,5 +314,38 @@ public class TOTPStorageTest {
         assert (usedCodes.length == 2);
         assert (usedCodes[0].equals(validCodeToLive));
         assert (usedCodes[1].equals(invalidCodeToLive));
+    }
+
+    @Test
+    public void deleteAllDataForUserTest() throws Exception {
+        TestSetupResult result = setup();
+        TOTPStorage storage = result.storage;
+
+        long now = System.currentTimeMillis();
+        long nextDay = now + 1000 * 60 * 60 * 24; // 1 day from now
+
+        TOTPDevice device1 = new TOTPDevice("user", "d1", "secretKey", 30, 1, false);
+        TOTPDevice device2 = new TOTPDevice("user", "d2", "secretKey", 30, 1, false);
+        TOTPUsedCode validCode = new TOTPUsedCode("user", "d1-valid", true, nextDay, now);
+        TOTPUsedCode invalidCode = new TOTPUsedCode("user", "invalid-code", false, nextDay, now);
+
+        storage.createDevice(device1);
+        storage.createDevice(device2);
+        storage.insertUsedCode(validCode);
+        storage.insertUsedCode(invalidCode);
+
+        TOTPDevice[] storedDevices = storage.getDevices("user");
+        TOTPUsedCode[] usedCodes = storage.getNonExpiredUsedCodes("user");
+
+        assert (storedDevices.length == 2);
+        assert (usedCodes.length == 2);
+
+        storage.deleteAllDataForUser("user");
+
+        storedDevices = storage.getDevices("user");
+        usedCodes = storage.getNonExpiredUsedCodes("user");
+
+        assert (storedDevices.length == 0);
+        assert (usedCodes.length == 0);
     }
 }

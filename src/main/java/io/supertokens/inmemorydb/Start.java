@@ -1652,16 +1652,9 @@ public class Start
         try {
             int updatedCount = TOTPQueries.markDeviceAsVerified(this, userId, deviceName);
             if (updatedCount == 0) {
-                TOTPDevice[] devices = TOTPQueries.getDevices(this, userId);
-                for (TOTPDevice device : devices) {
-                    if (device.deviceName.equals(deviceName) && device.verified) {
-                        return true; // Device was already verified
-                    }
-                }
-                // Device was not found:
                 throw new UnknownDeviceException();
             }
-            return false; // Device was marked as verified
+            return true; // Device was marked as verified
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1711,18 +1704,18 @@ public class Start
     }
 
     @Override
-    public boolean insertUsedCode(TOTPUsedCode usedCodeObj)
+    public void insertUsedCode(TOTPUsedCode usedCodeObj)
             throws StorageQueryException, TotpNotEnabledException {
         try {
-            TOTPDevice[] devices = TOTPQueries.getDevices(this, usedCodeObj.userId);
-            if (devices.length == 0) {
+            TOTPQueries.insertUsedCode(this, usedCodeObj);
+        } catch (StorageTransactionLogicException e) {
+            String message = e.actualException.getMessage();
+            if (message
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (FOREIGN KEY constraint failed)")) {
+                // No user/device exists for the given usedCodeObj.userId
                 throw new TotpNotEnabledException();
             }
-
-            int insertCount = TOTPQueries.insertUsedCode(this, usedCodeObj);
-            return insertCount == 1;
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
+            throw new StorageQueryException(e.actualException);
         }
     }
 
@@ -1742,6 +1735,15 @@ public class Start
         try {
             TOTPQueries.removeExpiredCodes(this);
         } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteAllDataForUser(String userId) throws StorageQueryException {
+        try {
+            TOTPQueries.deleteAllDataForUser(this, userId);
+        } catch (StorageTransactionLogicException e) {
             throw new StorageQueryException(e);
         }
     }

@@ -1,6 +1,7 @@
 package io.supertokens.cronjobs.deleteExpiredTotpTokens;
 
 import io.supertokens.Main;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.cronjobs.CronTask;
@@ -13,6 +14,14 @@ public class DeleteExpiredTotpTokens extends CronTask {
 
     private DeleteExpiredTotpTokens(Main main) {
         super("DeleteExpiredTotpTokens", main);
+    }
+
+    public static DeleteExpiredTotpTokens getInstance(Main main) {
+        ResourceDistributor.SingletonResource instance = main.getResourceDistributor().getResource(RESOURCE_KEY);
+        if (instance == null) {
+            instance = main.getResourceDistributor().setResource(RESOURCE_KEY, new DeleteExpiredTotpTokens(main));
+        }
+        return (DeleteExpiredTotpTokens) instance;
     }
 
     @Override
