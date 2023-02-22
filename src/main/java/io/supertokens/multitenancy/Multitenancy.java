@@ -74,18 +74,24 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     throw new BadPermissionException(
                             "You must use the public tenantId to add a new tenant to this app");
                 }
-                // TODO: app of the newTenant and sourceTenant is the same
-                // TODO: connectionuridomain of the newTenant and sourceTenant is the same.
+                if (!sourceTenant.getAppId().equals(newTenant.tenantIdentifier.getAppId())) {
+                    throw new BadPermissionException("You must use the same app to create new tenant");
+                }
+                if (!sourceTenant.getConnectionUriDomain().equals(newTenant.tenantIdentifier.getConnectionUriDomain())) {
+                    throw new BadPermissionException("You must use the same connection URI domain to create new tenant");
+                }
             } else if (!newTenant.tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
                 // this means that we are creating a new app for this connectionuridomain and must use the public app
                 // and
                 // public tenant for this
-                if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) &&
+                if (!sourceTenant.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID) ||
                         !sourceTenant.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
                     throw new BadPermissionException(
                             "You must use the public tenantId and public appId to add a new app");
                 }
-                // TODO: connectionuridomain of the newTenant and sourceTenant is the same.
+                if (!sourceTenant.getConnectionUriDomain().equals(newTenant.tenantIdentifier.getConnectionUriDomain())) {
+                    throw new BadPermissionException("You must use the same connection URI domain to create new app");
+                }
             } else if (!newTenant.tenantIdentifier.getConnectionUriDomain()
                     .equals(TenantIdentifier.DEFAULT_CONNECTION_URI)) {
                 // this means that we are creating a new connectionuridomain, and must use the base tenant for this

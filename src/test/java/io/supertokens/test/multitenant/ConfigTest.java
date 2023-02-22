@@ -20,25 +20,34 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
+import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfigTestContent;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.multitenancy.exception.DeletionInProgressException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.thirdparty.InvalidProviderConfigException;
 import io.supertokens.version.Version;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.*;
@@ -406,6 +415,482 @@ public class ConfigTest {
             assert (e.getMessage()
                     .equals("ConnectionUriDomain: c2 cannot be mapped to the same user pool as c1"));
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatOnlyDefaultConnectionURIAppAndTenantIsAllowedToGetAllTenants()
+            throws InterruptedException, BadPermissionException {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        CoreConfigTestContent.getInstance(process.main)
+                .setKeyValue(CoreConfigTestContent.VALIDITY_TESTING, true);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        try {
+            TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier("c1", null, null),
+                    process.getProcess());
+            fail();
+        } catch (BadPermissionException e) {
+        }
+
+        try {
+            TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, "a1", null),
+                    process.getProcess());
+            fail();
+        } catch (BadPermissionException e) {
+        }
+
+        try {
+            TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, null, "t1"),
+                    process.getProcess());
+            fail();
+        } catch (BadPermissionException e) {
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testCreationOfTenantsUsingValidSourceTenant()
+            throws InterruptedException, BadPermissionException, InvalidProviderConfigException,
+            DeletionInProgressException, StorageQueryException, FeatureNotEnabledException, IOException,
+            InvalidConfigException, CannotModifyBaseConfigException, TenantOrAppNotFoundException {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        CoreConfigTestContent.getInstance(process.main)
+                .setKeyValue(CoreConfigTestContent.VALIDITY_TESTING, true);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                new TenantConfig(
+                        new TenantIdentifier(null, null, "t1"),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        new JsonObject()
+                )
+        );
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                new TenantConfig(
+                        new TenantIdentifier(null, "a1", null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        new JsonObject()
+                )
+        );
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, "a1", null),
+                new TenantConfig(
+                        new TenantIdentifier(null, "a1", "t1"),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        new JsonObject()
+                )
+        );
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                new TenantConfig(
+                        new TenantIdentifier(null, "a2", null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        new JsonObject()
+                )
+        );
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, "a2", null),
+                new TenantConfig(
+                        new TenantIdentifier(null, "a2", "t1"),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        new JsonObject()
+                )
+        );
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, "a2", null),
+                new TenantConfig(
+                        new TenantIdentifier(null, "a2", "t2"),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        new JsonObject()
+                )
+        );
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(config, 2);
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                new TenantConfig(
+                        new TenantIdentifier("c1", null, null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config
+                )
+        );
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier("c1", null, null),
+                new TenantConfig(
+                        new TenantIdentifier("c1", null, "t1"),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config
+                )
+        );
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier("c1", null, null),
+                new TenantConfig(
+                        new TenantIdentifier("c1", "a1", null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config
+                )
+        );
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier("c1", "a1", null),
+                new TenantConfig(
+                        new TenantIdentifier("c1", "a1", "t1"),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config
+                )
+        );
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier("c1", null, null),
+                new TenantConfig(
+                        new TenantIdentifier("c1", "a2", null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config
+                )
+        );
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier("c1", "a2", null),
+                new TenantConfig(
+                        new TenantIdentifier("c1", "a2", "t1"),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config
+                )
+        );
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier("c1", "a2", null),
+                new TenantConfig(
+                        new TenantIdentifier("c1", "a2", "t2"),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(true),
+                        config
+                )
+        );
+
+        TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, null, null),
+                process.getProcess());
+        assertEquals(14, allTenants.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testInvalidCasesOfTenantCreation()
+            throws InterruptedException, BadPermissionException, InvalidProviderConfigException,
+            DeletionInProgressException, StorageQueryException, FeatureNotEnabledException, IOException,
+            InvalidConfigException, CannotModifyBaseConfigException, TenantOrAppNotFoundException {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        CoreConfigTestContent.getInstance(process.main)
+                .setKeyValue(CoreConfigTestContent.VALIDITY_TESTING, true);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject config = new JsonObject();
+        StorageLayer.getStorage(new TenantIdentifier(null, null, null), process.getProcess())
+                .modifyConfigToAddANewUserPoolForTesting(config, 2);
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", null, null),
+                    new TenantConfig(
+                            new TenantIdentifier("c2", null, null),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
+            fail();
+        } catch (BadPermissionException e) {
+        }
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, "a1", null),
+                    new TenantConfig(
+                            new TenantIdentifier(null, "a2", null),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
+            fail();
+        } catch (BadPermissionException e) {
+        }
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, "t1"),
+                    new TenantConfig(
+                            new TenantIdentifier(null, null, "t2"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
+            fail();
+        } catch (BadPermissionException e) {
+        }
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, "a1", "t1"),
+                    new TenantConfig(
+                            new TenantIdentifier(null, "a1", "t2"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
+            fail();
+        } catch (BadPermissionException e) {
+        }
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, "a1", null),
+                    new TenantConfig(
+                            new TenantIdentifier(null, "a2", "t2"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
+            fail();
+        } catch (BadPermissionException e) {
+        }
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", null, null),
+                    new TenantConfig(
+                            new TenantIdentifier("c2", null, "t1"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
+            fail();
+        } catch (BadPermissionException e) {
+        }
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", null, "t1"),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", null, "t2"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
+            fail();
+        } catch (BadPermissionException e) {
+        }
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", "a1", null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", "a2", null),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
+            fail();
+        } catch (BadPermissionException e) {
+        }
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", "a1", "t1"),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", "a1", "t2"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
+            fail();
+        } catch (BadPermissionException e) {
+        }
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier("c1", "a1", null),
+                    new TenantConfig(
+                            new TenantIdentifier("c2", "a1", "t1"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
+            fail();
+        } catch (BadPermissionException e) {
+        }
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            new TenantIdentifier("c1", "a1", "t1"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
+            fail();
+        } catch (BadPermissionException e) {
+        }
+
+        try {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            new TenantIdentifier(null, "a1", "t1"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
+            fail();
+        } catch (BadPermissionException e) {
+        }
+
+        TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, null, null),
+                process.getProcess());
+        assertEquals(1, allTenants.length);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testUpdationOfDefaultTenant()
+            throws InterruptedException, BadPermissionException, InvalidProviderConfigException,
+            DeletionInProgressException, StorageQueryException, FeatureNotEnabledException, IOException,
+            InvalidConfigException, CannotModifyBaseConfigException, TenantOrAppNotFoundException {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        CoreConfigTestContent.getInstance(process.main)
+                .setKeyValue(CoreConfigTestContent.VALIDITY_TESTING, true);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Multitenancy.addNewOrUpdateAppOrTenant(
+                process.getProcess(),
+                new TenantIdentifier(null, null, null),
+                new TenantConfig(
+                        new TenantIdentifier(null, null, null),
+                        new EmailPasswordConfig(true),
+                        new ThirdPartyConfig(true, null),
+                        new PasswordlessConfig(false),
+                        new JsonObject()
+                )
+        );
+
+        TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, null, null),
+                process.getProcess());
+        assertEquals(1, allTenants.length);
+        assertEquals(false, allTenants[0].passwordlessConfig.enabled);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
