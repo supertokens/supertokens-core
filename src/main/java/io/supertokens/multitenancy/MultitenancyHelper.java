@@ -49,7 +49,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
     private Main main;
     private TenantConfig[] tenantConfigs;
 
-    private MultitenancyHelper(Main main) {
+    private MultitenancyHelper(Main main) throws StorageQueryException {
         this.main = main;
         this.tenantConfigs = getAllTenantsFromDb();
     }
@@ -81,7 +81,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         }
     }
 
-    private TenantConfig[] getAllTenantsFromDb() {
+    private TenantConfig[] getAllTenantsFromDb() throws StorageQueryException {
         return StorageLayer.getMultitenancyStorage(main).getAllTenants();
     }
 
