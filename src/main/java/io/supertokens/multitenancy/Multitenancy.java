@@ -74,11 +74,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     throw new BadPermissionException(
                             "You must use the public tenantId to add a new tenant to this app");
                 }
-                if (!sourceTenant.getAppId().equals(newTenant.tenantIdentifier.getAppId())) {
+                if (!sourceTenant.toAppIdentifier().equals(newTenant.tenantIdentifier.toAppIdentifier())) {
                     throw new BadPermissionException("You must use the same app to create new tenant");
-                }
-                if (!sourceTenant.getConnectionUriDomain().equals(newTenant.tenantIdentifier.getConnectionUriDomain())) {
-                    throw new BadPermissionException("You must use the same connection URI domain to create new tenant");
                 }
             } else if (!newTenant.tenantIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
                 // this means that we are creating a new app for this connectionuridomain and must use the public app

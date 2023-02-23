@@ -20,7 +20,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.ResourceDistributor;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfigTestContent;
@@ -47,9 +46,9 @@ import org.junit.rules.TestRule;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Map;
 
 import static junit.framework.TestCase.assertEquals;
+import static junit.framework.TestCase.assertFalse;
 import static org.junit.Assert.*;
 
 public class ConfigTest {
@@ -373,7 +372,7 @@ public class ConfigTest {
 
     @Test
     public void testMappingSameUserPoolToDifferentConnectionURIThrowsError()
-            throws InterruptedException, IOException, InvalidConfigException, TenantOrAppNotFoundException {
+            throws InterruptedException, IOException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         Utils.setValueInConfig("email_verification_token_lifetime", "144001");
@@ -422,36 +421,37 @@ public class ConfigTest {
 
     @Test
     public void testThatOnlyDefaultConnectionURIAppAndTenantIsAllowedToGetAllTenants()
-            throws InterruptedException, BadPermissionException {
+            throws InterruptedException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        CoreConfigTestContent.getInstance(process.main)
-                .setKeyValue(CoreConfigTestContent.VALIDITY_TESTING, true);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         try {
-            TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier("c1", null, null),
+            Multitenancy.getAllTenants(new TenantIdentifier("c1", null, null),
                     process.getProcess());
             fail();
         } catch (BadPermissionException e) {
+            assertEquals("Only the public tenantId, public appId and default connectionUriDomain is allowed to list all connectionUriDomains and appIds associated with this core", e.getMessage());
         }
 
         try {
-            TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, "a1", null),
+            Multitenancy.getAllTenants(new TenantIdentifier(null, "a1", null),
                     process.getProcess());
             fail();
         } catch (BadPermissionException e) {
+            assertEquals("Only the public tenantId, public appId and default connectionUriDomain is allowed to list all connectionUriDomains and appIds associated with this core", e.getMessage());
         }
 
         try {
-            TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, null, "t1"),
+            Multitenancy.getAllTenants(new TenantIdentifier(null, null, "t1"),
                     process.getProcess());
             fail();
         } catch (BadPermissionException e) {
+            assertEquals("Only the public tenantId, public appId and default connectionUriDomain is allowed to list all connectionUriDomains and appIds associated with this core", e.getMessage());
         }
 
         process.kill();
@@ -468,8 +468,6 @@ public class ConfigTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        CoreConfigTestContent.getInstance(process.main)
-                .setKeyValue(CoreConfigTestContent.VALIDITY_TESTING, true);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -651,8 +649,6 @@ public class ConfigTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        CoreConfigTestContent.getInstance(process.main)
-                .setKeyValue(CoreConfigTestContent.VALIDITY_TESTING, true);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -674,6 +670,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
+            assertEquals("You must use the base tenant to create a new connectionUriDomain", e.getMessage());
         }
 
         try {
@@ -690,6 +687,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
+            assertEquals("You must use the public tenantId and public appId to add a new app", e.getMessage());
         }
 
         try {
@@ -706,6 +704,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
+            assertEquals("You must use the public tenantId to add a new tenant to this app", e.getMessage());
         }
 
         try {
@@ -722,6 +721,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
+            assertEquals("You must use the public tenantId to add a new tenant to this app", e.getMessage());
         }
 
         try {
@@ -738,6 +738,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
+            assertEquals("You must use the same app to create new tenant", e.getMessage());
         }
 
         try {
@@ -754,6 +755,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
+            assertEquals("You must use the same app to create new tenant", e.getMessage());
         }
 
         try {
@@ -770,6 +772,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
+            assertEquals("You must use the public tenantId to add a new tenant to this app", e.getMessage());
         }
 
         try {
@@ -786,6 +789,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
+            assertEquals("You must use the public tenantId and public appId to add a new app", e.getMessage());
         }
 
         try {
@@ -802,6 +806,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
+            assertEquals("You must use the public tenantId to add a new tenant to this app", e.getMessage());
         }
 
         try {
@@ -818,6 +823,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
+            assertEquals("You must use the same app to create new tenant", e.getMessage());
         }
 
         try {
@@ -834,6 +840,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
+            assertEquals("You must use the same app to create new tenant", e.getMessage());
         }
 
         try {
@@ -850,6 +857,7 @@ public class ConfigTest {
             );
             fail();
         } catch (BadPermissionException e) {
+            assertEquals("You must use the same app to create new tenant", e.getMessage());
         }
 
         TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, null, null),
@@ -864,14 +872,12 @@ public class ConfigTest {
     public void testUpdationOfDefaultTenant()
             throws InterruptedException, BadPermissionException, InvalidProviderConfigException,
             DeletionInProgressException, StorageQueryException, FeatureNotEnabledException, IOException,
-            InvalidConfigException, CannotModifyBaseConfigException, TenantOrAppNotFoundException {
+            InvalidConfigException, CannotModifyBaseConfigException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         FeatureFlagTestContent.getInstance(process.getProcess())
                 .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        CoreConfigTestContent.getInstance(process.main)
-                .setKeyValue(CoreConfigTestContent.VALIDITY_TESTING, true);
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -890,7 +896,7 @@ public class ConfigTest {
         TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, null, null),
                 process.getProcess());
         assertEquals(1, allTenants.length);
-        assertEquals(false, allTenants[0].passwordlessConfig.enabled);
+        assertFalse(allTenants[0].passwordlessConfig.enabled);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
