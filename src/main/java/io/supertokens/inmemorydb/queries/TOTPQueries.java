@@ -36,7 +36,7 @@ public class TOTPQueries {
 
     public static String getQueryToCreateUsedCodesTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getTotpUsedCodesTable() + " ("
-                + "user_id VARCHAR(128) NOT NULL, " + "device_name VARCHAR(256), "
+                + "user_id VARCHAR(128) NOT NULL, "
                 + "code CHAR(6) NOT NULL," + "is_valid BOOLEAN NOT NULL,"
                 + "created_time_ms BIGINT UNSIGNED NOT NULL,"
                 + "expiry_time_ms BIGINT UNSIGNED NOT NULL,"
