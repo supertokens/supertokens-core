@@ -37,7 +37,7 @@ public class TOTPQueries {
     public static String getQueryToCreateUsedCodesTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getTotpUsedCodesTable() + " ("
                 + "user_id VARCHAR(128) NOT NULL, " + "device_name VARCHAR(256), "
-                + "code CHAR(6) NOT NULL," + "is_valid_code BOOLEAN NOT NULL,"
+                + "code CHAR(6) NOT NULL," + "is_valid BOOLEAN NOT NULL,"
                 + "created_time_ms BIGINT UNSIGNED NOT NULL,"
                 + "expiry_time_ms BIGINT UNSIGNED NOT NULL,"
                 + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getTotpUsersTable()
@@ -195,12 +195,12 @@ public class TOTPQueries {
     private static int insertUsedCode_Transaction(Start start, Connection con, TOTPUsedCode code)
             throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getTotpUsedCodesTable()
-                + " (user_id, code, is_valid_code, expiry_time_ms, created_time_ms) VALUES (?, ?, ?, ?, ?);";
+                + " (user_id, code, is_valid, expiry_time_ms, created_time_ms) VALUES (?, ?, ?, ?, ?);";
 
         return update(con, QUERY, pst -> {
             pst.setString(1, code.userId);
             pst.setString(2, code.code);
-            pst.setBoolean(3, code.isValidCode);
+            pst.setBoolean(3, code.isValid);
             pst.setLong(4, code.expiryTime);
             pst.setLong(5, code.createdTime);
         });
@@ -230,31 +230,17 @@ public class TOTPQueries {
 
             return null;
         });
-
-        // String QUERY = "INSERT INTO " +
-        // Config.getConfig(start).getTotpUsedCodesTable()
-        // + " (user_id, code, is_valid_code, expiry_time_ms, created_time_ms) VALUES
-        // (?, ?, ?, ?, ?);";
-
-        // return update(start, QUERY, pst -> {
-        // pst.setString(1, code.userId);
-        // pst.setString(2, code.code);
-        // pst.setBoolean(3, code.isValidCode);
-        // pst.setLong(4, code.expiryTime);
-        // pst.setLong(5, code.createdTime);
-        // });
     }
 
-    public static TOTPUsedCode[] getUsedCodes(Start start, String userId) throws SQLException, StorageQueryException {
+    /**
+     * Query to get all non expired used codes for a user in descending order of
+     * creation time.
+     */
+    public static TOTPUsedCode[] getNonExpiredUsedCodesDescOrder(Start start, String userId)
+            throws SQLException, StorageQueryException {
         String QUERY = "SELECT * FROM " +
                 Config.getConfig(start).getTotpUsedCodesTable()
-                + " WHERE user_id = ? AND expiry_time_ms > ? ORDER BY created_time_ms DESC;"; // FIXME: Should be based
-                                                                                              // on creation_time
-                                                                                              // because
-                                                                                              // of different devices
-                                                                                              // having different expiry
-                                                                                              // times (bcoz of period
-                                                                                              // and skew values)
+                + " WHERE user_id = ? AND expiry_time_ms > ? ORDER BY created_time_ms DESC;";
         return execute(start, QUERY, pst -> {
             pst.setString(1, userId);
             pst.setLong(2, System.currentTimeMillis());
@@ -355,7 +341,7 @@ public class TOTPQueries {
             return new TOTPUsedCode(
                     result.getString("user_id"),
                     result.getString("code"),
-                    result.getBoolean("is_valid_code"),
+                    result.getBoolean("is_valid"),
                     result.getLong("expiry_time_ms"),
                     result.getLong("created_time_ms"));
         }

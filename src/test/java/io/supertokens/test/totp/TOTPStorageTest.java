@@ -276,7 +276,7 @@ public class TOTPStorageTest {
         storage.insertUsedCode(expiredInvalidCode);
 
         usedCodes = storage.getNonExpiredUsedCodes("user");
-        assert (usedCodes.length == 2);
+        assert (usedCodes.length == 2); // expired codes shouldn't be returned
         assert (usedCodes[0].equals(validCode));
         assert (usedCodes[1].equals(invalidCode));
     }

@@ -1647,14 +1647,14 @@ public class Start
     }
 
     @Override
-    public boolean markDeviceAsVerified(String userId, String deviceName)
+    public void markDeviceAsVerified(String userId, String deviceName)
             throws StorageQueryException, UnknownDeviceException {
         try {
             int updatedCount = TOTPQueries.markDeviceAsVerified(this, userId, deviceName);
             if (updatedCount == 0) {
                 throw new UnknownDeviceException();
             }
-            return true; // Device was marked as verified
+            return; // Device was marked as verified
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1723,7 +1723,7 @@ public class Start
     public TOTPUsedCode[] getNonExpiredUsedCodes(String userId)
             throws StorageQueryException {
         try {
-            return TOTPQueries.getUsedCodes(this, userId);
+            return TOTPQueries.getNonExpiredUsedCodesDescOrder(this, userId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
