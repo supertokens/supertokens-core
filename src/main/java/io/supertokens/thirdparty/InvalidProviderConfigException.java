@@ -17,4 +17,7 @@
 package io.supertokens.thirdparty;
 
 public class InvalidProviderConfigException extends Exception {
+    public InvalidProviderConfigException(String message) {
+        super(message);
+    }
 }
