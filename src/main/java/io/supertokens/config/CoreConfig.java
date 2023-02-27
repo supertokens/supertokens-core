@@ -57,7 +57,10 @@ public class CoreConfig {
     private long passwordless_code_lifetime = 900000; // in MS
 
     @JsonProperty
-    private int totp_rate_limit_window_size = 5;
+    private int totp_max_attempts = 5;
+
+    @JsonProperty
+    private int totp_rate_limit_cooldown_time = 900; // in seconds (Default 15 mins)
 
     private final String logDefault = "asdkfahbdfk3kjHS";
     @JsonProperty
@@ -274,8 +277,13 @@ public class CoreConfig {
         return passwordless_code_lifetime;
     }
 
-    public int getTotpRateLimitWindowSize() {
-        return totp_rate_limit_window_size;
+    public int getTotpMaxAttempts() {
+        return totp_max_attempts;
+    }
+
+    /** TOTP rate limit cooldown time (in seconds) */
+    public int getTotpRateLimitCooldownTime() {
+        return totp_rate_limit_cooldown_time;
     }
 
     public boolean isTelemetryDisabled() {
@@ -396,8 +404,12 @@ public class CoreConfig {
             throw new QuitProgramException("'passwordless_max_code_input_attempts' must be > 0");
         }
 
-        if (totp_rate_limit_window_size <= 0) {
-            throw new QuitProgramException("'totp_rate_limit_window_size' must be > 0");
+        if (totp_max_attempts <= 0) {
+            throw new QuitProgramException("'totp_max_attempts' must be > 0");
+        }
+
+        if (totp_rate_limit_cooldown_time <= 0) {
+            throw new QuitProgramException("'totp_rate_limit_cooldown_time' must be > 0");
         }
 
         if (max_server_pool_size <= 0) {

@@ -220,6 +220,10 @@ public class ConfigTest2_6 {
         assertFalse("Config access token blacklisting did not match default", config.getAccessTokenBlacklisting());
         assertEquals("Config refresh token validity did not match default", config.getRefreshTokenValidity(),
                 60 * 2400 * 60 * (long) 1000);
+        // TODO: Is this correct?
+        assertEquals(5, config.getTotpMaxAttempts()); // 5
+        assertEquals(900, config.getTotpRateLimitCooldownTime()); // 15 minutes
+
         assertEquals("Config info log path did not match default", config.getInfoLogPath(process.getProcess()),
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/info.log");
         assertEquals("Config error log path did not match default", config.getErrorLogPath(process.getProcess()),

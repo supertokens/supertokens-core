@@ -1633,7 +1633,7 @@ public class Start
     @Override
     public void createDevice(TOTPDevice device) throws StorageQueryException, DeviceAlreadyExistsException {
         try {
-            TOTPQueries.createDeviceAndUser(this, device);
+            TOTPQueries.createDevice(this, device);
         } catch (StorageTransactionLogicException e) {
             String message = e.actualException.getMessage();
             if (message.equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
@@ -1661,15 +1661,35 @@ public class Start
     }
 
     @Override
-    public void deleteDevice(String userId, String deviceName)
-            throws StorageQueryException, UnknownDeviceException {
+    public int deleteDevice_Transaction(TransactionConnection con, String userId, String deviceName)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
         try {
-            int deletedCount = TOTPQueries.deleteDevice(this, userId, deviceName);
-            if (deletedCount == 0) {
-                throw new UnknownDeviceException();
-            }
-        } catch (StorageTransactionLogicException e) {
-            throw new StorageQueryException(e.actualException);
+            return TOTPQueries.deleteDevice_Transaction(this, sqlCon, userId, deviceName);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public int getDevicesCount_Transaction(TransactionConnection con, String userId)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return TOTPQueries.getDevicesCount_Transaction(this, sqlCon, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void removeUser_Transaction(TransactionConnection con, String userId)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            TOTPQueries.removeUser_Transaction(this, sqlCon, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
         }
     }
 
@@ -1730,10 +1750,10 @@ public class Start
     }
 
     @Override
-    public void removeExpiredCodes()
+    public void removeExpiredCodes(int N)
             throws StorageQueryException {
         try {
-            TOTPQueries.removeExpiredCodes(this);
+            TOTPQueries.removeExpiredCodes(this, N);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

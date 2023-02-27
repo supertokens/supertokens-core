@@ -32,7 +32,8 @@ public class DeleteExpiredTotpTokens extends CronTask {
 
         TOTPSQLStorage storage = StorageLayer.getTOTPStorage(this.main);
 
-        storage.removeExpiredCodes();
+        int N = 5; // FIXME:: This is not used anywhere
+        storage.removeExpiredCodes(N);
     }
 
     @Override

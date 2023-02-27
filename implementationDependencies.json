@@ -100,6 +100,11 @@
       "jar": "https://repo1.maven.org/maven2/com/lambdaworks/scrypt/1.4.0/scrypt-1.4.0.jar",
       "name": "Scrypt 1.4.0",
       "src": "https://repo1.maven.org/maven2/com/lambdaworks/scrypt/1.4.0/scrypt-1.4.0-sources.jar"
+    },
+    {
+      "jar": "https://repo1.maven.org/maven2/com/eatthepath/java-otp/0.4.0/java-otp-0.4.0.jar",
+      "name": "Java OTP 0.4.0",
+      "src": "https://repo1.maven.org/maven2/com/eatthepath/java-otp/0.4.0/java-otp-0.4.0-sources.jar"
     }
   ]
 }

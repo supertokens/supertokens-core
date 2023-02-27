@@ -200,7 +200,8 @@ public class GeneralQueries {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, TOTPQueries.getQueryToCreateUsedCodesTable(start), NO_OP_SETTER);
             // index:
-            update(start, TOTPQueries.getQueryToCreateUsedCodesIndex(start), NO_OP_SETTER);
+            update(start, TOTPQueries.getQueryToCreateUsedCodesExpiryTimeIndex(start), NO_OP_SETTER);
+            update(start, TOTPQueries.getQueryToCreateUsedCodesCreatedTimeIndex(start), NO_OP_SETTER);
         }
 
     }
@@ -396,7 +397,8 @@ public class GeneralQueries {
             List<? extends AuthRecipeUserInfo> users = getUserInfoForRecipeIdFromUserIds(start, recipeId,
                     recipeIdToUserIdListMap.get(recipeId));
 
-            // we fill in all the slots in finalResult based on their position in usersFromQuery
+            // we fill in all the slots in finalResult based on their position in
+            // usersFromQuery
             Map<String, AuthRecipeUserInfo> userIdToInfoMap = new HashMap<>();
             for (AuthRecipeUserInfo user : users) {
                 userIdToInfoMap.put(user.id, user);

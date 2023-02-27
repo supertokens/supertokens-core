@@ -54,6 +54,11 @@ core_config_version: 0
 # (OPTIONAL | Default: 900000) long value. Time in milliseconds for how long a passwordless code is valid for.
 # passwordless_code_lifetime:
 
+# (OPTIONAL | Default: 5) integer value. The maximum number of invalid TOTP attempts that will trigger rate limiting.
+# totp_max_attempts:
+
+# (OPTIONAL | Default: 900) integer value. The time in seconds for which the user will be rate limited (once totp_max_attempts is crossed)
+# totp_rate_limit_cooldown_time:
 
 # (OPTIONAL | Default: installation directory/logs/info.log) string value. Give the path to a file (on your local
 #  system) in which the SuperTokens service can write INFO logs to. Set it to "null" if you want it to log to
