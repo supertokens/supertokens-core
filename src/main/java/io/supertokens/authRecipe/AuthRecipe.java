@@ -20,6 +20,7 @@ import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdType;
@@ -103,7 +104,16 @@ public class AuthRecipe {
         StorageLayer.getSessionStorage(main).deleteSessionsOfUser(userId);
         StorageLayer.getEmailVerificationStorage(main).deleteEmailVerificationUserInfo(userId);
         StorageLayer.getUserRolesStorage(main).deleteAllRolesForUser(userId);
-        StorageLayer.getTOTPStorage(main).deleteAllTotpDataForUser(userId);
+        try {
+            StorageLayer.getTOTPStorage(main).startTransaction(con -> {
+                StorageLayer.getTOTPStorage(main).removeUser_Transaction(con, userId);
+                return null;
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof StorageQueryException) {
+                throw (StorageQueryException) e.actualException;
+            }
+        }
     }
 
     private static void deleteAuthRecipeUser(Main main, String userId) throws StorageQueryException {

@@ -407,37 +407,4 @@ public class TOTPStorageTest {
         assert (usedCodes[0].equals(validCodeToLive));
         assert (usedCodes[1].equals(invalidCodeToLive));
     }
-
-    @Test
-    public void deleteAllDataForUserTest() throws Exception {
-        TestSetupResult result = initSteps();
-        TOTPSQLStorage storage = result.storage;
-
-        long now = System.currentTimeMillis();
-        long nextDay = now + 1000 * 60 * 60 * 24; // 1 day from now
-
-        TOTPDevice device1 = new TOTPDevice("user", "d1", "secretKey", 30, 1, false);
-        TOTPDevice device2 = new TOTPDevice("user", "d2", "secretKey", 30, 1, false);
-        TOTPUsedCode validCode = new TOTPUsedCode("user", "d1-valid", true, nextDay, now);
-        TOTPUsedCode invalidCode = new TOTPUsedCode("user", "invalid-code", false, nextDay, now);
-
-        storage.createDevice(device1);
-        storage.createDevice(device2);
-        storage.insertUsedCode(validCode);
-        storage.insertUsedCode(invalidCode);
-
-        TOTPDevice[] storedDevices = storage.getDevices("user");
-        TOTPUsedCode[] usedCodes = storage.getAllUsedCodes("user");
-
-        assert (storedDevices.length == 2);
-        assert (usedCodes.length == 2);
-
-        storage.deleteAllTotpDataForUser("user");
-
-        storedDevices = storage.getDevices("user");
-        usedCodes = storage.getAllUsedCodes("user");
-
-        assert (storedDevices.length == 0);
-        assert (usedCodes.length == 0);
-    }
 }

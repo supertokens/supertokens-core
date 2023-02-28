@@ -1758,22 +1758,4 @@ public class Start
             throw new StorageQueryException(e);
         }
     }
-
-    @Override
-    public void deleteAllTotpDataForUser(String userId) throws StorageQueryException {
-        // TODO: Logically this is corrrect. But is this the right way to do it?
-        try {
-            this.startTransaction(con -> {
-                Connection sqlCon = (Connection) con.getConnection();
-                try {
-                    TOTPQueries.removeUser_Transaction(this, sqlCon, userId);
-                } catch (SQLException e) {
-                    throw new StorageTransactionLogicException(e);
-                }
-                return null;
-            });
-        } catch (StorageTransactionLogicException e) {
-            throw new StorageQueryException(e.actualException);
-        }
-    }
 }
