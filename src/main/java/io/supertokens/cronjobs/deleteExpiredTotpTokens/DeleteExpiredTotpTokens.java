@@ -9,6 +9,7 @@ import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.output.Logging;
 
 public class DeleteExpiredTotpTokens extends CronTask {
 
@@ -26,11 +27,6 @@ public class DeleteExpiredTotpTokens extends CronTask {
         return (DeleteExpiredTotpTokens) instance;
     }
 
-    @TestOnly
-    public void doTaskForTest() throws Exception {
-        doTask();
-    }
-
     @Override
     protected void doTask() throws Exception {
         if (StorageLayer.getStorage(this.main).getType() != STORAGE_TYPE.SQL) {
@@ -39,7 +35,8 @@ public class DeleteExpiredTotpTokens extends CronTask {
 
         TOTPSQLStorage storage = StorageLayer.getTOTPStorage(this.main);
 
-        storage.removeExpiredCodes();
+        int deletedCount = storage.removeExpiredCodes();
+        Logging.debug(this.main, "Cron DeleteExpiredTotpTokens deleted " + deletedCount + " expired TOTP codes");
     }
 
     @Override

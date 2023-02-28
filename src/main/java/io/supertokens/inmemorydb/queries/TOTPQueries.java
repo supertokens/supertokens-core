@@ -140,31 +140,6 @@ public class TOTPQueries {
         return removedUsersCount;
     }
 
-    // public static int deleteDevice(Start start, String userId, String deviceName)
-    // throws StorageQueryException, StorageTransactionLogicException {
-    // return start.startTransaction(con -> {
-    // Connection sqlCon = (Connection) con.getConnection();
-
-    // try {
-    // int deletedCount = deleteDevice_Transaction(start, sqlCon, userId,
-    // deviceName);
-    // if (deletedCount > 0) {
-    // // Some device was deleted. Check if user has any other device left:
-    // int devicesCount = getDevicesCount_Transaction(start, sqlCon, userId);
-    // if (devicesCount == 0) {
-    // // no device left. delete user
-    // removeUser_Transaction(start, sqlCon, userId);
-    // }
-    // }
-
-    // sqlCon.commit();
-    // return deletedCount;
-    // } catch (SQLException e) {
-    // throw new StorageTransactionLogicException(e);
-    // }
-    // });
-    // }
-
     public static int updateDeviceName(Start start, String userId, String oldDeviceName, String newDeviceName)
             throws StorageQueryException, SQLException {
         String QUERY = "UPDATE " + Config.getConfig(start).getTotpUserDevicesTable()
@@ -243,17 +218,16 @@ public class TOTPQueries {
     }
 
     /**
-     * Query to get all non expired used codes for a user in descending order of
-     * creation time.
+     * Query to get all used codes (expired/non-expired) for a user in descending
+     * order of creation time.
      */
-    public static TOTPUsedCode[] getNonExpiredUsedCodesDescOrder(Start start, String userId)
+    public static TOTPUsedCode[] getAllUsedCodesDescOrder(Start start, String userId)
             throws SQLException, StorageQueryException {
         String QUERY = "SELECT * FROM " +
                 Config.getConfig(start).getTotpUsedCodesTable()
-                + " WHERE user_id = ? AND expiry_time_ms > ? ORDER BY created_time_ms DESC;";
+                + " WHERE user_id = ? ORDER BY created_time_ms DESC;";
         return execute(start, QUERY, pst -> {
             pst.setString(1, userId);
-            pst.setLong(2, System.currentTimeMillis());
         }, result -> {
             List<TOTPUsedCode> codes = new ArrayList<>();
             while (result.next()) {
@@ -291,27 +265,6 @@ public class TOTPQueries {
         String QUERY = "DELETE FROM " + Config.getConfig(start).getTotpUsersTable()
                 + " WHERE user_id = ?;";
         return update(con, QUERY, pst -> pst.setString(1, userId));
-    }
-
-    public static void deleteAllDataForUser(Start start, String userId)
-            throws StorageQueryException, StorageTransactionLogicException {
-        start.startTransaction(con -> {
-            Connection sqlCon = (Connection) con.getConnection();
-
-            try {
-                // NOTE: These two steps are required only for in-memory db.
-                // Since foreign key constraints are not supported in in-memory db.
-                deleteAllDevices_Transaction(start, sqlCon, userId);
-                deleteAllUsedCodes_Transaction(start, sqlCon, userId);
-
-                deleteUser_Transaction(start, sqlCon, userId);
-                sqlCon.commit();
-            } catch (SQLException e) {
-                throw new StorageTransactionLogicException(e);
-            }
-
-            return null;
-        });
     }
 
     private static class TOTPDeviceRowMapper implements RowMapper<TOTPDevice, ResultSet> {

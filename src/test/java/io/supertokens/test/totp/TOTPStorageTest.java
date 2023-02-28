@@ -11,6 +11,7 @@ import org.junit.rules.TestRule;
 
 import io.supertokens.test.Utils;
 import io.supertokens.ProcessState;
+import io.supertokens.cronjobs.deleteExpiredTotpTokens.DeleteExpiredTotpTokens;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -175,7 +176,7 @@ public class TOTPStorageTest {
         TOTPDevice[] storedDevices = storage.getDevices("user");
         assert (storedDevices.length == 2);
 
-        TOTPUsedCode[] storedUsedCodes = storage.getNonExpiredUsedCodes("user");
+        TOTPUsedCode[] storedUsedCodes = storage.getAllUsedCodes("user");
         assert (storedUsedCodes.length == 2);
 
         storage.startTransaction(con -> {
@@ -187,7 +188,7 @@ public class TOTPStorageTest {
         storedDevices = storage.getDevices("user");
         assert (storedDevices.length == 0);
 
-        storedUsedCodes = storage.getNonExpiredUsedCodes("user");
+        storedUsedCodes = storage.getAllUsedCodes("user");
         assert (storedUsedCodes.length == 0);
     }
 
@@ -304,7 +305,7 @@ public class TOTPStorageTest {
 
             storage.createDevice(device);
             storage.insertUsedCode(code);
-            TOTPUsedCode[] usedCodes = storage.getNonExpiredUsedCodes("user");
+            TOTPUsedCode[] usedCodes = storage.getAllUsedCodes("user");
 
             assert (usedCodes.length == 1);
             assert usedCodes[0].equals(code);
@@ -332,11 +333,11 @@ public class TOTPStorageTest {
     }
 
     @Test
-    public void getNonExpiredUsedCodesTest() throws Exception {
+    public void getAllUsedCodesTest() throws Exception {
         TestSetupResult result = initSteps();
         TOTPSQLStorage storage = result.storage;
 
-        TOTPUsedCode[] usedCodes = storage.getNonExpiredUsedCodes("non-existent-user");
+        TOTPUsedCode[] usedCodes = storage.getAllUsedCodes("non-existent-user");
         assert (usedCodes.length == 0);
 
         long now = System.currentTimeMillis();
@@ -359,7 +360,12 @@ public class TOTPStorageTest {
         storage.insertUsedCode(validCode2);
         storage.insertUsedCode(validCode3);
 
-        usedCodes = storage.getNonExpiredUsedCodes("user");
+        usedCodes = storage.getAllUsedCodes("user");
+        assert (usedCodes.length == 6);
+
+        DeleteExpiredTotpTokens.getInstance(result.process.getProcess()).run();
+
+        usedCodes = storage.getAllUsedCodes("user");
         assert (usedCodes.length == 4); // expired codes shouldn't be returned
         assert (usedCodes[0].equals(validCode3)); // order is DESC by created time (now + X)
         assert (usedCodes[1].equals(validCode2));
@@ -388,7 +394,7 @@ public class TOTPStorageTest {
         storage.insertUsedCode(validCodeToExpire);
         storage.insertUsedCode(invalidCodeToExpire);
 
-        TOTPUsedCode[] usedCodes = storage.getNonExpiredUsedCodes("user");
+        TOTPUsedCode[] usedCodes = storage.getAllUsedCodes("user");
         assert (usedCodes.length == 4);
 
         // After 500ms seconds pass:
@@ -396,7 +402,7 @@ public class TOTPStorageTest {
 
         storage.removeExpiredCodes();
 
-        usedCodes = storage.getNonExpiredUsedCodes("user");
+        usedCodes = storage.getAllUsedCodes("user");
         assert (usedCodes.length == 2);
         assert (usedCodes[0].equals(validCodeToLive));
         assert (usedCodes[1].equals(invalidCodeToLive));
@@ -421,15 +427,15 @@ public class TOTPStorageTest {
         storage.insertUsedCode(invalidCode);
 
         TOTPDevice[] storedDevices = storage.getDevices("user");
-        TOTPUsedCode[] usedCodes = storage.getNonExpiredUsedCodes("user");
+        TOTPUsedCode[] usedCodes = storage.getAllUsedCodes("user");
 
         assert (storedDevices.length == 2);
         assert (usedCodes.length == 2);
 
-        storage.deleteAllDataForUser("user");
+        storage.deleteAllTotpDataForUser("user");
 
         storedDevices = storage.getDevices("user");
-        usedCodes = storage.getNonExpiredUsedCodes("user");
+        usedCodes = storage.getAllUsedCodes("user");
 
         assert (storedDevices.length == 0);
         assert (usedCodes.length == 0);

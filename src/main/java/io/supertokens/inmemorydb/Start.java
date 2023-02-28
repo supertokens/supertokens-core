@@ -1740,31 +1740,40 @@ public class Start
     }
 
     @Override
-    public TOTPUsedCode[] getNonExpiredUsedCodes(String userId)
+    public TOTPUsedCode[] getAllUsedCodes(String userId)
             throws StorageQueryException {
         try {
-            return TOTPQueries.getNonExpiredUsedCodesDescOrder(this, userId);
+            return TOTPQueries.getAllUsedCodesDescOrder(this, userId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public void removeExpiredCodes()
+    public int removeExpiredCodes()
             throws StorageQueryException {
         try {
-            TOTPQueries.removeExpiredCodes(this);
+            return TOTPQueries.removeExpiredCodes(this);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public void deleteAllDataForUser(String userId) throws StorageQueryException {
+    public void deleteAllTotpDataForUser(String userId) throws StorageQueryException {
+        // TODO: Logically this is corrrect. But is this the right way to do it?
         try {
-            TOTPQueries.deleteAllDataForUser(this, userId);
+            this.startTransaction(con -> {
+                Connection sqlCon = (Connection) con.getConnection();
+                try {
+                    TOTPQueries.removeUser_Transaction(this, sqlCon, userId);
+                } catch (SQLException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
+                return null;
+            });
         } catch (StorageTransactionLogicException e) {
-            throw new StorageQueryException(e);
+            throw new StorageQueryException(e.actualException);
         }
     }
 }
