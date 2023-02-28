@@ -129,40 +129,40 @@ public class StorageLayerTest {
         userInfoHeaders.add("user-header", new JsonPrimitive("user-header-val"));
 
         mtStorage.overwriteTenantConfig(new TenantConfig(
-            new TenantIdentifier(null, null, null),
-            new EmailPasswordConfig(true),
-            new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
-                new ThirdPartyConfig.Provider(
-                    "google",
-                    "Google",
-                    new ThirdPartyConfig.ProviderClient[]{
-                        new ThirdPartyConfig.ProviderClient(
-                            "web",
-                            "client-id",
-                            "client-secret",
-                            new String[]{"scope-1", "scope-2"},
-                            true,
-                            new JsonObject()
+                new TenantIdentifier(null, null, null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
+                        new ThirdPartyConfig.Provider(
+                                "google",
+                                "Google",
+                                new ThirdPartyConfig.ProviderClient[]{
+                                        new ThirdPartyConfig.ProviderClient(
+                                                "web",
+                                                "client-id",
+                                                "client-secret",
+                                                new String[]{"scope-1", "scope-2"},
+                                                true,
+                                                new JsonObject()
+                                        )
+                                },
+                                "https://auth.example.com/auth",
+                                authParams,
+                                "https://auth.example.com/token",
+                                tokenParams,
+                                "https://auth.example.com/user",
+                                userInfoParams,
+                                userInfoHeaders,
+                                "https://auth.example.com/jwks",
+                                "https://auth.example.com",
+                                true,
+                                new ThirdPartyConfig.UserInfoMap(
+                                        new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                        new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
+                                )
                         )
-                    },
-                    "https://auth.example.com/auth",
-                    authParams,
-                    "https://auth.example.com/token",
-                    tokenParams,
-                    "https://auth.example.com/user",
-                    userInfoParams,
-                    userInfoHeaders,
-                    "https://auth.example.com/jwks",
-                    "https://auth.example.com",
-                    true,
-                    new ThirdPartyConfig.UserInfoMap(
-                        new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
-                        new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
-                    )
-                )
-            }),
-            new PasswordlessConfig(true),
-            new JsonObject()
+                }),
+                new PasswordlessConfig(true),
+                new JsonObject()
         ));
 
         TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
@@ -202,6 +202,116 @@ public class StorageLayerTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    public void testUpdationOfDefaultTenantWithNullClientType()
+            throws InterruptedException, DuplicateTenantException, StorageQueryException, TenantOrAppNotFoundException,
+            DuplicateThirdPartyIdException, DuplicateClientTypeException {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        FeatureFlagTestContent.getInstance(process.getProcess())
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE));
+        MultitenancyStorage mtStorage = StorageLayer.getMultitenancyStorage(process.getProcess());
+
+        JsonObject authParams = new JsonObject();
+        authParams.add("auth-param", new JsonPrimitive("auth-val"));
+
+        JsonObject tokenParams = new JsonObject();
+        tokenParams.add("token-param", new JsonPrimitive("token-val"));
+
+        JsonObject userInfoParams = new JsonObject();
+        userInfoParams.add("user-param", new JsonPrimitive("user-val"));
+
+        JsonObject userInfoHeaders = new JsonObject();
+        userInfoHeaders.add("user-header", new JsonPrimitive("user-header-val"));
+
+        mtStorage.overwriteTenantConfig(new TenantConfig(
+                new TenantIdentifier(null, null, null),
+                new EmailPasswordConfig(true),
+                new ThirdPartyConfig(true, new ThirdPartyConfig.Provider[]{
+                        new ThirdPartyConfig.Provider(
+                                "google",
+                                "Google",
+                                new ThirdPartyConfig.ProviderClient[]{
+                                        new ThirdPartyConfig.ProviderClient(
+                                                null,
+                                                "client-id",
+                                                "client-secret",
+                                                new String[]{"scope-1", "scope-2"},
+                                                true,
+                                                new JsonObject()
+                                        )
+                                },
+                                "https://auth.example.com/auth",
+                                authParams,
+                                "https://auth.example.com/token",
+                                tokenParams,
+                                "https://auth.example.com/user",
+                                userInfoParams,
+                                userInfoHeaders,
+                                "https://auth.example.com/jwks",
+                                "https://auth.example.com",
+                                true,
+                                new ThirdPartyConfig.UserInfoMap(
+                                        new ThirdPartyConfig.UserInfoMapKeyValue("id1", "email1", "email_verified1"),
+                                        new ThirdPartyConfig.UserInfoMapKeyValue("id2", "email2", "email_verified2")
+                                )
+                        )
+                }),
+                new PasswordlessConfig(true),
+                new JsonObject()
+        ));
+
+        TenantConfig[] tenantConfigs = mtStorage.getAllTenants();
+
+        assertEquals(1, tenantConfigs.length);
+        TenantConfig baseTenantConfig = tenantConfigs[0];
+
+        assertEquals(new TenantIdentifier(null, null, null), baseTenantConfig.tenantIdentifier);
+        assertTrue(baseTenantConfig.emailPasswordConfig.enabled);
+        assertTrue(baseTenantConfig.passwordlessConfig.enabled);
+        assertTrue(baseTenantConfig.thirdPartyConfig.enabled);
+        assertNotNull(baseTenantConfig.thirdPartyConfig.providers);
+        assertEquals(1, baseTenantConfig.thirdPartyConfig.providers.length);
+
+        ThirdPartyConfig.Provider provider = baseTenantConfig.thirdPartyConfig.providers[0];
+
+        assertEquals("google", provider.thirdPartyId);
+        assertEquals("Google", provider.name);
+        assertEquals("https://auth.example.com/auth", provider.authorizationEndpoint);
+        assertEquals(authParams, provider.authorizationEndpointQueryParams);
+        assertEquals("https://auth.example.com/token", provider.tokenEndpoint);
+        assertEquals(tokenParams, provider.tokenEndpointBodyParams);
+        assertEquals("https://auth.example.com/user", provider.userInfoEndpoint);
+        assertEquals(userInfoParams, provider.userInfoEndpointQueryParams);
+        assertEquals(userInfoHeaders, provider.userInfoEndpointHeaders);
+        assertEquals("https://auth.example.com/jwks", provider.jwksURI);
+        assertEquals("https://auth.example.com", provider.oidcDiscoveryEndpoint);
+        assertTrue(provider.requireEmail);
+        assertEquals("id1", provider.userInfoMap.fromIdTokenPayload.userId);
+        assertEquals("email1", provider.userInfoMap.fromIdTokenPayload.email);
+        assertEquals("email_verified1", provider.userInfoMap.fromIdTokenPayload.emailVerified);
+        assertEquals("id2", provider.userInfoMap.fromUserInfoAPI.userId);
+        assertEquals("email2", provider.userInfoMap.fromUserInfoAPI.email);
+        assertEquals("email_verified2", provider.userInfoMap.fromUserInfoAPI.emailVerified);
+
+        assertEquals(1, provider.clients);
+        ThirdPartyConfig.ProviderClient client = provider.clients[0];
+
+        assertEquals(null, client.clientType);
+        assertEquals("client-id", client.clientId);
+        assertEquals("client-secret", client.clientSecret);
+        assertEquals(new String[]{"scope-1", "scope-2"}, client.scope);
+        assertTrue(client.forcePKCE);
+        assertEquals(new JsonObject(), client.additionalConfig);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
     @Test
     public void testForNullsInUpdationOfDefaultTenant()
             throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException,
@@ -230,7 +340,7 @@ public class StorageLayerTest {
                                                 "client-id",
                                                 null,
                                                 null,
-                                                true,
+                                                false,
                                                 null
                                         )
                                 },
@@ -286,6 +396,16 @@ public class StorageLayerTest {
         assertEquals(null, provider.userInfoMap.fromUserInfoAPI.userId);
         assertEquals(null, provider.userInfoMap.fromUserInfoAPI.email);
         assertEquals(null, provider.userInfoMap.fromUserInfoAPI.emailVerified);
+
+        assertEquals(1, provider.clients.length);
+        ThirdPartyConfig.ProviderClient client = provider.clients[0];
+
+        assertEquals(null, client.clientType);
+        assertEquals("client-id", client.clientId);
+        assertEquals(null, client.clientSecret);
+        assertEquals(null, client.scope);
+        assertFalse(client.forcePKCE);
+        assertEquals(null, client.additionalConfig);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -367,6 +487,8 @@ public class StorageLayerTest {
         assertEquals(null, provider.userInfoMap.fromUserInfoAPI.userId);
         assertEquals(null, provider.userInfoMap.fromUserInfoAPI.email);
         assertEquals(null, provider.userInfoMap.fromUserInfoAPI.emailVerified);
+
+        assertEquals(null, provider.clients);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -508,6 +630,17 @@ public class StorageLayerTest {
         assertEquals("id2", provider.userInfoMap.fromUserInfoAPI.userId);
         assertEquals("email2", provider.userInfoMap.fromUserInfoAPI.email);
         assertEquals("email_verified2", provider.userInfoMap.fromUserInfoAPI.emailVerified);
+
+        assertEquals(1, provider.clients.length);
+        ThirdPartyConfig.ProviderClient client = provider.clients[0];
+
+        assertEquals("web", client.clientType);
+        assertEquals("client-id", client.clientId);
+        assertEquals("client-secret", client.clientSecret);
+        assertEquals(new String[]{"scope-1", "scope-2"}, client.scope);
+        assertTrue(client.forcePKCE);
+        assertEquals(new JsonObject(), client.additionalConfig);
+
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
