@@ -49,7 +49,7 @@ public class TOTPStorageTest {
         Utils.reset();
     }
 
-    public TestSetupResult setup() throws InterruptedException {
+    public TestSetupResult initSteps() throws InterruptedException {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -65,7 +65,7 @@ public class TOTPStorageTest {
 
     @Test
     public void createDeviceTests() throws Exception {
-        TestSetupResult result = setup();
+        TestSetupResult result = initSteps();
         TOTPSQLStorage storage = result.storage;
 
         TOTPDevice device1 = new TOTPDevice("user", "d1", "secret", 30, 1, false);
@@ -93,7 +93,7 @@ public class TOTPStorageTest {
 
     @Test
     public void verifyDeviceTests() throws Exception {
-        TestSetupResult result = setup();
+        TestSetupResult result = initSteps();
         TOTPSQLStorage storage = result.storage;
 
         TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
@@ -118,7 +118,7 @@ public class TOTPStorageTest {
 
     @Test
     public void getDevicesCount_TransactionTests() throws Exception {
-        TestSetupResult result = setup();
+        TestSetupResult result = initSteps();
         TOTPSQLStorage storage = result.storage;
 
         // Try to get the count for a user that doesn't exist (Should pass because
@@ -146,7 +146,7 @@ public class TOTPStorageTest {
 
     @Test
     public void removeUser_TransactionTests() throws Exception {
-        TestSetupResult result = setup();
+        TestSetupResult result = initSteps();
         TOTPSQLStorage storage = result.storage;
 
         // Try to remove a user that doesn't exist (Should pass because
@@ -193,7 +193,7 @@ public class TOTPStorageTest {
 
     @Test
     public void deleteDevice_TransactionTests() throws Exception {
-        TestSetupResult result = setup();
+        TestSetupResult result = initSteps();
         TOTPSQLStorage storage = result.storage;
 
         TOTPDevice device1 = new TOTPDevice("user", "device1", "sk1", 30, 1, false);
@@ -237,7 +237,7 @@ public class TOTPStorageTest {
 
     @Test
     public void updateDeviceNameTests() throws Exception {
-        TestSetupResult result = setup();
+        TestSetupResult result = initSteps();
         TOTPSQLStorage storage = result.storage;
 
         TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
@@ -272,7 +272,7 @@ public class TOTPStorageTest {
 
     @Test
     public void getDevicesTest() throws Exception {
-        TestSetupResult result = setup();
+        TestSetupResult result = initSteps();
         TOTPSQLStorage storage = result.storage;
 
         TOTPDevice device1 = new TOTPDevice("user", "d1", "secretKey", 30, 1, false);
@@ -293,7 +293,7 @@ public class TOTPStorageTest {
 
     @Test
     public void insertUsedCodeTest() throws Exception {
-        TestSetupResult result = setup();
+        TestSetupResult result = initSteps();
         TOTPSQLStorage storage = result.storage;
         long nextDay = System.currentTimeMillis() + 1000 * 60 * 60 * 24; // 1 day from now
 
@@ -333,7 +333,7 @@ public class TOTPStorageTest {
 
     @Test
     public void getNonExpiredUsedCodesTest() throws Exception {
-        TestSetupResult result = setup();
+        TestSetupResult result = initSteps();
         TOTPSQLStorage storage = result.storage;
 
         TOTPUsedCode[] usedCodes = storage.getNonExpiredUsedCodes("non-existent-user");
@@ -369,7 +369,7 @@ public class TOTPStorageTest {
 
     @Test
     public void removeExpiredCodesTest() throws Exception {
-        TestSetupResult result = setup();
+        TestSetupResult result = initSteps();
         TOTPSQLStorage storage = result.storage;
 
         long now = System.currentTimeMillis();
@@ -394,7 +394,7 @@ public class TOTPStorageTest {
         // After 500ms seconds pass:
         Thread.sleep(500);
 
-        storage.removeExpiredCodes(5); // FIXME::::
+        storage.removeExpiredCodes();
 
         usedCodes = storage.getNonExpiredUsedCodes("user");
         assert (usedCodes.length == 2);
@@ -404,7 +404,7 @@ public class TOTPStorageTest {
 
     @Test
     public void deleteAllDataForUserTest() throws Exception {
-        TestSetupResult result = setup();
+        TestSetupResult result = initSteps();
         TOTPSQLStorage storage = result.storage;
 
         long now = System.currentTimeMillis();

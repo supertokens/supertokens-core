@@ -264,10 +264,8 @@ public class TOTPQueries {
         });
     }
 
-    public static int removeExpiredCodes(Start start, int offset)
+    public static int removeExpiredCodes(Start start)
             throws StorageQueryException, SQLException {
-        // TODO: Use offset with `order by created_at desc` to exclude latest N codes
-        // for each user
         String QUERY = "DELETE FROM " + Config.getConfig(start).getTotpUsedCodesTable()
                 + " WHERE expiry_time_ms < ?;";
 

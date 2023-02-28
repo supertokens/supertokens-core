@@ -223,6 +223,7 @@ public class ConfigTest2_6 {
         // TODO: Is this correct?
         assertEquals(5, config.getTotpMaxAttempts()); // 5
         assertEquals(900, config.getTotpRateLimitCooldownTime()); // 15 minutes
+        assertEquals(5, config.getTotpInvalidCodeExpiryTime()); // 30 minutes
 
         assertEquals("Config info log path did not match default", config.getInfoLogPath(process.getProcess()),
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/info.log");

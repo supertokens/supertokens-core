@@ -60,7 +60,10 @@ public class CoreConfig {
     private int totp_max_attempts = 5;
 
     @JsonProperty
-    private int totp_rate_limit_cooldown_time = 900; // in seconds (Default 15 mins)
+    private int totp_rate_limit_cooldown_sec = 900; // in seconds (Default 15 mins)
+
+    @JsonProperty
+    private int totp_invalid_code_expiry_sec = 1800; // in seconds (Default 30 mins)
 
     private final String logDefault = "asdkfahbdfk3kjHS";
     @JsonProperty
@@ -283,7 +286,12 @@ public class CoreConfig {
 
     /** TOTP rate limit cooldown time (in seconds) */
     public int getTotpRateLimitCooldownTime() {
-        return totp_rate_limit_cooldown_time;
+        return totp_rate_limit_cooldown_sec;
+    }
+
+    /** TOTP invalid code expiry time (in seconds) */
+    public int getTotpInvalidCodeExpiryTime() {
+        return totp_invalid_code_expiry_sec;
     }
 
     public boolean isTelemetryDisabled() {
@@ -408,8 +416,12 @@ public class CoreConfig {
             throw new QuitProgramException("'totp_max_attempts' must be > 0");
         }
 
-        if (totp_rate_limit_cooldown_time <= 0) {
-            throw new QuitProgramException("'totp_rate_limit_cooldown_time' must be > 0");
+        if (totp_rate_limit_cooldown_sec <= 0) {
+            throw new QuitProgramException("'totp_rate_limit_cooldown_sec' must be > 0");
+        }
+
+        if (totp_invalid_code_expiry_sec <= 0) {
+            throw new QuitProgramException("'totp_invalid_code_expiry_sec' must be > 0");
         }
 
         if (max_server_pool_size <= 0) {

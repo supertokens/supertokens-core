@@ -1,5 +1,7 @@
 package io.supertokens.cronjobs.deleteExpiredTotpTokens;
 
+import org.jetbrains.annotations.TestOnly;
+
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -24,6 +26,11 @@ public class DeleteExpiredTotpTokens extends CronTask {
         return (DeleteExpiredTotpTokens) instance;
     }
 
+    @TestOnly
+    public void doTaskForTest() throws Exception {
+        doTask();
+    }
+
     @Override
     protected void doTask() throws Exception {
         if (StorageLayer.getStorage(this.main).getType() != STORAGE_TYPE.SQL) {
@@ -32,8 +39,7 @@ public class DeleteExpiredTotpTokens extends CronTask {
 
         TOTPSQLStorage storage = StorageLayer.getTOTPStorage(this.main);
 
-        int N = 5; // FIXME:: This is not used anywhere
-        storage.removeExpiredCodes(N);
+        storage.removeExpiredCodes();
     }
 
     @Override

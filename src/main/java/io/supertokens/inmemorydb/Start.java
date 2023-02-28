@@ -1750,10 +1750,10 @@ public class Start
     }
 
     @Override
-    public void removeExpiredCodes(int N)
+    public void removeExpiredCodes()
             throws StorageQueryException {
         try {
-            TOTPQueries.removeExpiredCodes(this, N);
+            TOTPQueries.removeExpiredCodes(this);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

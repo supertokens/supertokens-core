@@ -32,6 +32,8 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
+import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.cronjobs.deleteExpiredTotpTokens.DeleteExpiredTotpTokens;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -71,7 +73,7 @@ public class TOTPRecipeTest {
         }
     }
 
-    public TestSetupResult setup() throws InterruptedException, IOException {
+    public TestSetupResult defaultInit() throws InterruptedException, IOException {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -86,13 +88,13 @@ public class TOTPRecipeTest {
     }
 
     @Test
-    public void createDevice() throws Exception {
-        TestSetupResult result = setup();
+    public void createDeviceTest() throws Exception {
+        TestSetupResult result = defaultInit();
         Main main = result.process.getProcess();
 
         // Create device
-        String secret = Totp.registerDevice(main, "user", "device1", 1, 30);
-        assert secret != "";
+        TOTPDevice device = Totp.registerDevice(main, "user", "device1", 1, 30);
+        assert device.secretKey != "";
 
         // Create same device again (should fail)
         assertThrows(DeviceAlreadyExistsException.class,
@@ -100,12 +102,12 @@ public class TOTPRecipeTest {
     }
 
     @Test
-    public void createDeviceAndVerifyCode() throws Exception {
-        TestSetupResult result = setup();
+    public void createDeviceAndVerifyCodeTest() throws Exception {
+        TestSetupResult result = defaultInit();
         Main main = result.process.getProcess();
 
         // Create device
-        String secret = Totp.registerDevice(main, "user", "device", 1, 30);
+        TOTPDevice device = Totp.registerDevice(main, "user", "device", 1, 1);
 
         // Try login with non-existent user:
         assertThrows(TotpNotEnabledException.class,
@@ -124,10 +126,10 @@ public class TOTPRecipeTest {
         // Valid code & allowUnverifiedDevice = false:
         assertThrows(
                 InvalidTotpException.class,
-                () -> Totp.verifyCode(main, "user", Totp.generateTotpCode(main, "user", "device"), false));
+                () -> Totp.verifyCode(main, "user", Totp.generateTotpCode(main, device), false));
 
         // Valid code & allowUnverifiedDevice = true (Success):
-        String validCode = Totp.generateTotpCode(main, "user", "device");
+        String validCode = Totp.generateTotpCode(main, device);
         Totp.verifyCode(main, "user", validCode, true);
 
         // Now try again with same code:
@@ -135,13 +137,36 @@ public class TOTPRecipeTest {
                 InvalidTotpException.class,
                 () -> Totp.verifyCode(main, "user", validCode, true));
 
+        // Sleep for 1s so that code changes.
+        Thread.sleep(1500);
+
         // Use a new valid code:
-        String newValidCode = Totp.generateTotpCode(main, "user", "device");
+        String newValidCode = Totp.generateTotpCode(main, device);
         Totp.verifyCode(main, "user", newValidCode, true);
+
+        // Regenerate the same code and use it again (should fail):
+        String newValidCodeCopy = Totp.generateTotpCode(main, device);
+        assertThrows(InvalidTotpException.class,
+                () -> Totp.verifyCode(main, "user", newValidCodeCopy, true));
+
+        // Use a code from next period:
+        String nextValidCode = Totp.generateTotpCode(main, device, 1);
+        Totp.verifyCode(main, "user", nextValidCode, true);
+
+        // Use previous period code (should fail coz validCode): // FIXME: This should
+        // // fail
+        // String previousCode = Totp.generateTotpCode(main, "user", "device", -1);
+        // Totp.verifyCode(main, "user", previousCode, true);
+
+        // TODO: Add tests for next and previous codes as well.
+        // TODO: Add tests for different skew values (0 and 1)
+        // TODO: Add tests where we change totp_max_attempts
+        // TODO: Add tests where we change totp_invalid_code_expiry_sec
     }
 
-    public void triggerAndCheckRateLimit(Main main, String userId, String deviceName) throws Exception {
+    public void triggerAndCheckRateLimit(Main main, TOTPDevice device) throws Exception {
         int N = Config.getConfig(main).getTotpMaxAttempts();
+
         // First N attempts should fail with invalid code:
         // This is to trigger rate limiting
         for (int i = 0; i < N; i++) {
@@ -158,7 +183,7 @@ public class TOTPRecipeTest {
                 () -> Totp.verifyCode(main, "user", "invalid-code-N+1", true));
         assertThrows(
                 LimitReachedException.class,
-                () -> Totp.verifyCode(main, "user", Totp.generateTotpCode(main, userId, deviceName), true));
+                () -> Totp.verifyCode(main, "user", Totp.generateTotpCode(main, device), true));
         assertThrows(
                 LimitReachedException.class,
                 () -> Totp.verifyCode(main, "user", "invalid-code-N+2", true));
@@ -169,7 +194,7 @@ public class TOTPRecipeTest {
         String[] args = { "../" };
 
         // set rate limiting cooldown time to 1s
-        Utils.setValueInConfig("totp_rate_limit_cooldown_time", "1");
+        Utils.setValueInConfig("totp_rate_limit_cooldown_sec", "1");
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -177,48 +202,62 @@ public class TOTPRecipeTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             assert (false);
         }
-        TOTPStorage storage = StorageLayer.getTOTPStorage(process.getProcess());
 
         Main main = process.getProcess();
 
         // Create device
-        String secret = Totp.registerDevice(main, "user", "deviceName", 1, 30);
+        TOTPDevice device = Totp.registerDevice(main, "user", "deviceName", 1, 1);
 
         // Trigger rate limiting and fix it with a correct code after some time:
-        triggerAndCheckRateLimit(main, "user", "deviceName");
+        triggerAndCheckRateLimit(main, device);
         // Wait for 1 second (Should cool down rate limiting):
         Thread.sleep(1000);
         // But again try with invalid code:
-        Totp.verifyCode(main, "user", "yet-another-invalid-code", true);
+        assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "yet-another-invalid-code", true));
+        // This triggered rate limiting again. So even valid codes will fail for
+        // another cooldown period:
+        assertThrows(LimitReachedException.class,
+                () -> Totp.verifyCode(main, "user", Totp.generateTotpCode(main, device), true));
         // Wait for 1 second (Should cool down rate limiting):
         Thread.sleep(1000);
         // Now try with valid code:
-        Totp.verifyCode(main, "user", Totp.generateTotpCode(main, "user", "deviceName"), true);
+        Totp.verifyCode(main, "user", Totp.generateTotpCode(main, device), true);
+        // Now invalid code shouldn't trigger rate limiting. Unless you do it N times:
+        assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "some-invalid-code", true));
     }
 
     @Test
     public void removeExpiredCodesCronDuringRateLimitTest() throws Exception {
-        TestSetupResult result = setup();
+        TestSetupResult result = defaultInit();
         Main main = result.process.getProcess();
 
         // Create device
-        String secret = Totp.registerDevice(main, "user", "deviceName", 1, 30);
+        TOTPDevice device = Totp.registerDevice(main, "user", "deviceName", 0, 1);
 
-        // Trigger rate limiting and fix it with cronjob (runs every 1 hour)
-        triggerAndCheckRateLimit(main, "user", "deviceName");
-        // FIXME: Run cronjob at higher frequency:
-        assert false;
-        // Totp.runCron(main);
-        Totp.verifyCode(main, "user", "XXXX-code", true);
+        // Trigger rate limiting and fix it with cronjob (manually run cronjob):
+        triggerAndCheckRateLimit(main, device);
+        // Wait for 1 second so that all the codes expire:
+        Thread.sleep(1000);
+        // FIXME: Can this be cleaner?
+        DeleteExpiredTotpTokens.getInstance(main).doTaskForTest();
+        // Will completely reset the rate limiting. Allowing the user to do N attempts
+        // here N == totp_max_attempts from the config:
+        assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "again-wrong-code1", true));
+        // This should have throws LimitReachedException but it won't because of cron:
+        assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "again-wrong-code2", true));
+
+        Totp.verifyCode(main, "user", Totp.generateTotpCode(main, device), true);
+        // We can do N attempts again:
+        triggerAndCheckRateLimit(main, device);
     }
 
     @Test
-    public void createAndVerifyDevice() throws Exception {
-        TestSetupResult result = setup();
+    public void createAndVerifyDeviceTest() throws Exception {
+        TestSetupResult result = defaultInit();
         Main main = result.process.getProcess();
 
         // Create device
-        String secret = Totp.registerDevice(main, "user", "deviceName", 1, 30);
+        TOTPDevice device = Totp.registerDevice(main, "user", "deviceName", 1, 30);
 
         // Try verify non-existent user:
         assertThrows(TotpNotEnabledException.class,
@@ -232,7 +271,7 @@ public class TOTPRecipeTest {
         assertThrows(InvalidTotpException.class, () -> Totp.verifyDevice(main, "user", "deviceName", "wrong-code"));
 
         // Verify device with correct code
-        String validCode = Totp.generateTotpCode(main, "user", "deviceName");
+        String validCode = Totp.generateTotpCode(main, device);
         boolean justVerfied = Totp.verifyDevice(main, "user", "deviceName", validCode);
         assert justVerfied;
 
@@ -241,7 +280,7 @@ public class TOTPRecipeTest {
         assert !justVerfied;
 
         // Verify again with new correct code:
-        String newValidCode = Totp.generateTotpCode(main, "user", "deviceName");
+        String newValidCode = Totp.generateTotpCode(main, device);
         justVerfied = Totp.verifyDevice(main, "user", "deviceName", newValidCode);
         assert !justVerfied;
 
@@ -254,37 +293,157 @@ public class TOTPRecipeTest {
     }
 
     @Test
-    public void deleteDevice() throws Exception {
+    public void removeDeviceTest() throws Exception {
+        TestSetupResult result = defaultInit();
+        Main main = result.process.getProcess();
+        TOTPStorage storage = result.storage;
+
+        // Create devices
+        TOTPDevice device1 = Totp.registerDevice(main, "user", "device1", 1, 30);
+        TOTPDevice device2 = Totp.registerDevice(main, "user", "device2", 1, 30);
+
+        TOTPDevice[] devices = Totp.getDevices(main, "user");
+        assert (devices.length == 2);
+
+        // Delete one of the devices
+        {
+            assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", "invalid-code", true));
+            Totp.verifyCode(main, "user", Totp.generateTotpCode(main, device1), true);
+            Totp.verifyCode(main, "user", Totp.generateTotpCode(main, device2), true);
+
+            // Delete device1
+            Totp.removeDevice(main, "user", "device1");
+
+            devices = Totp.getDevices(main, "user");
+            assert (devices.length == 1);
+
+            // 1 device still remain so all codes should still be still there:
+            TOTPUsedCode[] usedCodes = storage.getNonExpiredUsedCodes("user");
+            assert (usedCodes.length == 3);
+        }
 
         // Deleting the last device of a user should delete all related codes:
-        TestSetupResult result = setup();
-        Main main = result.process.getProcess();
-
-        // Create device
-        String secret = Totp.registerDevice(main, "user", "device", 1, 30);
-
-        long nextDay = System.currentTimeMillis() + 1000 * 60 * 60 * 24; // 1 day
-        long now = System.currentTimeMillis();
+        // Delete the 2nd (and the last) device
         {
-            Totp.verifyCode(main, "user", "invalid-code", true);
-            Totp.verifyCode(main, "user", Totp.generateTotpCode(main, "user", "device"), true);
 
-            // delete device2 as well
-            // storage.startTransaction(con -> {
-            // storage.deleteDevice_Transaction(con, "user", "device2");
-            // storage.commitTransaction(con);
-            // return null;
-            // });
+            // Create another user to test that other users aren't affected:
+            TOTPDevice otherUserDevice = Totp.registerDevice(main, "other-user", "device", 1, 30);
+            Totp.verifyCode(main, "other-user", Totp.generateTotpCode(main, otherUserDevice), true);
+            assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "other-user", "invalid-code", true));
 
-            TOTPDevice[] devices = Totp.getDevices(main, "user");
-            assert (devices.length == 0);
+            // Delete device2
+            Totp.removeDevice(main, "user", "device2");
+
+            // TOTP has ben disabled for the user:
+            assertThrows(TotpNotEnabledException.class, () -> Totp.getDevices(main, "user"));
+
+            // No device left so all codes of the user should be deleted:
+            TOTPUsedCode[] usedCodes = storage.getNonExpiredUsedCodes("user");
+            assert (usedCodes.length == 0);
+
+            // But for other users things should still be there:
+            TOTPDevice[] otherUserDevices = Totp.getDevices(main, "other-user");
+            assert (otherUserDevices.length == 1);
+
+            usedCodes = storage.getNonExpiredUsedCodes("other-user");
+            assert (usedCodes.length == 2);
         }
     }
 
     @Test
-    public void deleteUser() throws Exception {
-        // Deleting a user should delete all related devices and codes:
+    public void updateDeviceNameTest() throws Exception {
+        TestSetupResult result = defaultInit();
+        Main main = result.process.getProcess();
 
+        Totp.registerDevice(main, "user", "device1", 1, 30);
+        Totp.registerDevice(main, "user", "device2", 1, 30);
+
+        // Try update non-existent user:
+        assertThrows(TotpNotEnabledException.class,
+                () -> Totp.updateDeviceName(main, "non-existent-user", "device1", "new-device-name"));
+
+        // Try update non-existent device:
+        assertThrows(UnknownDeviceException.class,
+                () -> Totp.updateDeviceName(main, "user", "non-existent-device", "new-device-name"));
+
+        // Update device name (should work)
+        Totp.updateDeviceName(main, "user", "device1", "new-device-name");
+
+        // Verify that the device name has been updated:
+        TOTPDevice[] devices = Totp.getDevices(main, "user");
+        assert (devices.length == 2);
+        assert (devices[0].deviceName.equals("device2"));
+        assert (devices[1].deviceName.equals("new-device-name"));
+
+        // Verify that TOTP verification still works:
+        Totp.verifyDevice(main, "user", devices[0].deviceName, Totp.generateTotpCode(main, devices[0]));
+        Totp.verifyDevice(main, "user", devices[0].deviceName, Totp.generateTotpCode(main, devices[1]));
+
+        // Try update device name to an already existing device name:
+        assertThrows(DeviceAlreadyExistsException.class,
+                () -> Totp.updateDeviceName(main, "user", "device2", "new-device-name"));
     }
 
+    @Test
+    public void getDevicesTest() throws Exception {
+        TestSetupResult result = defaultInit();
+        Main main = result.process.getProcess();
+
+        // Try get devices for non-existent user:
+        assertThrows(TotpNotEnabledException.class, () -> Totp.getDevices(main, "non-existent-user"));
+
+        TOTPDevice device1 = Totp.registerDevice(main, "user", "device1", 2, 30);
+        TOTPDevice device2 = Totp.registerDevice(main, "user", "device2", 1, 10);
+
+        TOTPDevice[] devices = Totp.getDevices(main, "user");
+        assert (devices.length == 2);
+        assert devices[0].equals(device1);
+        assert devices[1].equals(device2);
+    }
+
+    @Test
+    public void deleteExpiredTokensCronIntervalTest() throws Exception {
+        TestSetupResult result = defaultInit();
+        Main main = result.process.getProcess();
+
+        // Ensure that delete expired tokens cron runs every hour:
+        assert DeleteExpiredTotpTokens.getInstance(main).getIntervalTimeSeconds() == 60 * 60;
+    }
+
+    @Test
+    public void deleteExpiredTokensCronTest() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+
+        CronTaskTest.getInstance(process.getProcess()).setIntervalInSeconds(DeleteExpiredTotpTokens.RESOURCE_KEY, 1);
+        process.startProcess();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        Main main = process.getProcess();
+
+        // Create device
+        // Set period and skew to 0 to make sure that the codes are one time usable and
+        // expire in 1 second
+        TOTPDevice device = Totp.registerDevice(main, "user", "device", 0, 1);
+
+        // Add codes:
+        Totp.verifyCode(main, "user", Totp.generateTotpCode(main, device), true);
+        assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user",
+                "invalid-code", true));
+
+        TOTPStorage storage = StorageLayer.getTOTPStorage(process.getProcess());
+
+        // Verify that the codes have been added:
+        TOTPUsedCode[] usedCodes = storage.getNonExpiredUsedCodes("user");
+        assert (usedCodes.length == 2);
+
+        // Wait for 1 second to make sure that the valid codes expire
+        // (and crons deletes the valid ones since they are expired)
+        Thread.sleep(1000);
+
+        usedCodes = storage.getNonExpiredUsedCodes("user");
+        assert (usedCodes.length == 1);
+        // Invalid code will still remain because their expiration time is 5 minutes
+        assert usedCodes[0].code.equals("invalid-code");
+    }
 }
