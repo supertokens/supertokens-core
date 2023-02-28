@@ -104,7 +104,7 @@ public class StorageLayerTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
-    
+
     @Test
     public void testUpdationOfDefaultTenant()
             throws InterruptedException, DuplicateTenantException, StorageQueryException, TenantOrAppNotFoundException,
@@ -206,6 +206,7 @@ public class StorageLayerTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
+    @Test
     public void testUpdationOfDefaultTenantWithNullClientType()
             throws InterruptedException, DuplicateTenantException, StorageQueryException, TenantOrAppNotFoundException,
             DuplicateThirdPartyIdException, DuplicateClientTypeException {
@@ -302,7 +303,7 @@ public class StorageLayerTest {
         assertEquals("email2", provider.userInfoMap.fromUserInfoAPI.email);
         assertEquals("email_verified2", provider.userInfoMap.fromUserInfoAPI.emailVerified);
 
-        assertEquals(1, provider.clients);
+        assertEquals(1, provider.clients.length);
         ThirdPartyConfig.ProviderClient client = provider.clients[0];
 
         assertEquals(null, client.clientType);
@@ -497,7 +498,6 @@ public class StorageLayerTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
-
 
     @Test
     public void testForNullProvidersListInUpdationOfDefaultTenant()
