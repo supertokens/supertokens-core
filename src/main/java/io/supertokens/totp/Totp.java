@@ -77,12 +77,6 @@ public class Totp {
 
         TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
 
-        // Assert that period > 0 (not == 0 because it would lead to a divide by 0
-        // error)
-        // Assert that period <= 60. Otherwise, it is a security risk. Actually,
-        // anything > 30 is bad.
-        // and skew >= 0 and skew <= 2. Otherwise, it is a security risk.
-
         // TODO: There should be a hard limit on number of devices per user
         // 8 devices per user should be enough. Otherwise, it is a security risk.
 
@@ -120,7 +114,7 @@ public class Totp {
             if (now - latestInvalidCodeCreatedTime < rateLimitResetTimeInMs) {
                 // Less than rateLimitResetTimeInMs (default = 15 mins) time has elasped since
                 // the last invalid code:
-                throw new LimitReachedException();
+                throw new LimitReachedException(rateLimitResetTimeInMs / 1000);
 
                 // If we insert the used code here, then it will further delay the user from
                 // being able to login. So not inserting it here.

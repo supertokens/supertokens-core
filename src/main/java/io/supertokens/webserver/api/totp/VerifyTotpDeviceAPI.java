@@ -1,0 +1,87 @@
+package io.supertokens.webserver.api.totp;
+
+import java.io.IOException;
+
+import com.google.gson.JsonObject;
+
+import io.supertokens.Main;
+import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
+import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
+import io.supertokens.totp.Totp;
+import io.supertokens.totp.exceptions.InvalidTotpException;
+import io.supertokens.totp.exceptions.LimitReachedException;
+import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+public class VerifyTotpDeviceAPI extends WebserverAPI {
+    private static final long serialVersionUID = -4641988458637882374L;
+
+    public VerifyTotpDeviceAPI(Main main) {
+        super(main, RECIPE_ID.TOTP.toString());
+    }
+
+    @Override
+    public String getPath() {
+        return "/recipe/totp/device/verify";
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+
+        String userId = null;
+        String deviceName = null;
+        String totp = null;
+
+        if (input.has("userId")) {
+            userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        }
+        if (input.has("deviceName")) {
+            deviceName = InputParser.parseStringOrThrowError(input, "deviceName", false);
+        }
+        if (input.has("totp")) {
+            totp = InputParser.parseStringOrThrowError(input, "totp", false);
+        }
+
+        if (userId.isEmpty()) {
+            throw new ServletException(new IllegalArgumentException("userId cannot be empty"));
+        }
+        if (deviceName.isEmpty()) {
+            throw new ServletException(new IllegalArgumentException("deviceName cannot be empty"));
+        }
+        if (totp.length() != 6) {
+            throw new ServletException(new IllegalArgumentException("totp must be 6 characters long"));
+        }
+
+        JsonObject result = new JsonObject();
+
+        try {
+            boolean isNewlyVerified = Totp.verifyDevice(main, userId, deviceName, totp);
+
+            result.addProperty("status", "OK");
+            result.addProperty("wasAlreadyVerified", !isNewlyVerified);
+            super.sendJsonResponse(200, result, resp);
+        } catch (TotpNotEnabledException e) {
+            result.addProperty("status", "TOTP_NOT_ENABLED_ERROR");
+            super.sendJsonResponse(200, result, resp);
+        } catch (UnknownDeviceException e) {
+            result.addProperty("status", "UNKNOWN_DEVICE_ERROR");
+            super.sendJsonResponse(200, result, resp);
+        } catch (InvalidTotpException e) {
+            result.addProperty("status", "INVALID_TOTP_ERROR");
+            super.sendJsonResponse(200, result, resp);
+        } catch (LimitReachedException e) {
+            result.addProperty("status", "LIMIT_REACHED_ERROR");
+            // Also return a retryAfter value:
+            resp.addHeader("Retry-After", Integer.toString(e.retryInSeconds));
+            super.sendJsonResponse(429, result, resp); // 429 (Too Many Requests)
+        } catch (StorageQueryException e) {
+            throw new ServletException(e);
+        }
+    }
+}
