@@ -24,6 +24,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -68,7 +69,7 @@ public class VerifySessionAPITest2_18 {
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
-                Utils.getCdiVersion2_9ForTests(), "session");
+                SemVer.v2_9.get(), "session");
 
         JsonObject request = new JsonObject();
         request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
@@ -76,7 +77,7 @@ public class VerifySessionAPITest2_18 {
         request.addProperty("enableAntiCsrf", false);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/verify", request, 1000, 1000, null,
-                Utils.getCdiVersionLatestForTests(), "session");
+                Utils.getCdiVersionStringLatestForTests(), "session");
 
         assertEquals(response.get("status").getAsString(), "OK");
 
@@ -113,7 +114,7 @@ public class VerifySessionAPITest2_18 {
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
-                Utils.getCdiVersionLatestForTests(), "session");
+                Utils.getCdiVersionStringLatestForTests(), "session");
 
         JsonObject request = new JsonObject();
         request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
@@ -121,7 +122,7 @@ public class VerifySessionAPITest2_18 {
         request.addProperty("enableAntiCsrf", false);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/verify", request, 1000, 1000, null,
-                Utils.getCdiVersionLatestForTests(), "session");
+                Utils.getCdiVersionStringLatestForTests(), "session");
 
         assertEquals(response.get("status").getAsString(), "OK");
 
@@ -156,7 +157,7 @@ public class VerifySessionAPITest2_18 {
         sessionRequest.addProperty("enableAntiCsrf", false);
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
-                Utils.getCdiVersion2_9ForTests(), "session");
+                SemVer.v2_9.get(), "session");
 
         JsonObject refreshRequest = new JsonObject();
         refreshRequest.addProperty("refreshToken",
@@ -164,7 +165,7 @@ public class VerifySessionAPITest2_18 {
         refreshRequest.addProperty("enableAntiCsrf", false);
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/refresh", refreshRequest, 1000, 1000, null,
-                Utils.getCdiVersionLatestForTests(), "session");
+                Utils.getCdiVersionStringLatestForTests(), "session");
 
         JsonObject request = new JsonObject();
         request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
@@ -172,7 +173,7 @@ public class VerifySessionAPITest2_18 {
         request.addProperty("enableAntiCsrf", false);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/verify", request, 1000, 1000, null,
-                Utils.getCdiVersionLatestForTests(), "session");
+                Utils.getCdiVersionStringLatestForTests(), "session");
 
         assertEquals(response.get("status").getAsString(), "OK");
 

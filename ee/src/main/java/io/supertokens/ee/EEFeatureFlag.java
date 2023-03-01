@@ -22,6 +22,7 @@ import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
@@ -144,7 +145,13 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     @Override
     public JsonObject getPaidFeatureStats() throws StorageQueryException {
         JsonObject result = new JsonObject();
-        // TODO:
+        EE_FEATURES[] features = getEnabledEEFeaturesFromDbOrCache();
+        if (Arrays.stream(features).anyMatch(t -> t == EE_FEATURES.DASHBOARD_LOGIN)) {
+            JsonObject stats = new JsonObject();
+            int userCount = StorageLayer.getDashboardStorage(main).getAllDashboardUsers().length;
+            stats.addProperty("user_count", userCount);
+            result.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), stats);
+        }
         return result;
     }
 

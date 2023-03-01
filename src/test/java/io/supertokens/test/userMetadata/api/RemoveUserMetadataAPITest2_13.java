@@ -27,6 +27,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.usermetadata.UserMetadata;
 
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,7 +67,7 @@ public class RemoveUserMetadataAPITest2_13 {
         requestBody.addProperty("userId", userId);
         JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/metadata/remove", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_13ForTests(), "usermetadata");
+                SemVer.v2_13.get(), "usermetadata");
 
         // It should not throw
         assertEquals(1, resp.entrySet().size());
@@ -107,7 +108,7 @@ public class RemoveUserMetadataAPITest2_13 {
         requestBody.addProperty("userId", userId);
         JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/metadata/remove", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_13ForTests(), "usermetadata");
+                SemVer.v2_13.get(), "usermetadata");
 
         // It should not throw
         assertEquals(1, resp.entrySet().size());
@@ -149,7 +150,7 @@ public class RemoveUserMetadataAPITest2_13 {
         requestBody.addProperty("userId", userId);
         JsonObject resp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/metadata/remove", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_13ForTests(), "usermetadata");
+                SemVer.v2_13.get(), "usermetadata");
 
         // It should not throw
         assertEquals(1, resp.entrySet().size());
@@ -182,7 +183,7 @@ public class RemoveUserMetadataAPITest2_13 {
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/metadata/remove", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_13ForTests(), "usermetadata");
+                    SemVer.v2_13.get(), "usermetadata");
         } catch (HttpResponseException ex) {
             error = ex;
         }

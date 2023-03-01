@@ -22,6 +22,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -63,7 +64,7 @@ public class EmailPasswordUsersAPITest2_7 {
             QueryParams.put("limit", "1001");
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/users",
-                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                        QueryParams, 1000, 1000, null, SemVer.v2_7.get(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400
@@ -76,7 +77,7 @@ public class EmailPasswordUsersAPITest2_7 {
             QueryParams.put("limit", "-1");
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/users",
-                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                        QueryParams, 1000, 1000, null, SemVer.v2_7.get(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage()
@@ -90,7 +91,7 @@ public class EmailPasswordUsersAPITest2_7 {
             QueryParams.put("timeJoinedOrder", "AESC");
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/users",
-                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                        QueryParams, 1000, 1000, null, SemVer.v2_7.get(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -103,7 +104,7 @@ public class EmailPasswordUsersAPITest2_7 {
             QueryParams.put("paginationToken", "randomString");
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/users",
-                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                        QueryParams, 1000, 1000, null, SemVer.v2_7.get(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400
@@ -116,7 +117,7 @@ public class EmailPasswordUsersAPITest2_7 {
             QueryParams.put("paginationToken", "cmFuZG9tU3RyaW5n");
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/users",
-                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                        QueryParams, 1000, 1000, null, SemVer.v2_7.get(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400
@@ -129,7 +130,7 @@ public class EmailPasswordUsersAPITest2_7 {
             QueryParams.put("paginationToken", "OWIxZGViNGQtM2I3ZC00YmFkLTliZGQtMmIwZDdiM2RjYjZkOzNzZHNkczQyMzQyMzQ=");
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/users",
-                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                        QueryParams, 1000, 1000, null, SemVer.v2_7.get(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400

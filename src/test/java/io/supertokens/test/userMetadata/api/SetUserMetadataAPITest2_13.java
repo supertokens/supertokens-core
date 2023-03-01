@@ -27,6 +27,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.usermetadata.UserMetadata;
 
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -78,7 +79,7 @@ public class SetUserMetadataAPITest2_13 {
         requestBody.add("metadataUpdate", testMetadata);
         JsonObject resp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/metadata", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_13ForTests(), "usermetadata");
+                SemVer.v2_13.get(), "usermetadata");
 
         assertEquals(2, resp.entrySet().size());
         assertEquals("OK", resp.get("status").getAsString());
@@ -128,7 +129,7 @@ public class SetUserMetadataAPITest2_13 {
         requestBody.add("metadataUpdate", update);
         JsonObject resp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/metadata", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_13ForTests(), "usermetadata");
+                SemVer.v2_13.get(), "usermetadata");
 
         assertEquals(2, resp.entrySet().size());
         assertEquals("OK", resp.get("status").getAsString());
@@ -173,7 +174,7 @@ public class SetUserMetadataAPITest2_13 {
         try {
             HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/metadata", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_13ForTests(), "usermetadata");
+                    SemVer.v2_13.get(), "usermetadata");
         } catch (HttpResponseException ex) {
             error = ex;
         }
@@ -209,7 +210,7 @@ public class SetUserMetadataAPITest2_13 {
         try {
             HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/metadata", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_13ForTests(), "usermetadata");
+                    SemVer.v2_13.get(), "usermetadata");
         } catch (HttpResponseException ex) {
             error = ex;
         }
@@ -243,7 +244,7 @@ public class SetUserMetadataAPITest2_13 {
         try {
             HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/metadata", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_13ForTests(), "usermetadata");
+                    SemVer.v2_13.get(), "usermetadata");
         } catch (HttpResponseException ex) {
             error = ex;
         }

@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -59,13 +60,13 @@ public class RefreshSessionAPI extends WebserverAPI {
         assert enableAntiCsrf != null;
         assert refreshToken != null;
 
-        String version = super.getVersionFromRequest(req);
+        SemVer version = super.getVersionFromRequest(req);
         try {
             SessionInformationHolder sessionInfo = Session.refreshSession(main, refreshToken, antiCsrfToken,
-                    enableAntiCsrf,  version.equals(("2.18")));
+                    enableAntiCsrf,  version.equals((SemVer.v2_18)));
             JsonObject result = sessionInfo.toJsonObject();
 
-            if (super.getVersionFromRequest(req).equals("2.18")) {
+            if (super.getVersionFromRequest(req).equals(SemVer.v2_18)) {
                 result.remove("idRefreshToken");
             }
             result.addProperty("status", "OK");

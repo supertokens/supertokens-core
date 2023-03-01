@@ -30,6 +30,7 @@ import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -72,7 +73,7 @@ public class JWKSAPITest2_18 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         JsonObject oldResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
                 "jwt");
 
         JsonArray oldKeys = oldResponse.getAsJsonArray("keys");
@@ -93,11 +94,11 @@ public class JWKSAPITest2_18 {
 
         Thread.sleep(1500);
         HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_18.get(),
                 "session");
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
                 "jwt");
 
         JsonArray keys = response.getAsJsonArray("keys");
@@ -127,13 +128,13 @@ public class JWKSAPITest2_18 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject createResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_18.get(),
                 "session");
         DecodedJWT decodedJWT = JWT.decode(createResponse.get("accessToken").getAsJsonObject().get("token").getAsString());
         String keyIdFromHeader = decodedJWT.getHeaderClaim("kid").asString();
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
                 "jwt");
 
         JsonArray keys = response.getAsJsonArray("keys");
@@ -174,13 +175,13 @@ public class JWKSAPITest2_18 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject createResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_18.get(),
                 "session");
         DecodedJWT decodedJWT = JWT.decode(createResponse.get("accessToken").getAsJsonObject().get("token").getAsString());
         String keyIdFromHeader = decodedJWT.getHeaderClaim("kid").asString();
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
                 "jwt");
 
         JsonArray keys = response.getAsJsonArray("keys");

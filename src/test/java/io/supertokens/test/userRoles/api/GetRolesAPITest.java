@@ -24,6 +24,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.userroles.UserRoles;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -67,7 +68,7 @@ public class GetRolesAPITest {
         // retrieve all created roles
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/roles", null, 1000, 1000, null, Utils.getCdiVersion2_14ForTests(),
+                "http://localhost:3567/recipe/roles", null, 1000, 1000, null, SemVer.v2_14.get(),
                 "userroles");
 
         assertEquals(2, response.entrySet().size());

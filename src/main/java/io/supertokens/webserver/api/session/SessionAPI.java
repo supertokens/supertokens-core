@@ -33,6 +33,7 @@ import io.supertokens.session.Session;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.signingkeys.SigningKeys.KeyInfo;
 import io.supertokens.session.info.SessionInformationHolder;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -65,7 +66,7 @@ public class SessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        String version = super.getVersionFromRequest(req);
+        SemVer version = super.getVersionFromRequest(req);
 
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
@@ -77,19 +78,19 @@ public class SessionAPI extends WebserverAPI {
         JsonObject userDataInDatabase = InputParser.parseJsonObjectOrThrowError(input, "userDataInDatabase", false);
         assert userDataInDatabase != null;
 
-        boolean useStaticSigningKey = version.equals("2.18") ?
+        boolean useStaticSigningKey = version.equals(SemVer.v2_18) ?
                 Boolean.TRUE.equals(InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true)) :
                 Config.getConfig(main).getAccessTokenSigningKeyDynamic();
 
         try {
             SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
-                    userDataInDatabase, enableAntiCsrf, version.equals("2.18"), useStaticSigningKey);
+                    userDataInDatabase, enableAntiCsrf, version.equals(SemVer.v2_18), useStaticSigningKey);
 
             JsonObject result = sessionInfo.toJsonObject();
 
             result.addProperty("status", "OK");
 
-            if (super.getVersionFromRequest(req).equals("2.18")) {
+            if (super.getVersionFromRequest(req).equals(SemVer.v2_18)) {
                 result.remove("idRefreshToken");
             } else {
                 result.addProperty("jwtSigningPublicKey",
@@ -97,7 +98,7 @@ public class SessionAPI extends WebserverAPI {
                 result.addProperty("jwtSigningPublicKeyExpiryTime",
                         SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
 
-                if (!version.equals("2.7") && !version.equals("2.8")) {
+                if (!version.equals(SemVer.v2_7) && !version.equals(SemVer.v2_8)) {
                     List<KeyInfo> keys = SigningKeys.getInstance(main).getDynamicKeys();
                     JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                     result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
@@ -126,8 +127,8 @@ public class SessionAPI extends WebserverAPI {
             JsonObject result = new Gson().toJsonTree(sessionInfo).getAsJsonObject();
             result.add("userDataInJWT", Utils.toJsonTreeWithNulls(sessionInfo.userDataInJWT));
             result.add("userDataInDatabase", Utils.toJsonTreeWithNulls(sessionInfo.userDataInDatabase));
-            String version = super.getVersionFromRequest(req);
-            if (!version.equals("2.14")) {
+            SemVer version = super.getVersionFromRequest(req);
+            if (!version.equals(SemVer.v2_14)) {
                 result.remove("useStaticKey");
             }
 

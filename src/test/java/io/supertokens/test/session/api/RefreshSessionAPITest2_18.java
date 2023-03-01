@@ -22,6 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import io.supertokens.version.Version;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -69,7 +70,7 @@ public class RefreshSessionAPITest2_18 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -81,7 +82,7 @@ public class RefreshSessionAPITest2_18 {
 
         JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                Utils.getCdiVersionLatestForTests(), "session");
+                Utils.getCdiVersionStringLatestForTests(), "session");
         assertEquals(sessionRefreshResponse.get("status").getAsString(), "UNAUTHORISED");
         assertEquals(sessionRefreshResponse.get("message").getAsString(), "The user payload contains protected field");
     }
@@ -107,7 +108,7 @@ public class RefreshSessionAPITest2_18 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -119,7 +120,7 @@ public class RefreshSessionAPITest2_18 {
 
         JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                Utils.getCdiVersionLatestForTests(), "session");
+                Utils.getCdiVersionStringLatestForTests(), "session");
 
         checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, false);
         process.kill();

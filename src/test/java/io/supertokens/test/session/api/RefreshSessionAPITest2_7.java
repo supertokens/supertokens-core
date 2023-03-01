@@ -22,6 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import io.supertokens.version.Version;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -69,7 +70,7 @@ public class RefreshSessionAPITest2_7 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -93,7 +94,7 @@ public class RefreshSessionAPITest2_7 {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+                    SemVer.v2_7.get(), "session");
 
             checkRefreshSessionResponse(response, process, userId, userDataInJWT, true);
         }
@@ -124,7 +125,7 @@ public class RefreshSessionAPITest2_7 {
         request.addProperty("enableAntiCsrf", true);
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -148,7 +149,7 @@ public class RefreshSessionAPITest2_7 {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+                    SemVer.v2_7.get(), "session");
 
             checkRefreshSessionResponse(response, process, userId, userDataInJWT, false);
         }
@@ -168,7 +169,7 @@ public class RefreshSessionAPITest2_7 {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+                    SemVer.v2_7.get(), "session");
 
             assertEquals(response.entrySet().size(), 2);
             assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
@@ -190,7 +191,7 @@ public class RefreshSessionAPITest2_7 {
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", null, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+                    SemVer.v2_7.get(), "session");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals("Http error. Status Code: 400. Message: Invalid Json Input", e.getMessage());
@@ -206,7 +207,7 @@ public class RefreshSessionAPITest2_7 {
             jsonBody.addProperty("random", "random");
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", jsonBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+                    SemVer.v2_7.get(), "session");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(e.getMessage(),
@@ -227,7 +228,7 @@ public class RefreshSessionAPITest2_7 {
             request.addProperty("enableAntiCsrf", false);
 
             JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                    "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
                     "session");
             assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -238,7 +239,7 @@ public class RefreshSessionAPITest2_7 {
 
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+                    SemVer.v2_7.get(), "session");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(e.getMessage(),
@@ -259,7 +260,7 @@ public class RefreshSessionAPITest2_7 {
             request.addProperty("enableAntiCsrf", false);
 
             JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                    "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
                     "session");
             assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -271,7 +272,7 @@ public class RefreshSessionAPITest2_7 {
 
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+                    SemVer.v2_7.get(), "session");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(e.getMessage(),
@@ -305,7 +306,7 @@ public class RefreshSessionAPITest2_7 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/refresh", jsonBody, 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "session");
+                SemVer.v2_7.get(), "session");
 
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
@@ -345,7 +346,7 @@ public class RefreshSessionAPITest2_7 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/refresh", jsonBody, 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "session");
+                SemVer.v2_7.get(), "session");
 
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
@@ -376,7 +377,7 @@ public class RefreshSessionAPITest2_7 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -388,7 +389,7 @@ public class RefreshSessionAPITest2_7 {
 
         JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "session");
+                SemVer.v2_7.get(), "session");
 
         checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, false);
         process.kill();
@@ -417,7 +418,7 @@ public class RefreshSessionAPITest2_7 {
         request.addProperty("enableAntiCsrf", true);
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -431,7 +432,7 @@ public class RefreshSessionAPITest2_7 {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+                    SemVer.v2_7.get(), "session");
 
             assertEquals(response.entrySet().size(), 2);
             assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
@@ -447,7 +448,7 @@ public class RefreshSessionAPITest2_7 {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+                    SemVer.v2_7.get(), "session");
 
             assertEquals(response.entrySet().size(), 2);
             assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
@@ -464,7 +465,7 @@ public class RefreshSessionAPITest2_7 {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+                    SemVer.v2_7.get(), "session");
 
             checkRefreshSessionResponse(response, process, userId, userDataInJWT, true);
         }
@@ -494,7 +495,7 @@ public class RefreshSessionAPITest2_7 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -507,7 +508,7 @@ public class RefreshSessionAPITest2_7 {
 
         JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "session");
+                SemVer.v2_7.get(), "session");
 
         checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, false);
         process.kill();
@@ -537,7 +538,7 @@ public class RefreshSessionAPITest2_7 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -549,7 +550,7 @@ public class RefreshSessionAPITest2_7 {
 
         JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "session");
+                SemVer.v2_7.get(), "session");
 
         checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, false);
         process.kill();

@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.signingkeys.SigningKeys.KeyInfo;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -48,7 +49,7 @@ public class HandshakeAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        if (super.getVersionFromRequest(req).equals("2.18")) {
+        if (super.getVersionFromRequest(req).equals(SemVer.v2_18)) {
             super.sendTextResponse(404, "Not found", resp);
             return;
         }
@@ -61,7 +62,7 @@ public class HandshakeAPI extends WebserverAPI {
             result.addProperty("jwtSigningPublicKeyExpiryTime",
                     SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
 
-            if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
+            if (!super.getVersionFromRequest(req).equals(SemVer.v2_7) && !super.getVersionFromRequest(req).equals(SemVer.v2_8)) {
                 List<KeyInfo> keys = SigningKeys.getInstance(main).getDynamicKeys();
                 JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                 result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);

@@ -31,6 +31,7 @@ import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.usermetadata.UserMetadata;
+import io.supertokens.utils.SemVer;
 import junit.framework.TestCase;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -86,7 +87,7 @@ public class DeleteUserAPIWithUserIdMappingTest {
 
             JsonObject deleteResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/user/remove", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "");
+                    SemVer.v2_15.get(), "");
             assertEquals("OK", deleteResponse.get("status").getAsString());
 
             // check that user doesnt exist
@@ -147,7 +148,7 @@ public class DeleteUserAPIWithUserIdMappingTest {
 
             JsonObject deleteResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/user/remove", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+                    SemVer.v2_15.get(), "emailpassword");
             assertEquals("OK", deleteResponse.get("status").getAsString());
 
         }
@@ -207,7 +208,7 @@ public class DeleteUserAPIWithUserIdMappingTest {
 
             JsonObject deleteResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/user/remove", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "thirdparty");
+                    SemVer.v2_15.get(), "thirdparty");
             assertEquals("OK", deleteResponse.get("status").getAsString());
 
         }

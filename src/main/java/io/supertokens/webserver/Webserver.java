@@ -26,6 +26,12 @@ import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
 import io.supertokens.webserver.api.core.UsersAPI;
 import io.supertokens.webserver.api.core.UsersCountAPI;
+import io.supertokens.webserver.api.dashboard.DashboardSignInAPI;
+import io.supertokens.webserver.api.dashboard.DashboardUserAPI;
+import io.supertokens.webserver.api.dashboard.GetDashboardSessionsForUserAPI;
+import io.supertokens.webserver.api.dashboard.GetDashboardUsersAPI;
+import io.supertokens.webserver.api.dashboard.RevokeSessionAPI;
+import io.supertokens.webserver.api.dashboard.VerifyDashboardUserSessionAPI;
 import io.supertokens.webserver.api.core.*;
 import io.supertokens.webserver.api.emailpassword.UserAPI;
 import io.supertokens.webserver.api.emailpassword.*;
@@ -252,6 +258,12 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new ImportUserWithPasswordHashAPI(main));
         addAPI(new LicenseKeyAPI(main));
         addAPI(new EEFeatureFlagAPI(main));
+        addAPI(new DashboardUserAPI(main));
+        addAPI(new VerifyDashboardUserSessionAPI(main));
+        addAPI(new DashboardSignInAPI(main));
+        addAPI(new RevokeSessionAPI(main));
+        addAPI(new GetDashboardUsersAPI(main));
+        addAPI(new GetDashboardSessionsForUserAPI(main));
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),
                 new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));
