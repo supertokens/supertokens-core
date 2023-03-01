@@ -17,6 +17,7 @@
 package io.supertokens.inmemorydb;
 
 import io.supertokens.ResourceDistributor;
+import org.sqlite.SQLiteConfig;
 
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -32,7 +33,9 @@ public class ConnectionPool extends ResourceDistributor.SingletonResource {
     private Lock lock = new Lock();
 
     public ConnectionPool() throws SQLException {
-        this.alwaysAlive = DriverManager.getConnection(URL);
+        SQLiteConfig config = new SQLiteConfig();
+        config.enforceForeignKeys(true);
+        this.alwaysAlive = DriverManager.getConnection(URL, config.toProperties());
     }
 
     static void initPool(Start start) throws SQLException {
@@ -43,7 +46,10 @@ public class ConnectionPool extends ResourceDistributor.SingletonResource {
         if (!start.enabled) {
             throw new SQLException("Storage layer disabled");
         }
-        return new ConnectionWithLocks(DriverManager.getConnection(URL), ConnectionPool.getInstance(start));
+        SQLiteConfig config = new SQLiteConfig();
+        config.enforceForeignKeys(true);
+        return new ConnectionWithLocks(DriverManager.getConnection(URL, config.toProperties()),
+                ConnectionPool.getInstance(start));
     }
 
     private static ConnectionPool getInstance(Start start) {
