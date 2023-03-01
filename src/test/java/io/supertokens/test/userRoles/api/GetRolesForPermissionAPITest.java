@@ -26,6 +26,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.userroles.UserRoles;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -67,7 +68,7 @@ public class GetRolesForPermissionAPITest {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/permission/roles", new HashMap<>(), 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -82,7 +83,7 @@ public class GetRolesForPermissionAPITest {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/permission/roles", QUERY_PARAM, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -97,7 +98,7 @@ public class GetRolesForPermissionAPITest {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/permission/roles", QUERY_PARAM, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -137,7 +138,7 @@ public class GetRolesForPermissionAPITest {
             QUERY_PARAMS.put("permission", permission1);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/permission/roles", QUERY_PARAMS, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "userroles");
+                    SemVer.v2_14.get(), "userroles");
 
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
@@ -153,7 +154,7 @@ public class GetRolesForPermissionAPITest {
             QUERY_PARAMS.put("permission", permission2);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/permission/roles", QUERY_PARAMS, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "userroles");
+                    SemVer.v2_14.get(), "userroles");
 
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());

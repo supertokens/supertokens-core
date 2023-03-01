@@ -23,6 +23,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -61,7 +62,7 @@ public class VerifyEmailAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/email/verify", null, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "emailverification");
+                        SemVer.v2_7.get(), "emailverification");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400
@@ -74,7 +75,7 @@ public class VerifyEmailAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/email/verify", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "emailverification");
+                        SemVer.v2_7.get(), "emailverification");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -89,7 +90,7 @@ public class VerifyEmailAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/email/verify", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "emailverification");
+                        SemVer.v2_7.get(), "emailverification");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -124,7 +125,7 @@ public class VerifyEmailAPITest2_7 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "emailverification");
+                SemVer.v2_7.get(), "emailverification");
 
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "OK");
@@ -136,7 +137,7 @@ public class VerifyEmailAPITest2_7 {
 
         JsonObject response2 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/email/verify", verifyResponseBody, 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "emailverification");
+                SemVer.v2_7.get(), "emailverification");
 
         assertEquals(response2.entrySet().size(), 3);
         assertEquals(response2.get("status").getAsString(), "OK");
@@ -169,7 +170,7 @@ public class VerifyEmailAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/email/verify", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "emailverification");
+                        SemVer.v2_7.get(), "emailverification");
                 throw new Exception("Should not have come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage()
@@ -185,7 +186,7 @@ public class VerifyEmailAPITest2_7 {
 
             JsonObject response2 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/email/verify", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "emailverification");
+                    SemVer.v2_7.get(), "emailverification");
             assertEquals(response2.get("status").getAsString(), "EMAIL_VERIFICATION_INVALID_TOKEN_ERROR");
             assertEquals(response2.entrySet().size(), 1);
         }

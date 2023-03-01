@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -75,7 +76,7 @@ public class SignInAPITest {
         requestBody.addProperty("password", password);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/dashboard/signin", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_18ForTests(), "dashboard");
+                SemVer.v2_18.get(), "dashboard");
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
         assertNotNull(response.get("sessionId").getAsString());
@@ -122,7 +123,7 @@ public class SignInAPITest {
             requestBody.addProperty("password", "password123");
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/dashboard/signin", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+                    SemVer.v2_18.get(), "dashboard");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertNotNull(response.get("sessionId").getAsString());
@@ -135,7 +136,7 @@ public class SignInAPITest {
             requestBody.addProperty("password", password);
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/dashboard/signin", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+                    SemVer.v2_18.get(), "dashboard");
             assertEquals(2, response.entrySet().size());
             assertEquals("USER_SUSPENDED_ERROR", response.get("status").getAsString());
             assertEquals("User is currently suspended, please sign in with another account, or reactivate the SuperTokens core license key",

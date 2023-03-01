@@ -23,6 +23,7 @@ import static org.junit.Assert.assertNotNull;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -86,7 +87,7 @@ public class GetDashboardUsersAPITests {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/dashboard/users", new HashMap<>(), 1000, 1000, null,
-                Utils.getCdiVersion2_18ForTests(), "dashboard");
+                SemVer.v2_18.get(), "dashboard");
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
 
@@ -136,7 +137,7 @@ public class GetDashboardUsersAPITests {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/dashboard/users", new HashMap<>(), 1000, 1000, null,
-                Utils.getCdiVersion2_18ForTests(), "dashboard");
+                SemVer.v2_18.get(), "dashboard");
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
 

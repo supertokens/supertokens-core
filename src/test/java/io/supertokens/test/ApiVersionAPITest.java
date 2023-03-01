@@ -22,6 +22,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -100,7 +101,7 @@ public class ApiVersionAPITest {
 
         // with setting cdi-version header
         apiVersionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/apiversion", null, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), "");
+                "http://localhost:3567/apiversion", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
         assertNotNull(apiVersionResponse.getAsJsonArray("versions"));
         assertTrue(apiVersionResponse.getAsJsonArray("versions").size() >= 1);
 
@@ -120,10 +121,10 @@ public class ApiVersionAPITest {
         JsonObject apiVersionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/apiversion", null, 1000, 1000, null, null, "");
 
-        Set<String> supportedVersions = WebserverAPI.supportedVersions;
+        Set<SemVer> supportedVersions = WebserverAPI.supportedVersions;
         JsonArray apiSupportedVersions = apiVersionResponse.getAsJsonArray("versions");
         for (int i = 0; i < supportedVersions.size(); i++) {
-            assertTrue(supportedVersions.contains(apiSupportedVersions.get(i).getAsString()));
+            assertTrue(supportedVersions.contains(new SemVer(apiSupportedVersions.get(i).getAsString())));
         }
         assertEquals(supportedVersions.size(), apiSupportedVersions.size());
         process.kill();

@@ -33,6 +33,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -74,7 +75,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", new JsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -89,7 +90,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -106,7 +107,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -121,7 +122,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -136,7 +137,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -153,7 +154,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -169,7 +170,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -185,7 +186,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -203,7 +204,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -245,7 +246,7 @@ public class CreateUserIdMappingAPITest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                        SemVer.v2_15.get(), "useridmapping");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 400);
@@ -263,7 +264,7 @@ public class CreateUserIdMappingAPITest {
             requestBody.addProperty("force", true);
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
             assertEquals(response.get("status").getAsString(), "OK");
         }
         process.kill();
@@ -297,7 +298,7 @@ public class CreateUserIdMappingAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                SemVer.v2_15.get(), "useridmapping");
 
         assertEquals(1, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
@@ -335,7 +336,7 @@ public class CreateUserIdMappingAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                SemVer.v2_15.get(), "useridmapping");
 
         assertEquals(1, response.entrySet().size());
         assertEquals("UNKNOWN_SUPERTOKENS_USER_ID_ERROR", response.get("status").getAsString());
@@ -364,7 +365,7 @@ public class CreateUserIdMappingAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                SemVer.v2_15.get(), "useridmapping");
 
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
 
@@ -409,7 +410,7 @@ public class CreateUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
 
             assertEquals(3, response.entrySet().size());
             assertEquals("USER_ID_MAPPING_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
@@ -426,7 +427,7 @@ public class CreateUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
 
             assertEquals(3, response.entrySet().size());
             assertEquals("USER_ID_MAPPING_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
@@ -446,7 +447,7 @@ public class CreateUserIdMappingAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "useridmapping");
+                    SemVer.v2_15.get(), "useridmapping");
 
             assertEquals(3, response.entrySet().size());
             assertEquals("USER_ID_MAPPING_ALREADY_EXISTS_ERROR", response.get("status").getAsString());

@@ -31,6 +31,7 @@ import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 import io.supertokens.session.info.SessionInformationHolder;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -86,7 +87,7 @@ public class SessionAPI extends WebserverAPI {
             result.addProperty("jwtSigningPublicKeyExpiryTime",
                     AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
 
-            if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
+            if (!super.getVersionFromRequest(req).equals(SemVer.v2_7) && !super.getVersionFromRequest(req).equals(SemVer.v2_8)) {
                 List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getAllKeys();
                 JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                 result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);

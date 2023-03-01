@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -49,7 +50,7 @@ public class SignInUpAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        if (super.getVersionFromRequest(req).equals("2.7")) {
+        if (super.getVersionFromRequest(req).equals(SemVer.v2_7)) {
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
             String thirdPartyId = InputParser.parseStringOrThrowError(input, "thirdPartyId", false);
             String thirdPartyUserId = InputParser.parseStringOrThrowError(input, "thirdPartyUserId", false);

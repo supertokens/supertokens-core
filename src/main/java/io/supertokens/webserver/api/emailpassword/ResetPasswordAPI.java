@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -81,9 +82,9 @@ public class ResetPasswordAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
-            if (!(super.getVersionFromRequest(req).equals("2.7") || super.getVersionFromRequest(req).equals("2.8")
-                    || super.getVersionFromRequest(req).equals("2.9") || super.getVersionFromRequest(req).equals("2.10")
-                    || super.getVersionFromRequest(req).equals("2.11"))) {
+            if (!(super.getVersionFromRequest(req).equals(SemVer.v2_7) || super.getVersionFromRequest(req).equals(SemVer.v2_8)
+                    || super.getVersionFromRequest(req).equals(SemVer.v2_9) || super.getVersionFromRequest(req).equals(SemVer.v2_10)
+                    || super.getVersionFromRequest(req).equals(SemVer.v2_11))) {
                 // >= 2.12
                 result.addProperty("userId", userId);
             }

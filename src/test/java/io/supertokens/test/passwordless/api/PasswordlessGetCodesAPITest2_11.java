@@ -30,6 +30,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -73,7 +74,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+                        SemVer.v2_10.get(), "passwordless");
             } catch (HttpResponseException e) {
                 error = e;
             }
@@ -91,7 +92,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+                        SemVer.v2_10.get(), "passwordless");
             } catch (HttpResponseException e) {
                 error = e;
             }
@@ -110,7 +111,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+                        SemVer.v2_10.get(), "passwordless");
             } catch (HttpResponseException e) {
                 error = e;
             }
@@ -137,7 +138,7 @@ public class PasswordlessGetCodesAPITest2_11 {
         HashMap<String, String> map = new HashMap<>();
         map.put("deviceId", "nothing");
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(),
+                "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null, SemVer.v2_10.get(),
                 "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
@@ -175,7 +176,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             map.put("preAuthSessionId", deviceIdHash);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.entrySet().size());
@@ -194,7 +195,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             map.put("preAuthSessionId", deviceIdHash);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.entrySet().size());
@@ -232,7 +233,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             map.put("email", email);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.entrySet().size());
@@ -251,7 +252,7 @@ public class PasswordlessGetCodesAPITest2_11 {
                 map.put("email", email);
                 JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+                        SemVer.v2_10.get(), "passwordless");
 
                 assertEquals("OK", response.get("status").getAsString());
                 assertEquals(2, response.entrySet().size());
@@ -289,7 +290,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             map.put("phoneNumber", phoneNumber);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.entrySet().size());
@@ -308,7 +309,7 @@ public class PasswordlessGetCodesAPITest2_11 {
                 map.put("phoneNumber", phoneNumber);
                 JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+                        SemVer.v2_10.get(), "passwordless");
 
                 assertEquals("OK", response.get("status").getAsString());
                 assertEquals(2, response.entrySet().size());
@@ -343,7 +344,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             map.put("deviceId", deviceID);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.entrySet().size());
@@ -366,7 +367,7 @@ public class PasswordlessGetCodesAPITest2_11 {
                 map.put("deviceId", deviceID);
                 JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
-                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+                        SemVer.v2_10.get(), "passwordless");
 
                 assertEquals("OK", response.get("status").getAsString());
                 assertEquals(2, response.entrySet().size());

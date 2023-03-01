@@ -26,6 +26,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.utils.SemVer;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
@@ -97,6 +98,6 @@ public class UnverifyEmailAPITest2_8 {
     private JsonObject unverifyEmail(Main main, JsonObject body) throws IOException, HttpResponseException {
         return HttpRequestForTesting.sendJsonPOSTRequest(main, "",
                 "http://localhost:3567/recipe/user/email/verify/remove", body, 1000, 1000, null,
-                Utils.getCdiVersion2_8ForTests(), RECIPE_ID.EMAIL_VERIFICATION.toString());
+                SemVer.v2_8.get(), RECIPE_ID.EMAIL_VERIFICATION.toString());
     }
 }

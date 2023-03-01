@@ -27,6 +27,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.userroles.UserRoles;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -69,7 +70,7 @@ public class GetUserRolesAPITest {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/roles", new HashMap<>(), 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -84,7 +85,7 @@ public class GetUserRolesAPITest {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user/roles", QUERY_PARAM, 1000, 1000, null,
-                        Utils.getCdiVersion2_14ForTests(), "userroles");
+                        SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -124,7 +125,7 @@ public class GetUserRolesAPITest {
             QUERY_PARAMS.put("userId", userId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/roles", QUERY_PARAMS, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "userroles");
+                    SemVer.v2_14.get(), "userroles");
 
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
@@ -142,7 +143,7 @@ public class GetUserRolesAPITest {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/roles", QUERY_PARAMS, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "userroles");
+                    SemVer.v2_14.get(), "userroles");
 
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());

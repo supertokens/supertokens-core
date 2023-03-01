@@ -24,6 +24,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -75,7 +76,7 @@ public class ThirdPartyUsersAPITest2_7 {
             QueryParams.put("paginationToken", "randomValue");
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/users",
-                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        QueryParams, 1000, 1000, null, SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400
@@ -87,7 +88,7 @@ public class ThirdPartyUsersAPITest2_7 {
             QueryParams.put("limit", "randomValue");
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/users",
-                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        QueryParams, 1000, 1000, null, SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage()
@@ -100,7 +101,7 @@ public class ThirdPartyUsersAPITest2_7 {
             QueryParams.put("timeJoinedOrder", "randomValue");
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/users",
-                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        QueryParams, 1000, 1000, null, SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -145,7 +146,7 @@ public class ThirdPartyUsersAPITest2_7 {
             queryParams.put("limit", "1");
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/users", queryParams, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                    SemVer.v2_7.get(), "thirdparty");
 
             assertEquals("OK", response.get("status").getAsString());
             assertNotNull(response.get("nextPaginationToken"));
@@ -165,7 +166,7 @@ public class ThirdPartyUsersAPITest2_7 {
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/users", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                    SemVer.v2_7.get(), "thirdparty");
             assertEquals(5, response.getAsJsonArray("users").size());
         }
 
@@ -175,7 +176,7 @@ public class ThirdPartyUsersAPITest2_7 {
             queryParams.put("limit", "2");
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/users", queryParams, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                    SemVer.v2_7.get(), "thirdparty");
             assertEquals(2, response.getAsJsonArray("users").size());
 
             JsonObject user_1 = response.getAsJsonArray("users").get(0).getAsJsonObject();
@@ -195,7 +196,7 @@ public class ThirdPartyUsersAPITest2_7 {
             queryParams.put("timeJoinedOrder", "DESC");
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/users", queryParams, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                    SemVer.v2_7.get(), "thirdparty");
             assertEquals(2, response.getAsJsonArray("users").size());
 
             JsonObject user_1 = response.getAsJsonArray("users").get(0).getAsJsonObject();
