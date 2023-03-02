@@ -38,7 +38,7 @@ import java.util.UUID;
 import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotNull;
 
-public class SessionAPITest2_18 {
+public class SessionAPITest2_19 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -73,7 +73,7 @@ public class SessionAPITest2_18 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_18.get(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_19.get(),
                 "session");
         checkSessionResponse(response, process, userId, userDataInJWT, false);
         assertFalse(response.has("antiCsrfToken"));
@@ -172,7 +172,7 @@ public class SessionAPITest2_18 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_18.get(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_19.get(),
                 "session");
         checkSessionResponse(response, process, userId, userDataInJWT, true);
         assertFalse(response.has("antiCsrfToken"));

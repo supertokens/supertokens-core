@@ -72,18 +72,17 @@ public class VerifySessionAPI extends WebserverAPI {
             JsonObject result = sessionInfo.toJsonObject();
             result.addProperty("status", "OK");
 
-            if (!super.getVersionFromRequest(req).equals(SemVer.v2_18) ) {
+            if (!super.getVersionFromRequest(req).atLeast(SemVer.v2_19) ) {
                 result.addProperty("jwtSigningPublicKey",
                         new Utils.PubPriKey(SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
                 result.addProperty("jwtSigningPublicKeyExpiryTime",
                         SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
+            }
 
-                if (!super.getVersionFromRequest(req).equals(SemVer.v2_7) &&
-                        !super.getVersionFromRequest(req).equals(SemVer.v2_8)) {
-                    List<KeyInfo> keys = SigningKeys.getInstance(main).getDynamicKeys();
-                    JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
-                    result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
-                }
+            if (super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_18)) {
+                List<KeyInfo> keys = SigningKeys.getInstance(main).getDynamicKeys();
+                JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
+                result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
             }
 
             super.sendJsonResponse(200, result, resp);
@@ -101,20 +100,17 @@ public class VerifySessionAPI extends WebserverAPI {
                 JsonObject reply = new JsonObject();
                 reply.addProperty("status", "TRY_REFRESH_TOKEN");
 
-                if (!super.getVersionFromRequest(req).equals(SemVer.v2_18)) {
+                if (!super.getVersionFromRequest(req).atLeast(SemVer.v2_19)) {
                     reply.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(
                             SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
                     reply.addProperty("jwtSigningPublicKeyExpiryTime",
                             SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
+                }
 
-
-                    if (!super.getVersionFromRequest(req).equals(SemVer.v2_7)
-                            && !super.getVersionFromRequest(req).equals(SemVer.v2_8)
-                            && !super.getVersionFromRequest(req).equals(SemVer.v2_18)) {
-                        List<KeyInfo> keys = SigningKeys.getInstance(main).getDynamicKeys();
-                        JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
-                        reply.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
-                    }
+                if (super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_18)) {
+                    List<KeyInfo> keys = SigningKeys.getInstance(main).getDynamicKeys();
+                    JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
+                    reply.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
                 }
 
                 reply.addProperty("message", e.getMessage());

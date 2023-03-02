@@ -16,10 +16,8 @@
 
 package io.supertokens.test.session.api;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -34,7 +32,7 @@ import org.junit.rules.TestRule;
 import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotNull;
 
-public class VerifySessionAPITest2_18 {
+public class VerifySessionAPITest2_19 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

@@ -16,15 +16,7 @@
 
 package io.supertokens.test.session.api;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
-import io.supertokens.config.Config;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.signingkeys.SigningKeys;
-import io.supertokens.signingkeys.SigningKeys.KeyInfo;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -34,12 +26,9 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.util.List;
-import java.util.stream.Collectors;
-
 import static org.junit.Assert.*;
 
-public class HandshakeAPITest2_18 {
+public class HandshakeAPITest2_19 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

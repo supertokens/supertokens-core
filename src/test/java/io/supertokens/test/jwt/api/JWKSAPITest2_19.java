@@ -17,16 +17,10 @@
 package io.supertokens.test.jwt.api;
 
 import com.auth0.jwt.JWT;
-import com.auth0.jwt.JWTVerifier;
-import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.auth0.jwt.interfaces.RSAKeyProvider;
 import com.google.gson.JsonArray;
-import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
-import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -37,20 +31,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.security.KeyFactory;
-import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
-import java.security.spec.RSAPublicKeySpec;
-import java.util.Base64;
-import java.util.Map;
-import java.util.UUID;
-
 import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotNull;
 
-public class JWKSAPITest2_18 {
+public class JWKSAPITest2_19 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -94,7 +78,7 @@ public class JWKSAPITest2_18 {
 
         Thread.sleep(1500);
         HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_18.get(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_19.get(),
                 "session");
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
@@ -128,7 +112,7 @@ public class JWKSAPITest2_18 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject createResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_18.get(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_19.get(),
                 "session");
         DecodedJWT decodedJWT = JWT.decode(createResponse.get("accessToken").getAsJsonObject().get("token").getAsString());
         String keyIdFromHeader = decodedJWT.getHeaderClaim("kid").asString();
@@ -175,7 +159,7 @@ public class JWKSAPITest2_18 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject createResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_18.get(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_19.get(),
                 "session");
         DecodedJWT decodedJWT = JWT.decode(createResponse.get("accessToken").getAsJsonObject().get("token").getAsString());
         String keyIdFromHeader = decodedJWT.getHeaderClaim("kid").asString();

@@ -31,6 +31,7 @@ public class SemVer implements Comparable<SemVer> {
     public static final SemVer v2_16 = new SemVer("2.16");
     public static final SemVer v2_17 = new SemVer("2.17");
     public static final SemVer v2_18 = new SemVer("2.18");
+    public static final SemVer v2_19 = new SemVer("2.19");
 
     final private String version;
 
@@ -44,6 +45,14 @@ public class SemVer implements Comparable<SemVer> {
         if(!version.matches("[0-9]+(\\.[0-9]+)*"))
             throw new IllegalArgumentException("Invalid version format");
         this.version = version;
+    }
+
+    public boolean betweenInclusive(SemVer min, SemVer max) {
+        return min.compareTo(this) <= 0 && this.compareTo(max) <= 0;
+    }
+
+    public boolean atLeast(SemVer min) {
+        return min.compareTo(this) <= 0;
     }
 
     @Override public int compareTo(SemVer that) {

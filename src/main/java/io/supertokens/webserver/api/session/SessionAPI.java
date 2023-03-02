@@ -21,7 +21,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
-import io.supertokens.config.CoreConfig;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
@@ -78,19 +77,18 @@ public class SessionAPI extends WebserverAPI {
         JsonObject userDataInDatabase = InputParser.parseJsonObjectOrThrowError(input, "userDataInDatabase", false);
         assert userDataInDatabase != null;
 
-        boolean useStaticSigningKey = version.equals(SemVer.v2_18) ?
-                Boolean.TRUE.equals(InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true)) :
-                Config.getConfig(main).getAccessTokenSigningKeyDynamic();
+        Boolean inputUseStaticKey = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
+        boolean useStaticSigningKey = version.atLeast(SemVer.v2_19) ? Boolean.TRUE.equals(inputUseStaticKey) : Config.getConfig(main).getAccessTokenSigningKeyDynamic();
 
         try {
             SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
-                    userDataInDatabase, enableAntiCsrf, version.equals(SemVer.v2_18), useStaticSigningKey);
+                    userDataInDatabase, enableAntiCsrf, version.atLeast(SemVer.v2_19), useStaticSigningKey);
 
             JsonObject result = sessionInfo.toJsonObject();
 
             result.addProperty("status", "OK");
 
-            if (super.getVersionFromRequest(req).equals(SemVer.v2_18)) {
+            if (super.getVersionFromRequest(req).atLeast(SemVer.v2_19)) {
                 result.remove("idRefreshToken");
             } else {
                 result.addProperty("jwtSigningPublicKey",
@@ -98,7 +96,7 @@ public class SessionAPI extends WebserverAPI {
                 result.addProperty("jwtSigningPublicKeyExpiryTime",
                         SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
 
-                if (!version.equals(SemVer.v2_7) && !version.equals(SemVer.v2_8)) {
+                if (version.betweenInclusive(SemVer.v2_9, SemVer.v2_18)) {
                     List<KeyInfo> keys = SigningKeys.getInstance(main).getDynamicKeys();
                     JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                     result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
