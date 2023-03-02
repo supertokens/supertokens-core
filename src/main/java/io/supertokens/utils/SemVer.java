@@ -71,14 +71,15 @@ public class SemVer implements Comparable<SemVer> {
         if(that == null)
             return false;
 
-        if(this.getClass() != that.getClass())
+        if(!(that instanceof SemVer))
             return false;
+
         return this.compareTo((SemVer) that) == 0;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(version);
+        return version.hashCode();
     }
 
     @Override
