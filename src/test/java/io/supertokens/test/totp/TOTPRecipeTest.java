@@ -351,7 +351,7 @@ public class TOTPRecipeTest {
             assert (devices.length == 1);
 
             // 1 device still remain so all codes should still be still there:
-            TOTPUsedCode[] usedCodes = storage.getAllUsedCodes("user");
+            TOTPUsedCode[] usedCodes = storage.getAllUsedCodesDescOrder("user");
             assert (usedCodes.length == 3);
         }
 
@@ -371,14 +371,14 @@ public class TOTPRecipeTest {
             assertThrows(TotpNotEnabledException.class, () -> Totp.getDevices(main, "user"));
 
             // No device left so all codes of the user should be deleted:
-            TOTPUsedCode[] usedCodes = storage.getAllUsedCodes("user");
+            TOTPUsedCode[] usedCodes = storage.getAllUsedCodesDescOrder("user");
             assert (usedCodes.length == 0);
 
             // But for other users things should still be there:
             TOTPDevice[] otherUserDevices = Totp.getDevices(main, "other-user");
             assert (otherUserDevices.length == 1);
 
-            usedCodes = storage.getAllUsedCodes("other-user");
+            usedCodes = storage.getAllUsedCodesDescOrder("other-user");
             assert (usedCodes.length == 2);
         }
     }
@@ -467,14 +467,14 @@ public class TOTPRecipeTest {
         TOTPStorage storage = StorageLayer.getTOTPStorage(process.getProcess());
 
         // Verify that the codes have been added:
-        TOTPUsedCode[] usedCodes = storage.getAllUsedCodes("user");
+        TOTPUsedCode[] usedCodes = storage.getAllUsedCodesDescOrder("user");
         assert (usedCodes.length == 2);
 
         // Wait for 2 second to make sure that the valid codes expire
         // (and crons deletes the valid ones since they are expired)
         Thread.sleep(1000 * 2);
 
-        usedCodes = storage.getAllUsedCodes("user");
+        usedCodes = storage.getAllUsedCodesDescOrder("user");
         assert (usedCodes.length == 1);
         // Invalid code will still remain because their expiry time is 30 minutes
         assert usedCodes[0].code.equals("invalid-code");

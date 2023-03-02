@@ -60,7 +60,7 @@ public class AuthRecipe {
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
 
-    public static void deleteUser(Main main, String userId) throws StorageQueryException {
+    public static void deleteUser(Main main, String userId) throws StorageQueryException, StorageTransactionLogicException {
         // We clean up the user last so that if anything before that throws an error, then that will throw a 500 to the
         // developer. In this case, they expect that the user has not been deleted (which will be true). This is as
         // opposed to deleting the user first, in which case if something later throws an error, then the user has
@@ -98,22 +98,17 @@ public class AuthRecipe {
 
     }
 
-    private static void deleteNonAuthRecipeUser(Main main, String userId) throws StorageQueryException {
+    private static void deleteNonAuthRecipeUser(Main main, String userId) throws StorageQueryException, StorageTransactionLogicException {
         // non auth recipe deletion
         StorageLayer.getUserMetadataStorage(main).deleteUserMetadata(userId);
         StorageLayer.getSessionStorage(main).deleteSessionsOfUser(userId);
         StorageLayer.getEmailVerificationStorage(main).deleteEmailVerificationUserInfo(userId);
         StorageLayer.getUserRolesStorage(main).deleteAllRolesForUser(userId);
-        try {
-            StorageLayer.getTOTPStorage(main).startTransaction(con -> {
-                StorageLayer.getTOTPStorage(main).removeUser_Transaction(con, userId);
-                return null;
-            });
-        } catch (StorageTransactionLogicException e) {
-            if (e.actualException instanceof StorageQueryException) {
-                throw (StorageQueryException) e.actualException;
-            }
-        }
+        StorageLayer.getTOTPStorage(main).startTransaction(con -> {
+            StorageLayer.getTOTPStorage(main).removeUser_Transaction(con, userId);
+            StorageLayer.getTOTPStorage(main).commitTransaction(con);
+            return null;
+        });
     }
 
     private static void deleteAuthRecipeUser(Main main, String userId) throws StorageQueryException {

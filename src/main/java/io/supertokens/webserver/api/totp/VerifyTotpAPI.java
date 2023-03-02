@@ -26,7 +26,7 @@ public class VerifyTotpAPI extends WebserverAPI {
 
     @Override
     public String getPath() {
-        return "/recipe/totp/device/verify";
+        return "/recipe/totp/verify";
     }
 
     @Override

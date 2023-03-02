@@ -31,20 +31,17 @@ import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.totp.exceptions.InvalidTotpException;
 import io.supertokens.totp.exceptions.LimitReachedException;
-import jakarta.annotation.Nullable;
 
 public class Totp {
     private static String generateSecret() throws NoSuchAlgorithmException {
-        // TODO: We can actually allow the user to choose this algorithm.
-        // Changing it a would be rare but it can be a requirement for someone
-        // who's dealing with unconventional totp apps/devices.
+        // Reference: https://github.com/jchambers/java-otp
         final String TOTP_ALGORITHM = "HmacSHA1";
 
         final KeyGenerator keyGenerator = KeyGenerator.getInstance(TOTP_ALGORITHM);
         keyGenerator.init(160); // 160 bits = 20 bytes
 
         // FIXME: Should return base32 or base16
-        // Return base64 string of the secret key:
+        // Return base64 encoded string for the secret key:
         return Base64.getEncoder().encodeToString(keyGenerator.generateKey().getEncoded());
     }
 
@@ -61,10 +58,12 @@ public class Totp {
         // Check if code is valid for any of the time periods in the skew:
         for (int i = -skew; i <= skew; i++) {
             try {
+                // TODO: Would there be any effect of timezones here?
                 if (totp.generateOneTimePasswordString(key, Instant.now().plusSeconds(i * period)).equals(code)) {
                     return true;
                 }
             } catch (InvalidKeyException e) {
+                // This should never happen because we are always using a valid secretKey.
                 return false;
             }
         }
@@ -90,14 +89,38 @@ public class Totp {
     private static void checkAndStoreCode(Main main, TOTPStorage totpStorage, String userId, TOTPDevice[] devices,
             String code)
             throws InvalidTotpException, StorageQueryException, TotpNotEnabledException, LimitReachedException {
-        // Note that here we are fetching all the codes (expired/non-expired).
-        // otherwise, because of differences in expiry time of different codes, we might
-        // end up with a situation where the will be released from the rate limiting too
-        // early because of some invalid codes in the checking window expired OR it can
-        // also lead to random rate limiting because if some valid codes blip out of the
-        // checking window and if it leads to N contagious invalid codes, then the user
-        // will be rate limited for no reason.
-        TOTPUsedCode[] usedCodes = totpStorage.getAllUsedCodes(userId);
+        // Note that the TOTP cron runs every 1 hour, so all the expired tokens can stay
+        // in the db for at max 1 hour after expiry.
+
+        // If we filter expired codes in rate limiting logic, then because of
+        // differences in expiry time of different codes, we might end up with a
+        // situation where:
+        // Case 1: users might get released from the rate limiting too early because of
+        // some invalid codes in the checking window were expired.
+        // Case 2: users might face random rate limiting because if some valid codes
+        // expire and if it leads to N contagious invalid
+        // codes, then the user will be rate limited for no reason.
+
+        // For examaple, assume 0 means expired; 1 means non-expired:
+        // Also, assume that totp_max_attempts is 3, totp_rate_limit_cooldown_time is
+        // 15 minutes, and totp_invalid_code_expiry is 5 minutes.
+
+        // Example for Case 1:
+        // User is rate limited and the used codes are like this: [1, 1, 0, 0, 0]. Now
+        // if 1st zero (invalid code) expires in 5 mins and we filter
+        // out expired codes, we'll end up [1, 1, 0, 0]. This doesn't contain 3
+        // contiguous invalid codes, so the user will be released from rate limiting in
+        // 5 minutes instead of 15 minutes. 
+
+        // Example for Case 2:
+        // User has used codes like this: [0, 1, 0, 0].
+        // The 1st one (valid code) will expire in merely 1.5 minutes (assuming skew = 2
+        // and period = 30s). So now if we filter out expired codes, we'll see
+        // [0, 0, 0] and this contains 3 contagious invalid codes, so now the user will
+        // be rate limited for no reason.
+
+        // That's why we need to fetch all the codes (expired + non-expired).
+        TOTPUsedCode[] usedCodes = totpStorage.getAllUsedCodesDescOrder(userId);
 
         // N represents # of invalid attempts that will trigger rate limiting:
         int N = Config.getConfig(main).getTotpMaxAttempts(); // (Default 5)
@@ -119,14 +142,14 @@ public class Totp {
                 // If we insert the used code here, then it will further delay the user from
                 // being able to login. So not inserting it here.
 
-                // Note: One edge case here is: user is rate limited, and then the
+                // Note: One edge case here is: User is rate limited, and then the
                 // DeleteExpiredTotpTokens cron removes the latest invalid attempts
                 // (because they have expired), and then user will again be able to
                 // do extra login attempts (totp_max_attempts more times).
                 // But rate limiting will kick in after totp_max_attempts number
                 // disarming the brute force attack.
                 // Furthermore, the cron running during cooldown of a user is somewhat rare.
-                // So this edge case is not a big deal.
+                // So this edge case is practically harmless.
             }
         }
 

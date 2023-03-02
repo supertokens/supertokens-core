@@ -111,11 +111,12 @@ public class TOTPStorageTest {
         assert (storedDevices.length == 1);
         assert (storedDevices[0].verified);
 
+        // Try to verify the device again:
+        storage.markDeviceAsVerified("user", "device");
+
         // Try to verify a device that doesn't exist:
         assertThrows(UnknownDeviceException.class, () -> storage.markDeviceAsVerified("user", "non-existent-device"));
     }
-
-    // FIXME: Should write tests for other transaction functions as well.
 
     @Test
     public void getDevicesCount_TransactionTests() throws Exception {
@@ -176,7 +177,7 @@ public class TOTPStorageTest {
         TOTPDevice[] storedDevices = storage.getDevices("user");
         assert (storedDevices.length == 2);
 
-        TOTPUsedCode[] storedUsedCodes = storage.getAllUsedCodes("user");
+        TOTPUsedCode[] storedUsedCodes = storage.getAllUsedCodesDescOrder("user");
         assert (storedUsedCodes.length == 2);
 
         storage.startTransaction(con -> {
@@ -188,7 +189,7 @@ public class TOTPStorageTest {
         storedDevices = storage.getDevices("user");
         assert (storedDevices.length == 0);
 
-        storedUsedCodes = storage.getAllUsedCodes("user");
+        storedUsedCodes = storage.getAllUsedCodesDescOrder("user");
         assert (storedUsedCodes.length == 0);
     }
 
@@ -305,7 +306,7 @@ public class TOTPStorageTest {
 
             storage.createDevice(device);
             storage.insertUsedCode(code);
-            TOTPUsedCode[] usedCodes = storage.getAllUsedCodes("user");
+            TOTPUsedCode[] usedCodes = storage.getAllUsedCodesDescOrder("user");
 
             assert (usedCodes.length == 1);
             assert usedCodes[0].equals(code);
@@ -337,7 +338,7 @@ public class TOTPStorageTest {
         TestSetupResult result = initSteps();
         TOTPSQLStorage storage = result.storage;
 
-        TOTPUsedCode[] usedCodes = storage.getAllUsedCodes("non-existent-user");
+        TOTPUsedCode[] usedCodes = storage.getAllUsedCodesDescOrder("non-existent-user");
         assert (usedCodes.length == 0);
 
         long now = System.currentTimeMillis();
@@ -360,12 +361,12 @@ public class TOTPStorageTest {
         storage.insertUsedCode(validCode2);
         storage.insertUsedCode(validCode3);
 
-        usedCodes = storage.getAllUsedCodes("user");
+        usedCodes = storage.getAllUsedCodesDescOrder("user");
         assert (usedCodes.length == 6);
 
         DeleteExpiredTotpTokens.getInstance(result.process.getProcess()).run();
 
-        usedCodes = storage.getAllUsedCodes("user");
+        usedCodes = storage.getAllUsedCodesDescOrder("user");
         assert (usedCodes.length == 4); // expired codes shouldn't be returned
         assert (usedCodes[0].equals(validCode3)); // order is DESC by created time (now + X)
         assert (usedCodes[1].equals(validCode2));
@@ -394,7 +395,7 @@ public class TOTPStorageTest {
         storage.insertUsedCode(validCodeToExpire);
         storage.insertUsedCode(invalidCodeToExpire);
 
-        TOTPUsedCode[] usedCodes = storage.getAllUsedCodes("user");
+        TOTPUsedCode[] usedCodes = storage.getAllUsedCodesDescOrder("user");
         assert (usedCodes.length == 4);
 
         // After 500ms seconds pass:
@@ -402,7 +403,7 @@ public class TOTPStorageTest {
 
         storage.removeExpiredCodes();
 
-        usedCodes = storage.getAllUsedCodes("user");
+        usedCodes = storage.getAllUsedCodesDescOrder("user");
         assert (usedCodes.length == 2);
         assert (usedCodes[0].equals(validCodeToLive));
         assert (usedCodes[1].equals(invalidCodeToLive));

@@ -1,7 +1,5 @@
 package io.supertokens.cronjobs.deleteExpiredTotpTokens;
 
-import org.jetbrains.annotations.TestOnly;
-
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.pluginInterface.STORAGE_TYPE;

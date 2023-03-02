@@ -8,6 +8,7 @@ import java.util.List;
 
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.inmemorydb.config.Config;
+import io.supertokens.inmemorydb.ConnectionWithLocks;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -169,6 +170,8 @@ public class TOTPQueries {
 
     public static int getDevicesCount_Transaction(Start start, Connection con, String userId)
             throws StorageQueryException, SQLException {
+        ((ConnectionWithLocks) con).lock(userId + Config.getConfig(start).getTotpUserDevicesTable());
+
         String QUERY = "SELECT COUNT(*) as count FROM " + Config.getConfig(start).getTotpUserDevicesTable()
                 + " WHERE user_id = ?;";
 
@@ -244,27 +247,6 @@ public class TOTPQueries {
                 + " WHERE expiry_time_ms < ?;";
 
         return update(start, QUERY, pst -> pst.setLong(1, System.currentTimeMillis()));
-    }
-
-    private static int deleteAllDevices_Transaction(Start start, Connection con, String userId)
-            throws SQLException, StorageQueryException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getTotpUserDevicesTable()
-                + " WHERE user_id = ?;";
-        return update(con, QUERY, pst -> pst.setString(1, userId));
-    }
-
-    private static int deleteAllUsedCodes_Transaction(Start start, Connection con, String userId)
-            throws SQLException, StorageQueryException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getTotpUsedCodesTable()
-                + " WHERE user_id = ?;";
-        return update(con, QUERY, pst -> pst.setString(1, userId));
-    }
-
-    private static int deleteUser_Transaction(Start start, Connection con, String userId)
-            throws SQLException, StorageQueryException {
-        String QUERY = "DELETE FROM " + Config.getConfig(start).getTotpUsersTable()
-                + " WHERE user_id = ?;";
-        return update(con, QUERY, pst -> pst.setString(1, userId));
     }
 
     private static class TOTPDeviceRowMapper implements RowMapper<TOTPDevice, ResultSet> {
