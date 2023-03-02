@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateClientTypeException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
@@ -128,9 +129,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
         // validate third party config
         {
-            if (newTenant.thirdPartyConfig.providers.length > 0) {
-                ThirdParty.verifyThirdPartyProvidersArray(newTenant.thirdPartyConfig.providers);
-            }
+            ThirdParty.verifyThirdPartyProvidersArray(newTenant.thirdPartyConfig.providers);
         }
 
         boolean creationInSharedDbSucceeded = false;

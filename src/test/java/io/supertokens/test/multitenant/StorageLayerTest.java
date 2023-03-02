@@ -475,7 +475,7 @@ public class StorageLayerTest {
 
         assertEquals("google", provider.thirdPartyId);
         assertEquals("Google", provider.name);
-        assertEquals(null, provider.clients);
+        assertEquals(0, provider.clients.length);
         assertEquals(null, provider.authorizationEndpoint);
         assertEquals(null, provider.authorizationEndpointQueryParams);
         assertEquals(null, provider.tokenEndpoint);
@@ -493,7 +493,7 @@ public class StorageLayerTest {
         assertEquals(null, provider.userInfoMap.fromUserInfoAPI.email);
         assertEquals(null, provider.userInfoMap.fromUserInfoAPI.emailVerified);
 
-        assertEquals(null, provider.clients);
+        assertEquals(0, provider.clients.length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -1617,12 +1617,10 @@ public class StorageLayerTest {
                         ));
                         break;
                     } catch (Exception e) {
-                        if (e instanceof StorageQueryException) {
-                            if (e.getMessage().contains("request timed out") || e.getMessage().contains("concurrent delete")) {
-                                // retry, because connection was timed out, or
-                                // in case of postgres, number of retries may not be enough, we retry here anyway
-                                continue;
-                            }
+                        if (e.getMessage().toLowerCase().contains("request timed out") || e.getMessage().contains("concurrent delete")) {
+                            // retry, because connection was timed out, or
+                            // in case of postgres, number of retries may not be enough, we retry here anyway
+                            continue;
                         }
                         System.out.println(e.getMessage());
                         pass.set(false);

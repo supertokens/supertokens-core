@@ -34,6 +34,7 @@ import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
+import java.util.Arrays;
 
 public class ThirdParty {
 
@@ -228,7 +229,33 @@ public class ThirdParty {
 
     public static void verifyThirdPartyProvidersArray(ThirdPartyConfig.Provider[] providers)
             throws InvalidProviderConfigException {
-        // TODO:
+        for (ThirdPartyConfig.Provider provider: providers) {
+            verifyThirdPartyProvider(provider);
+        }
+    }
+
+    public static void verifyThirdPartyProvider(ThirdPartyConfig.Provider provider)
+            throws InvalidProviderConfigException {
+
+        if (provider.thirdPartyId == null) {
+            throw new InvalidProviderConfigException("thirdPartyId cannot be null");
+        }
+
+        for (ThirdPartyConfig.ProviderClient client : provider.clients) {
+            verifyThirdPartyProviderClient(client, provider.thirdPartyId);
+        }
+    }
+
+    public static void verifyThirdPartyProviderClient(ThirdPartyConfig.ProviderClient client, String thirdPartyId)
+            throws InvalidProviderConfigException {
+
+        if (client.clientId == null) {
+            throw new InvalidProviderConfigException("clientId cannot be null");
+        }
+
+        if (client.scope != null && Arrays.asList(client.scope).contains(null)) {
+            throw new InvalidProviderConfigException("scope array cannot contain a null");
+        }
     }
 
 }
