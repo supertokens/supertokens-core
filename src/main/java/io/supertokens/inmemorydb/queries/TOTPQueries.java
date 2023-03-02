@@ -121,18 +121,6 @@ public class TOTPQueries {
                 + " WHERE user_id = ?;";
         int removedUsersCount = update(con, QUERY, pst -> pst.setString(1, userId));
 
-        // Delete all devices and used codes for this user:
-        // This step is required only for in-memory db.
-        // Other databases will automatically delete these when the user is
-        // deleted because of foreign key constraints.
-        String QUERY2 = "DELETE FROM " + Config.getConfig(start).getTotpUserDevicesTable()
-                + " WHERE user_id = ?;";
-        update(con, QUERY2, pst -> pst.setString(1, userId));
-
-        String QUERY3 = "DELETE FROM " + Config.getConfig(start).getTotpUsedCodesTable()
-                + " WHERE user_id = ?;";
-        update(con, QUERY3, pst -> pst.setString(1, userId));
-
         return removedUsersCount;
     }
 
@@ -195,16 +183,6 @@ public class TOTPQueries {
             Connection sqlCon = (Connection) con.getConnection();
 
             try {
-                // Check if user exists or not (if no device exists, user does not exist)
-                // NOTE: This step is required only for in-memory db.
-                int devicesCount = getDevicesCount_Transaction(start, sqlCon, code.userId);
-                if (devicesCount == 0) {
-                    // no device left. transaction cannot be completed.
-                    // foreign key constraint will fail.
-                    throw new SQLException(
-                            "[SQLITE_CONSTRAINT]  Abort due to constraint violation (FOREIGN KEY constraint failed)");
-                }
-
                 insertUsedCode_Transaction(start, sqlCon, code);
                 sqlCon.commit();
             } catch (SQLException e) {

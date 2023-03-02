@@ -255,6 +255,7 @@ public class TOTPRecipeTest {
 
     @Test
     public void cronRemovesAllCodesDuringRateLimitTest() throws Exception {
+        // FIXME: This test is flaky because of time being involved.
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 
