@@ -101,4 +101,12 @@ public class SQLiteConfig {
     public String getTotpUsedCodesTable() {
         return "totp_used_codes";
     }
+
+    public String getDashboardUsersTable(){
+        return "dashboard_users";
+    }
+
+    public String getDashboardSessionsTable(){
+        return "dashboard_user_sessions";
+    }
 }
