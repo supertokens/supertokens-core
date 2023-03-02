@@ -201,7 +201,6 @@ public class GeneralQueries {
             update(start, TOTPQueries.getQueryToCreateUsedCodesTable(start), NO_OP_SETTER);
             // index:
             update(start, TOTPQueries.getQueryToCreateUsedCodesExpiryTimeIndex(start), NO_OP_SETTER);
-            update(start, TOTPQueries.getQueryToCreateUsedCodesCreatedTimeIndex(start), NO_OP_SETTER);
         }
 
     }

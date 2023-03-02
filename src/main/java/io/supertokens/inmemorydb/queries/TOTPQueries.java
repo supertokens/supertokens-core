@@ -50,11 +50,6 @@ public class TOTPQueries {
                 + Config.getConfig(start).getTotpUsedCodesTable() + " (expiry_time_ms)";
     }
 
-    public static String getQueryToCreateUsedCodesCreatedTimeIndex(Start start) {
-        return "CREATE INDEX IF NOT EXISTS totp_used_codes_created_time_ms_index ON "
-                + Config.getConfig(start).getTotpUsedCodesTable() + " (created_time_ms DESC)";
-    }
-
     private static int insertUser_Transaction(Start start, Connection con, String userId)
             throws SQLException, StorageQueryException {
         // Create user if not exists:
