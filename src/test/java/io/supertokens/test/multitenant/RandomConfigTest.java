@@ -80,7 +80,6 @@ public class RandomConfigTest {
             try {
                 TenantConfig tenantConfig = (TenantConfig) generated.value;
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null), tenantConfig);
-                MultitenancyHelper.getInstance(process.getProcess()).loadConfig();
                 if (!isOk) {
                     List<String> exceptions = ConfigGenerator.getExceptions(generated.expectation);
                     System.out.print("No exception was raised: ");
