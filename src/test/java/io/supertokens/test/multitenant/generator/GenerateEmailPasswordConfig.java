@@ -14,10 +14,15 @@
  *    under the License.
  */
 
-package io.supertokens.thirdparty;
+package io.supertokens.test.multitenant.generator;
 
-public class InvalidProviderConfigException extends Exception {
-    public InvalidProviderConfigException(String message) {
-        super(message);
+import java.util.Random;
+
+public class GenerateEmailPasswordConfig {
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_enabled() {
+        boolean enabled  = new Random().nextBoolean();
+        return new ConfigGenerator.GeneratedValueAndExpectation(
+                enabled,
+                new ConfigGenerator.Expectation("ok", enabled));
     }
 }

@@ -14,10 +14,20 @@
  *    under the License.
  */
 
-package io.supertokens.thirdparty;
+package io.supertokens.test.multitenant.generator.utils;
 
-public class InvalidProviderConfigException extends Exception {
-    public InvalidProviderConfigException(String message) {
-        super(message);
+import io.supertokens.test.multitenant.generator.ConfigGenerator;
+
+import java.util.Random;
+
+public class NullableBoolGenerator {
+    public static Boolean generate() {
+        Random random = new Random();
+
+        if (random.nextInt(3) != 0) { // 33% chance of generating a null value
+            return random.nextBoolean();
+        }
+
+        return null;
     }
 }

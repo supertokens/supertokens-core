@@ -29,7 +29,10 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
+import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateClientTypeException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.storageLayer.StorageLayer;
@@ -126,9 +129,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
         // validate third party config
         {
-            if (newTenant.thirdPartyConfig.providers.length > 0) {
-                ThirdParty.verifyThirdPartyProvidersArray(newTenant.thirdPartyConfig.providers);
-            }
+            ThirdParty.verifyThirdPartyProvidersArray(newTenant.thirdPartyConfig.providers);
         }
 
         boolean creationInSharedDbSucceeded = false;
@@ -164,6 +165,10 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 } catch (DuplicateTenantException ex) {
                     // we treat this as a success
                     return false;
+                } catch (DuplicateThirdPartyIdException overWriteException) {
+                    throw new InvalidProviderConfigException("Duplicate ThirdPartyId was specified in the providers list.");
+                } catch (DuplicateClientTypeException overWriteException) {
+                    throw new InvalidProviderConfigException("Duplicate clientType was specified in the clients list.");
                 }
             } else {
                 // we ignore this since it should technically never come here cause it means that the
@@ -171,6 +176,10 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 // but if it ever does come here, it doesn't really matter anyway.
                 return true;
             }
+        } catch (DuplicateThirdPartyIdException e) {
+            throw new InvalidProviderConfigException("Duplicate ThirdPartyId was specified in the providers list.");
+        } catch (DuplicateClientTypeException e) {
+            throw new InvalidProviderConfigException("Duplicate clientType was specified in the clients list.");
         }
     }
 

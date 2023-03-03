@@ -34,6 +34,8 @@ import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nonnull;
+import java.util.Arrays;
+import java.util.HashSet;
 
 public class ThirdParty {
 
@@ -228,7 +230,137 @@ public class ThirdParty {
 
     public static void verifyThirdPartyProvidersArray(ThirdPartyConfig.Provider[] providers)
             throws InvalidProviderConfigException {
-        // TODO:
+
+        HashSet<String> thirdPartyIds = new HashSet<>();
+
+        for (ThirdPartyConfig.Provider provider: providers) {
+            if (thirdPartyIds.contains(provider.thirdPartyId)) {
+                throw new InvalidProviderConfigException("Duplicate ThirdPartyId was specified in the providers list.");
+            }
+            thirdPartyIds.add(provider.thirdPartyId);
+
+            verifyThirdPartyProvider(provider);
+        }
     }
 
+    private static void verifyThirdPartyProvider(ThirdPartyConfig.Provider provider)
+            throws InvalidProviderConfigException {
+
+        if (provider.thirdPartyId == null || provider.thirdPartyId.isEmpty()) {
+            throw new InvalidProviderConfigException("thirdPartyId cannot be null or empty");
+        }
+
+        HashSet<String> clientTypes = new HashSet<>();
+        for (ThirdPartyConfig.ProviderClient client : provider.clients) {
+            if (clientTypes.contains(client.clientType)) {
+                throw new InvalidProviderConfigException("Duplicate clientType was specified in the clients list.");
+            }
+            clientTypes.add(client.clientType);
+
+            verifyThirdPartyProviderClient(client, provider.thirdPartyId);
+        }
+    }
+
+    private static void verifyThirdPartyProviderClient(ThirdPartyConfig.ProviderClient client, String thirdPartyId)
+            throws InvalidProviderConfigException {
+
+        if (client.clientId == null) {
+            throw new InvalidProviderConfigException("clientId cannot be null");
+        }
+
+        if (client.scope != null && Arrays.asList(client.scope).contains(null)) {
+            throw new InvalidProviderConfigException("scope array cannot contain a null");
+        }
+
+        if (thirdPartyId.startsWith("active-directory")) {
+            String errorMessage = "a non empty string value must be specified for directoryId in the additionalConfig for Active Directory provider";
+            try {
+                if (client.additionalConfig == null || !client.additionalConfig.has("directoryId") ||
+                        client.additionalConfig.get("directoryId").isJsonNull() ||
+                        client.additionalConfig.get("directoryId").getAsString().isEmpty() ||
+                        !client.additionalConfig.getAsJsonPrimitive("directoryId").isString()
+                ) {
+                    throw new InvalidProviderConfigException(errorMessage);
+                }
+            } catch (ClassCastException e) {
+                throw new InvalidProviderConfigException(errorMessage);
+            }
+        } else if (thirdPartyId.startsWith("apple")) {
+            String errorMessage = "a non empty string value must be specified for keyId, teamId and privateKey in the additionalConfig for Apple provider";
+
+            try {
+                if (
+                        client.additionalConfig == null ||
+                                !client.additionalConfig.has("keyId") ||
+                                client.additionalConfig.get("keyId").isJsonNull() ||
+                                client.additionalConfig.get("keyId").getAsString().isEmpty() ||
+                                !client.additionalConfig.getAsJsonPrimitive("keyId").isString() ||
+
+                                !client.additionalConfig.has("teamId") ||
+                                client.additionalConfig.get("teamId").isJsonNull() ||
+                                client.additionalConfig.get("teamId").getAsString().isEmpty() ||
+                                !client.additionalConfig.getAsJsonPrimitive("teamId").isString() ||
+
+                                !client.additionalConfig.has("privateKey") ||
+                                client.additionalConfig.get("privateKey").isJsonNull() ||
+                                client.additionalConfig.get("privateKey").getAsString().isEmpty() ||
+                                !client.additionalConfig.getAsJsonPrimitive("privateKey").isString()
+                ) {
+
+                    throw new InvalidProviderConfigException(errorMessage);
+                }
+            } catch (ClassCastException e) {
+                throw new InvalidProviderConfigException(errorMessage);
+            }
+        } else if (thirdPartyId.startsWith("discord")) {
+            // Nothing here
+        } else if (thirdPartyId.startsWith("facebook")) {
+            // Nothing here
+        } else if (thirdPartyId.startsWith("google-workspaces")) {
+            if (client.additionalConfig != null && client.additionalConfig.has("hd")) {
+                String errorMessage = "hd in additionalConfig must be a non empty string value";
+                try {
+                    if (client.additionalConfig.get("hd").isJsonNull() ||
+                            !client.additionalConfig.getAsJsonPrimitive("hd").isString() ||
+                            client.additionalConfig.get("hd").getAsString().isEmpty()) {
+                        throw new InvalidProviderConfigException(errorMessage);
+                    }
+                } catch (ClassCastException e) {
+                    throw new InvalidProviderConfigException(errorMessage);
+                }
+            }
+        } else if (thirdPartyId.startsWith("google")) {
+            // Nothing here
+        } else if (thirdPartyId.startsWith("linkedin")) {
+            // Nothing here
+        } else if (thirdPartyId.startsWith("okta")) {
+            String errorMessage = "a non empty string value must be specified for oktaDomain in the additionalConfig for Okta provider";
+            try {
+                if (client.additionalConfig == null || !client.additionalConfig.has("oktaDomain") ||
+                        client.additionalConfig.get("oktaDomain").isJsonNull() ||
+                        client.additionalConfig.get("oktaDomain").getAsString().isEmpty() ||
+                        !client.additionalConfig.getAsJsonPrimitive("oktaDomain").isString()) {
+
+                    throw new InvalidProviderConfigException(errorMessage);
+                }
+            } catch (ClassCastException e) {
+                throw new InvalidProviderConfigException(errorMessage);
+            }
+        } else if (thirdPartyId.startsWith("boxy-saml")) {
+            String errorMessage = "a non empty string value must be specified for boxyURL in the additionalConfig for Boxy SAML provider";
+
+            try {
+                if (client.additionalConfig == null ||
+                        !client.additionalConfig.has("boxyURL") ||
+                        client.additionalConfig.get("boxyURL").isJsonNull() ||
+                        client.additionalConfig.get("boxyURL").getAsString().isEmpty() ||
+                        !client.additionalConfig.getAsJsonPrimitive("boxyURL").isString()) {
+
+                    throw new InvalidProviderConfigException(errorMessage);
+                }
+            } catch (ClassCastException e) {
+                throw new InvalidProviderConfigException(errorMessage);
+            }
+        }
+    }
 }
