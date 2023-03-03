@@ -17,17 +17,19 @@
 package io.supertokens.test.multitenant.generator;
 
 import com.google.gson.JsonObject;
+import com.google.gson.JsonPrimitive;
 import io.supertokens.test.multitenant.generator.utils.JsonObjectGenerator;
 import io.supertokens.test.multitenant.generator.utils.NullableBoolGenerator;
 import io.supertokens.test.multitenant.generator.utils.NullableStringGenerator;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Random;
 
 public class GenerateThirdPartyConfig_ProviderClient {
     // TODO: generate valid and invalid configs based on thirdPartyId
 
-    public static class ScopeGenerator {
+    private static class ScopeGenerator {
         public static String[] generate() {
             Random random = new Random();
             // Randomly choose array length between 0 and 5
@@ -53,7 +55,266 @@ public class GenerateThirdPartyConfig_ProviderClient {
         }
     }
 
-    public static ConfigGenerator.GeneratedValueAndExpectation generate_clientType() {
+    private static class AdditionalConfigGenerator {
+        public static ConfigGenerator.GeneratedValueAndExpectation generate(String thirdPartyId) {
+            boolean valid = new Random().nextDouble() > 0.05;
+
+            if (thirdPartyId != null) {
+                if (thirdPartyId.startsWith("active-directory")) {
+                    return generateForActiveDirectory(valid);
+                } else if (thirdPartyId.startsWith("apple")) {
+                    return generateForApple(valid);
+                } else if (thirdPartyId.startsWith("google-workspaces")) {
+                    return generateForGoogleWorkspaces(valid);
+                } else if (thirdPartyId.startsWith("okta")) {
+                    return generateForOkta(valid);
+                } else if (thirdPartyId.startsWith("boxy-saml")) {
+                    return generateForBoxy(valid);
+                }
+            }
+
+            JsonObject jsonObject = JsonObjectGenerator.generate();
+            return new ConfigGenerator.GeneratedValueAndExpectation(
+                jsonObject,
+                new ConfigGenerator.Expectation("ok", jsonObject)    
+            );
+        }
+
+        private static ConfigGenerator.GeneratedValueAndExpectation generateForActiveDirectory(boolean valid) {
+            if (valid) {
+                JsonObject result = new JsonObject();
+                result.add("directoryId", new JsonPrimitive(NullableStringGenerator.generate(0)));
+                return new ConfigGenerator.GeneratedValueAndExpectation(
+                        result,
+                        new ConfigGenerator.Expectation("ok", result)
+                );
+            } else {
+                String EXPECTED_ERROR = "a non empty string value must be specified for directoryId in the additionalConfig for Active Directory provider";
+                int option = new Random().nextInt(3);
+                switch (option) {
+                    case 0:
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                null,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                    case 1:
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                new JsonObject(),
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                    default:
+                        JsonObject result = new JsonObject();
+                        result.add("directoryId", new JsonPrimitive(100));
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                result,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                }
+            }
+        }
+
+        private static ConfigGenerator.GeneratedValueAndExpectation generateForApple(boolean valid) {
+            if (valid) {
+                JsonObject result = new JsonObject();
+                result.add("keyId", new JsonPrimitive(NullableStringGenerator.generate(0)));
+                result.add("teamId", new JsonPrimitive(NullableStringGenerator.generate(0)));
+                result.add("privateKey", new JsonPrimitive(NullableStringGenerator.generate(0)));
+                return new ConfigGenerator.GeneratedValueAndExpectation(
+                        result,
+                        new ConfigGenerator.Expectation("ok", result)
+                );
+            } else {
+                String EXPECTED_ERROR = "a non empty string value must be specified for keyId, teamId and privateKey in the additionalConfig for Apple provider";
+                int option = new Random().nextInt(3);
+                String[] PROPERTIES = new String[]{"keyId", "teamId", "privateKey"};
+                Random rand = new Random();
+
+                switch (option) {
+                    case 0:
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                null,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                    case 1:
+                        int numProps = rand.nextInt(3); // select 0 to 2 properties
+                        HashSet<String> selectedProp = new HashSet<String>();
+                        while (selectedProp.size() < numProps) {
+                            int index = rand.nextInt(PROPERTIES.length);
+                            selectedProp.add(PROPERTIES[index]);
+                        }
+                        JsonObject result = new JsonObject();
+                        for (String item : selectedProp) {
+                            result.add(item, new JsonPrimitive(NullableStringGenerator.generate(0)));
+                        }
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                result,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                    default:
+                        result = new JsonObject();
+                        String invalidProperty = PROPERTIES[rand.nextInt(PROPERTIES.length)];
+                        for (String prop: PROPERTIES) {
+                            if (prop.equals(invalidProperty)) {
+                                result.add(prop, new JsonPrimitive(100));
+                            } else {
+                                result.add(prop, new JsonPrimitive(NullableStringGenerator.generate(0)));
+                            }
+                        }
+                        result.add("directoryId", new JsonPrimitive(100));
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                result,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                }
+            }
+        }
+
+        private static ConfigGenerator.GeneratedValueAndExpectation generateForGoogleWorkspaces(boolean valid) {
+            if (valid) {
+                int option = new Random().nextInt(3);
+                switch (option) {
+                    case 0:
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                null,
+                                new ConfigGenerator.Expectation("ok", null)
+                        );
+                    case 1:
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                new JsonObject(),
+                                new ConfigGenerator.Expectation("ok", new JsonObject())
+                        );
+                    default:
+                        JsonObject result = new JsonObject();
+                        result.add("hd", new JsonPrimitive(NullableStringGenerator.generate(0)));
+
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                result,
+                                new ConfigGenerator.Expectation("ok", result)
+                        );
+                }
+            } else {
+                String EXPECTED_ERROR = "hd in additionalConfig must be a non empty string value";
+                JsonObject result = new JsonObject();
+                int option = new Random().nextInt(3);
+                switch (option) {
+                    case 0:
+                        result.add("hd", new JsonPrimitive(100));
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                result,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                    case 1:
+                        result.add("hd", null);
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                result,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                    default:
+                        result.add("hd", new JsonPrimitive(""));
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                result,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                }
+            }
+        }
+
+        private static ConfigGenerator.GeneratedValueAndExpectation generateForOkta(boolean valid) {
+            if (valid) {
+                JsonObject result = new JsonObject();
+                result.add("oktaDomain", new JsonPrimitive(NullableStringGenerator.generate(0)));
+                return new ConfigGenerator.GeneratedValueAndExpectation(
+                        result,
+                        new ConfigGenerator.Expectation("ok", result)
+                );
+            } else {
+                String EXPECTED_ERROR = "a non empty string value must be specified for oktaDomain in the additionalConfig for Okta provider";
+                int option = new Random().nextInt(5);
+                switch (option) {
+                    case 0:
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                null,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                    case 1:
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                new JsonObject(),
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                    case 2:
+                        JsonObject result = new JsonObject();
+                        result.add("oktaDomain", null);
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                result,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                    case 3:
+                        result = new JsonObject();
+                        result.add("oktaDomain", new JsonPrimitive(""));
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                result,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                    default:
+                        result = new JsonObject();
+                        result.add("oktaDomain", new JsonPrimitive(100));
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                result,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                }
+            }
+        }
+
+        private static ConfigGenerator.GeneratedValueAndExpectation generateForBoxy(boolean valid) {
+            if (valid) {
+                JsonObject result = new JsonObject();
+                result.add("boxyURL", new JsonPrimitive(NullableStringGenerator.generate(0)));
+                return new ConfigGenerator.GeneratedValueAndExpectation(
+                        result,
+                        new ConfigGenerator.Expectation("ok", result)
+                );
+            } else {
+                String EXPECTED_ERROR = "a non empty string value must be specified for boxyURL in the additionalConfig for Boxy SAML provider";
+                int option = new Random().nextInt(5);
+                switch (option) {
+                    case 0:
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                null,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                    case 1:
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                new JsonObject(),
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                    case 2:
+                        JsonObject result = new JsonObject();
+                        result.add("boxyURL", null);
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                result,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                    case 3:
+                        result = new JsonObject();
+                        result.add("boxyURL", new JsonPrimitive(""));
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                result,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                    default:
+                        result = new JsonObject();
+                        result.add("boxyURL", new JsonPrimitive(100));
+                        return new ConfigGenerator.GeneratedValueAndExpectation(
+                                result,
+                                new ConfigGenerator.Expectation("exception", EXPECTED_ERROR)
+                        );
+                }
+            }
+        }
+    }
+
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_clientType(String thirdPartyId) {
         String clientType = NullableStringGenerator.generate();
 
         return new ConfigGenerator.GeneratedValueAndExpectation(
@@ -62,7 +323,7 @@ public class GenerateThirdPartyConfig_ProviderClient {
         );
     }
 
-    public static ConfigGenerator.GeneratedValueAndExpectation generate_clientId() {
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_clientId(String thirdPartyId) {
         String clientId = NullableStringGenerator.generate();
         if (clientId == null) {
             return new ConfigGenerator.GeneratedValueAndExpectation(
@@ -76,7 +337,7 @@ public class GenerateThirdPartyConfig_ProviderClient {
         );
     }
 
-    public static ConfigGenerator.GeneratedValueAndExpectation generate_clientSecret() {
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_clientSecret(String thirdPartyId) {
         String clientSecret = NullableStringGenerator.generate();
 
         return new ConfigGenerator.GeneratedValueAndExpectation(
@@ -85,7 +346,7 @@ public class GenerateThirdPartyConfig_ProviderClient {
         );
     }
 
-    public static ConfigGenerator.GeneratedValueAndExpectation generate_scope() {
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_scope(String thirdPartyId) {
         if (new Random().nextInt(10) == 0) {
             return new ConfigGenerator.GeneratedValueAndExpectation(
                     null,
@@ -106,7 +367,7 @@ public class GenerateThirdPartyConfig_ProviderClient {
         );
     }
 
-    public static ConfigGenerator.GeneratedValueAndExpectation generate_forcePKCE() {
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_forcePKCE(String thirdPartyId) {
         Boolean forcePKCE = NullableBoolGenerator.generate();
         return new ConfigGenerator.GeneratedValueAndExpectation(
                 forcePKCE,
@@ -114,13 +375,7 @@ public class GenerateThirdPartyConfig_ProviderClient {
         );
     }
 
-    public static ConfigGenerator.GeneratedValueAndExpectation generate_additionalConfig() {
-        // TODO: provider specific generation and validation
-        JsonObject config = JsonObjectGenerator.generate();
-
-        return new ConfigGenerator.GeneratedValueAndExpectation(
-                config,
-                new ConfigGenerator.Expectation("ok", config)
-        );
+    public static ConfigGenerator.GeneratedValueAndExpectation generate_additionalConfig(String thirdPartyId) {
+        return AdditionalConfigGenerator.generate(thirdPartyId);
     }
 }

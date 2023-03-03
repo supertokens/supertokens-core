@@ -27,7 +27,17 @@ import java.util.Random;
 
 public class GenerateThirdPartyConfig {
     private static class ProviderListGenerator {
-        private static final String[] PROVIDERS = new String[]{"apple", "active-directory", "discord", "facebook", "linkedin", "custom"};
+        private static final String[] PROVIDERS = new String[]{
+                "apple",
+                "active-directory",
+                "discord",
+                "facebook",
+                "google-workspaces",
+                "google",
+                "linkedin",
+                "okta",
+                "boxy-saml",
+                "custom"};
 
         public static String[] generate() {
             Random r = new Random();

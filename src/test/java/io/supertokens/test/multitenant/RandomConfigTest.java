@@ -17,7 +17,6 @@
 package io.supertokens.test.multitenant;
 
 import io.supertokens.ProcessState;
-import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -82,6 +81,11 @@ public class RandomConfigTest {
                 TenantConfig tenantConfig = (TenantConfig) generated.value;
                 Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null), tenantConfig);
                 MultitenancyHelper.getInstance(process.getProcess()).loadConfig();
+                if (!isOk) {
+                    List<String> exceptions = ConfigGenerator.getExceptions(generated.expectation);
+                    System.out.print("No exception was raised: ");
+                    System.out.println(exceptions);
+                }
                 assertTrue(isOk); // Assert that config was expected to be valid
                 okCount++;
 
@@ -93,7 +97,7 @@ public class RandomConfigTest {
                 boolean exceptionMatched = ConfigGenerator.matchExceptionInExpectation(e.getMessage(), generated.expectation);
                 if (!exceptionMatched) {
                     List<String> exceptions = ConfigGenerator.getExceptions(generated.expectation);
-                    System.out.printf("[%s] was not matched", e.getMessage());
+                    System.out.printf("[%s] was not matched: ", e.getMessage());
                     System.out.println(exceptions);
                 }
                 assertTrue(exceptionMatched);

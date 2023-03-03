@@ -20,10 +20,10 @@ import com.google.gson.JsonObject;
 import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.test.multitenant.generator.utils.JsonObjectGenerator;
 import io.supertokens.test.multitenant.generator.utils.NullableBoolGenerator;
+import io.supertokens.test.multitenant.generator.utils.NullableStringGenerator;
 import io.supertokens.test.multitenant.generator.utils.URLGenerator;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Random;
@@ -31,11 +31,11 @@ import java.util.Random;
 public class GenerateThirdPartyConfig_Provider {
 
     public static ConfigGenerator.GeneratedValueAndExpectation generate_thirdPartyId(String thirdPartyId) {
-        if (thirdPartyId == null) {
+        if (thirdPartyId == null || thirdPartyId.equals("")) {
             return new ConfigGenerator.GeneratedValueAndExpectation(
                     thirdPartyId,
                     new ConfigGenerator.Expectation(
-                            "exception", "thirdPartyId cannot be null"
+                            "exception", "thirdPartyId cannot be null or empty"
                     )
             );
         }
@@ -46,11 +46,11 @@ public class GenerateThirdPartyConfig_Provider {
     }
 
     public static ConfigGenerator.GeneratedValueAndExpectation generate_name(String thirdPartyId) {
+        String name = NullableStringGenerator.generate();
         return new ConfigGenerator.GeneratedValueAndExpectation(
-                "Google",
-                new ConfigGenerator.Expectation("ok", "Google")
+                name,
+                new ConfigGenerator.Expectation("ok", name)
         );
-        // "thirdPartyId cannot be null"
     }
 
     public static ConfigGenerator.GeneratedValueAndExpectation generate_clients(String thirdPartyId)
@@ -63,7 +63,7 @@ public class GenerateThirdPartyConfig_Provider {
         HashSet<String> clientTypeSet = new HashSet<>();
         for (int i=0; i<numClients; i++) {
             ConfigGenerator.GeneratedValueAndExpectation generated = ConfigGenerator.generate(
-                    ThirdPartyConfig.ProviderClient.class);
+                    ThirdPartyConfig.ProviderClient.class, new Object[]{thirdPartyId});
             clients[i] = (ThirdPartyConfig.ProviderClient) generated.value;
             expectations[i] = generated.expectation;
             if (clientTypeSet.contains(clients[i].clientType)) {
