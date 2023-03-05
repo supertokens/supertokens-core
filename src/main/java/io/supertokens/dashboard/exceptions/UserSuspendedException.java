@@ -1,9 +1,5 @@
 /*
-<<<<<<< HEAD
- *    Copyright (c) 2022, VRAI Labs and/or its affiliates. All rights reserved.
-=======
  *    Copyright (c) 2023, VRAI Labs and/or its affiliates. All rights reserved.
->>>>>>> 4.4
  *
  *    This software is licensed under the Apache License, Version 2.0 (the
  *    "License") as published by the Apache Software Foundation.
@@ -18,19 +14,8 @@
  *    under the License.
  */
 
+package io.supertokens.dashboard.exceptions;
 
-package io.supertokens.featureflag.exceptions;
+public class UserSuspendedException extends Exception {
 
-import io.supertokens.featureflag.EE_FEATURES;
-
-public class FeatureNotEnabledException extends Exception {
-    public FeatureNotEnabledException(EE_FEATURES feature) {
-        super("Cannot use feature: " + feature.toString() +
-                ", because the license key is missing, or doesn't have this feature enabled.");
-    }
-
-    public FeatureNotEnabledException(String message) {
-        super(message);
-    }
 }
-

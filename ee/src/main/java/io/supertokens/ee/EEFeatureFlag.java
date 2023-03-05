@@ -23,8 +23,11 @@ import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.utils.Utils;
 import io.supertokens.version.Version;
 import org.jetbrains.annotations.TestOnly;
 
@@ -145,7 +148,19 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     @Override
     public JsonObject getPaidFeatureStats() throws StorageQueryException {
         JsonObject result = new JsonObject();
-        // TODO:
+        EE_FEATURES[] features = getEnabledEEFeaturesFromDbOrCache();
+        if (Arrays.stream(features).anyMatch(t -> t == EE_FEATURES.DASHBOARD_LOGIN)) {
+            try {
+                JsonObject stats = new JsonObject();
+                // TODO: we need to properly get all the apps here and not just the base app
+                int userCount = StorageLayer.getDashboardStorage(new AppIdentifier(null, null), main)
+                        .getAllDashboardUsers(new AppIdentifier(null, null)).length;
+                stats.addProperty("user_count", userCount);
+                result.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), stats);
+            } catch (TenantOrAppNotFoundException e) {
+                Logging.error(main, Utils.exceptionStacktraceToString(e), false);
+            }
+        }
         return result;
     }
 

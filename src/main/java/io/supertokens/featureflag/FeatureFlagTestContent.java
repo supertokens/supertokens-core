@@ -25,6 +25,8 @@ import org.jetbrains.annotations.TestOnly;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.jetbrains.annotations.TestOnly;
+
 public class FeatureFlagTestContent extends ResourceDistributor.SingletonResource {
 
     public static final String EE_FOLDER_LOCATION = "validityTesting";

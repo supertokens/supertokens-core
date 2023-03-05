@@ -28,12 +28,14 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
+import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
@@ -478,6 +480,19 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
+    public static DashboardSQLStorage getDashboardStorage(AppIdentifier appIdentifier, Main main)
+            throws TenantOrAppNotFoundException {
+        return (DashboardSQLStorage) getInstance(appIdentifier.getAsPublicTenantIdentifier(), main).storage;
+    }
+
+    @TestOnly
+    public static DashboardSQLStorage getDashboardStorage(Main main) {
+        try {
+            return (DashboardSQLStorage) getInstance(new TenantIdentifier(null, null, null), main).storage;
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
     // This function intentionally doesn't take connectionUriDomain and tenantId
     // cause the data for this is only going to be in the primary db of the core.

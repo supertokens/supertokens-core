@@ -186,6 +186,18 @@ public class GeneralQueries {
             update(start, UserIdMappingQueries.getQueryToCreateUserIdMappingTable(start), NO_OP_SETTER);
         }
 
+        if (!doesTableExists(start, Config.getConfig(start).getDashboardUsersTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, DashboardQueries.getQueryToCreateDashboardUsersTable(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getDashboardSessionsTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, DashboardQueries.getQueryToCreateDashboardUserSessionsTable(start), NO_OP_SETTER);
+            // index
+            update(start, DashboardQueries.getQueryToCreateDashboardUserSessionsExpiryIndex(start), NO_OP_SETTER);
+        }
+
     }
 
     public static void setKeyValue_Transaction(Start start, Connection con, String key, KeyValueInfo info)
@@ -294,7 +306,8 @@ public class GeneralQueries {
     }
 
     public static AuthRecipeUserInfo[] getUsers(Start start, @NotNull Integer limit, @NotNull String timeJoinedOrder,
-            @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId, @Nullable Long timeJoined)
+                                                @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
+                                                @Nullable Long timeJoined)
             throws SQLException, StorageQueryException {
 
         // This list will be used to keep track of the result's order from the db
@@ -379,7 +392,8 @@ public class GeneralQueries {
             List<? extends AuthRecipeUserInfo> users = getUserInfoForRecipeIdFromUserIds(start, recipeId,
                     recipeIdToUserIdListMap.get(recipeId));
 
-            // we fill in all the slots in finalResult based on their position in usersFromQuery
+            // we fill in all the slots in finalResult based on their position in
+            // usersFromQuery
             Map<String, AuthRecipeUserInfo> userIdToInfoMap = new HashMap<>();
             for (AuthRecipeUserInfo user : users) {
                 userIdToInfoMap.put(user.id, user);
@@ -402,7 +416,8 @@ public class GeneralQueries {
     }
 
     private static List<? extends AuthRecipeUserInfo> getUserInfoForRecipeIdFromUserIds(Start start, RECIPE_ID recipeId,
-            List<String> userIds) throws StorageQueryException, SQLException {
+                                                                                        List<String> userIds)
+            throws StorageQueryException, SQLException {
         if (recipeId == RECIPE_ID.EMAIL_PASSWORD) {
             return EmailPasswordQueries.getUsersInfoUsingIdList(start, userIds);
         } else if (recipeId == RECIPE_ID.THIRD_PARTY) {

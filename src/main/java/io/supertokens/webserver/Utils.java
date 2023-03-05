@@ -1,5 +1,5 @@
 /*
- *    Copyright (c) 2022, VRAI Labs and/or its affiliates. All rights reserved.
+ *    Copyright (c) 2020, VRAI Labs and/or its affiliates. All rights reserved.
  *
  *    This software is licensed under the Apache License, Version 2.0 (the
  *    "License") as published by the Apache Software Foundation.
@@ -14,28 +14,20 @@
  *    under the License.
  */
 
-package io.supertokens.featureflag;
+package io.supertokens.webserver;
 
-public enum EE_FEATURES {
-    ACCOUNT_LINKING("account_linking"), MULTI_TENANCY("multi_tenancy"), TEST("test"), DASHBOARD_LOGIN("dashboard_login");
+import jakarta.servlet.ServletException;
 
-    private final String name;
+public class Utils {
 
-    EE_FEATURES(String s) {
-        name = s;
-    }
-
-    @Override
-    public String toString() {
-        return this.name;
-    }
-
-    public static EE_FEATURES getEnumFromString(String s) {
-        for (EE_FEATURES b : EE_FEATURES.values()) {
-            if (b.toString().equalsIgnoreCase(s)) {
-                return b;
-            }
+    public static String normalizeAndValidateStringParam(String param, String paramName) throws ServletException {
+        param = param.trim();
+        if (param.length() == 0) {
+            throw new ServletException(
+                    new WebserverAPI.BadRequestException("Field name '" + paramName + "' cannot be an empty String"));
         }
-        return null;
+        return param;
     }
+
+    
 }

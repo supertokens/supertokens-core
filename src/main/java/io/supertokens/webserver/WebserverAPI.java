@@ -53,10 +53,11 @@ public abstract class WebserverAPI extends HttpServlet {
         supportedVersions.add("2.15");
         supportedVersions.add("2.16");
         supportedVersions.add("2.17");
+        supportedVersions.add("2.18");
     }
 
     public static String getLatestCDIVersion() {
-        return "2.17";
+        return "2.18";
     }
 
     public WebserverAPI(Main main, String rid) {
@@ -263,6 +264,8 @@ public abstract class WebserverAPI extends HttpServlet {
                 Throwable rootCause = se.getRootCause();
                 if (rootCause instanceof BadRequestException) {
                     sendTextResponse(400, rootCause.getMessage(), resp);
+                } else if (rootCause instanceof FeatureNotEnabledException) {
+                    sendTextResponse(402, rootCause.getMessage(), resp);
                 } else if (rootCause instanceof APIKeyUnauthorisedException) {
                     sendTextResponse(401, "Invalid API key", resp);
                 } else if (rootCause instanceof TenantOrAppNotFoundException) {
@@ -272,8 +275,6 @@ public abstract class WebserverAPI extends HttpServlet {
                                     ", tenantId: " +
                                     ((TenantOrAppNotFoundException) rootCause).getTenantIdentifier().getTenantId(),
                             resp);
-                } else if (rootCause instanceof FeatureNotEnabledException) {
-                    sendTextResponse(402, rootCause.getMessage(), resp);
                 } else if (rootCause instanceof BadPermissionException) {
                     sendTextResponse(403, e.getMessage(), resp);
                 } else {

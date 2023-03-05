@@ -7,6 +7,18 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [4.4.0] - 2023-02-21
+
+### Added
+
+- Dashboard Recipe
+- Support with CDI version `2.18`
+
+### Database Changes
+
+- Adds `dashboard_users` table
+- Adds `dashboard_user_sessions` table
+
 ## [4.3.0] - 2023-01-05
 
 - Adds feature flag, ee folder and APIs to add / remove license keys for enterprise features.

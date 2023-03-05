@@ -27,6 +27,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.api.core.*;
+import io.supertokens.webserver.api.dashboard.*;
 import io.supertokens.webserver.api.emailpassword.UserAPI;
 import io.supertokens.webserver.api.emailpassword.*;
 import io.supertokens.webserver.api.emailverification.GenerateEmailVerificationTokenAPI;
@@ -250,6 +251,12 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new ImportUserWithPasswordHashAPI(main));
         addAPI(new LicenseKeyAPI(main));
         addAPI(new EEFeatureFlagAPI(main));
+        addAPI(new DashboardUserAPI(main));
+        addAPI(new VerifyDashboardUserSessionAPI(main));
+        addAPI(new DashboardSignInAPI(main));
+        addAPI(new RevokeSessionAPI(main));
+        addAPI(new GetDashboardUsersAPI(main));
+        addAPI(new GetDashboardSessionsForUserAPI(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();

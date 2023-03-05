@@ -48,6 +48,7 @@ labels:
     - [ ] check FDI list   
  - [ ] [supertokens-flutter:X.Y](https://github.com/supertokens/supertokens-flutter/X.Y)
     - [ ] check FDI list   
+ - [ ] [supertokens-dashboard](https://github.com/supertokens/dashboard)
 
 ### Others
 
@@ -67,6 +68,7 @@ labels:
  - [ ] Test on vercel (with-emailpassword-vercel app) 
  - [ ] SuperTokens Jackson SAML example update
  - [ ] Supabase docs
+ - [ ] Capacitor template app: https://github.com/RobSchilderr/capacitor-supertokens-nextjs-turborepo
 
 ### 📚 Documentation (test site)
 
@@ -108,6 +110,7 @@ labels:
     - [ ] Update logic for exporting csv file for registered users
     - [ ] Update SaaS instances to use the latest docker images.
     - [ ] Change [checklist in contributing guide for which tables to pick when migrating data from dev to prod instance](https://test.supertokens.com/docs/contribute/checklists/saas/tables-to-consider-for-data-migration-dev-to-prod).
+    - [ ] Update license key used for cores to include nea feature.
  - [ ] [supertokens-node:X.Y](https://github.com/supertokens/supertokens-node/tree/X.Y)
  - [ ] [supertokens-golang:X.Y](https://github.com/supertokens/supertokens-golang/tree/X.Y)
  - [ ] [supertokens-website:X.Y](https://github.com/supertokens/supertokens-website/tree/X.Y)
@@ -118,7 +121,7 @@ labels:
  - [ ] [supertokens-android:X.Y](https://github.com/supertokens/supertokens-android/X.Y)
  - [ ] [supertokens-ios:X.Y](https://github.com/supertokens/supertokens-ios/X.Y)
  - [ ] [supertokens-flutter:X.Y](https://github.com/supertokens/supertokens-flutter/X.Y)
-
+-  [ ] [supertokens-dashboard](https://github.com/supertokens/dashboard)
 
 ### 📚 Documentation
 
@@ -149,3 +152,4 @@ labels:
    - [ ] supertokens-android
    - [ ] supertokens-ios
    - [ ] supertokens-flutter
+   - [ ] supertokens-dashboard

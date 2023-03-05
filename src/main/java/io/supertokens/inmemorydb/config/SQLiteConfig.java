@@ -89,4 +89,12 @@ public class SQLiteConfig {
     public String getUserIdMappingTable() {
         return "userid_mapping";
     }
+
+    public String getDashboardUsersTable(){
+        return "dashboard_users";
+    }
+
+    public String getDashboardSessionsTable(){
+        return "dashboard_user_sessions";
+    }
 }
