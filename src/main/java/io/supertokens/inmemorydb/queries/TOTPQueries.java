@@ -38,9 +38,10 @@ public class TOTPQueries {
     public static String getQueryToCreateUsedCodesTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getTotpUsedCodesTable() + " ("
                 + "user_id VARCHAR(128) NOT NULL, "
-                + "code CHAR(6) NOT NULL," + "is_valid BOOLEAN NOT NULL,"
+                + "code VARCHAR(8) NOT NULL," + "is_valid BOOLEAN NOT NULL,"
                 + "created_time_ms BIGINT UNSIGNED NOT NULL,"
                 + "expiry_time_ms BIGINT UNSIGNED NOT NULL,"
+                + "PRIMARY KEY (user_id, created_time_ms)"
                 + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getTotpUsersTable()
                 + "(user_id) ON DELETE CASCADE);";
     }
@@ -214,12 +215,12 @@ public class TOTPQueries {
         });
     }
 
-    public static int removeExpiredCodes(Start start)
+    public static int removeExpiredCodes(Start start, long expiredBefore)
             throws StorageQueryException, SQLException {
         String QUERY = "DELETE FROM " + Config.getConfig(start).getTotpUsedCodesTable()
                 + " WHERE expiry_time_ms < ?;";
 
-        return update(start, QUERY, pst -> pst.setLong(1, System.currentTimeMillis()));
+        return update(start, QUERY, pst -> pst.setLong(1, expiredBefore));
     }
 
     private static class TOTPDeviceRowMapper implements RowMapper<TOTPDevice, ResultSet> {
@@ -262,6 +263,7 @@ public class TOTPQueries {
                     result.getBoolean("is_valid"),
                     result.getLong("expiry_time_ms"),
                     result.getLong("created_time_ms"));
+            // FIXME: Put created time first, then expiry time.
         }
     }
 }

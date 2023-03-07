@@ -33,14 +33,10 @@ public class GetTotpDevicesAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String userId = null;
-
-        if (input.has("userId")) {
-            userId = InputParser.parseStringOrThrowError(input, "userId", false);
-        }
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
 
         if (userId.isEmpty()) {
-            throw new ServletException(new IllegalArgumentException("userId cannot be empty"));
+            throw new ServletException(new BadRequestException("userId cannot be empty"));
         }
 
         JsonObject result = new JsonObject();

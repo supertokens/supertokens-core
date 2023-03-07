@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.totp.TOTPUsedCode;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
+import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.totp.exceptions.InvalidTotpException;
@@ -110,7 +111,7 @@ public class Totp {
         // if 1st zero (invalid code) expires in 5 mins and we filter
         // out expired codes, we'll end up [1, 1, 0, 0]. This doesn't contain 3
         // contiguous invalid codes, so the user will be released from rate limiting in
-        // 5 minutes instead of 15 minutes. 
+        // 5 minutes instead of 15 minutes.
 
         // Example for Case 2:
         // User has used codes like this: [0, 1, 0, 0].
@@ -177,18 +178,32 @@ public class Totp {
                 if (usedCode.code.equals(code) && usedCode.isValid
                         && usedCode.expiryTime > System.currentTimeMillis()) {
                     isValid = false;
-                    matchingDevice = null;
+                    // We found a matching device but the code
+                    // will be considered invalid here.
                 }
             }
         }
 
         // Insert the code into the list of used codes:
-        long now = System.currentTimeMillis();
-        int invalidCodeExpirySec = Config.getConfig(main).getTotpInvalidCodeExpiryTime(); // (Default 30 mins)
-        int expireInSec = isValid ? matchingDevice.period * (2 * matchingDevice.skew + 1) : invalidCodeExpirySec;
 
-        TOTPUsedCode newCode = new TOTPUsedCode(userId, code, isValid, now + 1000 * expireInSec, now);
-        totpStorage.insertUsedCode(newCode);
+        // If device is found, calculate used code expiry time for that device (based on
+        // its period and skew). Otherwise, use the max used code expiry time of all the
+        // devices.
+        int maxUsedCodeExpiry = Arrays.stream(devices).mapToInt(device -> device.period * (2 * device.skew + 1)).max()
+                .orElse(0);
+        int expireInSec = (matchingDevice != null) ? matchingDevice.period * (2 * matchingDevice.skew + 1)
+                : maxUsedCodeExpiry;
+
+        while (true) {
+            long now = System.currentTimeMillis();
+            TOTPUsedCode newCode = new TOTPUsedCode(userId, code, isValid, now + 1000 * expireInSec, now);
+            try {
+                totpStorage.insertUsedCode(newCode);
+                break;
+            } catch (UsedCodeAlreadyExistsException e) {
+                continue; // Try again
+            }
+        }
 
         if (!isValid) {
             throw new InvalidTotpException();
@@ -203,6 +218,10 @@ public class Totp {
 
         TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
         TOTPDevice matchingDevice = null;
+
+        // Here one race condition is that the same device
+        // is to be verified twice in parallel. In that case,
+        // both the API calls will return true, but that's okay.
 
         // Check if the user has any devices:
         TOTPDevice[] devices = totpStorage.getDevices(userId);
@@ -260,8 +279,9 @@ public class Totp {
         try {
             storage.startTransaction(con -> {
                 int deletedCount = storage.deleteDevice_Transaction(con, userId, deviceName);
-                if (deletedCount == 0)
+                if (deletedCount == 0) {
                     throw new StorageTransactionLogicException(new UnknownDeviceException());
+                }
 
                 // Some device(s) were deleted. Check if user has any other device left:
                 int devicesCount = storage.getDevicesCount_Transaction(con, userId);
@@ -283,7 +303,7 @@ public class Totp {
                 }
             }
 
-            throw e;
+            throw new StorageQueryException(e.actualException);
         }
     }
 

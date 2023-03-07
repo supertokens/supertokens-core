@@ -35,46 +35,26 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String userId = null;
-        String deviceName = null;
-        Integer skew = null;
-        Integer period = null;
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String deviceName = InputParser.parseStringOrThrowError(input, "deviceName", false);
+        Integer skew = InputParser.parseIntOrThrowError(input, "skew", false);
+        Integer period = InputParser.parseIntOrThrowError(input, "period", false);
 
-        // TODO: Should we also allow the user to change the hashing algo and totp
-        // length (6-8) since we are already allowing them to change the period and skew
-        // which are advanced options anyways?
-
-        if (input.has("userId")) {
-            userId = InputParser.parseStringOrThrowError(input, "userId", false);
-        }
-        if (input.has("deviceName")) {
-            deviceName = InputParser.parseStringOrThrowError(input, "deviceName", false);
-        }
-        if (input.has("skew")) {
-            // FIXME: No function to parse integer:
-            skew = InputParser.parseLongOrThrowError(input, "skew", false).intValue();
-        }
-        if (input.has("period")) {
-            // FIXME: No function to parse integer:
-            period = InputParser.parseLongOrThrowError(input, "period", false).intValue();
-        }
+        // Note: Not allowing the user to change the hashing algo and totp
+        // length (6-8) at the moment because it's rare to change them
 
         if (userId.isEmpty()) {
-            throw new ServletException(new IllegalArgumentException("userId cannot be empty"));
+            throw new ServletException(new BadRequestException("userId cannot be empty"));
         }
         if (deviceName.isEmpty()) {
-            throw new ServletException(new IllegalArgumentException("deviceName cannot be empty"));
+            throw new ServletException(new BadRequestException("deviceName cannot be empty"));
         }
         if (skew < 0) {
-            throw new ServletException(new IllegalArgumentException("skew must be >= 0"));
+            throw new ServletException(new BadRequestException("skew must be >= 0"));
         }
         if (period <= 0) {
-            throw new ServletException(new IllegalArgumentException("period must be > 0"));
+            throw new ServletException(new BadRequestException("period must be > 0"));
         }
-
-        // Should we do these as well?
-        // - Assert period <= 60. Otherwise, it is a security risk. > 30 is also bad.
-        // - Assert skew <= 2. Otherwise, it is a security risk.
 
         JsonObject result = new JsonObject();
 
@@ -96,28 +76,18 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String userId = null;
-        String existingDeviceName = null;
-        String newDeviceName = null;
-
-        if (input.has("userId")) {
-            userId = InputParser.parseStringOrThrowError(input, "userId", false);
-        }
-        if (input.has("existingDeviceName")) {
-            existingDeviceName = InputParser.parseStringOrThrowError(input, "existingDeviceName", false);
-        }
-        if (input.has("newDeviceName")) {
-            newDeviceName = InputParser.parseStringOrThrowError(input, "newDeviceName", false);
-        }
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String existingDeviceName = InputParser.parseStringOrThrowError(input, "existingDeviceName", false);
+        String newDeviceName = InputParser.parseStringOrThrowError(input, "newDeviceName", false);
 
         if (userId.isEmpty()) {
-            throw new ServletException(new IllegalArgumentException("userId cannot be empty"));
+            throw new ServletException(new BadRequestException("userId cannot be empty"));
         }
         if (existingDeviceName.isEmpty()) {
-            throw new ServletException(new IllegalArgumentException("existingDeviceName cannot be empty"));
+            throw new ServletException(new BadRequestException("existingDeviceName cannot be empty"));
         }
         if (newDeviceName.isEmpty()) {
-            throw new ServletException(new IllegalArgumentException("newDeviceName cannot be empty"));
+            throw new ServletException(new BadRequestException("newDeviceName cannot be empty"));
         }
 
         JsonObject result = new JsonObject();

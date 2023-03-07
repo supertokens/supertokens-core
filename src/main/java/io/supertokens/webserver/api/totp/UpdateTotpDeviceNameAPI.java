@@ -33,28 +33,18 @@ public class UpdateTotpDeviceNameAPI extends WebserverAPI {
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String userId = null;
-        String existingDeviceName = null;
-        String newDeviceName = null;
-
-        if (input.has("userId")) {
-            userId = InputParser.parseStringOrThrowError(input, "userId", false);
-        }
-        if (input.has("existingDeviceName")) {
-            existingDeviceName = InputParser.parseStringOrThrowError(input, "existingDeviceName", false);
-        }
-        if (input.has("newDeviceName")) {
-            newDeviceName = InputParser.parseStringOrThrowError(input, "newDeviceName", false);
-        }
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String existingDeviceName = InputParser.parseStringOrThrowError(input, "existingDeviceName", false);
+        String newDeviceName = InputParser.parseStringOrThrowError(input, "newDeviceName", false);
 
         if (userId.isEmpty()) {
-            throw new ServletException(new IllegalArgumentException("userId cannot be empty"));
+            throw new ServletException(new BadRequestException("userId cannot be empty"));
         }
         if (existingDeviceName.isEmpty()) {
-            throw new ServletException(new IllegalArgumentException("existingDeviceName cannot be empty"));
+            throw new ServletException(new BadRequestException("existingDeviceName cannot be empty"));
         }
         if (newDeviceName.isEmpty()) {
-            throw new ServletException(new IllegalArgumentException("newDeviceName cannot be empty"));
+            throw new ServletException(new BadRequestException("newDeviceName cannot be empty"));
         }
 
         JsonObject result = new JsonObject();

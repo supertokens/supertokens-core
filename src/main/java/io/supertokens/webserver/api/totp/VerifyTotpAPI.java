@@ -33,28 +33,15 @@ public class VerifyTotpAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String userId = null;
-        String totp = null;
-        Boolean allowUnverifiedDevices = null;
-
-        if (input.has("userId")) {
-            userId = InputParser.parseStringOrThrowError(input, "userId", false);
-        }
-        if (input.has("totp")) {
-            totp = InputParser.parseStringOrThrowError(input, "totp", false);
-            if (totp.length() != 6) {
-                throw new ServletException(new IllegalArgumentException("totp must be 6 characters long"));
-            }
-        }
-        if (input.has("allowUnverifiedDevices")) {
-            allowUnverifiedDevices = InputParser.parseBooleanOrThrowError(input, "allowUnverifiedDevices", false);
-        }
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String totp = InputParser.parseStringOrThrowError(input, "totp", false);
+        Boolean allowUnverifiedDevices = InputParser.parseBooleanOrThrowError(input, "allowUnverifiedDevices", false);
 
         if (userId.isEmpty()) {
-            throw new ServletException(new IllegalArgumentException("userId cannot be empty"));
+            throw new ServletException(new BadRequestException("userId cannot be empty"));
         }
         if (totp.length() != 6) {
-            throw new ServletException(new IllegalArgumentException("totp must be 6 characters long"));
+            throw new ServletException(new BadRequestException("totp must be 6 characters long"));
         }
         // Already checked that allowUnverifiedDevices is not null.
 

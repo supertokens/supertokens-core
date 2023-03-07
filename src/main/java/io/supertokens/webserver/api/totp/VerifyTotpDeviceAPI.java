@@ -34,28 +34,18 @@ public class VerifyTotpDeviceAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String userId = null;
-        String deviceName = null;
-        String totp = null;
-
-        if (input.has("userId")) {
-            userId = InputParser.parseStringOrThrowError(input, "userId", false);
-        }
-        if (input.has("deviceName")) {
-            deviceName = InputParser.parseStringOrThrowError(input, "deviceName", false);
-        }
-        if (input.has("totp")) {
-            totp = InputParser.parseStringOrThrowError(input, "totp", false);
-        }
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String deviceName = InputParser.parseStringOrThrowError(input, "deviceName", false);
+        String totp = InputParser.parseStringOrThrowError(input, "totp", false);
 
         if (userId.isEmpty()) {
-            throw new ServletException(new IllegalArgumentException("userId cannot be empty"));
+            throw new ServletException(new BadRequestException("userId cannot be empty"));
         }
         if (deviceName.isEmpty()) {
-            throw new ServletException(new IllegalArgumentException("deviceName cannot be empty"));
+            throw new ServletException(new BadRequestException("deviceName cannot be empty"));
         }
         if (totp.length() != 6) {
-            throw new ServletException(new IllegalArgumentException("totp must be 6 characters long"));
+            throw new ServletException(new BadRequestException("totp must be 6 characters long"));
         }
 
         JsonObject result = new JsonObject();

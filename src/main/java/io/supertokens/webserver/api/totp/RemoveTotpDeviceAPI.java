@@ -33,21 +33,14 @@ public class RemoveTotpDeviceAPI extends WebserverAPI {
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        String userId = null;
-        String deviceName = null;
-
-        if (input.has("userId")) {
-            userId = InputParser.parseStringOrThrowError(input, "userId", false);
-        }
-        if (input.has("deviceName")) {
-            deviceName = InputParser.parseStringOrThrowError(input, "deviceName", false);
-        }
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String deviceName = InputParser.parseStringOrThrowError(input, "deviceName", false);
 
         if (userId.isEmpty()) {
-            throw new ServletException(new IllegalArgumentException("userId cannot be empty"));
+            throw new ServletException(new BadRequestException("userId cannot be empty"));
         }
         if (deviceName.isEmpty()) {
-            throw new ServletException(new IllegalArgumentException("deviceName cannot be empty"));
+            throw new ServletException(new BadRequestException("deviceName cannot be empty"));
         }
 
         JsonObject result = new JsonObject();

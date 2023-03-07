@@ -68,6 +68,7 @@ import io.supertokens.pluginInterface.totp.TOTPUsedCode;
 import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
+import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
@@ -1866,16 +1867,23 @@ public class Start
 
     @Override
     public void insertUsedCode(TOTPUsedCode usedCodeObj)
-            throws StorageQueryException, TotpNotEnabledException {
+            throws StorageQueryException, TotpNotEnabledException, UsedCodeAlreadyExistsException {
         try {
             TOTPQueries.insertUsedCode(this, usedCodeObj);
         } catch (StorageTransactionLogicException e) {
             String message = e.actualException.getMessage();
+            // No user/device exists for the given usedCodeObj.userId
             if (message
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (FOREIGN KEY constraint failed)")) {
-                // No user/device exists for the given usedCodeObj.userId
                 throw new TotpNotEnabledException();
             }
+            // Failed due to primary key on (userId, created_time)
+            if (message.equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                    + Config.getConfig(this).getTotpUsedCodesTable() + ".user_id, "
+                    + Config.getConfig(this).getTotpUsedCodesTable() + ".created_time" + ")")) {
+                throw new UsedCodeAlreadyExistsException();
+            }
+
             throw new StorageQueryException(e.actualException);
         }
     }
@@ -1891,10 +1899,10 @@ public class Start
     }
 
     @Override
-    public int removeExpiredCodes()
+    public int removeExpiredCodes(long expiredBefore)
             throws StorageQueryException {
         try {
-            return TOTPQueries.removeExpiredCodes(this);
+            return TOTPQueries.removeExpiredCodes(this, expiredBefore);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

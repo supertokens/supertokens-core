@@ -2,6 +2,7 @@ package io.supertokens.cronjobs.deleteExpiredTotpTokens;
 
 import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
+import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.cronjobs.CronTask;
@@ -33,7 +34,14 @@ public class DeleteExpiredTotpTokens extends CronTask {
 
         TOTPSQLStorage storage = StorageLayer.getTOTPStorage(this.main);
 
-        int deletedCount = storage.removeExpiredCodes();
+        long rateLimitResetInMs = Config.getConfig(this.main).getTotpRateLimitCooldownTime();
+        long expiredBefore = System.currentTimeMillis() - rateLimitResetInMs;
+
+        // We will only remove expired codes that have been expired for longer
+        // than rate limiting duration. This ensures that this DB query
+        // doesn't delete totp codes that keep the rate limiting active for
+        // the expected cooldown duration.
+        int deletedCount = storage.removeExpiredCodes(expiredBefore);
         Logging.debug(this.main, "Cron DeleteExpiredTotpTokens deleted " + deletedCount + " expired TOTP codes");
     }
 
