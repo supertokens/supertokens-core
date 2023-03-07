@@ -39,40 +39,67 @@ public class SemVer implements Comparable<SemVer> {
     }
 
     public SemVer(String version) {
-        if(version == null)
+        if(version == null) {
             throw new IllegalArgumentException("Version can not be null");
-        if(!version.matches("[0-9]+(\\.[0-9]+)*"))
+        }
+
+        if(!version.matches("[0-9]+(\\.[0-9]+)*")) {
             throw new IllegalArgumentException("Invalid version format");
+        }
+
         this.version = version;
     }
 
+    public boolean betweenInclusive(SemVer min, SemVer max) {
+        return min.compareTo(this) <= 0 && this.compareTo(max) <= 0;
+    }
+
+    public boolean greaterThanOrEqualTo(SemVer min) {
+        return min.compareTo(this) <= 0;
+    }
+
+    public boolean lesserThan(SemVer max) {
+        return this.compareTo(max) < 0;
+    }
+
     @Override public int compareTo(SemVer that) {
-        if(that == null)
+        if (that == null) {
             return 1;
+        }
+
         String[] thisParts = this.get().split("\\.");
         String[] thatParts = that.get().split("\\.");
+
         int length = Math.max(thisParts.length, thatParts.length);
-        for(int i = 0; i < length; i++) {
-            int thisPart = i < thisParts.length ?
-                    Integer.parseInt(thisParts[i]) : 0;
-            int thatPart = i < thatParts.length ?
-                    Integer.parseInt(thatParts[i]) : 0;
-            if(thisPart < thatPart)
+
+        for (int i = 0; i < length; i++) {
+            int thisPart = i < thisParts.length ? Integer.parseInt(thisParts[i]) : 0;
+            int thatPart = i < thatParts.length ? Integer.parseInt(thatParts[i]) : 0;
+
+            if(thisPart < thatPart) {
                 return -1;
-            if(thisPart > thatPart)
+            }
+
+            if(thisPart > thatPart) {
                 return 1;
+            }
         }
+
         return 0;
     }
 
     @Override public boolean equals(Object that) {
-        if(this == that)
+        if(this == that) {
             return true;
-        if(that == null)
-            return false;
+        }
 
-        if(!(that instanceof SemVer))
+        if(that == null) {
             return false;
+        }
+
+        if(!(that instanceof SemVer)) {
+            return false;
+        }
 
         return this.compareTo((SemVer) that) == 0;
     }
