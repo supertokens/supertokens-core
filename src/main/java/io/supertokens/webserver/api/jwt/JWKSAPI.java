@@ -36,6 +36,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 
+@Deprecated
 public class JWKSAPI extends WebserverAPI {
     private static final long serialVersionUID = -3475605151671191143L;
 

@@ -69,8 +69,13 @@ public class JWTSigningAPI extends WebserverAPI {
                     new WebserverAPI.BadRequestException("validity must be greater than or equal to 0"));
         }
 
-        boolean useDynamicKey = version.equals(SemVer.v2_19) &&
-                Boolean.FALSE.equals(InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true));
+        boolean useDynamicKey = false;
+        if (version.greaterThanOrEqualTo(SemVer.v2_19)) {
+            Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
+            // useStaticKeyInput defaults to true, so we check if it has been explicitly set to false
+            useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);
+        }
+
         try {
             String jwt = JWTSigningFunctions.createJWTToken(main, algorithm.toUpperCase(), payload, jwksDomain,
                     validity, useDynamicKey);

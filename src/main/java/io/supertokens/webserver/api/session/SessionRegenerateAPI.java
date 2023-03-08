@@ -20,6 +20,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
@@ -83,6 +84,8 @@ public class SessionRegenerateAPI extends WebserverAPI {
             reply.addProperty("status", "UNAUTHORISED");
             reply.addProperty("message", e.getMessage());
             super.sendJsonResponse(200, reply, resp);
+        } catch(AccessTokenPayloadError e) {
+            throw new ServletException(new BadRequestException(e.getMessage()));
         }
     }
 

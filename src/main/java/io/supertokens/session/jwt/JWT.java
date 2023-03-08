@@ -79,24 +79,23 @@ public class JWT {
 
         JsonObject parsedHeader = new JsonParser().parse(Utils.convertFromBase64(splittedInput[0])).getAsJsonObject();
 
-        // TODO: check if we need these checks
         JsonPrimitive typ = parsedHeader.get("typ").getAsJsonPrimitive();
-        if (!typ.isJsonPrimitive() || !typ.isString() || !typ.getAsString().equals("JWT")) {
+        if (!typ.isString() || !typ.getAsString().equals("JWT")) {
             throw new JWTException("JWT header mismatch - typ");
         }
 
         JsonPrimitive alg = parsedHeader.get("alg").getAsJsonPrimitive();
-        if (!alg.isJsonPrimitive() || !alg.isString() || !alg.getAsString().equals("RS256")) {
+        if (!alg.isString() || !alg.getAsString().equals("RS256")) {
             throw new JWTException("JWT header mismatch - alg");
         }
 
         JsonPrimitive version = parsedHeader.get("version").getAsJsonPrimitive();
-        if (!version.isJsonPrimitive()  || !version.isString() || !version.getAsString().equals("3")) {
+        if (!version.isString() || !version.getAsString().equals("3")) {
             throw new JWTException("JWT header mismatch - version");
         }
 
         JsonPrimitive kid = parsedHeader.get("kid").getAsJsonPrimitive();
-        if (!kid.isJsonPrimitive() || !kid.isString()) {
+        if (!kid.isString()) {
             throw new JWTException("JWT header mismatch - kid");
         }
         return new JWTPreParseInfo(splittedInput, AccessToken.VERSION.V3, kid.getAsString());

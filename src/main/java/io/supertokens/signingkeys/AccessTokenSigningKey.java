@@ -174,7 +174,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                         if (keysCreatedAfterCanSign <= key.createdAtTime) {
                             generateNewKey = false;
                         }
-                        validKeysFromSQL.add(new KeyInfo(String.valueOf(key.createdAtTime), key.value, key.createdAtTime, signingKeyLifetime, ACCESS_TOKEN_SIGNING_ALGO));
+                        validKeysFromSQL.add(new KeyInfo("d-" + key.createdAtTime, key.value, key.createdAtTime, signingKeyLifetime, ACCESS_TOKEN_SIGNING_ALGO));
                     }
                 }
 
@@ -187,7 +187,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                         throw new StorageTransactionLogicException(e);
                     }
                     long creationTime = System.currentTimeMillis();
-                    KeyInfo newKey = new KeyInfo(String.valueOf(creationTime), signingKey, creationTime, signingKeyLifetime, ACCESS_TOKEN_SIGNING_ALGO);
+                    KeyInfo newKey = new KeyInfo("d-" + creationTime, signingKey, creationTime, signingKeyLifetime, ACCESS_TOKEN_SIGNING_ALGO);
                     sqlStorage.addAccessTokenSigningKey_Transaction(con,
                             new KeyValueInfo(newKey.value, newKey.createdAtTime));
                     validKeysFromSQL.add(newKey);
@@ -217,7 +217,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                         if (keysCreatedAfterCanSign <= key.createdAtTime) {
                             generateNewKey = false;
                         }
-                        validKeys.add(new KeyInfo(String.valueOf(key.createdAtTime), key.value, key.createdAtTime, signingKeyLifetime, ACCESS_TOKEN_SIGNING_ALGO));
+                        validKeys.add(new KeyInfo("d-" + key.createdAtTime, key.value, key.createdAtTime, signingKeyLifetime, ACCESS_TOKEN_SIGNING_ALGO));
                     }
                 }
 
@@ -230,7 +230,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                         throw new StorageTransactionLogicException(e);
                     }
                     long creationTime = System.currentTimeMillis();
-                    KeyInfo newKey = new KeyInfo(String.valueOf(creationTime), signingKey, creationTime, signingKeyLifetime, ACCESS_TOKEN_SIGNING_ALGO);
+                    KeyInfo newKey = new KeyInfo("d-"+ creationTime, signingKey, creationTime, signingKeyLifetime, ACCESS_TOKEN_SIGNING_ALGO);
                     boolean success = noSQLStorage.addAccessTokenSigningKey_Transaction(
                             new KeyValueInfo(newKey.value, newKey.createdAtTime), lastCreated);
 

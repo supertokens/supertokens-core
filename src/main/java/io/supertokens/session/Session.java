@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
+import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
@@ -60,7 +61,8 @@ public class Session {
             @Nonnull JsonObject userDataInJWT, @Nonnull JsonObject userDataInDatabase)
             throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
-            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException, UnauthorisedException, JWT.JWTException, UnsupportedJWTSigningAlgorithmException {
+            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException, UnauthorisedException,
+            JWT.JWTException, UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         return createNewSession(main, userId, userDataInJWT, userDataInDatabase, false, true, false);
     }
 
@@ -68,7 +70,7 @@ public class Session {
             @Nonnull JsonObject userDataInJWT, @Nonnull JsonObject userDataInDatabase, boolean enableAntiCsrf, boolean useV3AccessToken, boolean useStaticKey)
             throws NoSuchAlgorithmException, UnsupportedEncodingException, StorageQueryException, InvalidKeyException,
             InvalidKeySpecException, StorageTransactionLogicException, SignatureException, IllegalBlockSizeException,
-            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException, UnauthorisedException,
+            BadPaddingException, InvalidAlgorithmParameterException, NoSuchPaddingException, AccessTokenPayloadError,
             UnsupportedJWTSigningAlgorithmException {
         String sessionHandle = UUID.randomUUID().toString();
         String antiCsrfToken = enableAntiCsrf ? UUID.randomUUID().toString() : null;
@@ -108,7 +110,8 @@ public class Session {
     public static SessionInformationHolder regenerateToken(Main main, @Nonnull String token,
             @Nullable JsonObject userDataInJWT) throws StorageQueryException, StorageTransactionLogicException,
             UnauthorisedException, InvalidKeySpecException, SignatureException, NoSuchAlgorithmException,
-            InvalidKeyException, UnsupportedEncodingException, JWT.JWTException, TryRefreshTokenException, UnsupportedJWTSigningAlgorithmException {
+            InvalidKeyException, UnsupportedEncodingException, JWT.JWTException, TryRefreshTokenException, UnsupportedJWTSigningAlgorithmException,
+            AccessTokenPayloadError {
 
         // We assume the token has already been verified at this point. It may be expired or JWT signing key may have
         // changed for it...
@@ -143,7 +146,7 @@ public class Session {
     // pass antiCsrfToken to disable csrf check for this request
     public static SessionInformationHolder getSession(Main main, @Nonnull String token, @Nullable String antiCsrfToken,
             boolean enableAntiCsrf, Boolean doAntiCsrfCheck) throws StorageQueryException,
-            StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException, UnsupportedJWTSigningAlgorithmException {
+            StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException, UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
 
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessToken(main, token,
                 doAntiCsrfCheck && enableAntiCsrf);
@@ -224,14 +227,18 @@ public class Session {
                                 // here we purposely use accessToken.userData instead of sessionInfo.userDataInJWT
                                 // because we are not returning a new access token
                                 null, null, null, null);
-                    } catch (UnauthorisedException | NoSuchAlgorithmException | UnsupportedEncodingException
-                            | InvalidKeyException | InvalidKeySpecException | SignatureException | UnsupportedJWTSigningAlgorithmException e) {
+                    } catch (UnauthorisedException | NoSuchAlgorithmException | UnsupportedEncodingException |
+                             InvalidKeyException | InvalidKeySpecException | SignatureException |
+                             UnsupportedJWTSigningAlgorithmException | AccessTokenPayloadError e) {
                         throw new StorageTransactionLogicException(e);
                     }
                 });
             } catch (StorageTransactionLogicException e) {
                 if (e.actualException instanceof UnauthorisedException) {
                     throw (UnauthorisedException) e.actualException;
+                }
+                if (e.actualException instanceof AccessTokenPayloadError) {
+                    throw (AccessTokenPayloadError) e.actualException;
                 }
                 throw e;
             }
@@ -296,7 +303,7 @@ public class Session {
 
     public static SessionInformationHolder refreshSession(Main main, @Nonnull String refreshToken,
             @Nullable String antiCsrfToken, boolean enableAntiCsrf, boolean useV3AccessToken) throws StorageTransactionLogicException,
-            UnauthorisedException, StorageQueryException, TokenTheftDetectedException, UnsupportedJWTSigningAlgorithmException {
+            UnauthorisedException, StorageQueryException, TokenTheftDetectedException, UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         RefreshToken.RefreshTokenInfo refreshTokenInfo = RefreshToken.getInfoFromRefreshToken(main, refreshToken);
 
         if (enableAntiCsrf && refreshTokenInfo.antiCsrfToken != null) {
@@ -312,7 +319,7 @@ public class Session {
     private static SessionInformationHolder refreshSessionHelper(Main main, String refreshToken,
             RefreshToken.RefreshTokenInfo refreshTokenInfo, boolean enableAntiCsrf, AccessToken.VERSION accessTokenVersion)
             throws StorageTransactionLogicException, UnauthorisedException, StorageQueryException,
-            TokenTheftDetectedException, UnsupportedJWTSigningAlgorithmException {
+            TokenTheftDetectedException, UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
         ////////////////////////////////////////// SQL/////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////
         //////////////////////////////////////////////////////////////////////////////////////////////
@@ -373,9 +380,10 @@ public class Session {
                         throw new TokenTheftDetectedException(sessionHandle, sessionInfo.userId);
 
                     } catch (UnauthorisedException | NoSuchAlgorithmException | InvalidKeyException
-                            | UnsupportedEncodingException | TokenTheftDetectedException | InvalidKeySpecException
+                            | AccessTokenPayloadError | TokenTheftDetectedException | InvalidKeySpecException
                             | SignatureException | NoSuchPaddingException | InvalidAlgorithmParameterException
-                            | IllegalBlockSizeException | BadPaddingException| UnsupportedJWTSigningAlgorithmException e) {
+                            | IllegalBlockSizeException | BadPaddingException| UnsupportedJWTSigningAlgorithmException |
+                            UnsupportedEncodingException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                 });
@@ -384,6 +392,8 @@ public class Session {
                     throw (UnauthorisedException) e.actualException;
                 } else if (e.actualException instanceof TokenTheftDetectedException) {
                     throw (TokenTheftDetectedException) e.actualException;
+                } else if (e.actualException instanceof AccessTokenPayloadError) {
+                    throw (AccessTokenPayloadError) e.actualException;
                 }
                 throw e;
             }

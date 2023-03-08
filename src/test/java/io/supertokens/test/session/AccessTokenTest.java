@@ -25,7 +25,6 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.session.accessToken.AccessToken.AccessTokenInfo;
-import io.supertokens.signingkeys.AccessTokenSigningKey;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.session.jwt.JWT;
@@ -468,7 +467,7 @@ public class AccessTokenTest {
             });
         }
 
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.SETTING_ACCESS_TOKEN_SIGNING_KEY_TO_NULL));
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.UPDATING_ACCESS_TOKEN_SIGNING_KEYS));
 
         es.shutdown();
         es.awaitTermination(2, TimeUnit.MINUTES);

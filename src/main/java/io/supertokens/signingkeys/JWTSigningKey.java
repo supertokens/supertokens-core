@@ -227,7 +227,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         if (algorithm.getAlgorithmType().equalsIgnoreCase("rsa")) {
             long currentTimeInMillis = System.currentTimeMillis();
             Utils.PubPriKey newKey = Utils.generateNewPubPriKey();
-            return new JWTAsymmetricSigningKeyInfo(Utils.getUUID(), currentTimeInMillis, algorithm.name(),
+            return new JWTAsymmetricSigningKeyInfo("s-" + Utils.getUUID(), currentTimeInMillis, algorithm.name(),
                     newKey.publicKey, newKey.privateKey);
         }
 

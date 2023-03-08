@@ -22,11 +22,9 @@ import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.utils.SemVer;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
+import org.junit.*;
 import org.junit.rules.TestRule;
 
 import static junit.framework.TestCase.assertEquals;
@@ -77,11 +75,18 @@ public class RefreshSessionAPITest2_19 {
                 sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
         sessionRefreshBody.addProperty("enableAntiCsrf", false);
 
-        JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                Utils.getCdiVersionStringLatestForTests(), "session");
-        assertEquals(sessionRefreshResponse.get("status").getAsString(), "UNAUTHORISED");
-        assertEquals(sessionRefreshResponse.get("message").getAsString(), "The user payload contains protected field");
+        HttpResponseException caught = null;
+        try {
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
+                    Utils.getCdiVersionStringLatestForTests(), "session");
+        } catch (HttpResponseException e) {
+            caught = e;
+        }
+
+        assertNotNull(caught);
+        Assert.assertEquals(caught.statusCode, 400);
+        Assert.assertEquals(caught.getMessage(), "Http error. Status Code: 400. Message:" + " The user payload contains protected field");
     }
 
     @Test

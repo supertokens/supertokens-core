@@ -22,8 +22,8 @@ import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.config.Config;
+import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.TryRefreshTokenException;
-import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.jwt.JWTSigningFunctions;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.signingkeys.JWTSigningKey;
@@ -130,7 +130,7 @@ public class AccessToken {
                 ProcessState.getInstance(main).addState(PROCESS_STATE.RETRYING_ACCESS_TOKEN_JWT_VERIFICATION, error);
 
                 // remove key from memory and retry
-                SigningKeys.getInstance(main).removeKeyFromMemoryIfItHasNotChanged(keyInfoList);
+                SigningKeys.getInstance(main).updateKeyCacheIfNotChanged(keyInfoList);
                 return AccessToken.getInfoFromAccessToken(main, token, false, doAntiCsrfCheck);
             }
             throw new TryRefreshTokenException(error);
@@ -164,26 +164,26 @@ public class AccessToken {
             @Nonnull String userId, @Nonnull String refreshTokenHash1, @Nullable String parentRefreshTokenHash1,
             @Nonnull JsonObject userData, @Nullable String antiCsrfToken, @Nullable Long expiryTime, VERSION version, boolean useStaticKey)
             throws StorageQueryException, StorageTransactionLogicException, InvalidKeyException,
-            NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException, UnauthorisedException,
+            NoSuchAlgorithmException, UnsupportedEncodingException, InvalidKeySpecException, SignatureException, AccessTokenPayloadError,
             UnsupportedJWTSigningAlgorithmException {
 
         Utils.PubPriKey signingKey;
 
-        Date now = new Date();
-        Date expires;
+        long now = System.currentTimeMillis();
+        long expires;
         if (expiryTime != null) {
-            expires = new Date(expiryTime);
+            expires = expiryTime;
         } else {
-            expires = new Date(now.getTime() + Config.getConfig(main).getAccessTokenValidity());
+            expires = now + Config.getConfig(main).getAccessTokenValidity();
         }
-        AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expires.getTime(),
-                parentRefreshTokenHash1, userData, antiCsrfToken, now.getTime(), version);
+        AccessTokenInfo accessToken = new AccessTokenInfo(sessionHandle, userId, refreshTokenHash1, expires,
+                parentRefreshTokenHash1, userData, antiCsrfToken, now, version);
 
         JWTSigningKeyInfo keyToUse;
         if (useStaticKey) {
-            keyToUse = JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
+            keyToUse = SigningKeys.getInstance(main).getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
         } else {
-            keyToUse = SigningKeys.getJWTSigningKeyInfoFromKeyInfo(SigningKeys.getInstance(main).getLatestIssuedDynamicKey());
+            keyToUse = Utils.getJWTSigningKeyInfoFromKeyInfo(SigningKeys.getInstance(main).getLatestIssuedDynamicKey());
         }
 
         String token;
@@ -196,7 +196,7 @@ public class AccessToken {
             token = JWT.createAndSignLegacyAccessToken(accessToken.toJSON(), signingKey.privateKey, version);
         }
 
-        return new TokenInfo(token, expires.getTime(), now.getTime());
+        return new TokenInfo(token, expires, now);
     }
 
     public static TokenInfo createNewAccessTokenV1(@Nonnull Main main, @Nonnull String sessionHandle,
@@ -328,7 +328,7 @@ public class AccessToken {
 
         }
 
-        JsonObject toJSON() throws UnauthorisedException {
+        JsonObject toJSON() throws AccessTokenPayloadError {
             JsonObject res = new JsonObject();
             if (this.version == VERSION.V3) {
                 res.addProperty("sub", this.userId);
@@ -348,7 +348,7 @@ public class AccessToken {
                 for (Map.Entry<String, JsonElement> element : this.userData.entrySet()) {
                     if (res.has(element.getKey())) {
                         // The use is trying to add a protected prop into the payload (userId, etc) in V3 (this should be blocked by validation)
-                        throw new UnauthorisedException("The user payload contains protected field");
+                        throw new AccessTokenPayloadError("The user payload contains protected field");
                     }
                     res.add(element.getKey(), element.getValue());
                 }

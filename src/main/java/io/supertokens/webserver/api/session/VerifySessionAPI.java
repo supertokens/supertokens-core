@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
@@ -77,17 +78,15 @@ public class VerifySessionAPI extends WebserverAPI {
                         new Utils.PubPriKey(SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
                 result.addProperty("jwtSigningPublicKeyExpiryTime",
                         SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
-            }
 
-            if (super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_18)) {
-                List<KeyInfo> keys = SigningKeys.getInstance(main).getDynamicKeys();
-                JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
-                result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
+                Utils.addLegacySigningKeyInfos(main, result, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_19));
             }
 
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
+        } catch(AccessTokenPayloadError e) {
+            throw new ServletException(new BadRequestException(e.getMessage()));
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
@@ -105,17 +104,13 @@ public class VerifySessionAPI extends WebserverAPI {
                             SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
                     reply.addProperty("jwtSigningPublicKeyExpiryTime",
                             SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
-                }
 
-                if (super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_18)) {
-                    List<KeyInfo> keys = SigningKeys.getInstance(main).getDynamicKeys();
-                    JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
-                    reply.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
+                    Utils.addLegacySigningKeyInfos(main, reply, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_19));
                 }
 
                 reply.addProperty("message", e.getMessage());
                 super.sendJsonResponse(200, reply, resp);
-            } catch (StorageQueryException | StorageTransactionLogicException e2) {
+            } catch (StorageQueryException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e2) {
                 throw new ServletException(e2);
             }
         }

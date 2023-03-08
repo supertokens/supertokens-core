@@ -22,23 +22,23 @@ import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
+import io.supertokens.utils.Utils;
 
 import java.math.BigInteger;
-import java.security.KeyFactory;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
-import java.security.spec.PKCS8EncodedKeySpec;
-import java.security.spec.X509EncodedKeySpec;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
+import static io.supertokens.utils.Utils.getPublicKeyFromString;
 
 public class SigningKeys extends ResourceDistributor.SingletonResource {
     private static final String RESOURCE_KEY = "io.supertokens.signingKeys.SigningKeys";
@@ -52,7 +52,7 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
     }
 
     public static void init(Main main) {
-        AccessTokenSigningKey instance = (AccessTokenSigningKey) main.getResourceDistributor()
+        SigningKeys instance = (SigningKeys) main.getResourceDistributor()
                 .getResource(RESOURCE_KEY);
         if (instance != null) {
             return;
@@ -64,7 +64,7 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
         SigningKeys instance = (SigningKeys) main.getResourceDistributor()
                 .getResource(RESOURCE_KEY);
         if (instance == null) {
-            init(main);
+            throw new IllegalStateException("SigningKeys have not been initialized");
         }
         return (SigningKeys) main.getResourceDistributor().getResource(RESOURCE_KEY);
     }
@@ -79,7 +79,7 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
             throws StorageQueryException, StorageTransactionLogicException {
 
         return Stream.concat(
-            getDynamicKeys().stream().map(SigningKeys::getJWTSigningKeyInfoFromKeyInfo),
+            getDynamicKeys().stream().map(Utils::getJWTSigningKeyInfoFromKeyInfo),
             getStaticKeys().stream()
         ).collect(Collectors.toList());
     }
@@ -91,11 +91,13 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
             this.dynamicKeys = AccessTokenSigningKey.getInstance(main).getOrCreateAndGetSigningKeys();
         }
 
+        // This filters the list down to keys that can be used to verify tokens
         List<KeyInfo> res = this.dynamicKeys.stream().filter(k -> k.expiryTime >= System.currentTimeMillis()).collect(Collectors.toList());
 
-        if (res.size() == 0 || System.currentTimeMillis() > res.get(0).createdAtTime
-                + config.getAccessTokenDynamicSigningKeyUpdateInterval()) {
-            this.dynamicKeys = null;
+        // Here we check if the first (and latest) key can be used to sign new tokens (and that it exists)
+        if (res.size() == 0 || System.currentTimeMillis() > res.get(0).createdAtTime + config.getAccessTokenDynamicSigningKeyUpdateInterval()) {
+
+            updateKeyCacheIfNotChanged(res.stream().map(Utils::getJWTSigningKeyInfoFromKeyInfo).collect(Collectors.toList()));
             return getDynamicKeys();
         }
 
@@ -109,32 +111,57 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
 
         return this.staticKeys;
     }
+
+    public JWTSigningKeyInfo getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms algorithm)
+            throws StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException {
+        JWTSigningKeyInfo key = JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(algorithm);
+
+        List<JWTSigningKeyInfo> keyCache = getAllKeys();
+        // if the new key is not in the cache, we know we need to refresh it, except if something in the background already refreshed it
+        if (keyCache.stream().noneMatch(k -> Objects.equals(k.keyId, key.keyId))) {
+            updateKeyCacheIfNotChanged(keyCache);
+        }
+
+        return key;
+    }
+
     public KeyInfo getLatestIssuedDynamicKey() throws StorageQueryException, StorageTransactionLogicException {
         return getDynamicKeys().get(0);
     }
 
-    public synchronized long getDynamicSigningKeyExpiryTime() throws StorageQueryException, StorageTransactionLogicException {
+    public long getDynamicSigningKeyExpiryTime() throws StorageQueryException, StorageTransactionLogicException {
         long createdAtTime = getLatestIssuedDynamicKey().createdAtTime;
         return createdAtTime + Config.getConfig(main).getAccessTokenDynamicSigningKeyUpdateInterval();
     }
 
-    public synchronized void removeKeyFromMemoryIfItHasNotChanged(List<JWTSigningKeyInfo> oldKeyInfo)
+    // This function is synchronized because we only want a single function to clear (and refresh) the key cache.
+    // If multiple threads try to refresh it at the same time, we can avoid multiple trips to the DB by checking if their info is
+    // up-to-date, i.e.: if all currently cached keys were known to them.
+    public synchronized void updateKeyCacheIfNotChanged(List<JWTSigningKeyInfo> oldKeyInfo)
             throws StorageQueryException, StorageTransactionLogicException {
         // we cannot use read write locks for keyInfo because in getKey, we would
         // have to upgrade from the readLock to a
         // writeLock - which is not possible:
         // https://docs.oracle.com/javase/7/docs/api/java/util/concurrent/locks/ReentrantReadWriteLock.html
 
-        if (this.dynamicKeys != null && this.staticKeys != null &&
-                // we want to refresh if all keys we are storing were known before
-            this.getAllKeys().stream().allMatch(storedKey -> oldKeyInfo.stream().anyMatch(oldKey -> Objects.equals(oldKey.keyId, storedKey.keyId)))) {
-            // key has not changed since we previously tried to use it... So we can make it null.
-            // otherwise we might end up making this null unnecessarily.
-
+        if (this.dynamicKeys == null ||
+            // First we disregard expired keys - it doesn't matter if they were known or not
+            this.dynamicKeys.stream().filter(k -> k.expiryTime >= System.currentTimeMillis())
+                // then check if all keys currently in the cache exists in the parameter
+                .allMatch(storedKey -> oldKeyInfo.stream().anyMatch(oldKey -> Objects.equals(oldKey.keyId, storedKey.id)))) {
+            // key has not changed since we previously tried to use it... So we update it from the db, creating a new key if necessary
             ProcessState.getInstance(this.main)
-                    .addState(ProcessState.PROCESS_STATE.SETTING_ACCESS_TOKEN_SIGNING_KEY_TO_NULL, null);
-            this.staticKeys = null;
-            this.dynamicKeys = null;
+                    .addState(ProcessState.PROCESS_STATE.UPDATING_ACCESS_TOKEN_SIGNING_KEYS, null);
+            this.dynamicKeys = AccessTokenSigningKey.getInstance(main).getOrCreateAndGetSigningKeys();
+        }
+
+        if (this.staticKeys == null ||
+            // we want to refresh if all keys we are storing were known before
+            this.staticKeys.stream().allMatch(storedKey -> oldKeyInfo.stream().anyMatch(oldKey -> Objects.equals(oldKey.keyId, storedKey.keyId)))) {
+            // key has not changed since we previously tried to use it... So we update it from the db
+            ProcessState.getInstance(this.main)
+                    .addState(ProcessState.PROCESS_STATE.UPDATING_ACCESS_TOKEN_SIGNING_KEYS, null);
+            this.staticKeys = JWTSigningKey.getInstance(main).getAllSigningKeys();
         }
     }
 
@@ -152,7 +179,7 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
             NoSuchAlgorithmException, InvalidKeySpecException {
         List<JsonObject> jwks = new ArrayList<>();
 
-        // Retrieve all static keys in storage
+        // Retrieve all keys in storage
         List<JWTSigningKeyInfo> keys = this.getAllKeys();
         for (JWTSigningKeyInfo currentKeyInfo : keys) {
             // We only use asymmetric keys
@@ -208,26 +235,30 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
             this.expiryTime = createdAtTime + validityDuration;
             this.algorithm = algorithm;
         }
-    }
 
-    public static PublicKey getPublicKeyFromString(String keyCert, JWTSigningKey.SupportedAlgorithms algorithm)
-            throws NoSuchAlgorithmException, InvalidKeySpecException {
-        byte[] decodedKeyBytes = Base64.getDecoder().decode(keyCert);
-        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(decodedKeyBytes);
-        KeyFactory kf = KeyFactory.getInstance(algorithm.getAlgorithmType());
-        return kf.generatePublic(keySpec);
-    }
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || !(o instanceof KeyInfo)) return false;
 
-    public static PrivateKey getPrivateKeyFromString(String keyCert, JWTSigningKey.SupportedAlgorithms algorithm)
-            throws NoSuchAlgorithmException, InvalidKeySpecException {
-        byte[] decodedKeyBytes = Base64.getDecoder().decode(keyCert);
-        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(decodedKeyBytes);
-        KeyFactory kf = KeyFactory.getInstance(algorithm.getAlgorithmType());
-        return kf.generatePrivate(keySpec);
-    }
+            KeyInfo keyInfo = (KeyInfo) o;
 
-    public static JWTSigningKeyInfo getJWTSigningKeyInfoFromKeyInfo(KeyInfo keyInfo) {
-        return new JWTAsymmetricSigningKeyInfo(keyInfo.id, keyInfo.createdAtTime, keyInfo.algorithm, keyInfo.value);
+            if (createdAtTime != keyInfo.createdAtTime) return false;
+            if (expiryTime != keyInfo.expiryTime) return false;
+            if (!id.equals(keyInfo.id)) return false;
+            if (!value.equals(keyInfo.value)) return false;
+            return algorithm.equals(keyInfo.algorithm);
+        }
+
+        @Override
+        public int hashCode() {
+            int result = id.hashCode();
+            result = 31 * result + value.hashCode();
+            result = 31 * result + (int) (createdAtTime ^ (createdAtTime >>> 32));
+            result = 31 * result + (int) (expiryTime ^ (expiryTime >>> 32));
+            result = 31 * result + algorithm.hashCode();
+            return result;
+        }
     }
 
     /**

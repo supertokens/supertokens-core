@@ -21,6 +21,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
+import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
@@ -77,8 +78,13 @@ public class SessionAPI extends WebserverAPI {
         JsonObject userDataInDatabase = InputParser.parseJsonObjectOrThrowError(input, "userDataInDatabase", false);
         assert userDataInDatabase != null;
 
-        Boolean inputUseStaticKey = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
-        boolean useStaticSigningKey = version.greaterThanOrEqualTo(SemVer.v2_19) ? Boolean.TRUE.equals(inputUseStaticKey) : Config.getConfig(main).getAccessTokenSigningKeyDynamic();
+        boolean useStaticSigningKey = Config.getConfig(main).getAccessTokenSigningKeyDynamic();
+        if (version.greaterThanOrEqualTo(SemVer.v2_19)) {
+            Boolean inputUseStaticKey = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
+
+            // useStaticKeyInput defaults to false, so we check if it has been explicitly set to true
+            useStaticSigningKey = Boolean.TRUE.equals(inputUseStaticKey);
+        }
 
         try {
             SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
@@ -91,21 +97,12 @@ public class SessionAPI extends WebserverAPI {
             if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_19)) {
                 result.remove("idRefreshToken");
             } else {
-                result.addProperty("jwtSigningPublicKey",
-                        new Utils.PubPriKey(SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
-                result.addProperty("jwtSigningPublicKeyExpiryTime",
-                        SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
-
-                if (version.betweenInclusive(SemVer.v2_9, SemVer.v2_18)) {
-                    List<KeyInfo> keys = SigningKeys.getInstance(main).getDynamicKeys();
-                    JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
-                    result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
-                }
+                Utils.addLegacySigningKeyInfos(main, result, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_19));
             }
 
             super.sendJsonResponse(200, result, resp);
-        }  catch (UnauthorisedException e) {
-            super.sendTextResponse(400, e.getMessage(), resp);
+        } catch(AccessTokenPayloadError e) {
+            throw new ServletException(new BadRequestException(e.getMessage()));
         } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException
                  | StorageTransactionLogicException | SignatureException | IllegalBlockSizeException
                  | BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException |
@@ -126,7 +123,7 @@ public class SessionAPI extends WebserverAPI {
             result.add("userDataInJWT", Utils.toJsonTreeWithNulls(sessionInfo.userDataInJWT));
             result.add("userDataInDatabase", Utils.toJsonTreeWithNulls(sessionInfo.userDataInDatabase));
             SemVer version = super.getVersionFromRequest(req);
-            if (!version.equals(SemVer.v2_14)) {
+            if (!version.greaterThanOrEqualTo(SemVer.v2_19)) {
                 result.remove("useStaticKey");
             }
 

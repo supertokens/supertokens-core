@@ -148,7 +148,6 @@ public class SessionTest4 {
 
     @Test
     public void createVerifyRefreshVerifyRefresh() throws Exception {
-
         Utils.setValueInConfig("access_token_validity", "1");
 
         String[] args = { "../" };

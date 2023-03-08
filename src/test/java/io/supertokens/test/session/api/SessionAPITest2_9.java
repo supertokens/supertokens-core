@@ -173,7 +173,6 @@ public class SessionAPITest2_9 {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-
     }
 
     @Test

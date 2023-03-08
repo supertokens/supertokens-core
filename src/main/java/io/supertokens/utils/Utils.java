@@ -26,6 +26,15 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
+import io.supertokens.Main;
+import io.supertokens.config.Config;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
+import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
+import io.supertokens.signingkeys.JWTSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.signingkeys.SigningKeys.KeyInfo;
 
 import java.io.ByteArrayOutputStream;
@@ -272,13 +281,42 @@ public class Utils {
             this.privateKey = parts[1];
         }
         public PubPriKey(String s) {
-            this(s.split("[|;]"));
+            // We split by both | and ; because in old versions we used to use ";" in dynamic and "|" in static keys
+            // Now we are consolidating all of them to use "|", but we by handling legacy keys, we can avoid the
+            // need for manual key migration.
+            // I.e.: this way only people who used access_token_signing_key_dynamic has to do it instead of everyone.
+            // for everyone else, the key rotation should get it done in a few weeks.
+
+            String[] parts =s.split("[|;]");
+
+            this.publicKey = parts[0];
+            this.privateKey = parts[1];
         }
 
         @Override
         public String toString() {
             return publicKey + "|" + privateKey;
         }
+    }
+
+    public static PublicKey getPublicKeyFromString(String keyCert, JWTSigningKey.SupportedAlgorithms algorithm)
+            throws NoSuchAlgorithmException, InvalidKeySpecException {
+        byte[] decodedKeyBytes = Base64.getDecoder().decode(keyCert);
+        X509EncodedKeySpec keySpec = new X509EncodedKeySpec(decodedKeyBytes);
+        KeyFactory kf = KeyFactory.getInstance(algorithm.getAlgorithmType());
+        return kf.generatePublic(keySpec);
+    }
+
+    public static PrivateKey getPrivateKeyFromString(String keyCert, JWTSigningKey.SupportedAlgorithms algorithm)
+            throws NoSuchAlgorithmException, InvalidKeySpecException {
+        byte[] decodedKeyBytes = Base64.getDecoder().decode(keyCert);
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(decodedKeyBytes);
+        KeyFactory kf = KeyFactory.getInstance(algorithm.getAlgorithmType());
+        return kf.generatePrivate(keySpec);
+    }
+
+    public static JWTSigningKeyInfo getJWTSigningKeyInfoFromKeyInfo(KeyInfo keyInfo) {
+        return new JWTAsymmetricSigningKeyInfo(keyInfo.id, keyInfo.createdAtTime, keyInfo.algorithm, keyInfo.value);
     }
 
     public static String getUUID() {
@@ -293,16 +331,45 @@ public class Utils {
         return baos.toString();
     }
 
-    public static JsonArray keyListToJson(List<KeyInfo> keys) {
-        JsonArray jwtSigningPublicKeyListJSON = new JsonArray();
-        for (KeyInfo keyInfo : keys) {
-            JsonObject keyJSON = new JsonObject();
-            keyJSON.addProperty("publicKey", new PubPriKey(keyInfo.value).publicKey);
-            keyJSON.addProperty("expiryTime", keyInfo.expiryTime);
-            keyJSON.addProperty("createdAt", keyInfo.createdAtTime);
-            jwtSigningPublicKeyListJSON.add(keyJSON);
+    public static JsonObject addLegacySigningKeyInfos(Main main, JsonObject result, boolean addKeyList)
+            throws StorageQueryException, StorageTransactionLogicException, UnsupportedJWTSigningAlgorithmException {
+        if (Config.getConfig(main).getAccessTokenSigningKeyDynamic()) {
+            result.addProperty("jwtSigningPublicKey",
+                    new Utils.PubPriKey(SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
+            result.addProperty("jwtSigningPublicKeyExpiryTime",
+                    SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
+
+            if (addKeyList) {
+                List<KeyInfo> keys = SigningKeys.getInstance(main).getDynamicKeys();
+
+                JsonArray jwtSigningPublicKeyListJSON = new JsonArray();
+                for (KeyInfo keyInfo : keys) {
+                    JsonObject keyJSON = new JsonObject();
+                    keyJSON.addProperty("publicKey", new PubPriKey(keyInfo.value).publicKey);
+                    keyJSON.addProperty("expiryTime", keyInfo.expiryTime);
+                    keyJSON.addProperty("createdAt", keyInfo.createdAtTime);
+                    jwtSigningPublicKeyListJSON.add(keyJSON);
+                }
+
+                result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
+            }
+        } else {
+            JWTSigningKeyInfo keyInfo = SigningKeys.getInstance(main).getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
+            result.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(keyInfo.keyString).publicKey);
+            result.addProperty("jwtSigningPublicKeyExpiryTime", 10L * 365 * 24 * 3600 * 1000);
+
+            if (addKeyList) {
+                JsonArray jwtSigningPublicKeyListJSON = new JsonArray();
+                JsonObject keyJSON = new JsonObject();
+                keyJSON.addProperty("publicKey", new Utils.PubPriKey(keyInfo.keyString).publicKey);
+                keyJSON.addProperty("expiryTime", keyInfo.createdAtTime + 10L * 365 * 24 * 3600 * 1000);
+                keyJSON.addProperty("createdAt", keyInfo.createdAtTime);
+                jwtSigningPublicKeyListJSON.add(keyJSON);
+                result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
+            }
         }
-        return jwtSigningPublicKeyListJSON;
+
+        return result;
     }
 
     public static JsonElement toJsonTreeWithNulls(Object src) {

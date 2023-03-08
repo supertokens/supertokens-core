@@ -23,6 +23,7 @@ import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -140,13 +141,18 @@ public class SessionRegenerateAPITest2_19 {
         sessionRegenerateRequest.addProperty("accessToken", accessToken);
         sessionRegenerateRequest.add("userDataInJWT", newUserDataInJWT);
 
-        JsonObject sessionRegenerateResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
-                SemVer.v2_19.get(), "session");
+        HttpResponseException caught = null;
+        try {
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+            "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
+            SemVer.v2_19.get(), "session");
+        } catch (HttpResponseException e) {
+            caught = e;
+        }
 
-        assertEquals(sessionRegenerateResponse.get("status").getAsString(), "UNAUTHORISED");
-
-        assertEquals(sessionRegenerateResponse.get("message").getAsString(), "The user payload contains protected field");
+        assertNotNull(caught);
+        assertEquals(caught.statusCode, 400);
+        assertEquals(caught.getMessage(), "Http error. Status Code: 400. Message:" + " The user payload contains protected field");
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

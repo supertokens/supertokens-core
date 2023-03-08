@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.jwt.JWTAsymmetricSigningKeyInfo;
 import io.supertokens.pluginInterface.jwt.JWTSigningKeyInfo;
 import io.supertokens.signingkeys.JWTSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
+import io.supertokens.utils.Utils;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -37,9 +38,6 @@ import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.*;
-
-import static io.supertokens.signingkeys.SigningKeys.getPrivateKeyFromString;
-import static io.supertokens.signingkeys.SigningKeys.getPublicKeyFromString;
 
 public class JWTSigningFunctions {
     /**
@@ -50,7 +48,7 @@ public class JWTSigningFunctions {
      *                    {@link JWTSigningKey.SupportedAlgorithms}
      * @param payload     JSON object containing user defined claims to be added to the JWT payload
      * @param jwksDomain  Used as the issuer in the JWT payload
-     * @param jwtValidity Used to set iat anf exp claims in the JWT payload
+     * @param jwtValidityInSeconds Used to set iat and exp claims in the JWT payload
      * @param useDynamicKey Set to true to use a dynamic key (AccessTokenSigningKey)
      * @return String token
      * @throws StorageQueryException                   If there is an error interacting with the database
@@ -61,7 +59,7 @@ public class JWTSigningFunctions {
      * @throws UnsupportedJWTSigningAlgorithmException If the algorithm provided does not match any of the supported
      *                                                 algorithms
      */
-    public static String createJWTToken(Main main, String algorithm, JsonObject payload, String jwksDomain, long jwtValidity, boolean useDynamicKey)
+    public static String createJWTToken(Main main, String algorithm, JsonObject payload, String jwksDomain, long jwtValidityInSeconds, boolean useDynamicKey)
             throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
             InvalidKeySpecException, JWTCreationException, UnsupportedJWTSigningAlgorithmException {
         // TODO: In the future we will have a way for the user to send a custom key id to use
@@ -74,14 +72,14 @@ public class JWTSigningFunctions {
             throw new UnsupportedJWTSigningAlgorithmException();
         }
 
-        Date issued = new Date();
-        Date expires = new Date(issued.getTime() + jwtValidity * 1000);
+        long issued = System.currentTimeMillis();
+        long expires = System.currentTimeMillis() + (jwtValidityInSeconds * 1000);
 
         JWTSigningKeyInfo keyToUse;
         if (useDynamicKey) {
-            keyToUse = SigningKeys.getJWTSigningKeyInfoFromKeyInfo(SigningKeys.getInstance(main).getLatestIssuedDynamicKey());
+            keyToUse = Utils.getJWTSigningKeyInfoFromKeyInfo(SigningKeys.getInstance(main).getLatestIssuedDynamicKey());
         } else {
-            keyToUse = JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
+            keyToUse = SigningKeys.getInstance(main).getStaticKeyForAlgorithm(JWTSigningKey.SupportedAlgorithms.RS256);
         }
 
         return createJWTToken(supportedAlgorithm, new HashMap<>(), payload, jwksDomain, expires, issued, keyToUse);
@@ -89,7 +87,7 @@ public class JWTSigningFunctions {
 
     @SuppressWarnings("unchecked")
     public static String createJWTToken(JWTSigningKey.SupportedAlgorithms supportedAlgorithm, Map<String, Object> headerClaims, JsonObject payload, String jwksDomain,
-            Date jwtExpiry, Date jwtIssuedAt, JWTSigningKeyInfo keyToUse) throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
+            long jwtExpiryInMs, long jwtIssuedAtInMs, JWTSigningKeyInfo keyToUse) throws StorageQueryException, StorageTransactionLogicException, NoSuchAlgorithmException,
             InvalidKeySpecException, JWTCreationException, UnsupportedJWTSigningAlgorithmException {
         // Get an instance of auth0's Algorithm which is needed when signing using auth0's package
         Algorithm signingAlgorithm = getAuth0Algorithm(supportedAlgorithm, keyToUse);
@@ -105,14 +103,12 @@ public class JWTSigningFunctions {
         if (jwksDomain != null ) {
             jwtPayload.putIfAbsent("iss", jwksDomain);
         }
-        jwtPayload.put("exp", jwtExpiry);
-        jwtPayload.put("iat", jwtIssuedAt); // JWT uses seconds from epoch not millis
 
         JWTCreator.Builder builder = com.auth0.jwt.JWT.create();
         builder.withKeyId(keyToUse.keyId);
         builder.withHeader(headerClaims);
-        builder.withIssuedAt(jwtIssuedAt);
-        builder.withExpiresAt(jwtExpiry);
+        builder.withIssuedAt(new Date(jwtIssuedAtInMs));
+        builder.withExpiresAt(new Date(jwtExpiryInMs));
 
         if (jwksDomain != null) {
             builder.withIssuer(jwksDomain);
@@ -126,8 +122,8 @@ public class JWTSigningFunctions {
             throws NoSuchAlgorithmException, InvalidKeySpecException, UnsupportedJWTSigningAlgorithmException {
         // TODO: Abstract this away from the main package to avoid a direct dependency on auth0s package
         if (algorithm.equalsString("rs256")) {
-            PublicKey publicKey = getPublicKeyFromString(((JWTAsymmetricSigningKeyInfo) keyToUse).publicKey, algorithm);
-            PrivateKey privateKey = getPrivateKeyFromString(((JWTAsymmetricSigningKeyInfo) keyToUse).privateKey,
+            PublicKey publicKey = Utils.getPublicKeyFromString(((JWTAsymmetricSigningKeyInfo) keyToUse).publicKey, algorithm);
+            PrivateKey privateKey = Utils.getPrivateKeyFromString(((JWTAsymmetricSigningKeyInfo) keyToUse).privateKey,
                     algorithm);
 
             if (publicKey instanceof RSAPublicKey && privateKey instanceof RSAPrivateKey) {

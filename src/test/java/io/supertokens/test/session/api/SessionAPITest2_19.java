@@ -206,7 +206,7 @@ public class SessionAPITest2_19 {
         IllegalArgumentException caught = null;
         try {
             // We are just checking the format basically;
-            UUID.fromString(preParseInfo.kid);
+            UUID.fromString(preParseInfo.kid.substring(2));
         } catch (IllegalArgumentException ex) {
             caught = ex;
         }
