@@ -281,7 +281,7 @@ public class DashboardTest {
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/ee/featureflag",
-                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+                    null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(0, response.get("features").getAsJsonArray().size());
@@ -294,7 +294,7 @@ public class DashboardTest {
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/ee/featureflag",
-                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+                    null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(0, response.get("features").getAsJsonArray().size());
@@ -307,7 +307,7 @@ public class DashboardTest {
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/ee/featureflag",
-                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+                    null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(1, response.get("features").getAsJsonArray().size());
@@ -330,7 +330,7 @@ public class DashboardTest {
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/ee/featureflag",
-                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+                    null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(1, response.get("features").getAsJsonArray().size());

@@ -27,6 +27,7 @@ import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager.TestingProcess;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.RecipeRouter;
 import io.supertokens.webserver.Webserver;
@@ -46,6 +47,7 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.util.HashMap;
+import java.util.stream.Collectors;
 
 import static org.junit.Assert.*;
 
@@ -93,25 +95,25 @@ public class WebserverTest extends Mockito {
             // get request
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/testRecipe", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "");
+                    SemVer.v2_7.get(), "");
             assertEquals("get request from Recipe1", response);
 
             // post request
             response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "");
+                    SemVer.v2_7.get(), "");
             assertEquals("post request from Recipe1", response);
 
             // put request
             response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "");
+                    SemVer.v2_7.get(), "");
             assertEquals("put request from Recipe1", response);
 
             // delete request
             response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
                     "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "");
+                    SemVer.v2_7.get(), "");
             assertEquals("delete request from Recipe1", response);
 
         }
@@ -121,25 +123,25 @@ public class WebserverTest extends Mockito {
             // get request
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/testRecipe", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), recipe_1);
+                    SemVer.v2_7.get(), recipe_1);
             assertEquals("get request from Recipe1", response);
 
             // post request
             response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), recipe_1);
+                    SemVer.v2_7.get(), recipe_1);
             assertEquals("post request from Recipe1", response);
 
             // put request
             response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), recipe_1);
+                    SemVer.v2_7.get(), recipe_1);
             assertEquals("put request from Recipe1", response);
 
             // delete request
             response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
                     "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), recipe_1);
+                    SemVer.v2_7.get(), recipe_1);
             assertEquals("delete request from Recipe1", response);
 
         }
@@ -148,22 +150,22 @@ public class WebserverTest extends Mockito {
         {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/testRecipe", new HashMap<>(), 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), recipe_2);
+                    SemVer.v2_7.get(), recipe_2);
             assertEquals("get request from Recipe2", response);
 
             response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), recipe_2);
+                    SemVer.v2_7.get(), recipe_2);
             assertEquals("post request from Recipe2", response);
 
             response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), recipe_2);
+                    SemVer.v2_7.get(), recipe_2);
             assertEquals("put request from Recipe2", response);
 
             response = HttpRequestForTesting.sendJsonDELETERequest(process.getProcess(), "",
                     "http://localhost:3567/testRecipe", new JsonObject(), 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), recipe_2);
+                    SemVer.v2_7.get(), recipe_2);
             assertEquals("delete request from Recipe2", response);
         }
 
@@ -235,11 +237,12 @@ public class WebserverTest extends Mockito {
             }
         });
 
-        Object[] supportedVersions = WebserverAPI.supportedVersions.toArray();
+        SemVer[] supportedVersions = new SemVer[WebserverAPI.supportedVersions.size()];
+        supportedVersions = WebserverAPI.supportedVersions.toArray(supportedVersions);
         for (int i = 0; i < supportedVersions.length; i++) {
             String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/testSupportedVersions", null, 1000, 1000, null,
-                    supportedVersions[i].toString(), "");
+                    supportedVersions[i].get(), "");
             assertEquals(response, "version supported");
         }
 
@@ -274,13 +277,13 @@ public class WebserverTest extends Mockito {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp)
                     throws IOException, ServletException {
-                sendTextResponse(200, super.getVersionFromRequest(req), resp);
+                sendTextResponse(200, super.getVersionFromRequest(req).get(), resp);
             }
         });
 
         String response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/defaultVersion", null, 1000, 1000, null, null, "");
-        assertEquals(response, Utils.getCdiVersionLatestForTests());
+        assertEquals(response, Utils.getCdiVersionStringLatestForTests());
     }
 
     @Test

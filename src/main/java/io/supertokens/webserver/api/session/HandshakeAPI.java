@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -57,7 +58,7 @@ public class HandshakeAPI extends WebserverAPI {
             result.addProperty("jwtSigningPublicKeyExpiryTime",
                     AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
 
-            if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
+            if (!super.getVersionFromRequest(req).equals(SemVer.v2_7) && !super.getVersionFromRequest(req).equals(SemVer.v2_8)) {
                 List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getAllKeys();
                 JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                 result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);

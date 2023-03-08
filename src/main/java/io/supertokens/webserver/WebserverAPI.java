@@ -22,6 +22,7 @@ import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.output.Logging;
+import io.supertokens.utils.SemVer;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -35,26 +36,26 @@ public abstract class WebserverAPI extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
     protected final Main main;
-    public static final Set<String> supportedVersions = new HashSet<>();
+    public static final Set<SemVer> supportedVersions = new HashSet<>();
     private String rid;
 
     static {
-        supportedVersions.add("2.7");
-        supportedVersions.add("2.8");
-        supportedVersions.add("2.9");
-        supportedVersions.add("2.10");
-        supportedVersions.add("2.11");
-        supportedVersions.add("2.12");
-        supportedVersions.add("2.13");
-        supportedVersions.add("2.14");
-        supportedVersions.add("2.15");
-        supportedVersions.add("2.16");
-        supportedVersions.add("2.17");
-        supportedVersions.add("2.18");
+        supportedVersions.add(SemVer.v2_7);
+        supportedVersions.add(SemVer.v2_8);
+        supportedVersions.add(SemVer.v2_9);
+        supportedVersions.add(SemVer.v2_10);
+        supportedVersions.add(SemVer.v2_11);
+        supportedVersions.add(SemVer.v2_12);
+        supportedVersions.add(SemVer.v2_13);
+        supportedVersions.add(SemVer.v2_14);
+        supportedVersions.add(SemVer.v2_15);
+        supportedVersions.add(SemVer.v2_16);
+        supportedVersions.add(SemVer.v2_17);
+        supportedVersions.add(SemVer.v2_18);
     }
 
-    public static String getLatestCDIVersion() {
-        return "2.18";
+    public static SemVer getLatestCDIVersion() {
+        return SemVer.v2_18;
     }
 
     public WebserverAPI(Main main, String rid) {
@@ -116,7 +117,7 @@ public abstract class WebserverAPI extends HttpServlet {
         this.sendTextResponse(405, "Method not supported", resp);
     }
 
-    private void assertThatVersionIsCompatible(String version) throws ServletException {
+    private void assertThatVersionIsCompatible(SemVer version) throws ServletException {
         if (version == null) {
             throw new ServletException(new BadRequestException("cdi-version not provided"));
         }
@@ -157,7 +158,7 @@ public abstract class WebserverAPI extends HttpServlet {
                 assertThatAPIKeyCheckPasses(req.getHeader("api-key"));
             }
             if (this.versionNeeded(req)) {
-                String version = getVersionFromRequest(req);
+                SemVer version = getVersionFromRequest(req);
                 assertThatVersionIsCompatible(version);
                 Logging.info(main,
                         "API called: " + this.getPath() + ". Method: " + req.getMethod() + ". Version: " + version,
@@ -196,12 +197,12 @@ public abstract class WebserverAPI extends HttpServlet {
         return req.getHeader("rId");
     }
 
-    protected String getVersionFromRequest(HttpServletRequest req) {
+    protected SemVer getVersionFromRequest(HttpServletRequest req) {
         String version = req.getHeader("cdi-version");
         if (version == null) {
-            version = getLatestCDIVersion();
+            return getLatestCDIVersion();
         }
-        return version;
+        return new SemVer(version);
     }
 
     public static class BadRequestException extends Exception {

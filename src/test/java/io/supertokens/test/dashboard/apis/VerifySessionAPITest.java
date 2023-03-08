@@ -19,6 +19,7 @@ package io.supertokens.test.dashboard.apis;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -74,7 +75,7 @@ public class VerifySessionAPITest {
         requestBody.addProperty("sessionId", sessionId);
         JsonObject verifyResponse1 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/dashboard/session/verify", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_18ForTests(), "dashboard");
+                SemVer.v2_18.get(), "dashboard");
         assertEquals(1, verifyResponse1.entrySet().size());
         assertEquals("OK", verifyResponse1.get("status").getAsString());
 
@@ -82,7 +83,7 @@ public class VerifySessionAPITest {
 
         JsonObject verifyResponse2 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/dashboard/session/verify", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_18ForTests(), "dashboard");
+                SemVer.v2_18.get(), "dashboard");
 
         assertEquals(1, verifyResponse2.entrySet().size());
         assertEquals("INVALID_SESSION_ERROR", verifyResponse2.get("status").getAsString());

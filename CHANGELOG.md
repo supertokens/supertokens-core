@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+### Changed
+
+- Using an internal `SemVer` class to handle version numbers. This will make handling CDI version ranges easier.
+
 ## [4.4.0] - 2023-02-21
 
 ### Added
