@@ -20,8 +20,6 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
-import io.supertokens.dashboard.Dashboard;
-import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatException;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.inmemorydb.config.Config;
@@ -32,7 +30,6 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
-import io.supertokens.pluginInterface.dashboard.DashboardStorage;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
@@ -304,7 +301,8 @@ public class Start
 
     @Override
     public void createNewSession(String sessionHandle, String userId, String refreshTokenHash2,
-            JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT, long createdAtTime, boolean useStaticKey)
+                                 JsonObject userDataInDatabase, long expiry, JsonObject userDataInJWT,
+                                 long createdAtTime, boolean useStaticKey)
             throws StorageQueryException {
         try {
             SessionQueries.createNewSession(this, sessionHandle, userId, refreshTokenHash2, userDataInDatabase, expiry,
@@ -417,7 +415,8 @@ public class Start
 
     @Override
     public AuthRecipeUserInfo[] getUsers(@NotNull Integer limit, @NotNull String timeJoinedOrder,
-            @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId, @Nullable Long timeJoined)
+                                         @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
+                                         @Nullable Long timeJoined)
             throws StorageQueryException {
         try {
             return GeneralQueries.getUsers(this, limit, timeJoinedOrder, includeRecipeIds, userId, timeJoined);
@@ -448,7 +447,7 @@ public class Start
 
     @Override
     public void updateSessionInfo_Transaction(TransactionConnection con, String sessionHandle, String refreshTokenHash2,
-            long expiry) throws StorageQueryException {
+                                              long expiry) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             SessionQueries.updateSessionInfo_Transaction(this, sqlCon, sessionHandle, refreshTokenHash2, expiry);
@@ -493,8 +492,8 @@ public class Start
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getEmailPasswordUsersTable() + ".user_id)")
                     || e.getMessage()
-                            .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                                    + Config.getConfig(this).getUsersTable() + ".user_id)")) {
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getUsersTable() + ".user_id)")) {
                 throw new DuplicateUserIdException();
             }
             throw new StorageQueryException(e);
@@ -532,12 +531,6 @@ public class Start
     public void addPasswordResetToken(PasswordResetTokenInfo passwordResetTokenInfo)
             throws StorageQueryException, UnknownUserIdException, DuplicatePasswordResetTokenException {
         try {
-            // SQLite is not compiled with foreign key constraint and so we must check for
-            // the userId manually
-            if (this.getUserInfoUsingId(passwordResetTokenInfo.userId) == null) {
-                throw new UnknownUserIdException();
-            }
-
             EmailPasswordQueries.addPasswordResetToken(this, passwordResetTokenInfo.userId,
                     passwordResetTokenInfo.token, passwordResetTokenInfo.tokenExpiry);
         } catch (SQLException e) {
@@ -546,6 +539,9 @@ public class Start
                             + Config.getConfig(this).getPasswordResetTokensTable() + ".user_id, "
                             + Config.getConfig(this).getPasswordResetTokensTable() + ".token)")) {
                 throw new DuplicatePasswordResetTokenException();
+            } else if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (FOREIGN KEY constraint failed)")) {
+                throw new UnknownUserIdException();
             }
             throw new StorageQueryException(e);
         }
@@ -571,7 +567,8 @@ public class Start
 
     @Override
     public PasswordResetTokenInfo[] getAllPasswordResetTokenInfoForUser_Transaction(TransactionConnection con,
-            String userId) throws StorageQueryException {
+                                                                                    String userId)
+            throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return EmailPasswordQueries.getAllPasswordResetTokenInfoForUser_Transaction(this, sqlCon, userId);
@@ -633,7 +630,7 @@ public class Start
     @Override
     @Deprecated
     public UserInfo[] getUsers(@NotNull String userId, @NotNull Long timeJoined, @NotNull Integer limit,
-            @NotNull String timeJoinedOrder) throws StorageQueryException {
+                               @NotNull String timeJoinedOrder) throws StorageQueryException {
         try {
             return EmailPasswordQueries.getUsersInfo(this, userId, timeJoined, limit, timeJoinedOrder);
         } catch (SQLException e) {
@@ -672,7 +669,8 @@ public class Start
 
     @Override
     public EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser_Transaction(TransactionConnection con,
-            String userId, String email) throws StorageQueryException {
+                                                                                            String userId, String email)
+            throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return EmailVerificationQueries.getAllEmailVerificationTokenInfoForUser_Transaction(this, sqlCon, userId,
@@ -702,7 +700,7 @@ public class Start
 
     @Override
     public void deleteAllEmailVerificationTokensForUser_Transaction(TransactionConnection con, String userId,
-            String email) throws StorageQueryException {
+                                                                    String email) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             EmailVerificationQueries.deleteAllEmailVerificationTokensForUser_Transaction(this, sqlCon, userId, email);
@@ -713,7 +711,7 @@ public class Start
 
     @Override
     public void updateIsEmailVerified_Transaction(TransactionConnection con, String userId, String email,
-            boolean isEmailVerified) throws StorageQueryException {
+                                                  boolean isEmailVerified) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             EmailVerificationQueries.updateUsersIsEmailVerified_Transaction(this, sqlCon, userId, email,
@@ -795,7 +793,9 @@ public class Start
 
     @Override
     public io.supertokens.pluginInterface.thirdparty.UserInfo getUserInfoUsingId_Transaction(TransactionConnection con,
-            String thirdPartyId, String thirdPartyUserId) throws StorageQueryException {
+                                                                                             String thirdPartyId,
+                                                                                             String thirdPartyUserId)
+            throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             return ThirdPartyQueries.getUserInfoUsingId_Transaction(this, sqlCon, thirdPartyId, thirdPartyUserId);
@@ -806,7 +806,7 @@ public class Start
 
     @Override
     public void updateUserEmail_Transaction(TransactionConnection con, String thirdPartyId, String thirdPartyUserId,
-            String newEmail) throws StorageQueryException {
+                                            String newEmail) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
             ThirdPartyQueries.updateUserEmail_Transaction(this, sqlCon, thirdPartyId, thirdPartyUserId, newEmail);
@@ -832,8 +832,8 @@ public class Start
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getThirdPartyUsersTable() + ".user_id)")
                     || e.getMessage()
-                            .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                                    + Config.getConfig(this).getUsersTable() + ".user_id)")) {
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getUsersTable() + ".user_id)")) {
                 throw new io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException();
             }
             throw new StorageQueryException(e);
@@ -851,7 +851,8 @@ public class Start
 
     @Override
     public io.supertokens.pluginInterface.thirdparty.UserInfo getThirdPartyUserInfoUsingId(String thirdPartyId,
-            String thirdPartyUserId) throws StorageQueryException {
+                                                                                           String thirdPartyUserId)
+            throws StorageQueryException {
         try {
             return ThirdPartyQueries.getThirdPartyUserInfoUsingId(this, thirdPartyId, thirdPartyUserId);
         } catch (SQLException e) {
@@ -872,7 +873,9 @@ public class Start
     @Override
     @Deprecated
     public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsers(@NotNull String userId,
-            @NotNull Long timeJoined, @NotNull Integer limit, @NotNull String timeJoinedOrder)
+                                                                                   @NotNull Long timeJoined,
+                                                                                   @NotNull Integer limit,
+                                                                                   @NotNull String timeJoinedOrder)
             throws StorageQueryException {
         try {
             return ThirdPartyQueries.getThirdPartyUsers(this, userId, timeJoined, limit, timeJoinedOrder);
@@ -884,7 +887,8 @@ public class Start
     @Override
     @Deprecated
     public io.supertokens.pluginInterface.thirdparty.UserInfo[] getThirdPartyUsers(@NotNull Integer limit,
-            @NotNull String timeJoinedOrder) throws StorageQueryException {
+                                                                                   @NotNull String timeJoinedOrder)
+            throws StorageQueryException {
         try {
             return ThirdPartyQueries.getThirdPartyUsers(this, limit, timeJoinedOrder);
         } catch (SQLException e) {
@@ -1036,7 +1040,8 @@ public class Start
 
     @Override
     public void createDeviceWithCode(@Nullable String email, @Nullable String phoneNumber, String linkCodeSalt,
-            PasswordlessCode code) throws StorageQueryException, DuplicateDeviceIdHashException,
+                                     PasswordlessCode code)
+            throws StorageQueryException, DuplicateDeviceIdHashException,
             DuplicateCodeIdException, DuplicateLinkCodeHashException {
         if (email == null && phoneNumber == null) {
             throw new IllegalArgumentException("Both email and phoneNumber can't be null");
@@ -1186,8 +1191,8 @@ public class Start
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getPasswordlessUsersTable() + ".user_id)")
                     || message
-                            .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
-                                    + Config.getConfig(this).getUsersTable() + ".user_id)")) {
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this).getUsersTable() + ".user_id)")) {
                 throw new DuplicateUserIdException();
             }
 
@@ -1292,11 +1297,6 @@ public class Start
     public void addRoleToUser(String userId, String role)
             throws StorageQueryException, UnknownRoleException, DuplicateUserRoleMappingException {
         try {
-            // SQLite is not compiled with foreign key constraint and so we must check for
-            // role manually
-            if (!this.doesRoleExist(role)) {
-                throw new UnknownRoleException();
-            }
             UserRoleQueries.addRoleToUser(this, userId, role);
         } catch (SQLException e) {
             if (e.getMessage()
@@ -1304,6 +1304,9 @@ public class Start
                             + Config.getConfig(this).getUserRolesTable() + ".user_id, "
                             + Config.getConfig(this).getUserRolesTable() + ".role" + ")")) {
                 throw new DuplicateUserRoleMappingException();
+            } else if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (FOREIGN KEY constraint failed)")) {
+                throw new UnknownRoleException();
             }
 
             throw new StorageQueryException(e);
@@ -1407,20 +1410,17 @@ public class Start
 
     @Override
     public void addPermissionToRoleOrDoNothingIfExists_Transaction(TransactionConnection con, String role,
-            String permission) throws StorageQueryException, UnknownRoleException {
+                                                                   String permission)
+            throws StorageQueryException, UnknownRoleException {
         Connection sqlCon = (Connection) con.getConnection();
 
         try {
-            // SQLite is not compiled with foreign key constraint and so we must check for
-            // role manually
-
-            if (!this.doesRoleExist_Transaction(con, role)) {
-                throw new UnknownRoleException();
-            }
-
             UserRoleQueries.addPermissionToRoleOrDoNothingIfExists_Transaction(this, sqlCon, role, permission);
         } catch (SQLException e) {
-
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (FOREIGN KEY constraint failed)")) {
+                throw new UnknownRoleException();
+            }
             throw new StorageQueryException(e);
         }
     }
@@ -1460,17 +1460,8 @@ public class Start
 
     @Override
     public void createUserIdMapping(String superTokensUserId, String externalUserId,
-            @Nullable String externalUserIdInfo)
+                                    @Nullable String externalUserIdInfo)
             throws StorageQueryException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException {
-
-        // SQLite is not compiled with foreign key constraint, so we need an explicit
-        // check to see if superTokensUserId
-        // is a valid
-        // userId.
-        if (!doesUserIdExist(superTokensUserId)) {
-            throw new UnknownSuperTokensUserIdException();
-        }
-
         try {
             UserIdMappingQueries.createUserIdMapping(this, superTokensUserId, externalUserId, externalUserIdInfo);
         } catch (SQLException e) {
@@ -1491,6 +1482,10 @@ public class Start
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                             + Config.getConfig(this).getUserIdMappingTable() + ".external_user_id" + ")")) {
                 throw new UserIdMappingAlreadyExistsException(false, true);
+            }
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (FOREIGN KEY constraint failed)")) {
+                throw new UnknownSuperTokensUserIdException();
             }
             throw new StorageQueryException(e);
         }
@@ -1535,7 +1530,7 @@ public class Start
 
     @Override
     public boolean updateOrDeleteExternalUserIdInfo(String userId, boolean isSuperTokensUserId,
-            @Nullable String externalUserIdInfo) throws StorageQueryException {
+                                                    @Nullable String externalUserIdInfo) throws StorageQueryException {
         try {
             if (isSuperTokensUserId) {
                 return UserIdMappingQueries.updateOrDeleteExternalUserIdInfoWithSuperTokensUserId(this, userId,
@@ -1682,11 +1677,12 @@ public class Start
 
     @Override
     public void updateDashboardUsersEmailWithUserId_Transaction(TransactionConnection con, String userId,
-            String newEmail)
-            throws StorageQueryException, io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException, UserIdNotFoundException {
+                                                                String newEmail)
+            throws StorageQueryException, io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException,
+            UserIdNotFoundException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            if(!DashboardQueries.updateDashboardUsersEmailWithUserId_Transaction(this, sqlCon, userId, newEmail)){
+            if (!DashboardQueries.updateDashboardUsersEmailWithUserId_Transaction(this, sqlCon, userId, newEmail)) {
                 throw new UserIdNotFoundException();
             }
         } catch (SQLException e) {
@@ -1701,10 +1697,12 @@ public class Start
 
     @Override
     public void updateDashboardUsersPasswordWithUserId_Transaction(TransactionConnection con, String userId,
-            String newPassword) throws StorageQueryException, UserIdNotFoundException {
+                                                                   String newPassword)
+            throws StorageQueryException, UserIdNotFoundException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            if(!DashboardQueries.updateDashboardUsersPasswordWithUserId_Transaction(this, sqlCon, userId, newPassword)){
+            if (!DashboardQueries.updateDashboardUsersPasswordWithUserId_Transaction(this, sqlCon, userId,
+                    newPassword)) {
                 throw new UserIdNotFoundException();
             }
         } catch (SQLException e) {
@@ -1743,14 +1741,13 @@ public class Start
     @Override
     public void createNewDashboardUserSession(String userId, String sessionId, long timeCreated, long expiry)
             throws StorageQueryException, UserIdNotFoundException {
-        // SQLite is not compiled with foreign key constraint and so we must check if
-        // the user exists
-        if (this.getDashboardUserByUserId(userId) == null) {
-            throw new UserIdNotFoundException();
-        }
         try {
             DashboardQueries.createDashboardSession(this, userId, sessionId, timeCreated, expiry);
         } catch (SQLException e) {
+            if (e.getMessage()
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (FOREIGN KEY constraint failed)")) {
+                throw new UserIdNotFoundException();
+            }
             throw new StorageQueryException(e);
         }
 

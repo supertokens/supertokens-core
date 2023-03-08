@@ -72,7 +72,7 @@ public class VerifySessionAPI extends WebserverAPI {
             JsonObject result = sessionInfo.toJsonObject();
             result.addProperty("status", "OK");
 
-            if (!super.getVersionFromRequest(req).atLeast(SemVer.v2_19) ) {
+            if (!super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_19) ) {
                 result.addProperty("jwtSigningPublicKey",
                         new Utils.PubPriKey(SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
                 result.addProperty("jwtSigningPublicKeyExpiryTime",
@@ -100,7 +100,7 @@ public class VerifySessionAPI extends WebserverAPI {
                 JsonObject reply = new JsonObject();
                 reply.addProperty("status", "TRY_REFRESH_TOKEN");
 
-                if (!super.getVersionFromRequest(req).atLeast(SemVer.v2_19)) {
+                if (!super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_19)) {
                     reply.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(
                             SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
                     reply.addProperty("jwtSigningPublicKeyExpiryTime",

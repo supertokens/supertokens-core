@@ -49,7 +49,7 @@ public class HandshakeAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        if (super.getVersionFromRequest(req).atLeast(SemVer.v2_19)) {
+        if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_19)) {
             super.sendTextResponse(404, "Not found", resp);
             return;
         }

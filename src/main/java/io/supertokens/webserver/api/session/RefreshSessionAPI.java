@@ -63,10 +63,10 @@ public class RefreshSessionAPI extends WebserverAPI {
         SemVer version = super.getVersionFromRequest(req);
         try {
             SessionInformationHolder sessionInfo = Session.refreshSession(main, refreshToken, antiCsrfToken,
-                    enableAntiCsrf,  version.atLeast((SemVer.v2_19)));
+                    enableAntiCsrf,  version.greaterThanOrEqualTo((SemVer.v2_19)));
             JsonObject result = sessionInfo.toJsonObject();
 
-            if (version.atLeast(SemVer.v2_19)) {
+            if (version.greaterThanOrEqualTo(SemVer.v2_19)) {
                 result.remove("idRefreshToken");
             }
             result.addProperty("status", "OK");

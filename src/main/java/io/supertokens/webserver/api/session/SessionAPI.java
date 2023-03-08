@@ -78,17 +78,17 @@ public class SessionAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         Boolean inputUseStaticKey = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
-        boolean useStaticSigningKey = version.atLeast(SemVer.v2_19) ? Boolean.TRUE.equals(inputUseStaticKey) : Config.getConfig(main).getAccessTokenSigningKeyDynamic();
+        boolean useStaticSigningKey = version.greaterThanOrEqualTo(SemVer.v2_19) ? Boolean.TRUE.equals(inputUseStaticKey) : Config.getConfig(main).getAccessTokenSigningKeyDynamic();
 
         try {
             SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
-                    userDataInDatabase, enableAntiCsrf, version.atLeast(SemVer.v2_19), useStaticSigningKey);
+                    userDataInDatabase, enableAntiCsrf, version.greaterThanOrEqualTo(SemVer.v2_19), useStaticSigningKey);
 
             JsonObject result = sessionInfo.toJsonObject();
 
             result.addProperty("status", "OK");
 
-            if (super.getVersionFromRequest(req).atLeast(SemVer.v2_19)) {
+            if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_19)) {
                 result.remove("idRefreshToken");
             } else {
                 result.addProperty("jwtSigningPublicKey",
