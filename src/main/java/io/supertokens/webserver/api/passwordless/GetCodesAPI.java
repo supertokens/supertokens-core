@@ -30,7 +30,6 @@ import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -82,7 +81,8 @@ public class GetCodesAPI extends WebserverAPI {
                 devicesInfos = deviceWithCodes == null ? Collections.emptyList()
                         : Collections.singletonList(deviceWithCodes);
             } else if (email != null) {
-                devicesInfos = Passwordless.getDevicesWithCodesByEmail(main, Utils.normaliseEmail(email));
+                email = Utils.normaliseEmail(email);
+                devicesInfos = Passwordless.getDevicesWithCodesByEmail(main, email);
             } else {
                 devicesInfos = Passwordless.getDevicesWithCodesByPhoneNumber(main, phoneNumber);
             }

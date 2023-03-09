@@ -7,6 +7,11 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [4.4.1] - 2023-03-09
+
+- Normalises email in all APIs in which email was not being
+  normalised: https://github.com/supertokens/supertokens-core/issues/577
+
 ## [4.4.0] - 2023-02-21
 
 ### Added

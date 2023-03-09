@@ -51,7 +51,7 @@ public class EmailPasswordGetUserAPITest2_7 {
     // Check for bad input (missing fields)
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -92,7 +92,7 @@ public class EmailPasswordGetUserAPITest2_7 {
     // Check good input works
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -111,7 +111,7 @@ public class EmailPasswordGetUserAPITest2_7 {
             assertNotNull(signUpUser.get("id"));
 
             HashMap<String, String> map = new HashMap<>();
-            map.put("email", "random@gmail.com");
+            map.put("email", "randoM@gmail.com");
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
@@ -159,7 +159,7 @@ public class EmailPasswordGetUserAPITest2_7 {
     // Failure condition: passing a valid email/userId will cause the test to fail
     @Test
     public void testForAllTypesOfOutput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

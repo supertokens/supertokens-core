@@ -91,6 +91,30 @@ public class UserPutAPITest2_8 {
     }
 
     @Test
+    public void testUpdatingEmailNormalisesIt() throws Exception {
+        TestingProcessManager.withProcess(process -> {
+            if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+                return;
+            }
+
+            UserInfo user = EmailPassword.signUp(process.getProcess(), "someemail@gmail.com", "somePass");
+
+            JsonObject body = new JsonObject();
+            body.addProperty("userId", user.id);
+            body.addProperty("email", "someemail+TEST@gmail.com");
+
+            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(),
+                    RECIPE_ID.EMAIL_PASSWORD.toString());
+
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(1, response.entrySet().size());
+
+            EmailPassword.signIn(process.getProcess(), "someemail+test@gmail.com", "somePass");
+        });
+    }
+
+    @Test
     public void testQueryingWithoutEmailAndPassword() throws Exception {
         TestingProcessManager.withProcess(process -> {
             if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
