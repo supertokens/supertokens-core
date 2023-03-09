@@ -48,7 +48,7 @@ public class VerifyEmailAPITest2_7 {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -104,7 +104,7 @@ public class VerifyEmailAPITest2_7 {
     // Check good input works
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -120,7 +120,7 @@ public class VerifyEmailAPITest2_7 {
         String userId = signUpResponse.get("user").getAsJsonObject().get("id").getAsString();
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", userId);
-        requestBody.addProperty("email", "random@gmail.com");
+        requestBody.addProperty("email", "randoM@gmail.com");
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/email/verify/token", requestBody, 1000, 1000, null,
@@ -151,7 +151,7 @@ public class VerifyEmailAPITest2_7 {
     // Check for all types of output
     @Test
     public void testAllTypesOfOutput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

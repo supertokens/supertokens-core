@@ -130,6 +130,8 @@ public class UserAPI extends WebserverAPI {
             throw new ServletException(new BadRequestException("You have to provide either email or password."));
         }
 
+        email = Utils.normaliseEmail(email);
+
         try {
             // if a userIdMapping exists, pass the superTokensUserId to the updateUsersEmailOrPassword
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping

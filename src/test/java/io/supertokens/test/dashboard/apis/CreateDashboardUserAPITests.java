@@ -16,19 +16,7 @@
 
 package io.supertokens.test.dashboard.apis;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -38,6 +26,13 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
+import static org.junit.Assert.*;
 
 public class CreateDashboardUserAPITests {
     @Rule
@@ -55,7 +50,7 @@ public class CreateDashboardUserAPITests {
 
     @Test
     public void BadInputTests() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -184,7 +179,7 @@ public class CreateDashboardUserAPITests {
 
     @Test
     public void testSuccessfullyCreatingDashboardUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -197,7 +192,7 @@ public class CreateDashboardUserAPITests {
         String password = "testPass123";
 
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("email", email);
+        requestBody.addProperty("email", email.toUpperCase());
         requestBody.addProperty("password", password);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
@@ -223,7 +218,7 @@ public class CreateDashboardUserAPITests {
 
     @Test
     public void testCreatingTheSameUserTwice() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -270,7 +265,7 @@ public class CreateDashboardUserAPITests {
 
     @Test
     public void testCreatingAUserWithAnInvalidEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -297,7 +292,7 @@ public class CreateDashboardUserAPITests {
 
     @Test
     public void testCreatingAUserWithAWeakPassword() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -358,7 +353,7 @@ public class CreateDashboardUserAPITests {
 
     @Test
     public void testCreatingAUserAfterCrossingTheFreeUserThreshold() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -393,7 +388,9 @@ public class CreateDashboardUserAPITests {
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 402 && e.getMessage().equals(
                         "Http error. Status Code: 402. Message:"
-                                + " Free user limit reached. Please subscribe to a SuperTokens core license key to allow more users to access the dashboard."));
+                                +
+                                " Free user limit reached. Please subscribe to a SuperTokens core license key to " +
+                                "allow more users to access the dashboard."));
             }
         }
 

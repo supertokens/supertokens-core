@@ -63,6 +63,7 @@ public class DashboardUserAPI extends WebserverAPI {
 
             // normalize email
             email = Utils.normalizeAndValidateStringParam(email, "email");
+            email = io.supertokens.utils.Utils.normaliseEmail(email);
 
             // check if input email is invalid
             if (!Dashboard.isValidEmail(email)) {
@@ -112,6 +113,7 @@ public class DashboardUserAPI extends WebserverAPI {
         if (newEmail != null) {
             // normalize new email
             newEmail = Utils.normalizeAndValidateStringParam(newEmail, "newEmail");
+            newEmail = io.supertokens.utils.Utils.normaliseEmail(newEmail);
 
             // check if the newEmail is in valid format
             if (!Dashboard.isValidEmail(newEmail)) {
@@ -158,6 +160,7 @@ public class DashboardUserAPI extends WebserverAPI {
             if (email != null) {
                 // normalize email
                 email = Utils.normalizeAndValidateStringParam(email, "email");
+                email = io.supertokens.utils.Utils.normaliseEmail(email);
 
                 // check if the user exists
                 DashboardUser user = Dashboard.getDashboardUserByEmail(main, email);
@@ -216,6 +219,7 @@ public class DashboardUserAPI extends WebserverAPI {
             if (email != null) {
                 // normalize email
                 email = Utils.normalizeAndValidateStringParam(email, "email");
+                email = io.supertokens.utils.Utils.normaliseEmail(email);
                 boolean didUserExist = Dashboard.deleteUserWithEmail(super.getTenantIdentifier(req).toAppIdentifier(),
                         main, email);
                 JsonObject response = new JsonObject();
