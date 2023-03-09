@@ -1866,13 +1866,15 @@ public class Start
     }
 
     @Override
-    public void insertUsedCode(TOTPUsedCode usedCodeObj)
+    public void insertUsedCode_Transaction(TransactionConnection con, TOTPUsedCode usedCodeObj)
             throws StorageQueryException, TotpNotEnabledException, UsedCodeAlreadyExistsException {
+        Connection sqlCon = (Connection) con.getConnection();
         try {
-            TOTPQueries.insertUsedCode(this, usedCodeObj);
-        } catch (StorageTransactionLogicException e) {
-            String message = e.actualException.getMessage();
+            TOTPQueries.insertUsedCode_Transaction(this, sqlCon, usedCodeObj);
+        } catch (SQLException e) {
+            String message = e.getMessage();
             // No user/device exists for the given usedCodeObj.userId
+
             if (message
                     .equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (FOREIGN KEY constraint failed)")) {
                 throw new TotpNotEnabledException();
@@ -1880,19 +1882,20 @@ public class Start
             // Failed due to primary key on (userId, created_time)
             if (message.equals("[SQLITE_CONSTRAINT]  Abort due to constraint violation (UNIQUE constraint failed: "
                     + Config.getConfig(this).getTotpUsedCodesTable() + ".user_id, "
-                    + Config.getConfig(this).getTotpUsedCodesTable() + ".created_time" + ")")) {
+                    + Config.getConfig(this).getTotpUsedCodesTable() + ".created_time_ms" + ")")) {
                 throw new UsedCodeAlreadyExistsException();
             }
 
-            throw new StorageQueryException(e.actualException);
+            throw new StorageQueryException(e);
         }
     }
 
     @Override
-    public TOTPUsedCode[] getAllUsedCodesDescOrder(String userId)
+    public TOTPUsedCode[] getAllUsedCodesDescOrderAndLockByUser_Transaction(TransactionConnection con, String userId)
             throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
         try {
-            return TOTPQueries.getAllUsedCodesDescOrder(this, userId);
+            return TOTPQueries.getAllUsedCodesDescOrderAndLockByUser_Transaction(this, sqlCon, userId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

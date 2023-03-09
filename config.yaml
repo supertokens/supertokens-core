@@ -60,9 +60,6 @@ core_config_version: 0
 # (OPTIONAL | Default: 900) integer value. The time in seconds for which the user will be rate limited once totp_max_attempts is crossed.
 # totp_rate_limit_cooldown_sec:
 
-# (OPTIONAL | Default: 1800) integer value. The time in seconds in which invalid TOTP codes will be considered expired.
-# totp_invalid_code_expiry_sec:
-
 # (OPTIONAL | Default: installation directory/logs/info.log) string value. Give the path to a file (on your local
 #  system) in which the SuperTokens service can write INFO logs to. Set it to "null" if you want it to log to
 # standard output instead.

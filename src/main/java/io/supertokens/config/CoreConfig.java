@@ -282,7 +282,7 @@ public class CoreConfig {
     }
 
     /** TOTP rate limit cooldown time (in seconds) */
-    public int getTotpRateLimitCooldownTime() {
+    public int getTotpRateLimitCooldownTimeSec() {
         return totp_rate_limit_cooldown_sec;
     }
 

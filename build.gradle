@@ -68,6 +68,9 @@ dependencies {
     // https://mvnrepository.com/artifact/com.eatthepath/java-otp
     implementation group: 'com.eatthepath', name: 'java-otp', version: '0.4.0'
 
+    // https://mvnrepository.com/artifact/commons-codec/commons-codec
+    implementation group: 'commons-codec', name: 'commons-codec', version: '1.15'
+
     compileOnly project(":supertokens-plugin-interface")
     testImplementation project(":supertokens-plugin-interface")
 

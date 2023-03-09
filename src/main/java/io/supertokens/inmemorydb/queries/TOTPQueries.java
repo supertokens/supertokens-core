@@ -54,8 +54,6 @@ public class TOTPQueries {
     private static int insertUser_Transaction(Start start, Connection con, String userId)
             throws SQLException, StorageQueryException {
         // Create user if not exists:
-        // TODO: Check if not using "CONFLICT DO NOTHING" will break the transaction
-        // It's not a problem anyways. but we should check for clarity
         String QUERY = "INSERT INTO " + Config.getConfig(start).getTotpUsersTable()
                 + " (user_id) VALUES (?) ON CONFLICT DO NOTHING";
 
@@ -164,7 +162,7 @@ public class TOTPQueries {
         });
     }
 
-    private static int insertUsedCode_Transaction(Start start, Connection con, TOTPUsedCode code)
+    public static int insertUsedCode_Transaction(Start start, Connection con, TOTPUsedCode code)
             throws SQLException, StorageQueryException {
         String QUERY = "INSERT INTO " + Config.getConfig(start).getTotpUsedCodesTable()
                 + " (user_id, code, is_valid, expiry_time_ms, created_time_ms) VALUES (?, ?, ?, ?, ?);";
@@ -178,32 +176,20 @@ public class TOTPQueries {
         });
     }
 
-    public static void insertUsedCode(Start start, TOTPUsedCode code)
-            throws StorageQueryException, StorageTransactionLogicException {
-        start.startTransaction(con -> {
-            Connection sqlCon = (Connection) con.getConnection();
-
-            try {
-                insertUsedCode_Transaction(start, sqlCon, code);
-                sqlCon.commit();
-            } catch (SQLException e) {
-                throw new StorageTransactionLogicException(e);
-            }
-
-            return null;
-        });
-    }
-
     /**
      * Query to get all used codes (expired/non-expired) for a user in descending
      * order of creation time.
      */
-    public static TOTPUsedCode[] getAllUsedCodesDescOrder(Start start, String userId)
+    public static TOTPUsedCode[] getAllUsedCodesDescOrderAndLockByUser_Transaction(Start start, Connection con,
+            String userId)
             throws SQLException, StorageQueryException {
+        // Take a lock based on the user id:
+        ((ConnectionWithLocks) con).lock(userId + Config.getConfig(start).getTotpUsedCodesTable());
+
         String QUERY = "SELECT * FROM " +
                 Config.getConfig(start).getTotpUsedCodesTable()
-                + " WHERE user_id = ? ORDER BY created_time_ms DESC;";
-        return execute(start, QUERY, pst -> {
+                + " WHERE user_id = ? ORDER BY created_time_ms DESC";
+        return execute(con, QUERY, pst -> {
             pst.setString(1, userId);
         }, result -> {
             List<TOTPUsedCode> codes = new ArrayList<>();

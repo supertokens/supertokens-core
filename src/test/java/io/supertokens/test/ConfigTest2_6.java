@@ -264,8 +264,7 @@ public class ConfigTest2_6 {
         assertEquals("Config refresh token validity did not match default", config.getRefreshTokenValidity(),
                 60 * 2400 * 60 * (long) 1000);
         assertEquals(5, config.getTotpMaxAttempts()); // 5
-        assertEquals(900, config.getTotpRateLimitCooldownTime()); // 15 minutes
-        assertEquals(1800, config.getTotpInvalidCodeExpiryTime()); // 30 minutes
+        assertEquals(900, config.getTotpRateLimitCooldownTimeSec()); // 15 minutes
 
         assertEquals("Config info log path did not match default", config.getInfoLogPath(process.getProcess()),
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/info.log");

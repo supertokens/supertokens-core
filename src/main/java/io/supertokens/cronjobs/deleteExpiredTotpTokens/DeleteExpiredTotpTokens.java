@@ -34,7 +34,7 @@ public class DeleteExpiredTotpTokens extends CronTask {
 
         TOTPSQLStorage storage = StorageLayer.getTOTPStorage(this.main);
 
-        long rateLimitResetInMs = Config.getConfig(this.main).getTotpRateLimitCooldownTime();
+        long rateLimitResetInMs = Config.getConfig(this.main).getTotpRateLimitCooldownTimeSec() * 1000;
         long expiredBefore = System.currentTimeMillis() - rateLimitResetInMs;
 
         // We will only remove expired codes that have been expired for longer
