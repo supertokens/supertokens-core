@@ -28,10 +28,10 @@ import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class SignInUpAPI extends WebserverAPI {
@@ -64,11 +64,11 @@ public class SignInUpAPI extends WebserverAPI {
 
             // logic according to https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
 
-            String normalisedEmail = Utils.normaliseEmail(email);
+            email = Utils.normaliseEmail(email);
 
             try {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(super.main, thirdPartyId,
-                        thirdPartyUserId, normalisedEmail, isEmailVerified);
+                        thirdPartyUserId, email, isEmailVerified);
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
@@ -94,11 +94,11 @@ public class SignInUpAPI extends WebserverAPI {
             // logic according to https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
             // and modifed according to https://github.com/supertokens/supertokens-core/issues/295
 
-            String normalisedEmail = Utils.normaliseEmail(email);
+            email = Utils.normaliseEmail(email);
 
             try {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(super.main, thirdPartyId, thirdPartyUserId,
-                        normalisedEmail);
+                        email);
 
                 //
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping

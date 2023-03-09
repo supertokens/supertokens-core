@@ -16,10 +16,7 @@
 
 package io.supertokens.webserver.api.dashboard;
 
-import java.io.IOException;
-
 import com.google.gson.JsonObject;
-
 import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.dashboard.exceptions.UserSuspendedException;
@@ -31,6 +28,8 @@ import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
 
 public class DashboardSignInAPI extends WebserverAPI {
 
@@ -50,6 +49,7 @@ public class DashboardSignInAPI extends WebserverAPI {
 
         // normalize email
         email = Utils.normalizeAndValidateStringParam(email, "email");
+        email = io.supertokens.utils.Utils.normaliseEmail(email);
 
         String password = InputParser.parseStringOrThrowError(input, "password", false);
 
@@ -58,7 +58,7 @@ public class DashboardSignInAPI extends WebserverAPI {
 
         try {
             String sessionId = Dashboard.signInDashboardUser(main, email, password);
-            if(sessionId == null){
+            if (sessionId == null) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "INVALID_CREDENTIALS_ERROR");
                 super.sendJsonResponse(200, response, resp);
@@ -73,7 +73,8 @@ public class DashboardSignInAPI extends WebserverAPI {
             response.addProperty("status", "USER_SUSPENDED_ERROR");
             // TODO: update message
             response.addProperty("message",
-                    "User is currently suspended, please sign in with another account, or reactivate the SuperTokens core license key");
+                    "User is currently suspended, please sign in with another account, or reactivate the SuperTokens " +
+                            "core license key");
             super.sendJsonResponse(200, response, resp);
         } catch (StorageQueryException e) {
             throw new ServletException(e);
