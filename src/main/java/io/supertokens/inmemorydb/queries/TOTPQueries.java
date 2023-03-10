@@ -39,8 +39,8 @@ public class TOTPQueries {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getTotpUsedCodesTable() + " ("
                 + "user_id VARCHAR(128) NOT NULL, "
                 + "code VARCHAR(8) NOT NULL," + "is_valid BOOLEAN NOT NULL,"
-                + "created_time_ms BIGINT UNSIGNED NOT NULL,"
                 + "expiry_time_ms BIGINT UNSIGNED NOT NULL,"
+                + "created_time_ms BIGINT UNSIGNED NOT NULL,"
                 + "PRIMARY KEY (user_id, created_time_ms)"
                 + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getTotpUsersTable()
                 + "(user_id) ON DELETE CASCADE);";
@@ -254,7 +254,6 @@ public class TOTPQueries {
                     result.getBoolean("is_valid"),
                     result.getLong("expiry_time_ms"),
                     result.getLong("created_time_ms"));
-            // FIXME: Put created time first, then expiry time.
         }
     }
 }
