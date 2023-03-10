@@ -150,16 +150,21 @@ public class TOTPQueries {
         });
     }
 
-    public static int getDevicesCount_Transaction(Start start, Connection con, String userId)
+    public static TOTPDevice[] getDevices_Transaction(Start start, Connection con, String userId)
             throws StorageQueryException, SQLException {
         ((ConnectionWithLocks) con).lock(userId + Config.getConfig(start).getTotpUserDevicesTable());
-
-        String QUERY = "SELECT COUNT(*) as count FROM " + Config.getConfig(start).getTotpUserDevicesTable()
+        String QUERY = "SELECT * FROM " + Config.getConfig(start).getTotpUserDevicesTable()
                 + " WHERE user_id = ?;";
 
         return execute(con, QUERY, pst -> pst.setString(1, userId), result -> {
-            return result.getInt("count");
+            List<TOTPDevice> devices = new ArrayList<>();
+            while (result.next()) {
+                devices.add(TOTPDeviceRowMapper.getInstance().map(result));
+            }
+
+            return devices.toArray(TOTPDevice[]::new);
         });
+
     }
 
     public static int insertUsedCode_Transaction(Start start, Connection con, TOTPUsedCode code)
@@ -180,7 +185,7 @@ public class TOTPQueries {
      * Query to get all used codes (expired/non-expired) for a user in descending
      * order of creation time.
      */
-    public static TOTPUsedCode[] getAllUsedCodesDescOrderAndLockByUser_Transaction(Start start, Connection con,
+    public static TOTPUsedCode[] getAllUsedCodesDescOrder_Transaction(Start start, Connection con,
             String userId)
             throws SQLException, StorageQueryException {
         // Take a lock based on the user id:

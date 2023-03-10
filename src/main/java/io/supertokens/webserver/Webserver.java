@@ -48,7 +48,6 @@ import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
 import io.supertokens.webserver.api.totp.CreateOrUpdateTotpDeviceAPI;
 import io.supertokens.webserver.api.totp.GetTotpDevicesAPI;
 import io.supertokens.webserver.api.totp.RemoveTotpDeviceAPI;
-import io.supertokens.webserver.api.totp.UpdateTotpDeviceNameAPI;
 import io.supertokens.webserver.api.totp.VerifyTotpAPI;
 import io.supertokens.webserver.api.totp.VerifyTotpDeviceAPI;
 import io.supertokens.webserver.api.useridmapping.RemoveUserIdMappingAPI;

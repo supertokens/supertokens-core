@@ -1815,17 +1815,6 @@ public class Start
     }
 
     @Override
-    public int getDevicesCount_Transaction(TransactionConnection con, String userId)
-            throws StorageQueryException {
-        Connection sqlCon = (Connection) con.getConnection();
-        try {
-            return TOTPQueries.getDevicesCount_Transaction(this, sqlCon, userId);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
     public void removeUser_Transaction(TransactionConnection con, String userId)
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
@@ -1866,6 +1855,17 @@ public class Start
     }
 
     @Override
+    public TOTPDevice[] getDevices_Transaction(TransactionConnection con, String userId)
+            throws StorageQueryException {
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return TOTPQueries.getDevices_Transaction(this, sqlCon, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public void insertUsedCode_Transaction(TransactionConnection con, TOTPUsedCode usedCodeObj)
             throws StorageQueryException, TotpNotEnabledException, UsedCodeAlreadyExistsException {
         Connection sqlCon = (Connection) con.getConnection();
@@ -1891,11 +1891,11 @@ public class Start
     }
 
     @Override
-    public TOTPUsedCode[] getAllUsedCodesDescOrderAndLockByUser_Transaction(TransactionConnection con, String userId)
+    public TOTPUsedCode[] getAllUsedCodesDescOrder_Transaction(TransactionConnection con, String userId)
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            return TOTPQueries.getAllUsedCodesDescOrderAndLockByUser_Transaction(this, sqlCon, userId);
+            return TOTPQueries.getAllUsedCodesDescOrder_Transaction(this, sqlCon, userId);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

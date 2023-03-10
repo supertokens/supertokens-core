@@ -7,6 +7,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.totp.Totp;
 import io.supertokens.totp.exceptions.InvalidTotpException;
@@ -63,7 +64,7 @@ public class VerifyTotpAPI extends WebserverAPI {
             // Also return a retryAfter value:
             resp.addHeader("Retry-After", Integer.toString(e.retryInSeconds));
             super.sendJsonResponse(429, result, resp); // 429 Too Many Requests
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | InterruptedException e) {
             throw new ServletException(e);
         }
     }

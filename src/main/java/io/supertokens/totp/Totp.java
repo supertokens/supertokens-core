@@ -53,7 +53,6 @@ public class Totp {
         // Check if code is valid for any of the time periods in the skew:
         for (int i = -skew; i <= skew; i++) {
             try {
-                // TODO: Would there be any effect of timezones here?
                 if (totp.generateOneTimePasswordString(key, Instant.now().plusSeconds(i * period)).equals(code)) {
                     return true;
                 }
@@ -71,9 +70,6 @@ public class Totp {
 
         TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
 
-        // TODO: There should be a hard limit on number of devices per user
-        // 8 devices per user should be enough. Otherwise, it is a security risk.
-
         String secret = generateSecret();
         TOTPDevice device = new TOTPDevice(userId, deviceName, secret, period, skew, false);
         totpStorage.createDevice(device);
@@ -83,7 +79,8 @@ public class Totp {
 
     private static void checkAndStoreCode(Main main, TOTPStorage totpStorage, String userId, TOTPDevice[] devices,
             String code)
-            throws InvalidTotpException, StorageQueryException, TotpNotEnabledException, LimitReachedException {
+            throws InvalidTotpException, TotpNotEnabledException,
+            LimitReachedException, StorageQueryException, StorageTransactionLogicException, InterruptedException {
         // Note that the TOTP cron runs every 1 hour, so all the expired tokens can stay
         // in the db for at max 1 hour after expiry.
 
@@ -119,125 +116,118 @@ public class Totp {
 
         TOTPSQLStorage totpSQLStorage = (TOTPSQLStorage) totpStorage;
 
-        try {
-            totpSQLStorage.startTransaction(con -> {
-                TOTPUsedCode[] usedCodes = totpSQLStorage.getAllUsedCodesDescOrderAndLockByUser_Transaction(con,
-                        userId);
+        while (true) {
+            try {
+                totpSQLStorage.startTransaction(con -> {
+                    TOTPUsedCode[] usedCodes = totpSQLStorage.getAllUsedCodesDescOrder_Transaction(con,
+                            userId);
 
-                // N represents # of invalid attempts that will trigger rate limiting:
-                int N = Config.getConfig(main).getTotpMaxAttempts(); // (Default 5)
-                // Count # of contiguous invalids in latest N attempts (stop at first valid):
-                long invalidOutOfN = Arrays.stream(usedCodes).limit(N).takeWhile(usedCode -> !usedCode.isValid).count();
-                int rateLimitResetTimeInMs = Config.getConfig(main).getTotpRateLimitCooldownTimeSec() * 1000; // (Default
-                                                                                                              // 15
-                                                                                                              // mins)
+                    // N represents # of invalid attempts that will trigger rate limiting:
+                    int N = Config.getConfig(main).getTotpMaxAttempts(); // (Default 5)
+                    // Count # of contiguous invalids in latest N attempts (stop at first valid):
+                    long invalidOutOfN = Arrays.stream(usedCodes).limit(N).takeWhile(usedCode -> !usedCode.isValid)
+                            .count();
+                    int rateLimitResetTimeInMs = Config.getConfig(main).getTotpRateLimitCooldownTimeSec() * 1000; // (Default
+                    // 15 mins)
 
-                // Check if the user has been rate limited:
-                if (invalidOutOfN == N) {
-                    // All of the latest N attempts were invalid:
-                    long latestInvalidCodeCreatedTime = usedCodes[0].createdTime;
-                    long now = System.currentTimeMillis();
+                    // Check if the user has been rate limited:
+                    if (invalidOutOfN == N) {
+                        // All of the latest N attempts were invalid:
+                        long latestInvalidCodeCreatedTime = usedCodes[0].createdTime;
+                        long now = System.currentTimeMillis();
 
-                    if (now - latestInvalidCodeCreatedTime < rateLimitResetTimeInMs) {
-                        // Less than rateLimitResetTimeInMs (default = 15 mins) time has elasped since
-                        // the last invalid code:
-                        throw new StorageTransactionLogicException(
-                                new LimitReachedException(rateLimitResetTimeInMs / 1000));
+                        if (now - latestInvalidCodeCreatedTime < rateLimitResetTimeInMs) {
+                            // Less than rateLimitResetTimeInMs (default = 15 mins) time has elasped since
+                            // the last invalid code:
+                            throw new StorageTransactionLogicException(
+                                    new LimitReachedException(rateLimitResetTimeInMs / 1000));
 
-                        // If we insert the used code here, then it will further delay the user from
-                        // being able to login. So not inserting it here.
-
-                        // Note: One edge case here is: User is rate limited, and then the
-                        // DeleteExpiredTotpTokens cron removes the latest invalid attempts
-                        // (because they have expired), and then user will again be able to
-                        // do extra login attempts (totp_max_attempts more times).
-                        // But rate limiting will kick in after totp_max_attempts number
-                        // disarming the brute force attack.
-                        // Furthermore, the cron running during cooldown of a user is somewhat rare.
-                        // So this edge case is practically harmless.
-                    }
-                }
-
-                // Check if the code is valid for any device:
-                boolean isValid = false;
-                TOTPDevice matchingDevice = null;
-                for (TOTPDevice device : devices) {
-                    // Check if the code is valid for this device:
-                    if (checkCode(device, code)) {
-                        isValid = true;
-                        matchingDevice = device;
-                        break;
-                    }
-                }
-
-                // Check if the code has been previously used by the user and it was valid (and
-                // is still valid). If so, this could be a replay attack. So reject it.
-                if (isValid) {
-                    for (TOTPUsedCode usedCode : usedCodes) {
-                        // One edge case is that if the user has 2 devices, and they are used back to
-                        // back (within 90 seconds) such that the code of the first device was
-                        // regenerated by the second device, then it won't allow the second device's
-                        // code to be used until it is expired.
-                        // But this would be rare so we can ignore it for now.
-                        if (usedCode.code.equals(code) && usedCode.isValid
-                                && usedCode.expiryTime > System.currentTimeMillis()) {
-                            isValid = false;
-                            // We found a matching device but the code
-                            // will be considered invalid here.
+                            // If we insert the used code here, then it will further delay the user from
+                            // being able to login. So not inserting it here.
                         }
                     }
-                }
 
-                // Insert the code into the list of used codes:
+                    // Check if the code is valid for any device:
+                    boolean isValid = false;
+                    TOTPDevice matchingDevice = null;
+                    for (TOTPDevice device : devices) {
+                        // Check if the code is valid for this device:
+                        if (checkCode(device, code)) {
+                            isValid = true;
+                            matchingDevice = device;
+                            break;
+                        }
+                    }
 
-                // If device is found, calculate used code expiry time for that device (based on
-                // its period and skew). Otherwise, use the max used code expiry time of all the
-                // devices.
-                int maxUsedCodeExpiry = Arrays.stream(devices).mapToInt(device -> device.period * (2 * device.skew + 1))
-                        .max()
-                        .orElse(0);
-                int expireInSec = (matchingDevice != null) ? matchingDevice.period * (2 * matchingDevice.skew + 1)
-                        : maxUsedCodeExpiry;
+                    // Check if the code has been previously used by the user and it was valid (and
+                    // is still valid). If so, this could be a replay attack. So reject it.
+                    if (isValid) {
+                        for (TOTPUsedCode usedCode : usedCodes) {
+                            // One edge case is that if the user has 2 devices, and they are used back to
+                            // back (within 90 seconds) such that the code of the first device was
+                            // regenerated by the second device, then it won't allow the second device's
+                            // code to be used until it is expired.
+                            // But this would be rare so we can ignore it for now.
+                            if (usedCode.code.equals(code) && usedCode.isValid
+                                    && usedCode.expiryTime > System.currentTimeMillis()) {
+                                isValid = false;
+                                // We found a matching device but the code
+                                // will be considered invalid here.
+                            }
+                        }
+                    }
 
-                while (true) {
+                    // Insert the code into the list of used codes:
+
+                    // If device is found, calculate used code expiry time for that device (based on
+                    // its period and skew). Otherwise, use the max used code expiry time of all the
+                    // devices.
+                    int maxUsedCodeExpiry = Arrays.stream(devices)
+                            .mapToInt(device -> device.period * (2 * device.skew + 1))
+                            .max()
+                            .orElse(0);
+                    int expireInSec = (matchingDevice != null) ? matchingDevice.period * (2 * matchingDevice.skew + 1)
+                            : maxUsedCodeExpiry;
+
                     long now = System.currentTimeMillis();
                     TOTPUsedCode newCode = new TOTPUsedCode(userId, code, isValid, now + 1000 * expireInSec, now);
                     try {
                         totpSQLStorage.insertUsedCode_Transaction(con, newCode);
-                        break;
-                    } catch (UsedCodeAlreadyExistsException e) {
-                        break;
-                    } catch (TotpNotEnabledException e) {
+                        totpSQLStorage.commitTransaction(con);
+                    } catch (UsedCodeAlreadyExistsException | TotpNotEnabledException e) {
                         throw new StorageTransactionLogicException(e);
                     }
-                }
 
-                if (!isValid) {
-                    totpSQLStorage.commitTransaction(con);
-                    throw new StorageTransactionLogicException(new InvalidTotpException());
-                }
+                    if (!isValid) {
+                        // transaction has been committed, so we can directly throw the exception:
+                        throw new StorageTransactionLogicException(new InvalidTotpException());
+                    }
 
-                return null;
-            });
-        } catch (StorageTransactionLogicException e) {
-            if (e.actualException instanceof LimitReachedException) {
-                throw (LimitReachedException) e.actualException;
-            } else if (e.actualException instanceof InvalidTotpException) {
-                throw (InvalidTotpException) e.actualException;
-            } else if (e.actualException instanceof TotpNotEnabledException) {
-                throw (TotpNotEnabledException) e.actualException;
-            } else {
-                throw new StorageQueryException(e.actualException);
+                    return null;
+                });
+                return; // exit the while loop
+            } catch (StorageTransactionLogicException e) {
+                // throwing errors will also help exit the while loop:
+                if (e.actualException instanceof LimitReachedException) {
+                    throw (LimitReachedException) e.actualException;
+                } else if (e.actualException instanceof InvalidTotpException) {
+                    throw (InvalidTotpException) e.actualException;
+                } else if (e.actualException instanceof TotpNotEnabledException) {
+                    throw (TotpNotEnabledException) e.actualException;
+                } else if (e.actualException instanceof UsedCodeAlreadyExistsException) {
+                    // retry the transaction after 3ms (not sec)
+                    Thread.sleep(3);
+                    continue;
+                } else {
+                    throw e;
+                }
             }
         }
-
-        return;
-
     }
 
     public static boolean verifyDevice(Main main, String userId, String deviceName, String code)
-            throws StorageQueryException, TotpNotEnabledException, UnknownDeviceException, InvalidTotpException,
-            LimitReachedException {
+            throws TotpNotEnabledException, UnknownDeviceException, InvalidTotpException,
+            LimitReachedException, StorageQueryException, StorageTransactionLogicException, InterruptedException {
         // Here boolean return value tells whether the device has been
         // newly verified (true) OR it was already verified (false)
 
@@ -277,8 +267,8 @@ public class Totp {
     }
 
     public static void verifyCode(Main main, String userId, String code, boolean allowUnverifiedDevices)
-            throws StorageQueryException, TotpNotEnabledException, InvalidTotpException,
-            LimitReachedException {
+            throws TotpNotEnabledException, InvalidTotpException, LimitReachedException,
+            StorageQueryException, StorageTransactionLogicException, InterruptedException {
         TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
 
         // Check if the user has any devices:
@@ -309,8 +299,9 @@ public class Totp {
                 }
 
                 // Some device(s) were deleted. Check if user has any other device left:
-                int devicesCount = storage.getDevicesCount_Transaction(con, userId);
-                if (devicesCount == 0) {
+                // This also takes a lock on the user devices.
+                TOTPDevice[] devices = storage.getDevices_Transaction(con, userId);
+                if (devices.length == 0) {
                     // no device left. delete user
                     storage.removeUser_Transaction(con, userId);
                 }
@@ -330,7 +321,7 @@ public class Totp {
                 throw (UnknownDeviceException) e.actualException;
             }
 
-            throw new StorageQueryException(e.actualException);
+            throw e;
         }
     }
 

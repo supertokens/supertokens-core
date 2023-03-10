@@ -72,7 +72,7 @@ public class TOTPStorageTest {
         TOTPSQLStorage sqlStorage = (TOTPSQLStorage) storage;
 
         return (TOTPUsedCode[]) sqlStorage.startTransaction(con -> {
-            TOTPUsedCode[] usedCodes = sqlStorage.getAllUsedCodesDescOrderAndLockByUser_Transaction(con, userId);
+            TOTPUsedCode[] usedCodes = sqlStorage.getAllUsedCodesDescOrder_Transaction(con, userId);
             sqlStorage.commitTransaction(con);
             return usedCodes;
         });
@@ -167,9 +167,9 @@ public class TOTPStorageTest {
         // Try to get the count for a user that doesn't exist (Should pass because
         // this is DB level txn that doesn't throw TotpNotEnabledException):
         int devicesCount = storage.startTransaction(con -> {
-            int value = storage.getDevicesCount_Transaction(con, "non-existent-user");
+            TOTPDevice[] devices = storage.getDevices_Transaction(con, "non-existent-user");
             storage.commitTransaction(con);
-            return value;
+            return devices.length;
         });
         assert devicesCount == 0;
 
@@ -180,9 +180,9 @@ public class TOTPStorageTest {
         storage.createDevice(device2);
 
         devicesCount = storage.startTransaction(con -> {
-            int value = storage.getDevicesCount_Transaction(con, "user");
+            TOTPDevice[] devices = storage.getDevices_Transaction(con, "user");
             storage.commitTransaction(con);
-            return value;
+            return devices.length;
         });
         assert devicesCount == 2;
     }

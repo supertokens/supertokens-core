@@ -120,7 +120,7 @@ public class TOTPRecipeTest {
         TOTPSQLStorage sqlStorage = (TOTPSQLStorage) storage;
 
         return (TOTPUsedCode[]) sqlStorage.startTransaction(con -> {
-            TOTPUsedCode[] usedCodes = sqlStorage.getAllUsedCodesDescOrderAndLockByUser_Transaction(con, userId);
+            TOTPUsedCode[] usedCodes = sqlStorage.getAllUsedCodesDescOrder_Transaction(con, userId);
             sqlStorage.commitTransaction(con);
             return usedCodes;
         });
@@ -177,33 +177,47 @@ public class TOTPRecipeTest {
                 () -> Totp.verifyCode(main, "user", validCode, true));
 
         // Sleep for 1s so that code changes.
-        Thread.sleep(1500);
+        Thread.sleep(1000);
 
         // Use a new valid code:
         String newValidCode = generateTotpCode(main, device);
         Totp.verifyCode(main, "user", newValidCode, true);
 
-        // Regenerate the same code and use it again (should fail):
-        String newValidCodeCopy = generateTotpCode(main, device);
+        // Reuse the same code and use it again (should fail):
         assertThrows(InvalidTotpException.class,
-                () -> Totp.verifyCode(main, "user", newValidCodeCopy, true));
+                () -> Totp.verifyCode(main, "user", newValidCode, true));
 
         // Use a code from next period:
         String nextValidCode = generateTotpCode(main, device, 1);
         Totp.verifyCode(main, "user", nextValidCode, true);
 
-        // Use previous period code (should fail coz validCode): // FIXME: This should
-        // // fail
-        // String previousCode = generateTotpCode(main, "user", "device", -1);
-        // Totp.verifyCode(main, "user", previousCode, true);
+        // Use previous period code (should fail coz validCode has been used):
+        String previousCode = generateTotpCode(main, device, -1);
+        assert previousCode.equals(validCode);
+        assertThrows(InvalidTotpException.class, () -> Totp.verifyCode(main, "user", previousCode, true));
 
-        // TODO: Add isolated tests where we
-        // - we try next and previous codes as well (try different skew values)
-        // - change totp_max_attempts
-        // - change totp_invalid_code_expiry_sec
+        // Create device with skew = 0, check that it only works with the current code
+        TOTPDevice device2 = Totp.registerDevice(main, "user", "device2", 0, 1);
+        assert device2.secretKey != device.secretKey;
+
+        String nextValidCode2 = generateTotpCode(main, device2, 1);
+        assertThrows(InvalidTotpException.class,
+                () -> Totp.verifyCode(main, "user", nextValidCode2, true));
+
+        String previousValidCode2 = generateTotpCode(main, device2, -1);
+        assertThrows(InvalidTotpException.class,
+                () -> Totp.verifyCode(main, "user", previousValidCode2, true));
+
+        String currentValidCode2 = generateTotpCode(main, device2);
+        Totp.verifyCode(main, "user", currentValidCode2, true);
     }
 
-    public void triggerAndCheckRateLimit(Main main, TOTPDevice device) throws Exception {
+    /*
+     * Triggers rate limiting and checks that it works.
+     * It returns the number of attempts that were made before rate limiting was
+     * triggered.
+     */
+    public int triggerAndCheckRateLimit(Main main, TOTPDevice device) throws Exception {
         int N = Config.getConfig(main).getTotpMaxAttempts();
 
         // First N attempts should fail with invalid code:
@@ -226,6 +240,8 @@ public class TOTPRecipeTest {
         assertThrows(
                 LimitReachedException.class,
                 () -> Totp.verifyCode(main, "user", "invalid-code-N+2", true));
+
+        return N;
     }
 
     @Test
@@ -234,6 +250,8 @@ public class TOTPRecipeTest {
 
         // set rate limiting cooldown time to 1s
         Utils.setValueInConfig("totp_rate_limit_cooldown_sec", "1");
+        // set max attempts to 3
+        Utils.setValueInConfig("totp_max_attempts", "3");
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -248,7 +266,8 @@ public class TOTPRecipeTest {
         TOTPDevice device = Totp.registerDevice(main, "user", "deviceName", 1, 1);
 
         // Trigger rate limiting and fix it with a correct code after some time:
-        triggerAndCheckRateLimit(main, device);
+        int attemptsRequired = triggerAndCheckRateLimit(main, device);
+        assert attemptsRequired == 3;
         // Wait for 1 second (Should cool down rate limiting):
         Thread.sleep(1000);
         // But again try with invalid code:
@@ -275,7 +294,8 @@ public class TOTPRecipeTest {
         TOTPDevice device = Totp.registerDevice(main, "user", "deviceName", 0, 1);
 
         // Trigger rate limiting and fix it with cronjob (manually run cronjob):
-        triggerAndCheckRateLimit(main, device);
+        int attemptsRequired = triggerAndCheckRateLimit(main, device);
+        assert attemptsRequired == 5;
         // Wait for 1 second so that all the codes expire:
         Thread.sleep(1500);
         // Manually run cronjob to delete all the codes after their
