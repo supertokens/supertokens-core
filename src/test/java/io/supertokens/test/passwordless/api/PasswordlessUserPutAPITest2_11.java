@@ -20,13 +20,12 @@ import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
+import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-
 import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -52,7 +51,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -133,7 +132,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
     @Test
     public void testEmailToPhone() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -168,12 +167,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * remove phoneNumber set email -> OK
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void testPhoneToEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -192,7 +191,7 @@ public class PasswordlessUserPutAPITest2_11 {
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
         updateUserRequestBody.add("phoneNumber", JsonNull.INSTANCE);
-        updateUserRequestBody.addProperty("email", email);
+        updateUserRequestBody.addProperty("email", email.toUpperCase());
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
@@ -208,12 +207,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * update both email and phoneNumber -> OK
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void testPhoneAndEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -254,12 +253,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * remove both phoneNumber and email -> BadRequest
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void clearEmailAndPhone() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -302,12 +301,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * clear email of email only user -> BadRequest
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void clearEmailOfEmailOnlyUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -349,12 +348,12 @@ public class PasswordlessUserPutAPITest2_11 {
     /**
      * clear phoneNumber of phoneNumber only user -> BadRequest
      * TODO: error messages could be more clearer from the API
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void clearPhoneNUmberOfPhoneNumberOnlyUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -395,12 +394,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * clear email -> OK
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void clearEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -435,12 +434,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * clear phoneNumber -> OK
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void clearPhone() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -475,12 +474,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * update neither -> OK
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void updateNothing() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -514,12 +513,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * update email only -> OK
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void testUpdateEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -555,12 +554,12 @@ public class PasswordlessUserPutAPITest2_11 {
 
     /**
      * update phoneNumber only -> OK
-     * 
+     *
      * @throws Exception
      */
     @Test
     public void testUpdatePhoneNumber() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

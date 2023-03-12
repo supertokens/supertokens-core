@@ -20,26 +20,24 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
-import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-
+import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static io.supertokens.test.passwordless.PasswordlessUtility.EMAIL;
-import static org.junit.Assert.*;
-
 import java.util.HashMap;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class PasswordlessGetCodesAPITest2_11 {
     @Rule
@@ -57,7 +55,7 @@ public class PasswordlessGetCodesAPITest2_11 {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -80,7 +78,8 @@ public class PasswordlessGetCodesAPITest2_11 {
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber, deviceId or preAuthSessionId",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber, " +
+                            "deviceId or preAuthSessionId",
                     error.getMessage());
         }
 
@@ -98,7 +97,8 @@ public class PasswordlessGetCodesAPITest2_11 {
             assertNotNull(error);
             assertEquals(400, error.statusCode);
             assertEquals(
-                    "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber, deviceId or preAuthSessionId",
+                    "Http error. Status Code: 400. Message: Please provide exactly one of email, phoneNumber, " +
+                            "deviceId or preAuthSessionId",
                     error.getMessage());
         }
 
@@ -125,7 +125,7 @@ public class PasswordlessGetCodesAPITest2_11 {
 
     @Test
     public void testGetCodesNoMatch() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -151,7 +151,7 @@ public class PasswordlessGetCodesAPITest2_11 {
 
     @Test
     public void testGetCodes() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -202,7 +202,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
             assertEquals(1, jsonDeviceList.size());
 
-            checkDevice(jsonDeviceList, 0, email, null, deviceIdHash, new String[] { codeId });
+            checkDevice(jsonDeviceList, 0, email, null, deviceIdHash, new String[]{codeId});
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -210,7 +210,7 @@ public class PasswordlessGetCodesAPITest2_11 {
 
     @Test
     public void testGetCodesWithEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -248,7 +248,7 @@ public class PasswordlessGetCodesAPITest2_11 {
 
             {
                 HashMap<String, String> map = new HashMap<>();
-                map.put("email", email);
+                map.put("email", email.toUpperCase());
                 JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup/codes", map, 1000, 1000, null,
                         Utils.getCdiVersion2_10ForTests(), "passwordless");
@@ -258,7 +258,7 @@ public class PasswordlessGetCodesAPITest2_11 {
                 assert (response.has("devices"));
                 JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
                 assertEquals(1, jsonDeviceList.size());
-                checkDevice(jsonDeviceList, 0, email, null, deviceIdHash, new String[] { codeId });
+                checkDevice(jsonDeviceList, 0, email, null, deviceIdHash, new String[]{codeId});
             }
         }
         process.kill();
@@ -267,7 +267,7 @@ public class PasswordlessGetCodesAPITest2_11 {
 
     @Test
     public void testGetCodesWithPhoneNumber() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -315,7 +315,7 @@ public class PasswordlessGetCodesAPITest2_11 {
                 assert (response.has("devices"));
                 JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
                 assertEquals(1, jsonDeviceList.size());
-                checkDevice(jsonDeviceList, 0, null, phoneNumber, deviceIdHash, new String[] { codeId });
+                checkDevice(jsonDeviceList, 0, null, phoneNumber, deviceIdHash, new String[]{codeId});
             }
         }
         process.kill();
@@ -324,7 +324,7 @@ public class PasswordlessGetCodesAPITest2_11 {
 
     @Test
     public void testGetCodesWithDeviceID() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -374,7 +374,7 @@ public class PasswordlessGetCodesAPITest2_11 {
                 JsonArray jsonDeviceList = response.get("devices").getAsJsonArray();
                 assertEquals(1, jsonDeviceList.size());
                 checkDevice(jsonDeviceList, 0, null, phoneNumber, createCodeResponse.deviceIdHash,
-                        new String[] { createCodeResponse.codeId });
+                        new String[]{createCodeResponse.codeId});
             }
         }
         process.kill();
@@ -382,7 +382,7 @@ public class PasswordlessGetCodesAPITest2_11 {
     }
 
     private void checkDevice(JsonArray jsonDeviceList, int ind, String email, String phoneNumber, String deviceIdHash,
-            String[] codeIds) {
+                             String[] codeIds) {
         JsonObject device = jsonDeviceList.get(ind).getAsJsonObject();
 
         assertEquals(deviceIdHash, device.get("preAuthSessionId").getAsString());

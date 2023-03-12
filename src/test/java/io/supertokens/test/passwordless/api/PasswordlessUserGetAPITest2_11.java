@@ -18,24 +18,24 @@ package io.supertokens.test.passwordless.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
+import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-
+import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import static org.junit.Assert.*;
-
 import java.util.HashMap;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 public class PasswordlessUserGetAPITest2_11 {
     @Rule
@@ -53,7 +53,7 @@ public class PasswordlessUserGetAPITest2_11 {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -139,7 +139,8 @@ public class PasswordlessUserGetAPITest2_11 {
             assert (exception instanceof HttpResponseException);
             assertEquals(400, ((HttpResponseException) exception).statusCode);
             assertEquals(exception.getMessage(),
-                    "Http error. Status Code: 400. Message: Please provide exactly one of userId, email or phoneNumber");
+                    "Http error. Status Code: 400. Message: Please provide exactly one of userId, email or " +
+                            "phoneNumber");
         }
 
         process.kill();
@@ -148,7 +149,7 @@ public class PasswordlessUserGetAPITest2_11 {
 
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -178,7 +179,7 @@ public class PasswordlessUserGetAPITest2_11 {
         }
         {
             HashMap<String, String> map = new HashMap<>();
-            map.put("email", email);
+            map.put("email", email.toUpperCase());
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", map, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(),
                     "passwordless");
