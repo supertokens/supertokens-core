@@ -183,7 +183,7 @@ public class SignUpAPITest2_7 {
         assertNotNull(signUpUser.get("id"));
 
         UserInfo userInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
-                .getUserInfoUsingId(new AppIdentifier(null, null), signUpUser.get("id").getAsString());
+                .getUserInfoUsingId(new TenantIdentifier(null, null, null), signUpUser.get("id").getAsString());
 
         assertEquals(userInfo.email, "random@gmail.com");
 

@@ -157,19 +157,17 @@ public class EmailPassword {
             EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(tenantIdentifier, main);
 
             try {
-                StorageLayer.getEmailPasswordStorage(tenantIdentifier, main).signUp(tenantIdentifier, userInfo);
+                storage.signUp(tenantIdentifier, userInfo);
                 return new ImportUserResponse(false, userInfo);
             } catch (DuplicateUserIdException e) {
                 // we retry with a new userId
             } catch (DuplicateEmailException e) {
-                UserInfo userInfoToBeUpdated = StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
-                        .getUserInfoUsingEmail(tenantIdentifier, email);
+                UserInfo userInfoToBeUpdated = storage.getUserInfoUsingEmail(tenantIdentifier, email);
 
                 if (userInfoToBeUpdated != null) {
-                    String finalPasswordHash = passwordHash;
                     storage.startTransaction(con -> {
                         storage.updateUsersPassword_Transaction(tenantIdentifier.toAppIdentifier(), con,
-                                userInfoToBeUpdated.id, finalPasswordHash);
+                                userInfoToBeUpdated.id, passwordHash);
                         return null;
                     });
                     return new ImportUserResponse(true, userInfoToBeUpdated);
@@ -388,7 +386,7 @@ public class EmailPassword {
         try {
             storage.startTransaction(transaction -> {
                 try {
-                    UserInfo userInfo = storage.getUserInfoUsingId_Transaction(tenantIdentifier.toAppIdentifier(),
+                    UserInfo userInfo = storage.getUserInfoUsingId_Transaction(tenantIdentifier,
                             transaction, userId);
 
                     if (userInfo == null) {
@@ -442,7 +440,7 @@ public class EmailPassword {
     public static UserInfo getUserUsingId(TenantIdentifier tenantIdentifier, Main main, String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
         return StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
-                .getUserInfoUsingId(tenantIdentifier.toAppIdentifier(), userId);
+                .getUserInfoUsingId(tenantIdentifier, userId);
     }
 
     public static UserInfo getUserUsingEmail(TenantIdentifier tenantIdentifier, Main main, String email)
