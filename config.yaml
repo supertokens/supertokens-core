@@ -26,8 +26,8 @@ core_config_version: 0
 # access_token_blacklisting:
 
 
-# (OPTIONAL | Default: true) boolean value. If this is set to true, the JWT (access token)
-# signing key will change every fixed intervale of time.
+# (OPTIONAL | Default: true) boolean value. Deprecated, please see changelog.
+# If this is set to true, the access tokens created using CDI<=2.18 will be signed using a static signing key.
 # access_token_signing_key_dynamic:
 
 
