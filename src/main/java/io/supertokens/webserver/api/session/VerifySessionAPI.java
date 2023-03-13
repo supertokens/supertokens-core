@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.config.Config;
 import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.exceptions.UnauthorisedException;
@@ -66,9 +67,13 @@ public class VerifySessionAPI extends WebserverAPI {
         Boolean enableAntiCsrf = InputParser.parseBooleanOrThrowError(input, "enableAntiCsrf", false);
         assert enableAntiCsrf != null;
 
+        boolean checkDatabase = Config.getConfig(main).getAccessTokenBlacklisting();
+        if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_19)) {
+            checkDatabase = Boolean.TRUE.equals(InputParser.parseBooleanOrThrowError(input, "checkDatabase", false));
+        }
         try {
             SessionInformationHolder sessionInfo = Session.getSession(main, accessToken, antiCsrfToken, enableAntiCsrf,
-                    doAntiCsrfCheck);
+                    doAntiCsrfCheck, checkDatabase);
 
             JsonObject result = sessionInfo.toJsonObject();
             result.addProperty("status", "OK");

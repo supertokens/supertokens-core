@@ -85,7 +85,6 @@ public class SessionAPI extends WebserverAPI {
             // useStaticKeyInput defaults to false, so we check if it has been explicitly set to true
             useStaticSigningKey = Boolean.TRUE.equals(inputUseStaticKey);
         }
-
         try {
             SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf, version.greaterThanOrEqualTo(SemVer.v2_19), useStaticSigningKey);

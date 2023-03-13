@@ -171,14 +171,14 @@ public class SessionTest4 {
 
         for (int i = 0; i < 5; i++) {
             SessionInformationHolder verifiedSession = Session.getSession(process.getProcess(),
-                    sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
+                    sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
 
             assertEquals(verifiedSession.session.userDataInJWT.toString(), userDataInJWT.toString());
             assertEquals(verifiedSession.session.userId, userId);
             assertEquals(verifiedSession.session.handle, sessionInfo.session.handle);
 
             verifiedSession = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
-                    sessionInfo.antiCsrfToken, false, true);
+                    sessionInfo.antiCsrfToken, false, true, false);
 
             assertEquals(verifiedSession.session.userDataInJWT.toString(), userDataInJWT.toString());
             assertEquals(verifiedSession.session.userId, userId);
@@ -188,7 +188,7 @@ public class SessionTest4 {
 
             try {
                 Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken,
-                        false, true);
+                        false, true, false);
                 fail();
             } catch (TryRefreshTokenException ignored) {
             }
@@ -240,7 +240,7 @@ public class SessionTest4 {
                 refreshedSession2.antiCsrfToken, false, true);
 
         SessionInformationHolder verifiedSession = Session.getSession(process.getProcess(),
-                refreshedSession.accessToken.token, refreshedSession.antiCsrfToken, false, true);
+                refreshedSession.accessToken.token, refreshedSession.antiCsrfToken, false, true, false);
 
         assertEquals(verifiedSession.session.userDataInJWT.toString(), userDataInJWT.toString());
         assertEquals(verifiedSession.session.userId, userId);

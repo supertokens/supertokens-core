@@ -89,7 +89,7 @@ public class SessionTest2 {
         assert newRefreshedSession.accessToken != null;
 
         SessionInformationHolder sessionObj = Session.getSession(main, newRefreshedSession.accessToken.token,
-                newRefreshedSession.antiCsrfToken, false, true);
+                newRefreshedSession.antiCsrfToken, false, true, false);
         assert sessionObj.accessToken != null;
         assertNotEquals(sessionObj.accessToken.token, newRefreshedSession.accessToken.token);
 
@@ -216,7 +216,7 @@ public class SessionTest2 {
         }
 
         SessionInformationHolder verifiedSession = Session.getSession(process.getProcess(),
-                sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
+                sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
         assertEquals(verifiedSession.session.userId, sessionInfo.session.userId);
         assertEquals(verifiedSession.session.userDataInJWT.toString(), sessionInfo.session.userDataInJWT.toString());
 

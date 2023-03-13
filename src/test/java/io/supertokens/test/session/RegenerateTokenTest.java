@@ -81,7 +81,7 @@ public class RegenerateTokenTest {
         // Verify
         assert newSessionInfo.accessToken != null;
         SessionInformationHolder getSessionResponse = Session.getSession(process.getProcess(),
-                newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
+                newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
 
         // check payload and lmrt is different.
         assertEquals(getSessionResponse.session.userDataInJWT, newUserDataInJWT);
@@ -131,7 +131,7 @@ public class RegenerateTokenTest {
         // Verify
         assert newSessionInfo.accessToken != null;
         SessionInformationHolder getSessionResponse = Session.getSession(process.getProcess(),
-                newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
+                newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
         assertEquals(getSessionResponse.session.userDataInJWT, emptyUserDataInJWT);
 
         AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -178,7 +178,7 @@ public class RegenerateTokenTest {
 
         assert newSessionInfo.accessToken != null;
         SessionInformationHolder getSessionResponse = Session.getSession(process.getProcess(),
-                newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
+                newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
 
         assertEquals(getSessionResponse.session.userDataInJWT, userDataInJWT);
 
@@ -242,7 +242,7 @@ public class RegenerateTokenTest {
         // Verify
         assert refreshSessionInfo.accessToken != null;
         SessionInformationHolder getSessionResponse = Session.getSession(process.getProcess(),
-                refreshSessionInfo.accessToken.token, refreshSessionInfo.antiCsrfToken, false, true);
+                refreshSessionInfo.accessToken.token, refreshSessionInfo.antiCsrfToken, false, true, false);
 
         assertEquals(getSessionResponse.session.userDataInJWT, newUserDataInJWT);
 
@@ -310,7 +310,7 @@ public class RegenerateTokenTest {
         // Verify
         assert refreshSessionInfo.accessToken != null;
         SessionInformationHolder getSessionResponse = Session.getSession(process.getProcess(),
-                refreshSessionInfo.accessToken.token, refreshSessionInfo.antiCsrfToken, false, true);
+                refreshSessionInfo.accessToken.token, refreshSessionInfo.antiCsrfToken, false, true, false);
 
         assertEquals(getSessionResponse.session.userDataInJWT, newUserDataInJWT);
 
@@ -402,7 +402,7 @@ public class RegenerateTokenTest {
 
         // verify
         SessionInformationHolder getSession = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
-                sessionInfo.antiCsrfToken, false, true);
+                sessionInfo.antiCsrfToken, false, true, false);
         assertEquals(getSession.session.userDataInJWT, userDataInJWT);
 
         AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -428,7 +428,7 @@ public class RegenerateTokenTest {
 
         // verify
         getSession = Session.getSession(process.getProcess(), refreshSessionInfo.accessToken.token,
-                refreshSessionInfo.antiCsrfToken, false, true);
+                refreshSessionInfo.antiCsrfToken, false, true, false);
 
         assert getSession.accessToken != null;
 
@@ -475,7 +475,7 @@ public class RegenerateTokenTest {
 
         // verify
         SessionInformationHolder getSession = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
-                sessionInfo.antiCsrfToken, false, true);
+                sessionInfo.antiCsrfToken, false, true, false);
         assertEquals(getSession.session.userDataInJWT, userDataInJWT);
 
         AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -504,7 +504,7 @@ public class RegenerateTokenTest {
 
         // verify
         getSession = Session.getSession(process.getProcess(), refreshSessionInfo.accessToken.token,
-                refreshSessionInfo.antiCsrfToken, false, true);
+                refreshSessionInfo.antiCsrfToken, false, true, false);
 
         assert getSession.accessToken != null;
 
@@ -551,7 +551,7 @@ public class RegenerateTokenTest {
 
         // verify
         SessionInformationHolder getSession = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
-                sessionInfo.antiCsrfToken, false, true);
+                sessionInfo.antiCsrfToken, false, true, false);
         assertEquals(getSession.session.userDataInJWT, userDataInJWT);
 
         AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -577,7 +577,7 @@ public class RegenerateTokenTest {
 
         // verify
         getSession = Session.getSession(process.getProcess(), refreshSessionInfo.accessToken.token,
-                refreshSessionInfo.antiCsrfToken, false, true);
+                refreshSessionInfo.antiCsrfToken, false, true, false);
 
         assert getSession.accessToken != null;
 

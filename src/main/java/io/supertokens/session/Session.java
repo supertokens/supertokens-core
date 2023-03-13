@@ -145,7 +145,7 @@ public class Session {
 
     // pass antiCsrfToken to disable csrf check for this request
     public static SessionInformationHolder getSession(Main main, @Nonnull String token, @Nullable String antiCsrfToken,
-            boolean enableAntiCsrf, Boolean doAntiCsrfCheck) throws StorageQueryException,
+            boolean enableAntiCsrf, Boolean doAntiCsrfCheck, Boolean checkDatabase) throws StorageQueryException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException, UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
 
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessToken(main, token,
@@ -157,7 +157,7 @@ public class Session {
         }
 
         io.supertokens.pluginInterface.session.SessionInfo sessionInfoForBlacklisting = null;
-        if (Config.getConfig(main).getAccessTokenBlacklisting()) {
+        if (checkDatabase) {
             sessionInfoForBlacklisting = StorageLayer.getSessionStorage(main).getSession(accessToken.sessionHandle);
             if (sessionInfoForBlacklisting == null) {
                 throw new UnauthorisedException("Either the session has ended or has been blacklisted");

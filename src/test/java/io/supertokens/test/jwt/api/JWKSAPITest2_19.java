@@ -21,6 +21,8 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -30,6 +32,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.util.List;
 
 import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotNull;
@@ -63,23 +67,7 @@ public class JWKSAPITest2_19 {
         JsonArray oldKeys = oldResponse.getAsJsonArray("keys");
         assertEquals(oldKeys.size(), 2); // 1 static + 1 dynamic key
 
-        String userId = "userId";
-        JsonObject userDataInJWT = new JsonObject();
-        userDataInJWT.addProperty("key", "value");
-        JsonObject userDataInDatabase = new JsonObject();
-        userDataInDatabase.addProperty("key", "value");
-
-        JsonObject request = new JsonObject();
-        request.addProperty("userId", userId);
-        request.add("userDataInJWT", userDataInJWT);
-        request.add("userDataInDatabase", userDataInDatabase);
-        request.addProperty("useStaticSigningKey", false);
-        request.addProperty("enableAntiCsrf", false);
-
         Thread.sleep(1500);
-        HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_19.get(),
-                "session");
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
@@ -87,6 +75,46 @@ public class JWKSAPITest2_19 {
 
         JsonArray keys = response.getAsJsonArray("keys");
         assertEquals(keys.size(), oldKeys.size() + 1);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testThatNewDynamicKeysAreReflectedIfAddedByAnotherCore() throws Exception {
+        Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00027"); // 1 second
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        JsonObject oldResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                "jwt");
+
+        JsonArray oldKeys = oldResponse.getAsJsonArray("keys");
+        assertEquals(oldKeys.size(), 2); // 1 static + 1 dynamic key
+
+        Thread.sleep(1500);
+
+        // Simulate another core adding a new key
+        List<SigningKeys.KeyInfo> keyList = AccessTokenSigningKey.getInstance(process.getProcess()).getOrCreateAndGetSigningKeys();
+
+        JsonObject responseAfterWait = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/jwt/jwks", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
+                "jwt");
+
+        JsonArray keys = responseAfterWait.getAsJsonArray("keys");
+        assertEquals(keys.size(), oldKeys.size() + 1);
+
+        // The key list returned by jwt should contain the dynamic keys on keyList + the static key
+        assertEquals(keys.size(), keyList.size() + 1);
+
+
+        for (int i = 0; i < keyList.size(); ++i) {
+            System.out.println(keyList.get(i).id);
+            System.out.println(keys.get(i));
+            assertEquals(keyList.get(i).id, keys.get(i).getAsJsonObject().get("kid").getAsString());
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

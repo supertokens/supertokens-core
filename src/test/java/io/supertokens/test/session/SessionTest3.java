@@ -67,9 +67,6 @@ public class SessionTest3 {
 
     @Test
     public void revokeSessionWithBlacklistingRefreshSessionAndGetSessionThrows() throws Exception {
-
-        Utils.setValueInConfig("access_token_blacklisting", "true");
-
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -102,7 +99,7 @@ public class SessionTest3 {
 
         try {
             Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false,
-                    true);
+                    true, true);
             fail();
         } catch (UnauthorisedException e) {
 
@@ -135,13 +132,13 @@ public class SessionTest3 {
         assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(),
                 new String[] { sessionInfo.session.handle })[0], sessionInfo.session.handle);
 
-        Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
+        Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
 
         Thread.sleep(1500);
 
         try {
             Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false,
-                    true);
+                    true, false);
             fail();
         } catch (TryRefreshTokenException ignored) {
 
@@ -196,11 +193,11 @@ public class SessionTest3 {
 
         assertEquals(StorageLayer.getSessionStorage(process.getProcess()).getNumberOfSessions(), 1);
 
-        Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
+        Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
         Session.getSession(process.getProcess(), sessionInfo2.accessToken.token, sessionInfo2.antiCsrfToken, false,
-                true);
+                true, false);
         Session.getSession(process.getProcess(), sessionInfo3.accessToken.token, sessionInfo3.antiCsrfToken, false,
-                true);
+                true, false);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
