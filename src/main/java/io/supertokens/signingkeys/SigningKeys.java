@@ -94,9 +94,11 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
         // This filters the list down to keys that can be used to verify tokens
         List<KeyInfo> res = this.dynamicKeys.stream().filter(k -> k.expiryTime >= System.currentTimeMillis()).collect(Collectors.toList());
 
-        // Here we check if the first (and latest) key can be used to sign new tokens (and that it exists)
-        if (res.size() == 0 || System.currentTimeMillis() > res.get(0).createdAtTime + config.getAccessTokenDynamicSigningKeyUpdateInterval()) {
-
+        // if we don't have any available keys
+        if (res.size() == 0 ||
+                // or if we should generate a key we can use after dynamicSigningKeyOverlapMS
+                System.currentTimeMillis() + AccessTokenSigningKey.getInstance(main).getDynamicSigningKeyOverlapMS() > res.get(0).createdAtTime + config.getAccessTokenDynamicSigningKeyUpdateInterval()
+        ) {
             updateKeyCacheIfNotChanged(res.stream().map(Utils::getJWTSigningKeyInfoFromKeyInfo).collect(Collectors.toList()));
             return getDynamicKeys();
         }
@@ -126,7 +128,18 @@ public class SigningKeys extends ResourceDistributor.SingletonResource {
     }
 
     public KeyInfo getLatestIssuedDynamicKey() throws StorageQueryException, StorageTransactionLogicException {
-        return getDynamicKeys().get(0);
+        CoreConfig config = Config.getConfig(main);
+        List<KeyInfo> dynamicKeys = getDynamicKeys();
+
+        KeyInfo latest = dynamicKeys.get(0);
+        if (dynamicKeys.size() > 1 && // if we have more than 1 available
+                latest.createdAtTime + AccessTokenSigningKey.getInstance(main).getDynamicSigningKeyOverlapMS() > System.currentTimeMillis() &&  // the latest isn't old enough
+                System.currentTimeMillis() < dynamicKeys.get(1).createdAtTime + config.getAccessTokenDynamicSigningKeyUpdateInterval() // the one before can still be used to sign
+        ) {
+            return dynamicKeys.get(1);
+        } else {
+            return latest;
+        }
     }
 
     public long getDynamicSigningKeyExpiryTime() throws StorageQueryException, StorageTransactionLogicException {

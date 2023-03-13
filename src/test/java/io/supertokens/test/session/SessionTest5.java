@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicExceptio
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.session.jwt.JWT;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -262,6 +263,52 @@ public class SessionTest5 {
         assertNotEquals(preParseInfoCreate.kid, preParseInfoRefresh.kid);
         // The static kid remained unchanged
         assertEquals(preParseInfoCreateStatic.kid, preParseInfoRefreshStatic.kid);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void checkDynamicKeyOverlap() throws Exception {
+        Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00027"); // 1 second
+
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        AccessTokenSigningKey.getInstance(process.getProcess()).setDynamicSigningKeyOverlapMS(500);
+        SigningKeys signingKeysInstance = SigningKeys.getInstance(process.getProcess());
+        assertEquals(2, signingKeysInstance.getAllKeys().size());
+        assertEquals(1, signingKeysInstance.getDynamicKeys().size());
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        SessionInformationHolder createInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase, false, true, false);
+        JWT.JWTPreParseInfo preParseInfoCreate = JWT.preParseJWTInfo(createInfo.accessToken.token);
+
+        Thread.sleep(750);
+        assertEquals(3, signingKeysInstance.getAllKeys().size());
+        assertEquals(2, signingKeysInstance.getDynamicKeys().size());
+
+        SessionInformationHolder createInfoDuringOverlap = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase, false, true, false);
+        JWT.JWTPreParseInfo preParseInfoCreateDuringOverlap = JWT.preParseJWTInfo(createInfoDuringOverlap.accessToken.token);
+
+        Thread.sleep(300);
+        assertEquals(2, signingKeysInstance.getDynamicKeys().size());
+        assertEquals(3, signingKeysInstance.getAllKeys().size());
+
+        SessionInformationHolder createInfoAfterOverlap = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase, false, true, false);
+        JWT.JWTPreParseInfo preParseInfoAfterOverlap = JWT.preParseJWTInfo(createInfoAfterOverlap.accessToken.token);
+
+        assertEquals(preParseInfoCreate.kid, preParseInfoCreateDuringOverlap.kid);
+        assertNotEquals(preParseInfoCreateDuringOverlap.kid, preParseInfoAfterOverlap.kid);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

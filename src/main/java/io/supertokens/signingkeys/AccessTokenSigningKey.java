@@ -38,6 +38,7 @@ import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.signingkeys.SigningKeys.KeyInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
+import org.jetbrains.annotations.TestOnly;
 
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
@@ -48,6 +49,11 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     // JWTs are still checked for expiration after signature verification, this doesn't extend the lifetime of the
     // sessions.
     private static final int SIGNING_KEY_VALIDITY_OVERLAP = 2;
+
+    // We create signing keys with this overlap, since we want to add the keys to the jwks endpoint long before they are used
+    // The default overlap is only overridden by tests
+    private int dynamicSigningKeyOverlapMS = 60000; // 60 seconds
+
     private static final String RESOURCE_KEY = "io.supertokens.signingKeys.AccessTokenSigningKey";
     private final Main main;
 
@@ -148,9 +154,9 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         // Access token signing keys older than this are deleted (ms)
         final long signingKeyLifetime = config.getAccessTokenDynamicSigningKeyUpdateInterval()
                 + SIGNING_KEY_VALIDITY_OVERLAP * config.getAccessTokenValidity();
-        // Keys created after this timestamp can be used to sign access tokens (ms)
+        // Keys created after this timestamp can be used to sign access tokens (ms) after the overlap period
         final long keysCreatedAfterCanSign = System.currentTimeMillis()
-                - config.getAccessTokenDynamicSigningKeyUpdateInterval();
+                - config.getAccessTokenDynamicSigningKeyUpdateInterval() + dynamicSigningKeyOverlapMS;
         // Keys created after this timestamp can be used to verify access token signatures (ms)
         final long keysCreatedAfterCanVerify = System.currentTimeMillis() - signingKeyLifetime;
 
@@ -177,7 +183,6 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                         validKeysFromSQL.add(new KeyInfo("d-" + key.createdAtTime, key.value, key.createdAtTime, signingKeyLifetime, ACCESS_TOKEN_SIGNING_ALGO));
                     }
                 }
-
                 if (generateNewKey) {
                     String signingKey;
                     try {
@@ -250,5 +255,14 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         validKeys.sort(Comparator.comparingLong((KeyInfo key) -> key.createdAtTime).reversed());
 
         return Collections.unmodifiableList(validKeys);
+    }
+
+    @TestOnly()
+    public void setDynamicSigningKeyOverlapMS(int overlap) {
+        dynamicSigningKeyOverlapMS = overlap;
+    }
+
+    public int getDynamicSigningKeyOverlapMS() {
+        return dynamicSigningKeyOverlapMS;
     }
 }
