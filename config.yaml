@@ -20,9 +20,9 @@ core_config_version: 0
 # access_token_validity:
 
 
-# (OPTIONAL | Default: false) boolean value. If true, allows for immediate revocation of any access token.
-# Keep in mind that setting this to true will result in a db query for each API call that
-# requires authentication.
+# (OPTIONAL | Default: false) boolean value. Deprecated, please see changelog. Only used in CDI<=2.18
+# If true, allows for immediate revocation of any access token. Keep in mind that setting this to true will result
+# in a db query for each API call that requires authentication.
 # access_token_blacklisting:
 
 
