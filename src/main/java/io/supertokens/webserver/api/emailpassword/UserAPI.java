@@ -76,7 +76,7 @@ public class UserAPI extends WebserverAPI {
                 if (userIdMapping != null) {
                     userId = userIdMapping.superTokensUserId;
                 }
-                user = EmailPassword.getUserUsingId(this.getTenantIdentifier(req), main, userId);
+                user = EmailPassword.getUserUsingId(this.getTenantIdentifier(req).toAppIdentifier(), main, userId);
 
                 // if the userIdMapping exists set the userId in the response to the externalUserId
                 if (user != null && userIdMapping != null) {
@@ -137,7 +137,7 @@ public class UserAPI extends WebserverAPI {
             if (userIdMapping != null) {
                 userId = userIdMapping.superTokensUserId;
             }
-            EmailPassword.updateUsersEmailOrPassword(this.getTenantIdentifier(req), main, userId, email, password);
+            EmailPassword.updateUsersEmailOrPassword(this.getTenantIdentifier(req).toAppIdentifier(), main, userId, email, password);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

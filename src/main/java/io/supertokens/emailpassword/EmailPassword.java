@@ -24,6 +24,7 @@ import io.supertokens.emailpassword.exceptions.UnsupportedPasswordHashingFormatE
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
@@ -33,6 +34,7 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdExce
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -45,6 +47,7 @@ import javax.annotation.Nullable;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.spec.InvalidKeySpecException;
+import java.util.List;
 
 public class EmailPassword {
 
@@ -371,59 +374,60 @@ public class EmailPassword {
             throws StorageQueryException, StorageTransactionLogicException,
             UnknownUserIdException, DuplicateEmailException {
         try {
-            updateUsersEmailOrPassword(new TenantIdentifier(null, null, null), main, userId, email, password);
+            updateUsersEmailOrPassword(new AppIdentifier(null, null), main, userId, email, password);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static void updateUsersEmailOrPassword(TenantIdentifier tenantIdentifier, Main main,
+    public static void updateUsersEmailOrPassword(AppIdentifier appIdentifier, Main main,
                                                   @Nonnull String userId, @Nullable String email,
                                                   @Nullable String password)
             throws StorageQueryException, StorageTransactionLogicException,
             UnknownUserIdException, DuplicateEmailException, TenantOrAppNotFoundException {
-        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(tenantIdentifier, main);
-        try {
-            storage.startTransaction(transaction -> {
-                try {
-                    UserInfo userInfo = storage.getUserInfoUsingId_Transaction(tenantIdentifier.toAppIdentifier(),
-                            transaction, userId);
+        Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
+        for (Storage storage : storages) {
+            EmailPasswordSQLStorage epSqlStorage = (EmailPasswordSQLStorage) storage;
+            try {
+                epSqlStorage.startTransaction(transaction -> {
+                    try {
+                        UserInfo userInfo = epSqlStorage.getUserInfoUsingId_Transaction(appIdentifier, transaction, userId);
 
-                    if (userInfo == null) {
-                        throw new StorageTransactionLogicException(new UnknownUserIdException());
-                    }
-
-                    if (email != null) {
-                        try {
-                            storage.updateUsersEmail_Transaction(tenantIdentifier.toAppIdentifier(), transaction,
-                                    userId, email);
-                        } catch (DuplicateEmailException e) {
-                            throw new StorageTransactionLogicException(e);
+                        if (userInfo == null) {
+                            throw new StorageTransactionLogicException(new UnknownUserIdException());
                         }
-                    }
 
-                    if (password != null) {
-                        String hashedPassword = PasswordHashing.getInstance(main)
-                                .createHashWithSalt(tenantIdentifier.toAppIdentifier(), password);
-                        storage.updateUsersPassword_Transaction(tenantIdentifier.toAppIdentifier(), transaction, userId,
-                                hashedPassword);
-                    }
+                        if (email != null) {
+                            try {
+                                epSqlStorage.updateUsersEmail_Transaction(appIdentifier, transaction,
+                                        userId, email);
+                            } catch (DuplicateEmailException e) {
+                                throw new StorageTransactionLogicException(e);
+                            }
+                        }
 
-                    storage.commitTransaction(transaction);
-                    return null;
-                } catch (TenantOrAppNotFoundException e) {
-                    throw new StorageTransactionLogicException(e);
+                        if (password != null) {
+                            String hashedPassword = PasswordHashing.getInstance(main)
+                                    .createHashWithSalt(appIdentifier, password);
+                            epSqlStorage.updateUsersPassword_Transaction(appIdentifier, transaction, userId, hashedPassword);
+                        }
+
+                        epSqlStorage.commitTransaction(transaction);
+                        return null;
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
+                });
+            } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof UnknownUserIdException) {
+                    throw (UnknownUserIdException) e.actualException;
+                } else if (e.actualException instanceof DuplicateEmailException) {
+                    throw (DuplicateEmailException) e.actualException;
+                } else if (e.actualException instanceof TenantOrAppNotFoundException) {
+                    throw (TenantOrAppNotFoundException) e.actualException;
                 }
-            });
-        } catch (StorageTransactionLogicException e) {
-            if (e.actualException instanceof UnknownUserIdException) {
-                throw (UnknownUserIdException) e.actualException;
-            } else if (e.actualException instanceof DuplicateEmailException) {
-                throw (DuplicateEmailException) e.actualException;
-            } else if (e.actualException instanceof TenantOrAppNotFoundException) {
-                throw (TenantOrAppNotFoundException) e.actualException;
+                throw e;
             }
-            throw e;
         }
     }
 
@@ -431,16 +435,22 @@ public class EmailPassword {
     public static UserInfo getUserUsingId(Main main, String userId)
             throws StorageQueryException {
         try {
-            return getUserUsingId(new TenantIdentifier(null, null, null), main, userId);
+            return getUserUsingId(new AppIdentifier(null, null), main, userId);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static UserInfo getUserUsingId(TenantIdentifier tenantIdentifier, Main main, String userId)
+    public static UserInfo getUserUsingId(AppIdentifier appIdentifier, Main main, String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
-                .getUserInfoUsingId(tenantIdentifier.toAppIdentifier(), userId);
+        Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
+        for (Storage storage : storages) {
+            UserInfo userInfo = ((EmailPasswordSQLStorage) storage).getUserInfoUsingId(appIdentifier, userId);
+            if (userInfo != null) {
+                return userInfo;
+            }
+        }
+        return null;
     }
 
     public static UserInfo getUserUsingEmail(TenantIdentifier tenantIdentifier, Main main, String email)

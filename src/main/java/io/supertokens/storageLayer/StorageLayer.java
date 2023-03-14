@@ -560,4 +560,19 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
         return result;
     }
+
+    public static Storage[] getStoragesForApp(Main main, AppIdentifier appIdentifier) {
+        Map<String, Storage> userPoolToStorage = new HashMap<>();
+
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                main.getResourceDistributor()
+                        .getAllResourcesWithResourceKey(RESOURCE_KEY);
+        for (ResourceDistributor.KeyClass key : resources.keySet()) {
+            Storage storage = ((StorageLayer) resources.get(key)).storage;
+            if (key.getTenantIdentifier().toAppIdentifier().equals(appIdentifier)) {
+                userPoolToStorage.put(storage.getUserPoolId(), storage);
+            }
+        }
+        return userPoolToStorage.values().toArray(new Storage[0]);
+    }
 }
