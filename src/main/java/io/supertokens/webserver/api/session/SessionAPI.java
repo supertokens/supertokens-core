@@ -121,10 +121,6 @@ public class SessionAPI extends WebserverAPI {
             JsonObject result = new Gson().toJsonTree(sessionInfo).getAsJsonObject();
             result.add("userDataInJWT", Utils.toJsonTreeWithNulls(sessionInfo.userDataInJWT));
             result.add("userDataInDatabase", Utils.toJsonTreeWithNulls(sessionInfo.userDataInDatabase));
-            SemVer version = super.getVersionFromRequest(req);
-            if (!version.greaterThanOrEqualTo(SemVer.v2_19)) {
-                result.remove("useStaticKey");
-            }
 
             result.addProperty("status", "OK");
 
