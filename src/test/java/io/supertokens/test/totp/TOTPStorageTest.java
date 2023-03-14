@@ -78,7 +78,7 @@ public class TOTPStorageTest {
         });
     }
 
-    private static void insertUsedCodesUtil(TOTPSQLStorage storage, TOTPUsedCode[] usedCodes)
+    public static void insertUsedCodesUtil(TOTPSQLStorage storage, TOTPUsedCode[] usedCodes)
             throws StorageQueryException, StorageTransactionLogicException, TotpNotEnabledException,
             UsedCodeAlreadyExistsException {
         try {
@@ -101,7 +101,7 @@ public class TOTPStorageTest {
             } else if (actual instanceof UsedCodeAlreadyExistsException) {
                 throw (UsedCodeAlreadyExistsException) actual;
             }
-            throw new StorageQueryException(e);
+            throw e;
         }
     }
 
@@ -401,12 +401,12 @@ public class TOTPStorageTest {
         long prevDay = now - 1000 * 60 * 60 * 24; // 1 day ago
 
         TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
-        TOTPUsedCode validCode1 = new TOTPUsedCode("user", "valid-code-1", true, nextDay, now + 1);
-        TOTPUsedCode invalidCode = new TOTPUsedCode("user", "invalid-code", false, nextDay, now + 2);
-        TOTPUsedCode expiredCode = new TOTPUsedCode("user", "expired-code", true, prevDay, now + 3);
-        TOTPUsedCode expiredInvalidCode = new TOTPUsedCode("user", "expired-invalid-code", false, prevDay, now + 4);
-        TOTPUsedCode validCode2 = new TOTPUsedCode("user", "valid-code-2", true, nextDay, now + 5);
-        TOTPUsedCode validCode3 = new TOTPUsedCode("user", "valid-code-3", true, nextDay, now + 6);
+        TOTPUsedCode validCode1 = new TOTPUsedCode("user", "valid1", true, nextDay, now + 1);
+        TOTPUsedCode invalidCode = new TOTPUsedCode("user", "invalid", false, nextDay, now + 2);
+        TOTPUsedCode expiredCode = new TOTPUsedCode("user", "expired", true, prevDay, now + 3);
+        TOTPUsedCode expiredInvalidCode = new TOTPUsedCode("user", "ex-in", false, prevDay, now + 4);
+        TOTPUsedCode validCode2 = new TOTPUsedCode("user", "valid2", true, nextDay, now + 5);
+        TOTPUsedCode validCode3 = new TOTPUsedCode("user", "valid3", true, nextDay, now + 6);
 
         storage.createDevice(device);
         insertUsedCodesUtil(storage, new TOTPUsedCode[] {
@@ -414,6 +414,12 @@ public class TOTPStorageTest {
                 expiredCode, expiredInvalidCode,
                 validCode2, validCode3
         });
+
+        // Try to create a code with same user and created time. It should fail:
+        assertThrows(UsedCodeAlreadyExistsException.class,
+                () -> insertUsedCodesUtil(storage, new TOTPUsedCode[] {
+                        new TOTPUsedCode("user", "any-code", true, nextDay, now + 1)
+                }));
 
         usedCodes = getAllUsedCodesUtil(storage, "user");
         assert (usedCodes.length == 6);
@@ -438,10 +444,10 @@ public class TOTPStorageTest {
         long halfSecond = System.currentTimeMillis() + 500; // 500ms from now
 
         TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
-        TOTPUsedCode validCodeToLive = new TOTPUsedCode("user", "valid-code", true, nextDay, now);
-        TOTPUsedCode invalidCodeToLive = new TOTPUsedCode("user", "invalid-code", false, nextDay, now + 1);
-        TOTPUsedCode validCodeToExpire = new TOTPUsedCode("user", "valid-code", true, halfSecond, now + 2);
-        TOTPUsedCode invalidCodeToExpire = new TOTPUsedCode("user", "invalid-code", false, halfSecond, now + 3);
+        TOTPUsedCode validCodeToLive = new TOTPUsedCode("user", "valid", true, nextDay, now);
+        TOTPUsedCode invalidCodeToLive = new TOTPUsedCode("user", "invalid", false, nextDay, now + 1);
+        TOTPUsedCode validCodeToExpire = new TOTPUsedCode("user", "valid", true, halfSecond, now + 2);
+        TOTPUsedCode invalidCodeToExpire = new TOTPUsedCode("user", "invalid", false, halfSecond, now + 3);
 
         storage.createDevice(device);
         insertUsedCodesUtil(storage, new TOTPUsedCode[] {

@@ -30,7 +30,7 @@ public class TOTPQueries {
                 + "user_id VARCHAR(128) NOT NULL," + "device_name VARCHAR(256) NOT NULL,"
                 + "secret_key VARCHAR(256) NOT NULL,"
                 + "period INTEGER NOT NULL," + "skew INTEGER NOT NULL," + "verified BOOLEAN NOT NULL,"
-                + "PRIMARY KEY (user_id, device_name)"
+                + "PRIMARY KEY (user_id, device_name),"
                 + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getTotpUsersTable()
                 + "(user_id) ON DELETE CASCADE);";
     }
@@ -38,10 +38,13 @@ public class TOTPQueries {
     public static String getQueryToCreateUsedCodesTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getTotpUsedCodesTable() + " ("
                 + "user_id VARCHAR(128) NOT NULL, "
-                + "code VARCHAR(8) NOT NULL," + "is_valid BOOLEAN NOT NULL,"
+                // SQLite doesn't follow VARCHAR length by default
+                // But we can add a check constraint to make sure the length is <= 8
+                + "code VARCHAR(8) NOT NULL CHECK(LENGTH(code) <= 8),"
+                + "is_valid BOOLEAN NOT NULL,"
                 + "expiry_time_ms BIGINT UNSIGNED NOT NULL,"
                 + "created_time_ms BIGINT UNSIGNED NOT NULL,"
-                + "PRIMARY KEY (user_id, created_time_ms)"
+                + "PRIMARY KEY (user_id, created_time_ms)," // failing without comma in postgres. validate
                 + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getTotpUsersTable()
                 + "(user_id) ON DELETE CASCADE);";
     }

@@ -42,7 +42,7 @@ public class Totp {
 
     private static boolean checkCode(TOTPDevice device, String code) {
         final TimeBasedOneTimePasswordGenerator totp = new TimeBasedOneTimePasswordGenerator(
-                Duration.ofSeconds(device.period));
+                Duration.ofSeconds(device.period), 6);
 
         byte[] keyBytes = new Base32().decode(device.secretKey);
         Key key = new SecretKeySpec(keyBytes, "HmacSHA1");
@@ -80,7 +80,7 @@ public class Totp {
     private static void checkAndStoreCode(Main main, TOTPStorage totpStorage, String userId, TOTPDevice[] devices,
             String code)
             throws InvalidTotpException, TotpNotEnabledException,
-            LimitReachedException, StorageQueryException, StorageTransactionLogicException, InterruptedException {
+            LimitReachedException, StorageQueryException, StorageTransactionLogicException {
         // Note that the TOTP cron runs every 1 hour, so all the expired tokens can stay
         // in the db for at max 1 hour after expiry.
 
@@ -215,9 +215,15 @@ public class Totp {
                 } else if (e.actualException instanceof TotpNotEnabledException) {
                     throw (TotpNotEnabledException) e.actualException;
                 } else if (e.actualException instanceof UsedCodeAlreadyExistsException) {
-                    // retry the transaction after 3ms (not sec)
-                    Thread.sleep(3);
-                    continue;
+                    // retry the transaction after a small delay:
+                    int delayInMs = (int) (Math.random() * 10 + 1);
+                    try {
+                        Thread.sleep(delayInMs);
+                        continue;
+                    } catch (InterruptedException err) {
+                        // ignore the error and retry
+                        continue;
+                    }
                 } else {
                     throw e;
                 }
@@ -227,7 +233,7 @@ public class Totp {
 
     public static boolean verifyDevice(Main main, String userId, String deviceName, String code)
             throws TotpNotEnabledException, UnknownDeviceException, InvalidTotpException,
-            LimitReachedException, StorageQueryException, StorageTransactionLogicException, InterruptedException {
+            LimitReachedException, StorageQueryException, StorageTransactionLogicException {
         // Here boolean return value tells whether the device has been
         // newly verified (true) OR it was already verified (false)
 
@@ -260,6 +266,12 @@ public class Totp {
             throw new UnknownDeviceException();
         }
 
+        // At this point, even if device is suddenly deleted/renamed by another API
+        // call. We will still check the code against the new set of devices and store
+        // it in the used codes table. However, the device will not be marked as
+        // verified in the devices table (because it was deleted/renamed). So the user
+        // gets a UnknownDevceException.
+        // This behaviour is okay so we can ignore it.
         checkAndStoreCode(main, totpStorage, userId, new TOTPDevice[] { matchingDevice }, code);
         // Will reach here only if the code is valid:
         totpStorage.markDeviceAsVerified(userId, deviceName);
@@ -268,7 +280,7 @@ public class Totp {
 
     public static void verifyCode(Main main, String userId, String code, boolean allowUnverifiedDevices)
             throws TotpNotEnabledException, InvalidTotpException, LimitReachedException,
-            StorageQueryException, StorageTransactionLogicException, InterruptedException {
+            StorageQueryException, StorageTransactionLogicException {
         TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
 
         // Check if the user has any devices:
@@ -282,6 +294,10 @@ public class Totp {
             devices = Arrays.stream(devices).filter(device -> device.verified).toArray(TOTPDevice[]::new);
         }
 
+        // At this point, even if some of the devices are suddenly deleted/renamed by
+        // another API call. We will still check the code against the updated set of
+        // devices and store it in the used codes table. This behaviour is okay so we
+        // can ignore it.
         checkAndStoreCode(main, totpStorage, userId, devices, code);
     }
 
