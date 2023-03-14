@@ -112,7 +112,7 @@ public class SessionTest3 {
     @Test
     public void removeSessionFromDbButAccessTokenStillValidUntilExpiry() throws Exception {
 
-        Utils.setValueInConfig("access_token_validity", "1"); // 1 second
+        Utils.setValueInConfig("access_token_validity", "2"); // 1 second
 
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -134,7 +134,7 @@ public class SessionTest3 {
 
         Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
 
-        Thread.sleep(1500);
+        Thread.sleep(2500);
 
         try {
             Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false,

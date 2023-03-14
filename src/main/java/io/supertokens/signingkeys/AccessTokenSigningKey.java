@@ -156,7 +156,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 + SIGNING_KEY_VALIDITY_OVERLAP * config.getAccessTokenValidity();
         // Keys created after this timestamp can be used to sign access tokens (ms) after the overlap period
         final long keysCreatedAfterCanSign = System.currentTimeMillis()
-                - config.getAccessTokenDynamicSigningKeyUpdateInterval() + dynamicSigningKeyOverlapMS;
+                - config.getAccessTokenDynamicSigningKeyUpdateInterval() + getDynamicSigningKeyOverlapMS();
         // Keys created after this timestamp can be used to verify access token signatures (ms)
         final long keysCreatedAfterCanVerify = System.currentTimeMillis() - signingKeyLifetime;
 
@@ -263,6 +263,12 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
     }
 
     public int getDynamicSigningKeyOverlapMS() {
+        CoreConfig config = Config.getConfig(main);
+        // We do this, because otherwise we could get issues in testing if getAccessTokenDynamicSigningKeyUpdateInterval is shorter than dynamicSigningKeyOverlapMS
+        // If we didn't explicitly set it, we try to set it to a sensible default. In tests where this matters setDynamicSigningKeyOverlapMS should be used.
+        if (Main.isTesting && dynamicSigningKeyOverlapMS == 60000 && config.getAccessTokenDynamicSigningKeyUpdateInterval() < 60000) {
+            return (int)(config.getAccessTokenDynamicSigningKeyUpdateInterval() / 5);
+        }
         return dynamicSigningKeyOverlapMS;
     }
 }

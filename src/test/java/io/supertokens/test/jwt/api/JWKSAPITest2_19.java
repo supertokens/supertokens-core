@@ -111,8 +111,6 @@ public class JWKSAPITest2_19 {
 
 
         for (int i = 0; i < keyList.size(); ++i) {
-            System.out.println(keyList.get(i).id);
-            System.out.println(keys.get(i));
             assertEquals(keyList.get(i).id, keys.get(i).getAsJsonObject().get("kid").getAsString());
         }
 
