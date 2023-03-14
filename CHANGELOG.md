@@ -10,6 +10,47 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Changed
 
 - Using an internal `SemVer` class to handle version numbers. This will make handling CDI version ranges easier.
+- Support for CDI version `2.19`
+  - Removed POST `/recipe/handshake`
+  - Added `useStaticSigningKey` into `createNewSession` (POST `/recipe/session`) and `createSignedJWT` (POST `/recipe/jwt`)
+  - Removed `idRefreshToken`, `jwtSigningPublicKey`, `jwtSigningPublicKeyExpiryTime` and `jwtSigningPublicKeyList` 
+    from responses
+  - Deprecated GET `/recipe/jwt/jwks`
+  - Added GET `/.well-known/jwks.json`: a standard jwks
+- Changes in configuration:
+  - `access_token_signing_key_dynamic` is now deprecated, only used for requests with CDI<=2.18
+  - Renamed `access_token_signing_key_update_interval` to `access_token_dynamic_signing_key_update_interval`
+- Added new access token version
+  - Uses standard prop names (i.e.: `sub` instead of `userId`)
+  - Contains the id of the signing key in the header (as `kid`)
+  - Stores the user payload merged into the root level, instead of the `userData` prop
+- Session handling function now throw if the user payload contains protected props (`sub`, `iat`, `exp`, 
+  `sessionHandle`, `refreshTokenHash1`, `parentRefreshTokenHash1`, `antiCsrfToken`)
+  - A related exception type was added as `AccessTokenPayloadError`
+- Refactored the handling of signing keys
+- `createNewSession` now takes a `useStaticKey` parameter instead of depending on the 
+  `access_token_signing_key_dynamic` config value
+- `createJWTToken` now supports signing by a dynamic key
+- `getSession` now takes a `checkDatabase` parameter instead of using the `access_token_blacklisting` config value 
+- Updated plugin interface version to 2.21
+
+### Database Changes
+
+- Added new `useStaticKey` field into session info
+- Manual migration is also required if `access_token_signing_key_dynamic` was set to true
+
+#### Migration steps for SQL
+- TODO
+- If using `access_token_signing_key_dynamic` false:
+  - `ALTER TABLE table ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);`
+  - 
+- If using `access_token_signing_key_dynamic` true:
+  - `ALTER TABLE table ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true);`
+  - `DELETE FROM tbl_OldTableName WHERE id in (SELECT id FROM tbl_NewTableName)` 
+
+#### Migration steps for NoSQL
+
+- TODO
 
 ## [4.4.0] - 2023-02-21
 
