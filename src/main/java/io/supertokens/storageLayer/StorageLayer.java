@@ -319,6 +319,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return (AuthRecipeStorage) getInstance(tenantIdentifier, main).storage;
     }
 
+    public static AuthRecipeStorage getAuthRecipeStorageForUser(AppIdentifier appIdentifier, Main main, String userId)
+            throws StorageQueryException {
+        return (AuthRecipeStorage) getStorageForUser(main, appIdentifier, userId);
+    }
+
     @TestOnly
     public static AuthRecipeStorage getAuthRecipeStorage(Main main) {
         try {
@@ -471,6 +476,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return (UserIdMappingStorage) getInstance(tenantIdentifier, main).storage;
     }
 
+    public static UserIdMappingStorage getUserIdMappingStorageForUser(AppIdentifier appIdentifier, Main main, String userId)
+            throws TenantOrAppNotFoundException, StorageQueryException {
+        return (UserIdMappingStorage) getStorageForUser(main, appIdentifier, userId);
+    }
+
     @TestOnly
     public static UserIdMappingStorage getUserIdMappingStorage(Main main) {
         try {
@@ -574,5 +584,17 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             }
         }
         return userPoolToStorage.values().toArray(new Storage[0]);
+    }
+
+    public static Storage getStorageForUser(Main main, AppIdentifier appIdentifier, String userId)
+            throws StorageQueryException {
+        Storage[] storages = getStoragesForApp(main, appIdentifier);
+
+        for (Storage storage : storages) {
+            if (((AuthRecipeStorage) storage).doesUserIdExist(appIdentifier, userId)) {
+                return storage;
+            }
+        }
+        return null;
     }
 }

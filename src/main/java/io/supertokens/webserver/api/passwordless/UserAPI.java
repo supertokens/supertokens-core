@@ -72,7 +72,7 @@ public class UserAPI extends WebserverAPI {
             UserInfo user;
             if (userId != null) {
                 UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                        this.getTenantIdentifier(req), main, userId,
+                        this.getTenantIdentifier(req).toAppIdentifier(), main, userId,
                         UserIdType.ANY);
                 if (userIdMapping != null) {
                     userId = userIdMapping.superTokensUserId;
@@ -85,7 +85,7 @@ public class UserAPI extends WebserverAPI {
                 user = Passwordless.getUserByEmail(this.getTenantIdentifier(req), main, Utils.normaliseEmail(email));
                 if (user != null) {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            this.getTenantIdentifier(req), main,
+                            this.getTenantIdentifier(req).toAppIdentifier(), main,
                             user.id, UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
@@ -95,7 +95,7 @@ public class UserAPI extends WebserverAPI {
                 user = Passwordless.getUserByPhoneNumber(this.getTenantIdentifier(req), main, phoneNumber);
                 if (user != null) {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            this.getTenantIdentifier(req), main,
+                            this.getTenantIdentifier(req).toAppIdentifier(), main,
                             user.id, UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
@@ -138,7 +138,7 @@ public class UserAPI extends WebserverAPI {
         try {
             // if userIdMapping exists, set the externalUserId in the response
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    this.getTenantIdentifier(req), main, userId,
+                    this.getTenantIdentifier(req).toAppIdentifier(), main, userId,
                     UserIdType.ANY);
             if (userIdMapping != null) {
                 userId = userIdMapping.superTokensUserId;

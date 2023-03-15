@@ -48,7 +48,7 @@ public class DeleteUserAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         try {
-            AuthRecipe.deleteUser(this.getTenantIdentifier(req), super.main, userId);
+            AuthRecipe.deleteUser(this.getTenantIdentifier(req).toAppIdentifier(), super.main, userId);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);

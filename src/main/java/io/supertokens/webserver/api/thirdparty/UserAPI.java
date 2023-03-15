@@ -70,7 +70,7 @@ public class UserAPI extends WebserverAPI {
             UserInfo user = null;
             if (userId != null) {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(this.getTenantIdentifier(req), main, userId,
+                        .getUserIdMapping(this.getTenantIdentifier(req).toAppIdentifier(), main, userId,
                                 UserIdType.ANY);
                 if (userIdMapping != null) {
                     userId = userIdMapping.superTokensUserId;
@@ -84,7 +84,7 @@ public class UserAPI extends WebserverAPI {
                         thirdPartyUserId);
                 if (user != null) {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                            .getUserIdMapping(this.getTenantIdentifier(req), main, user.id,
+                            .getUserIdMapping(this.getTenantIdentifier(req).toAppIdentifier(), main, user.id,
                                     UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;

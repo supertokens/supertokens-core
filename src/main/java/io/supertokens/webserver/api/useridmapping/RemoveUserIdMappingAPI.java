@@ -81,8 +81,8 @@ public class RemoveUserIdMappingAPI extends WebserverAPI {
         }
 
         try {
-            boolean didMappingExist = UserIdMapping.deleteUserIdMapping(this.getTenantIdentifier(req), main, userId,
-                    userIdType, force);
+            boolean didMappingExist = UserIdMapping.deleteUserIdMapping(
+                    this.getTenantIdentifier(req).toAppIdentifier(), main, userId, userIdType, force);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("didMappingExist", didMappingExist);

@@ -90,7 +90,7 @@ public class UpdateExternalUserIdInfoAPI extends WebserverAPI {
         }
 
         try {
-            if (UserIdMapping.updateOrDeleteExternalUserIdInfo(this.getTenantIdentifier(req), main, userId, userIdType,
+            if (UserIdMapping.updateOrDeleteExternalUserIdInfo(this.getTenantIdentifier(req).toAppIdentifier(), main, userId, userIdType,
                     externalUserIdInfo)) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");

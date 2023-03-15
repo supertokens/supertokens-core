@@ -91,7 +91,7 @@ public class UserIdMappingAPI extends WebserverAPI {
 
         try {
 
-            UserIdMapping.createUserIdMapping(this.getTenantIdentifier(req), main, superTokensUserId, externalUserId,
+            UserIdMapping.createUserIdMapping(this.getTenantIdentifier(req).toAppIdentifier(), main, superTokensUserId, externalUserId,
                     externalUserIdInfo, force);
 
             JsonObject response = new JsonObject();
@@ -149,7 +149,7 @@ public class UserIdMappingAPI extends WebserverAPI {
 
         try {
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(this.getTenantIdentifier(req), main, userId,
+                    .getUserIdMapping(this.getTenantIdentifier(req).toAppIdentifier(), main, userId,
                             userIdType);
             if (userIdMapping == null) {
                 JsonObject response = new JsonObject();

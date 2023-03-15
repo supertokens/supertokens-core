@@ -62,7 +62,7 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
         try {
             // if a userIdMapping exists, pass the superTokensUserId to the generatePasswordResetToken
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(this.getTenantIdentifier(req), main, userId,
+                    .getUserIdMapping(this.getTenantIdentifier(req).toAppIdentifier(), main, userId,
                             UserIdType.ANY);
             if (userIdMapping != null) {
                 userId = userIdMapping.superTokensUserId;

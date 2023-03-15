@@ -72,7 +72,7 @@ public class UserAPI extends WebserverAPI {
             if (userId != null) {
                 // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(this.getTenantIdentifier(req), main, userId, UserIdType.ANY);
+                        .getUserIdMapping(this.getTenantIdentifier(req).toAppIdentifier(), main, userId, UserIdType.ANY);
                 if (userIdMapping != null) {
                     userId = userIdMapping.superTokensUserId;
                 }
@@ -89,7 +89,7 @@ public class UserAPI extends WebserverAPI {
                 // if a userIdMapping exists, set the userId in the response to the externalUserId
                 if (user != null) {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                            .getUserIdMapping(this.getTenantIdentifier(req), main, user.id, UserIdType.ANY);
+                            .getUserIdMapping(this.getTenantIdentifier(req).toAppIdentifier(), main, user.id, UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
                     }
@@ -133,7 +133,7 @@ public class UserAPI extends WebserverAPI {
         try {
             // if a userIdMapping exists, pass the superTokensUserId to the updateUsersEmailOrPassword
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(this.getTenantIdentifier(req), main, userId, UserIdType.ANY);
+                    .getUserIdMapping(this.getTenantIdentifier(req).toAppIdentifier(), main, userId, UserIdType.ANY);
             if (userIdMapping != null) {
                 userId = userIdMapping.superTokensUserId;
             }
