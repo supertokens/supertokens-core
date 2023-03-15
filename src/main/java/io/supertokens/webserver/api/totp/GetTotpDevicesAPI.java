@@ -31,9 +31,7 @@ public class GetTotpDevicesAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
-
-        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
 
         if (userId.isEmpty()) {
             throw new ServletException(new BadRequestException("userId cannot be empty"));

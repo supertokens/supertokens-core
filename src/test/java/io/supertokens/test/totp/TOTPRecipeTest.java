@@ -97,7 +97,7 @@ public class TOTPRecipeTest {
         return new TestSetupResult(storage, process);
     }
 
-    private static String generateTotpCode(Main main, TOTPDevice device)
+    public static String generateTotpCode(Main main, TOTPDevice device)
             throws InvalidKeyException, StorageQueryException {
         return generateTotpCode(main, device, 0);
     }

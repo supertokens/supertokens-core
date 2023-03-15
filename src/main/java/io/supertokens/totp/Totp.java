@@ -139,8 +139,8 @@ public class Totp {
                         if (now - latestInvalidCodeCreatedTime < rateLimitResetTimeInMs) {
                             // Less than rateLimitResetTimeInMs (default = 15 mins) time has elasped since
                             // the last invalid code:
-                            throw new StorageTransactionLogicException(
-                                    new LimitReachedException(rateLimitResetTimeInMs / 1000));
+                            int timeLeftMs = (int) (rateLimitResetTimeInMs - (now - latestInvalidCodeCreatedTime));
+                            throw new StorageTransactionLogicException(new LimitReachedException(timeLeftMs / 1000));
 
                             // If we insert the used code here, then it will further delay the user from
                             // being able to login. So not inserting it here.

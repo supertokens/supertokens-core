@@ -81,7 +81,6 @@ public class StorageLayerTest {
 
         // Try code with length > 8
         try {
-
             TOTPUsedCode code = new TOTPUsedCode("user", "123456789", true, nextDay, now);
             insertUsedCodeUtil(storage, code);
             assert (false);

@@ -68,9 +68,8 @@ public class VerifyTotpDeviceAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (LimitReachedException e) {
             result.addProperty("status", "LIMIT_REACHED_ERROR");
-            // Also return a retryAfter value:
-            resp.addHeader("Retry-After", Integer.toString(e.retryInSeconds));
-            super.sendJsonResponse(429, result, resp); // 429 (Too Many Requests)
+            result.addProperty("retryAfterSec", e.retryInSeconds);
+            super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             throw new ServletException(e);
         }
