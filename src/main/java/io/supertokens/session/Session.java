@@ -145,7 +145,7 @@ public class Session {
 
     // pass antiCsrfToken to disable csrf check for this request
     public static SessionInformationHolder getSession(Main main, @Nonnull String token, @Nullable String antiCsrfToken,
-            boolean enableAntiCsrf, Boolean doAntiCsrfCheck, Boolean checkDatabase) throws StorageQueryException,
+            boolean enableAntiCsrf, Boolean doAntiCsrfCheck, boolean checkDatabase) throws StorageQueryException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException, UnsupportedJWTSigningAlgorithmException, AccessTokenPayloadError {
 
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessToken(main, token,

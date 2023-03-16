@@ -86,7 +86,7 @@ public class AccessTokenSigningKeyTest {
     }
 
     @Test
-    public void getAllKeysReturnsOrdered()
+    public void getDynamicKeysReturnsOrdered()
             throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
             StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException {
         Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00027"); // 1 seconds
@@ -113,7 +113,7 @@ public class AccessTokenSigningKeyTest {
         // Wait for access_token_dynamic_signing_key_update_interval + margin
         Thread.sleep(1500);
 
-        List<JWTSigningKeyInfo> allKeys = SigningKeys.getInstance(process.getProcess()).getAllKeys();
+        List<KeyInfo> allKeys = SigningKeys.getInstance(process.getProcess()).getDynamicKeys();
         // We get a migrated + new static signing key (generated on startup)
         // + 1 expired and 1 fresh dynamic key
         assertEquals(allKeys.size(), 4);
@@ -121,11 +121,11 @@ public class AccessTokenSigningKeyTest {
         // The first one should be the latest key
         KeyInfo key = SigningKeys.getInstance(process.getProcess()).getLatestIssuedDynamicKey();
         assertEquals(allKeys.get(0).createdAtTime, key.createdAtTime);
-        assertEquals(allKeys.get(0).keyString, key.value);
+        assertEquals(allKeys.get(0).value, key.value);
 
         // The oldest one should be the legacy key.
         assertEquals(allKeys.get(3).createdAtTime, legacyKey.createdAtTime);
-        assertEquals(allKeys.get(3).keyString, legacyKey.value);
+        assertEquals(allKeys.get(3).value, legacyKey.value);
 
         // Keys should be ordered by createdAtTime descending
         for (int i = 0; i < allKeys.size() - 1; ++i) {

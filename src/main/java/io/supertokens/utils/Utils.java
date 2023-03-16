@@ -279,7 +279,7 @@ public class Utils {
         public PubPriKey(String s) {
             // We split by both | and ; because in old versions we used to use ";" in dynamic and "|" in static keys
             // Now we are consolidating all of them to use "|", but by handling legacy keys, we can avoid the need for manual key migration.
-            // I.e.: this way only people who used access_token_signing_key_dynamic has to do manual migration instead of everyone.
+            // I.e.: this way only people who set access_token_signing_key_dynamic to false has to do manual migration instead of everyone.
             // for everyone else, the key rotation should get it done.
             String[] parts =s.split("[|;]");
 

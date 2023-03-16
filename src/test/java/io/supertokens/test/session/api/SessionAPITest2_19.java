@@ -213,8 +213,10 @@ public class SessionAPITest2_19 {
 
         if (isStatic) {
             assertNull(caught);
+            assertEquals("s-", preParseInfo.kid.substring(0, 2));
         } else {
             assertNotNull(caught);
+            assertEquals("d-", preParseInfo.kid.substring(0, 2));
         }
 
         Base64.getUrlDecoder().decode(preParseInfo.header);

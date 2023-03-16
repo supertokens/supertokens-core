@@ -7,19 +7,20 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
-### Changed
+### Breaking changes
 
 - Using an internal `SemVer` class to handle version numbers. This will make handling CDI version ranges easier.
 - Support for CDI version `2.19`
   - Removed POST `/recipe/handshake`
-  - Added `useStaticSigningKey` into `createNewSession` (POST `/recipe/session`) and `createSignedJWT` (POST `/recipe/jwt`)
+  - Added `useStaticSigningKey` into `createNewSession` (POST `/recipe/session`), replacing 
+    `access_token_signing_key_dynamic` used in CDI<=2.18
+  - Added `useStaticSigningKey` into `createSignedJWT` (POST `/recipe/jwt`)
+  - Added `checkDatabase` into `verifySession` (POST `/recipe/session/verify`), replacing 
+    `access_token_blacklisting` used in CDI<=2.18
   - Removed `idRefreshToken`, `jwtSigningPublicKey`, `jwtSigningPublicKeyExpiryTime` and `jwtSigningPublicKeyList` 
     from responses
   - Deprecated GET `/recipe/jwt/jwks`
   - Added GET `/.well-known/jwks.json`: a standard jwks
-- Changes in configuration:
-  - `access_token_signing_key_dynamic` is now deprecated, only used for requests with CDI<=2.18
-  - Renamed `access_token_signing_key_update_interval` to `access_token_dynamic_signing_key_update_interval`
 - Added new access token version
   - Uses standard prop names (i.e.: `sub` instead of `userId`)
   - Contains the id of the signing key in the header (as `kid`)
@@ -33,6 +34,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `createJWTToken` now supports signing by a dynamic key
 - `getSession` now takes a `checkDatabase` parameter instead of using the `access_token_blacklisting` config value 
 - Updated plugin interface version to 2.21
+
+### Configuration Changes
+
+- `access_token_signing_key_dynamic` is now deprecated, only used for requests with CDI<=2.18
+- `access_token_blacklisting` is now deprecated, only used for requests with CDI<=2.18
+- Renamed `access_token_signing_key_update_interval` to `access_token_dynamic_signing_key_update_interval`
 
 ### Database Changes
 
@@ -48,7 +55,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - `ALTER TABLE table ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true);`
   - `DELETE FROM tbl_OldTableName WHERE id in (SELECT id FROM tbl_NewTableName)` 
 
-#### Migration steps for NoSQL
+#### Migration steps for MongoDB
 
 - TODO
 
