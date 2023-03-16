@@ -31,6 +31,7 @@ import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardStorage;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
@@ -417,10 +418,11 @@ public class Start
 
     @Override
     public AuthRecipeUserInfo[] getUsers(@NotNull Integer limit, @NotNull String timeJoinedOrder,
-            @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId, @Nullable Long timeJoined)
+            @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId, @Nullable Long timeJoined,
+            @Nullable DashboardSearchTags dashboardSearchTags)
             throws StorageQueryException {
         try {
-            return GeneralQueries.getUsers(this, limit, timeJoinedOrder, includeRecipeIds, userId, timeJoined);
+            return GeneralQueries.getUsers(this, limit, timeJoinedOrder, includeRecipeIds, userId, timeJoined, dashboardSearchTags);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -1683,10 +1685,11 @@ public class Start
     @Override
     public void updateDashboardUsersEmailWithUserId_Transaction(TransactionConnection con, String userId,
             String newEmail)
-            throws StorageQueryException, io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException, UserIdNotFoundException {
+            throws StorageQueryException, io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException,
+            UserIdNotFoundException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            if(!DashboardQueries.updateDashboardUsersEmailWithUserId_Transaction(this, sqlCon, userId, newEmail)){
+            if (!DashboardQueries.updateDashboardUsersEmailWithUserId_Transaction(this, sqlCon, userId, newEmail)) {
                 throw new UserIdNotFoundException();
             }
         } catch (SQLException e) {
@@ -1704,7 +1707,8 @@ public class Start
             String newPassword) throws StorageQueryException, UserIdNotFoundException {
         Connection sqlCon = (Connection) con.getConnection();
         try {
-            if(!DashboardQueries.updateDashboardUsersPasswordWithUserId_Transaction(this, sqlCon, userId, newPassword)){
+            if (!DashboardQueries.updateDashboardUsersPasswordWithUserId_Transaction(this, sqlCon, userId,
+                    newPassword)) {
                 throw new UserIdNotFoundException();
             }
         } catch (SQLException e) {

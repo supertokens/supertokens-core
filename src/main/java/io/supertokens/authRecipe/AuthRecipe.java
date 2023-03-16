@@ -42,11 +42,11 @@ public class AuthRecipe {
         AuthRecipeUserInfo[] users;
         if (paginationToken == null) {
             users = StorageLayer.getAuthRecipeStorage(main).getUsers(limit + 1, timeJoinedOrder, includeRecipeIds, null,
-                    null);
+                    null, null);
         } else {
             UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
             users = StorageLayer.getAuthRecipeStorage(main).getUsers(limit + 1, timeJoinedOrder, includeRecipeIds,
-                    tokenInfo.userId, tokenInfo.timeJoined);
+                    tokenInfo.userId, tokenInfo.timeJoined, null);
         }
         String nextPaginationToken = null;
         int maxLoop = users.length;
