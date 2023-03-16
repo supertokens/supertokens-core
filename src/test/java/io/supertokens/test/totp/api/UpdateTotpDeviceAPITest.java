@@ -1,4 +1,4 @@
-package io.supertokens.test.totp.totp;
+package io.supertokens.test.totp.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;

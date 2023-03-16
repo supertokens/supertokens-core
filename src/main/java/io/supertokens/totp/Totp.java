@@ -29,6 +29,8 @@ import io.supertokens.totp.exceptions.InvalidTotpException;
 import io.supertokens.totp.exceptions.LimitReachedException;
 import org.apache.commons.codec.binary.Base32;
 
+// TODO: Add test for UsedCodeAlreadyExistsException once we implement time mocking
+
 public class Totp {
     private static String generateSecret() throws NoSuchAlgorithmException {
         // Reference: https://github.com/jchambers/java-otp
@@ -139,8 +141,8 @@ public class Totp {
                         if (now - latestInvalidCodeCreatedTime < rateLimitResetTimeInMs) {
                             // Less than rateLimitResetTimeInMs (default = 15 mins) time has elasped since
                             // the last invalid code:
-                            int timeLeftMs = (int) (rateLimitResetTimeInMs - (now - latestInvalidCodeCreatedTime));
-                            throw new StorageTransactionLogicException(new LimitReachedException(timeLeftMs / 1000));
+                            long timeLeftMs = (rateLimitResetTimeInMs - (now - latestInvalidCodeCreatedTime));
+                            throw new StorageTransactionLogicException(new LimitReachedException(timeLeftMs));
 
                             // If we insert the used code here, then it will further delay the user from
                             // being able to login. So not inserting it here.

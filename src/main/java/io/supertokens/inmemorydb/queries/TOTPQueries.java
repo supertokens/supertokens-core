@@ -44,7 +44,7 @@ public class TOTPQueries {
                 + "is_valid BOOLEAN NOT NULL,"
                 + "expiry_time_ms BIGINT UNSIGNED NOT NULL,"
                 + "created_time_ms BIGINT UNSIGNED NOT NULL,"
-                + "PRIMARY KEY (user_id, created_time_ms)," // failing without comma in postgres. validate
+                + "PRIMARY KEY (user_id, created_time_ms),"
                 + "FOREIGN KEY (user_id) REFERENCES " + Config.getConfig(start).getTotpUsersTable()
                 + "(user_id) ON DELETE CASCADE);";
     }

@@ -1,4 +1,4 @@
-package io.supertokens.test.totp.totp;
+package io.supertokens.test.totp.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
@@ -16,7 +16,7 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
-public class CreateTotpDeviceAPITest {
+public class RemoveTotpDeviceAPITest {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -31,13 +31,13 @@ public class CreateTotpDeviceAPITest {
         Utils.reset();
     }
 
-    private Exception createDeviceRequest(TestingProcessManager.TestingProcess process, JsonObject body) {
+    private Exception removeDeviceRequest(TestingProcessManager.TestingProcess process, JsonObject body) {
         return assertThrows(
                 io.supertokens.test.httpRequest.HttpResponseException.class,
                 () -> HttpRequestForTesting.sendJsonPOSTRequest(
                         process.getProcess(),
                         "",
-                        "http://localhost:3567/recipe/totp/device",
+                        "http://localhost:3567/recipe/totp/device/remove",
                         body,
                         1000,
                         1000,
@@ -72,51 +72,71 @@ public class CreateTotpDeviceAPITest {
             return;
         }
 
+        // Setup user and devices:
+        JsonObject createDeviceReq = new JsonObject();
+        createDeviceReq.addProperty("userId", "user-id");
+        createDeviceReq.addProperty("deviceName", "d1");
+        createDeviceReq.addProperty("period", 30);
+        createDeviceReq.addProperty("skew", 0);
+
+        JsonObject createDeviceRes = HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(),
+                "",
+                "http://localhost:3567/recipe/totp/device",
+                createDeviceReq,
+                1000,
+                1000,
+                null,
+                Utils.getCdiVersionLatestForTests(),
+                "totp");
+        assertEquals(createDeviceRes.get("status").getAsString(), "OK");
+
+        // create another device d2:
+        createDeviceReq.addProperty("deviceName", "d2");
+        JsonObject createDeviceRes2 = HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(),
+                "",
+                "http://localhost:3567/recipe/totp/device",
+                createDeviceReq,
+                1000,
+                1000,
+                null,
+                Utils.getCdiVersionLatestForTests(),
+                "totp");
+        assertEquals(createDeviceRes2.get("status").getAsString(), "OK");
+
+        // Start the actual tests for remove device API:
+
         JsonObject body = new JsonObject();
 
-        // Missing userId/deviceName/skew/period
+        // Missing userId/deviceName
         {
-            Exception e = createDeviceRequest(process, body);
+            Exception e = removeDeviceRequest(process, body);
             checkFieldMissingErrorResponse(e, "userId");
 
             body.addProperty("userId", "");
-            e = createDeviceRequest(process, body);
+            e = removeDeviceRequest(process, body);
             checkFieldMissingErrorResponse(e, "deviceName");
 
-            body.addProperty("deviceName", "");
-            e = createDeviceRequest(process, body);
-            checkFieldMissingErrorResponse(e, "skew");
-
-            body.addProperty("skew", -1);
-            e = createDeviceRequest(process, body);
-            checkFieldMissingErrorResponse(e, "period");
         }
 
-        // Invalid userId/deviceName/skew/period
+        // Invalid userId/deviceName
         {
-            body.addProperty("period", 0);
-            Exception e = createDeviceRequest(process, body);
+            body.addProperty("deviceName", "");
+            Exception e = removeDeviceRequest(process, body);
             checkResponseErrorContains(e, "userId cannot be empty"); // Note that this is not a field missing error
 
             body.addProperty("userId", "user-id");
-            e = createDeviceRequest(process, body);
+            e = removeDeviceRequest(process, body);
             checkResponseErrorContains(e, "deviceName cannot be empty");
 
             body.addProperty("deviceName", "d1");
-            e = createDeviceRequest(process, body);
-            checkResponseErrorContains(e, "skew must be >= 0");
-
-            body.addProperty("skew", 0);
-            e = createDeviceRequest(process, body);
-            checkResponseErrorContains(e, "period must be > 0");
-
-            body.addProperty("period", 30);
 
             // should pass now:
             JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(
                     process.getProcess(),
                     "",
-                    "http://localhost:3567/recipe/totp/device",
+                    "http://localhost:3567/recipe/totp/device/remove",
                     body,
                     1000,
                     1000,
@@ -124,19 +144,35 @@ public class CreateTotpDeviceAPITest {
                     Utils.getCdiVersionLatestForTests(),
                     "totp");
             assert res.get("status").getAsString().equals("OK");
+            assert res.get("didDeviceExist").getAsBoolean() == true;
 
-            // try again with same device:
+            // try again with same device (still pass but didDeviceExist should be false)
             JsonObject res2 = HttpRequestForTesting.sendJsonPOSTRequest(
                     process.getProcess(),
                     "",
-                    "http://localhost:3567/recipe/totp/device",
+                    "http://localhost:3567/recipe/totp/device/remove",
                     body,
                     1000,
                     1000,
                     null,
                     Utils.getCdiVersionLatestForTests(),
                     "totp");
-            assert res2.get("status").getAsString().equals("DEVICE_ALREADY_EXISTS_ERROR");
+            assert res2.get("status").getAsString().equals("OK");
+            assert res2.get("didDeviceExist").getAsBoolean() == false;
+
+            // try deleting device for a non-existent user
+            body.addProperty("userId", "non-existent-user");
+            JsonObject res3 = HttpRequestForTesting.sendJsonPOSTRequest(
+                    process.getProcess(),
+                    "",
+                    "http://localhost:3567/recipe/totp/device/remove",
+                    body,
+                    1000,
+                    1000,
+                    null,
+                    Utils.getCdiVersionLatestForTests(),
+                    "totp");
+            assert res3.get("status").getAsString().equals("TOTP_NOT_ENABLED_ERROR");
         }
 
         process.kill();

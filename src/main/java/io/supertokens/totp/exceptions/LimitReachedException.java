@@ -2,10 +2,10 @@ package io.supertokens.totp.exceptions;
 
 public class LimitReachedException extends Exception {
 
-    public int retryInSeconds;
+    public long retryInMs;
 
-    public LimitReachedException(int retryInSeconds) {
+    public LimitReachedException(long retryInSeconds) {
         super("Retry in " + retryInSeconds + " seconds");
-        this.retryInSeconds = retryInSeconds;
+        this.retryInMs = retryInSeconds;
     }
 }

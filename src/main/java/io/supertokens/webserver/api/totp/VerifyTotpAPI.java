@@ -61,7 +61,7 @@ public class VerifyTotpAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (LimitReachedException e) {
             result.addProperty("status", "LIMIT_REACHED_ERROR");
-            result.addProperty("retryAfterSec", e.retryInSeconds);
+            result.addProperty("retryAfterMs", e.retryInMs);
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException e) {
             throw new ServletException(e);
