@@ -321,7 +321,7 @@ public class GeneralQueries {
             {
                 StringBuilder USER_SEARCH_TAG_CONDITION = new StringBuilder();
 
-                if (dashboardSearchTags.recipeIds.contains("emailpassword") || dashboardSearchTags.recipeIds == null) {
+                if (dashboardSearchTags.recipeIds == null || dashboardSearchTags.recipeIds.contains("emailpassword")) {
                     String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
                             + " AS allAuthUsersTable" +
                             " JOIN " + getConfig(start).getEmailPasswordUsersTable()
@@ -341,7 +341,7 @@ public class GeneralQueries {
                     USER_SEARCH_TAG_CONDITION.append(QUERY);
                 }
 
-                if (dashboardSearchTags.recipeIds.contains("thirdparty") || dashboardSearchTags.recipeIds == null) {
+                if (dashboardSearchTags.recipeIds == null || dashboardSearchTags.recipeIds.contains("thirdparty")) {
                     String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
                             + " AS allAuthUsersTable" +
                             " JOIN " + getConfig(start).getThirdPartyUsersTable()
@@ -374,7 +374,7 @@ public class GeneralQueries {
                             USER_SEARCH_TAG_CONDITION.append(QUERY);
                         }
 
-                    } else if (dashboardSearchTags.providers != null) {
+                    } else if (dashboardSearchTags.recipeIds == null || dashboardSearchTags.providers != null) {
                         QUERY += " WHERE thirdPartyTable.third_party_id LIKE ?";
                         queryList.add(dashboardSearchTags.providers.get(0));
                         for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
@@ -389,7 +389,7 @@ public class GeneralQueries {
                     }
                 }
 
-                if (dashboardSearchTags.recipeIds.contains("passwordless") || dashboardSearchTags.recipeIds == null) {
+                if (dashboardSearchTags.recipeIds == null || dashboardSearchTags.recipeIds.contains("passwordless")) {
                     String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
                             + " AS allAuthUsersTable" +
                             " JOIN " + getConfig(start).getPasswordlessUsersTable()
@@ -399,18 +399,18 @@ public class GeneralQueries {
                     if (dashboardSearchTags.emails != null) {
 
                         QUERY = QUERY + " WHERE passwordlessTable.email LIKE ?";
-                        queryList.add(dashboardSearchTags.emails.get(0));
+                        queryList.add(dashboardSearchTags.emails.get(0) + "%");
                         for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
                             QUERY += " OR passwordlessTable.email LIKE ?";
-                            queryList.add(dashboardSearchTags.emails.get(i));
+                            queryList.add(dashboardSearchTags.emails.get(i) + "%");
                         }
 
                         if (dashboardSearchTags.phoneNumbers != null) {
                             QUERY += " AND  passwordlessTable.phone_number LIKE ?";
-                            queryList.add(dashboardSearchTags.phoneNumbers.get(0));
+                            queryList.add(dashboardSearchTags.phoneNumbers.get(0) + "%");
                             for (int i = 1; i < dashboardSearchTags.phoneNumbers.size(); i++) {
                                 QUERY += " OR passwordlessTable.phone_number LIKE ?";
-                                queryList.add(dashboardSearchTags.phoneNumbers.get(i));
+                                queryList.add(dashboardSearchTags.phoneNumbers.get(i) + "%");
                             }
 
                         }
@@ -432,7 +432,7 @@ public class GeneralQueries {
                         USER_SEARCH_TAG_CONDITION.append(QUERY);
                     }
                 }
-            
+
                 String finalQuery = "Select * FROM ( " + USER_SEARCH_TAG_CONDITION.toString() + " )";
                 usersFromQuery = execute(start, finalQuery, pst -> {
                     for (int i = 1; i <= queryList.size(); i++) {

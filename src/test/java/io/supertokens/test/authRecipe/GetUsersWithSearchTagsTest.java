@@ -35,6 +35,7 @@ import io.supertokens.passwordless.Passwordless.CreateCodeResponse;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
+import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -71,15 +72,11 @@ public class GetUsersWithSearchTagsTest {
         ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com");
 
         // create passwordless user
-
         CreateCodeResponse createCodeResponse =  Passwordless.createCode(process.getProcess(), "test@example.com", null, null, null);
-
-        ConsumeCodeResponse response =  Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
-
+        Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
 
         ArrayList<String> emails = new ArrayList<>();
         emails.add("test");
-        // emails.add("test2@example.com");
         ArrayList<String> recipeIds = new ArrayList<>();
         recipeIds.add("emailpassword");
         recipeIds.add("thirdparty");
