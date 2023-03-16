@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [4.4.2] - 2023-03-16
+
+- Adds null check in email normalisation to fix: https://github.com/supertokens/supertokens-node/issues/514
+
 ## [4.4.1] - 2023-03-09
 
 - Normalises email in all APIs in which email was not being
