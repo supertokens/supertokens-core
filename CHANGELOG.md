@@ -47,18 +47,80 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Manual migration is also required if `access_token_signing_key_dynamic` was set to true
 
 #### Migration steps for SQL
-- TODO
 - If using `access_token_signing_key_dynamic` false:
-  - `ALTER TABLE table ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);`
-  - 
-- If using `access_token_signing_key_dynamic` true:
   - `ALTER TABLE table ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true);`
-  - `DELETE FROM tbl_OldTableName WHERE id in (SELECT id FROM tbl_NewTableName)` 
+  - ```sql
+    INSERT INTO jwt_signing_keys(key_id, key_string, algorithm, created_at)
+      select CONCAT('s-', created_at_time) as key_id, value as key_string, 'RS256' as algorithm, created_at_time as created_at
+      from session_access_token_signing_keys;
+    ```
+- If using `access_token_signing_key_dynamic` true:
+  - `ALTER TABLE table ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);` 
 
 #### Migration steps for MongoDB
 
-- TODO
+- If using `access_token_signing_key_dynamic` false:
+  - ```
+    db.session_info.update({},
+      {
+        "$set": {
+          "useStaticKey": true
+        }
+      });
+    ```
+  - ```
+    db.key_value.aggregate([
+      {
+        "$match": {
+          _id: "access_token_signing_key_list"
+        }
+      },
+      {
+        $unwind: "$keys"
+      },
+      {
+        $addFields: {
+          _id: {
+            "$concat": [
+              "s-",
+              {
+                $convert: {
+                  input: "$keys.created_at_time",
+                  to: "string"
+                }
+              }
+            ]
+          },
+          "key_string": "$keys.value",
+          "algorithm": "RS256",
+          "created_at": "$keys.created_at_time",
+          
+        }
+      },
+      {
+        "$project": {
+          "keys": 0,
+          
+        }
+      },
+      {
+        "$merge": {
+          "into": "jwt_signing_keys",
+          
+        }
+      }
+    ]);
+    ```
 
+- If using `access_token_signing_key_dynamic` true:
+  - ```
+    db.session_info.update({},
+      {
+        "$set": {
+          "useStaticKey": false
+        }
+      });
+    ```
 ## [4.4.0] - 2023-02-21
 
 ### Added
