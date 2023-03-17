@@ -124,7 +124,7 @@ public class UserIdMappingAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-
+        // API is app specific
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
 
         // normalize userId

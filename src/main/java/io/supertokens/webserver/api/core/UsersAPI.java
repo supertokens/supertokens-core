@@ -111,7 +111,7 @@ public class UsersAPI extends WebserverAPI {
 
         try {
             UserPaginationContainer users = AuthRecipe.getUsers(this.getTenantIdentifier(req),
-                    super.main, limit, timeJoinedOrder, paginationToken,
+                    limit, timeJoinedOrder, paginationToken,
                     recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
 
             ArrayList<String> userIds = new ArrayList<>();

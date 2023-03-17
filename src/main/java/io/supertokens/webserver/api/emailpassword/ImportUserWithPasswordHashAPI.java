@@ -53,7 +53,7 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
         String passwordHash = InputParser.parseStringOrThrowError(input, "passwordHash", false);

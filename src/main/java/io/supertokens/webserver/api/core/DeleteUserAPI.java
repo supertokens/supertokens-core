@@ -55,7 +55,7 @@ public class DeleteUserAPI extends WebserverAPI {
             AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
                     this.getAppIdentifierStorageAndUserIdMapping(req, userId, UserIdType.SUPERTOKENS);
 
-            AuthRecipe.deleteUser(appIdentifierStorageAndUserIdMapping.appIdentifier, super.main, userId);
+            AuthRecipe.deleteUser(appIdentifierStorageAndUserIdMapping.appIdentifier, userId);
         } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
@@ -65,6 +65,5 @@ public class DeleteUserAPI extends WebserverAPI {
         JsonObject result = new JsonObject();
         result.addProperty("status", "OK");
         super.sendJsonResponse(200, result, resp);
-
     }
 }

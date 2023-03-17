@@ -70,7 +70,7 @@ public class UsersCountAPI extends WebserverAPI {
         }
 
         try {
-            long count = AuthRecipe.getUsersCount(this.getTenantIdentifier(req), super.main,
+            long count = AuthRecipe.getUsersCount(this.getTenantIdentifier(req),
                     recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new), includeAllTenants);
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
