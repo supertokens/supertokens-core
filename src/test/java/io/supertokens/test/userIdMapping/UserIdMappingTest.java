@@ -826,11 +826,7 @@ public class UserIdMappingTest {
             }
 
             // delete user data
-            try {
-                AuthRecipe.deleteUser(process.main, userId);
-            } catch (BadPermissionException | TenantOrAppNotFoundException e) {
-                // ignore if user did not exist
-            }
+            AuthRecipe.deleteUser(process.main, userId);
         }
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

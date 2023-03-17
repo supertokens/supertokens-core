@@ -566,7 +566,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return result;
     }
 
-    public static Storage[] getStoragesForApp(Main main, AppIdentifier appIdentifier) {
+    private static Storage[] getStoragesForApp(Main main, AppIdentifier appIdentifier) {
         Map<String, Storage> userPoolToStorage = new HashMap<>();
 
         Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
@@ -585,10 +585,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             Main main, TenantIdentifier tenantIdentifier, String userId, UserIdType userIdType)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
         Storage storage = getStorage(tenantIdentifier, main);
-
-        if (storage == null) {
-            throw new TenantOrAppNotFoundException(tenantIdentifier);
-        }
 
         UserIdMappingStorage uimStorage = (UserIdMappingStorage) storage;
         AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier(storage);

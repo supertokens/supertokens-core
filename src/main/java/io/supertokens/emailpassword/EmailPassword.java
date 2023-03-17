@@ -433,7 +433,7 @@ public class EmailPassword {
             });
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof UnknownUserIdException) {
-                throw new UnknownUserIdException();
+                throw (UnknownUserIdException) e.actualException;
             } else if (e.actualException instanceof DuplicateEmailException) {
                 throw (DuplicateEmailException) e.actualException;
             } else if (e.actualException instanceof TenantOrAppNotFoundException) {

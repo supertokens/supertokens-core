@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -69,10 +70,10 @@ public class SignInAPI extends WebserverAPI {
             TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
             UserInfo user = EmailPassword.signIn(tenantIdentifier, super.main, normalisedEmail, password);
 
-            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    tenantIdentifier.toAppIdentifier(), user.id, UserIdType.SUPERTOKENS);
-
             // if a userIdMapping exists, pass the externalUserId to the response
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                    tenantIdentifier.toAppIdentifier(), user.id, UserIdType.ANY);
+
             if (userIdMapping != null) {
                 user.id = userIdMapping.externalUserId;
             }

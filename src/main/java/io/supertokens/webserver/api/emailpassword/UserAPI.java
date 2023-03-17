@@ -102,7 +102,7 @@ public class UserAPI extends WebserverAPI {
                 if (user != null) {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
                             UserIdMapping.getUserIdMapping(tenantIdentifier.toAppIdentifier(), user.id,
-                                    UserIdType.SUPERTOKENS);
+                                    UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
                     }
@@ -133,6 +133,7 @@ public class UserAPI extends WebserverAPI {
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
+
     }
 
     @Override

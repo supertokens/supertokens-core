@@ -126,23 +126,13 @@ public class UserIdMapping {
             Main main, String userId,
             UserIdType userIdType)
             throws StorageQueryException {
-        try {
-            AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
-                    StorageLayer.getAppIdentifierStorageAndUserIdMappingForUser(
-                            main, new AppIdentifier(null, null),
-                            userId, userIdType
-                    );
-            return getUserIdMapping(appIdentifierStorageAndUserIdMapping.appIdentifier, userId, userIdType);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        } catch (UnknownUserIdException e) {
-            return null;
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return getUserIdMapping(new AppIdentifier(null, null, storage), userId, userIdType);
     }
 
     public static boolean deleteUserIdMapping(AppIdentifier appIdentifier, String userId,
                                               UserIdType userIdType, boolean force)
-            throws StorageQueryException, ServletException, TenantOrAppNotFoundException {
+            throws StorageQueryException, ServletException {
 
         // referring to
         // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
@@ -187,29 +177,15 @@ public class UserIdMapping {
     public static boolean deleteUserIdMapping(Main main, String userId,
                                               UserIdType userIdType, boolean force)
             throws StorageQueryException, ServletException {
-        try {
-            AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMappingForUser =
-                    StorageLayer.getAppIdentifierStorageAndUserIdMappingForUser(
-                    main, new AppIdentifier(null, null), userId, userIdType);
-            return deleteUserIdMapping(
-                    appIdentifierStorageAndUserIdMappingForUser.appIdentifier, userId, userIdType, force);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        } catch (UnknownUserIdException e) {
-            return false;
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return deleteUserIdMapping(
+                new AppIdentifier(null, null, storage), userId, userIdType, force);
     }
 
     public static boolean updateOrDeleteExternalUserIdInfo(AppIdentifier appIdentifier,
                                                            String userId, UserIdType userIdType,
                                                            @Nullable String externalUserIdInfo)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = getUserIdMapping(appIdentifier,
-                userId, userIdType);
-        if (mapping == null) {
-            return false;
-        }
-
+            throws StorageQueryException {
         UserIdMappingStorage storage = appIdentifier.getUserIdMappingStorage();
 
         if (userIdType == UserIdType.SUPERTOKENS) {
@@ -238,23 +214,15 @@ public class UserIdMapping {
                                                            String userId, UserIdType userIdType,
                                                            @Nullable String externalUserIdInfo)
             throws StorageQueryException {
-        try {
-            AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMappingForUser =
-                    StorageLayer.getAppIdentifierStorageAndUserIdMappingForUser(
-                            main, new AppIdentifier(null, null), userId, userIdType);
-            return updateOrDeleteExternalUserIdInfo(appIdentifierStorageAndUserIdMappingForUser.appIdentifier,
-                    userId, userIdType, externalUserIdInfo);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        } catch (UnknownUserIdException e) {
-            return false;
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return updateOrDeleteExternalUserIdInfo(new AppIdentifier(null, null, storage),
+                userId, userIdType, externalUserIdInfo);
     }
 
     public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(AppIdentifier appIdentifier,
                                                                                 ArrayList<String> userIds)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        // This is still tenant specific
+        // This is tenant specific, so just use the storage from the appIdentifier
         return appIdentifier.getUserIdMappingStorage().getUserIdMappingForSuperTokensIds(appIdentifier, userIds);
     }
 
