@@ -152,9 +152,13 @@ public class AuthRecipe {
 
     @TestOnly
     public static void deleteUser(Main main, String userId)
-            throws StorageQueryException, TenantOrAppNotFoundException, BadPermissionException {
-        Storage storage = StorageLayer.getStorage(main);
-        deleteUser(new AppIdentifier(null, null, storage), userId);
+            throws StorageQueryException {
+        try {
+            Storage storage = StorageLayer.getStorage(main);
+            deleteUser(new AppIdentifier(null, null, storage), userId);
+        } catch (BadPermissionException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     private static void deleteNonAuthRecipeUser(AppIdentifier appIdentifier, String userId)
