@@ -322,8 +322,9 @@ public class GeneralQueries {
             {
                 StringBuilder USER_SEARCH_TAG_CONDITION = new StringBuilder();
 
-                // if recipeIds is null we are searching across all recipies
-                if (dashboardSearchTags.recipeIds == null || dashboardSearchTags.recipeIds.contains("emailpassword")) {
+                // if recipeIds is null we are searching across all recipes
+                if ((dashboardSearchTags.recipeIds == null || dashboardSearchTags.recipeIds.contains("emailpassword"))
+                        && dashboardSearchTags.providers == null && dashboardSearchTags.phoneNumbers == null) {
                     String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
                             + " AS allAuthUsersTable" +
                             " JOIN " + getConfig(start).getEmailPasswordUsersTable()
@@ -343,7 +344,8 @@ public class GeneralQueries {
                     USER_SEARCH_TAG_CONDITION.append(QUERY);
                 }
 
-                if (dashboardSearchTags.recipeIds == null || dashboardSearchTags.recipeIds.contains("thirdparty")) {
+                if ((dashboardSearchTags.recipeIds == null || dashboardSearchTags.recipeIds.contains("thirdparty"))
+                        && dashboardSearchTags.phoneNumbers == null) {
                     String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
                             + " AS allAuthUsersTable" +
                             " JOIN " + getConfig(start).getThirdPartyUsersTable()
@@ -370,13 +372,6 @@ public class GeneralQueries {
                             }
                         }
 
-                        // check if we need to append this to the existing search query
-                        if (USER_SEARCH_TAG_CONDITION.length() != 0) {
-                            USER_SEARCH_TAG_CONDITION.append(" UNION ").append(QUERY);
-                        } else {
-                            USER_SEARCH_TAG_CONDITION.append(QUERY);
-                        }
-
                     } else if (dashboardSearchTags.providers != null) {
                         QUERY += " WHERE thirdPartyTable.third_party_id LIKE ?";
                         queryList.add("%" + dashboardSearchTags.providers.get(0) + "%");
@@ -384,15 +379,18 @@ public class GeneralQueries {
                             QUERY += " OR thirdPartyTable.third_party_id LIKE ?";
                             queryList.add("%" + dashboardSearchTags.providers.get(i) + "%");
                         }
-                        if (USER_SEARCH_TAG_CONDITION.length() != 0) {
-                            USER_SEARCH_TAG_CONDITION.append(" UNION ").append(QUERY);
-                        } else {
-                            USER_SEARCH_TAG_CONDITION.append(QUERY);
-                        }
+                    }
+
+                    // check if we need to append this to the existing search query
+                    if (USER_SEARCH_TAG_CONDITION.length() != 0) {
+                        USER_SEARCH_TAG_CONDITION.append(" UNION ").append(QUERY);
+                    } else {
+                        USER_SEARCH_TAG_CONDITION.append(QUERY);
                     }
                 }
 
-                if (dashboardSearchTags.recipeIds == null || dashboardSearchTags.recipeIds.contains("passwordless")) {
+                if ((dashboardSearchTags.recipeIds == null || dashboardSearchTags.recipeIds.contains("passwordless"))
+                        && dashboardSearchTags.providers == null) {
                     String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
                             + " AS allAuthUsersTable" +
                             " JOIN " + getConfig(start).getPasswordlessUsersTable()
@@ -436,50 +434,57 @@ public class GeneralQueries {
                     }
                 }
 
-                if (timeJoined != null && userId != null) {
-                    String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
-                    String finalQuery = "SELECT * FROM ( " + USER_SEARCH_TAG_CONDITION.toString() + " ) WHERE "
-                            + " (time_joined " + timeJoinedOrderSymbol
-                            + " ? OR (time_joined = ? AND user_id <= ?)) ORDER BY time_joined " + timeJoinedOrder
-                            + ", user_id DESC LIMIT ?";
-                    usersFromQuery = execute(start, finalQuery, pst -> {
-                        int i = 1;
-                        for (; i <= queryList.size(); i++) {
-                            pst.setString(i, queryList.get(i - 1));
-                        }
-                        pst.setLong(i, timeJoined);
-                        pst.setLong(++i, timeJoined);
-                        pst.setString(++i, userId);
-                        pst.setInt(++i, limit);
-                    }, result -> {
-                        List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
-                        while (result.next()) {
-                            temp.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
-                                    result.getString("recipe_id")));
-                        }
-                        return temp;
-                    });
-
+                if (USER_SEARCH_TAG_CONDITION.toString().length() == 0) {
+                    usersFromQuery = new ArrayList<>();
                 } else {
 
-                    String finalQuery = "SELECT * FROM ( " + USER_SEARCH_TAG_CONDITION.toString() + " )"
-                            + " ORDER BY time_joined " + timeJoinedOrder + ", user_id DESC LIMIT ?";
-                    usersFromQuery = execute(start, finalQuery, pst -> {
-                        int i = 1;
-                        for (; i <= queryList.size(); i++) {
-                            pst.setString(i, queryList.get(i - 1));
-                        }
-                        pst.setInt(i, limit);
-                    }, result -> {
-                        List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
-                        while (result.next()) {
-                            temp.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
-                                    result.getString("recipe_id")));
-                        }
-                        return temp;
-                    });
+                    if (timeJoined != null && userId != null) {
 
+                        String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
+                        String finalQuery = "SELECT * FROM ( " + USER_SEARCH_TAG_CONDITION.toString() + " ) WHERE "
+                                + " (time_joined " + timeJoinedOrderSymbol
+                                + " ? OR (time_joined = ? AND user_id <= ?)) ORDER BY time_joined " + timeJoinedOrder
+                                + ", user_id DESC LIMIT ?";
+                        usersFromQuery = execute(start, finalQuery, pst -> {
+                            int i = 1;
+                            for (; i <= queryList.size(); i++) {
+                                pst.setString(i, queryList.get(i - 1));
+                            }
+                            pst.setLong(i, timeJoined);
+                            pst.setLong(++i, timeJoined);
+                            pst.setString(++i, userId);
+                            pst.setInt(++i, limit);
+                        }, result -> {
+                            List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
+                            while (result.next()) {
+                                temp.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
+                                        result.getString("recipe_id")));
+                            }
+                            return temp;
+                        });
+
+                    } else {
+
+                        String finalQuery = "SELECT * FROM ( " + USER_SEARCH_TAG_CONDITION.toString() + " )"
+                                + " ORDER BY time_joined " + timeJoinedOrder + ", user_id DESC LIMIT ?";
+                        usersFromQuery = execute(start, finalQuery, pst -> {
+                            int i = 1;
+                            for (; i <= queryList.size(); i++) {
+                                pst.setString(i, queryList.get(i - 1));
+                            }
+                            pst.setInt(i, limit);
+                        }, result -> {
+                            List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
+                            while (result.next()) {
+                                temp.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
+                                        result.getString("recipe_id")));
+                            }
+                            return temp;
+                        });
+
+                    }
                 }
+
             }
         } else {
             StringBuilder RECIPE_ID_CONDITION = new StringBuilder();
