@@ -322,6 +322,7 @@ public class GeneralQueries {
             {
                 StringBuilder USER_SEARCH_TAG_CONDITION = new StringBuilder();
 
+                // if recipeIds is null we are searching across all recipies
                 if (dashboardSearchTags.recipeIds == null || dashboardSearchTags.recipeIds.contains("emailpassword")) {
                     String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
                             + " AS allAuthUsersTable" +
@@ -330,7 +331,7 @@ public class GeneralQueries {
 
                     // check if email tag is preset
                     if (dashboardSearchTags.emails != null) {
-
+                        // attach email tags to queries
                         QUERY = QUERY + " WHERE emailpasswordTable.email LIKE ?";
                         queryList.add("%" + dashboardSearchTags.emails.get(0) + "%");
                         for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
@@ -359,23 +360,24 @@ public class GeneralQueries {
                             queryList.add("%" + dashboardSearchTags.emails.get(i) + "%");
                         }
 
+                        // checks if providers tag is present
                         if (dashboardSearchTags.providers != null) {
-                            QUERY += " AND ( thirdPartyTable.third_party_id LIKE ?";
+                            QUERY += " AND thirdPartyTable.third_party_id LIKE ?";
                             queryList.add("%" + dashboardSearchTags.providers.get(0) + "%");
                             for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
                                 QUERY += " OR thirdPartyTable.third_party_id LIKE ?";
                                 queryList.add("%" + dashboardSearchTags.providers.get(i) + "%");
                             }
-
-                            QUERY += " )";
                         }
+
+                        // check if we need to append this to the existing search query
                         if (USER_SEARCH_TAG_CONDITION.length() != 0) {
                             USER_SEARCH_TAG_CONDITION.append(" UNION ").append(QUERY);
                         } else {
                             USER_SEARCH_TAG_CONDITION.append(QUERY);
                         }
 
-                    } else if (dashboardSearchTags.recipeIds == null || dashboardSearchTags.providers != null) {
+                    } else if (dashboardSearchTags.providers != null) {
                         QUERY += " WHERE thirdPartyTable.third_party_id LIKE ?";
                         queryList.add("%" + dashboardSearchTags.providers.get(0) + "%");
                         for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
