@@ -28,7 +28,9 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailExc
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.useridmapping.AppIdentifierStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
@@ -67,29 +69,39 @@ public class UserAPI extends WebserverAPI {
         if (userId == null && email == null) {
             throw new ServletException(new BadRequestException("Please provide one of userId or email"));
         }
+
         try {
-            UserInfo user = null;
+            // API is app specific for get by UserId
+            UserInfo user;
             if (userId != null) {
+                // Query by userId
+                AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
+                        this.getAppIdentifierStorageAndUserIdMapping(req, userId, UserIdType.ANY);
                 // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(this.getTenantIdentifier(req).toAppIdentifier(), main, userId, UserIdType.ANY);
-                if (userIdMapping != null) {
-                    userId = userIdMapping.superTokensUserId;
+                if (appIdentifierStorageAndUserIdMapping.userIdMapping != null) {
+                    userId = appIdentifierStorageAndUserIdMapping.userIdMapping.superTokensUserId;
                 }
-                user = EmailPassword.getUserUsingId(this.getTenantIdentifier(req).toAppIdentifier(), main, userId);
+
+                user = EmailPassword.getUserUsingId(
+                        appIdentifierStorageAndUserIdMapping.appIdentifier, userId);
 
                 // if the userIdMapping exists set the userId in the response to the externalUserId
-                if (user != null && userIdMapping != null) {
-                    user.id = userIdMapping.externalUserId;
+                if (user != null && appIdentifierStorageAndUserIdMapping.userIdMapping != null) {
+                    user.id = appIdentifierStorageAndUserIdMapping.userIdMapping.externalUserId;
                 }
 
             } else {
+                // API is tenant specific for get by Email
+                // Query by email
                 String normalisedEmail = Utils.normaliseEmail(email);
-                user = EmailPassword.getUserUsingEmail(this.getTenantIdentifier(req), main, normalisedEmail);
+                TenantIdentifier tenantIdentifier = this.getTenantIdentifier(req);
+                user = EmailPassword.getUserUsingEmail(tenantIdentifier, normalisedEmail);
+
                 // if a userIdMapping exists, set the userId in the response to the externalUserId
                 if (user != null) {
-                    io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                            .getUserIdMapping(this.getTenantIdentifier(req).toAppIdentifier(), main, user.id, UserIdType.ANY);
+                    io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
+                            UserIdMapping.getUserIdMapping(tenantIdentifier.toAppIdentifier(), user.id,
+                                    UserIdType.SUPERTOKENS);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
                     }
@@ -100,6 +112,7 @@ public class UserAPI extends WebserverAPI {
                 JsonObject result = new JsonObject();
                 result.addProperty("status", userId != null ? "UNKNOWN_USER_ID_ERROR" : "UNKNOWN_EMAIL_ERROR");
                 super.sendJsonResponse(200, result, resp);
+
             } else {
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
@@ -111,14 +124,19 @@ public class UserAPI extends WebserverAPI {
                 super.sendJsonResponse(200, result, resp);
             }
 
+        } catch (UnknownUserIdException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
+            super.sendJsonResponse(200, result, resp);
+
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
-
     }
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         String email = InputParser.parseStringOrThrowError(input, "email", true);
@@ -131,13 +149,16 @@ public class UserAPI extends WebserverAPI {
         }
 
         try {
+            AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
+                    this.getAppIdentifierStorageAndUserIdMapping(req, userId, UserIdType.ANY);
             // if a userIdMapping exists, pass the superTokensUserId to the updateUsersEmailOrPassword
-            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(this.getTenantIdentifier(req).toAppIdentifier(), main, userId, UserIdType.ANY);
-            if (userIdMapping != null) {
-                userId = userIdMapping.superTokensUserId;
+            if (appIdentifierStorageAndUserIdMapping.userIdMapping != null) {
+                userId = appIdentifierStorageAndUserIdMapping.userIdMapping.superTokensUserId;
             }
-            EmailPassword.updateUsersEmailOrPassword(this.getTenantIdentifier(req).toAppIdentifier(), main, userId, email, password);
+
+            EmailPassword.updateUsersEmailOrPassword(
+                    appIdentifierStorageAndUserIdMapping.appIdentifier,
+                    main, userId, email, password);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -145,11 +166,13 @@ public class UserAPI extends WebserverAPI {
 
         } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
+
         } catch (UnknownUserIdException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             super.sendJsonResponse(200, result, resp);
+
         } catch (DuplicateEmailException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();

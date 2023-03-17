@@ -29,6 +29,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
@@ -43,9 +44,13 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
+import io.supertokens.useridmapping.AppIdentifierStorageAndUserIdMapping;
+import io.supertokens.useridmapping.TenantIdentifierStorageAndUserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
@@ -319,11 +324,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return (AuthRecipeStorage) getInstance(tenantIdentifier, main).storage;
     }
 
-    public static AuthRecipeStorage getAuthRecipeStorageForUser(AppIdentifier appIdentifier, Main main, String userId)
-            throws StorageQueryException {
-        return (AuthRecipeStorage) getStorageForUser(main, appIdentifier, userId);
-    }
-
     @TestOnly
     public static AuthRecipeStorage getAuthRecipeStorage(Main main) {
         try {
@@ -476,11 +476,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return (UserIdMappingStorage) getInstance(tenantIdentifier, main).storage;
     }
 
-    public static UserIdMappingStorage getUserIdMappingStorageForUser(AppIdentifier appIdentifier, Main main, String userId)
-            throws TenantOrAppNotFoundException, StorageQueryException {
-        return (UserIdMappingStorage) getStorageForUser(main, appIdentifier, userId);
-    }
-
     @TestOnly
     public static UserIdMappingStorage getUserIdMappingStorage(Main main) {
         try {
@@ -586,15 +581,119 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return userPoolToStorage.values().toArray(new Storage[0]);
     }
 
-    public static Storage getStorageForUser(Main main, AppIdentifier appIdentifier, String userId)
-            throws StorageQueryException {
-        Storage[] storages = getStoragesForApp(main, appIdentifier);
+    public static TenantIdentifierStorageAndUserIdMapping getTenantIdentifierStorageAndUserIdMappingForUser(
+            Main main, TenantIdentifier tenantIdentifier, String userId, UserIdType userIdType)
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
+        Storage storage = getStorage(tenantIdentifier, main);
 
-        for (Storage storage : storages) {
-            if (((AuthRecipeStorage) storage).doesUserIdExist(appIdentifier, userId)) {
-                return storage;
+        if (storage == null) {
+            throw new TenantOrAppNotFoundException(tenantIdentifier);
+        }
+
+        UserIdMappingStorage uimStorage = (UserIdMappingStorage) storage;
+        AppIdentifier appIdentifier = tenantIdentifier.toAppIdentifier(storage);
+
+        if (userIdType == UserIdType.SUPERTOKENS) {
+            UserIdMapping mapping = uimStorage.getUserIdMapping(
+                    appIdentifier, userId, true);
+            if (mapping != null) {
+                return new TenantIdentifierStorageAndUserIdMapping(
+                        tenantIdentifier.withStorage(storage), storage, mapping);
+            }
+
+        } else if (userIdType == UserIdType.EXTERNAL) {
+            UserIdMapping mapping = uimStorage.getUserIdMapping(
+                    appIdentifier, userId, false);
+            if (mapping != null) {
+                return new TenantIdentifierStorageAndUserIdMapping(
+                        tenantIdentifier.withStorage(storage), storage, mapping);
+            }
+
+        } else {
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping[] userIdMappings = uimStorage.getUserIdMapping(
+                    appIdentifier, userId);
+
+            if (userIdMappings.length == 1) {
+                return new TenantIdentifierStorageAndUserIdMapping(
+                        tenantIdentifier.withStorage(storage), storage, userIdMappings[0]);
+
+            } else if (userIdMappings.length == 2) {
+                for (io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping : userIdMappings) {
+                    if (userIdMapping.superTokensUserId.equals(userId)) {
+                        return new TenantIdentifierStorageAndUserIdMapping(
+                                tenantIdentifier.withStorage(storage), storage, userIdMapping);
+                    }
+                }
+
+            } else if (userIdMappings.length > 2) {
+                throw new IllegalStateException("Retrieved more than 2 UserId Mapping entries for a single userId.");
             }
         }
-        return null;
+
+        if (((AuthRecipeStorage) storage).doesUserIdExist(appIdentifier, userId)) {
+            return new TenantIdentifierStorageAndUserIdMapping(
+                    tenantIdentifier.withStorage(storage), storage, null);
+        }
+
+        throw new UnknownUserIdException();
+    }
+
+    public static AppIdentifierStorageAndUserIdMapping getAppIdentifierStorageAndUserIdMappingForUser(
+            Main main, AppIdentifier appIdentifier, String userId,
+            UserIdType userIdType) throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
+
+        Storage[] storages = getStoragesForApp(main, appIdentifier);
+
+        if (storages.length == 0) {
+            throw new TenantOrAppNotFoundException(appIdentifier);
+        }
+
+        for (Storage storage : storages) {
+            UserIdMappingStorage uimStorage = (UserIdMappingStorage) storage;
+
+            if (userIdType == UserIdType.SUPERTOKENS) {
+                UserIdMapping mapping = uimStorage.getUserIdMapping(
+                        appIdentifier, userId, true);
+                if (mapping != null) {
+                    return new AppIdentifierStorageAndUserIdMapping(
+                            appIdentifier.withStorage(storage), storage, mapping);
+                }
+
+            } else if (userIdType == UserIdType.EXTERNAL) {
+                UserIdMapping mapping = uimStorage.getUserIdMapping(
+                        appIdentifier, userId, false);
+                if (mapping != null) {
+                    return new AppIdentifierStorageAndUserIdMapping(
+                            appIdentifier.withStorage(storage), storage, mapping);
+                }
+
+            } else {
+                io.supertokens.pluginInterface.useridmapping.UserIdMapping[] userIdMappings = uimStorage.getUserIdMapping(
+                        appIdentifier, userId);
+
+                if (userIdMappings.length == 1) {
+                    return new AppIdentifierStorageAndUserIdMapping(
+                            appIdentifier.withStorage(storage), storage, userIdMappings[0]);
+
+                } else if (userIdMappings.length == 2) {
+                    for (io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping : userIdMappings) {
+                        if (userIdMapping.superTokensUserId.equals(userId)) {
+                            return new AppIdentifierStorageAndUserIdMapping(
+                                    appIdentifier.withStorage(storage), storage, userIdMapping);
+                        }
+                    }
+
+                } else if (userIdMappings.length > 2) {
+                    throw new IllegalStateException("Retrieved more than 2 UserId Mapping entries for a single userId.");
+                }
+            }
+
+            if (((AuthRecipeStorage) storage).doesUserIdExist(appIdentifier, userId)) {
+                return new AppIdentifierStorageAndUserIdMapping(
+                        appIdentifier.withStorage(storage), storage, null);
+            }
+        }
+
+        throw new UnknownUserIdException();
     }
 }

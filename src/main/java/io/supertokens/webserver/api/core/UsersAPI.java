@@ -56,6 +56,7 @@ public class UsersAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // this API is tenant specific
         String[] recipeIds = InputParser.getCommaSeparatedStringArrayQueryParamOrThrowError(req, "includeRecipeIds",
                 true);
 
@@ -118,8 +119,7 @@ public class UsersAPI extends WebserverAPI {
                 userIds.add(users.users[i].user.id);
             }
             HashMap<String, String> userIdMapping = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
-                    this.getTenantIdentifier(req).toAppIdentifier(), super.main,
-                    userIds);
+                    this.getTenantIdentifier(req).toAppIdentifier(), userIds);
             if (!userIdMapping.isEmpty()) {
                 for (int i = 0; i < users.users.length; i++) {
                     String externalId = userIdMapping.get(userIds.get(i));

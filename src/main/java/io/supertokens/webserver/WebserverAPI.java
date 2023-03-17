@@ -23,8 +23,16 @@ import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.AppIdentifierStorageAndUserIdMapping;
+import io.supertokens.useridmapping.TenantIdentifierStorageAndUserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -225,7 +233,26 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     protected TenantIdentifier getTenantIdentifier(HttpServletRequest req) {
-        return new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
+        try {
+            Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
+            tenantIdentifier = tenantIdentifier.withStorage(storage);
+        } catch (TenantOrAppNotFoundException e) {
+            // TODO ignore only for now, this function should throw this exception
+        }
+        return tenantIdentifier;
+    }
+
+    protected TenantIdentifierStorageAndUserIdMapping getTenantIdentifierStorageAndUserIdMappingFromRequest(HttpServletRequest req, String userId, UserIdType userIdType)
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
+        return StorageLayer.getTenantIdentifierStorageAndUserIdMappingForUser(main, tenantIdentifier, userId, userIdType);
+    }
+
+    protected AppIdentifierStorageAndUserIdMapping getAppIdentifierStorageAndUserIdMapping(HttpServletRequest req, String userId, UserIdType userIdType)
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
+        AppIdentifier appIdentifier = new AppIdentifier(this.getConnectionUriDomain(req), this.getAppId(req));
+        return StorageLayer.getAppIdentifierStorageAndUserIdMappingForUser(main, appIdentifier, userId, userIdType);
     }
 
     @Override

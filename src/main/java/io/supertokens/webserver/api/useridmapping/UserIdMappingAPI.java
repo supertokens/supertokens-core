@@ -18,11 +18,15 @@ package io.supertokens.webserver.api.useridmapping;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.AppIdentifierStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
@@ -50,6 +54,7 @@ public class UserIdMappingAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // this API is specific to app
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String superTokensUserId = InputParser.parseStringOrThrowError(input, "superTokensUserId", false);
@@ -90,22 +95,22 @@ public class UserIdMappingAPI extends WebserverAPI {
         }
 
         try {
+            AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
+                    this.getAppIdentifierStorageAndUserIdMapping(req, superTokensUserId, UserIdType.SUPERTOKENS);
 
-            UserIdMapping.createUserIdMapping(this.getTenantIdentifier(req).toAppIdentifier(), main, superTokensUserId, externalUserId,
-                    externalUserIdInfo, force);
+            UserIdMapping.createUserIdMapping(appIdentifierStorageAndUserIdMapping.appIdentifier,
+                    superTokensUserId, externalUserId, externalUserIdInfo, force);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
 
-        } catch (UnknownSuperTokensUserIdException e) {
-
+        } catch (UnknownSuperTokensUserIdException | UnknownUserIdException e) {
             JsonObject response = new JsonObject();
             response.addProperty("status", "UNKNOWN_SUPERTOKENS_USER_ID_ERROR");
             super.sendJsonResponse(200, response, resp);
 
         } catch (UserIdMappingAlreadyExistsException e) {
-
             JsonObject response = new JsonObject();
             response.addProperty("status", "USER_ID_MAPPING_ALREADY_EXISTS_ERROR");
             response.addProperty("doesSuperTokensUserIdExist", e.doesSuperTokensUserIdExist);
@@ -148,10 +153,10 @@ public class UserIdMappingAPI extends WebserverAPI {
         }
 
         try {
-            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(this.getTenantIdentifier(req).toAppIdentifier(), main, userId,
-                            userIdType);
-            if (userIdMapping == null) {
+            AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
+                    this.getAppIdentifierStorageAndUserIdMapping(req, userId, userIdType);
+
+            if (appIdentifierStorageAndUserIdMapping.userIdMapping == null) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "UNKNOWN_MAPPING_ERROR");
                 super.sendJsonResponse(200, response, resp);
@@ -160,14 +165,23 @@ public class UserIdMappingAPI extends WebserverAPI {
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
-            response.addProperty("superTokensUserId", userIdMapping.superTokensUserId);
-            response.addProperty("externalUserId", userIdMapping.externalUserId);
-            if (userIdMapping.externalUserIdInfo != null) {
-                response.addProperty("externalUserIdInfo", userIdMapping.externalUserIdInfo);
+            response.addProperty("superTokensUserId",
+                    appIdentifierStorageAndUserIdMapping.userIdMapping.superTokensUserId);
+            response.addProperty("externalUserId",
+                    appIdentifierStorageAndUserIdMapping.userIdMapping.externalUserId);
+            if (appIdentifierStorageAndUserIdMapping.userIdMapping.externalUserIdInfo != null) {
+                response.addProperty("externalUserIdInfo",
+                        appIdentifierStorageAndUserIdMapping.userIdMapping.externalUserIdInfo);
             }
             super.sendJsonResponse(200, response, resp);
+
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
+
+        } catch (UnknownUserIdException e) {
+            JsonObject response = new JsonObject();
+            response.addProperty("status", "UNKNOWN_MAPPING_ERROR");
+            super.sendJsonResponse(200, response, resp);
         }
     }
 }

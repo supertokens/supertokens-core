@@ -25,7 +25,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.TenantIdentifierStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -53,6 +53,7 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         assert userId != null;
@@ -60,24 +61,26 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
         // logic according to https://github.com/supertokens/supertokens-core/issues/106
 
         try {
+            TenantIdentifierStorageAndUserIdMapping tenantIdentifierStorageAndMapping =
+                    getTenantIdentifierStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
             // if a userIdMapping exists, pass the superTokensUserId to the generatePasswordResetToken
-            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                    .getUserIdMapping(this.getTenantIdentifier(req).toAppIdentifier(), main, userId,
-                            UserIdType.ANY);
-            if (userIdMapping != null) {
-                userId = userIdMapping.superTokensUserId;
+            if (tenantIdentifierStorageAndMapping.userIdMapping != null) {
+                userId = tenantIdentifierStorageAndMapping.userIdMapping.superTokensUserId;
             }
-            String token = EmailPassword.generatePasswordResetToken(this.getTenantIdentifier(req), super.main, userId);
+
+            String token = EmailPassword.generatePasswordResetToken(tenantIdentifierStorageAndMapping.tenantIdentifier, super.main, userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("token", token);
             super.sendJsonResponse(200, result, resp);
+
         } catch (UnknownUserIdException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject result = new JsonObject();
             result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             super.sendJsonResponse(200, result, resp);
+
         } catch (StorageQueryException | BadPermissionException | NoSuchAlgorithmException | InvalidKeySpecException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }

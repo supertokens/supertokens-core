@@ -81,7 +81,10 @@ public class EmailPassword {
     public static UserInfo signUp(Main main, @Nonnull String email, @Nonnull String password)
             throws DuplicateEmailException, StorageQueryException {
         try {
-            return signUp(new TenantIdentifier(null, null, null), main, email, password);
+            Storage storage = StorageLayer.getStorage(
+                    new TenantIdentifier(null, null, null), main);
+            return signUp(new TenantIdentifier(null, null, null, storage),
+                    main, email, password);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -110,7 +113,7 @@ public class EmailPassword {
 
             try {
                 UserInfo user = new UserInfo(userId, email, hashedPassword, timeJoined);
-                StorageLayer.getEmailPasswordStorage(tenantIdentifier, main).signUp(tenantIdentifier, user);
+                tenantIdentifier.getEmailPasswordStorage().signUp(tenantIdentifier, user);
 
                 return user;
 
@@ -126,8 +129,12 @@ public class EmailPassword {
                                                                         CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
         try {
-            return importUserWithPasswordHash(new TenantIdentifier(null, null, null), main, email, passwordHash,
-                    hashingAlgorithm);
+            Storage storage = StorageLayer.getStorage(
+                    new TenantIdentifier(null, null, null), main);
+
+            return importUserWithPasswordHash(
+                    new TenantIdentifier(null, null, null, storage), main, email,
+                    passwordHash, hashingAlgorithm);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -156,7 +163,7 @@ public class EmailPassword {
             long timeJoined = System.currentTimeMillis();
 
             UserInfo userInfo = new UserInfo(userId, email, passwordHash, timeJoined);
-            EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(tenantIdentifier, main);
+            EmailPasswordSQLStorage storage = tenantIdentifier.getEmailPasswordStorage();
 
             try {
                 storage.signUp(tenantIdentifier, userInfo);
@@ -183,7 +190,11 @@ public class EmailPassword {
                                                                 @Nonnull String passwordHash)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
         try {
-            return importUserWithPasswordHash(new TenantIdentifier(null, null, null), main, email, passwordHash, null);
+            Storage storage = StorageLayer.getStorage(
+                    new TenantIdentifier(null, null, null), main);
+            return importUserWithPasswordHash(
+                    new TenantIdentifier(null, null, null, storage), main, email,
+                    passwordHash, null);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -194,7 +205,10 @@ public class EmailPassword {
                                   @Nonnull String password)
             throws StorageQueryException, WrongCredentialsException {
         try {
-            return signIn(new TenantIdentifier(null, null, null), main, email, password);
+            Storage storage = StorageLayer.getStorage(
+                    new TenantIdentifier(null, null, null), main);
+            return signIn(new TenantIdentifier(null, null, null, storage), main,
+                    email, password);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -213,7 +227,7 @@ public class EmailPassword {
             throw new BadPermissionException("Email password login not enabled for tenant");
         }
 
-        UserInfo user = StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
+        UserInfo user = tenantIdentifier.getEmailPasswordStorage()
                 .getUserInfoUsingEmail(tenantIdentifier, email);
 
         if (user == null) {
@@ -244,7 +258,10 @@ public class EmailPassword {
     public static String generatePasswordResetToken(Main main, String userId)
             throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException, UnknownUserIdException {
         try {
-            return generatePasswordResetToken(new TenantIdentifier(null, null, null), main, userId);
+            Storage storage = StorageLayer.getStorage(
+                    new TenantIdentifier(null, null, null), main);
+            return generatePasswordResetToken(
+                    new TenantIdentifier(null, null, null, storage), main, userId);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -285,8 +302,8 @@ public class EmailPassword {
             String hashedToken = Utils.hashSHA256(token);
 
             try {
-                StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
-                        .addPasswordResetToken(tenantIdentifier.toAppIdentifier(), new PasswordResetTokenInfo(userId,
+                tenantIdentifier.getEmailPasswordStorage().addPasswordResetToken(
+                        tenantIdentifier.toAppIdentifier(), new PasswordResetTokenInfo(userId,
                                 hashedToken, System.currentTimeMillis() +
                                 getPasswordResetTokenLifetime(tenantIdentifier, main)));
                 return token;
@@ -301,7 +318,10 @@ public class EmailPassword {
             throws ResetPasswordInvalidTokenException, NoSuchAlgorithmException, StorageQueryException,
             StorageTransactionLogicException {
         try {
-            return resetPassword(new TenantIdentifier(null, null, null), main, token, password);
+            Storage storage = StorageLayer.getStorage(
+                    new TenantIdentifier(null, null, null), main);
+            return resetPassword(new TenantIdentifier(null, null, null, storage),
+                    main, token, password);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -314,7 +334,7 @@ public class EmailPassword {
         String hashedToken = Utils.hashSHA256(token);
         String hashedPassword = PasswordHashing.getInstance(main)
                 .createHashWithSalt(tenantIdentifier.toAppIdentifier(), password);
-        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(tenantIdentifier, main);
+        EmailPasswordSQLStorage storage = tenantIdentifier.getEmailPasswordStorage();
 
         PasswordResetTokenInfo resetInfo = storage.getPasswordResetTokenInfo(tenantIdentifier.toAppIdentifier(),
                 hashedToken);
@@ -373,7 +393,10 @@ public class EmailPassword {
             throws StorageQueryException, StorageTransactionLogicException,
             UnknownUserIdException, DuplicateEmailException {
         try {
-            updateUsersEmailOrPassword(new AppIdentifier(null, null), main, userId, email, password);
+            Storage storage = StorageLayer.getStorage(
+                    new TenantIdentifier(null, null, null), main);
+            updateUsersEmailOrPassword(new AppIdentifier(null, null, storage), main, userId,
+                    email, password);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -384,80 +407,68 @@ public class EmailPassword {
                                                   @Nullable String password)
             throws StorageQueryException, StorageTransactionLogicException,
             UnknownUserIdException, DuplicateEmailException, TenantOrAppNotFoundException {
-        Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
-        for (Storage storage : storages) {
-            EmailPasswordSQLStorage epSqlStorage = (EmailPasswordSQLStorage) storage;
-            try {
-                epSqlStorage.startTransaction(transaction -> {
-                    try {
-                        UserInfo userInfo = epSqlStorage.getUserInfoUsingId_Transaction(appIdentifier, transaction, userId);
+        EmailPasswordSQLStorage storage = appIdentifier.getEmailPasswordStorage();
+        try {
+            storage.startTransaction(transaction -> {
+                try {
+                    UserInfo userInfo = storage.getUserInfoUsingId_Transaction(appIdentifier, transaction, userId);
 
-                        if (userInfo == null) {
-                            throw new StorageTransactionLogicException(new UnknownUserIdException());
-                        }
-
-                        if (email != null) {
-                            try {
-                                epSqlStorage.updateUsersEmail_Transaction(appIdentifier, transaction,
-                                        userId, email);
-                            } catch (DuplicateEmailException e) {
-                                throw new StorageTransactionLogicException(e);
-                            }
-                        }
-
-                        if (password != null) {
-                            String hashedPassword = PasswordHashing.getInstance(main)
-                                    .createHashWithSalt(appIdentifier, password);
-                            epSqlStorage.updateUsersPassword_Transaction(appIdentifier, transaction, userId, hashedPassword);
-                        }
-
-                        epSqlStorage.commitTransaction(transaction);
-                        return null;
-                    } catch (TenantOrAppNotFoundException e) {
-                        throw new StorageTransactionLogicException(e);
+                    if (userInfo == null) {
+                        throw new StorageTransactionLogicException(new UnknownUserIdException());
                     }
-                });
-                return;
-            } catch (StorageTransactionLogicException e) {
-                if (e.actualException instanceof UnknownUserIdException) {
-                    continue;
-                } else if (e.actualException instanceof DuplicateEmailException) {
-                    throw (DuplicateEmailException) e.actualException;
-                } else if (e.actualException instanceof TenantOrAppNotFoundException) {
-                    throw (TenantOrAppNotFoundException) e.actualException;
-                }
-                throw e;
-            }
-        }
 
-        throw new UnknownUserIdException();
+                    if (email != null) {
+                        try {
+                            storage.updateUsersEmail_Transaction(appIdentifier, transaction,
+                                    userId, email);
+                        } catch (DuplicateEmailException e) {
+                            throw new StorageTransactionLogicException(e);
+                        }
+                    }
+
+                    if (password != null) {
+                        String hashedPassword = PasswordHashing.getInstance(main)
+                                .createHashWithSalt(appIdentifier, password);
+                        storage.updateUsersPassword_Transaction(appIdentifier, transaction, userId, hashedPassword);
+                    }
+
+                    storage.commitTransaction(transaction);
+                    return null;
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof UnknownUserIdException) {
+                throw new UnknownUserIdException();
+            } else if (e.actualException instanceof DuplicateEmailException) {
+                throw (DuplicateEmailException) e.actualException;
+            } else if (e.actualException instanceof TenantOrAppNotFoundException) {
+                throw (TenantOrAppNotFoundException) e.actualException;
+            }
+            throw e;
+        }
     }
 
     @TestOnly
     public static UserInfo getUserUsingId(Main main, String userId)
             throws StorageQueryException {
         try {
-            return getUserUsingId(new AppIdentifier(null, null), main, userId);
+            Storage storage = StorageLayer.getStorage(
+                    new TenantIdentifier(null, null, null), main);
+            return getUserUsingId(new AppIdentifier(null, null, storage), userId);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static UserInfo getUserUsingId(AppIdentifier appIdentifier, Main main, String userId)
+    public static UserInfo getUserUsingId(AppIdentifier appIdentifier, String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
-        for (Storage storage : storages) {
-            UserInfo userInfo = ((EmailPasswordSQLStorage) storage).getUserInfoUsingId(appIdentifier, userId);
-            if (userInfo != null) {
-                return userInfo;
-            }
-        }
-        return null;
+        return appIdentifier.getEmailPasswordStorage().getUserInfoUsingId(appIdentifier, userId);
     }
 
-    public static UserInfo getUserUsingEmail(TenantIdentifier tenantIdentifier, Main main, String email)
+    public static UserInfo getUserUsingEmail(TenantIdentifier tenantIdentifier, String email)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getEmailPasswordStorage(tenantIdentifier, main)
-                .getUserInfoUsingEmail(tenantIdentifier, email);
+        return tenantIdentifier.getEmailPasswordStorage().getUserInfoUsingEmail(tenantIdentifier, email);
     }
 }

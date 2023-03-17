@@ -52,6 +52,7 @@ public class SignUpAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
         String password = InputParser.parseStringOrThrowError(input, "password", false);
@@ -83,6 +84,7 @@ public class SignUpAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
             super.sendJsonResponse(200, result, resp);
+
         } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }

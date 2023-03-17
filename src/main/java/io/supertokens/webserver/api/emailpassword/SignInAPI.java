@@ -27,8 +27,8 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -54,6 +54,7 @@ public class SignInAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
         String password = InputParser.parseStringOrThrowError(input, "password", false);
@@ -65,12 +66,13 @@ public class SignInAPI extends WebserverAPI {
         String normalisedEmail = Utils.normaliseEmail(email);
 
         try {
-            UserInfo user = EmailPassword.signIn(this.getTenantIdentifier(req), super.main, normalisedEmail, password);
+            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            UserInfo user = EmailPassword.signIn(tenantIdentifier, super.main, normalisedEmail, password);
+
+            io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                    tenantIdentifier.toAppIdentifier(), user.id, UserIdType.SUPERTOKENS);
 
             // if a userIdMapping exists, pass the externalUserId to the response
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    this.getTenantIdentifier(req).toAppIdentifier(), super.main,
-                    user.id, UserIdType.ANY);
             if (userIdMapping != null) {
                 user.id = userIdMapping.externalUserId;
             }
