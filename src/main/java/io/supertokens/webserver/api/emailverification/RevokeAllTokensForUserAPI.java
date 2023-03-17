@@ -21,12 +21,13 @@ import io.supertokens.Main;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class RevokeAllTokensForUserAPI extends WebserverAPI {
@@ -46,6 +47,7 @@ public class RevokeAllTokensForUserAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
+        email = Utils.normaliseEmail(email);
 
         try {
             EmailVerification.revokeAllTokens(main, userId, email);

@@ -26,10 +26,10 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
@@ -54,6 +54,7 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
         String email = InputParser.parseStringOrThrowError(input, "email", false);
         assert userId != null;
         assert email != null;
+        email = Utils.normaliseEmail(email);
 
         // used to be according to logic according to https://github.com/supertokens/supertokens-core/issues/139
         // but then changed slightly when extracting this into its own recipe

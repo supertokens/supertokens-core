@@ -33,10 +33,10 @@ import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class UserAPI extends WebserverAPI {
@@ -128,6 +128,8 @@ public class UserAPI extends WebserverAPI {
         if (email == null && password == null) {
             throw new ServletException(new BadRequestException("You have to provide either email or password."));
         }
+
+        email = Utils.normaliseEmail(email);
 
         try {
             // if a userIdMapping exists, pass the superTokensUserId to the updateUsersEmailOrPassword

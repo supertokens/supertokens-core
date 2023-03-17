@@ -16,18 +16,16 @@
 
 package io.supertokens.utils;
 
-import javax.crypto.*;
-import javax.crypto.spec.GCMParameterSpec;
-import javax.crypto.spec.PBEKeySpec;
-import javax.crypto.spec.SecretKeySpec;
-
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
-
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 
+import javax.crypto.*;
+import javax.crypto.spec.GCMParameterSpec;
+import javax.crypto.spec.PBEKeySpec;
+import javax.crypto.spec.SecretKeySpec;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.math.BigInteger;
@@ -39,14 +37,17 @@ import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
-import java.util.List;
 import java.util.Base64.Decoder;
 import java.util.Base64.Encoder;
+import java.util.List;
 import java.util.UUID;
 
 public class Utils {
 
     public static String normaliseEmail(String email) {
+        if (email == null) {
+            return null;
+        }
         // we assume that the email's syntax is correct here.
 
         // as per https://github.com/supertokens/supertokens-core/issues/89 and
