@@ -46,7 +46,7 @@ public class SessionQueries {
                 + "session_handle VARCHAR(255) NOT NULL," + "user_id VARCHAR(128) NOT NULL,"
                 + "refresh_token_hash_2 VARCHAR(128) NOT NULL," + "session_data TEXT,"
                 + "expires_at BIGINT UNSIGNED NOT NULL," + "created_at_time BIGINT UNSIGNED NOT NULL,"
-                + "jwt_user_payload TEXT," + "use_static_key BOOLEAN," + "PRIMARY KEY(session_handle)" + " );";
+                + "jwt_user_payload TEXT," + "use_static_key BOOLEAN NOT NULL," + "PRIMARY KEY(session_handle)" + " );";
     }
 
     static String getQueryToCreateAccessTokenSigningKeysTable(Start start) {
@@ -265,7 +265,9 @@ public class SessionQueries {
                     result.getString("refresh_token_hash_2"),
                     jp.parse(result.getString("session_data")).getAsJsonObject(), result.getLong("expires_at"),
                     jp.parse(result.getString("jwt_user_payload")).getAsJsonObject(),
-                    result.getLong("created_at_time"), result.getBoolean("use_static_key"));
+                    result.getLong("created_at_time"),
+                    result.getBoolean("use_static_key") // This returns false if the column contains null (meaning we have to do less migration)
+            );
         }
     }
 
