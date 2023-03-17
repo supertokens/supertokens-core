@@ -20,21 +20,17 @@ import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
-import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
-import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
-import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.UserIdType;
 import org.jetbrains.annotations.TestOnly;
 
 import javax.annotation.Nullable;
@@ -127,22 +123,8 @@ public class AuthRecipe {
 
         // If userId mapping exists then delete entries with superTokensUserId from auth related tables and
         // externalUserid from non-auth tables
-
-        UserIdMapping userIdMapping = appIdentifier.getUserIdMappingStorage()
-                .getUserIdMapping(appIdentifier, userId, true);
-
-        // we check if the current user is a part of the tenant
-        String toCheckUserId = userId;
-        if (userIdMapping != null) {
-            toCheckUserId = userIdMapping.superTokensUserId;
-        }
-        if (!appIdentifier.getAuthRecipeStorage()
-                .doesUserIdExist(appIdentifier, toCheckUserId) &&
-                appIdentifier.getAuthRecipeStorage()
-                        .doesUserIdExist(appIdentifier, toCheckUserId)) {
-            // this means that the user exists in the app, but is not associated with this tenant.
-            throw new BadPermissionException("The input user does not belong to this tenant or app");
-        }
+        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(appIdentifier,
+                userId, UserIdType.ANY);
 
         if (userIdMapping != null) {
             // We check if the mapped externalId is another SuperTokens UserId, this could come up when migrating
@@ -192,7 +174,7 @@ public class AuthRecipe {
         // auth recipe deletions here only
         // TODO delete from app_id_to_user_id table
         Storage storage = appIdentifier.getStorage();
-        ((EmailPasswordSQLStorage)storage).deleteEmailPasswordUser(appIdentifier, userId);
+        ((EmailPasswordSQLStorage) storage).deleteEmailPasswordUser(appIdentifier, userId);
         ((ThirdPartySQLStorage) storage).deleteThirdPartyUser(appIdentifier, userId);
         ((PasswordlessSQLStorage) storage).deletePasswordlessUser(appIdentifier, userId);
     }

@@ -89,7 +89,7 @@ public class UserIdMapping {
     public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(
             AppIdentifier appIdentifier, String userId,
             UserIdType userIdType)
-            throws StorageQueryException, TenantOrAppNotFoundException {
+            throws StorageQueryException {
         UserIdMappingStorage storage = appIdentifier.getUserIdMappingStorage();
 
         if (userIdType == UserIdType.SUPERTOKENS) {
