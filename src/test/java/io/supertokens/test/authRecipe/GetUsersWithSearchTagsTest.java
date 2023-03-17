@@ -25,6 +25,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+import static org.junit.Assert.*;
+import static org.junit.Assert.assertNotNull;
 
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.authRecipe.AuthRecipe;
@@ -85,10 +87,9 @@ public class GetUsersWithSearchTagsTest {
         DashboardSearchTags tags = new DashboardSearchTags(emails, null, null, recipeIds);
 
 
-        AuthRecipeUserInfo[] info = StorageLayer.getAuthRecipeStorage(process.getProcess()).getUsers(null, null, null, null, null, tags);
-        for (AuthRecipeUserInfo authRecipeUserInfo : info) {
-            System.out.println(authRecipeUserInfo.id);
-        }
+        AuthRecipeUserInfo[] info = StorageLayer.getAuthRecipeStorage(process.getProcess()).getUsers(null, null, null, null, null, tags);   
+        assertEquals(4, info.length);
+        
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }

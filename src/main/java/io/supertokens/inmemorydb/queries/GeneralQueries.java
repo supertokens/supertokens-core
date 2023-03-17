@@ -332,10 +332,10 @@ public class GeneralQueries {
                     if (dashboardSearchTags.emails != null) {
 
                         QUERY = QUERY + " WHERE emailpasswordTable.email LIKE ?";
-                        queryList.add(dashboardSearchTags.emails.get(0) + "%");
+                        queryList.add("%" + dashboardSearchTags.emails.get(0) + "%");
                         for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
                             QUERY += " OR emailpasswordTable.email LIKE ?";
-                            queryList.add(dashboardSearchTags.emails.get(i) + "%");
+                            queryList.add("%" + dashboardSearchTags.emails.get(i) + "%");
                         }
                     }
 
@@ -352,19 +352,19 @@ public class GeneralQueries {
                     if (dashboardSearchTags.emails != null) {
 
                         QUERY += " WHERE thirdPartyTable.email LIKE ?";
-                        queryList.add(dashboardSearchTags.emails.get(0) + "%");
+                        queryList.add("%" + dashboardSearchTags.emails.get(0) + "%");
 
                         for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
                             QUERY += " OR thirdPartyTable.email LIKE ?";
-                            queryList.add(dashboardSearchTags.emails.get(i) + "%");
+                            queryList.add("%" + dashboardSearchTags.emails.get(i) + "%");
                         }
 
                         if (dashboardSearchTags.providers != null) {
                             QUERY += " AND ( thirdPartyTable.third_party_id LIKE ?";
-                            queryList.add(dashboardSearchTags.providers.get(0));
+                            queryList.add("%" + dashboardSearchTags.providers.get(0) + "%");
                             for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
                                 QUERY += " OR thirdPartyTable.third_party_id LIKE ?";
-                                queryList.add(dashboardSearchTags.providers.get(i));
+                                queryList.add( "%" + dashboardSearchTags.providers.get(i) + "%");
                             }
 
                             QUERY += " )";
@@ -377,10 +377,10 @@ public class GeneralQueries {
 
                     } else if (dashboardSearchTags.recipeIds == null || dashboardSearchTags.providers != null) {
                         QUERY += " WHERE thirdPartyTable.third_party_id LIKE ?";
-                        queryList.add(dashboardSearchTags.providers.get(0));
+                        queryList.add("%" + dashboardSearchTags.providers.get(0) + "%");
                         for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
                             QUERY += " OR thirdPartyTable.third_party_id LIKE ?";
-                            queryList.add(dashboardSearchTags.providers.get(i));
+                            queryList.add("%" + dashboardSearchTags.providers.get(i) + "%");
                         }
                         if (USER_SEARCH_TAG_CONDITION.length() != 0) {
                             USER_SEARCH_TAG_CONDITION.append(" UNION ").append(QUERY);
@@ -400,18 +400,18 @@ public class GeneralQueries {
                     if (dashboardSearchTags.emails != null) {
 
                         QUERY = QUERY + " WHERE passwordlessTable.email LIKE ?";
-                        queryList.add(dashboardSearchTags.emails.get(0) + "%");
+                        queryList.add("%" + dashboardSearchTags.emails.get(0) + "%");
                         for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
                             QUERY += " OR passwordlessTable.email LIKE ?";
-                            queryList.add(dashboardSearchTags.emails.get(i) + "%");
+                            queryList.add("%" + dashboardSearchTags.emails.get(i) + "%");
                         }
 
                         if (dashboardSearchTags.phoneNumbers != null) {
                             QUERY += " AND  passwordlessTable.phone_number LIKE ?";
-                            queryList.add(dashboardSearchTags.phoneNumbers.get(0) + "%");
+                            queryList.add("%" + dashboardSearchTags.phoneNumbers.get(0) + "%");
                             for (int i = 1; i < dashboardSearchTags.phoneNumbers.size(); i++) {
                                 QUERY += " OR passwordlessTable.phone_number LIKE ?";
-                                queryList.add(dashboardSearchTags.phoneNumbers.get(i) + "%");
+                                queryList.add("%" + dashboardSearchTags.phoneNumbers.get(i) + "%");
                             }
 
                         }
@@ -419,10 +419,10 @@ public class GeneralQueries {
                     } else if (dashboardSearchTags.phoneNumbers != null) {
 
                         QUERY = QUERY + " WHERE passwordlessTable.phone_number LIKE ?";
-                        queryList.add(dashboardSearchTags.phoneNumbers.get(0));
+                        queryList.add("%" + dashboardSearchTags.phoneNumbers.get(0));
                         for (int i = 1; i < dashboardSearchTags.phoneNumbers.size(); i++) {
                             QUERY += " OR passwordlessTable.phone_number LIKE ?";
-                            queryList.add(dashboardSearchTags.phoneNumbers.get(i));
+                            queryList.add("%" + dashboardSearchTags.phoneNumbers.get(i) + "%");
                         }
 
                     }

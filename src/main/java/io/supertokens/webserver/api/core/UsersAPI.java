@@ -26,6 +26,7 @@ import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.utils.Utils;
@@ -107,9 +108,68 @@ public class UsersAPI extends WebserverAPI {
             limit = 100;
         }
 
+        DashboardSearchTags searchTags = null;
+
+        String emails = InputParser.getQueryParamOrThrowError(req, "email", true);
+        {
+            if (emails != null) {
+                ArrayList<String> emailArrayList = normalizeSearchTags(emails);
+
+                if (emailArrayList.size() != 0) {
+                    searchTags = new DashboardSearchTags(emailArrayList, null, null, null);
+                }
+            }
+        }
+
+        String phoneNumbers = InputParser.getQueryParamOrThrowError(req, "phone", true);
+        {
+            if (phoneNumbers != null) {
+                ArrayList<String> phoneNumberArrayList = normalizeSearchTags(phoneNumbers);
+
+                if (phoneNumberArrayList.size() != 0) {
+                    if (searchTags == null) {
+                        searchTags = new DashboardSearchTags(null, phoneNumberArrayList, null, null);
+                    } else {
+                        searchTags.phoneNumbers = phoneNumberArrayList;
+                    }
+
+                }
+            }
+        }
+
+        String providers = InputParser.getQueryParamOrThrowError(req, "phone", true);
+        {
+            if (providers != null) {
+                ArrayList<String> providerArrayList = normalizeSearchTags(providers);
+
+                if (providerArrayList.size() != 0) {
+                    if (searchTags == null) {
+                        searchTags = new DashboardSearchTags(null, null, providerArrayList, null);
+                    } else {
+                        searchTags.providers = providerArrayList;
+                    }
+                }
+            }
+        }
+
+        String recipes = InputParser.getQueryParamOrThrowError(req, "recipe", true);
+        {
+            if (recipes != null) {
+                ArrayList<String> recipeArrayList = normalizeSearchTags(recipes);
+
+                if (recipeArrayList.size() != 0) {
+                    if (searchTags == null) {
+                        searchTags = new DashboardSearchTags(null, null, null, recipeArrayList);
+                    } else {
+                        searchTags.providers = recipeArrayList;
+                    }
+                }
+            }
+        }
+
         try {
             UserPaginationContainer users = AuthRecipe.getUsers(super.main, limit, timeJoinedOrder, paginationToken,
-                    recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
+                    recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new), searchTags);
 
             ArrayList<String> userIds = new ArrayList<>();
             for (int i = 0; i < users.users.length; i++) {
@@ -142,5 +202,17 @@ public class UsersAPI extends WebserverAPI {
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
+    }
+
+    private static ArrayList<String> normalizeSearchTags(String searchTag) {
+        String[] searchTagArray = searchTag.split(";");
+        ArrayList<String> searchTagArrayList = new ArrayList<>();
+        for (String searchTagString : searchTagArray) {
+            String normalizedSearchTag = searchTagString.trim();
+            if (normalizedSearchTag.length() != 0) {
+                searchTagArrayList.add(normalizedSearchTag);
+            }
+        }
+        return searchTagArrayList;
     }
 }

@@ -19,6 +19,7 @@ package io.supertokens.authRecipe;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.storageLayer.StorageLayer;
@@ -37,7 +38,7 @@ public class AuthRecipe {
     }
 
     public static UserPaginationContainer getUsers(Main main, Integer limit, String timeJoinedOrder,
-            @Nullable String paginationToken, @Nullable RECIPE_ID[] includeRecipeIds)
+            @Nullable String paginationToken, @Nullable RECIPE_ID[] includeRecipeIds, @Nullable DashboardSearchTags dashboardSearchTags)
             throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         AuthRecipeUserInfo[] users;
         if (paginationToken == null) {
