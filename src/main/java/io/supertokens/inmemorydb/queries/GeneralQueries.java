@@ -309,8 +309,8 @@ public class GeneralQueries {
     }
 
     public static AuthRecipeUserInfo[] getUsers(Start start, @NotNull Integer limit, @NotNull String timeJoinedOrder,
-                                                @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
-                                                @Nullable Long timeJoined,
+            @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
+            @Nullable Long timeJoined,
             @Nullable DashboardSearchTags dashboardSearchTags)
             throws SQLException, StorageQueryException {
 
@@ -364,7 +364,7 @@ public class GeneralQueries {
                             queryList.add("%" + dashboardSearchTags.providers.get(0) + "%");
                             for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
                                 QUERY += " OR thirdPartyTable.third_party_id LIKE ?";
-                                queryList.add( "%" + dashboardSearchTags.providers.get(i) + "%");
+                                queryList.add("%" + dashboardSearchTags.providers.get(i) + "%");
                             }
 
                             QUERY += " )";
@@ -434,19 +434,50 @@ public class GeneralQueries {
                     }
                 }
 
-                String finalQuery = "Select * FROM ( " + USER_SEARCH_TAG_CONDITION.toString() + " )";
-                usersFromQuery = execute(start, finalQuery, pst -> {
-                    for (int i = 1; i <= queryList.size(); i++) {
-                        pst.setString(i, queryList.get(i - 1));
-                    }
-                }, result -> {
-                    List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
-                    while (result.next()) {
-                        temp.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
-                                result.getString("recipe_id")));
-                    }
-                    return temp;
-                });
+                if (timeJoined != null && userId != null) {
+                    String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
+                    String finalQuery = "SELECT * FROM ( " + USER_SEARCH_TAG_CONDITION.toString() + " ) WHERE "
+                            + " (time_joined " + timeJoinedOrderSymbol
+                            + " ? OR (time_joined = ? AND user_id <= ?)) ORDER BY time_joined " + timeJoinedOrder
+                            + ", user_id DESC LIMIT ?";
+                    usersFromQuery = execute(start, finalQuery, pst -> {
+                        int i = 1;
+                        for (; i <= queryList.size(); i++) {
+                            pst.setString(i, queryList.get(i - 1));
+                        }
+                        pst.setLong(i, timeJoined);
+                        pst.setLong(++i, timeJoined);
+                        pst.setString(++i, userId);
+                        pst.setInt(++i, limit);
+                    }, result -> {
+                        List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
+                        while (result.next()) {
+                            temp.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
+                                    result.getString("recipe_id")));
+                        }
+                        return temp;
+                    });
+
+                } else {
+
+                    String finalQuery = "SELECT * FROM ( " + USER_SEARCH_TAG_CONDITION.toString() + " )"
+                            + " ORDER BY time_joined " + timeJoinedOrder + ", user_id DESC LIMIT ?";
+                    usersFromQuery = execute(start, finalQuery, pst -> {
+                        int i = 1;
+                        for (; i <= queryList.size(); i++) {
+                            pst.setString(i, queryList.get(i - 1));
+                        }
+                        pst.setInt(i, limit);
+                    }, result -> {
+                        List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
+                        while (result.next()) {
+                            temp.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
+                                    result.getString("recipe_id")));
+                        }
+                        return temp;
+                    });
+
+                }
             }
         } else {
             StringBuilder RECIPE_ID_CONDITION = new StringBuilder();
@@ -551,7 +582,7 @@ public class GeneralQueries {
     }
 
     private static List<? extends AuthRecipeUserInfo> getUserInfoForRecipeIdFromUserIds(Start start, RECIPE_ID recipeId,
-                                                                                        List<String> userIds)
+            List<String> userIds)
             throws StorageQueryException, SQLException {
         if (recipeId == RECIPE_ID.EMAIL_PASSWORD) {
             return EmailPasswordQueries.getUsersInfoUsingIdList(start, userIds);

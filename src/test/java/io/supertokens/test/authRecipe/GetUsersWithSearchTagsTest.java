@@ -30,6 +30,7 @@ import static org.junit.Assert.assertNotNull;
 
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.authRecipe.AuthRecipe;
+import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.ConsumeCodeResponse;
@@ -78,7 +79,7 @@ public class GetUsersWithSearchTagsTest {
         Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash, createCodeResponse.userInputCode, null);
 
         ArrayList<String> emails = new ArrayList<>();
-        emails.add("test");
+        emails.add("st");
         ArrayList<String> recipeIds = new ArrayList<>();
         recipeIds.add("emailpassword");
         recipeIds.add("thirdparty");
@@ -86,9 +87,8 @@ public class GetUsersWithSearchTagsTest {
 
         DashboardSearchTags tags = new DashboardSearchTags(emails, null, null, recipeIds);
 
-
-        AuthRecipeUserInfo[] info = StorageLayer.getAuthRecipeStorage(process.getProcess()).getUsers(null, null, null, null, null, tags);   
-        assertEquals(4, info.length);
+        UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 100, "ASC", null, null, tags);
+        assertEquals(4, info.users.length);
         
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
