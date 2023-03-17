@@ -221,7 +221,7 @@ public class UserIdMapping {
 
     public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(AppIdentifier appIdentifier,
                                                                                 ArrayList<String> userIds)
-            throws StorageQueryException, TenantOrAppNotFoundException {
+            throws StorageQueryException {
         // This is tenant specific, so just use the storage from the appIdentifier
         return appIdentifier.getUserIdMappingStorage().getUserIdMappingForSuperTokensIds(appIdentifier, userIds);
     }
@@ -230,15 +230,9 @@ public class UserIdMapping {
     public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(Main main,
                                                                                 ArrayList<String> userIds)
             throws StorageQueryException {
-        try {
-            Storage storage = StorageLayer.getStorage(
-                    new TenantIdentifier(null, null, null), main);
-
-            return getUserIdMappingForSuperTokensUserIds(
-                    new AppIdentifier(null, null, storage), userIds);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage( main);
+        return getUserIdMappingForSuperTokensUserIds(
+                new AppIdentifier(null, null, storage), userIds);
     }
 
     private static void assertThatUserIdIsNotBeingUsedInNonAuthRecipes(AppIdentifier appIdentifier, String userId)
