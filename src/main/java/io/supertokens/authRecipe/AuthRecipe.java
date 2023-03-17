@@ -128,9 +128,21 @@ public class AuthRecipe {
         // If userId mapping exists then delete entries with superTokensUserId from auth related tables and
         // externalUserid from non-auth tables
 
-        AuthRecipeStorage storage = appIdentifier.getAuthRecipeStorage();
         UserIdMapping userIdMapping = appIdentifier.getUserIdMappingStorage()
                 .getUserIdMapping(appIdentifier, userId, true);
+
+        // we check if the current user is a part of the tenant
+        String toCheckUserId = userId;
+        if (userIdMapping != null) {
+            toCheckUserId = userIdMapping.superTokensUserId;
+        }
+        if (!appIdentifier.getAuthRecipeStorage()
+                .doesUserIdExist(appIdentifier, toCheckUserId) &&
+                appIdentifier.getAuthRecipeStorage()
+                        .doesUserIdExist(appIdentifier, toCheckUserId)) {
+            // this means that the user exists in the app, but is not associated with this tenant.
+            throw new BadPermissionException("The input user does not belong to this tenant or app");
+        }
 
         if (userIdMapping != null) {
             // We check if the mapped externalId is another SuperTokens UserId, this could come up when migrating
@@ -138,7 +150,8 @@ public class AuthRecipe {
             // in reference to
             // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
             // we want to check which state the db is in
-            if (storage.doesUserIdExist(appIdentifier, userIdMapping.externalUserId)) {
+            if (appIdentifier.getAuthRecipeStorage()
+                    .doesUserIdExist(appIdentifier, userIdMapping.externalUserId)) {
                 // db is in state A4
                 // delete only from auth tables
                 deleteAuthRecipeUser(appIdentifier, userId);
@@ -164,11 +177,14 @@ public class AuthRecipe {
 
     private static void deleteNonAuthRecipeUser(AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
-        Storage storage = appIdentifier.getStorage();
-        ((UserMetadataSQLStorage) storage).deleteUserMetadata(appIdentifier, userId);
-        ((SessionStorage) storage).deleteSessionsOfUser(appIdentifier, userId);
-        ((EmailVerificationSQLStorage) storage).deleteEmailVerificationUserInfo(appIdentifier, userId);
-        ((UserRolesSQLStorage) storage).deleteAllRolesForUser(appIdentifier, userId);
+        appIdentifier.getUserMetadataStorage()
+                .deleteUserMetadata(appIdentifier, userId);
+        appIdentifier.getSessionStorage()
+                .deleteSessionsOfUser(appIdentifier, userId);
+        appIdentifier.getEmailVerificationStorage()
+                .deleteEmailVerificationUserInfo(appIdentifier, userId);
+        appIdentifier.getUserRolesStorage()
+                .deleteAllRolesForUser(appIdentifier, userId);
     }
 
     private static void deleteAuthRecipeUser(AppIdentifier appIdentifier, String userId)

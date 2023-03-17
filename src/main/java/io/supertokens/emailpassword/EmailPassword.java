@@ -81,8 +81,7 @@ public class EmailPassword {
     public static UserInfo signUp(Main main, @Nonnull String email, @Nonnull String password)
             throws DuplicateEmailException, StorageQueryException {
         try {
-            Storage storage = StorageLayer.getStorage(
-                    new TenantIdentifier(null, null, null), main);
+            Storage storage = StorageLayer.getStorage(main);
             return signUp(new TenantIdentifier(null, null, null, storage),
                     main, email, password);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
@@ -129,8 +128,7 @@ public class EmailPassword {
                                                                         CoreConfig.PASSWORD_HASHING_ALG hashingAlgorithm)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
         try {
-            Storage storage = StorageLayer.getStorage(
-                    new TenantIdentifier(null, null, null), main);
+            Storage storage = StorageLayer.getStorage(main);
 
             return importUserWithPasswordHash(
                     new TenantIdentifier(null, null, null, storage), main, email,
@@ -190,8 +188,7 @@ public class EmailPassword {
                                                                 @Nonnull String passwordHash)
             throws StorageQueryException, StorageTransactionLogicException, UnsupportedPasswordHashingFormatException {
         try {
-            Storage storage = StorageLayer.getStorage(
-                    new TenantIdentifier(null, null, null), main);
+            Storage storage = StorageLayer.getStorage(main);
             return importUserWithPasswordHash(
                     new TenantIdentifier(null, null, null, storage), main, email,
                     passwordHash, null);
@@ -205,8 +202,7 @@ public class EmailPassword {
                                   @Nonnull String password)
             throws StorageQueryException, WrongCredentialsException {
         try {
-            Storage storage = StorageLayer.getStorage(
-                    new TenantIdentifier(null, null, null), main);
+            Storage storage = StorageLayer.getStorage(main);
             return signIn(new TenantIdentifier(null, null, null, storage), main,
                     email, password);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
@@ -258,8 +254,7 @@ public class EmailPassword {
     public static String generatePasswordResetToken(Main main, String userId)
             throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException, UnknownUserIdException {
         try {
-            Storage storage = StorageLayer.getStorage(
-                    new TenantIdentifier(null, null, null), main);
+            Storage storage = StorageLayer.getStorage(main);
             return generatePasswordResetToken(
                     new TenantIdentifier(null, null, null, storage), main, userId);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
@@ -318,8 +313,7 @@ public class EmailPassword {
             throws ResetPasswordInvalidTokenException, NoSuchAlgorithmException, StorageQueryException,
             StorageTransactionLogicException {
         try {
-            Storage storage = StorageLayer.getStorage(
-                    new TenantIdentifier(null, null, null), main);
+            Storage storage = StorageLayer.getStorage(main);
             return resetPassword(new TenantIdentifier(null, null, null, storage),
                     main, token, password);
         } catch (TenantOrAppNotFoundException e) {
@@ -393,8 +387,7 @@ public class EmailPassword {
             throws StorageQueryException, StorageTransactionLogicException,
             UnknownUserIdException, DuplicateEmailException {
         try {
-            Storage storage = StorageLayer.getStorage(
-                    new TenantIdentifier(null, null, null), main);
+            Storage storage = StorageLayer.getStorage(main);
             updateUsersEmailOrPassword(new AppIdentifier(null, null, storage), main, userId,
                     email, password);
         } catch (TenantOrAppNotFoundException e) {
@@ -454,8 +447,7 @@ public class EmailPassword {
     public static UserInfo getUserUsingId(Main main, String userId)
             throws StorageQueryException {
         try {
-            Storage storage = StorageLayer.getStorage(
-                    new TenantIdentifier(null, null, null), main);
+            Storage storage = StorageLayer.getStorage(main);
             return getUserUsingId(new AppIdentifier(null, null, storage), userId);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
