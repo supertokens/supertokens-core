@@ -22,6 +22,7 @@ import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.*;
@@ -46,7 +47,8 @@ public class FeatureFlagTest {
     }
 
     @Test
-    public void noLicenseKeyShouldHaveEmptyFeatureFlag() throws InterruptedException, StorageQueryException {
+    public void noLicenseKeyShouldHaveEmptyFeatureFlag()
+            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -69,7 +71,8 @@ public class FeatureFlagTest {
     }
 
     @Test
-    public void missingEEFolderShouldBeSameAsNoLicenseKey() throws InterruptedException, StorageQueryException {
+    public void missingEEFolderShouldBeSameAsNoLicenseKey()
+            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);

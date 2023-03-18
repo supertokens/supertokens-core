@@ -29,7 +29,6 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateClientTypeException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
@@ -47,7 +46,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     public static boolean addNewOrUpdateAppOrTenant(Main main, TenantIdentifier sourceTenant, TenantConfig newTenant)
             throws DeletionInProgressException, CannotModifyBaseConfigException, BadPermissionException,
             StorageQueryException, FeatureNotEnabledException, IOException, InvalidConfigException,
-            InvalidProviderConfigException {
+            InvalidProviderConfigException, TenantOrAppNotFoundException {
 
         // TODO: adding a new tenant is not thread safe here - for example, one can add a new connectionuridomain
         //  such that they both point to the same user pool ID by trying to add them in parallel. This is not such
@@ -61,7 +60,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     throw new CannotModifyBaseConfigException();
                 }
             } else {
-                if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
+                if (Arrays.stream(FeatureFlag.getInstance(main, sourceTenant.toAppIdentifier()).getEnabledFeatures())
                         .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
                     throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
                 }
@@ -89,7 +88,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     throw new BadPermissionException(
                             "You must use the public tenantId and public appId to add a new app");
                 }
-                if (!sourceTenant.getConnectionUriDomain().equals(newTenant.tenantIdentifier.getConnectionUriDomain())) {
+                if (!sourceTenant.getConnectionUriDomain()
+                        .equals(newTenant.tenantIdentifier.getConnectionUriDomain())) {
                     throw new BadPermissionException("You must use the same connection URI domain to create new app");
                 }
             } else if (!newTenant.tenantIdentifier.getConnectionUriDomain()
@@ -166,7 +166,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     // we treat this as a success
                     return false;
                 } catch (DuplicateThirdPartyIdException overWriteException) {
-                    throw new InvalidProviderConfigException("Duplicate ThirdPartyId was specified in the providers list.");
+                    throw new InvalidProviderConfigException(
+                            "Duplicate ThirdPartyId was specified in the providers list.");
                 } catch (DuplicateClientTypeException overWriteException) {
                     throw new InvalidProviderConfigException("Duplicate clientType was specified in the clients list.");
                 }
@@ -247,7 +248,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
     public static boolean addUserIdToTenant(Main main, TenantIdentifier tenantIdentifier, String userId)
             throws TenantOrAppNotFoundException, UnknownUserIdException, StorageQueryException,
             FeatureNotEnabledException {
-        if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
+        if (Arrays.stream(FeatureFlag.getInstance(main, tenantIdentifier.toAppIdentifier()).getEnabledFeatures())
                 .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
         }
@@ -261,7 +262,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throws TenantOrAppNotFoundException, UnknownRoleException, StorageQueryException,
             FeatureNotEnabledException {
 
-        if (Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
+        if (Arrays.stream(FeatureFlag.getInstance(main, tenantIdentifier.toAppIdentifier()).getEnabledFeatures())
                 .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
         }

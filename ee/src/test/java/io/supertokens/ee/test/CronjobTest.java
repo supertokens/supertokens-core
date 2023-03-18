@@ -10,6 +10,7 @@ import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
 import org.junit.*;
@@ -33,7 +34,7 @@ public class CronjobTest {
 
     @Test
     public void cronjobUpdatesStatefulKey()
-            throws InterruptedException, StorageQueryException {
+            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -76,7 +77,7 @@ public class CronjobTest {
 
     @Test
     public void cronjobDoesNotUpdatesStatefulKeyIfItDoesntRun()
-            throws InterruptedException, StorageQueryException {
+            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -119,7 +120,7 @@ public class CronjobTest {
 
     @Test
     public void cronjobUpdatesStatelessKey()
-            throws InterruptedException, StorageQueryException {
+            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -162,7 +163,7 @@ public class CronjobTest {
 
     @Test
     public void cronjobDoesNotUpdatesStatelessKeyIfItDoesntRun()
-            throws InterruptedException, StorageQueryException {
+            throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {

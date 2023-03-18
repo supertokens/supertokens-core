@@ -40,10 +40,24 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
     protected List<List<TenantIdentifier>> tenantsInfo;
     private final Object lock = new Object();
 
+    protected final TenantIdentifier targetTenant;
+
     protected CronTask(String jobName, Main main, List<List<TenantIdentifier>> tenantsInfo) {
         this.jobName = jobName;
         this.main = main;
         this.tenantsInfo = tenantsInfo;
+        this.targetTenant = null;
+        Logging.info(main, "Starting task: " + jobName, false);
+    }
+
+    // this cronjob will only run for the targetTenant if it's in the tenantsInfo list. This is useful for 
+    // cronjobs which run on a per app basis like the eelicensecheck cronjob
+    protected CronTask(String jobName, Main main, List<List<TenantIdentifier>> tenantsInfo,
+                       TenantIdentifier targetTenant) {
+        this.jobName = jobName;
+        this.main = main;
+        this.tenantsInfo = tenantsInfo;
+        this.targetTenant = targetTenant;
         Logging.info(main, "Starting task: " + jobName, false);
     }
 
@@ -62,9 +76,16 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
             copied = new ArrayList<>(tenantsInfo);
         }
 
-        ExecutorService service = Executors.newFixedThreadPool(copied.size());
+        // if targetTenant is not null, it means that this cronjob will run only for one tenant, so no need to
+        // create multiple threads.
+        ExecutorService service = Executors.newFixedThreadPool(this.targetTenant == null ? copied.size() : 1);
         AtomicBoolean threwQuitProgramException = new AtomicBoolean(false);
         for (List<TenantIdentifier> t : copied) {
+            if (targetTenant != null) {
+                if (!t.contains(targetTenant)) {
+                    continue;
+                }
+            }
             service.execute(() -> {
                 try {
                     doTask(t);
@@ -76,6 +97,11 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
                     }
                 }
             });
+            if (targetTenant != null) {
+                // if it comes here, it means that the targetTenant was found, and that the job was started already.
+                // so we stop the loop
+                break;
+            }
         }
         service.shutdown();
         boolean didShutdown = false;

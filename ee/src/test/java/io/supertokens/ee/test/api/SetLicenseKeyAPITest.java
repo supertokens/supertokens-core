@@ -62,6 +62,7 @@ public class SetLicenseKeyAPITest {
 
     @Test
     public void testSettingLicenseKeyWhenEEFolderDoesNotExist() throws Exception {
+        FeatureFlag.clearURLClassLoader();
         String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);

@@ -24,7 +24,6 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
@@ -70,6 +69,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
     private Main main;
 
+    private AppIdentifier appIdentifier;
+
     @Override
     @TestOnly
     public void updateEnabledFeaturesValueReadFromDbTime(long newTime) {
@@ -77,9 +78,10 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     }
 
     @Override
-    public void constructor(Main main) {
+    public void constructor(Main main, AppIdentifier appIdentifier) {
         this.main = main;
-        Cronjobs.addCronjob(main, EELicenseCheck.getInstance(main));
+        this.appIdentifier = appIdentifier;
+        Cronjobs.addCronjob(main, EELicenseCheck.getInstance(main, this.appIdentifier.getAsPublicTenantIdentifier()));
         try {
             this.syncFeatureFlagWithLicenseKey();
         } catch (HttpResponseException | IOException e) {
@@ -94,12 +96,13 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     }
 
     @Override
-    public EE_FEATURES[] getEnabledFeatures() throws StorageQueryException {
+    public EE_FEATURES[] getEnabledFeatures() throws StorageQueryException, TenantOrAppNotFoundException {
         return this.getEnabledEEFeaturesFromDbOrCache();
     }
 
     @Override
-    public void removeLicenseKeyAndSyncFeatures() throws HttpResponseException, IOException, StorageQueryException {
+    public void removeLicenseKeyAndSyncFeatures()
+            throws HttpResponseException, IOException, StorageQueryException, TenantOrAppNotFoundException {
         this.removeLicenseKeyFromDb();
         try {
             this.syncFeatureFlagWithLicenseKey();
@@ -110,7 +113,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
     @Override
     public void setLicenseKeyAndSyncFeatures(String key)
-            throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
+            throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException,
+            TenantOrAppNotFoundException {
         // if the key is not valid, we will not affect the current running of things.
         // This would cause 2 calls to the supertokens server if the key is opaque, but that's OK.
         verifyLicenseKey(key);
@@ -120,7 +124,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
     @Override
     public void syncFeatureFlagWithLicenseKey()
-            throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException {
+            throws HttpResponseException, IOException, StorageQueryException, InvalidLicenseKeyException,
+            TenantOrAppNotFoundException {
         Logging.debug(main, "Syncing feature flag with license key");
         String licenseKey;
         try {
@@ -146,15 +151,14 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     }
 
     @Override
-    public JsonObject getPaidFeatureStats() throws StorageQueryException {
+    public JsonObject getPaidFeatureStats() throws StorageQueryException, TenantOrAppNotFoundException {
         JsonObject result = new JsonObject();
         EE_FEATURES[] features = getEnabledEEFeaturesFromDbOrCache();
         if (Arrays.stream(features).anyMatch(t -> t == EE_FEATURES.DASHBOARD_LOGIN)) {
             try {
                 JsonObject stats = new JsonObject();
-                // TODO: we need to properly get all the apps here and not just the base app
-                int userCount = StorageLayer.getDashboardStorage(new AppIdentifier(null, null), main)
-                        .getAllDashboardUsers(new AppIdentifier(null, null)).length;
+                int userCount = StorageLayer.getDashboardStorage(this.appIdentifier, main)
+                        .getAllDashboardUsers(this.appIdentifier).length;
                 stats.addProperty("user_count", userCount);
                 result.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), stats);
             } catch (TenantOrAppNotFoundException e) {
@@ -165,7 +169,8 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     }
 
     private EE_FEATURES[] verifyLicenseKey(String licenseKey)
-            throws StorageQueryException, InvalidLicenseKeyException, HttpResponseException, IOException {
+            throws StorageQueryException, InvalidLicenseKeyException, HttpResponseException, IOException,
+            TenantOrAppNotFoundException {
         if (doesLicenseKeyRequireServerQuery(licenseKey)) {
             return doServerCall(licenseKey);
         } else {
@@ -225,11 +230,12 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     }
 
     private EE_FEATURES[] doServerCall(String licenseKey)
-            throws StorageQueryException, HttpResponseException, IOException, InvalidLicenseKeyException {
+            throws StorageQueryException, HttpResponseException, IOException, InvalidLicenseKeyException,
+            TenantOrAppNotFoundException {
         try {
             Logging.debug(main, "Making API call to server with licenseKey: " + licenseKey);
             JsonObject json = new JsonObject();
-            KeyValueInfo info = Telemetry.getTelemetryId(main);
+            KeyValueInfo info = Telemetry.getTelemetryId(main, this.appIdentifier);
             String telemetryId = info == null ? null : info.value;
             if (telemetryId != null) {
                 // this can be null if we are using in mem db right now.
@@ -266,25 +272,26 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         }
     }
 
-    private void setEnabledEEFeaturesInDb(EE_FEATURES[] features) throws StorageQueryException {
+    private void setEnabledEEFeaturesInDb(EE_FEATURES[] features)
+            throws StorageQueryException, TenantOrAppNotFoundException {
         JsonArray json = new JsonArray();
         Arrays.stream(features).forEach(ee_features -> json.add(new JsonPrimitive(ee_features.toString())));
         Logging.debug(main, "Saving new feature flag in database: " + json);
-        StorageLayer.getBaseStorage(main)
-                .setKeyValue(new TenantIdentifier(null, null, null), FEATURE_FLAG_KEY_IN_DB,
+        StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main)
+                .setKeyValue(this.appIdentifier.getAsPublicTenantIdentifier(), FEATURE_FLAG_KEY_IN_DB,
                         new KeyValueInfo(json.toString()));
         this.enabledFeaturesValueReadFromDbTime = System.currentTimeMillis();
         this.enabledFeaturesFromDb = features;
     }
 
     private EE_FEATURES[] getEnabledEEFeaturesFromDbOrCache()
-            throws StorageQueryException {
+            throws StorageQueryException, TenantOrAppNotFoundException {
         if (this.enabledFeaturesValueReadFromDbTime == -1
                 || (System.currentTimeMillis()
                 - this.enabledFeaturesValueReadFromDbTime > INTERVAL_BETWEEN_DB_READS)) {
             Logging.debug(main, "Reading feature flag from database");
-            KeyValueInfo keyValueInfo = StorageLayer.getBaseStorage(main)
-                    .getKeyValue(new TenantIdentifier(null, null, null), FEATURE_FLAG_KEY_IN_DB);
+            KeyValueInfo keyValueInfo = StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main)
+                    .getKeyValue(this.appIdentifier.getAsPublicTenantIdentifier(), FEATURE_FLAG_KEY_IN_DB);
             if (keyValueInfo == null) {
                 Logging.debug(main, "No feature flag set in db");
                 return new EE_FEATURES[]{};
@@ -305,24 +312,26 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         return this.enabledFeaturesFromDb;
     }
 
-    private void setLicenseKeyInDb(String key) throws StorageQueryException {
+    private void setLicenseKeyInDb(String key) throws StorageQueryException, TenantOrAppNotFoundException {
         Logging.debug(main, "Setting license key in db: " + key);
-        StorageLayer.getBaseStorage(main)
-                .setKeyValue(new TenantIdentifier(null, null, null), LICENSE_KEY_IN_DB, new KeyValueInfo(key));
+        StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main)
+                .setKeyValue(this.appIdentifier.getAsPublicTenantIdentifier(), LICENSE_KEY_IN_DB,
+                        new KeyValueInfo(key));
     }
 
-    private void removeLicenseKeyFromDb() throws StorageQueryException {
+    private void removeLicenseKeyFromDb() throws StorageQueryException, TenantOrAppNotFoundException {
         Logging.debug(main, "Removing license key from db");
-        StorageLayer.getBaseStorage(main)
-                .setKeyValue(new TenantIdentifier(null, null, null), LICENSE_KEY_IN_DB,
+        StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main)
+                .setKeyValue(this.appIdentifier.getAsPublicTenantIdentifier(), LICENSE_KEY_IN_DB,
                         new KeyValueInfo(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE));
     }
 
     @Override
-    public String getLicenseKeyFromDb() throws NoLicenseKeyFoundException, StorageQueryException {
+    public String getLicenseKeyFromDb()
+            throws NoLicenseKeyFoundException, StorageQueryException, TenantOrAppNotFoundException {
         Logging.debug(main, "Attempting to fetch license key from db");
-        KeyValueInfo info = StorageLayer.getBaseStorage(main)
-                .getKeyValue(new TenantIdentifier(null, null, null), LICENSE_KEY_IN_DB);
+        KeyValueInfo info = StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main)
+                .getKeyValue(this.appIdentifier.getAsPublicTenantIdentifier(), LICENSE_KEY_IN_DB);
         if (info == null || info.value.equals(LICENSE_KEY_IN_DB_NOT_PRESENT_VALUE)) {
             Logging.debug(main, "No license key found in db");
             throw new NoLicenseKeyFoundException();

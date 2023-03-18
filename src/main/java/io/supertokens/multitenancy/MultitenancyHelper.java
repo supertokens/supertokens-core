@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.Cronjobs;
+import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
@@ -74,8 +75,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                                 new TenantIdentifier(null, null, null),
                                 new EmailPasswordConfig(true), new ThirdPartyConfig(true, null),
                                 new PasswordlessConfig(true), new JsonObject()));
-            } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException |
-                    FeatureNotEnabledException | InvalidConfigException | InvalidProviderConfigException e) {
+            } catch (DeletionInProgressException | CannotModifyBaseConfigException | BadPermissionException | FeatureNotEnabledException | InvalidConfigException | InvalidProviderConfigException | TenantOrAppNotFoundException e) {
                 throw new IllegalStateException(e);
             }
         }
@@ -117,6 +117,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
                     // storageLayer
                     loadConfig();
                     loadStorageLayer();
+                    loadFeatureFlag();
                     loadSigningKeys();
                     refreshCronjobs();
                 } catch (Exception e) {
@@ -134,6 +135,19 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
 
     public void loadStorageLayer() throws DbInitException, IOException, InvalidConfigException {
         StorageLayer.loadAllTenantStorage(main, this.tenantConfigs);
+    }
+
+    public void loadFeatureFlag() {
+        List<AppIdentifier> apps = new ArrayList<>();
+        Set<AppIdentifier> appsSet = new HashSet<>();
+        for (TenantConfig t : tenantConfigs) {
+            if (appsSet.contains(t.tenantIdentifier.toAppIdentifier())) {
+                continue;
+            }
+            apps.add(t.tenantIdentifier.toAppIdentifier());
+            appsSet.add(t.tenantIdentifier.toAppIdentifier());
+        }
+        FeatureFlag.loadForAllTenants(main, apps);
     }
 
     public void loadSigningKeys() throws UnsupportedJWTSigningAlgorithmException {
