@@ -45,6 +45,9 @@ import java.util.UUID;
 public class Utils {
 
     public static String normaliseEmail(String email) {
+        if (email == null) {
+            return null;
+        }
         // we assume that the email's syntax is correct here.
 
         // as per https://github.com/supertokens/supertokens-core/issues/89 and
