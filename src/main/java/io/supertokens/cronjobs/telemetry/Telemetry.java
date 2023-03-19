@@ -35,9 +35,7 @@ import io.supertokens.utils.Utils;
 import io.supertokens.version.Version;
 import org.jetbrains.annotations.TestOnly;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class Telemetry extends CronTask {
 
@@ -48,7 +46,7 @@ public class Telemetry extends CronTask {
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.telemetry.Telemetry";
 
     private Telemetry(Main main, List<List<TenantIdentifier>> tenants) {
-        super("Telemetry", main, tenants);
+        super("Telemetry", main, tenants, true);
     }
 
     @TestOnly
@@ -68,45 +66,36 @@ public class Telemetry extends CronTask {
     }
 
     @Override
-    protected void doTask(List<TenantIdentifier> tenantIdentifier) throws Exception {
-        // this cronjob is per app, so we keep track of the apps that have already finished in the loop
-        Set<AppIdentifier> seenApps = new HashSet<>();
-        for (TenantIdentifier t : tenantIdentifier) {
-            if (seenApps.contains(t.toAppIdentifier())) {
-                continue;
-            }
-            seenApps.add(t.toAppIdentifier());
+    protected void doTaskPerApp(AppIdentifier app) throws Exception {
+        if (StorageLayer.isInMemDb(main) ||
+                Config.getConfig(app.getAsPublicTenantIdentifier(), main).isTelemetryDisabled()) {
+            // we do not send any info in this case since it's not under development / production env or the user
+            // has
+            // disabled Telemetry
+            return;
+        }
 
-            if (StorageLayer.isInMemDb(main) ||
-                    Config.getConfig(t, main).isTelemetryDisabled()) {
-                // we do not send any info in this case since it's not under development / production env or the user
-                // has
-                // disabled Telemetry
-                return;
-            }
+        ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENDING_TELEMETRY, null);
 
-            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENDING_TELEMETRY, null);
+        KeyValueInfo telemetryId = Telemetry.getTelemetryId(main, app);
 
-            KeyValueInfo telemetryId = Telemetry.getTelemetryId(main, t.toAppIdentifier());
+        String coreVersion = Version.getVersion(main).getCoreVersion();
 
-            String coreVersion = Version.getVersion(main).getCoreVersion();
+        // following the API spec mentioned here:
+        // https://github.com/supertokens/supertokens-core/issues/116#issuecomment-725465665
 
-            // following the API spec mentioned here:
-            // https://github.com/supertokens/supertokens-core/issues/116#issuecomment-725465665
+        JsonObject json = new JsonObject();
+        json.addProperty("telemetryId", telemetryId.value);
+        json.addProperty("superTokensVersion", coreVersion);
 
-            JsonObject json = new JsonObject();
-            json.addProperty("telemetryId", telemetryId.value);
-            json.addProperty("superTokensVersion", coreVersion);
+        String url = "https://api.supertokens.io/0/st/telemetry";
 
-            String url = "https://api.supertokens.io/0/st/telemetry";
-
-            // we call the API only if we are not testing the core, of if the request can be mocked (in case a test
-            // wants
-            // to use this)
-            if (!Main.isTesting || HttpRequestMocking.getInstance(main).getMockURL(REQUEST_ID, url) != null) {
-                HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 0);
-                ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENT_TELEMETRY, null);
-            }
+        // we call the API only if we are not testing the core, of if the request can be mocked (in case a test
+        // wants
+        // to use this)
+        if (!Main.isTesting || HttpRequestMocking.getInstance(main).getMockURL(REQUEST_ID, url) != null) {
+            HttpRequest.sendJsonPOSTRequest(main, REQUEST_ID, url, json, 10000, 10000, 0);
+            ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.SENT_TELEMETRY, null);
         }
     }
 

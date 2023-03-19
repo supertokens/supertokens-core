@@ -26,9 +26,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import org.jetbrains.annotations.TestOnly;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
 
@@ -36,7 +34,7 @@ public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
             ".DeleteExpiredAccessTokenSigningKeys";
 
     private DeleteExpiredAccessTokenSigningKeys(Main main, List<List<TenantIdentifier>> tenantsInfo) {
-        super("DeleteExpiredAccessTokenSigningKeys", main, tenantsInfo);
+        super("DeleteExpiredAccessTokenSigningKeys", main, tenantsInfo, true);
     }
 
     public static DeleteExpiredAccessTokenSigningKeys init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
@@ -56,17 +54,10 @@ public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
     }
 
     @Override
-    protected void doTask(List<TenantIdentifier> tenantIdentifier) throws Exception {
-        Set<AppIdentifier> seenApps = new HashSet<>();
-        for (TenantIdentifier t : tenantIdentifier) {
-            if (seenApps.contains(t.toAppIdentifier())) {
-                continue;
-            }
-            seenApps.add(t.toAppIdentifier());
-            if (Config.getConfig(t, main)
-                    .getAccessTokenSigningKeyDynamic()) {
-                AccessTokenSigningKey.getInstance(t.toAppIdentifier(), main).cleanExpiredAccessTokenSigningKeys();
-            }
+    protected void doTaskPerApp(AppIdentifier app) throws Exception {
+        if (Config.getConfig(app.getAsPublicTenantIdentifier(), main)
+                .getAccessTokenSigningKeyDynamic()) {
+            AccessTokenSigningKey.getInstance(app, main).cleanExpiredAccessTokenSigningKeys();
         }
     }
 

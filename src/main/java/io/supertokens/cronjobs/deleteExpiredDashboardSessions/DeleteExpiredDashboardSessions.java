@@ -20,9 +20,10 @@ import io.supertokens.Main;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
 
 import java.util.List;
@@ -33,7 +34,7 @@ public class DeleteExpiredDashboardSessions extends CronTask {
             ".DeleteExpiredDashboardSessions";
 
     private DeleteExpiredDashboardSessions(Main main, List<List<TenantIdentifier>> tenantsInfo) {
-        super("RemoveExpiredDashboardSessions", main, tenantsInfo);
+        super("RemoveExpiredDashboardSessions", main, tenantsInfo, false);
     }
 
     public static DeleteExpiredDashboardSessions init(Main main,
@@ -54,16 +55,11 @@ public class DeleteExpiredDashboardSessions extends CronTask {
     }
 
     @Override
-    protected void doTask(List<TenantIdentifier> tenantIdentifier) throws Exception {
-        if (StorageLayer.getStorage(tenantIdentifier.get(0), this.main).getType() != STORAGE_TYPE.SQL) {
+    protected void doTaskPerStorage(Storage storage) throws Exception {
+        if (storage.getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        for (TenantIdentifier t : tenantIdentifier) {
-            // we loop through all tenants here and not just pass the first tenant's app identifier cause
-            // a tenant may be pointing to a different db compared to its app
-            StorageLayer.getDashboardStorage(t.toAppIdentifier(), this.main).revokeExpiredSessions();
-        }
-
+        ((DashboardSQLStorage) storage).revokeExpiredSessions();
     }
 
     @Override

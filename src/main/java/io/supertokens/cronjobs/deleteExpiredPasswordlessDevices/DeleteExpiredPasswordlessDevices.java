@@ -39,7 +39,7 @@ public class DeleteExpiredPasswordlessDevices extends CronTask {
             + ".DeleteExpiredPasswordlessDevices";
 
     private DeleteExpiredPasswordlessDevices(Main main, List<List<TenantIdentifier>> tenantsInfo) {
-        super("DeleteExpiredPasswordlessDevices", main, tenantsInfo);
+        super("DeleteExpiredPasswordlessDevices", main, tenantsInfo, false);
     }
 
     public static DeleteExpiredPasswordlessDevices init(Main main,
@@ -55,39 +55,36 @@ public class DeleteExpiredPasswordlessDevices extends CronTask {
     }
 
     @Override
-    protected void doTask(List<TenantIdentifier> tenantIdentifier) throws Exception {
-        if (StorageLayer.getStorage(tenantIdentifier.get(0), this.main).getType() != STORAGE_TYPE.SQL) {
+    protected void doTaskPerTenant(TenantIdentifier tenantIdentifier) throws Exception {
+        if (StorageLayer.getStorage(tenantIdentifier, this.main).getType() != STORAGE_TYPE.SQL) {
             return;
         }
 
-        for (TenantIdentifier t : tenantIdentifier) {
-            PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(t, this.main);
+        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(tenantIdentifier, this.main);
 
-            long codeExpirationCutoff = System.currentTimeMillis() -
-                    Config.getConfig(t, main).getPasswordlessCodeLifetime();
-            PasswordlessCode[] expiredCodes = storage.getCodesBefore(t, codeExpirationCutoff);
-            Set<String> uniqueDevicesIdHashes = Stream.of(expiredCodes).map(code -> code.deviceIdHash)
-                    .collect(Collectors.toSet());
+        long codeExpirationCutoff = System.currentTimeMillis() -
+                Config.getConfig(tenantIdentifier, main).getPasswordlessCodeLifetime();
+        PasswordlessCode[] expiredCodes = storage.getCodesBefore(tenantIdentifier, codeExpirationCutoff);
+        Set<String> uniqueDevicesIdHashes = Stream.of(expiredCodes).map(code -> code.deviceIdHash)
+                .collect(Collectors.toSet());
 
-            for (String deviceIdHash : uniqueDevicesIdHashes) {
-                storage.startTransaction(con -> {
-                    PasswordlessDevice device = storage.getDevice_Transaction(t, con, deviceIdHash);
-                    if (device == null) {
-                        return null;
-                    }
-                    PasswordlessCode[] codes = storage.getCodesOfDevice_Transaction(t, con, deviceIdHash);
-
-                    if (Stream.of(codes).allMatch(code -> code.createdAt < codeExpirationCutoff)) {
-                        storage.deleteDevice_Transaction(t, con, deviceIdHash);
-                    }
-                    // We don't delete expired codes without the device because we want to detect if the submitted
-                    // user input code belongs to an expired code or if it's just incorrect.
-
+        for (String deviceIdHash : uniqueDevicesIdHashes) {
+            storage.startTransaction(con -> {
+                PasswordlessDevice device = storage.getDevice_Transaction(tenantIdentifier, con, deviceIdHash);
+                if (device == null) {
                     return null;
-                });
-            }
-        }
+                }
+                PasswordlessCode[] codes = storage.getCodesOfDevice_Transaction(tenantIdentifier, con, deviceIdHash);
 
+                if (Stream.of(codes).allMatch(code -> code.createdAt < codeExpirationCutoff)) {
+                    storage.deleteDevice_Transaction(tenantIdentifier, con, deviceIdHash);
+                }
+                // We don't delete expired codes without the device because we want to detect if the submitted
+                // user input code belongs to an expired code or if it's just incorrect.
+
+                return null;
+            });
+        }
     }
 
     @Override
