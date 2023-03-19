@@ -19,17 +19,19 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.config.Config;
+import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.session.SessionInfo;
 import io.supertokens.session.Session;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
-import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
+import io.supertokens.signingkeys.SigningKeys;
+import io.supertokens.signingkeys.SigningKeys.KeyInfo;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
@@ -64,6 +66,8 @@ public class SessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        SemVer version = super.getVersionFromRequest(req);
+
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         assert userId != null;
@@ -74,29 +78,34 @@ public class SessionAPI extends WebserverAPI {
         JsonObject userDataInDatabase = InputParser.parseJsonObjectOrThrowError(input, "userDataInDatabase", false);
         assert userDataInDatabase != null;
 
+        boolean useStaticSigningKey = Config.getConfig(main).getAccessTokenSigningKeyDynamic();
+        if (version.greaterThanOrEqualTo(SemVer.v2_19)) {
+            Boolean inputUseStaticKey = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
+
+            // useStaticKeyInput defaults to false, so we check if it has been explicitly set to true
+            useStaticSigningKey = Boolean.TRUE.equals(inputUseStaticKey);
+        }
         try {
             SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
-                    userDataInDatabase, enableAntiCsrf);
+                    userDataInDatabase, enableAntiCsrf, version.greaterThanOrEqualTo(SemVer.v2_19), useStaticSigningKey);
 
             JsonObject result = sessionInfo.toJsonObject();
 
             result.addProperty("status", "OK");
 
-            result.addProperty("jwtSigningPublicKey",
-                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value).publicKey);
-            result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
-
-            if (!super.getVersionFromRequest(req).equals(SemVer.v2_7) && !super.getVersionFromRequest(req).equals(SemVer.v2_8)) {
-                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getAllKeys();
-                JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
-                result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
+            if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_19)) {
+                result.remove("idRefreshToken");
+            } else {
+                Utils.addLegacySigningKeyInfos(main, result, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_19));
             }
 
             super.sendJsonResponse(200, result, resp);
+        } catch(AccessTokenPayloadError e) {
+            throw new ServletException(new BadRequestException(e.getMessage()));
         } catch (NoSuchAlgorithmException | StorageQueryException | InvalidKeyException | InvalidKeySpecException
-                | StorageTransactionLogicException | SignatureException | IllegalBlockSizeException
-                | BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException e) {
+                 | StorageTransactionLogicException | SignatureException | IllegalBlockSizeException
+                 | BadPaddingException | InvalidAlgorithmParameterException | NoSuchPaddingException |
+                 UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
     }

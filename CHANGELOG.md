@@ -7,10 +7,120 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
-### Changed
+### Breaking changes
 
 - Using an internal `SemVer` class to handle version numbers. This will make handling CDI version ranges easier.
+- Support for CDI version `2.19`
+  - Removed POST `/recipe/handshake`
+  - Added `useStaticSigningKey` into `createNewSession` (POST `/recipe/session`), replacing 
+    `access_token_signing_key_dynamic` used in CDI<=2.18
+  - Added `useStaticSigningKey` into `createSignedJWT` (POST `/recipe/jwt`)
+  - Added `checkDatabase` into `verifySession` (POST `/recipe/session/verify`), replacing 
+    `access_token_blacklisting` used in CDI<=2.18
+  - Removed `idRefreshToken`, `jwtSigningPublicKey`, `jwtSigningPublicKeyExpiryTime` and `jwtSigningPublicKeyList` 
+    from responses
+  - Deprecated GET `/recipe/jwt/jwks`
+  - Added GET `/.well-known/jwks.json`: a standard jwks
+- Added new access token version
+  - Uses standard prop names (i.e.: `sub` instead of `userId`)
+  - Contains the id of the signing key in the header (as `kid`)
+  - Stores the user payload merged into the root level, instead of the `userData` prop
+- Session handling function now throw if the user payload contains protected props (`sub`, `iat`, `exp`, 
+  `sessionHandle`, `refreshTokenHash1`, `parentRefreshTokenHash1`, `antiCsrfToken`)
+  - A related exception type was added as `AccessTokenPayloadError`
+- Refactored the handling of signing keys
+- `createNewSession` now takes a `useStaticKey` parameter instead of depending on the 
+  `access_token_signing_key_dynamic` config value
+- `createJWTToken` now supports signing by a dynamic key
+- `getSession` now takes a `checkDatabase` parameter instead of using the `access_token_blacklisting` config value 
+- Updated plugin interface version to 2.21
 
+### Configuration Changes
+
+- `access_token_signing_key_dynamic` is now deprecated, only used for requests with CDI<=2.18
+- `access_token_blacklisting` is now deprecated, only used for requests with CDI<=2.18
+- Renamed `access_token_signing_key_update_interval` to `access_token_dynamic_signing_key_update_interval`
+
+### Database Changes
+
+- Added new `useStaticKey` field into session info
+- Manual migration is also required if `access_token_signing_key_dynamic` was set to true
+
+#### Migration steps for SQL
+- If using `access_token_signing_key_dynamic` false:
+  - `ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true);`
+  - ```sql
+    INSERT INTO jwt_signing_keys(key_id, key_string, algorithm, created_at)
+      select CONCAT('s-', created_at_time) as key_id, value as key_string, 'RS256' as algorithm, created_at_time as created_at
+      from session_access_token_signing_keys;
+    ```
+- If using `access_token_signing_key_dynamic` true:
+  - `ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);` 
+
+#### Migration steps for MongoDB
+
+- If using `access_token_signing_key_dynamic` false:
+  - ```
+    db.session_info.update({},
+      {
+        "$set": {
+          "useStaticKey": true
+        }
+      });
+    ```
+  - ```
+    db.key_value.aggregate([
+      {
+        "$match": {
+          _id: "access_token_signing_key_list"
+        }
+      },
+      {
+        $unwind: "$keys"
+      },
+      {
+        $addFields: {
+          _id: {
+            "$concat": [
+              "s-",
+              {
+                $convert: {
+                  input: "$keys.created_at_time",
+                  to: "string"
+                }
+              }
+            ]
+          },
+          "key_string": "$keys.value",
+          "algorithm": "RS256",
+          "created_at": "$keys.created_at_time",
+          
+        }
+      },
+      {
+        "$project": {
+          "keys": 0,
+          
+        }
+      },
+      {
+        "$merge": {
+          "into": "jwt_signing_keys",
+          
+        }
+      }
+    ]);
+    ```
+
+- If using `access_token_signing_key_dynamic` true:
+  - ```
+    db.session_info.update({},
+      {
+        "$set": {
+          "useStaticKey": false
+        }
+      });
+    ```
 ## [4.4.0] - 2023-02-21
 
 ### Added

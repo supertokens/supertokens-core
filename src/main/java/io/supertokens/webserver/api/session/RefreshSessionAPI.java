@@ -15,19 +15,19 @@
  */
 
 package io.supertokens.webserver.api.session;
-
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.Main;
+import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.UnauthorisedException;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -58,14 +58,21 @@ public class RefreshSessionAPI extends WebserverAPI {
         assert enableAntiCsrf != null;
         assert refreshToken != null;
 
+        SemVer version = super.getVersionFromRequest(req);
         try {
             SessionInformationHolder sessionInfo = Session.refreshSession(main, refreshToken, antiCsrfToken,
-                    enableAntiCsrf);
+                    enableAntiCsrf,  version.greaterThanOrEqualTo((SemVer.v2_19)));
             JsonObject result = sessionInfo.toJsonObject();
+
+            if (version.greaterThanOrEqualTo(SemVer.v2_19)) {
+                result.remove("idRefreshToken");
+            }
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
+        } catch(AccessTokenPayloadError e) {
+            throw new ServletException(new BadRequestException(e.getMessage()));
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();

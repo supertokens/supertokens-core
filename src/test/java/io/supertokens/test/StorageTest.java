@@ -30,6 +30,7 @@ import io.supertokens.pluginInterface.sqlStorage.SQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.utils.SemVer;
 import io.supertokens.version.Version;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -661,6 +662,7 @@ public class StorageTest {
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
+        request.addProperty("useStaticKey", false);
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -713,7 +715,7 @@ public class StorageTest {
     @Test
     public void multipleParallelTransactionTest() throws InterruptedException, IOException {
         String[] args = { "../" };
-        Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00005");
+        Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00005");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -762,7 +764,7 @@ public class StorageTest {
                             + "\"version\": \"nDVersion\"" + "}" + "}" + "}";
                     HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                             "http://localhost:3567/recipe/handshake", new JsonParser().parse(jsonInput), 10000, 20000,
-                            null, Utils.getCdiVersionStringLatestForTests(), "session");
+                            null, SemVer.v2_18.get(), "session");
                     success = true;
                     break;
                 } catch (Exception error) {

@@ -23,7 +23,8 @@ import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -143,7 +144,7 @@ public class HandshakeAPITest2_7 {
     public void changingSigningKeyHandshakeAPITest() throws Exception {
         String[] args = { "../" };
 
-        Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00081"); // 0.00027*3 = 3 seconds
+        Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00081"); // 0.00027*3 = 3 seconds
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -157,7 +158,7 @@ public class HandshakeAPITest2_7 {
         assertEquals(response.entrySet().size(), 6);
 
         assertEquals(response.get("jwtSigningPublicKey").getAsString(), new io.supertokens.utils.Utils.PubPriKey(
-                AccessTokenSigningKey.getInstance(process.main).getLatestIssuedKey().value).publicKey);
+                SigningKeys.getInstance(process.main).getLatestIssuedDynamicKey().value).publicKey);
 
         Thread.sleep(4000);
 
@@ -171,7 +172,7 @@ public class HandshakeAPITest2_7 {
         // the previous signing key
         assertTrue(changedResponse.get("jwtSigningPublicKey").getAsString()
                 .equals(new io.supertokens.utils.Utils.PubPriKey(
-                        AccessTokenSigningKey.getInstance(process.main).getLatestIssuedKey().value).publicKey)
+                        SigningKeys.getInstance(process.main).getLatestIssuedDynamicKey().value).publicKey)
                 && !(changedResponse.get("jwtSigningPublicKey").getAsString()
                         .equals(response.get("jwtSigningPublicKey").getAsString())));
 
@@ -186,11 +187,11 @@ public class HandshakeAPITest2_7 {
 
         // check jwtSigningPublicKey
         assertEquals(response.get("jwtSigningPublicKey").getAsString(), new io.supertokens.utils.Utils.PubPriKey(
-                AccessTokenSigningKey.getInstance(process.main).getLatestIssuedKey().value).publicKey);
+                SigningKeys.getInstance(process.main).getLatestIssuedDynamicKey().value).publicKey);
 
         // check jwtSigningPublicKeyExpiryTime
         assertEquals(response.get("jwtSigningPublicKeyExpiryTime").getAsLong(),
-                AccessTokenSigningKey.getInstance(process.getProcess()).getKeyExpiryTime());
+                SigningKeys.getInstance(process.getProcess()).getDynamicSigningKeyExpiryTime());
 
         // check accessTokenBlacklistingEnabled
         assertEquals(response.get("accessTokenBlacklistingEnabled").getAsBoolean(),

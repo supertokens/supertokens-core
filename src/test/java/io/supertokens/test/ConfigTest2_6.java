@@ -224,9 +224,8 @@ public class ConfigTest2_6 {
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/info.log");
         assertEquals("Config error log path did not match default", config.getErrorLogPath(process.getProcess()),
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/error.log");
-        assertTrue("Config access signing key dynamic did not match default", config.getAccessTokenSigningKeyDynamic());
         assertEquals("Config access signing key interval did not match default",
-                config.getAccessTokenSigningKeyUpdateInterval(), 7 * 24 * 60 * 60 * 1000);
+                config.getAccessTokenDynamicSigningKeyUpdateInterval(), 7 * 24 * 60 * 60 * 1000);
 
         assertEquals(config.getHost(process.getProcess()), "localhost");
         assertEquals(config.getPort(process.getProcess()), 3567);

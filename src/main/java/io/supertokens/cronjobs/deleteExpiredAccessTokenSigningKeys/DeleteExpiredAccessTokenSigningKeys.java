@@ -22,7 +22,7 @@ import io.supertokens.config.Config;
 import io.supertokens.config.CoreConfig;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
 
 public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
 
@@ -58,7 +58,7 @@ public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
 
         // This can get out of sync with the keys expiring, but this shouldn't be an issue. We never use the expired
         // keys anyway.
-        return Math.max((int) (config.getAccessTokenSigningKeyUpdateInterval() / 1000), 1);
+        return Math.max((int) (config.getAccessTokenDynamicSigningKeyUpdateInterval() / 1000), 1);
     }
 
     @Override

@@ -64,7 +64,7 @@ public class JWTCreateTest {
         String jwksDomain = "http://localhost";
         long validity = 3600;
 
-        JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
+        JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity, false);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -86,13 +86,13 @@ public class JWTCreateTest {
         String jwksDomain = "http://localhost";
         long validity = 63072000;
 
-        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
+        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity, false);
 
         DecodedJWT decodedJWT = JWT.decode(jwt);
 
         // compares the (expiry time in seconds) - (issued at time in seconds) -1
         // 1 is added to expiry time to make sure expiry is atleast 1 second
-        assertEquals((decodedJWT.getExpiresAt().getTime() / 1000 - decodedJWT.getIssuedAt().getTime() / 1000) - 1,
+        assertEquals((decodedJWT.getExpiresAt().getTime() / 1000 - decodedJWT.getIssuedAt().getTime() / 1000),
                 validity);
 
         process.kill();
@@ -115,7 +115,7 @@ public class JWTCreateTest {
         long validity = 3600;
 
         try {
-            JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
+            JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity, false);
             fail("JWTSigningFunctions.createJWTToken succeeded when it should have failed");
         } catch (UnsupportedJWTSigningAlgorithmException e) {
             // Do nothing
@@ -140,7 +140,7 @@ public class JWTCreateTest {
         String jwksDomain = "http://localhost";
         long validity = 3600;
 
-        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
+        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity, false);
 
         DecodedJWT decodedJWT = JWT.decode(jwt);
 
@@ -187,7 +187,7 @@ public class JWTCreateTest {
         long expectedIssuedAtTime = System.currentTimeMillis() / 1000;
         long expectedExpiry = expectedIssuedAtTime + validity;
 
-        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
+        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity, false);
 
         DecodedJWT decodedJWT = JWT.decode(jwt);
 
@@ -234,7 +234,7 @@ public class JWTCreateTest {
         String jwksDomain = "http://localhost";
         long validity = 3600;
 
-        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
+        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity, false);
 
         DecodedJWT decodedJWT = JWT.decode(jwt);
 
@@ -269,7 +269,7 @@ public class JWTCreateTest {
         String jwksDomain = "http://localhost";
         long validity = 3600;
 
-        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
+        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity, false);
         DecodedJWT decodedJWT = JWT.decode(jwt);
 
         String issuer = decodedJWT.getIssuer();

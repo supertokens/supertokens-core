@@ -20,20 +20,19 @@ core_config_version: 0
 # access_token_validity:
 
 
-# (OPTIONAL | Default: false) boolean value. If true, allows for immediate revocation of any access token.
-# Keep in mind that setting this to true will result in a db query for each API call that
-# requires authentication.
+# (OPTIONAL | Default: false) boolean value. Deprecated, please see changelog. Only used in CDI<=2.18
+# If true, allows for immediate revocation of any access token. Keep in mind that setting this to true will result
+# in a db query for each API call that requires authentication.
 # access_token_blacklisting:
 
 
-# (OPTIONAL | Default: true) boolean value. If this is set to true, the JWT (access token)
-# signing key will change every fixed intervale of time.
+# (OPTIONAL | Default: true) boolean value. Deprecated, please see changelog.
+# If this is set to true, the access tokens created using CDI<=2.18 will be signed using a static signing key.
 # access_token_signing_key_dynamic:
 
 
-# (OPTIONAL | Default:168) integer value. Time in hours for how frequently the JWT (access token) signing key
-# will change. This value only makes sense if "access_token_signing_key_dynamic" is true.
-# access_token_signing_key_update_interval:
+# (OPTIONAL | Default:168) integer value. Time in hours for how frequently the dynamic signing key will change.
+# access_token_dynamic_signing_key_update_interval:
 
 
 # (OPTIONAL | Default: 144000) double value. Time in mins for how long a refresh token is valid for.

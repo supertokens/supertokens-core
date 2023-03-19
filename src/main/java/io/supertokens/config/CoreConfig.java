@@ -67,7 +67,7 @@ public class CoreConfig {
     private boolean access_token_signing_key_dynamic = true;
 
     @JsonProperty
-    private double access_token_signing_key_update_interval = 168; // in hours
+    private double access_token_dynamic_signing_key_update_interval = 168; // in hours
 
     @JsonProperty
     private int port = 3567;
@@ -296,9 +296,8 @@ public class CoreConfig {
         return access_token_signing_key_dynamic;
     }
 
-    public long getAccessTokenSigningKeyUpdateInterval() {
-        return access_token_signing_key_dynamic ? (long) (access_token_signing_key_update_interval * 3600 * 1000)
-                : (10L * 365 * 24 * 3600 * 1000);
+    public long getAccessTokenDynamicSigningKeyUpdateInterval() {
+        return (long) (access_token_dynamic_signing_key_update_interval * 3600 * 1000);
     }
 
     public String[] getAPIKeys() {
@@ -361,9 +360,9 @@ public class CoreConfig {
         }
 
         if (!Main.isTesting || validityTesting) { // since in testing we make this really small
-            if (access_token_signing_key_update_interval < 1) {
+            if (access_token_dynamic_signing_key_update_interval < 1) {
                 throw new QuitProgramException(
-                        "'access_token_signing_key_update_interval' must be greater than, equal to 1 hour. The "
+                        "'access_token_dynamic_signing_key_update_interval' must be greater than, equal to 1 hour. The "
                                 + "config file can be found here: " + getConfigFileLocation(main));
             }
         }

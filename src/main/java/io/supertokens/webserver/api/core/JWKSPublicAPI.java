@@ -1,5 +1,5 @@
 /*
- *    Copyright (c) 2021, VRAI Labs and/or its affiliates. All rights reserved.
+ *    Copyright (c) 2023, VRAI Labs and/or its affiliates. All rights reserved.
  *
  *    This software is licensed under the Apache License, Version 2.0 (the
  *    "License") as published by the Apache Software Foundation.
@@ -14,39 +14,45 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api.jwt;
+package io.supertokens.webserver.api.core;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import io.supertokens.Main;
-import io.supertokens.jwt.JWTSigningFunctions;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.security.NoSuchAlgorithmException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.List;
 
-@Deprecated
-public class JWKSAPI extends WebserverAPI {
-    private static final long serialVersionUID = -3475605151671191143L;
-
-    public JWKSAPI(Main main) {
-        super(main, RECIPE_ID.JWT.toString());
+public class JWKSPublicAPI extends WebserverAPI {
+    public JWKSPublicAPI(Main main) {
+        super(main, "");
     }
 
     @Override
+    protected boolean versionNeeded(HttpServletRequest req) {
+        return false;
+    }
+
+
+    @Override
+    protected boolean checkAPIKey(HttpServletRequest req) { return false; }
+
+
+    @Override
     public String getPath() {
-        return "/recipe/jwt/jwks";
+        return "/.well-known/jwks.json";
     }
 
     @Override
@@ -56,7 +62,6 @@ public class JWKSAPI extends WebserverAPI {
             JsonObject reply = new JsonObject();
             JsonArray jwksJsonArray = new JsonParser().parse(new Gson().toJson(jwks)).getAsJsonArray();
             reply.add("keys", jwksJsonArray);
-            reply.addProperty("status", "OK");
             super.sendJsonResponse(200, reply, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | NoSuchAlgorithmException
                 | InvalidKeySpecException e) {

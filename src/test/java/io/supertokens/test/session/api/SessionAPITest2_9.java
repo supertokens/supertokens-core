@@ -19,7 +19,10 @@ package io.supertokens.test.session.api;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
+import io.supertokens.session.accessToken.AccessToken;
+import io.supertokens.session.jwt.JWT;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -29,6 +32,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
+
+import java.util.Base64;
 
 import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotNull;
@@ -138,6 +143,36 @@ public class SessionAPITest2_9 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
+    }
+
+    @Test
+    public void successOutputCheckWithStaticAccessTokenSigningKey() throws Exception {
+        Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
+
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        JsonObject request = new JsonObject();
+        request.addProperty("userId", userId);
+        request.add("userDataInJWT", userDataInJWT);
+        request.add("userDataInDatabase", userDataInDatabase);
+        request.addProperty("enableAntiCsrf", false);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_9.get(),
+                "session");
+        checkSessionResponse(response, process, userId, userDataInJWT);
+        assertFalse(response.has("antiCsrfToken"));
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
     @Test
@@ -274,7 +309,7 @@ public class SessionAPITest2_9 {
     }
 
     public static void checkSessionResponse(JsonObject response, TestingProcessManager.TestingProcess process,
-            String userId, JsonObject userDataInJWT) {
+            String userId, JsonObject userDataInJWT) throws JWT.JWTException {
         assertNotNull(response.get("session").getAsJsonObject().get("handle").getAsString());
         assertEquals(response.get("session").getAsJsonObject().get("userId").getAsString(), userId);
         assertEquals(response.get("session").getAsJsonObject().get("userDataInJWT").getAsJsonObject().toString(),
@@ -306,5 +341,17 @@ public class SessionAPITest2_9 {
             assertTrue(respPubKeyList.get(i).getAsJsonObject().has("createdAt"));
             assertEquals(respPubKeyList.get(i).getAsJsonObject().entrySet().size(), 3);
         }
+
+        JWT.JWTPreParseInfo preParseInfo = JWT.preParseJWTInfo(response.get("accessToken").getAsJsonObject().get("token").getAsString());
+        assertEquals(preParseInfo.version, AccessToken.VERSION.V2);
+        assertNull(preParseInfo.kid);
+        Base64.getDecoder().decode(preParseInfo.header);
+        Base64.getDecoder().decode(preParseInfo.payload);
+        Base64.getDecoder().decode(preParseInfo.signature);
+
+
+        JsonObject payload = new JsonParser().parse(io.supertokens.utils.Utils.convertFromBase64(preParseInfo.payload)).getAsJsonObject();
+        assertTrue(payload.has("userData"));
+        assertEquals(payload.get("userData").getAsJsonObject().toString(), userDataInJWT.toString());
     }
 }
