@@ -48,14 +48,14 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 #### Migration steps for SQL
 - If using `access_token_signing_key_dynamic` false:
-  - `ALTER TABLE table ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true);`
+  - `ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(true);`
   - ```sql
     INSERT INTO jwt_signing_keys(key_id, key_string, algorithm, created_at)
       select CONCAT('s-', created_at_time) as key_id, value as key_string, 'RS256' as algorithm, created_at_time as created_at
       from session_access_token_signing_keys;
     ```
 - If using `access_token_signing_key_dynamic` true:
-  - `ALTER TABLE table ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);` 
+  - `ALTER TABLE session_info ADD COLUMN use_static_key BOOLEAN NOT NULL DEFAULT(false);` 
 
 #### Migration steps for MongoDB
 
