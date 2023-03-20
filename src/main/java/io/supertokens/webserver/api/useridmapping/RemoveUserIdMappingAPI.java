@@ -22,7 +22,7 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdExce
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.useridmapping.AppIdentifierStorageAndUserIdMapping;
+import io.supertokens.AppIdentifierStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
@@ -85,7 +85,7 @@ public class RemoveUserIdMappingAPI extends WebserverAPI {
 
         try {
             AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
-                    this.getAppIdentifierStorageAndUserIdMapping(req, userId, userIdType);
+                    this.getAppIdentifierStorageAndUserIdMappingFromRequest(req, userId, userIdType);
 
             boolean didMappingExist = UserIdMapping.deleteUserIdMapping(
                     appIdentifierStorageAndUserIdMapping.appIdentifier, userId, userIdType, force);

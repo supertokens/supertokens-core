@@ -67,7 +67,7 @@ public class SignInAPI extends WebserverAPI {
         String normalisedEmail = Utils.normaliseEmail(email);
 
         try {
-            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            TenantIdentifier tenantIdentifier = getTenantIdentifierStorageFromRequest(req);
             UserInfo user = EmailPassword.signIn(tenantIdentifier, super.main, normalisedEmail, password);
 
             // if a userIdMapping exists, pass the externalUserId to the response

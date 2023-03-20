@@ -54,7 +54,7 @@ public class GetUsersByEmailAPI extends WebserverAPI {
         // this API is tenant specific
         try {
             String email = InputParser.getQueryParamOrThrowError(req, "email", false);
-            TenantIdentifier tenantIdentifier = this.getTenantIdentifier(req);
+            TenantIdentifier tenantIdentifier = this.getTenantIdentifierStorageFromRequest(req);
             UserInfo[] users = ThirdParty.getUsersByEmail(tenantIdentifier, super.main, email);
 
             // return the externalUserId if a mapping exists for a user

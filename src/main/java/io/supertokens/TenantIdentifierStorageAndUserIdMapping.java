@@ -14,7 +14,7 @@
  *    under the License.
  */
 
-package io.supertokens.useridmapping;
+package io.supertokens;
 
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;

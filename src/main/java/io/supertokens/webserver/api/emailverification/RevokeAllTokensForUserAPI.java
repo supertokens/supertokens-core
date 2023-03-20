@@ -49,7 +49,7 @@ public class RevokeAllTokensForUserAPI extends WebserverAPI {
         String email = InputParser.parseStringOrThrowError(input, "email", false);
 
         try {
-            EmailVerification.revokeAllTokens(this.getTenantIdentifier(req), main, userId,
+            EmailVerification.revokeAllTokens(this.getTenantIdentifierStorageFromRequest(req), main, userId,
                     email);
 
             JsonObject response = new JsonObject();

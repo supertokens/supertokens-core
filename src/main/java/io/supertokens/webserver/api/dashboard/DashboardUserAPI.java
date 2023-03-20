@@ -202,7 +202,7 @@ public class DashboardUserAPI extends WebserverAPI {
             if (userId != null) {
                 // normalize userId
                 userId = Utils.normalizeAndValidateStringParam(userId, "userId");
-                boolean didUserExist = Dashboard.deleteUserWithUserId(super.getTenantIdentifier(req).toAppIdentifier(),
+                boolean didUserExist = Dashboard.deleteUserWithUserId(super.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(),
                         main, userId);
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
@@ -216,7 +216,7 @@ public class DashboardUserAPI extends WebserverAPI {
             if (email != null) {
                 // normalize email
                 email = Utils.normalizeAndValidateStringParam(email, "email");
-                boolean didUserExist = Dashboard.deleteUserWithEmail(super.getTenantIdentifier(req).toAppIdentifier(),
+                boolean didUserExist = Dashboard.deleteUserWithEmail(super.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(),
                         main, email);
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");

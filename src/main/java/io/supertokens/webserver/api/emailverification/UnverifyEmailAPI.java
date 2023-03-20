@@ -49,7 +49,7 @@ public class UnverifyEmailAPI extends WebserverAPI {
         String email = InputParser.parseStringOrThrowError(input, "email", false);
 
         try {
-            EmailVerification.unverifyEmail(this.getTenantIdentifier(req), main, userId,
+            EmailVerification.unverifyEmail(this.getTenantIdentifierStorageFromRequest(req), main, userId,
                     email);
 
             JsonObject response = new JsonObject();

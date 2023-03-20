@@ -88,8 +88,8 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                     super.sendTextResponse(200,
-                            this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifier(req).getTenantId(), resp);
+                            this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                    this.getTenantIdentifierStorageFromRequest(req).getTenantId(), resp);
                 }
             });
         }
@@ -225,8 +225,8 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                     super.sendTextResponse(200,
-                            this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifier(req).getTenantId(), resp);
+                            this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                    this.getTenantIdentifierStorageFromRequest(req).getTenantId(), resp);
                 }
             });
         }
@@ -363,8 +363,8 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                     super.sendTextResponse(200,
-                            this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifier(req).getTenantId(), resp);
+                            this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                    this.getTenantIdentifierStorageFromRequest(req).getTenantId(), resp);
                 }
             });
         }
@@ -511,8 +511,8 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                     super.sendTextResponse(200,
-                            this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifier(req).getTenantId(), resp);
+                            this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                    this.getTenantIdentifierStorageFromRequest(req).getTenantId(), resp);
                 }
             });
         }
@@ -659,8 +659,8 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                     super.sendTextResponse(200,
-                            this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifier(req).getTenantId(), resp);
+                            this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                    this.getTenantIdentifierStorageFromRequest(req).getTenantId(), resp);
                 }
             });
         }
@@ -804,8 +804,8 @@ public class PathRouterTest extends Mockito {
                     @Override
                     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                         super.sendTextResponse(200,
-                                this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                        this.getTenantIdentifier(req).getTenantId() +
+                                this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                        this.getTenantIdentifierStorageFromRequest(req).getTenantId() +
                                         ",",
                                 resp);
                     }
@@ -826,8 +826,8 @@ public class PathRouterTest extends Mockito {
                     @Override
                     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                         super.sendTextResponse(200,
-                                this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                        this.getTenantIdentifier(req).getTenantId() +
+                                this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                        this.getTenantIdentifierStorageFromRequest(req).getTenantId() +
                                         ",r1",
                                 resp);
                     }
@@ -850,8 +850,8 @@ public class PathRouterTest extends Mockito {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                 super.sendTextResponse(200,
-                        this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                this.getTenantIdentifier(req).getTenantId(), resp);
+                        this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                this.getTenantIdentifierStorageFromRequest(req).getTenantId(), resp);
             }
         });
 
@@ -919,8 +919,8 @@ public class PathRouterTest extends Mockito {
                     @Override
                     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                         super.sendTextResponse(200,
-                                this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                        this.getTenantIdentifier(req).getTenantId() +
+                                this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                        this.getTenantIdentifierStorageFromRequest(req).getTenantId() +
                                         ",",
                                 resp);
                     }
@@ -944,8 +944,8 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                     super.sendTextResponse(200,
-                            this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifier(req).getTenantId(), resp);
+                            this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                    this.getTenantIdentifierStorageFromRequest(req).getTenantId(), resp);
                 }
             });
             fail();
@@ -982,8 +982,8 @@ public class PathRouterTest extends Mockito {
                         @Override
                         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                             super.sendTextResponse(200,
-                                    this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                            this.getTenantIdentifier(req).getTenantId() + ",",
+                                    this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                            this.getTenantIdentifierStorageFromRequest(req).getTenantId() + ",",
                                     resp);
                         }
                     }, new WebserverAPI(process.getProcess(), "r1") {
@@ -1003,8 +1003,8 @@ public class PathRouterTest extends Mockito {
                         @Override
                         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                             super.sendTextResponse(200,
-                                    this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                            this.getTenantIdentifier(req).getTenantId() + ",r1",
+                                    this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                            this.getTenantIdentifierStorageFromRequest(req).getTenantId() + ",r1",
                                     resp);
                         }
                     }));
@@ -1032,8 +1032,8 @@ public class PathRouterTest extends Mockito {
                         @Override
                         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                             super.sendTextResponse(200,
-                                    this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                            this.getTenantIdentifier(req).getTenantId() + ",",
+                                    this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                            this.getTenantIdentifierStorageFromRequest(req).getTenantId() + ",",
                                     resp);
                         }
                     }, new WebserverAPI(process.getProcess(), "r1") {
@@ -1053,8 +1053,8 @@ public class PathRouterTest extends Mockito {
                         @Override
                         protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                             super.sendTextResponse(200,
-                                    this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                            this.getTenantIdentifier(req).getTenantId() + ",r1",
+                                    this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                            this.getTenantIdentifierStorageFromRequest(req).getTenantId() + ",r1",
                                     resp);
                         }
                     }));
@@ -1117,8 +1117,8 @@ public class PathRouterTest extends Mockito {
 
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-                super.sendTextResponse(200, super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                        this.getTenantIdentifier(req).getTenantId(), resp);
+                super.sendTextResponse(200, super.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                        this.getTenantIdentifierStorageFromRequest(req).getTenantId(), resp);
             }
         });
 
@@ -1206,8 +1206,8 @@ public class PathRouterTest extends Mockito {
 
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-                super.sendTextResponse(200, super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                this.getTenantIdentifier(req).getTenantId(),
+                super.sendTextResponse(200, super.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                this.getTenantIdentifierStorageFromRequest(req).getTenantId(),
                         resp);
             }
         });
@@ -1299,8 +1299,8 @@ public class PathRouterTest extends Mockito {
 
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-                super.sendTextResponse(200, super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                this.getTenantIdentifier(req).getTenantId(),
+                super.sendTextResponse(200, super.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                this.getTenantIdentifierStorageFromRequest(req).getTenantId(),
                         resp);
             }
         });
@@ -1351,9 +1351,9 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                     super.sendTextResponse(200,
-                            this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifier(req).getAppId() + "," +
-                                    this.getTenantIdentifier(req).getTenantId(), resp);
+                            this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                    this.getTenantIdentifierStorageFromRequest(req).getAppId() + "," +
+                                    this.getTenantIdentifierStorageFromRequest(req).getTenantId(), resp);
                 }
             });
         }
@@ -1572,9 +1572,9 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                     super.sendTextResponse(200,
-                            this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifier(req).getAppId() + "," +
-                                    this.getTenantIdentifier(req).getTenantId(), resp);
+                            this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                    this.getTenantIdentifierStorageFromRequest(req).getAppId() + "," +
+                                    this.getTenantIdentifierStorageFromRequest(req).getTenantId(), resp);
                 }
             });
         }
@@ -1777,9 +1777,9 @@ public class PathRouterTest extends Mockito {
                 @Override
                 protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                     super.sendTextResponse(200,
-                            this.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                    this.getTenantIdentifier(req).getAppId() + "," +
-                                    this.getTenantIdentifier(req).getTenantId(), resp);
+                            this.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                    this.getTenantIdentifierStorageFromRequest(req).getAppId() + "," +
+                                    this.getTenantIdentifierStorageFromRequest(req).getTenantId(), resp);
                 }
             });
         }
@@ -2004,8 +2004,8 @@ public class PathRouterTest extends Mockito {
 
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-                super.sendTextResponse(200, super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                this.getTenantIdentifier(req).getAppId() + "," + this.getTenantIdentifier(req).getTenantId(),
+                super.sendTextResponse(200, super.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                this.getTenantIdentifierStorageFromRequest(req).getAppId() + "," + this.getTenantIdentifierStorageFromRequest(req).getTenantId(),
                         resp);
             }
         });
@@ -2094,8 +2094,8 @@ public class PathRouterTest extends Mockito {
 
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-                super.sendTextResponse(200, super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                this.getTenantIdentifier(req).getAppId() + "," + this.getTenantIdentifier(req).getTenantId(),
+                super.sendTextResponse(200, super.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                this.getTenantIdentifierStorageFromRequest(req).getAppId() + "," + this.getTenantIdentifierStorageFromRequest(req).getTenantId(),
                         resp);
             }
         });
@@ -2215,8 +2215,8 @@ public class PathRouterTest extends Mockito {
 
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-                super.sendTextResponse(200, super.getTenantIdentifier(req).getConnectionUriDomain() + "," +
-                                this.getTenantIdentifier(req).getAppId() + "," + this.getTenantIdentifier(req).getTenantId(),
+                super.sendTextResponse(200, super.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                this.getTenantIdentifierStorageFromRequest(req).getAppId() + "," + this.getTenantIdentifierStorageFromRequest(req).getTenantId(),
                         resp);
             }
         });

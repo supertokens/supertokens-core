@@ -23,7 +23,7 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.useridmapping.AppIdentifierStorageAndUserIdMapping;
+import io.supertokens.AppIdentifierStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -53,7 +53,7 @@ public class DeleteUserAPI extends WebserverAPI {
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         try {
             AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
-                    this.getAppIdentifierStorageAndUserIdMapping(req, userId, UserIdType.SUPERTOKENS);
+                    this.getAppIdentifierStorageAndUserIdMappingFromRequest(req, userId, UserIdType.SUPERTOKENS);
 
             AuthRecipe.deleteUser(appIdentifierStorageAndUserIdMapping.appIdentifier, userId);
         } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {

@@ -57,7 +57,7 @@ public class DashboardSignInAPI extends WebserverAPI {
         password = Utils.normalizeAndValidateStringParam(password, "password");
 
         try {
-            String sessionId = Dashboard.signInDashboardUser(super.getTenantIdentifier(req).toAppIdentifier(), main,
+            String sessionId = Dashboard.signInDashboardUser(super.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(), main,
                     email, password);
             if (sessionId == null) {
                 JsonObject response = new JsonObject();

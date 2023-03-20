@@ -51,7 +51,7 @@ public class GetRolesForUserAPI extends WebserverAPI {
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         try {
 
-            String[] userRoles = UserRoles.getRolesForUser(this.getTenantIdentifier(req),
+            String[] userRoles = UserRoles.getRolesForUser(this.getTenantIdentifierStorageFromRequest(req),
                     main, userId);
             JsonArray arr = new JsonArray();
             for (String s : userRoles) {

@@ -59,7 +59,7 @@ public class AddUserRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean didUserAlreadyHaveRole = !UserRoles.addRoleToUser(this.getTenantIdentifier(req), main, userId,
+            boolean didUserAlreadyHaveRole = !UserRoles.addRoleToUser(this.getTenantIdentifierStorageFromRequest(req), main, userId,
                     role);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

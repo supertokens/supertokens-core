@@ -112,7 +112,7 @@ public class EmailPassword {
 
             try {
                 UserInfo user = new UserInfo(userId, email, hashedPassword, timeJoined);
-                tenantIdentifier.getEmailPasswordStorage().signUp(tenantIdentifier, user);
+                ((EmailPasswordSQLStorage) tenantIdentifier.getStorage()).signUp(tenantIdentifier, user);
 
                 return user;
 
@@ -161,7 +161,7 @@ public class EmailPassword {
             long timeJoined = System.currentTimeMillis();
 
             UserInfo userInfo = new UserInfo(userId, email, passwordHash, timeJoined);
-            EmailPasswordSQLStorage storage = tenantIdentifier.getEmailPasswordStorage();
+            EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) tenantIdentifier.getStorage();
 
             try {
                 storage.signUp(tenantIdentifier, userInfo);
@@ -223,7 +223,7 @@ public class EmailPassword {
             throw new BadPermissionException("Email password login not enabled for tenant");
         }
 
-        UserInfo user = tenantIdentifier.getEmailPasswordStorage()
+        UserInfo user = ((EmailPasswordSQLStorage) tenantIdentifier.getStorage())
                 .getUserInfoUsingEmail(tenantIdentifier, email);
 
         if (user == null) {
@@ -297,7 +297,7 @@ public class EmailPassword {
             String hashedToken = Utils.hashSHA256(token);
 
             try {
-                tenantIdentifier.getEmailPasswordStorage().addPasswordResetToken(
+                ((EmailPasswordSQLStorage) tenantIdentifier.getStorage()).addPasswordResetToken(
                         tenantIdentifier.toAppIdentifier(), new PasswordResetTokenInfo(userId,
                                 hashedToken, System.currentTimeMillis() +
                                 getPasswordResetTokenLifetime(tenantIdentifier, main)));
@@ -328,7 +328,7 @@ public class EmailPassword {
         String hashedToken = Utils.hashSHA256(token);
         String hashedPassword = PasswordHashing.getInstance(main)
                 .createHashWithSalt(tenantIdentifier.toAppIdentifier(), password);
-        EmailPasswordSQLStorage storage = tenantIdentifier.getEmailPasswordStorage();
+        EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) tenantIdentifier.getStorage();
 
         PasswordResetTokenInfo resetInfo = storage.getPasswordResetTokenInfo(tenantIdentifier.toAppIdentifier(),
                 hashedToken);
@@ -400,7 +400,7 @@ public class EmailPassword {
                                                   @Nullable String password)
             throws StorageQueryException, StorageTransactionLogicException,
             UnknownUserIdException, DuplicateEmailException, TenantOrAppNotFoundException {
-        EmailPasswordSQLStorage storage = appIdentifier.getEmailPasswordStorage();
+        EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) appIdentifier.getStorage();
         try {
             storage.startTransaction(transaction -> {
                 try {
@@ -456,11 +456,11 @@ public class EmailPassword {
 
     public static UserInfo getUserUsingId(AppIdentifier appIdentifier, String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        return appIdentifier.getEmailPasswordStorage().getUserInfoUsingId(appIdentifier, userId);
+        return ((EmailPasswordSQLStorage) appIdentifier.getStorage()).getUserInfoUsingId(appIdentifier, userId);
     }
 
     public static UserInfo getUserUsingEmail(TenantIdentifier tenantIdentifier, String email)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        return tenantIdentifier.getEmailPasswordStorage().getUserInfoUsingEmail(tenantIdentifier, email);
+        return ((EmailPasswordSQLStorage) tenantIdentifier.getStorage()).getUserInfoUsingEmail(tenantIdentifier, email);
     }
 }

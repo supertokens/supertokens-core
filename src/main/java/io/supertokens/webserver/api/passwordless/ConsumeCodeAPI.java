@@ -79,12 +79,12 @@ public class ConsumeCodeAPI extends WebserverAPI {
         }
 
         try {
-            ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(this.getTenantIdentifier(req), main,
+            ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(this.getTenantIdentifierStorageFromRequest(req), main,
                     deviceId, deviceIdHash,
                     userInputCode, linkCode);
 
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    this.getTenantIdentifier(req).toAppIdentifier(), consumeCodeResponse.user.id, UserIdType.ANY);
+                    this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(), consumeCodeResponse.user.id, UserIdType.ANY);
             if (userIdMapping != null) {
                 consumeCodeResponse.user.id = userIdMapping.externalUserId;
             }

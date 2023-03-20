@@ -72,11 +72,11 @@ public class ResetPasswordAPI extends WebserverAPI {
         }
 
         try {
-            TenantIdentifier tenantIdentifier = getTenantIdentifier(req);
+            TenantIdentifier tenantIdentifier = getTenantIdentifierStorageFromRequest(req);
             String userId = EmailPassword.resetPassword(tenantIdentifier, super.main, token, newPassword);
 
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
-                    tenantIdentifier.toAppIdentifier(), userId, UserIdType.SUPERTOKENS);
+                    tenantIdentifier.toAppIdentifier(), userId, UserIdType.ANY);
 
             // if userIdMapping exists, pass the externalUserId to the response
             if (userIdMapping != null) {

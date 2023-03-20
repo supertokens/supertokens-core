@@ -67,7 +67,7 @@ public class JWTSigningAPI extends WebserverAPI {
         }
 
         try {
-            String jwt = JWTSigningFunctions.createJWTToken(this.getTenantIdentifier(req).toAppIdentifier(),
+            String jwt = JWTSigningFunctions.createJWTToken(this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(),
                     main, algorithm.toUpperCase(), payload, jwksDomain,
                     validity);
             JsonObject reply = new JsonObject();

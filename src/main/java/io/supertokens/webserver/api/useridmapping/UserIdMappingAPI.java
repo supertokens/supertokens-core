@@ -19,14 +19,12 @@ package io.supertokens.webserver.api.useridmapping;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
-import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.useridmapping.AppIdentifierStorageAndUserIdMapping;
+import io.supertokens.AppIdentifierStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
@@ -96,7 +94,7 @@ public class UserIdMappingAPI extends WebserverAPI {
 
         try {
             AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
-                    this.getAppIdentifierStorageAndUserIdMapping(req, superTokensUserId, UserIdType.SUPERTOKENS);
+                    this.getAppIdentifierStorageAndUserIdMappingFromRequest(req, superTokensUserId, UserIdType.SUPERTOKENS);
 
             UserIdMapping.createUserIdMapping(appIdentifierStorageAndUserIdMapping.appIdentifier,
                     superTokensUserId, externalUserId, externalUserIdInfo, force);
@@ -154,7 +152,7 @@ public class UserIdMappingAPI extends WebserverAPI {
 
         try {
             AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
-                    this.getAppIdentifierStorageAndUserIdMapping(req, userId, userIdType);
+                    this.getAppIdentifierStorageAndUserIdMappingFromRequest(req, userId, userIdType);
 
             if (appIdentifierStorageAndUserIdMapping.userIdMapping == null) {
                 JsonObject response = new JsonObject();
