@@ -29,8 +29,6 @@ import io.supertokens.totp.exceptions.InvalidTotpException;
 import io.supertokens.totp.exceptions.LimitReachedException;
 import org.apache.commons.codec.binary.Base32;
 
-// TODO: Add test for UsedCodeAlreadyExistsException once we implement time mocking
-
 public class Totp {
     private static String generateSecret() throws NoSuchAlgorithmException {
         // Reference: https://github.com/jchambers/java-otp

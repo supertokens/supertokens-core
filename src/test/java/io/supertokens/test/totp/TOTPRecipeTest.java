@@ -58,6 +58,8 @@ import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 
+// TODO: Add test for UsedCodeAlreadyExistsException once we implement time mocking
+
 public class TOTPRecipeTest {
 
     @Rule
@@ -295,7 +297,7 @@ public class TOTPRecipeTest {
     }
 
     @Test
-    public void cronRemovesAllCodesDuringRateLimitTest() throws Exception {
+    public void cronRemovesCodesDuringRateLimitTest() throws Exception {
         // This test is flaky because of time.
         TestSetupResult result = defaultInit();
         Main main = result.process.getProcess();
