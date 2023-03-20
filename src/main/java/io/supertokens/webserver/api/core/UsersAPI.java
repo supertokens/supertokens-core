@@ -137,7 +137,7 @@ public class UsersAPI extends WebserverAPI {
             }
         }
 
-        String providers = InputParser.getQueryParamOrThrowError(req, "phone", true);
+        String providers = InputParser.getQueryParamOrThrowError(req, "provider", true);
         {
             if (providers != null) {
                 ArrayList<String> providerArrayList = normalizeSearchTags(providers);
@@ -155,13 +155,20 @@ public class UsersAPI extends WebserverAPI {
         String recipes = InputParser.getQueryParamOrThrowError(req, "recipe", true);
         {
             if (recipes != null) {
-                ArrayList<String> recipeArrayList = normalizeSearchTags(recipes);
+                String[] searchTagArray = recipes.split(";");
+                ArrayList<String> searchTagArrayList = new ArrayList<>();
+                for (String searchTagString : searchTagArray) {
+                    String normalizedSearchTag = searchTagString.toLowerCase().replaceAll("\\s", "");
+                    if (normalizedSearchTag.length() != 0) {
+                        searchTagArrayList.add(normalizedSearchTag);
+                    }
+                }
 
-                if (recipeArrayList.size() != 0) {
+                if (searchTagArrayList.size() != 0) {
                     if (searchTags == null) {
-                        searchTags = new DashboardSearchTags(null, null, null, recipeArrayList);
+                        searchTags = new DashboardSearchTags(null, null, null, searchTagArrayList);
                     } else {
-                        searchTags.providers = recipeArrayList;
+                        searchTags.providers = searchTagArrayList;
                     }
                 }
             }
