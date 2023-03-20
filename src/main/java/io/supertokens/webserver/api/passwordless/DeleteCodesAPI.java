@@ -23,6 +23,7 @@ import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -61,6 +62,7 @@ public class DeleteCodesAPI extends WebserverAPI {
         }
         try {
             if (email != null) {
+                email = Utils.normaliseEmail(email);
                 Passwordless.removeCodesByEmail(this.getTenantIdentifierStorageFromRequest(req), main, email);
             } else {
                 Passwordless.removeCodesByPhoneNumber(this.getTenantIdentifierStorageFromRequest(req), main, phoneNumber);

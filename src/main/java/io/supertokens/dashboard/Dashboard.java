@@ -68,7 +68,7 @@ public class Dashboard {
             throw new DuplicateEmailException();
         }
 
-        if (!isDashboardFeatureFlagEnabled(main)) {
+        if (!isDashboardFeatureFlagEnabled(main, appIdentifier)) {
             DashboardUser[] users = StorageLayer.getDashboardStorage(appIdentifier, main)
                     .getAllDashboardUsers(appIdentifier);
             if (users.length >= MAX_NUMBER_OF_FREE_DASHBOARD_USERS) {
@@ -109,7 +109,7 @@ public class Dashboard {
 
         DashboardUser[] dashboardUsers = StorageLayer.getDashboardStorage(appIdentifier, main)
                 .getAllDashboardUsers(appIdentifier);
-        if (isDashboardFeatureFlagEnabled(main)) {
+        if (isDashboardFeatureFlagEnabled(main, appIdentifier)) {
             return dashboardUsers;
         } else {
             List<DashboardUser> validDashboardUsers = new ArrayList<>();
@@ -169,7 +169,7 @@ public class Dashboard {
     private static boolean isUserSuspended(AppIdentifier appIdentifier, Main main, @Nullable String email,
                                            @Nullable String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        if (!isDashboardFeatureFlagEnabled(main)) {
+        if (!isDashboardFeatureFlagEnabled(main, appIdentifier)) {
             DashboardUser[] users = StorageLayer.getDashboardStorage(appIdentifier, main)
                     .getAllDashboardUsers(appIdentifier);
 
@@ -329,9 +329,10 @@ public class Dashboard {
         return StorageLayer.getDashboardStorage(appIdentifier, main).getAllSessionsForUserId(appIdentifier, userId);
     }
 
-    private static boolean isDashboardFeatureFlagEnabled(Main main) throws StorageQueryException {
+    private static boolean isDashboardFeatureFlagEnabled(Main main, AppIdentifier appIdentifier)
+            throws StorageQueryException {
         try {
-            return Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
+            return Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
                     .anyMatch(t -> t == EE_FEATURES.DASHBOARD_LOGIN);
         } catch (Exception e) {
             return false;

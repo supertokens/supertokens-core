@@ -54,7 +54,7 @@ public class PasswordlessUserGetAPITest2_11 {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -150,7 +150,7 @@ public class PasswordlessUserGetAPITest2_11 {
 
     @Test
     public void testGoodInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -161,7 +161,8 @@ public class PasswordlessUserGetAPITest2_11 {
 
         PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
 
-        // length of user ID needs to be 36 character long, otherwise it throws error with postgres DB
+        // length of user ID needs to be 36 character long, otherwise it throws error
+        // with postgres DB
         String userIdEmail = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkF";
         String userIdPhone = "pZ9SP0USbXbejGFO6qx7x3JBjupJZVtw4RkD";
         String email = "random@gmail.com";
@@ -181,7 +182,7 @@ public class PasswordlessUserGetAPITest2_11 {
         }
         {
             HashMap<String, String> map = new HashMap<>();
-            map.put("email", email);
+            map.put("email", email.toUpperCase());
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", map, 1000, 1000, null, Utils.getCdiVersion2_10ForTests(),
                     "passwordless");

@@ -22,7 +22,10 @@ import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -45,8 +48,13 @@ public class EEFeatureFlagAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            EE_FEATURES[] features = FeatureFlag.getInstance(main).getEnabledFeatures();
-            JsonObject stats = FeatureFlag.getInstance(main).getPaidFeatureStats();
+            if (!this.getTenantIdentifier(req).getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                throw new BadPermissionException("This API can only be queried using the public tenant of the app");
+            }
+            EE_FEATURES[] features = FeatureFlag.getInstance(main, this.getTenantIdentifier(req).toAppIdentifier())
+                    .getEnabledFeatures();
+            JsonObject stats = FeatureFlag.getInstance(main, this.getTenantIdentifier(req).toAppIdentifier())
+                    .getPaidFeatureStats();
             JsonObject result = new JsonObject();
             JsonArray featuresJson = new JsonArray();
             Arrays.stream(features).forEach(ee_features -> {
@@ -56,7 +64,7 @@ public class EEFeatureFlagAPI extends WebserverAPI {
             result.add("usageStats", stats);
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | BadPermissionException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

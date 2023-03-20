@@ -16,6 +16,7 @@ import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
 import org.junit.*;
@@ -192,7 +193,8 @@ public class EETest extends Mockito {
 
     @Test
     public void invalidNewStatefulLicenseKeyNotAllowed()
-            throws InterruptedException, StorageQueryException, HttpResponseException, IOException {
+            throws InterruptedException, StorageQueryException, HttpResponseException, IOException,
+            TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -285,7 +287,8 @@ public class EETest extends Mockito {
 
     @Test
     public void invalidNewStatelessLicenseKeyNotAllowed()
-            throws InterruptedException, StorageQueryException, HttpResponseException, IOException {
+            throws InterruptedException, StorageQueryException, HttpResponseException, IOException,
+            TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -308,7 +311,8 @@ public class EETest extends Mockito {
 
     @Test
     public void startCoreWithInvalidStatelessLicenseKey()
-            throws InterruptedException, StorageQueryException, HttpResponseException, IOException {
+            throws InterruptedException, StorageQueryException, HttpResponseException, IOException,
+            TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -349,7 +353,8 @@ public class EETest extends Mockito {
 
     @Test
     public void startCoreWithInvalidStatefulLicenseKey()
-            throws InterruptedException, StorageQueryException, HttpResponseException, IOException {
+            throws InterruptedException, StorageQueryException, HttpResponseException, IOException,
+            TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -391,7 +396,7 @@ public class EETest extends Mockito {
     @Test
     public void startCoreWithValidStatefulKeyBut500ServerResponseHasNoSideEffect()
             throws InterruptedException, StorageQueryException, HttpResponseException, IOException,
-            InvalidLicenseKeyException {
+            InvalidLicenseKeyException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -451,7 +456,7 @@ public class EETest extends Mockito {
     @Test
     public void startCoreWithValidStatefulKeyButNoServerResponseHasNoSideEffect()
             throws InterruptedException, StorageQueryException, HttpResponseException, IOException,
-            InvalidLicenseKeyException {
+            InvalidLicenseKeyException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -493,7 +498,7 @@ public class EETest extends Mockito {
     @Test
     public void licenseCheckServerNotWorkingShouldYieldErrorInCaseOfSettingKey()
             throws InterruptedException, StorageQueryException,
-            InvalidLicenseKeyException, IOException {
+            InvalidLicenseKeyException, IOException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -541,7 +546,7 @@ public class EETest extends Mockito {
     @Test
     public void licenseCheckServerNotReachableShouldYieldErrorInCaseOfSettingKey()
             throws InterruptedException, StorageQueryException,
-            InvalidLicenseKeyException, HttpResponseException {
+            InvalidLicenseKeyException, HttpResponseException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -572,7 +577,7 @@ public class EETest extends Mockito {
     @Test
     public void checkThatRemovingOpaqueLicenseKeyHasNoNetworkCall()
             throws InterruptedException, StorageQueryException,
-            InvalidLicenseKeyException, HttpResponseException, IOException {
+            InvalidLicenseKeyException, HttpResponseException, IOException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -597,7 +602,7 @@ public class EETest extends Mockito {
     @Test
     public void addingInvalidKeyAfterAddingCorrectKeyShouldHaveNoEffect()
             throws InterruptedException, StorageQueryException,
-            InvalidLicenseKeyException, HttpResponseException, IOException {
+            InvalidLicenseKeyException, HttpResponseException, IOException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -626,7 +631,7 @@ public class EETest extends Mockito {
     @Test
     public void addingInvalidStatelessKeyAfterAddingCorrectKeyShouldHaveNoEffect()
             throws InterruptedException, StorageQueryException,
-            InvalidLicenseKeyException, HttpResponseException, IOException {
+            InvalidLicenseKeyException, HttpResponseException, IOException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -661,7 +666,7 @@ public class EETest extends Mockito {
     @Test
     public void updateOpaqueToOpaqueLicenseKey()
             throws InterruptedException, StorageQueryException,
-            InvalidLicenseKeyException, HttpResponseException, IOException {
+            InvalidLicenseKeyException, HttpResponseException, IOException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -695,7 +700,7 @@ public class EETest extends Mockito {
     @Test
     public void updateOpaqueToStatelessLicenseKey()
             throws InterruptedException, StorageQueryException,
-            InvalidLicenseKeyException, HttpResponseException, IOException {
+            InvalidLicenseKeyException, HttpResponseException, IOException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -729,7 +734,7 @@ public class EETest extends Mockito {
     @Test
     public void updateStatelessToOpaqueLicenseKey()
             throws InterruptedException, StorageQueryException,
-            InvalidLicenseKeyException, HttpResponseException, IOException {
+            InvalidLicenseKeyException, HttpResponseException, IOException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -764,7 +769,7 @@ public class EETest extends Mockito {
     @Test
     public void updateStatelessToStatelessLicenseKey()
             throws InterruptedException, StorageQueryException,
-            InvalidLicenseKeyException, HttpResponseException, IOException {
+            InvalidLicenseKeyException, HttpResponseException, IOException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -798,7 +803,7 @@ public class EETest extends Mockito {
     @Test
     public void testRemovingOpaqueLicenseKey()
             throws InterruptedException, StorageQueryException,
-            InvalidLicenseKeyException, HttpResponseException, IOException {
+            InvalidLicenseKeyException, HttpResponseException, IOException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -824,7 +829,7 @@ public class EETest extends Mockito {
     @Test
     public void testRemovingStatelessLicenseKey()
             throws InterruptedException, StorageQueryException,
-            InvalidLicenseKeyException, HttpResponseException, IOException {
+            InvalidLicenseKeyException, HttpResponseException, IOException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -849,7 +854,7 @@ public class EETest extends Mockito {
     @Test
     public void testVariousStatelessKeys()
             throws InterruptedException, StorageQueryException,
-            InvalidLicenseKeyException, HttpResponseException, IOException {
+            InvalidLicenseKeyException, HttpResponseException, IOException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {
@@ -902,7 +907,7 @@ public class EETest extends Mockito {
     @Test
     public void testVariousOpaqueKeys()
             throws InterruptedException, StorageQueryException,
-            InvalidLicenseKeyException, HttpResponseException, IOException {
+            InvalidLicenseKeyException, HttpResponseException, IOException, TenantOrAppNotFoundException {
         String[] args = {"../../"};
 
         {

@@ -21,6 +21,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.exceptions.QuitProgramException;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import org.junit.AfterClass;
@@ -44,7 +45,7 @@ public class CronjobTest {
         private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest" + ".QuitProgramExceptionCronjob";
 
         private QuitProgramExceptionCronjob(Main main, List<List<TenantIdentifier>> tenants) {
-            super("QuitProgramExceptionCronjob", main, tenants);
+            super("QuitProgramExceptionCronjob", main, tenants, false);
         }
 
         public static QuitProgramExceptionCronjob getInstance(Main main) {
@@ -63,7 +64,7 @@ public class CronjobTest {
         }
 
         @Override
-        protected void doTask(List<TenantIdentifier> tenantIdentifier) {
+        protected void doTaskPerStorage(Storage storage) {
             throw new QuitProgramException("Cronjob Threw QuitProgramException");
 
         }
@@ -84,7 +85,7 @@ public class CronjobTest {
         private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest.ErrorCronjob";
 
         private ErrorCronjob(Main main, List<List<TenantIdentifier>> tenants) {
-            super("ErrorCronjob", main, tenants);
+            super("ErrorCronjob", main, tenants, false);
         }
 
         public static ErrorCronjob getInstance(Main main) {
@@ -102,7 +103,7 @@ public class CronjobTest {
         }
 
         @Override
-        protected void doTask(List<TenantIdentifier> tenantIdentifier) throws Exception {
+        protected void doTaskPerStorage(Storage s) throws Exception {
             errorCronjobCounter++;
             throw new Exception("ERROR thrown from ErrorCronjobTest");
 
@@ -124,7 +125,7 @@ public class CronjobTest {
         private static final String RESOURCE_ID = "io.supertokens.test.CronjobTest.NormalCronjob";
 
         private NormalCronjob(Main main, List<List<TenantIdentifier>> tenants) {
-            super("NormalCronjob", main, tenants);
+            super("NormalCronjob", main, tenants, false);
         }
 
         public static NormalCronjob getInstance(Main main) {
@@ -143,7 +144,7 @@ public class CronjobTest {
         }
 
         @Override
-        protected void doTask(List<TenantIdentifier> tenantIdentifier) {
+        protected void doTaskPerStorage(Storage s) {
             normalCronjobCounter++;
         }
 

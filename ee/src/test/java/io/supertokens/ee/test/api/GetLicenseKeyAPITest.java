@@ -6,18 +6,15 @@ import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.ee.test.EETest;
 import io.supertokens.ee.test.TestingProcessManager;
 import io.supertokens.ee.test.Utils;
-import io.supertokens.ee.test.TestingProcessManager.TestingProcess;
 import io.supertokens.ee.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.ee.test.httpRequest.HttpResponseException;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.webserver.WebserverAPI;
+import org.junit.*;
+import org.junit.rules.TestRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-
-import org.junit.*;
-import org.junit.rules.TestRule;
 
 public class GetLicenseKeyAPITest {
     @Rule
@@ -35,7 +32,7 @@ public class GetLicenseKeyAPITest {
 
     @Test
     public void testRetrievingLicenseKeyWhenItIsNotSet() throws Exception {
-        String[] args = { "../../" };
+        String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -52,7 +49,7 @@ public class GetLicenseKeyAPITest {
 
     @Test
     public void testRetrievingLicenseKeyWhenItIsSet() throws Exception {
-        String[] args = { "../../" };
+        String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -76,7 +73,8 @@ public class GetLicenseKeyAPITest {
 
     @Test
     public void testRetrievingLicenseKeyWhenEEFolderDoesNotExist() throws Exception {
-        String[] args = { "../../" };
+        FeatureFlag.clearURLClassLoader();
+        String[] args = {"../../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
 

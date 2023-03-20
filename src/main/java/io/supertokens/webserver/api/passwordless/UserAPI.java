@@ -81,7 +81,8 @@ public class UserAPI extends WebserverAPI {
                     user.id = userIdMapping.externalUserId;
                 }
             } else if (email != null) {
-                user = Passwordless.getUserByEmail(this.getTenantIdentifierStorageFromRequest(req), main, Utils.normaliseEmail(email));
+                email = Utils.normaliseEmail(email);
+                user = Passwordless.getUserByEmail(this.getTenantIdentifierStorageFromRequest(req), main, email);
                 if (user != null) {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                             this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(), user.id, UserIdType.ANY);
@@ -126,11 +127,11 @@ public class UserAPI extends WebserverAPI {
 
         FieldUpdate emailUpdate = !input.has("email") ? null
                 : new FieldUpdate(input.get("email").isJsonNull() ? null
-                : Utils.normaliseEmail(InputParser.parseStringOrThrowError(input, "email", false)));
+                        : Utils.normaliseEmail(InputParser.parseStringOrThrowError(input, "email", false)));
 
         FieldUpdate phoneNumberUpdate = !input.has("phoneNumber") ? null
                 : new FieldUpdate(input.get("phoneNumber").isJsonNull() ? null
-                : InputParser.parseStringOrThrowError(input, "phoneNumber", false));
+                        : InputParser.parseStringOrThrowError(input, "phoneNumber", false));
 
         try {
             // if userIdMapping exists, set the externalUserId in the response

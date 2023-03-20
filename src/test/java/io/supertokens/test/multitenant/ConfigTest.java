@@ -435,7 +435,10 @@ public class ConfigTest {
                     process.getProcess());
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("Only the public tenantId, public appId and default connectionUriDomain is allowed to list all connectionUriDomains and appIds associated with this core", e.getMessage());
+            assertEquals(
+                    "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
+                            "connectionUriDomains and appIds associated with this core",
+                    e.getMessage());
         }
 
         try {
@@ -443,7 +446,10 @@ public class ConfigTest {
                     process.getProcess());
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("Only the public tenantId, public appId and default connectionUriDomain is allowed to list all connectionUriDomains and appIds associated with this core", e.getMessage());
+            assertEquals(
+                    "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
+                            "connectionUriDomains and appIds associated with this core",
+                    e.getMessage());
         }
 
         try {
@@ -451,7 +457,10 @@ public class ConfigTest {
                     process.getProcess());
             fail();
         } catch (BadPermissionException e) {
-            assertEquals("Only the public tenantId, public appId and default connectionUriDomain is allowed to list all connectionUriDomains and appIds associated with this core", e.getMessage());
+            assertEquals(
+                    "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
+                            "connectionUriDomains and appIds associated with this core",
+                    e.getMessage());
         }
 
         process.kill();
@@ -872,7 +881,7 @@ public class ConfigTest {
     public void testUpdationOfDefaultTenant()
             throws InterruptedException, BadPermissionException, InvalidProviderConfigException,
             DeletionInProgressException, StorageQueryException, FeatureNotEnabledException, IOException,
-            InvalidConfigException, CannotModifyBaseConfigException {
+            InvalidConfigException, CannotModifyBaseConfigException, TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);

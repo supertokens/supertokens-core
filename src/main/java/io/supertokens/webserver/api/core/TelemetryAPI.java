@@ -21,6 +21,7 @@ import io.supertokens.Main;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -43,7 +44,7 @@ public class TelemetryAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            KeyValueInfo telemetryId = Telemetry.getTelemetryId(main);
+            KeyValueInfo telemetryId = Telemetry.getTelemetryId(main, this.getTenantIdentifier(req).toAppIdentifier());
 
             JsonObject result = new JsonObject();
             if (telemetryId == null) {
@@ -53,7 +54,7 @@ public class TelemetryAPI extends WebserverAPI {
                 result.addProperty("telemetryId", telemetryId.value);
             }
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

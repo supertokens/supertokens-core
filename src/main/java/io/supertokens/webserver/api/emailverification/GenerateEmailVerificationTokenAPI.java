@@ -55,6 +55,7 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
         String email = InputParser.parseStringOrThrowError(input, "email", false);
         assert userId != null;
         assert email != null;
+        email = Utils.normaliseEmail(email);
 
         // used to be according to logic according to https://github.com/supertokens/supertokens-core/issues/139
         // but then changed slightly when extracting this into its own recipe

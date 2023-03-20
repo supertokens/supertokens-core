@@ -51,7 +51,7 @@ public class SignInAPITest {
 
     @Test
     public void testSigningInAUserAndVerifyingTheirSession() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -68,7 +68,7 @@ public class SignInAPITest {
 
         // signin user
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("email", email);
+        requestBody.addProperty("email", "tesT@example.com");
         requestBody.addProperty("password", password);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/dashboard/signin", requestBody, 1000, 1000, null,
@@ -87,7 +87,7 @@ public class SignInAPITest {
 
     @Test
     public void testSigningInASuspendedUser() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));

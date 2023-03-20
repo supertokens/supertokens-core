@@ -52,7 +52,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -136,7 +136,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
     @Test
     public void testEmailToPhone() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -177,7 +177,7 @@ public class PasswordlessUserPutAPITest2_11 {
      */
     @Test
     public void testPhoneToEmail() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -197,7 +197,7 @@ public class PasswordlessUserPutAPITest2_11 {
         JsonObject updateUserRequestBody = new JsonObject();
         updateUserRequestBody.addProperty("userId", userId);
         updateUserRequestBody.add("phoneNumber", JsonNull.INSTANCE);
-        updateUserRequestBody.addProperty("email", email);
+        updateUserRequestBody.addProperty("email", email.toUpperCase());
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
@@ -218,7 +218,7 @@ public class PasswordlessUserPutAPITest2_11 {
      */
     @Test
     public void testPhoneAndEmail() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -265,7 +265,7 @@ public class PasswordlessUserPutAPITest2_11 {
      */
     @Test
     public void clearEmailAndPhone() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -314,7 +314,7 @@ public class PasswordlessUserPutAPITest2_11 {
      */
     @Test
     public void clearEmailOfEmailOnlyUser() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -362,7 +362,7 @@ public class PasswordlessUserPutAPITest2_11 {
      */
     @Test
     public void clearPhoneNUmberOfPhoneNumberOnlyUser() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -409,7 +409,7 @@ public class PasswordlessUserPutAPITest2_11 {
      */
     @Test
     public void clearEmail() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -450,7 +450,7 @@ public class PasswordlessUserPutAPITest2_11 {
      */
     @Test
     public void clearPhone() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -491,7 +491,7 @@ public class PasswordlessUserPutAPITest2_11 {
      */
     @Test
     public void updateNothing() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -531,7 +531,7 @@ public class PasswordlessUserPutAPITest2_11 {
      */
     @Test
     public void testUpdateEmail() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -573,7 +573,7 @@ public class PasswordlessUserPutAPITest2_11 {
      */
     @Test
     public void testUpdatePhoneNumber() throws Exception {
-        String[] args = {"../"};
+        String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

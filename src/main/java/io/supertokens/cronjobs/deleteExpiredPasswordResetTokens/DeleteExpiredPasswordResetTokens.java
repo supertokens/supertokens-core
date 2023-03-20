@@ -20,8 +20,9 @@ import io.supertokens.Main;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.storageLayer.StorageLayer;
 import org.jetbrains.annotations.TestOnly;
 
 import java.util.List;
@@ -32,7 +33,7 @@ public class DeleteExpiredPasswordResetTokens extends CronTask {
             + ".DeleteExpiredPasswordResetTokens";
 
     private DeleteExpiredPasswordResetTokens(Main main, List<List<TenantIdentifier>> tenantsInfo) {
-        super("RemoveOldPasswordResetTokens", main, tenantsInfo);
+        super("RemoveOldPasswordResetTokens", main, tenantsInfo, false);
     }
 
     public static DeleteExpiredPasswordResetTokens init(Main main,
@@ -48,12 +49,11 @@ public class DeleteExpiredPasswordResetTokens extends CronTask {
     }
 
     @Override
-    protected void doTask(List<TenantIdentifier> tenantIdentifier) throws Exception {
-        if (StorageLayer.getStorage(tenantIdentifier.get(0), this.main).getType() != STORAGE_TYPE.SQL) {
+    protected void doTaskPerStorage(Storage storage) throws Exception {
+        if (storage.getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        StorageLayer.getEmailPasswordStorage(tenantIdentifier.get(0), this.main)
-                .deleteExpiredPasswordResetTokens();
+        ((EmailPasswordSQLStorage) storage).deleteExpiredPasswordResetTokens();
     }
 
     @Override

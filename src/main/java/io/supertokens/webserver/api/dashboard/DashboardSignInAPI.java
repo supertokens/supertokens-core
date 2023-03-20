@@ -50,6 +50,7 @@ public class DashboardSignInAPI extends WebserverAPI {
 
         // normalize email
         email = Utils.normalizeAndValidateStringParam(email, "email");
+        email = io.supertokens.utils.Utils.normaliseEmail(email);
 
         String password = InputParser.parseStringOrThrowError(input, "password", false);
 

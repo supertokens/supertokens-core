@@ -21,10 +21,15 @@ import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.storageLayer.StorageLayer;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -40,10 +45,26 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
     protected List<List<TenantIdentifier>> tenantsInfo;
     private final Object lock = new Object();
 
-    protected CronTask(String jobName, Main main, List<List<TenantIdentifier>> tenantsInfo) {
+    private final TenantIdentifier targetTenant;
+
+    private final boolean isPerApp;
+
+    protected CronTask(String jobName, Main main, List<List<TenantIdentifier>> tenantsInfo, boolean isPerApp) {
         this.jobName = jobName;
         this.main = main;
         this.tenantsInfo = tenantsInfo;
+        this.targetTenant = null;
+        this.isPerApp = isPerApp;
+        Logging.info(main, "Starting task: " + jobName, false);
+    }
+
+    // this cronjob will only run for the targetTenant if it's in the tenantsInfo list. This is useful for 
+    // cronjobs which run on a per app basis like the eelicensecheck cronjob
+    protected CronTask(String jobName, Main main, TenantIdentifier targetTenant) {
+        this.jobName = jobName;
+        this.main = main;
+        this.targetTenant = targetTenant;
+        this.isPerApp = false;
         Logging.info(main, "Starting task: " + jobName, false);
     }
 
@@ -55,51 +76,122 @@ public abstract class CronTask extends ResourceDistributor.SingletonResource imp
     public void run() {
         Logging.info(main, "Cronjob started: " + jobName, false);
 
-        // first we copy over the array so that if it changes while the cronjob runs, it won't affect
-        // this run of the cronjob
-        List<List<TenantIdentifier>> copied = null;
-        synchronized (lock) {
-            copied = new ArrayList<>(tenantsInfo);
-        }
+        if (this.targetTenant != null) {
+            try {
+                doTaskForTargetTenant(this.targetTenant);
+            } catch (Exception e) {
+                ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
+                Logging.error(main, "Cronjob threw an exception: " + this.jobName, Main.isTesting, e);
+                if (e instanceof QuitProgramException) {
+                    main.wakeUpMainThreadToShutdown();
+                }
+            }
+        } else {
+            // first we copy over the array so that if it changes while the cronjob runs, it won't affect
+            // this run of the cronjob
+            List<List<TenantIdentifier>> copied = null;
+            synchronized (lock) {
+                copied = new ArrayList<>(tenantsInfo);
+            }
 
-        ExecutorService service = Executors.newFixedThreadPool(copied.size());
-        AtomicBoolean threwQuitProgramException = new AtomicBoolean(false);
-        for (List<TenantIdentifier> t : copied) {
-            service.execute(() -> {
+            if (this.isPerApp) {
+                // we extract all apps..
+                List<AppIdentifier> apps = new ArrayList<>();
+                Set<AppIdentifier> appsSet = new HashSet<>();
+                for (List<TenantIdentifier> t : copied) {
+                    for (TenantIdentifier tenant : t) {
+                        if (appsSet.contains(tenant.toAppIdentifier())) {
+                            continue;
+                        }
+                        appsSet.add(tenant.toAppIdentifier());
+                        apps.add(tenant.toAppIdentifier());
+                    }
+                }
                 try {
-                    doTask(t);
+                    for (AppIdentifier app : apps) {
+                        doTaskPerApp(app);
+                    }
                 } catch (Exception e) {
                     ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
                     Logging.error(main, "Cronjob threw an exception: " + this.jobName, Main.isTesting, e);
                     if (e instanceof QuitProgramException) {
-                        threwQuitProgramException.set(true);
+                        main.wakeUpMainThreadToShutdown();
                     }
                 }
-            });
-        }
-        service.shutdown();
-        boolean didShutdown = false;
-        try {
-            didShutdown = service.awaitTermination(this.getIntervalTimeSeconds(), TimeUnit.SECONDS);
-        } catch (InterruptedException ignored) {
-        }
-        if (!didShutdown) {
-            service.shutdownNow();
-        }
-        if (threwQuitProgramException.get()) {
-            main.wakeUpMainThreadToShutdown();
+            } else {
+                // we create one thread per unique storage and run the query based on that.
+                ExecutorService service = Executors.newFixedThreadPool(copied.size());
+                AtomicBoolean threwQuitProgramException = new AtomicBoolean(false);
+                for (List<TenantIdentifier> t : copied) {
+                    service.execute(() -> {
+                        try {
+                            doTaskPerStorage(StorageLayer.getStorage(t.get(0), main));
+                            for (TenantIdentifier tenant : t) {
+                                doTaskPerTenant(tenant);
+                            }
+                        } catch (Exception e) {
+                            ProcessState.getInstance(main)
+                                    .addState(ProcessState.PROCESS_STATE.CRON_TASK_ERROR_LOGGING, e);
+                            Logging.error(main, "Cronjob threw an exception: " + this.jobName, Main.isTesting, e);
+                            if (e instanceof QuitProgramException) {
+                                threwQuitProgramException.set(true);
+                            }
+                        }
+                    });
+                }
+                service.shutdown();
+                boolean didShutdown = false;
+                try {
+                    didShutdown = service.awaitTermination(this.getIntervalTimeSeconds(), TimeUnit.SECONDS);
+                } catch (InterruptedException ignored) {
+                }
+                if (!didShutdown) {
+                    service.shutdownNow();
+                }
+                if (threwQuitProgramException.get()) {
+                    main.wakeUpMainThreadToShutdown();
+                }
+            }
         }
         Logging.info(main, "Cronjob finished: " + jobName, false);
     }
 
     public void setTenantsInfo(List<List<TenantIdentifier>> tenantsInfo) {
         synchronized (lock) {
-            this.tenantsInfo = tenantsInfo;
+            if (this.targetTenant != null) {
+                boolean found = false;
+                for (List<TenantIdentifier> t : tenantsInfo) {
+                    for (TenantIdentifier tenant : t) {
+                        if (tenant.equals(targetTenant)) {
+                            found = true;
+                        }
+                    }
+                }
+                if (!found) {
+                    Cronjobs.removeCronjob(main, this);
+                }
+            } else {
+                this.tenantsInfo = tenantsInfo;
+            }
         }
     }
 
     // the list belongs to tenants that are a part of the same user pool ID
-    protected abstract void doTask(List<TenantIdentifier> tenantIdentifier) throws Exception;
+    protected void doTaskPerStorage(Storage storage) throws Exception {
+
+    }
+
+    protected void doTaskForTargetTenant(TenantIdentifier targetTenant) throws Exception {
+
+    }
+
+    protected void doTaskPerApp(AppIdentifier app) throws Exception {
+
+    }
+
+    protected void doTaskPerTenant(TenantIdentifier tenant) throws Exception {
+
+    }
 
     public abstract int getIntervalTimeSeconds();
 

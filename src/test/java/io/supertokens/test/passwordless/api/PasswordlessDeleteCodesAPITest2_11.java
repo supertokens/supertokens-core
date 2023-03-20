@@ -173,7 +173,7 @@ public class PasswordlessDeleteCodesAPITest2_11 {
                 new PasswordlessCode(codeId2, deviceIdHash, linkCodeHash2, System.currentTimeMillis()));
 
         JsonObject createCodeRequestBody = new JsonObject();
-        createCodeRequestBody.addProperty("email", email);
+        createCodeRequestBody.addProperty("email", "test@examplE.com");
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/codes/remove", createCodeRequestBody, 1000, 1000, null,

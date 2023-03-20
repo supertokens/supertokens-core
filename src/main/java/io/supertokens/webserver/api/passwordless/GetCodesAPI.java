@@ -84,8 +84,8 @@ public class GetCodesAPI extends WebserverAPI {
                 devicesInfos = deviceWithCodes == null ? Collections.emptyList()
                         : Collections.singletonList(deviceWithCodes);
             } else if (email != null) {
-                devicesInfos = Passwordless.getDevicesWithCodesByEmail(this.getTenantIdentifierStorageFromRequest(req), main,
-                        Utils.normaliseEmail(email));
+                email = Utils.normaliseEmail(email);
+                devicesInfos = Passwordless.getDevicesWithCodesByEmail(this.getTenantIdentifierStorageFromRequest(req), main, email);
             } else {
                 devicesInfos = Passwordless.getDevicesWithCodesByPhoneNumber(this.getTenantIdentifierStorageFromRequest(req), main,
                         phoneNumber);
@@ -128,7 +128,8 @@ public class GetCodesAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (Base64EncodingException ex) {
             throw new ServletException(new BadRequestException("Input encoding error in " + ex.source));
-        } catch (NoSuchAlgorithmException | StorageTransactionLogicException | StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (NoSuchAlgorithmException | StorageTransactionLogicException | StorageQueryException
+                | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }

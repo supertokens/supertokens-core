@@ -150,6 +150,8 @@ public class UserAPI extends WebserverAPI {
             throw new ServletException(new BadRequestException("You have to provide either email or password."));
         }
 
+        email = Utils.normaliseEmail(email);
+
         try {
             AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
                     this.getAppIdentifierStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);

@@ -197,7 +197,7 @@ public class Main {
                 }
             }
         }
-        FeatureFlag.init(this, CLIOptions.get(this).getInstallationPath() + "ee/");
+        FeatureFlag.initForBaseTenant(this, CLIOptions.get(this).getInstallationPath() + "ee/");
 
         MultitenancyHelper.init(this);
 
@@ -210,6 +210,9 @@ public class Main {
         } catch (InvalidConfigException | DbInitException e) {
             throw new QuitProgramException(e);
         }
+
+        // load feature flag for all loaded apps
+        MultitenancyHelper.getInstance(this).loadFeatureFlag();
 
         // init signing keys
         try {
@@ -240,7 +243,7 @@ public class Main {
 
         // starts Telemetry cronjob if the user has not disabled it
         if (!Config.getBaseConfig(this).isTelemetryDisabled()) {
-            Cronjobs.addCronjob(this, Telemetry.getInstance(this));
+            Cronjobs.addCronjob(this, Telemetry.init(this, uniqueUserPoolIdsTenants));
         }
 
         // starts DeleteExpiredAccessTokenSigningKeys cronjob if the access token signing keys can change

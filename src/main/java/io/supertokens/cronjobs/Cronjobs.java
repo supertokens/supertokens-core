@@ -75,6 +75,15 @@ public class Cronjobs extends ResourceDistributor.SingletonResource {
         });
     }
 
+    public static void removeCronjob(Main main, CronTask task) {
+        Cronjobs instance = Cronjobs.getInstance(main);
+        if (instance != null) {
+            synchronized (instance.lock) {
+                instance.tasks.remove(task);
+            }
+        }
+    }
+
     public static void addCronjob(Main main, CronTask task) {
         if (getInstance(main) == null) {
             init(main);

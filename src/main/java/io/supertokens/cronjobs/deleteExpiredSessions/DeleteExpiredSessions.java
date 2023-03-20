@@ -19,9 +19,10 @@ package io.supertokens.cronjobs.deleteExpiredSessions;
 import io.supertokens.Main;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.pluginInterface.session.SessionStorage;
 import org.jetbrains.annotations.TestOnly;
 
 import java.util.List;
@@ -31,7 +32,7 @@ public class DeleteExpiredSessions extends CronTask {
     public static final String RESOURCE_KEY = "io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions";
 
     private DeleteExpiredSessions(Main main, List<List<TenantIdentifier>> tenantsInfo) {
-        super("RemoveOldSessions", main, tenantsInfo);
+        super("RemoveOldSessions", main, tenantsInfo, false);
     }
 
     public static DeleteExpiredSessions init(Main main, List<List<TenantIdentifier>> tenantsInfo) {
@@ -51,8 +52,8 @@ public class DeleteExpiredSessions extends CronTask {
     }
 
     @Override
-    protected void doTask(List<TenantIdentifier> tenantIdentifier) throws Exception {
-        StorageLayer.getSessionStorage(tenantIdentifier.get(0), this.main).deleteAllExpiredSessions();
+    protected void doTaskPerStorage(Storage storage) throws Exception {
+        ((SessionStorage) storage).deleteAllExpiredSessions();
     }
 
     @Override

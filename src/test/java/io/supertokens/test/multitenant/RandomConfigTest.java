@@ -21,18 +21,22 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.multitenancy.exception.DeletionInProgressException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.*;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.multitenant.generator.ConfigGenerator;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
-import org.junit.*;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import java.io.IOException;
@@ -59,7 +63,8 @@ public class RandomConfigTest {
     public void randomlyTestLoadConfig()
             throws InterruptedException, ClassNotFoundException, InvocationTargetException, NoSuchMethodException,
             IllegalAccessException, InstantiationException, DeletionInProgressException, StorageQueryException,
-            FeatureNotEnabledException, IOException, CannotModifyBaseConfigException, BadPermissionException {
+            FeatureNotEnabledException, IOException, CannotModifyBaseConfigException, BadPermissionException,
+            TenantOrAppNotFoundException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -79,7 +84,8 @@ public class RandomConfigTest {
 
             try {
                 TenantConfig tenantConfig = (TenantConfig) generated.value;
-                Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null), tenantConfig);
+                Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
+                        tenantConfig);
                 if (!isOk) {
                     List<String> exceptions = ConfigGenerator.getExceptions(generated.expectation);
                     System.out.print("No exception was raised: ");
@@ -88,12 +94,14 @@ public class RandomConfigTest {
                 assertTrue(isOk); // Assert that config was expected to be valid
                 okCount++;
 
-                TenantConfig persistedTenantConfig = Multitenancy.getTenantInfo(process.getProcess(), tenantConfig.tenantIdentifier);
+                TenantConfig persistedTenantConfig = Multitenancy.getTenantInfo(process.getProcess(),
+                        tenantConfig.tenantIdentifier);
                 assertEquals(tenantConfig, persistedTenantConfig);
 
             } catch (InvalidProviderConfigException | InvalidConfigException e) {
                 assertFalse(isOk);
-                boolean exceptionMatched = ConfigGenerator.matchExceptionInExpectation(e.getMessage(), generated.expectation);
+                boolean exceptionMatched = ConfigGenerator.matchExceptionInExpectation(e.getMessage(),
+                        generated.expectation);
                 if (!exceptionMatched) {
                     List<String> exceptions = ConfigGenerator.getExceptions(generated.expectation);
                     System.out.printf("[%s] was not matched: ", e.getMessage());
