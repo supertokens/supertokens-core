@@ -50,15 +50,15 @@ public class LicenseKeyAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String licenseKey = InputParser.parseStringOrThrowError(input, "licenseKey", true);
         try {
-            if (!this.getTenantIdentifier(req).getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            if (!this.getTenantIdentifierStorageFromRequest(req).getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                 throw new BadPermissionException("This API can only be queried using the public tenant of the app");
             }
             boolean success = false;
             if (licenseKey != null) {
-                success = FeatureFlag.getInstance(main, this.getTenantIdentifier(req).toAppIdentifier())
+                success = FeatureFlag.getInstance(main, this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier())
                         .setLicenseKeyAndSyncFeatures(licenseKey);
             } else {
-                success = FeatureFlag.getInstance(main, this.getTenantIdentifier(req).toAppIdentifier())
+                success = FeatureFlag.getInstance(main, this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier())
                         .syncFeatureFlagWithLicenseKey();
             }
             JsonObject result = new JsonObject();
@@ -76,10 +76,10 @@ public class LicenseKeyAPI extends WebserverAPI {
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            if (!this.getTenantIdentifier(req).getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            if (!this.getTenantIdentifierStorageFromRequest(req).getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                 throw new BadPermissionException("This API can only be queried using the public tenant of the app");
             }
-            FeatureFlag.getInstance(main, this.getTenantIdentifier(req).toAppIdentifier())
+            FeatureFlag.getInstance(main, this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier())
                     .removeLicenseKeyAndSyncFeatures();
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -92,10 +92,10 @@ public class LicenseKeyAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            if (!this.getTenantIdentifier(req).getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            if (!this.getTenantIdentifierStorageFromRequest(req).getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                 throw new BadPermissionException("This API can only be queried using the public tenant of the app");
             }
-            String licenseKey = FeatureFlag.getInstance(main, this.getTenantIdentifier(req).toAppIdentifier())
+            String licenseKey = FeatureFlag.getInstance(main, this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier())
                     .getLicenseKey();
             JsonObject result = new JsonObject();
             result.addProperty("licenseKey", licenseKey);
