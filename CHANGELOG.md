@@ -20,8 +20,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - `POST /recipe/totp/device/verify` to verify a device. This is to ensure that the user has access to the device.
 - `POST /recipe/totp/verify` to verify a code and continue the login flow.
 - `PUT /recipe/totp/device` to update the name of a device. Name is just a string that the user can set to identify the device.
-- `GET /recipe/totp/device/list` to get all devices for a user. 
+- `GET /recipe/totp/device/list` to get all devices for a user.
 - `POST /recipe/totp/device/remove` to remove a device. If the user has no more devices, the user is also removed.
+
+## [4.4.2] - 2023-03-16
+
+- Adds null check in email normalisation to fix: https://github.com/supertokens/supertokens-node/issues/514
 
 ## [4.4.1] - 2023-03-09
 
