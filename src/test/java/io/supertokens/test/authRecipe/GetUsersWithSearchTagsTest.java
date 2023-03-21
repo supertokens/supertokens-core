@@ -82,53 +82,30 @@ public class GetUsersWithSearchTagsTest {
                 null, null);
         userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
         createCodeResponse.userInputCode, null).user.id);
-
-        // search for users with no recipes selected, should return users from all recipes
+        
+        // partial search with input emails as "test"
         {
+            ArrayList<String> emailArrayList = new ArrayList<>();
+            emailArrayList.add("test");
 
-            DashboardSearchTags tags = new DashboardSearchTags(null, null, null, null);
+            DashboardSearchTags tags = new DashboardSearchTags(emailArrayList, null, null);
 
             UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
-            assertEquals(4, info.users.length);
+            assertEquals(userIds.size(), info.users.length);
             for (int i = 0; i < info.users.length; i++) {
                 assertEquals(userIds.get(i), info.users[i].user.id);   
             }
         }
 
-        // search for emailpassword users
-
+        // search with provider and input email as "test"
         {
-            ArrayList<String> recipes = new ArrayList<>();
-            recipes.add("emailpassword");
-            DashboardSearchTags tags = new DashboardSearchTags(null, null, null, recipes);
+            ArrayList<String> arrayList = new ArrayList<>();
+            arrayList.add("test");
 
-            UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
-            assertEquals(2, info.users.length);
-            for (int i = 0; i < info.users.length; i++) {
-                assertEquals(userIds.get(i), info.users[i].user.id);   
-            }
-        }
-
-        // search for thirdparty users
-        {
-            ArrayList<String> recipes = new ArrayList<>();
-            recipes.add("thirdparty");
-            DashboardSearchTags tags = new DashboardSearchTags(null, null, null, recipes);
-
+            DashboardSearchTags tags = new DashboardSearchTags(arrayList, null, arrayList);
             UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
             assertEquals(1, info.users.length);
-            assertEquals(userIds.get(2), info.users[0].user.id);
-        }
 
-        // search for passwordless
-        {
-            ArrayList<String> recipes = new ArrayList<>();
-            recipes.add("passwordless");
-            DashboardSearchTags tags = new DashboardSearchTags(null, null, null, recipes);
-
-            UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
-            assertEquals(1, info.users.length);
-            assertEquals(userIds.get(3), info.users[0].user.id);
         }
 
         process.kill();
@@ -159,53 +136,7 @@ public class GetUsersWithSearchTagsTest {
         userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
         createCodeResponse.userInputCode, null).user.id);
 
-        // search for users with no recipes selected, should return users from all recipes
-        {
-
-            DashboardSearchTags tags = new DashboardSearchTags(null, null, null, null);
-
-            UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
-            assertEquals(4, info.users.length);
-            for (int i = 0; i < info.users.length; i++) {
-                assertEquals(userIds.get(i), info.users[i].user.id);   
-            }
-        }
-
-        // search for emailpassword users
-
-        {
-            ArrayList<String> recipes = new ArrayList<>();
-            recipes.add("emailpassword");
-            DashboardSearchTags tags = new DashboardSearchTags(null, null, null, recipes);
-
-            UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
-            assertEquals(2, info.users.length);
-            for (int i = 0; i < info.users.length; i++) {
-                assertEquals(userIds.get(i), info.users[i].user.id);   
-            }
-        }
-
-        // search for thirdparty users
-        {
-            ArrayList<String> recipes = new ArrayList<>();
-            recipes.add("thirdparty");
-            DashboardSearchTags tags = new DashboardSearchTags(null, null, null, recipes);
-
-            UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
-            assertEquals(1, info.users.length);
-            assertEquals(userIds.get(2), info.users[0].user.id);
-        }
-
-        // search for passwordless
-        {
-            ArrayList<String> recipes = new ArrayList<>();
-            recipes.add("passwordless");
-            DashboardSearchTags tags = new DashboardSearchTags(null, null, null, recipes);
-
-            UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
-            assertEquals(1, info.users.length);
-            assertEquals(userIds.get(3), info.users[0].user.id);
-        }
+        
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));

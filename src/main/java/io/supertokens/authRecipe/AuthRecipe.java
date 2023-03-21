@@ -57,6 +57,9 @@ public class AuthRecipe {
         }
         AuthRecipeUserInfo[] resultUsers = new AuthRecipeUserInfo[maxLoop];
         System.arraycopy(users, 0, resultUsers, 0, maxLoop);
+        if(dashboardSearchTags != null){
+            return new UserPaginationContainer(resultUsers, null);
+        }
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
 

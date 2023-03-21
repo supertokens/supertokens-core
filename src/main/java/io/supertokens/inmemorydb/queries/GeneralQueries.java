@@ -340,7 +340,7 @@ public class GeneralQueries {
                         }
                     }
 
-                    USER_SEARCH_TAG_CONDITION.append(QUERY).append(" LIMIT 1000");
+                    USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
                 }
 
                 if (dashboardSearchTags.phoneNumbers == null) {
@@ -381,9 +381,11 @@ public class GeneralQueries {
 
                     // check if we need to append this to the existing search query
                     if (USER_SEARCH_TAG_CONDITION.length() != 0) {
-                        USER_SEARCH_TAG_CONDITION.append(" UNION ").append(QUERY).append(" LIMIT 1000");;
+                        USER_SEARCH_TAG_CONDITION.append(" UNION ").append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
+                        
                     } else {
-                        USER_SEARCH_TAG_CONDITION.append(QUERY).append(" LIMIT 1000");;
+                        USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
+    
                     }
                 }
 
@@ -425,9 +427,10 @@ public class GeneralQueries {
                     }
 
                     if (USER_SEARCH_TAG_CONDITION.length() != 0) {
-                        USER_SEARCH_TAG_CONDITION.append(" UNION ").append(QUERY).append(" LIMIT 1000");;
+                        USER_SEARCH_TAG_CONDITION.append(" UNION ").append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
+                        ;
                     } else {
-                        USER_SEARCH_TAG_CONDITION.append(QUERY).append(" LIMIT 1000");
+                        USER_SEARCH_TAG_CONDITION.append(QUERY).append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
                     }
                 }
 
@@ -435,51 +438,22 @@ public class GeneralQueries {
                     usersFromQuery = new ArrayList<>();
                 } else {
 
-                    if (timeJoined != null && userId != null) {
-
-                        String timeJoinedOrderSymbol = timeJoinedOrder.equals("ASC") ? ">" : "<";
-                        String finalQuery = "SELECT * FROM ( " + USER_SEARCH_TAG_CONDITION.toString() + " ) WHERE "
-                                + " (time_joined " + timeJoinedOrderSymbol
-                                + " ? OR (time_joined = ? AND user_id <= ?)) ORDER BY time_joined " + timeJoinedOrder
-                                + ", user_id DESC LIMIT ?";
-                        usersFromQuery = execute(start, finalQuery, pst -> {
-                            int i = 1;
-                            for (; i <= queryList.size(); i++) {
-                                pst.setString(i, queryList.get(i - 1));
-                            }
-                            pst.setLong(i, timeJoined);
-                            pst.setLong(++i, timeJoined);
-                            pst.setString(++i, userId);
-                            pst.setInt(++i, limit);
-                        }, result -> {
-                            List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
-                            while (result.next()) {
-                                temp.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
-                                        result.getString("recipe_id")));
-                            }
-                            return temp;
-                        });
-
-                    } else {
-
-                        String finalQuery = "SELECT * FROM ( " + USER_SEARCH_TAG_CONDITION.toString() + " )"
-                                + " ORDER BY time_joined " + timeJoinedOrder + ", user_id DESC LIMIT ?";
-                        usersFromQuery = execute(start, finalQuery, pst -> {
-                            int i = 1;
-                            for (; i <= queryList.size(); i++) {
-                                pst.setString(i, queryList.get(i - 1));
-                            }
-                            pst.setInt(i, limit);
-                        }, result -> {
-                            List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
-                            while (result.next()) {
-                                temp.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
-                                        result.getString("recipe_id")));
-                            }
-                            return temp;
-                        });
-
-                    }
+                    String finalQuery = "SELECT * FROM ( " + USER_SEARCH_TAG_CONDITION.toString() + " )"
+                            + " ORDER BY time_joined " + timeJoinedOrder + ", user_id DESC LIMIT ?";
+                    usersFromQuery = execute(start, finalQuery, pst -> {
+                        int i = 1;
+                        for (; i <= queryList.size(); i++) {
+                            pst.setString(i, queryList.get(i - 1));
+                        }
+                        pst.setInt(i, limit);
+                    }, result -> {
+                        List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
+                        while (result.next()) {
+                            temp.add(new UserInfoPaginationResultHolder(result.getString("user_id"),
+                                    result.getString("recipe_id")));
+                        }
+                        return temp;
+                    });
                 }
 
             }
