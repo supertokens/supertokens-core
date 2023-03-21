@@ -584,11 +584,11 @@ public class Passwordless {
                         throw new StorageTransactionLogicException(e);
                     }
                     if (user.email != null) {
-                        storage.deleteDevicesByEmail_Transaction(tenantIdentifier.toAppIdentifier(), con, user.email,
+                        storage.deleteDevicesByEmail_Transaction(tenantIdentifier, con, user.email,
                                 userId);
                     }
                     if (emailUpdate.newValue != null) {
-                        storage.deleteDevicesByEmail_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                        storage.deleteDevicesByEmail_Transaction(tenantIdentifier, con,
                                 emailUpdate.newValue, userId);
                     }
                 }
@@ -600,11 +600,11 @@ public class Passwordless {
                         throw new StorageTransactionLogicException(e);
                     }
                     if (user.phoneNumber != null) {
-                        storage.deleteDevicesByPhoneNumber_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                        storage.deleteDevicesByPhoneNumber_Transaction(tenantIdentifier, con,
                                 user.phoneNumber, userId);
                     }
                     if (phoneNumberUpdate.newValue != null) {
-                        storage.deleteDevicesByPhoneNumber_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                        storage.deleteDevicesByPhoneNumber_Transaction(tenantIdentifier, con,
                                 phoneNumberUpdate.newValue, userId);
                     }
                 }

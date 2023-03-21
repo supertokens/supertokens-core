@@ -146,11 +146,14 @@ public class MultitenantEmailPasswordTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
-        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t1");
-        TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
-
         createTenants(process);
+
+        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
+        t1.setStorage(StorageLayer.getStorage(t1, process.getProcess()));
+        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t1");
+        t2.setStorage(StorageLayer.getStorage(t2, process.getProcess()));
+        TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
+        t3.setStorage(StorageLayer.getStorage(t3, process.getProcess()));
 
         {
             EmailPassword.signUp(t1, process.getProcess(), "user1@example.com", "password1");
@@ -189,11 +192,15 @@ public class MultitenantEmailPasswordTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
-        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t1");
-        TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
-
         createTenants(process);
+
+        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
+        t1.setStorage(StorageLayer.getStorage(t1, process.getProcess()));
+        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t1");
+        t2.setStorage(StorageLayer.getStorage(t2, process.getProcess()));
+        TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
+        t3.setStorage(StorageLayer.getStorage(t3, process.getProcess()));
+
 
         EmailPassword.signUp(t1, process.getProcess(), "user@example.com", "password1");
         EmailPassword.signUp(t2, process.getProcess(), "user@example.com", "password2");
@@ -232,11 +239,14 @@ public class MultitenantEmailPasswordTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
-        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t1");
-        TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
-
         createTenants(process);
+
+        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
+        t1.setStorage(StorageLayer.getStorage(t1, process.getProcess()));
+        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t1");
+        t2.setStorage(StorageLayer.getStorage(t2, process.getProcess()));
+        TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
+        t3.setStorage(StorageLayer.getStorage(t3, process.getProcess()));
 
         UserInfo user1 = EmailPassword.signUp(t1, process.getProcess(), "user1@example.com", "password1");
         UserInfo user2 = EmailPassword.signUp(t2, process.getProcess(), "user2@example.com", "password2");
@@ -275,11 +285,14 @@ public class MultitenantEmailPasswordTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
-        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t1");
-        TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
-
         createTenants(process);
+
+        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
+        t1.setStorage(StorageLayer.getStorage(t1, process.getProcess()));
+        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t1");
+        t2.setStorage(StorageLayer.getStorage(t2, process.getProcess()));
+        TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
+        t3.setStorage(StorageLayer.getStorage(t3, process.getProcess()));
 
         UserInfo user1 = EmailPassword.signUp(t1, process.getProcess(), "user@example.com", "password1");
         UserInfo user2 = EmailPassword.signUp(t2, process.getProcess(), "user@example.com", "password2");
@@ -319,11 +332,14 @@ public class MultitenantEmailPasswordTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
-        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t1");
-        TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
-
         createTenants(process);
+
+        TenantIdentifier t1 = new TenantIdentifier(null, "a1", null);
+        t1.setStorage(StorageLayer.getStorage(t1, process.getProcess()));
+        TenantIdentifier t2 = new TenantIdentifier(null, "a1", "t1");
+        t2.setStorage(StorageLayer.getStorage(t2, process.getProcess()));
+        TenantIdentifier t3 = new TenantIdentifier(null, "a1", "t2");
+        t3.setStorage(StorageLayer.getStorage(t3, process.getProcess()));
 
         UserInfo user1 = EmailPassword.signUp(t1, process.getProcess(), "user@example.com", "password1");
         UserInfo user2 = EmailPassword.signUp(t2, process.getProcess(), "user@example.com", "password2");

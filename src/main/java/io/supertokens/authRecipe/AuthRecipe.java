@@ -182,10 +182,10 @@ public class AuthRecipe {
     private static void deleteAuthRecipeUser(AppIdentifier appIdentifier, String userId)
             throws StorageQueryException {
         // auth recipe deletions here only
-        // TODO delete from app_id_to_user_id table
         Storage storage = appIdentifier.getStorage();
-        ((EmailPasswordSQLStorage) storage).deleteEmailPasswordUser(appIdentifier, userId);
-        ((ThirdPartySQLStorage) storage).deleteThirdPartyUser(appIdentifier, userId);
-        ((PasswordlessSQLStorage) storage).deletePasswordlessUser(appIdentifier, userId);
+        ((AuthRecipeStorage) storage).deleteAuthRecipeUser(appIdentifier, userId);
+
+        // TODO Delete passwordless user was also deleting all the devices with matching email or phone number
+        // which is no longer being done.
     }
 }
