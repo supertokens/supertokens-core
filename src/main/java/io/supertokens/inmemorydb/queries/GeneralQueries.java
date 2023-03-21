@@ -323,8 +323,7 @@ public class GeneralQueries {
                 StringBuilder USER_SEARCH_TAG_CONDITION = new StringBuilder();
 
                 // if recipeIds is null we are searching across all recipes
-                if ((dashboardSearchTags.recipeIds == null || dashboardSearchTags.recipeIds.contains("emailpassword"))
-                        && dashboardSearchTags.providers == null && dashboardSearchTags.phoneNumbers == null) {
+                if (dashboardSearchTags.providers == null && dashboardSearchTags.phoneNumbers == null) {
                     String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
                             + " AS allAuthUsersTable" +
                             " JOIN " + getConfig(start).getEmailPasswordUsersTable()
@@ -341,11 +340,10 @@ public class GeneralQueries {
                         }
                     }
 
-                    USER_SEARCH_TAG_CONDITION.append(QUERY);
+                    USER_SEARCH_TAG_CONDITION.append(QUERY).append(" LIMIT 1000");
                 }
 
-                if ((dashboardSearchTags.recipeIds == null || dashboardSearchTags.recipeIds.contains("thirdparty"))
-                        && dashboardSearchTags.phoneNumbers == null) {
+                if (dashboardSearchTags.phoneNumbers == null) {
                     String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
                             + " AS allAuthUsersTable" +
                             " JOIN " + getConfig(start).getThirdPartyUsersTable()
@@ -383,14 +381,13 @@ public class GeneralQueries {
 
                     // check if we need to append this to the existing search query
                     if (USER_SEARCH_TAG_CONDITION.length() != 0) {
-                        USER_SEARCH_TAG_CONDITION.append(" UNION ").append(QUERY);
+                        USER_SEARCH_TAG_CONDITION.append(" UNION ").append(QUERY).append(" LIMIT 1000");;
                     } else {
-                        USER_SEARCH_TAG_CONDITION.append(QUERY);
+                        USER_SEARCH_TAG_CONDITION.append(QUERY).append(" LIMIT 1000");;
                     }
                 }
 
-                if ((dashboardSearchTags.recipeIds == null || dashboardSearchTags.recipeIds.contains("passwordless"))
-                        && dashboardSearchTags.providers == null) {
+                if (dashboardSearchTags.providers == null) {
                     String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
                             + " AS allAuthUsersTable" +
                             " JOIN " + getConfig(start).getPasswordlessUsersTable()
@@ -428,9 +425,9 @@ public class GeneralQueries {
                     }
 
                     if (USER_SEARCH_TAG_CONDITION.length() != 0) {
-                        USER_SEARCH_TAG_CONDITION.append(" UNION ").append(QUERY);
+                        USER_SEARCH_TAG_CONDITION.append(" UNION ").append(QUERY).append(" LIMIT 1000");;
                     } else {
-                        USER_SEARCH_TAG_CONDITION.append(QUERY);
+                        USER_SEARCH_TAG_CONDITION.append(QUERY).append(" LIMIT 1000");
                     }
                 }
 

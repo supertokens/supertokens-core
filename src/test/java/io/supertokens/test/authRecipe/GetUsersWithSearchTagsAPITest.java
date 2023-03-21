@@ -20,6 +20,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 
 import org.junit.AfterClass;
@@ -29,9 +30,11 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 
 import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.dashboard.Dashboard;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.CreateCodeResponse;
@@ -92,7 +95,35 @@ public class GetUsersWithSearchTagsAPITest {
         JsonArray users = response.get("users").getAsJsonArray();
 
         for (int i = 0; i < userIds.size(); i++) {
-            assertEquals(userIds.get(i), users.get(i).getAsJsonObject().get("user").getAsJsonObject().get("id").getAsString());
+            assertEquals(userIds.get(i),
+                    users.get(i).getAsJsonObject().get("user").getAsJsonObject().get("id").getAsString());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testRetriev() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/user/search/tags", null, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(),
+                null);
+        assertEquals(2, response.entrySet().size());
+        assertEquals("OK", response.get("status").getAsString());
+        JsonArray tags = response.get("tags").getAsJsonArray();
+        assertEquals(Dashboard.SUPPORTED_SEARCH_TAGS.values().length, tags.size());
+
+        for (JsonElement tag : tags) {
+            Arrays.asList(Dashboard.SUPPORTED_SEARCH_TAGS.values())
+                    .contains(Dashboard.SUPPORTED_SEARCH_TAGS.fromString(tag.getAsString()));
         }
 
         process.kill();

@@ -47,6 +47,30 @@ public class Dashboard {
     public static final int MAX_NUMBER_OF_FREE_DASHBOARD_USERS = 1;
     public static final long DASHBOARD_SESSION_DURATION = 2592000000L; // 30 days in milliseconds
 
+    public enum SUPPORTED_SEARCH_TAGS {
+        EMAIL("email"), PHONE("phone"), PROVIDER("provider");
+
+        private String tag;
+
+        SUPPORTED_SEARCH_TAGS(String tag) {
+            this.tag = tag;
+        }
+
+        public static SUPPORTED_SEARCH_TAGS fromString(String text) {
+            for (SUPPORTED_SEARCH_TAGS t : SUPPORTED_SEARCH_TAGS.values()) {
+                if (t.tag.equalsIgnoreCase(text)) {
+                    return t;
+                }
+            }
+            return null;
+        }
+
+        @Override
+        public String toString() {
+            return tag;
+        }
+    }
+
     public static DashboardUser signUpDashboardUser(Main main, String email, String password)
             throws StorageQueryException, DuplicateEmailException, FeatureNotEnabledException {
 
@@ -149,7 +173,8 @@ public class Dashboard {
         return false;
     }
 
-    public static DashboardUser updateUsersCredentialsWithUserId(Main main, String userId, String newEmail, String newPassword)
+    public static DashboardUser updateUsersCredentialsWithUserId(Main main, String userId, String newEmail,
+            String newPassword)
             throws StorageQueryException, DuplicateEmailException, UserIdNotFoundException,
             StorageTransactionLogicException {
         DashboardSQLStorage storage = StorageLayer.getDashboardStorage(main);
@@ -185,17 +210,17 @@ public class Dashboard {
             }
             throw e;
         }
-        
+
         // revoke sessions for the user
         DashboardSessionInfo[] sessionInfo = Dashboard.getAllDashboardSessionsForUser(main, userId);
-        for(int i = 0; i < sessionInfo.length; i ++){
+        for (int i = 0; i < sessionInfo.length; i++) {
             StorageLayer.getDashboardStorage(main).revokeSessionWithSessionId(sessionInfo[i].sessionId);
         }
 
         return StorageLayer.getDashboardStorage(main).getDashboardUserByUserId(userId);
     }
 
-    public static DashboardUser getDashboardUserByEmail(Main main, String email) throws StorageQueryException{
+    public static DashboardUser getDashboardUserByEmail(Main main, String email) throws StorageQueryException {
 
         return StorageLayer.getDashboardStorage(main).getDashboardUserByEmail(email);
     }
@@ -208,16 +233,17 @@ public class Dashboard {
         return StorageLayer.getDashboardStorage(main).revokeSessionWithSessionId(sessionId);
     }
 
-    public static DashboardSessionInfo [] getAllDashboardSessionsForUser(Main main, String userId) throws StorageQueryException {
+    public static DashboardSessionInfo[] getAllDashboardSessionsForUser(Main main, String userId)
+            throws StorageQueryException {
         return StorageLayer.getDashboardStorage(main).getAllSessionsForUserId(userId);
     }
 
     private static boolean isDashboardFeatureFlagEnabled(Main main) throws StorageQueryException {
         try {
             return Arrays.stream(FeatureFlag.getInstance(main).getEnabledFeatures())
-                .anyMatch(t -> t == EE_FEATURES.DASHBOARD_LOGIN);
+                    .anyMatch(t -> t == EE_FEATURES.DASHBOARD_LOGIN);
         } catch (Exception e) {
-           return false;
+            return false;
         }
     }
 

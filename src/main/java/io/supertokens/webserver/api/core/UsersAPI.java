@@ -116,7 +116,7 @@ public class UsersAPI extends WebserverAPI {
                 ArrayList<String> emailArrayList = normalizeSearchTags(emails);
 
                 if (emailArrayList.size() != 0) {
-                    searchTags = new DashboardSearchTags(emailArrayList, null, null, null);
+                    searchTags = new DashboardSearchTags(emailArrayList, null, null);
                 }
             }
         }
@@ -128,7 +128,7 @@ public class UsersAPI extends WebserverAPI {
 
                 if (phoneNumberArrayList.size() != 0) {
                     if (searchTags == null) {
-                        searchTags = new DashboardSearchTags(null, phoneNumberArrayList, null, null);
+                        searchTags = new DashboardSearchTags(null, phoneNumberArrayList, null);
                     } else {
                         searchTags.phoneNumbers = phoneNumberArrayList;
                     }
@@ -144,31 +144,9 @@ public class UsersAPI extends WebserverAPI {
 
                 if (providerArrayList.size() != 0) {
                     if (searchTags == null) {
-                        searchTags = new DashboardSearchTags(null, null, providerArrayList, null);
+                        searchTags = new DashboardSearchTags(null, null, providerArrayList);
                     } else {
                         searchTags.providers = providerArrayList;
-                    }
-                }
-            }
-        }
-
-        String recipes = InputParser.getQueryParamOrThrowError(req, "recipe", true);
-        {
-            if (recipes != null) {
-                String[] searchTagArray = recipes.split(";");
-                ArrayList<String> searchTagArrayList = new ArrayList<>();
-                for (String searchTagString : searchTagArray) {
-                    String normalizedSearchTag = searchTagString.toLowerCase().replaceAll("\\s", "");
-                    if (normalizedSearchTag.length() != 0) {
-                        searchTagArrayList.add(normalizedSearchTag);
-                    }
-                }
-
-                if (searchTagArrayList.size() != 0) {
-                    if (searchTags == null) {
-                        searchTags = new DashboardSearchTags(null, null, null, searchTagArrayList);
-                    } else {
-                        searchTags.providers = searchTagArrayList;
                     }
                 }
             }
