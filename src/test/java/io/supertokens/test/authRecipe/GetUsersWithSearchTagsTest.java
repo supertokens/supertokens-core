@@ -102,9 +102,13 @@ public class GetUsersWithSearchTagsTest {
             ArrayList<String> arrayList = new ArrayList<>();
             arrayList.add("test");
 
+            // check that only thirdparty user is retrieved
+
             DashboardSearchTags tags = new DashboardSearchTags(arrayList, null, arrayList);
             UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
             assertEquals(1, info.users.length);
+            assertEquals(userIds.get(2), info.users[0].user.id);
+            assertEquals("thirdparty", info.users[0].recipeId);
 
         }
 
