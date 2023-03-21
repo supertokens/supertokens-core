@@ -5,6 +5,7 @@ import java.security.NoSuchAlgorithmException;
 
 import com.google.gson.JsonObject;
 
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -60,6 +61,8 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
 
         try {
             TOTPDevice device = Totp.registerDevice(main, userId, deviceName, skew, period);
+
+            ActiveUsers.updateLastActive(main, userId);
 
             result.addProperty("status", "OK");
             result.addProperty("secret", device.secretKey);

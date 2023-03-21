@@ -19,6 +19,8 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -74,6 +76,9 @@ public class SessionRemoveAPI extends WebserverAPI {
         if (userId != null) {
             try {
                 String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(main, userId);
+
+                ActiveUsers.updateLastActive(main, userId);
+
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();

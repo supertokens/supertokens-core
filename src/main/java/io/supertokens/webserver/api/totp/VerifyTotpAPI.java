@@ -4,6 +4,7 @@ import java.io.IOException;
 
 import com.google.gson.JsonObject;
 
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -50,6 +51,8 @@ public class VerifyTotpAPI extends WebserverAPI {
 
         try {
             Totp.verifyCode(main, userId, totp, allowUnverifiedDevices);
+
+            ActiveUsers.updateLastActive(main, userId);
 
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);

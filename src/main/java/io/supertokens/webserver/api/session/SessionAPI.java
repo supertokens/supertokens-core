@@ -20,6 +20,8 @@ import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
@@ -76,6 +78,8 @@ public class SessionAPI extends WebserverAPI {
         try {
             SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf);
+
+            ActiveUsers.updateLastActive(main, userId);
 
             JsonObject result = sessionInfo.toJsonObject();
 

@@ -19,6 +19,8 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.UnauthorisedException;
@@ -61,6 +63,9 @@ public class RefreshSessionAPI extends WebserverAPI {
         try {
             SessionInformationHolder sessionInfo = Session.refreshSession(main, refreshToken, antiCsrfToken,
                     enableAntiCsrf);
+
+            ActiveUsers.updateLastActive(main, sessionInfo.session.userId);
+
             JsonObject result = sessionInfo.toJsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
