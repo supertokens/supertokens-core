@@ -28,6 +28,8 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.utils.Utils;
@@ -64,7 +66,13 @@ public class RefreshSessionAPI extends WebserverAPI {
             SessionInformationHolder sessionInfo = Session.refreshSession(main, refreshToken, antiCsrfToken,
                     enableAntiCsrf);
 
-            ActiveUsers.updateLastActive(main, sessionInfo.session.userId);
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main,
+                    sessionInfo.session.userId, UserIdType.ANY);
+            if (userIdMapping != null) {
+                ActiveUsers.updateLastActive(main, userIdMapping.superTokensUserId);
+            } else {
+                ActiveUsers.updateLastActive(main, sessionInfo.session.userId);
+            }
 
             JsonObject result = sessionInfo.toJsonObject();
             result.addProperty("status", "OK");

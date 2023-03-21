@@ -12,7 +12,7 @@ import static io.supertokens.inmemorydb.QueryExecutorTemplate.update;
 public class ActiveUsersQueries {
     static String getQueryToCreateUserLastActiveTable(Start start) {
         return "CREATE TABLE IF NOT EXISTS " + Config.getConfig(start).getUserLastActiveTable() + " ("
-                + "user_id CHAR(36),"
+                + "user_id VARCHAR(128),"
                 + "last_active_time BIGINT UNSIGNED," + "PRIMARY KEY(user_id)" + " );";
     }
 
