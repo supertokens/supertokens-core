@@ -19,7 +19,8 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
@@ -27,6 +28,8 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.session.SessionInfo;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
@@ -76,6 +79,14 @@ public class SessionAPI extends WebserverAPI {
         try {
             SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf);
+
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main,
+                    sessionInfo.session.userId, UserIdType.ANY);
+            if (userIdMapping != null) {
+                ActiveUsers.updateLastActive(main, userIdMapping.superTokensUserId);
+            } else {
+                ActiveUsers.updateLastActive(main, sessionInfo.session.userId);
+            }
 
             JsonObject result = sessionInfo.toJsonObject();
 

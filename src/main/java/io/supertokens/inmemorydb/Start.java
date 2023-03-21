@@ -24,6 +24,7 @@ import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.inmemorydb.queries.*;
+import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.LOG_LEVEL;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -99,7 +100,7 @@ import java.util.Set;
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
-        DashboardSQLStorage, TOTPSQLStorage {
+        DashboardSQLStorage, TOTPSQLStorage, ActiveUsersStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -436,6 +437,24 @@ public class Start
     public boolean doesUserIdExist(String userId) throws StorageQueryException {
         try {
             return GeneralQueries.doesUserIdExist(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void updateLastActive(String userId) throws StorageQueryException {
+        try {
+            ActiveUsersQueries.updateUserLastActive(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public int countUsersActiveSince(long time) throws StorageQueryException {
+        try {
+            return ActiveUsersQueries.countUsersActiveSince(this, time);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }

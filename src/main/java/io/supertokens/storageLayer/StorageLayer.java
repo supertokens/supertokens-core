@@ -23,6 +23,7 @@ import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
@@ -173,6 +174,14 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             throw new QuitProgramException("please call init() before calling getStorageLayer");
         }
         return (AuthRecipeStorage) getInstance(main).storage;
+    }
+
+    public static ActiveUsersStorage getActiveUsersStorage(Main main) {
+        if (getInstance(main) == null) {
+            throw new QuitProgramException("please call init() before calling getStorageLayer");
+        }
+
+        return (ActiveUsersStorage) getInstance(main).storage;
     }
 
     public static SessionStorage getSessionStorage(Main main) {
