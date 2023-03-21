@@ -16,9 +16,7 @@
 
 package io.supertokens.webserver.api.session;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;

@@ -17,6 +17,8 @@
 package io.supertokens.test.emailpassword.api;
 
 import com.google.gson.JsonObject;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
@@ -68,6 +70,8 @@ public class SignInAPITest2_7 {
             return;
         }
 
+        long startTs = System.currentTimeMillis();
+
         {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
@@ -107,6 +111,9 @@ public class SignInAPITest2_7 {
             }
         }
 
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 0);
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -133,6 +140,8 @@ public class SignInAPITest2_7 {
         responseBody.addProperty("email", "random@gmail.com");
         responseBody.addProperty("password", "validPass123");
 
+        long beforeSignIn = System.currentTimeMillis();
+
         JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
                 "emailpassword");
@@ -147,11 +156,15 @@ public class SignInAPITest2_7 {
         signInResponse.get("user").getAsJsonObject().get("timeJoined").getAsLong();
         assertEquals(signInResponse.get("user").getAsJsonObject().entrySet().size(), 3);
 
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), beforeSignIn);
+        assert (activeUsers == 1);
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Test that sign in with unnormalised email like Test@gmail.com should also work
+    // Test that sign in with unnormalised email like Test@gmail.com should also
+    // work
     @Test
     public void testThatUnnormalisedEmailShouldAlsoWork() throws Exception {
         String[] args = { "../" };
@@ -190,7 +203,8 @@ public class SignInAPITest2_7 {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    // Test that giving an empty password, empty email, invalid email, random email or wrong password throws a wrong
+    // Test that giving an empty password, empty email, invalid email, random email
+    // or wrong password throws a wrong
     // * credentials error
     @Test
     public void testInputsToSignInAPI() throws Exception {
