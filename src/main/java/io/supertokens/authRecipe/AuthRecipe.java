@@ -16,12 +16,14 @@
 
 package io.supertokens.authRecipe;
 
+import io.supertokens.AppIdentifierStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -116,7 +118,7 @@ public class AuthRecipe {
         }
     }
 
-    public static void deleteUser(AppIdentifier appIdentifier, String userId)
+    public static void deleteUser(AppIdentifier appIdentifier, String userId, UserIdMapping userIdMapping)
             throws StorageQueryException, BadPermissionException {
         // We clean up the user last so that if anything before that throws an error, then that will throw a 500 to the
         // developer. In this case, they expect that the user has not been deleted (which will be true). This is as
@@ -129,9 +131,6 @@ public class AuthRecipe {
 
         // If userId mapping exists then delete entries with superTokensUserId from auth related tables and
         // externalUserid from non-auth tables
-        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(appIdentifier,
-                userId, UserIdType.ANY);
-
         if (userIdMapping != null) {
             // We check if the mapped externalId is another SuperTokens UserId, this could come up when migrating
             // recipes.
@@ -160,10 +159,15 @@ public class AuthRecipe {
     public static void deleteUser(Main main, String userId)
             throws StorageQueryException {
         try {
-            Storage storage = StorageLayer.getStorage(main);
-            deleteUser(new AppIdentifier(null, null, storage), userId);
-        } catch (BadPermissionException e) {
+            AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndMapping =
+                    StorageLayer.getAppIdentifierStorageAndUserIdMappingForUser(
+                    main, new AppIdentifier(null, null), userId, UserIdType.ANY);
+            deleteUser(appIdentifierStorageAndMapping.appIdentifier, userId,
+                    appIdentifierStorageAndMapping.userIdMapping);
+        } catch (BadPermissionException | TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
+        } catch (UnknownUserIdException e) {
+            throw new RuntimeException(e);
         }
     }
 

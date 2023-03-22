@@ -53,9 +53,10 @@ public class DeleteUserAPI extends WebserverAPI {
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         try {
             AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
-                    this.getAppIdentifierStorageAndUserIdMappingFromRequest(req, userId, UserIdType.SUPERTOKENS);
+                    this.getAppIdentifierStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
 
-            AuthRecipe.deleteUser(appIdentifierStorageAndUserIdMapping.appIdentifier, userId);
+            AuthRecipe.deleteUser(appIdentifierStorageAndUserIdMapping.appIdentifier, userId,
+                    appIdentifierStorageAndUserIdMapping.userIdMapping);
         } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
