@@ -1140,8 +1140,7 @@ public class PathRouterTest extends Mockito {
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 400);
                 assertEquals(e.getMessage(),
-                        "Http error. Status Code: 400. Message: AppId or tenantId not found => appId: public, " +
-                                "tenantId: t2");
+                        "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the following connectionURIDomain, appId and tenantId combination not found: (127.0.0.1:3567, public, t2)");
             }
         }
         {
@@ -1245,8 +1244,7 @@ public class PathRouterTest extends Mockito {
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 400);
                 assertEquals(e.getMessage(),
-                        "Http error. Status Code: 400. Message: AppId or tenantId not found => appId: public, " +
-                                "tenantId: t1");
+                        "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the following connectionURIDomain, appId and tenantId combination not found: (, public, t1)");
             }
         }
         {
@@ -1315,8 +1313,7 @@ public class PathRouterTest extends Mockito {
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 400);
                 assertEquals(e.getMessage(),
-                        "Http error. Status Code: 400. Message: AppId or tenantId not found => appId: public, " +
-                                "tenantId: t2");
+                        "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the following connectionURIDomain, appId and tenantId combination not found: (localhost:3567, public, t2)");
             }
         }
 
@@ -2028,8 +2025,7 @@ public class PathRouterTest extends Mockito {
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 400);
                 assertEquals(e.getMessage(),
-                        "Http error. Status Code: 400. Message: AppId or tenantId not found => appId: app1, " +
-                                "tenantId: public");
+                        "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the following connectionURIDomain, appId and tenantId combination not found: (127.0.0.1:3567, app1, public)");
             }
         }
         {
@@ -2133,8 +2129,7 @@ public class PathRouterTest extends Mockito {
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 400);
                 assertEquals(e.getMessage(),
-                        "Http error. Status Code: 400. Message: AppId or tenantId not found => appId: public, " +
-                                "tenantId: t1");
+                        "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the following connectionURIDomain, appId and tenantId combination not found: (, public, t1)");
             }
         }
         {
@@ -2147,8 +2142,7 @@ public class PathRouterTest extends Mockito {
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 400);
                 assertEquals(e.getMessage(),
-                        "Http error. Status Code: 400. Message: AppId or tenantId not found => appId: app1, " +
-                                "tenantId: t1");
+                        "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the following connectionURIDomain, appId and tenantId combination not found: (, app1, t1)");
             }
         }
         {
@@ -2161,8 +2155,7 @@ public class PathRouterTest extends Mockito {
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 400);
                 assertEquals(e.getMessage(),
-                        "Http error. Status Code: 400. Message: AppId or tenantId not found => appId: public, " +
-                                "tenantId: t2");
+                        "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the following connectionURIDomain, appId and tenantId combination not found: (, public, t2)");
             }
         }
         {
@@ -2231,8 +2224,7 @@ public class PathRouterTest extends Mockito {
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 400);
                 assertEquals(e.getMessage(),
-                        "Http error. Status Code: 400. Message: AppId or tenantId not found => appId: public, " +
-                                "tenantId: t2");
+                        "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the following connectionURIDomain, appId and tenantId combination not found: (localhost:3567, public, t2)");
             }
         }
 
@@ -2246,8 +2238,7 @@ public class PathRouterTest extends Mockito {
             } catch (HttpResponseException e) {
                 assertEquals(e.statusCode, 400);
                 assertEquals(e.getMessage(),
-                        "Http error. Status Code: 400. Message: AppId or tenantId not found => appId: app1, " +
-                                "tenantId: public");
+                        "Http error. Status Code: 400. Message: AppId or tenantId not found => Tenant with the following connectionURIDomain, appId and tenantId combination not found: (localhost:3567, app1, public)");
             }
         }
 
