@@ -17,6 +17,8 @@
 package io.supertokens.test.emailpassword.api;
 
 import com.google.gson.JsonObject;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
@@ -68,6 +70,8 @@ public class SignUpAPITest2_7 {
             return;
         }
 
+        long beforeTestTs = System.currentTimeMillis();
+
         {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
@@ -107,6 +111,9 @@ public class SignUpAPITest2_7 {
             }
         }
 
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), beforeTestTs);
+        assert (activeUsers == 0);
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -123,6 +130,8 @@ public class SignUpAPITest2_7 {
             return;
         }
 
+        long beforeSignUpTs = System.currentTimeMillis();
+
         JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "random@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
         assertEquals(signUpResponse.entrySet().size(), 2);
@@ -130,6 +139,9 @@ public class SignUpAPITest2_7 {
         JsonObject signUpUser = signUpResponse.get("user").getAsJsonObject();
         assertEquals(signUpUser.get("email").getAsString(), "random@gmail.com");
         assertNotNull(signUpUser.get("id"));
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), beforeSignUpTs);
+        assert (activeUsers == 0);
 
         UserInfo user = StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .getUserInfoUsingEmail("random@gmail.com");
@@ -160,7 +172,8 @@ public class SignUpAPITest2_7 {
 
     // Test the normalise email function
     // Test that only the normalised email is saved in the db
-    // Failure condition: If the email retrieved from the data is not normalised the test will fail
+    // Failure condition: If the email retrieved from the data is not normalised the
+    // test will fail
     @Test
     public void testTheNormaliseEmailFunction() throws Exception {
         String[] args = { "../" };

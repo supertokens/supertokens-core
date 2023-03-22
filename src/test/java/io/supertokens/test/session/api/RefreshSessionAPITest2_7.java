@@ -18,6 +18,8 @@ package io.supertokens.test.session.api;
 
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -35,7 +37,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 public class RefreshSessionAPITest2_7 {
-    @Rule
+        @Rule
     public TestRule watchman = Utils.getOnFailure();
 
     @AfterClass
@@ -187,6 +189,8 @@ public class RefreshSessionAPITest2_7 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        long start1 = System.currentTimeMillis();
+
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", null, 1000, 1000, null,
@@ -195,11 +199,17 @@ public class RefreshSessionAPITest2_7 {
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals("Http error. Status Code: 400. Message: Invalid Json Input", e.getMessage());
         }
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), start1);
+        assert (activeUsers == 0);
+        
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
         process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        long start2 = System.currentTimeMillis();
 
         try {
             JsonObject jsonBody = new JsonObject();
@@ -213,6 +223,13 @@ public class RefreshSessionAPITest2_7 {
                     "Http error. Status Code: 400. Message: Field name 'refreshToken' is invalid in JSON input");
 
         }
+
+        activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), start2);
+        assert (activeUsers == 0);
+
+        long start3 = System.currentTimeMillis();
+
+        long start3Inner = 0; // to be set after session is created
 
         try {
             String userId = "userId";
@@ -236,6 +253,8 @@ public class RefreshSessionAPITest2_7 {
             sessionRefreshBody.addProperty("refreshToken",
                     sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
 
+            start3Inner = System.currentTimeMillis();
+
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
                     Utils.getCdiVersion2_7ForTests(), "session");
@@ -245,6 +264,16 @@ public class RefreshSessionAPITest2_7 {
                     "Http error. Status Code: 400. Message: Field name 'enableAntiCsrf' is invalid in JSON input");
 
         }
+
+        activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), start3);
+        assert (activeUsers == 1);
+
+        int activeUsersAfterSessionCreate = ActiveUsers.countUsersActiveSince(process.getProcess(), start3Inner);
+        assert (activeUsersAfterSessionCreate == 0);
+
+        long start4 = System.currentTimeMillis();
+
+        long start4Inner = 0; // to be set after session is created
 
         try {
             String userId = "userId";
@@ -269,6 +298,8 @@ public class RefreshSessionAPITest2_7 {
                     sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
             sessionRefreshBody.addProperty("enableAntiCsrf", "false");
 
+            start4Inner = System.currentTimeMillis();
+
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
                     Utils.getCdiVersion2_7ForTests(), "session");
@@ -278,6 +309,12 @@ public class RefreshSessionAPITest2_7 {
                     "Http error. Status Code: 400. Message: Field name 'enableAntiCsrf' is invalid in JSON input");
 
         }
+
+        activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), start4);
+        assert (activeUsers == 1);
+
+        activeUsersAfterSessionCreate = ActiveUsers.countUsersActiveSince(process.getProcess(), start4Inner);
+        assert (activeUsersAfterSessionCreate == 0);
     }
 
     @Test
@@ -375,6 +412,8 @@ public class RefreshSessionAPITest2_7 {
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
 
+        long startTs = System.currentTimeMillis();
+
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
                 "session");
@@ -386,14 +425,19 @@ public class RefreshSessionAPITest2_7 {
                 sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
         sessionRefreshBody.addProperty("enableAntiCsrf", false);
 
+        long afterSessionCreateTs = System.currentTimeMillis();
+
         JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
                 Utils.getCdiVersion2_7ForTests(), "session");
 
         checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, false);
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 1);
+
+        int activeUsersAfterSessionCreate = ActiveUsers.countUsersActiveSince(process.getProcess(), afterSessionCreateTs);
+        assert (activeUsersAfterSessionCreate == 1);
     }
 
     @Test

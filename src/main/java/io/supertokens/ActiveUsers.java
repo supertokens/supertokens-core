@@ -11,4 +11,8 @@ public class ActiveUsers {
         } catch (StorageQueryException ignored) {
         }
     }
+
+    public static int countUsersActiveSince(Main main, long time) throws StorageQueryException {
+        return StorageLayer.getActiveUsersStorage(main).countUsersActiveSince(time);
+    }
 }

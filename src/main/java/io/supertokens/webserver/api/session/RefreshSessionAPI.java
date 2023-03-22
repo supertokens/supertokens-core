@@ -16,9 +16,7 @@
 
 package io.supertokens.webserver.api.session;
 
-import com.google.gson.Gson;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
@@ -66,13 +64,17 @@ public class RefreshSessionAPI extends WebserverAPI {
             SessionInformationHolder sessionInfo = Session.refreshSession(main, refreshToken, antiCsrfToken,
                     enableAntiCsrf);
 
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main,
-                    sessionInfo.session.userId, UserIdType.ANY);
-            if (userIdMapping != null) {
-                ActiveUsers.updateLastActive(main, userIdMapping.superTokensUserId);
-            } else {
-                ActiveUsers.updateLastActive(main, sessionInfo.session.userId);
+            try{
+                UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main,
+                        sessionInfo.session.userId, UserIdType.ANY);
+                if (userIdMapping != null) {
+                    ActiveUsers.updateLastActive(main, userIdMapping.superTokensUserId);
+                } else {
+                    ActiveUsers.updateLastActive(main, sessionInfo.session.userId);
+                }
+            } catch (StorageQueryException ignored){
             }
+
 
             JsonObject result = sessionInfo.toJsonObject();
             result.addProperty("status", "OK");
