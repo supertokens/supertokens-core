@@ -6,10 +6,8 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.RSAKeyProvider;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.*;
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.cronjobs.Cronjobs;
@@ -146,11 +144,36 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     public JsonObject getPaidFeatureStats() throws StorageQueryException {
         JsonObject result = new JsonObject();
         EE_FEATURES[] features = getEnabledEEFeaturesFromDbOrCache();
-        if (Arrays.stream(features).anyMatch(t -> t == EE_FEATURES.DASHBOARD_LOGIN)) {
-            JsonObject stats = new JsonObject();
-            int userCount = StorageLayer.getDashboardStorage(main).getAllDashboardUsers().length;
-            stats.addProperty("user_count", userCount);
-            result.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), stats);
+        for (EE_FEATURES feature : features) {
+            if (feature == EE_FEATURES.DASHBOARD_LOGIN) {
+                JsonObject stats = new JsonObject();
+                int userCount = StorageLayer.getDashboardStorage(main).getAllDashboardUsers().length;
+                stats.addProperty("user_count", userCount);
+                result.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), stats);
+            }
+
+            if (feature == EE_FEATURES.TOTP) {
+                JsonObject stats = new JsonObject();
+                JsonArray mauArr = new JsonArray();
+                JsonArray totpMauArr = new JsonArray();
+                for (int i = 0; i < 30; i++) {
+                    long timestamp = System.currentTimeMillis() - i * 24 * 60 * 60 * 1000;
+
+                    int mau = ActiveUsers.countUsersActiveSince(main, timestamp);
+                    mauArr.add(new JsonPrimitive(mau));
+
+                    int totpMau = StorageLayer.getActiveUsersStorage(main).countUsersEnabledTotpAndActiveSince(timestamp);
+                    totpMauArr.add(new JsonPrimitive(totpMau));
+                }
+
+                stats.add("maus", mauArr);
+                stats.add("totp_maus", totpMauArr);
+
+                int totpTotalEnabled = StorageLayer.getActiveUsersStorage(main).countUsersEnabledTotp();
+                stats.addProperty("total_totp_users", totpTotalEnabled);
+
+                result.add(EE_FEATURES.TOTP.toString(), stats);
+            }
         }
         return result;
     }
