@@ -198,7 +198,7 @@ public class VerifySessionAPITest2_19 {
     }
 
     @Test
-    public void unauthorisedOutputCheck() throws Exception {
+    public void checkDatabaseParamTest() throws Exception {
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -225,20 +225,34 @@ public class VerifySessionAPITest2_19 {
         HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/remove", deleteRequest, 1000, 1000, null,
                 SemVer.v2_19.get(), "session");
+        {
+            JsonObject request = new JsonObject();
+            request.addProperty("accessToken",
+                    sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
+            request.addProperty("doAntiCsrfCheck", true);
+            request.addProperty("checkDatabase", true);
+            request.addProperty("enableAntiCsrf", false);
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/session/verify", request, 1000, 1000, null,
+                    SemVer.v2_19.get(), "session");
 
-        JsonObject request = new JsonObject();
-        request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
-        request.addProperty("doAntiCsrfCheck", true);
-        request.addProperty("checkDatabase", true);
-        request.addProperty("enableAntiCsrf", false);
-        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session/verify", request, 1000, 1000, null,
-                SemVer.v2_19.get(), "session");
+            assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
+            assertEquals(response.get("message").getAsString(), "Either the session has ended or has been blacklisted");
 
-        assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
-        assertEquals(response.get("message").getAsString(), "Either the session has ended or has been blacklisted");
+            assertEquals(response.entrySet().size(), 2);
+        }
+        {
+            JsonObject request = new JsonObject();
+            request.addProperty("accessToken", sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString());
+            request.addProperty("doAntiCsrfCheck", true);
+            request.addProperty("enableAntiCsrf", false);
+            request.addProperty("checkDatabase", false);
+            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/session/verify", request, 1000, 1000, null,
+                    Utils.getCdiVersionStringLatestForTests(), "session");
 
-        assertEquals(response.entrySet().size(), 2);
+            assertEquals(response.get("status").getAsString(), "OK");
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

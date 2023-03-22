@@ -91,6 +91,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
             throws StorageQueryException, StorageTransactionLogicException {
         Storage storage = StorageLayer.getSessionStorage(main);
         Storage jwtRecipeStorage = StorageLayer.getJWTRecipeStorage(main);
+        final boolean isLegacyKeyDynamic = Config.getConfig(main).getAccessTokenSigningKeyDynamic();
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
@@ -101,13 +102,17 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
                 KeyValueInfo legacyKey = sqlStorage.getLegacyAccessTokenSigningKey_Transaction(con);
 
                 if (legacyKey != null) {
-                    try {
-                        sqlJWTRecipeStorage.setJWTSigningKey_Transaction(con, new JWTAsymmetricSigningKeyInfo(
-                                Utils.getUUID(), legacyKey.createdAtTime, ACCESS_TOKEN_SIGNING_ALGO, legacyKey.value
-                        ));
-                    } catch (DuplicateKeyIdException e) {
-                        // This should be exceedingly rare, since we are generating the UUID above.
-                        throw new StorageTransactionLogicException(e);
+                    if (isLegacyKeyDynamic) {
+                        sqlStorage.addAccessTokenSigningKey_Transaction(con, legacyKey);
+                    } else {
+                        try {
+                            sqlJWTRecipeStorage.setJWTSigningKey_Transaction(con, new JWTAsymmetricSigningKeyInfo(
+                                    "s-" + Utils.getUUID(), legacyKey.createdAtTime, ACCESS_TOKEN_SIGNING_ALGO, legacyKey.value
+                            ));
+                        } catch (DuplicateKeyIdException e) {
+                            // This should be exceedingly rare, since we are generating the UUID above.
+                            throw new StorageTransactionLogicException(e);
+                        }
                     }
                     sqlStorage.removeLegacyAccessTokenSigningKey_Transaction(con);
                     sqlStorage.commitTransaction(con);
@@ -121,13 +126,20 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
 
             if (legacyKey != null) {
                 // We should only get here once, after an upgrade.
-                try {
-                    noSQLJWTRecipeStorage.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(new JWTAsymmetricSigningKeyInfo(
-                            Utils.getUUID(), legacyKey.createdAtTime, ACCESS_TOKEN_SIGNING_ALGO, legacyKey.value
-                    ));
-                } catch (DuplicateKeyIdException e) {
-                    // This should be exceedingly rare, since we are generating the UUID above.
-                    throw new StorageTransactionLogicException(e);
+                if (isLegacyKeyDynamic) {
+                    noSQLStorage.addAccessTokenSigningKey_Transaction(
+                            new KeyValueInfo(legacyKey.value, legacyKey.createdAtTime), null);
+                } else {
+                    try {
+                        noSQLJWTRecipeStorage.setJWTSigningKeyInfoIfNoKeyForAlgorithmExists_Transaction(
+                                new JWTAsymmetricSigningKeyInfo(
+                                        "s-" + Utils.getUUID(), legacyKey.createdAtTime, ACCESS_TOKEN_SIGNING_ALGO,
+                                        legacyKey.value
+                                ));
+                    } catch (DuplicateKeyIdException e) {
+                        // This should be exceedingly rare, since we are generating the UUID above.
+                        throw new StorageTransactionLogicException(e);
+                    }
                 }
                 // We don't need to check the lastUpdatedSign here, since we never update or set
                 // legacy keys anymore.

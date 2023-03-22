@@ -200,7 +200,7 @@ public class RegenerateTokenTest {
     public void testSessionRegenerateWithTokenExpiryAndRefresh() throws Exception {
         String[] args = { "../" };
 
-        Utils.setValueInConfig("access_token_validity", "1");// 1 second validity
+        Utils.setValueInConfig("access_token_validity", "2");// 1 second validity
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -223,7 +223,7 @@ public class RegenerateTokenTest {
         assertEquals(accessTokenInfoBefore.userData, userDataInJWT);
 
         // let it expire
-        Thread.sleep(2000);
+        Thread.sleep(2500);
 
         // regenerate with different payload (should return accessToken as null)
 
