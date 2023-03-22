@@ -78,7 +78,7 @@ public class GetUsersWithSearchTagsTest {
         userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.id);
 
         // create passwordless user
-        CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com", null,
+        CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com", "+123456789012",
                 null, null);
         userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
         createCodeResponse.userInputCode, null).user.id);
@@ -110,6 +110,20 @@ public class GetUsersWithSearchTagsTest {
             assertEquals(userIds.get(2), info.users[0].user.id);
             assertEquals("thirdparty", info.users[0].recipeId);
 
+        }
+
+        // test retrieving the passwordless user with partial phone number
+        {
+            ArrayList<String> arrayList = new ArrayList<>();
+            arrayList.add("+12345");
+
+            // check that only passwordless user is retrieved
+
+            DashboardSearchTags tags = new DashboardSearchTags(null, arrayList, null);
+            UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
+            assertEquals(1, info.users.length);
+            assertEquals(userIds.get(3), info.users[0].user.id);
+            assertEquals("passwordless", info.users[0].recipeId);   
         }
 
         process.kill();

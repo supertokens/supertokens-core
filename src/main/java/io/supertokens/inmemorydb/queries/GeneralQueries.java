@@ -418,7 +418,7 @@ public class GeneralQueries {
                     } else if (dashboardSearchTags.phoneNumbers != null) {
 
                         QUERY = QUERY + " WHERE passwordlessTable.phone_number LIKE ?";
-                        queryList.add("%" + dashboardSearchTags.phoneNumbers.get(0));
+                        queryList.add("%" + dashboardSearchTags.phoneNumbers.get(0) + "%");
                         for (int i = 1; i < dashboardSearchTags.phoneNumbers.size(); i++) {
                             QUERY += " OR passwordlessTable.phone_number LIKE ?";
                             queryList.add("%" + dashboardSearchTags.phoneNumbers.get(i) + "%");
@@ -430,7 +430,7 @@ public class GeneralQueries {
                         USER_SEARCH_TAG_CONDITION.append(" UNION ").append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
                         ;
                     } else {
-                        USER_SEARCH_TAG_CONDITION.append(QUERY).append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
+                        USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
                     }
                 }
 
