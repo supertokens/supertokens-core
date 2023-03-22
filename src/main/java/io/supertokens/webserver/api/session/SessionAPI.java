@@ -80,12 +80,15 @@ public class SessionAPI extends WebserverAPI {
             SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf);
 
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main,
-                    sessionInfo.session.userId, UserIdType.ANY);
-            if (userIdMapping != null) {
-                ActiveUsers.updateLastActive(main, userIdMapping.superTokensUserId);
-            } else {
-                ActiveUsers.updateLastActive(main, sessionInfo.session.userId);
+            try {
+                UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main,
+                        sessionInfo.session.userId, UserIdType.ANY);
+                if (userIdMapping != null) {
+                    ActiveUsers.updateLastActive(main, userIdMapping.superTokensUserId);
+                } else {
+                    ActiveUsers.updateLastActive(main, sessionInfo.session.userId);
+                }
+            } catch (StorageQueryException ignored) {
             }
 
             JsonObject result = sessionInfo.toJsonObject();

@@ -79,12 +79,16 @@ public class SessionRemoveAPI extends WebserverAPI {
             try {
                 String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(main, userId);
 
-                UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main,
-                        userId, UserIdType.ANY);
-                if (userIdMapping != null) {
-                    ActiveUsers.updateLastActive(main, userIdMapping.superTokensUserId);
-                } else {
-                    ActiveUsers.updateLastActive(main, userId);
+                try {
+                    UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                            super.main,
+                            userId, UserIdType.ANY);
+                    if (userIdMapping != null) {
+                        ActiveUsers.updateLastActive(main, userIdMapping.superTokensUserId);
+                    } else {
+                        ActiveUsers.updateLastActive(main, userId);
+                    }
+                } catch (StorageQueryException ignored) {
                 }
 
                 JsonObject result = new JsonObject();
