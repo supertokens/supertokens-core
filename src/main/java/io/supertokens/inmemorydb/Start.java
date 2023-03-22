@@ -517,11 +517,6 @@ public class Start
     }
 
     @Override
-    public void deleteAuthRecipeUser(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
-        // TODO...
-    }
-
-    @Override
     public SessionInfo getSessionInfo_Transaction(TenantIdentifier tenantIdentifier, TransactionConnection con,
                                                   String sessionHandle)
             throws StorageQueryException {
@@ -594,6 +589,16 @@ public class Start
                 throw new DuplicateUserIdException();
             }
             throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteEmailPasswordUser(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
+        // TODO..
+        try {
+            EmailPasswordQueries.deleteUser(this, userId);
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e.actualException);
         }
     }
 
@@ -959,6 +964,16 @@ public class Start
                 throw new io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException();
             }
             throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteThirdPartyUser(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
+        try {
+            // TODO..
+            ThirdPartyQueries.deleteUser(this, userId);
+        } catch (StorageTransactionLogicException e) {
+            throw new StorageQueryException(e.actualException);
         }
     }
 
@@ -1408,6 +1423,17 @@ public class Start
                 throw new DuplicatePhoneNumberException();
             }
 
+            throw new StorageQueryException(e.actualException);
+        }
+    }
+
+    @Override
+    public void deletePasswordlessUser(AppIdentifier appIdentifier, String userId) throws
+            StorageQueryException {
+        try {
+            // TODO..
+            PasswordlessQueries.deleteUser(this, userId);
+        } catch (StorageTransactionLogicException e) {
             throw new StorageQueryException(e.actualException);
         }
     }
