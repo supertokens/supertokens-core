@@ -75,18 +75,13 @@ public class RefreshSessionAPITest2_19 {
                 sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
         sessionRefreshBody.addProperty("enableAntiCsrf", false);
 
-        HttpResponseException caught = null;
-        try {
-            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
                     Utils.getCdiVersionStringLatestForTests(), "session");
-        } catch (HttpResponseException e) {
-            caught = e;
-        }
 
-        assertNotNull(caught);
-        Assert.assertEquals(caught.statusCode, 400);
-        Assert.assertEquals(caught.getMessage(), "Http error. Status Code: 400. Message:" + " The user payload contains protected field");
+        assertEquals(response.entrySet().size(), 2);
+        assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
+        assertEquals(response.get("message").getAsString(), "The user payload contains protected field");
     }
 
     @Test
