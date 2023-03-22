@@ -80,11 +80,12 @@ public class SessionAPI extends WebserverAPI {
 
         boolean useStaticSigningKey = Config.getConfig(main).getAccessTokenSigningKeyDynamic();
         if (version.greaterThanOrEqualTo(SemVer.v2_19)) {
-            Boolean inputUseStaticKey = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
+            Boolean useDynamicSigningKey = InputParser.parseBooleanOrThrowError(input, "useDynamicSigningKey", true);
 
-            // useStaticKeyInput defaults to false, so we check if it has been explicitly set to true
-            useStaticSigningKey = Boolean.TRUE.equals(inputUseStaticKey);
+            // useDynamicSigningKey defaults to true, so we check if it has been explicitly set to true
+            useStaticSigningKey = Boolean.FALSE.equals(useDynamicSigningKey);
         }
+
         try {
             SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf, version.greaterThanOrEqualTo(SemVer.v2_19), useStaticSigningKey);

@@ -168,7 +168,7 @@ public class SessionAPITest2_19 {
         request.addProperty("userId", userId);
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
-        request.addProperty("useStaticSigningKey", true);
+        request.addProperty("useDynamicSigningKey", false);
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",

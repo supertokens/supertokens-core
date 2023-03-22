@@ -16,28 +16,29 @@
 
 package io.supertokens.test.session;
 
+import com.auth0.jwt.interfaces.Claim;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
-import io.supertokens.exceptions.TryRefreshTokenException;
-import io.supertokens.exceptions.UnauthorisedException;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.config.Config;
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.session.jwt.JWT;
 import io.supertokens.signingkeys.AccessTokenSigningKey;
 import io.supertokens.signingkeys.SigningKeys;
-import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
 import java.io.IOException;
+import java.time.Instant;
 import java.util.Base64;
+import java.util.Date;
 
 import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
 
 public class SessionTest5 {
 
@@ -165,6 +166,36 @@ public class SessionTest5 {
         Base64.getUrlDecoder().decode(tokenParts[1]);
         Base64.getUrlDecoder().decode(tokenParts[2]);
 
+        DecodedJWT decodedJWT = com.auth0.jwt.JWT.decode(sessionInfo.accessToken.token);
+
+        Claim headerAlg = decodedJWT.getHeaderClaim("alg");
+        Claim headerType = decodedJWT.getHeaderClaim("typ");
+        Claim headerKeyId = decodedJWT.getHeaderClaim("kid");
+        assertTrue(!headerAlg.isNull() && !headerType.isNull() && !headerKeyId.isNull());
+        assert headerAlg.asString().equalsIgnoreCase("rs256");
+        assert headerType.asString().equalsIgnoreCase("jwt");
+        assert !headerKeyId.asString().isEmpty();
+        assert headerKeyId.asString().startsWith("d-");
+
+        assertEquals(userId, decodedJWT.getSubject());
+
+        Instant issued = decodedJWT.getIssuedAtAsInstant();
+        assert issued.isAfter(Instant.now().minusMillis(1500));
+        assert issued.isBefore(Instant.now().plusMillis(1500));
+
+        Instant expires = decodedJWT.getExpiresAtAsInstant();
+        long validityInMS = Config.getConfig(process.getProcess()).getAccessTokenValidity();
+        assert expires.isAfter(Instant.now().plusMillis(validityInMS).minusMillis(1500));
+        assert expires.isBefore(Instant.now().plusMillis(validityInMS).plusMillis(1500));
+
+        assertNull(decodedJWT.getIssuer());
+        assertNull(decodedJWT.getAudience());
+        assertNull(decodedJWT.getNotBefore());
+
+        // [antiCsrfToken, sub, sessionHandle, exp, iat, parentRefreshTokenHash1, key, refreshTokenHash1]
+        assertEquals(8, decodedJWT.getClaims().size());
+        assertEquals("value", decodedJWT.getClaim("key").asString());
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
@@ -193,6 +224,37 @@ public class SessionTest5 {
         Base64.getUrlDecoder().decode(tokenParts[0]);
         Base64.getUrlDecoder().decode(tokenParts[1]);
         Base64.getUrlDecoder().decode(tokenParts[2]);
+
+        DecodedJWT decodedJWT = com.auth0.jwt.JWT.decode(sessionInfo.accessToken.token);
+
+        Claim headerAlg = decodedJWT.getHeaderClaim("alg");
+        Claim headerType = decodedJWT.getHeaderClaim("typ");
+        Claim headerKeyId = decodedJWT.getHeaderClaim("kid");
+        assertTrue(!headerAlg.isNull() && !headerType.isNull() && !headerKeyId.isNull());
+        assert headerAlg.asString().equalsIgnoreCase("rs256");
+        assert headerType.asString().equalsIgnoreCase("jwt");
+        assert !headerKeyId.asString().isEmpty();
+        assert headerKeyId.asString().startsWith("s-");
+
+        assertEquals(userId, decodedJWT.getSubject());
+
+        Instant issued = decodedJWT.getIssuedAtAsInstant();
+        assert issued.isAfter(Instant.now().minusMillis(1500));
+        assert issued.isBefore(Instant.now().plusMillis(1500));
+
+        Instant expires = decodedJWT.getExpiresAtAsInstant();
+        long validityInMS = Config.getConfig(process.getProcess()).getAccessTokenValidity();
+
+        assert expires.isAfter(Instant.now().plusMillis(validityInMS).minusMillis(1500));
+        assert expires.isBefore(Instant.now().plusMillis(validityInMS).plusMillis(1500));
+
+        assertNull(decodedJWT.getIssuer());
+        assertNull(decodedJWT.getAudience());
+        assertNull(decodedJWT.getNotBefore());
+
+        // [antiCsrfToken, sub, sessionHandle, exp, iat, parentRefreshTokenHash1, key, refreshTokenHash1]
+        assertEquals(8, decodedJWT.getClaims().size());
+        assertEquals("value", decodedJWT.getClaim("key").asString());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

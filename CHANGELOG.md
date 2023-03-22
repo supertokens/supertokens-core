@@ -12,7 +12,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Using an internal `SemVer` class to handle version numbers. This will make handling CDI version ranges easier.
 - Support for CDI version `2.19`
   - Removed POST `/recipe/handshake`
-  - Added `useStaticSigningKey` into `createNewSession` (POST `/recipe/session`), replacing 
+  - Added `useDynamicSigningKey` into `createNewSession` (POST `/recipe/session`), replacing 
     `access_token_signing_key_dynamic` used in CDI<=2.18
   - Added `useStaticSigningKey` into `createSignedJWT` (POST `/recipe/jwt`)
   - Added `checkDatabase` into `verifySession` (POST `/recipe/session/verify`), replacing 
