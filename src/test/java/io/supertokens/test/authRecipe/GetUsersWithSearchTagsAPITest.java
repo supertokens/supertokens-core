@@ -104,7 +104,7 @@ public class GetUsersWithSearchTagsAPITest {
     }
 
     @Test
-    public void testRetriev() throws Exception {
+    public void testRetrievingUsersWithConflictingTagsReturnsEmptyList() throws Exception {
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));

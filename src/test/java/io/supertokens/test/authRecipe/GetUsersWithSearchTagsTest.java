@@ -149,12 +149,23 @@ public class GetUsersWithSearchTagsTest {
         userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.id);
 
         // create passwordless user
-        CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com", null,
+        CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com", "+123456789012",
                 null, null);
         userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
         createCodeResponse.userInputCode, null).user.id);
 
-        
+        // test retrieving a user with a phoneNumber and provider
+        {
+            ArrayList<String> phoneNumberList = new ArrayList<>();
+            phoneNumberList.add("+1234");
+            ArrayList<String> providerList = new ArrayList<>();
+            providerList.add("testTPID");
+
+            DashboardSearchTags tags = new DashboardSearchTags(null, phoneNumberList, providerList);
+            UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
+
+            assertEquals(0, info.users.length);
+        }
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
