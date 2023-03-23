@@ -49,6 +49,13 @@ public class AuthRecipe {
             users = StorageLayer.getAuthRecipeStorage(main).getUsers(limit + 1, timeJoinedOrder, includeRecipeIds,
                     tokenInfo.userId, tokenInfo.timeJoined, dashboardSearchTags);
         }
+
+        if(dashboardSearchTags != null){
+            AuthRecipeUserInfo[] resultUsers = new AuthRecipeUserInfo[users.length];
+            resultUsers = users;
+            return new UserPaginationContainer(resultUsers, null);
+        }
+
         String nextPaginationToken = null;
         int maxLoop = users.length;
         if (users.length == limit + 1) {
@@ -57,9 +64,6 @@ public class AuthRecipe {
         }
         AuthRecipeUserInfo[] resultUsers = new AuthRecipeUserInfo[maxLoop];
         System.arraycopy(users, 0, resultUsers, 0, maxLoop);
-        if(dashboardSearchTags != null){
-            return new UserPaginationContainer(resultUsers, null);
-        }
         return new UserPaginationContainer(resultUsers, nextPaginationToken);
     }
 

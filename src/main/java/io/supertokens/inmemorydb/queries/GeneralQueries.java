@@ -364,7 +364,7 @@ public class GeneralQueries {
                         if (dashboardSearchTags.providers != null) {
                             QUERY += " AND thirdPartyTable.third_party_id LIKE ?";
                             queryList.add("%" + dashboardSearchTags.providers.get(0) + "%");
-                            for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
+                            for (int i = 1; i < dashboardSearchTags.providers.size(); i++) {
                                 QUERY += " OR thirdPartyTable.third_party_id LIKE ?";
                                 queryList.add("%" + dashboardSearchTags.providers.get(i) + "%");
                             }
@@ -373,7 +373,7 @@ public class GeneralQueries {
                     } else if (dashboardSearchTags.providers != null) {
                         QUERY += " WHERE thirdPartyTable.third_party_id LIKE ?";
                         queryList.add("%" + dashboardSearchTags.providers.get(0) + "%");
-                        for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
+                        for (int i = 1; i < dashboardSearchTags.providers.size(); i++) {
                             QUERY += " OR thirdPartyTable.third_party_id LIKE ?";
                             queryList.add("%" + dashboardSearchTags.providers.get(i) + "%");
                         }
