@@ -10,9 +10,11 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.totp.Totp;
 import io.supertokens.totp.exceptions.InvalidTotpException;
 import io.supertokens.totp.exceptions.LimitReachedException;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -52,6 +54,13 @@ public class VerifyTotpDeviceAPI extends WebserverAPI {
         JsonObject result = new JsonObject();
 
         try {
+            // This step is required only because user_last_active table stores supertokens internal user id.
+            // While sending the usage stats we do a join, so totp tables also must use internal user id.
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main, userId, UserIdType.ANY);
+            if (userIdMapping != null) {
+                userId = userIdMapping.superTokensUserId;
+            }
+
             boolean isNewlyVerified = Totp.verifyDevice(main, userId, deviceName, totp);
 
             result.addProperty("status", "OK");

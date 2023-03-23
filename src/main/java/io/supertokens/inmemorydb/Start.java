@@ -461,6 +461,24 @@ public class Start
     }
 
     @Override
+    public int countUsersEnabledTotp() throws StorageQueryException {
+        try {
+            return ActiveUsersQueries.countUsersEnabledTotp(this);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+    
+    @Override
+    public int countUsersEnabledTotpAndActiveSince(long time) throws StorageQueryException {
+        try {
+            return ActiveUsersQueries.countUsersEnabledTotpAndActiveSince(this, time);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public SessionInfo getSessionInfo_Transaction(TransactionConnection con, String sessionHandle)
             throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
