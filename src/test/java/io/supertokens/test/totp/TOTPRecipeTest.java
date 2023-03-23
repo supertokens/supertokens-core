@@ -27,7 +27,9 @@ import java.time.Instant;
 
 import javax.crypto.spec.SecretKeySpec;
 
+import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
 import io.supertokens.httpRequest.HttpResponseException;
 import org.apache.commons.codec.binary.Base32;
@@ -101,7 +103,7 @@ public class TOTPRecipeTest {
         }
         TOTPStorage storage = StorageLayer.getTOTPStorage(process.getProcess());
 
-        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_TOTP_FEATURE);
+        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
 
         return new TestSetupResult(storage, process);
     }

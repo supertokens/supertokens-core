@@ -3,7 +3,9 @@ package io.supertokens.test.totp.api;
 import com.google.gson.JsonObject;
 
 import io.supertokens.ProcessState;
+import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.test.totp.TOTPRecipeTest;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -82,7 +84,7 @@ public class VerifyTotpAPITest {
             return;
         }
 
-        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_TOTP_FEATURE);
+        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
 
         // Setup user and devices:
         JsonObject createDeviceReq = new JsonObject();

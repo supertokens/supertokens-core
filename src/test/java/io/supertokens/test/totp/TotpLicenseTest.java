@@ -16,20 +16,20 @@
 
 package io.supertokens.test.totp;
 
+import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
-import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
-import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
-import io.supertokens.httpRequest.HttpResponseException;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPStorage;
-import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.totp.Totp;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -37,7 +37,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.io.IOException;
 
 import static io.supertokens.test.totp.TOTPRecipeTest.generateTotpCode;
 import static org.junit.Assert.assertNotNull;
@@ -96,12 +95,66 @@ public class TotpLicenseTest {
         assertThrows(FeatureNotEnabledException.class, () -> {
             Totp.verifyCode(main, "user", "device1", true);
         });
+
+        // Try to create device via API:
+        JsonObject body = new JsonObject();
+        body.addProperty("userId", "user-id");
+        body.addProperty("deviceName", "d1");
+        body.addProperty("skew", 0);
+        body.addProperty("period", 30);
+
+
+        HttpResponseException e = assertThrows(
+                HttpResponseException.class,
+                () -> {
+                    HttpRequestForTesting.sendJsonPOSTRequest(
+                            result.process.getProcess(),
+                            "",
+                            "http://localhost:3567/recipe/totp/device",
+                            body,
+                            1000,
+                            1000,
+                            null,
+                            Utils.getCdiVersionLatestForTests(),
+                            "totp");
+                }
+        );
+        assert e.statusCode == 402;
+        assert e.getMessage().contains("TOTP feature is not enabled");
+
+
+        // Try to verify code via API:
+        JsonObject body2 = new JsonObject();
+        body2.addProperty("userId", "user-id");
+        body2.addProperty("totp", "123456");
+        body2.addProperty("allowUnverifiedDevices", true);
+
+
+        HttpResponseException e2 = assertThrows(
+                HttpResponseException.class,
+                () -> {
+                    HttpRequestForTesting.sendJsonPOSTRequest(
+                            result.process.getProcess(),
+                            "",
+                            "http://localhost:3567/recipe/totp/verify",
+                            body2,
+                            1000,
+                            1000,
+                            null,
+                            Utils.getCdiVersionLatestForTests(),
+                            "totp");
+                }
+        );
+        assert e2.statusCode == 402;
+        assert e2.getMessage().contains("TOTP feature is not enabled");
     }
+
 
     @Test
     public void testTotpWithLicense() throws Exception {
         TestSetupResult result = defaultInit();
-        FeatureFlag.getInstance(result.process.main).setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_TOTP_FEATURE);
+        FeatureFlagTestContent.getInstance(result.process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
+
         Main main = result.process.getProcess();
 
         // Create device
