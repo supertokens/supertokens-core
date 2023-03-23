@@ -78,7 +78,7 @@ public class SessionAPI extends WebserverAPI {
         JsonObject userDataInDatabase = InputParser.parseJsonObjectOrThrowError(input, "userDataInDatabase", false);
         assert userDataInDatabase != null;
 
-        boolean useStaticSigningKey = Config.getConfig(main).getAccessTokenSigningKeyDynamic();
+        boolean useStaticSigningKey = !Config.getConfig(main).getAccessTokenSigningKeyDynamic();
         if (version.greaterThanOrEqualTo(SemVer.v2_19)) {
             Boolean useDynamicSigningKey = InputParser.parseBooleanOrThrowError(input, "useDynamicSigningKey", true);
 

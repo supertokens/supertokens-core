@@ -71,9 +71,7 @@ public class RefreshSessionAPI extends WebserverAPI {
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
-        } catch(AccessTokenPayloadError e) {
-            throw new ServletException(new BadRequestException(e.getMessage()));
-        } catch (UnauthorisedException e) {
+        } catch (AccessTokenPayloadError | UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "UNAUTHORISED");
