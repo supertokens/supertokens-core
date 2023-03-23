@@ -2,12 +2,14 @@ package io.supertokens.test.totp.api;
 
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
+import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.totp.TotpLicenseTest;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -61,12 +63,15 @@ public class CreateTotpDeviceAPITest {
         assertTrue(e.getMessage().contains(msg));
     }
 
+
     @Test
     public void testApi() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_TOTP_FEATURE);
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;

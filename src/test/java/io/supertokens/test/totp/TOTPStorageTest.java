@@ -3,6 +3,9 @@ package io.supertokens.test.totp;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
+import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
+import io.supertokens.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -26,6 +29,8 @@ import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
 import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
+
+import java.io.IOException;
 
 public class TOTPStorageTest {
 
@@ -52,7 +57,9 @@ public class TOTPStorageTest {
         Utils.reset();
     }
 
-    public TestSetupResult initSteps() throws InterruptedException {
+    public TestSetupResult initSteps()
+            throws InterruptedException, StorageQueryException, InvalidLicenseKeyException, HttpResponseException,
+            IOException {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -62,6 +69,8 @@ public class TOTPStorageTest {
             assert (false);
         }
         TOTPSQLStorage storage = StorageLayer.getTOTPStorage(process.getProcess());
+
+        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_TOTP_FEATURE);
 
         return new TestSetupResult(storage, process);
     }

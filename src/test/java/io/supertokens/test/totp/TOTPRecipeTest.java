@@ -27,6 +27,9 @@ import java.time.Instant;
 
 import javax.crypto.spec.SecretKeySpec;
 
+import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
+import io.supertokens.httpRequest.HttpResponseException;
 import org.apache.commons.codec.binary.Base32;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -85,7 +88,9 @@ public class TOTPRecipeTest {
         }
     }
 
-    public TestSetupResult defaultInit() throws InterruptedException, IOException {
+    public TestSetupResult defaultInit()
+            throws InterruptedException, IOException, StorageQueryException, InvalidLicenseKeyException,
+            HttpResponseException {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -95,6 +100,8 @@ public class TOTPRecipeTest {
             assert (false);
         }
         TOTPStorage storage = StorageLayer.getTOTPStorage(process.getProcess());
+
+        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_TOTP_FEATURE);
 
         return new TestSetupResult(storage, process);
     }

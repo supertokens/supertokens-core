@@ -3,15 +3,16 @@ package io.supertokens.test.totp.api;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
-import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.totp.TOTPRecipeTest;
+import io.supertokens.test.totp.TotpLicenseTest;
 import io.supertokens.useridmapping.UserIdMapping;
 
 import static org.junit.Assert.assertNotNull;
@@ -46,6 +47,8 @@ public class TotpUserIdMappingTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
+
+        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_TOTP_FEATURE);
 
         JsonObject body = new JsonObject();
 
