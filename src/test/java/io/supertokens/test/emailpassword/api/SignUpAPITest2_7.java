@@ -141,7 +141,7 @@ public class SignUpAPITest2_7 {
         assertNotNull(signUpUser.get("id"));
 
         int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), beforeSignUpTs);
-        assert (activeUsers == 0);
+        assert (activeUsers == 1);
 
         UserInfo user = StorageLayer.getEmailPasswordStorage(process.getProcess())
                 .getUserInfoUsingEmail("random@gmail.com");

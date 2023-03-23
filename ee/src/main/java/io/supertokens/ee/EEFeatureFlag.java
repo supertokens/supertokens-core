@@ -19,6 +19,7 @@ import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -156,20 +157,25 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                 JsonObject stats = new JsonObject();
                 JsonArray mauArr = new JsonArray();
                 JsonArray totpMauArr = new JsonArray();
-                for (int i = 0; i < 30; i++) {
-                    long timestamp = System.currentTimeMillis() - i * 24 * 60 * 60 * 1000;
 
-                    int mau = ActiveUsers.countUsersActiveSince(main, timestamp);
+                ActiveUsersStorage activeUsersStorage = StorageLayer.getActiveUsersStorage(main);
+
+                for (int i = 0; i < 30; i++) {
+                    long now = System.currentTimeMillis();
+                    long today = now - (now % (24 * 60 * 60 * 1000L));
+                    long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+
+                    int mau = activeUsersStorage.countUsersActiveSince(timestamp);
                     mauArr.add(new JsonPrimitive(mau));
 
-                    int totpMau = StorageLayer.getActiveUsersStorage(main).countUsersEnabledTotpAndActiveSince(timestamp);
+                    int totpMau = activeUsersStorage.countUsersEnabledTotpAndActiveSince(timestamp);
                     totpMauArr.add(new JsonPrimitive(totpMau));
                 }
 
                 stats.add("maus", mauArr);
                 stats.add("totp_maus", totpMauArr);
 
-                int totpTotalEnabled = StorageLayer.getActiveUsersStorage(main).countUsersEnabledTotp();
+                int totpTotalEnabled = activeUsersStorage.countUsersEnabledTotp();
                 stats.addProperty("total_totp_users", totpTotalEnabled);
 
                 result.add(EE_FEATURES.TOTP.toString(), stats);

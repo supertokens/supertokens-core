@@ -124,30 +124,87 @@ public class FeatureFlagTest {
 
         FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_TOTP_FEATURE);
 
-        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/ee/featureflag",
-                null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
-        Assert.assertEquals("OK", response.get("status").getAsString());
+        // Get the stats without any users/activity
+        {
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/ee/featureflag",
+                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+            Assert.assertEquals("OK", response.get("status").getAsString());
 
-        JsonArray features = response.get("features").getAsJsonArray();
-        JsonObject totpStats = response.get("usageStats").getAsJsonObject().get("totp").getAsJsonObject();
+            JsonArray features = response.get("features").getAsJsonArray();
+            JsonObject totpStats = response.get("usageStats").getAsJsonObject().get("totp").getAsJsonObject();
 
-        assert features.size() == 1;
-        assert features.get(0).getAsString().equals("totp");
+            assert features.size() == 1;
+            assert features.get(0).getAsString().equals("totp");
 
-        JsonArray mau = totpStats.get("maus").getAsJsonArray();
-        JsonArray totpMau = totpStats.get("totp_maus").getAsJsonArray();
-        int totalTotpUsers = totpStats.get("total_totp_users").getAsInt();
+            JsonArray mau = totpStats.get("maus").getAsJsonArray();
+            JsonArray totpMau = totpStats.get("totp_maus").getAsJsonArray();
+            int totalTotpUsers = totpStats.get("total_totp_users").getAsInt();
 
-        assert mau.size() == 30;
-        assert mau.get(0).getAsInt() == 0;
-        assert mau.get(29).getAsInt() == 0;
+            assert mau.size() == 30;
+            assert mau.get(0).getAsInt() == 0;
+            assert mau.get(29).getAsInt() == 0;
 
-        assert totpMau.size() == 30;
-        assert totpMau.get(0).getAsInt() == 0;
-        assert totpMau.get(29).getAsInt() == 0;
+            assert totpMau.size() == 30;
+            assert totpMau.get(0).getAsInt() == 0;
+            assert totpMau.get(29).getAsInt() == 0;
 
-        assert totalTotpUsers == 0;
+            assert totalTotpUsers == 0;
+        }
+
+        // First register 2 users for emailpassword recipe.
+        // This also marks them as active.
+        JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "random@gmail.com", "validPass123");
+        assert signUpResponse.get("status").getAsString().equals("OK");
+
+        JsonObject signUpResponse2 = Utils.signUpRequest_2_5(process, "random2@gmail.com", "validPass123");
+        assert signUpResponse2.get("status").getAsString().equals("OK");
+
+        // Now enable TOTP for the first user by registering a device.
+        JsonObject body = new JsonObject();
+        body.addProperty("userId", signUpResponse.get("user").getAsJsonObject().get("id").getAsString());
+        body.addProperty("deviceName", "d1");
+        body.addProperty("skew", 0);
+        body.addProperty("period", 30);
+        JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(),
+                "",
+                "http://localhost:3567/recipe/totp/device",
+                body,
+                1000,
+                1000,
+                null,
+                Utils.getCdiVersionLatestForTests(),
+                "totp");
+        assert res.get("status").getAsString().equals("OK");
+
+        // Now check the stats again:
+        {
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/ee/featureflag",
+                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+            Assert.assertEquals("OK", response.get("status").getAsString());
+
+            JsonArray features = response.get("features").getAsJsonArray();
+            JsonObject totpStats = response.get("usageStats").getAsJsonObject().get("totp").getAsJsonObject();
+
+            assert features.size() == 1;
+            assert features.get(0).getAsString().equals("totp");
+
+            JsonArray mau = totpStats.get("maus").getAsJsonArray();
+            JsonArray totpMau = totpStats.get("totp_maus").getAsJsonArray();
+            int totalTotpUsers = totpStats.get("total_totp_users").getAsInt();
+
+            assert mau.size() == 30;
+            assert mau.get(0).getAsInt() == 2; // 2 users have signed up
+            assert mau.get(29).getAsInt() == 2;
+
+            assert totpMau.size() == 30;
+            assert totpMau.get(0).getAsInt() == 1; // only 1 user has TOTP enabled
+            assert totpMau.get(29).getAsInt() == 1;
+
+            assert totalTotpUsers == 1;
+        }
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
