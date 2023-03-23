@@ -132,22 +132,22 @@ public class FeatureFlagTest {
             Assert.assertEquals("OK", response.get("status").getAsString());
 
             JsonArray features = response.get("features").getAsJsonArray();
-            JsonObject totpStats = response.get("usageStats").getAsJsonObject().get("totp").getAsJsonObject();
+            JsonObject usageStats = response.get("usageStats").getAsJsonObject();
+            JsonArray maus = usageStats.get("maus").getAsJsonArray();
 
             assert features.size() == 1;
             assert features.get(0).getAsString().equals("totp");
+            assert maus.size() == 30;
+            assert maus.get(0).getAsInt() == 0;
+            assert maus.get(29).getAsInt() == 0;
 
-            JsonArray mau = totpStats.get("maus").getAsJsonArray();
-            JsonArray totpMau = totpStats.get("totp_maus").getAsJsonArray();
-            int totalTotpUsers = totpStats.get("total_totp_users").getAsInt();
+            JsonObject totpStats = usageStats.get("totp").getAsJsonObject();
+            JsonArray totpMaus = totpStats.get("maus").getAsJsonArray();
+            int totalTotpUsers = totpStats.get("total_users").getAsInt();
 
-            assert mau.size() == 30;
-            assert mau.get(0).getAsInt() == 0;
-            assert mau.get(29).getAsInt() == 0;
-
-            assert totpMau.size() == 30;
-            assert totpMau.get(0).getAsInt() == 0;
-            assert totpMau.get(29).getAsInt() == 0;
+            assert totpMaus.size() == 30;
+            assert totpMaus.get(0).getAsInt() == 0;
+            assert totpMaus.get(29).getAsInt() == 0;
 
             assert totalTotpUsers == 0;
         }
@@ -186,22 +186,22 @@ public class FeatureFlagTest {
             Assert.assertEquals("OK", response.get("status").getAsString());
 
             JsonArray features = response.get("features").getAsJsonArray();
-            JsonObject totpStats = response.get("usageStats").getAsJsonObject().get("totp").getAsJsonObject();
+            JsonObject usageStats = response.get("usageStats").getAsJsonObject();
+            JsonArray maus = usageStats.get("maus").getAsJsonArray();
 
             assert features.size() == 1;
             assert features.get(0).getAsString().equals("totp");
+            assert maus.size() == 30;
+            assert maus.get(0).getAsInt() == 2; // 2 users have signed up
+            assert maus.get(29).getAsInt() == 2;
 
-            JsonArray mau = totpStats.get("maus").getAsJsonArray();
-            JsonArray totpMau = totpStats.get("totp_maus").getAsJsonArray();
-            int totalTotpUsers = totpStats.get("total_totp_users").getAsInt();
+            JsonObject totpStats = usageStats.get("totp").getAsJsonObject();
+            JsonArray totpMaus = totpStats.get("maus").getAsJsonArray();
+            int totalTotpUsers = totpStats.get("total_users").getAsInt();
 
-            assert mau.size() == 30;
-            assert mau.get(0).getAsInt() == 2; // 2 users have signed up
-            assert mau.get(29).getAsInt() == 2;
-
-            assert totpMau.size() == 30;
-            assert totpMau.get(0).getAsInt() == 1; // only 1 user has TOTP enabled
-            assert totpMau.get(29).getAsInt() == 1;
+            assert totpMaus.size() == 30;
+            assert totpMaus.get(0).getAsInt() == 1; // only 1 user has TOTP enabled
+            assert totpMaus.get(29).getAsInt() == 1;
 
             assert totalTotpUsers == 1;
         }

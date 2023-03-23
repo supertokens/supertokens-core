@@ -143,45 +143,50 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
     @Override
     public JsonObject getPaidFeatureStats() throws StorageQueryException {
-        JsonObject result = new JsonObject();
+        JsonObject usageStats = new JsonObject();
         EE_FEATURES[] features = getEnabledEEFeaturesFromDbOrCache();
+        ActiveUsersStorage activeUsersStorage = StorageLayer.getActiveUsersStorage(main);
+
         for (EE_FEATURES feature : features) {
             if (feature == EE_FEATURES.DASHBOARD_LOGIN) {
                 JsonObject stats = new JsonObject();
                 int userCount = StorageLayer.getDashboardStorage(main).getAllDashboardUsers().length;
                 stats.addProperty("user_count", userCount);
-                result.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), stats);
+                usageStats.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), stats);
             }
-
             if (feature == EE_FEATURES.TOTP) {
-                JsonObject stats = new JsonObject();
-                JsonArray mauArr = new JsonArray();
+                JsonObject totpStats = new JsonObject();
                 JsonArray totpMauArr = new JsonArray();
-
-                ActiveUsersStorage activeUsersStorage = StorageLayer.getActiveUsersStorage(main);
 
                 for (int i = 0; i < 30; i++) {
                     long now = System.currentTimeMillis();
                     long today = now - (now % (24 * 60 * 60 * 1000L));
                     long timestamp = today - (i * 24 * 60 * 60 * 1000L);
 
-                    int mau = activeUsersStorage.countUsersActiveSince(timestamp);
-                    mauArr.add(new JsonPrimitive(mau));
-
                     int totpMau = activeUsersStorage.countUsersEnabledTotpAndActiveSince(timestamp);
                     totpMauArr.add(new JsonPrimitive(totpMau));
                 }
 
-                stats.add("maus", mauArr);
-                stats.add("totp_maus", totpMauArr);
+                totpStats.add("maus", totpMauArr);
 
-                int totpTotalEnabled = activeUsersStorage.countUsersEnabledTotp();
-                stats.addProperty("total_totp_users", totpTotalEnabled);
-
-                result.add(EE_FEATURES.TOTP.toString(), stats);
+                int totpTotalUsers = activeUsersStorage.countUsersEnabledTotp();
+                totpStats.addProperty("total_users", totpTotalUsers);
+                usageStats.add(EE_FEATURES.TOTP.toString(), totpStats);
             }
         }
-        return result;
+
+        JsonArray mauArr = new JsonArray();
+        for (int i = 0; i < 30; i++) {
+            long now = System.currentTimeMillis();
+            long today = now - (now % (24 * 60 * 60 * 1000L));
+            long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+
+            int mau = activeUsersStorage.countUsersActiveSince(timestamp);
+            mauArr.add(new JsonPrimitive(mau));
+        }
+
+        usageStats.add("maus", mauArr);
+        return usageStats;
     }
 
     private EE_FEATURES[] verifyLicenseKey(String licenseKey)
