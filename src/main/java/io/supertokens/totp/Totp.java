@@ -15,6 +15,9 @@ import io.supertokens.config.Config;
 
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator;
 
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlag;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
@@ -29,6 +32,9 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.totp.exceptions.InvalidTotpException;
 import io.supertokens.totp.exceptions.LimitReachedException;
 import org.apache.commons.codec.binary.Base32;
+import org.jetbrains.annotations.TestOnly;
+
+import static io.supertokens.featureflag.FeatureFlag.getInstance;
 
 public class Totp {
     private static String generateSecret() throws NoSuchAlgorithmException {
@@ -66,8 +72,25 @@ public class Totp {
         return false;
     }
 
+    private static boolean isTotpEnabled(Main main) throws StorageQueryException {
+        EE_FEATURES[] features = FeatureFlag.getInstance(main).getEnabledFeatures();
+        for (EE_FEATURES f : features) {
+            if (f == EE_FEATURES.TOTP) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+
     public static TOTPDevice registerDevice(Main main, String userId, String deviceName, int skew, int period)
-            throws StorageQueryException, DeviceAlreadyExistsException, NoSuchAlgorithmException {
+            throws StorageQueryException, DeviceAlreadyExistsException, NoSuchAlgorithmException,
+            FeatureNotEnabledException {
+
+        if (!isTotpEnabled(main)){
+            throw new FeatureNotEnabledException(
+                    "TOTP feature is not enabled. Please subscribe to a SuperTokens core license key to enable this feature.");
+        }
 
         TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
 
@@ -281,7 +304,13 @@ public class Totp {
 
     public static void verifyCode(Main main, String userId, String code, boolean allowUnverifiedDevices)
             throws TotpNotEnabledException, InvalidTotpException, LimitReachedException,
-            StorageQueryException, StorageTransactionLogicException {
+            StorageQueryException, StorageTransactionLogicException, FeatureNotEnabledException {
+
+        if (!isTotpEnabled(main)){
+            throw new FeatureNotEnabledException(
+                    "TOTP feature is not enabled. Please subscribe to a SuperTokens core license key to enable this feature.");
+        }
+
         TOTPSQLStorage totpStorage = StorageLayer.getTOTPStorage(main);
 
         // Check if the user has any devices:

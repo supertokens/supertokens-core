@@ -5,6 +5,7 @@ import java.io.IOException;
 import com.google.gson.JsonObject;
 
 import io.supertokens.Main;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
@@ -72,7 +73,7 @@ public class VerifyTotpAPI extends WebserverAPI {
             result.addProperty("status", "LIMIT_REACHED_ERROR");
             result.addProperty("retryAfterMs", e.retryAfterMs);
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | FeatureNotEnabledException e) {
             throw new ServletException(e);
         }
     }
