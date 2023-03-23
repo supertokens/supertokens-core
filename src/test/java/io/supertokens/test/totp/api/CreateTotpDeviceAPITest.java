@@ -142,5 +142,4 @@ public class CreateTotpDeviceAPITest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
-
 }
