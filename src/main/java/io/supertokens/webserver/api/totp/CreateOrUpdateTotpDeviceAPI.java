@@ -60,6 +60,8 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
         JsonObject result = new JsonObject();
 
         try {
+            // This step is required only because user_last_active table stores supertokens internal user id.
+            // While sending the usage stats we do a join, so totp tables also must use internal user id.
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main, userId, UserIdType.ANY);
             if (userIdMapping != null) {
                 userId = userIdMapping.superTokensUserId;
@@ -99,6 +101,8 @@ public class CreateOrUpdateTotpDeviceAPI extends WebserverAPI {
         JsonObject result = new JsonObject();
 
         try {
+            // This step is required only because user_last_active table stores supertokens internal user id.
+            // While sending the usage stats we do a join, so totp tables also must use internal user id.
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main, userId, UserIdType.ANY);
             if (userIdMapping != null) {
                 userId = userIdMapping.superTokensUserId;
