@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -72,11 +73,11 @@ public class ResetPasswordAPI extends WebserverAPI {
         }
 
         try {
-            TenantIdentifier tenantIdentifier = getTenantIdentifierStorageFromRequest(req);
-            String userId = EmailPassword.resetPassword(tenantIdentifier, super.main, token, newPassword);
+            TenantIdentifierWithStorage tenantIdentifierWithStorage = getTenantIdentifierWithStorageFromRequest(req);
+            String userId = EmailPassword.resetPassword(tenantIdentifierWithStorage, super.main, token, newPassword);
 
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
-                    tenantIdentifier.toAppIdentifier(), userId, UserIdType.ANY);
+                    tenantIdentifierWithStorage.toAppIdentifierWithStorage(), userId, UserIdType.ANY);
 
             // if userIdMapping exists, pass the externalUserId to the response
             if (userIdMapping != null) {

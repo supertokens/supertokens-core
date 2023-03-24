@@ -59,7 +59,7 @@ public class GetRolesForPermissionAPI extends WebserverAPI {
 
         try {
 
-            String[] roles = UserRoles.getRolesThatHavePermission(this.getTenantIdentifierStorageFromRequest(req), main, permission);
+            String[] roles = UserRoles.getRolesThatHavePermission(this.getTenantIdentifierFromRequest(req), main, permission);
             JsonArray arr = new JsonArray();
 
             for (String s : roles) {

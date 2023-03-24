@@ -36,10 +36,7 @@ import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
@@ -48,8 +45,8 @@ import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
-import io.supertokens.AppIdentifierStorageAndUserIdMapping;
-import io.supertokens.TenantIdentifierStorageAndUserIdMapping;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
+import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import org.jetbrains.annotations.TestOnly;
 
@@ -606,29 +603,29 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return userPoolToStorage.values().toArray(new Storage[0]);
     }
 
-    public static TenantIdentifierStorageAndUserIdMapping getTenantIdentifierStorageAndUserIdMappingForUser(
+    public static TenantIdentifierWithStorageAndUserIdMapping getTenantIdentifierWithStorageAndUserIdMappingForUser(
             Main main, TenantIdentifier tenantIdentifier, String userId, UserIdType userIdType)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
         Storage storage = getStorage(tenantIdentifier, main);
-        tenantIdentifier.setStorage(storage);
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(storage);
 
         UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                tenantIdentifier.toAppIdentifier(), userId, userIdType);
+                tenantIdentifierWithStorage.toAppIdentifierWithStorage(), userId, userIdType);
 
         if (mapping != null) {
-            return new TenantIdentifierStorageAndUserIdMapping(tenantIdentifier, storage, mapping);
+            return new TenantIdentifierWithStorageAndUserIdMapping(tenantIdentifierWithStorage, mapping);
         }
 
         if (userIdType != UserIdType.EXTERNAL
                 && ((AuthRecipeStorage) storage).doesUserIdExist(tenantIdentifier.toAppIdentifier(), userId)) {
-            return new TenantIdentifierStorageAndUserIdMapping(
-                    tenantIdentifier, storage, null);
+            return new TenantIdentifierWithStorageAndUserIdMapping(
+                    tenantIdentifierWithStorage, null);
         }
 
         throw new UnknownUserIdException();
     }
 
-    public static AppIdentifierStorageAndUserIdMapping getAppIdentifierStorageAndUserIdMappingForUser(
+    public static AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingForUser(
             Main main, AppIdentifier appIdentifier, String userId,
             UserIdType userIdType) throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
 
@@ -640,19 +637,18 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
         for (Storage storage : storages) {
             UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    new AppIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(), storage),
+                    appIdentifier.withStorage(storage),
                     userId, userIdType);
 
             if (mapping != null) {
-                appIdentifier.setStorage(storage);
-                return new AppIdentifierStorageAndUserIdMapping(appIdentifier, storage, mapping);
+                AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(storage);
+                return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, mapping);
             }
 
             if (userIdType != UserIdType.EXTERNAL
                     && ((AuthRecipeStorage) storage).doesUserIdExist(appIdentifier, userId)) {
-                appIdentifier.setStorage(storage);
-                return new AppIdentifierStorageAndUserIdMapping(
-                        appIdentifier, storage, null);
+                AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(storage);
+                return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, null);
             }
         }
 

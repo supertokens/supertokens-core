@@ -51,7 +51,7 @@ public class RevokeSessionAPI extends WebserverAPI {
         sessionId = Utils.normalizeAndValidateStringParam(sessionId, "sessionId");
 
         try {
-            Dashboard.revokeSessionWithSessionId(super.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(), main, sessionId);
+            Dashboard.revokeSessionWithSessionId(super.getTenantIdentifierFromRequest(req).toAppIdentifier(), main, sessionId);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);

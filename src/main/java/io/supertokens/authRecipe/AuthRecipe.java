@@ -16,25 +16,23 @@
 
 package io.supertokens.authRecipe;
 
-import io.supertokens.AppIdentifierStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
-import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -49,8 +47,8 @@ public class AuthRecipe {
 
     public static final int USER_PAGINATION_LIMIT = 500;
 
-    public static long getUsersCountForTenant(TenantIdentifier tenantIdentifier,
-                                     RECIPE_ID[] includeRecipeIds)
+    public static long getUsersCountForTenant(TenantIdentifierWithStorage tenantIdentifier,
+                                              RECIPE_ID[] includeRecipeIds)
             throws StorageQueryException,
             TenantOrAppNotFoundException, BadPermissionException {
             return ((AuthRecipeStorage) tenantIdentifier.getStorage()).getUsersCount(
@@ -77,27 +75,28 @@ public class AuthRecipe {
                                      RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            return getUsersCountForTenant(new TenantIdentifier(null, null, null, storage),
+            return getUsersCountForTenant(new TenantIdentifierWithStorage(
+                    null, null, null, storage),
                     includeRecipeIds);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static UserPaginationContainer getUsers(TenantIdentifier tenantIdentifier,
+    public static UserPaginationContainer getUsers(TenantIdentifierWithStorage tenantIdentifierWithStorage,
                                                    Integer limit, String timeJoinedOrder,
                                                    @Nullable String paginationToken,
                                                    @Nullable RECIPE_ID[] includeRecipeIds)
             throws StorageQueryException, UserPaginationToken.InvalidTokenException, TenantOrAppNotFoundException {
         AuthRecipeUserInfo[] users;
         if (paginationToken == null) {
-            users = ((AuthRecipeStorage) tenantIdentifier.getStorage())
-                    .getUsers(tenantIdentifier, limit + 1, timeJoinedOrder, includeRecipeIds, null,
+            users = ((AuthRecipeStorage) tenantIdentifierWithStorage.getStorage())
+                    .getUsers(tenantIdentifierWithStorage, limit + 1, timeJoinedOrder, includeRecipeIds, null,
                             null);
         } else {
             UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
-            users = ((AuthRecipeStorage) tenantIdentifier.getStorage())
-                    .getUsers(tenantIdentifier, limit + 1, timeJoinedOrder, includeRecipeIds,
+            users = ((AuthRecipeStorage) tenantIdentifierWithStorage.getStorage())
+                    .getUsers(tenantIdentifierWithStorage, limit + 1, timeJoinedOrder, includeRecipeIds,
                             tokenInfo.userId, tokenInfo.timeJoined);
         }
         String nextPaginationToken = null;
@@ -119,14 +118,16 @@ public class AuthRecipe {
             throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            return getUsers(new TenantIdentifier(null, null, null, storage), limit, timeJoinedOrder, paginationToken,
-                    includeRecipeIds);
+            return getUsers(new TenantIdentifierWithStorage(
+                    null, null, null, storage),
+                    limit, timeJoinedOrder, paginationToken, includeRecipeIds);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static void deleteUser(AppIdentifier appIdentifier, String userId, UserIdMapping userIdMapping)
+    public static void deleteUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId,
+                                  UserIdMapping userIdMapping)
             throws StorageQueryException {
         // We clean up the user last so that if anything before that throws an error, then that will throw a 500 to the
         // developer. In this case, they expect that the user has not been deleted (which will be true). This is as
@@ -145,21 +146,21 @@ public class AuthRecipe {
             // in reference to
             // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
             // we want to check which state the db is in
-            if (((AuthRecipeStorage) appIdentifier.getStorage())
-                    .doesUserIdExist(appIdentifier, userIdMapping.externalUserId)) {
+            if (((AuthRecipeStorage) appIdentifierWithStorage.getStorage())
+                    .doesUserIdExist(appIdentifierWithStorage, userIdMapping.externalUserId)) {
                 // db is in state A4
                 // delete only from auth tables
-                deleteAuthRecipeUser(appIdentifier, userId);
+                deleteAuthRecipeUser(appIdentifierWithStorage, userId);
             } else {
                 // db is in state A3
                 // delete user from non-auth tables with externalUserId
-                deleteNonAuthRecipeUser(appIdentifier, userIdMapping.externalUserId);
+                deleteNonAuthRecipeUser(appIdentifierWithStorage, userIdMapping.externalUserId);
                 // delete user from auth tables with superTokensUserId
-                deleteAuthRecipeUser(appIdentifier, userIdMapping.superTokensUserId);
+                deleteAuthRecipeUser(appIdentifierWithStorage, userIdMapping.superTokensUserId);
             }
         } else {
-            deleteNonAuthRecipeUser(appIdentifier, userId);
-            deleteAuthRecipeUser(appIdentifier, userId);
+            deleteNonAuthRecipeUser(appIdentifierWithStorage, userId);
+            deleteAuthRecipeUser(appIdentifierWithStorage, userId);
         }
     }
 
@@ -167,31 +168,32 @@ public class AuthRecipe {
     public static void deleteUser(Main main, String userId)
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
-        AppIdentifier appIdentifier = new AppIdentifier(null, null, storage);
+        AppIdentifierWithStorage appIdentifier = new AppIdentifierWithStorage(
+                null, null, storage);
         UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(appIdentifier,
                 userId, UserIdType.ANY);
 
         deleteUser(appIdentifier, userId, mapping);
     }
 
-    private static void deleteNonAuthRecipeUser(AppIdentifier appIdentifier, String userId)
+    private static void deleteNonAuthRecipeUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
             throws StorageQueryException {
-        ((UserMetadataSQLStorage) appIdentifier.getStorage())
-                .deleteUserMetadata(appIdentifier, userId);
-        ((SessionStorage) appIdentifier.getStorage())
-                .deleteSessionsOfUser(appIdentifier, userId);
-        ((EmailVerificationSQLStorage) appIdentifier.getStorage())
-                .deleteEmailVerificationUserInfo(appIdentifier, userId);
-        ((UserRolesSQLStorage) appIdentifier.getStorage())
-                .deleteAllRolesForUser(appIdentifier, userId);
+        ((UserMetadataSQLStorage) appIdentifierWithStorage.getStorage())
+                .deleteUserMetadata(appIdentifierWithStorage, userId);
+        ((SessionStorage) appIdentifierWithStorage.getStorage())
+                .deleteSessionsOfUser(appIdentifierWithStorage, userId);
+        ((EmailVerificationSQLStorage) appIdentifierWithStorage.getStorage())
+                .deleteEmailVerificationUserInfo(appIdentifierWithStorage, userId);
+        ((UserRolesSQLStorage) appIdentifierWithStorage.getStorage())
+                .deleteAllRolesForUser(appIdentifierWithStorage, userId);
     }
 
-    private static void deleteAuthRecipeUser(AppIdentifier appIdentifier, String userId)
+    private static void deleteAuthRecipeUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
             throws StorageQueryException {
         // auth recipe deletions here only
-        Storage storage = appIdentifier.getStorage();
-        ((EmailPasswordSQLStorage) storage).deleteEmailPasswordUser(appIdentifier, userId);
-        ((ThirdPartySQLStorage) storage).deleteThirdPartyUser(appIdentifier, userId);
-        ((PasswordlessSQLStorage) storage).deletePasswordlessUser(appIdentifier, userId);
+        Storage storage = appIdentifierWithStorage.getStorage();
+        ((EmailPasswordSQLStorage) storage).deleteEmailPasswordUser(appIdentifierWithStorage, userId);
+        ((ThirdPartySQLStorage) storage).deleteThirdPartyUser(appIdentifierWithStorage, userId);
+        ((PasswordlessSQLStorage) storage).deletePasswordlessUser(appIdentifierWithStorage, userId);
     }
 }

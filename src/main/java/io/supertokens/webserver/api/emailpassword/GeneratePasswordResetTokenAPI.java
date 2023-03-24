@@ -25,7 +25,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.TenantIdentifierStorageAndUserIdMapping;
+import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
@@ -61,14 +61,14 @@ public class GeneratePasswordResetTokenAPI extends WebserverAPI {
         // logic according to https://github.com/supertokens/supertokens-core/issues/106
 
         try {
-            TenantIdentifierStorageAndUserIdMapping tenantIdentifierStorageAndMapping =
-                    getTenantIdentifierStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+            TenantIdentifierWithStorageAndUserIdMapping tenantIdentifierStorageAndMapping =
+                    getTenantIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
             // if a userIdMapping exists, pass the superTokensUserId to the generatePasswordResetToken
             if (tenantIdentifierStorageAndMapping.userIdMapping != null) {
                 userId = tenantIdentifierStorageAndMapping.userIdMapping.superTokensUserId;
             }
 
-            String token = EmailPassword.generatePasswordResetToken(tenantIdentifierStorageAndMapping.tenantIdentifier, super.main, userId);
+            String token = EmailPassword.generatePasswordResetToken(tenantIdentifierStorageAndMapping.tenantIdentifierWithStorage, super.main, userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

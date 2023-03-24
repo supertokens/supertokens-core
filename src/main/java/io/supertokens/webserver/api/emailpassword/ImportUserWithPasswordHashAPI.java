@@ -93,7 +93,7 @@ public class ImportUserWithPasswordHashAPI extends WebserverAPI {
 
         try {
             EmailPassword.ImportUserResponse importUserResponse = EmailPassword.importUserWithPasswordHash(
-                    this.getTenantIdentifierStorageFromRequest(req), main, email,
+                    this.getTenantIdentifierWithStorageFromRequest(req), main, email,
                     passwordHash, passwordHashingAlgorithm);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

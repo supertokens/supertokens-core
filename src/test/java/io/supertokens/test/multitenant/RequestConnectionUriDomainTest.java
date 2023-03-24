@@ -80,7 +80,7 @@ public class RequestConnectionUriDomainTest {
 
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-                super.sendTextResponse(200, getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain(), resp);
+                super.sendTextResponse(200, getTenantIdentifierFromRequest(req).getConnectionUriDomain(), resp);
             }
         });
 
@@ -142,8 +142,8 @@ public class RequestConnectionUriDomainTest {
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                 super.sendTextResponse(200,
-                        super.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
-                                super.getTenantIdentifierStorageFromRequest(req).getTenantId(), resp);
+                        super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
+                                super.getTenantIdentifierFromRequest(req).getTenantId(), resp);
             }
         });
 
@@ -242,8 +242,8 @@ public class RequestConnectionUriDomainTest {
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
                 super.sendTextResponse(200,
-                        super.getTenantIdentifierStorageFromRequest(req).getConnectionUriDomain() + "," +
-                                super.getTenantIdentifierStorageFromRequest(req).getTenantId(), resp);
+                        super.getTenantIdentifierFromRequest(req).getConnectionUriDomain() + "," +
+                                super.getTenantIdentifierFromRequest(req).getTenantId(), resp);
             }
         });
 

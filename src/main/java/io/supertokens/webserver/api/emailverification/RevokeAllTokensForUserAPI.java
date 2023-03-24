@@ -51,7 +51,7 @@ public class RevokeAllTokensForUserAPI extends WebserverAPI {
         email = Utils.normaliseEmail(email);
 
         try {
-            EmailVerification.revokeAllTokens(this.getTenantIdentifierStorageFromRequest(req), main, userId,
+            EmailVerification.revokeAllTokens(this.getTenantIdentifierWithStorageFromRequest(req), main, userId,
                     email);
 
             JsonObject response = new JsonObject();

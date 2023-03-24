@@ -56,7 +56,7 @@ public class RemoveRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean didRoleExist = UserRoles.deleteRole(this.getTenantIdentifierStorageFromRequest(req), main,
+            boolean didRoleExist = UserRoles.deleteRole(this.getTenantIdentifierFromRequest(req), main,
                     role);
 
             JsonObject response = new JsonObject();

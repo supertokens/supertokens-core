@@ -70,20 +70,24 @@ public class UserAPI extends WebserverAPI {
             UserInfo user = null;
             if (userId != null) {
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(), userId, UserIdType.ANY);
+                        .getUserIdMapping(
+                                this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(),
+                                userId, UserIdType.ANY);
                 if (userIdMapping != null) {
                     userId = userIdMapping.superTokensUserId;
                 }
-                user = ThirdParty.getUser(this.getTenantIdentifierStorageFromRequest(req), main, userId);
+                user = ThirdParty.getUser(this.getTenantIdentifierWithStorageFromRequest(req), main, userId);
                 if (user != null && userIdMapping != null) {
                     user.id = userIdMapping.externalUserId;
                 }
             } else {
-                user = ThirdParty.getUser(this.getTenantIdentifierStorageFromRequest(req), main, thirdPartyId,
+                user = ThirdParty.getUser(this.getTenantIdentifierWithStorageFromRequest(req), main, thirdPartyId,
                         thirdPartyUserId);
                 if (user != null) {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                            .getUserIdMapping(this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(), user.id, UserIdType.ANY);
+                            .getUserIdMapping(
+                                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(),
+                                    user.id, UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
                     }

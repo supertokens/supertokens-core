@@ -17,29 +17,25 @@
 package io.supertokens;
 
 import io.supertokens.pluginInterface.Storage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 
-public class AppIdentifierStorageAndUserIdMapping {
-    @Nonnull
-    public final Storage storage;
-
+public class TenantIdentifierWithStorageAndUserIdMapping {
     @Nullable
     public final io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping;
 
     @Nonnull
-    public final AppIdentifier appIdentifier;
+    public final TenantIdentifierWithStorage tenantIdentifierWithStorage;
 
-    public AppIdentifierStorageAndUserIdMapping(AppIdentifier appIdentifier, Storage storage, UserIdMapping userIdMapping) {
-        this.appIdentifier = appIdentifier;
-        this.storage = storage;
+    public TenantIdentifierWithStorageAndUserIdMapping(TenantIdentifierWithStorage tenantIdentifierWithStorage,
+                                                       UserIdMapping userIdMapping) {
+        this.tenantIdentifierWithStorage = tenantIdentifierWithStorage;
         this.userIdMapping = userIdMapping;
 
-        assert(this.storage != null);
-        assert(this.appIdentifier != null);
+        assert(this.tenantIdentifierWithStorage != null);
     }
 }

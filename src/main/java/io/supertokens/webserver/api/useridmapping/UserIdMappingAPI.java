@@ -24,7 +24,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
-import io.supertokens.AppIdentifierStorageAndUserIdMapping;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
@@ -93,10 +93,10 @@ public class UserIdMappingAPI extends WebserverAPI {
         }
 
         try {
-            AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
-                    this.getAppIdentifierStorageAndUserIdMappingFromRequest(req, superTokensUserId, UserIdType.SUPERTOKENS);
+            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, superTokensUserId, UserIdType.SUPERTOKENS);
 
-            UserIdMapping.createUserIdMapping(appIdentifierStorageAndUserIdMapping.appIdentifier,
+            UserIdMapping.createUserIdMapping(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
                     superTokensUserId, externalUserId, externalUserIdInfo, force);
 
             JsonObject response = new JsonObject();
@@ -151,10 +151,10 @@ public class UserIdMappingAPI extends WebserverAPI {
         }
 
         try {
-            AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
-                    this.getAppIdentifierStorageAndUserIdMappingFromRequest(req, userId, userIdType);
+            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, userIdType);
 
-            if (appIdentifierStorageAndUserIdMapping.userIdMapping == null) {
+            if (appIdentifierWithStorageAndUserIdMapping.userIdMapping == null) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "UNKNOWN_MAPPING_ERROR");
                 super.sendJsonResponse(200, response, resp);
@@ -164,12 +164,12 @@ public class UserIdMappingAPI extends WebserverAPI {
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("superTokensUserId",
-                    appIdentifierStorageAndUserIdMapping.userIdMapping.superTokensUserId);
+                    appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId);
             response.addProperty("externalUserId",
-                    appIdentifierStorageAndUserIdMapping.userIdMapping.externalUserId);
-            if (appIdentifierStorageAndUserIdMapping.userIdMapping.externalUserIdInfo != null) {
+                    appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId);
+            if (appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserIdInfo != null) {
                 response.addProperty("externalUserIdInfo",
-                        appIdentifierStorageAndUserIdMapping.userIdMapping.externalUserIdInfo);
+                        appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserIdInfo);
             }
             super.sendJsonResponse(200, response, resp);
 

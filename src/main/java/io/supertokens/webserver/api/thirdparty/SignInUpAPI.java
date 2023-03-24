@@ -70,7 +70,7 @@ public class SignInUpAPI extends WebserverAPI {
             email = Utils.normaliseEmail(email);
 
             try {
-                ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(this.getTenantIdentifierStorageFromRequest(req), super.main,
+                ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(this.getTenantIdentifierWithStorageFromRequest(req), super.main,
                         thirdPartyId,
                         thirdPartyUserId, email, isEmailVerified);
 
@@ -103,13 +103,14 @@ public class SignInUpAPI extends WebserverAPI {
             email = Utils.normaliseEmail(email);
 
             try {
-                ThirdParty.SignInUpResponse response = ThirdParty.signInUp(this.getTenantIdentifierStorageFromRequest(req), super.main,
+                ThirdParty.SignInUpResponse response = ThirdParty.signInUp(this.getTenantIdentifierWithStorageFromRequest(req), super.main,
                         thirdPartyId, thirdPartyUserId,
                         email);
 
                 //
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(),
+                        .getUserIdMapping(
+                                this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(),
                                 response.user.id, UserIdType.ANY);
                 if (userIdMapping != null) {
                     response.user.id = userIdMapping.externalUserId;

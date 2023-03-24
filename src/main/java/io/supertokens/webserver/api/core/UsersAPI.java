@@ -110,7 +110,7 @@ public class UsersAPI extends WebserverAPI {
         }
 
         try {
-            UserPaginationContainer users = AuthRecipe.getUsers(this.getTenantIdentifierStorageFromRequest(req),
+            UserPaginationContainer users = AuthRecipe.getUsers(this.getTenantIdentifierWithStorageFromRequest(req),
                     limit, timeJoinedOrder, paginationToken,
                     recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
 
@@ -119,7 +119,7 @@ public class UsersAPI extends WebserverAPI {
                 userIds.add(users.users[i].user.id);
             }
             HashMap<String, String> userIdMapping = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
-                    this.getTenantIdentifierStorageFromRequest(req), userIds);
+                    this.getTenantIdentifierWithStorageFromRequest(req), userIds);
             if (!userIdMapping.isEmpty()) {
                 for (int i = 0; i < users.users.length; i++) {
                     String externalId = userIdMapping.get(userIds.get(i));

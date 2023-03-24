@@ -65,7 +65,7 @@ public class VerifySessionAPI extends WebserverAPI {
         assert enableAntiCsrf != null;
 
         try {
-            SessionInformationHolder sessionInfo = Session.getSession(this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(),
+            SessionInformationHolder sessionInfo = Session.getSession(this.getTenantIdentifierFromRequest(req).toAppIdentifier(),
                     main, accessToken,
                     antiCsrfToken, enableAntiCsrf,
                     doAntiCsrfCheck);
@@ -75,14 +75,14 @@ public class VerifySessionAPI extends WebserverAPI {
 
             result.addProperty("jwtSigningPublicKey",
                     new Utils.PubPriKey(
-                            AccessTokenSigningKey.getInstance(this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(), main)
+                            AccessTokenSigningKey.getInstance(this.getTenantIdentifierFromRequest(req).toAppIdentifier(), main)
                                     .getLatestIssuedKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(), main)
+                    AccessTokenSigningKey.getInstance(this.getTenantIdentifierFromRequest(req).toAppIdentifier(), main)
                             .getKeyExpiryTime());
 
             if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
-                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(),
+                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getTenantIdentifierFromRequest(req).toAppIdentifier(),
                                 main)
                         .getAllKeys();
                 JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
@@ -105,16 +105,16 @@ public class VerifySessionAPI extends WebserverAPI {
                 reply.addProperty("status", "TRY_REFRESH_TOKEN");
 
                 reply.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(
-                        AccessTokenSigningKey.getInstance(this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(), main)
+                        AccessTokenSigningKey.getInstance(this.getTenantIdentifierFromRequest(req).toAppIdentifier(), main)
                                 .getLatestIssuedKey().value).publicKey);
                 reply.addProperty("jwtSigningPublicKeyExpiryTime",
-                        AccessTokenSigningKey.getInstance(this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(), main)
+                        AccessTokenSigningKey.getInstance(this.getTenantIdentifierFromRequest(req).toAppIdentifier(), main)
                                 .getKeyExpiryTime());
 
                 if (!super.getVersionFromRequest(req).equals("2.7")
                         && !super.getVersionFromRequest(req).equals("2.8")) {
                     List<KeyInfo> keys = AccessTokenSigningKey.getInstance(
-                                    this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(), main)
+                                    this.getTenantIdentifierFromRequest(req).toAppIdentifier(), main)
                             .getAllKeys();
                     JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                     reply.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);

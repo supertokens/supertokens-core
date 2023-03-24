@@ -68,7 +68,7 @@ public class SignUpAPI extends WebserverAPI {
         }
 
         try {
-            UserInfo user = EmailPassword.signUp(this.getTenantIdentifierStorageFromRequest(req), super.main, normalisedEmail, password);
+            UserInfo user = EmailPassword.signUp(this.getTenantIdentifierWithStorageFromRequest(req), super.main, normalisedEmail, password);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

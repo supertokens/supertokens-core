@@ -22,7 +22,7 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdExce
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.AppIdentifierStorageAndUserIdMapping;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
@@ -93,11 +93,11 @@ public class UpdateExternalUserIdInfoAPI extends WebserverAPI {
         }
 
         try {
-            AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
-                    this.getAppIdentifierStorageAndUserIdMappingFromRequest(req, userId, userIdType);
+            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, userIdType);
 
             if (UserIdMapping.updateOrDeleteExternalUserIdInfo(
-                    appIdentifierStorageAndUserIdMapping.appIdentifier, userId, userIdType, externalUserIdInfo)) {
+                    appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId, userIdType, externalUserIdInfo)) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 super.sendJsonResponse(200, response, resp);

@@ -54,7 +54,7 @@ public class GetDashboardSessionsForUserAPI extends WebserverAPI {
         try {
 
             JsonArray arr = new com.google.gson.JsonParser().parse(new Gson().toJson(
-                    Dashboard.getAllDashboardSessionsForUser(super.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(), main,
+                    Dashboard.getAllDashboardSessionsForUser(super.getTenantIdentifierFromRequest(req).toAppIdentifier(), main,
                             userId))).getAsJsonArray();
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

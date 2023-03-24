@@ -83,7 +83,7 @@ public class UsersCountAPI extends WebserverAPI {
                         recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
 
             } else {
-                count = AuthRecipe.getUsersCountForTenant(this.getTenantIdentifierStorageFromRequest(req),
+                count = AuthRecipe.getUsersCountForTenant(this.getTenantIdentifierWithStorageFromRequest(req),
                         recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
             }
             JsonObject result = new JsonObject();

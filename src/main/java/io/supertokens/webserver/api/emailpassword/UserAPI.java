@@ -28,9 +28,9 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailExc
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.AppIdentifierStorageAndUserIdMapping;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
@@ -78,32 +78,33 @@ public class UserAPI extends WebserverAPI {
             try {
                 if (userId != null) {
                     // Query by userId
-                    AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
-                            this.getAppIdentifierStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+                    AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+                            this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
                     // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
-                    if (appIdentifierStorageAndUserIdMapping.userIdMapping != null) {
-                        userId = appIdentifierStorageAndUserIdMapping.userIdMapping.superTokensUserId;
+                    if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
+                        userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
                     }
 
                     user = EmailPassword.getUserUsingId(
-                            appIdentifierStorageAndUserIdMapping.appIdentifier, userId);
+                            appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId);
 
                     // if the userIdMapping exists set the userId in the response to the externalUserId
-                    if (user != null && appIdentifierStorageAndUserIdMapping.userIdMapping != null) {
-                        user.id = appIdentifierStorageAndUserIdMapping.userIdMapping.externalUserId;
+                    if (user != null && appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
+                        user.id = appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId;
                     }
 
                 } else {
                     // API is tenant specific for get by Email
                     // Query by email
                     String normalisedEmail = Utils.normaliseEmail(email);
-                    TenantIdentifier tenantIdentifier = this.getTenantIdentifierStorageFromRequest(req);
-                    user = EmailPassword.getUserUsingEmail(tenantIdentifier, normalisedEmail);
+                    TenantIdentifierWithStorage tenantIdentifierWithStorage = this.getTenantIdentifierWithStorageFromRequest(req);
+                    user = EmailPassword.getUserUsingEmail(tenantIdentifierWithStorage, normalisedEmail);
 
                     // if a userIdMapping exists, set the userId in the response to the externalUserId
                     if (user != null) {
                         io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
-                                UserIdMapping.getUserIdMapping(tenantIdentifier.toAppIdentifier(), user.id,
+                                UserIdMapping.getUserIdMapping(
+                                        tenantIdentifierWithStorage.toAppIdentifierWithStorage(), user.id,
                                         UserIdType.ANY);
                         if (userIdMapping != null) {
                             user.id = userIdMapping.externalUserId;
@@ -153,15 +154,15 @@ public class UserAPI extends WebserverAPI {
         email = Utils.normaliseEmail(email);
 
         try {
-            AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndUserIdMapping =
-                    this.getAppIdentifierStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
             // if a userIdMapping exists, pass the superTokensUserId to the updateUsersEmailOrPassword
-            if (appIdentifierStorageAndUserIdMapping.userIdMapping != null) {
-                userId = appIdentifierStorageAndUserIdMapping.userIdMapping.superTokensUserId;
+            if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
+                userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
             }
 
             EmailPassword.updateUsersEmailOrPassword(
-                    appIdentifierStorageAndUserIdMapping.appIdentifier,
+                    appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
                     main, userId, email, password);
 
             JsonObject result = new JsonObject();

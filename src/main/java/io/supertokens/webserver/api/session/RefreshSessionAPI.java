@@ -59,7 +59,7 @@ public class RefreshSessionAPI extends WebserverAPI {
 
         try {
             SessionInformationHolder sessionInfo = Session.refreshSession(
-                    this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(), main,
+                    this.getTenantIdentifierFromRequest(req).toAppIdentifier(), main,
                     refreshToken, antiCsrfToken,
                     enableAntiCsrf);
             JsonObject result = sessionInfo.toJsonObject();

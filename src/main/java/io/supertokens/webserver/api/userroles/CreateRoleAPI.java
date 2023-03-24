@@ -79,7 +79,7 @@ public class CreateRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean createdNewRole = UserRoles.createNewRoleOrModifyItsPermissions(this.getTenantIdentifierStorageFromRequest(req), main,
+            boolean createdNewRole = UserRoles.createNewRoleOrModifyItsPermissions(this.getTenantIdentifierFromRequest(req), main,
                     role, permissions);
 
             JsonObject response = new JsonObject();

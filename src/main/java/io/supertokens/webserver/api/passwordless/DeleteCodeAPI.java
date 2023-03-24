@@ -52,7 +52,7 @@ public class DeleteCodeAPI extends WebserverAPI {
         String codeId = InputParser.parseStringOrThrowError(input, "codeId", false);
 
         try {
-            Passwordless.removeCode(this.getTenantIdentifierStorageFromRequest(req), main, codeId);
+            Passwordless.removeCode(this.getTenantIdentifierWithStorageFromRequest(req), main, codeId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
