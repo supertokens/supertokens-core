@@ -34,6 +34,7 @@ import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLSto
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -48,29 +49,36 @@ public class AuthRecipe {
 
     public static final int USER_PAGINATION_LIMIT = 500;
 
-    public static long getUsersCount(TenantIdentifier tenantIdentifier,
-                                     RECIPE_ID[] includeRecipeIds, boolean includeAllTenants)
+    public static long getUsersCountForTenant(TenantIdentifier tenantIdentifier,
+                                     RECIPE_ID[] includeRecipeIds)
             throws StorageQueryException,
             TenantOrAppNotFoundException, BadPermissionException {
-        if (!includeAllTenants) {
             return ((AuthRecipeStorage) tenantIdentifier.getStorage()).getUsersCount(
                     tenantIdentifier, includeRecipeIds);
-        } else {
-            if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-                throw new BadPermissionException("Only public tenantId can query across tenants");
-            }
-            // TODO:..
-            throw new UnsupportedOperationException("TODO");
-        }
     }
+
+    public static long getUsersCountAcrossAllTenants(Main main, AppIdentifier appIdentifier,
+                                              RECIPE_ID[] includeRecipeIds)
+            throws StorageQueryException,
+            TenantOrAppNotFoundException, BadPermissionException {
+        long count = 0;
+
+        for (Storage storage : StorageLayer.getStoragesForApp(main, appIdentifier)) {
+            count += ((AuthRecipeStorage) storage).getUsersCount(
+                    appIdentifier, includeRecipeIds);
+        }
+
+        return count;
+    }
+
 
     @TestOnly
     public static long getUsersCount(Main main,
                                      RECIPE_ID[] includeRecipeIds) throws StorageQueryException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            return getUsersCount(new TenantIdentifier(null, null, null, storage),
-                    includeRecipeIds, false);
+            return getUsersCountForTenant(new TenantIdentifier(null, null, null, storage),
+                    includeRecipeIds);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
@@ -119,7 +127,7 @@ public class AuthRecipe {
     }
 
     public static void deleteUser(AppIdentifier appIdentifier, String userId, UserIdMapping userIdMapping)
-            throws StorageQueryException, BadPermissionException {
+            throws StorageQueryException {
         // We clean up the user last so that if anything before that throws an error, then that will throw a 500 to the
         // developer. In this case, they expect that the user has not been deleted (which will be true). This is as
         // opposed to deleting the user first, in which case if something later throws an error, then the user has
@@ -158,17 +166,12 @@ public class AuthRecipe {
     @TestOnly
     public static void deleteUser(Main main, String userId)
             throws StorageQueryException {
-        try {
-            AppIdentifierStorageAndUserIdMapping appIdentifierStorageAndMapping =
-                    StorageLayer.getAppIdentifierStorageAndUserIdMappingForUser(
-                    main, new AppIdentifier(null, null), userId, UserIdType.ANY);
-            deleteUser(appIdentifierStorageAndMapping.appIdentifier, userId,
-                    appIdentifierStorageAndMapping.userIdMapping);
-        } catch (BadPermissionException | TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        } catch (UnknownUserIdException e) {
-            throw new RuntimeException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        AppIdentifier appIdentifier = new AppIdentifier(null, null, storage);
+        UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(appIdentifier,
+                userId, UserIdType.ANY);
+
+        deleteUser(appIdentifier, userId, mapping);
     }
 
     private static void deleteNonAuthRecipeUser(AppIdentifier appIdentifier, String userId)

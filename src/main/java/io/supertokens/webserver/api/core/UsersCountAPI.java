@@ -22,6 +22,7 @@ import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -70,8 +71,21 @@ public class UsersCountAPI extends WebserverAPI {
         }
 
         try {
-            long count = AuthRecipe.getUsersCount(this.getTenantIdentifierStorageFromRequest(req),
-                    recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new), includeAllTenants);
+            long count;
+
+            if (includeAllTenants) {
+                TenantIdentifier tenantIdentifier = getTenantIdentifierFromRequest(req);
+                if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                    throw new BadPermissionException("Only public tenantId can query across tenants");
+                }
+
+                count = AuthRecipe.getUsersCountAcrossAllTenants(this.main, tenantIdentifier.toAppIdentifier(),
+                        recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
+
+            } else {
+                count = AuthRecipe.getUsersCountForTenant(this.getTenantIdentifierStorageFromRequest(req),
+                        recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
+            }
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             result.addProperty("count", count);

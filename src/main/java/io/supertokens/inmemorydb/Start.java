@@ -482,6 +482,17 @@ public class Start
     }
 
     @Override
+    public long getUsersCount(AppIdentifier appIdentifier, RECIPE_ID[] includeRecipeIds)
+            throws StorageQueryException {
+        // TODO:..
+        try {
+            return GeneralQueries.getUsersCount(this, includeRecipeIds);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public AuthRecipeUserInfo[] getUsers(TenantIdentifier tenantIdentifier, @NotNull Integer limit,
                                          @NotNull String timeJoinedOrder,
                                          @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
@@ -1302,35 +1313,6 @@ public class Start
     @Override
     public void deleteDevicesByPhoneNumber_Transaction(AppIdentifier
                                                                appIdentifier, TransactionConnection con,
-                                                       @Nonnull String phoneNumber)
-            throws StorageQueryException {
-        // TODO..
-        Connection sqlCon = (Connection) con.getConnection();
-        try {
-            PasswordlessQueries.deleteDevicesByPhoneNumber_Transaction(this, sqlCon,
-                    phoneNumber);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public void deleteDevicesByEmail_Transaction(AppIdentifier
-                                                         appIdentifier, TransactionConnection con,
-                                                 @Nonnull String email)
-            throws StorageQueryException {
-        // TODO..
-        Connection sqlCon = (Connection) con.getConnection();
-        try {
-            PasswordlessQueries.deleteDevicesByEmail_Transaction(this, sqlCon, email);
-        } catch (SQLException e) {
-            throw new StorageQueryException(e);
-        }
-    }
-
-    @Override
-    public void deleteDevicesByPhoneNumber_Transaction(TenantIdentifier
-                                                               tenantIdentifier, TransactionConnection con,
                                                        String phoneNumber, String userId) throws StorageQueryException {
         // TODO..
         Connection sqlCon = (Connection) con.getConnection();
@@ -1343,8 +1325,8 @@ public class Start
     }
 
     @Override
-    public void deleteDevicesByEmail_Transaction(TenantIdentifier
-                                                         tenantIdentifier, TransactionConnection con, String email,
+    public void deleteDevicesByEmail_Transaction(AppIdentifier
+                                                         appIdentifier, TransactionConnection con, String email,
                                                  String userId) throws StorageQueryException {
         // TODO..
         Connection sqlCon = (Connection) con.getConnection();
@@ -1905,9 +1887,7 @@ public class Start
     }
 
     @Override
-    public HashMap<String, String> getUserIdMappingForSuperTokensIds(AppIdentifier
-                                                                             appIdentifier,
-                                                                     ArrayList<String> userIds)
+    public HashMap<String, String> getUserIdMappingForSuperTokensIds(ArrayList<String> userIds)
             throws StorageQueryException {
         // TODO..
         try {

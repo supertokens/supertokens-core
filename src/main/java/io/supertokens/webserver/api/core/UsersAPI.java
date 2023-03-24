@@ -119,7 +119,7 @@ public class UsersAPI extends WebserverAPI {
                 userIds.add(users.users[i].user.id);
             }
             HashMap<String, String> userIdMapping = UserIdMapping.getUserIdMappingForSuperTokensUserIds(
-                    this.getTenantIdentifierStorageFromRequest(req).toAppIdentifier(), userIds);
+                    this.getTenantIdentifierStorageFromRequest(req), userIds);
             if (!userIdMapping.isEmpty()) {
                 for (int i = 0; i < users.users.length; i++) {
                     String externalId = userIdMapping.get(userIds.get(i));

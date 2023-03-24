@@ -23,6 +23,7 @@ import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
@@ -219,12 +220,11 @@ public class UserIdMapping {
                 userId, userIdType, externalUserIdInfo);
     }
 
-    public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(AppIdentifier appIdentifier,
+    public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(TenantIdentifier tenantIdentifier,
                                                                                 ArrayList<String> userIds)
             throws StorageQueryException {
-        // This is tenant specific, so just use the storage from the appIdentifier
-        return ((UserIdMappingStorage) appIdentifier.getStorage()).getUserIdMappingForSuperTokensIds(
-                appIdentifier, userIds);
+        // userIds are already filtered for a tenant, so this becomes a tenant specific operation.
+        return ((UserIdMappingStorage) tenantIdentifier.getStorage()).getUserIdMappingForSuperTokensIds(userIds);
     }
 
     @TestOnly
@@ -233,7 +233,7 @@ public class UserIdMapping {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage( main);
         return getUserIdMappingForSuperTokensUserIds(
-                new AppIdentifier(null, null, storage), userIds);
+                new TenantIdentifier(null, null, null, storage), userIds);
     }
 
     private static void assertThatUserIdIsNotBeingUsedInNonAuthRecipes(AppIdentifier appIdentifier, String userId)

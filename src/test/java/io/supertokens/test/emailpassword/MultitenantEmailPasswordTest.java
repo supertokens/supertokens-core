@@ -27,6 +27,7 @@ import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.multitenancy.exception.DeletionInProgressException;
+import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
@@ -41,7 +42,10 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.useridmapping.UserIdType;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Test;
@@ -50,7 +54,6 @@ import java.io.IOException;
 
 import static org.junit.Assert.*;
 
-// TODO DO NOT REVIEW YET, TESTS ARE NOT WORKING
 public class MultitenantEmailPasswordTest {
     @AfterClass
     public static void afterTesting() {
@@ -63,8 +66,7 @@ public class MultitenantEmailPasswordTest {
     }
 
     private void createTenants(TestingProcessManager.TestingProcess process)
-            throws DuplicateThirdPartyIdException, DuplicateClientTypeException, DuplicateTenantException,
-            StorageQueryException, TenantOrAppNotFoundException, InvalidProviderConfigException,
+            throws StorageQueryException, TenantOrAppNotFoundException, InvalidProviderConfigException,
             DeletionInProgressException, FeatureNotEnabledException, IOException, InvalidConfigException,
             CannotModifyBaseConfigException, BadPermissionException {
         // User pool 1 - (null, a1, null)
@@ -133,8 +135,7 @@ public class MultitenantEmailPasswordTest {
 
     @Test
     public void testSignUpAndLoginInDifferentTenants()
-            throws InterruptedException, DuplicateThirdPartyIdException, DuplicateClientTypeException,
-            DuplicateTenantException, StorageQueryException, InvalidProviderConfigException,
+            throws InterruptedException, StorageQueryException, InvalidProviderConfigException,
             DeletionInProgressException, FeatureNotEnabledException, TenantOrAppNotFoundException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException, DuplicateEmailException,
             WrongCredentialsException {
@@ -179,8 +180,7 @@ public class MultitenantEmailPasswordTest {
 
     @Test
     public void testSameEmailWithDifferentPasswordsOnDifferentTenantsWorksCorrectly()
-            throws InterruptedException, DuplicateThirdPartyIdException, DuplicateClientTypeException,
-            InvalidProviderConfigException, DuplicateTenantException, DeletionInProgressException,
+            throws InterruptedException, InvalidProviderConfigException, DeletionInProgressException,
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException, DuplicateEmailException,
             WrongCredentialsException {
@@ -227,10 +227,10 @@ public class MultitenantEmailPasswordTest {
 
     @Test
     public void testGetUserUsingIdReturnsCorrectUser()
-            throws InterruptedException, DuplicateThirdPartyIdException, DuplicateClientTypeException,
-            InvalidProviderConfigException, DuplicateTenantException, DeletionInProgressException,
+            throws InterruptedException, InvalidProviderConfigException, DeletionInProgressException,
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, IOException,
-            InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException, DuplicateEmailException {
+            InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException, DuplicateEmailException,
+            UnknownUserIdException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -253,17 +253,26 @@ public class MultitenantEmailPasswordTest {
         UserInfo user3 = EmailPassword.signUp(t3, process.getProcess(), "user3@example.com", "password3");
 
         {
-            UserInfo userInfo = EmailPassword.getUserUsingId(new AppIdentifier(null, "a1"), user1.id);
+            UserInfo userInfo = EmailPassword.getUserUsingId(
+                    StorageLayer.getAppIdentifierStorageAndUserIdMappingForUser(
+                            process.getProcess(), new AppIdentifier(null, "a1"), user1.id,
+                            UserIdType.SUPERTOKENS).appIdentifier, user1.id);
             assertEquals(user1, userInfo);
         }
 
         {
-            UserInfo userInfo = EmailPassword.getUserUsingId(new AppIdentifier(null, "a1"), user2.id);
+            UserInfo userInfo = EmailPassword.getUserUsingId(
+                    StorageLayer.getAppIdentifierStorageAndUserIdMappingForUser(
+                            process.getProcess(), new AppIdentifier(null, "a1"), user2.id,
+                            UserIdType.SUPERTOKENS).appIdentifier, user2.id);
             assertEquals(user2, userInfo);
         }
 
         {
-            UserInfo userInfo = EmailPassword.getUserUsingId(new AppIdentifier(null, "a1"), user3.id);
+            UserInfo userInfo = EmailPassword.getUserUsingId(
+                    StorageLayer.getAppIdentifierStorageAndUserIdMappingForUser(
+                            process.getProcess(), new AppIdentifier(null, "a1"), user3.id,
+                            UserIdType.SUPERTOKENS).appIdentifier, user3.id);
             assertEquals(user3, userInfo);
         }
 
@@ -273,8 +282,7 @@ public class MultitenantEmailPasswordTest {
 
     @Test
     public void testGetUserUsingEmailReturnsTheUserFromTheSpecificTenant()
-            throws InterruptedException, DuplicateThirdPartyIdException, DuplicateClientTypeException,
-            InvalidProviderConfigException, DuplicateTenantException, DeletionInProgressException,
+            throws InterruptedException, InvalidProviderConfigException, DeletionInProgressException,
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException, DuplicateEmailException {
         String[] args = {"../"};
@@ -319,11 +327,10 @@ public class MultitenantEmailPasswordTest {
 
     @Test
     public void testUpdatePasswordWorksCorrectlyAcrossAllTenants()
-            throws InterruptedException, DuplicateThirdPartyIdException, DuplicateClientTypeException,
-            InvalidProviderConfigException, DuplicateTenantException, DeletionInProgressException,
+            throws InterruptedException, InvalidProviderConfigException, DeletionInProgressException,
             StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, IOException,
             InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException, DuplicateEmailException,
-            StorageTransactionLogicException, UnknownUserIdException, WrongCredentialsException {
+            UnknownUserIdException, StorageTransactionLogicException, WrongCredentialsException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -345,21 +352,39 @@ public class MultitenantEmailPasswordTest {
         UserInfo user2 = EmailPassword.signUp(t2, process.getProcess(), "user@example.com", "password2");
         UserInfo user3 = EmailPassword.signUp(t3, process.getProcess(), "user@example.com", "password3");
 
-        EmailPassword.updateUsersEmailOrPassword(new AppIdentifier(null, "a1"), process.getProcess(), user1.id, null, "newpassword1");
-        EmailPassword.updateUsersEmailOrPassword(new AppIdentifier(null, "a1"), process.getProcess(), user2.id, null, "newpassword2");
-        EmailPassword.updateUsersEmailOrPassword(new AppIdentifier(null, "a1"), process.getProcess(), user3.id, null, "newpassword3");
+        EmailPassword.updateUsersEmailOrPassword(
+                StorageLayer.getAppIdentifierStorageAndUserIdMappingForUser(
+                        process.getProcess(), new AppIdentifier(null, "a1"), user1.id,
+                        UserIdType.SUPERTOKENS).appIdentifier,
+                process.getProcess(), user1.id, null, "newpassword1");
+        EmailPassword.updateUsersEmailOrPassword(
+                StorageLayer.getAppIdentifierStorageAndUserIdMappingForUser(
+                        process.getProcess(), new AppIdentifier(null, "a1"), user2.id,
+                        UserIdType.SUPERTOKENS).appIdentifier,
+                process.getProcess(), user2.id, null, "newpassword2");
+        EmailPassword.updateUsersEmailOrPassword(
+                StorageLayer.getAppIdentifierStorageAndUserIdMappingForUser(
+                        process.getProcess(), new AppIdentifier(null, "a1"), user3.id,
+                        UserIdType.SUPERTOKENS).appIdentifier,
+                process.getProcess(), user3.id, null, "newpassword3");
 
         {
+            t1 = StorageLayer.getTenantIdentifierStorageAndUserIdMappingForUser(process.getProcess(), t1, user1.id,
+                    UserIdType.SUPERTOKENS).tenantIdentifier;
             UserInfo userInfo = EmailPassword.signIn(t1, process.getProcess(), "user@example.com", "newpassword1");
             assertEquals(user1.id, userInfo.id);
         }
 
         {
+            t2 = StorageLayer.getTenantIdentifierStorageAndUserIdMappingForUser(process.getProcess(), t2, user2.id,
+                    UserIdType.SUPERTOKENS).tenantIdentifier;
             UserInfo userInfo = EmailPassword.signIn(t2, process.getProcess(), "user@example.com", "newpassword2");
             assertEquals(user2.id, userInfo.id);
         }
 
         {
+            t3 = StorageLayer.getTenantIdentifierStorageAndUserIdMappingForUser(process.getProcess(), t3, user3.id,
+                    UserIdType.SUPERTOKENS).tenantIdentifier;
             UserInfo userInfo = EmailPassword.signIn(t3, process.getProcess(), "user@example.com", "newpassword3");
             assertEquals(user3.id, userInfo.id);
         }

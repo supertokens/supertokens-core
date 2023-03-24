@@ -57,7 +57,7 @@ public class DeleteUserAPI extends WebserverAPI {
 
             AuthRecipe.deleteUser(appIdentifierStorageAndUserIdMapping.appIdentifier, userId,
                     appIdentifierStorageAndUserIdMapping.userIdMapping);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             // Do nothing
