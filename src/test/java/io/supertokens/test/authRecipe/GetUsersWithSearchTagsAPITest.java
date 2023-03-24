@@ -39,6 +39,7 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.CreateCodeResponse;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -119,11 +120,11 @@ public class GetUsersWithSearchTagsAPITest {
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
         JsonArray tags = response.get("tags").getAsJsonArray();
-        assertEquals(Dashboard.SUPPORTED_SEARCH_TAGS.values().length, tags.size());
+        assertEquals(DashboardSearchTags.SUPPORTED_SEARCH_TAGS.values().length, tags.size());
 
         for (JsonElement tag : tags) {
-            Arrays.asList(Dashboard.SUPPORTED_SEARCH_TAGS.values())
-                    .contains(Dashboard.SUPPORTED_SEARCH_TAGS.fromString(tag.getAsString()));
+            Arrays.asList(DashboardSearchTags.SUPPORTED_SEARCH_TAGS.values())
+                    .contains(DashboardSearchTags.SUPPORTED_SEARCH_TAGS.fromString(tag.getAsString()));
         }
 
         process.kill();

@@ -47,30 +47,6 @@ public class Dashboard {
     public static final int MAX_NUMBER_OF_FREE_DASHBOARD_USERS = 1;
     public static final long DASHBOARD_SESSION_DURATION = 2592000000L; // 30 days in milliseconds
 
-    public enum SUPPORTED_SEARCH_TAGS {
-        EMAIL("email"), PHONE("phone"), PROVIDER("provider");
-
-        private String tag;
-
-        SUPPORTED_SEARCH_TAGS(String tag) {
-            this.tag = tag;
-        }
-
-        public static SUPPORTED_SEARCH_TAGS fromString(String text) {
-            for (SUPPORTED_SEARCH_TAGS t : SUPPORTED_SEARCH_TAGS.values()) {
-                if (t.tag.equalsIgnoreCase(text)) {
-                    return t;
-                }
-            }
-            return null;
-        }
-
-        @Override
-        public String toString() {
-            return tag;
-        }
-    }
-
     public static DashboardUser signUpDashboardUser(Main main, String email, String password)
             throws StorageQueryException, DuplicateEmailException, FeatureNotEnabledException {
 
