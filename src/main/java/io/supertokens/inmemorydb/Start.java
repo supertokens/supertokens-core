@@ -1300,6 +1300,35 @@ public class Start
     }
 
     @Override
+    public void deleteDevicesByPhoneNumber_Transaction(AppIdentifier
+                                                               appIdentifier, TransactionConnection con,
+                                                       @Nonnull String phoneNumber)
+            throws StorageQueryException {
+        // TODO..
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            PasswordlessQueries.deleteDevicesByPhoneNumber_Transaction(this, sqlCon,
+                    phoneNumber);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void deleteDevicesByEmail_Transaction(AppIdentifier
+                                                         appIdentifier, TransactionConnection con,
+                                                 @Nonnull String email)
+            throws StorageQueryException {
+        // TODO..
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            PasswordlessQueries.deleteDevicesByEmail_Transaction(this, sqlCon, email);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public void deleteDevicesByPhoneNumber_Transaction(TenantIdentifier
                                                                tenantIdentifier, TransactionConnection con,
                                                        String phoneNumber, String userId) throws StorageQueryException {
