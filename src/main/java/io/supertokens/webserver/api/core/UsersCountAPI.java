@@ -74,7 +74,7 @@ public class UsersCountAPI extends WebserverAPI {
             long count;
 
             if (includeAllTenants) {
-                TenantIdentifier tenantIdentifier = getTenantIdentifierFromRequest(req);
+                TenantIdentifier tenantIdentifier = getTenantIdentifierWithStorageFromRequest(req);
                 if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
                     throw new BadPermissionException("Only public tenantId can query across tenants");
                 }

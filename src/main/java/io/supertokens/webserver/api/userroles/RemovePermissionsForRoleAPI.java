@@ -79,7 +79,7 @@ public class RemovePermissionsForRoleAPI extends WebserverAPI {
         }
 
         try {
-            UserRoles.deletePermissionsFromRole(this.getTenantIdentifierFromRequest(req), main, role,
+            UserRoles.deletePermissionsFromRole(this.getTenantIdentifierWithStorageFromRequest(req), main, role,
                     permissions);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

@@ -63,7 +63,7 @@ public class SessionRegenerateAPI extends WebserverAPI {
 
         try {
             SessionInformationHolder sessionInfo = Session.regenerateToken(
-                    this.getTenantIdentifierFromRequest(req).toAppIdentifier(), main,
+                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main,
                     accessToken, userDataInJWT);
 
             JsonObject result = sessionInfo.toJsonObject();

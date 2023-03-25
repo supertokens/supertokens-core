@@ -74,7 +74,7 @@ public class SessionAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         try {
-            SessionInformationHolder sessionInfo = Session.createNewSession(this.getTenantIdentifierFromRequest(req), main, userId,
+            SessionInformationHolder sessionInfo = Session.createNewSession(this.getTenantIdentifierWithStorageFromRequest(req), main, userId,
                     userDataInJWT,
                     userDataInDatabase, enableAntiCsrf);
 
@@ -84,14 +84,14 @@ public class SessionAPI extends WebserverAPI {
 
             result.addProperty("jwtSigningPublicKey",
                     new Utils.PubPriKey(
-                            AccessTokenSigningKey.getInstance(this.getTenantIdentifierFromRequest(req).toAppIdentifier(), main)
+                            AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main)
                                     .getLatestIssuedKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(this.getTenantIdentifierFromRequest(req).toAppIdentifier(), main)
+                    AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main)
                             .getKeyExpiryTime());
 
             if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
-                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getTenantIdentifierFromRequest(req).toAppIdentifier(),
+                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(),
                                 main)
                         .getAllKeys();
                 JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
@@ -110,7 +110,7 @@ public class SessionAPI extends WebserverAPI {
         assert sessionHandle != null;
 
         try {
-            SessionInfo sessionInfo = Session.getSession(this.getTenantIdentifierFromRequest(req), main, sessionHandle);
+            SessionInfo sessionInfo = Session.getSession(this.getTenantIdentifierWithStorageFromRequest(req), main, sessionHandle);
 
             JsonObject result = new Gson().toJsonTree(sessionInfo).getAsJsonObject();
             result.add("userDataInJWT", Utils.toJsonTreeWithNulls(sessionInfo.userDataInJWT));

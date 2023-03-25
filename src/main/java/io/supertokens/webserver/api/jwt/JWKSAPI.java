@@ -51,7 +51,7 @@ public class JWKSAPI extends WebserverAPI {
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         try {
-            List<JsonObject> jwks = JWTSigningFunctions.getJWKS(this.getTenantIdentifierFromRequest(req).toAppIdentifier(),
+            List<JsonObject> jwks = JWTSigningFunctions.getJWKS(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(),
                     main);
             JsonObject reply = new JsonObject();
             JsonArray jwksJsonArray = new JsonParser().parse(new Gson().toJson(jwks)).getAsJsonArray();

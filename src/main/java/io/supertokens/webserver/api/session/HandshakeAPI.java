@@ -55,14 +55,14 @@ public class HandshakeAPI extends WebserverAPI {
 
             result.addProperty("jwtSigningPublicKey",
                     new Utils.PubPriKey(
-                            AccessTokenSigningKey.getInstance(this.getTenantIdentifierFromRequest(req).toAppIdentifier(),
+                            AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(),
                                     main).getLatestIssuedKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(this.getTenantIdentifierFromRequest(req).toAppIdentifier(), main)
+                    AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main)
                             .getKeyExpiryTime());
 
             if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
-                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getTenantIdentifierFromRequest(req).toAppIdentifier(),
+                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(),
                                 main)
                         .getAllKeys();
                 JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
@@ -70,13 +70,13 @@ public class HandshakeAPI extends WebserverAPI {
             }
 
             result.addProperty("accessTokenBlacklistingEnabled",
-                    Config.getConfig(this.getTenantIdentifierFromRequest(req), main)
+                    Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
                             .getAccessTokenBlacklisting());
             result.addProperty("accessTokenValidity",
-                    Config.getConfig(this.getTenantIdentifierFromRequest(req), main)
+                    Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
                             .getAccessTokenValidity());
             result.addProperty("refreshTokenValidity",
-                    Config.getConfig(this.getTenantIdentifierFromRequest(req), main)
+                    Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
                             .getRefreshTokenValidity());
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
