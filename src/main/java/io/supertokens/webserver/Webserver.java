@@ -238,6 +238,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new ConsumeCodeAPI(main));
         addAPI(new TelemetryAPI(main));
         addAPI(new UsersCountAPI(main));
+        addAPI(new ActiveUsersCountAPI(main));
         addAPI(new UsersAPI(main));
         addAPI(new DeleteUserAPI(main));
         addAPI(new RevokeAllTokensForUserAPI(main));

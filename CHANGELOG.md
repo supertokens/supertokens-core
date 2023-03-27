@@ -16,6 +16,7 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - `totp_used_codes` that stores used codes for each user. This is to implement rate limiting and prevent replay attacks.
 
 ### New APIs:
+- `GET /users/count/active` to fetch the number of active users after the given timestamp.
 - `POST /recipe/totp/device` to create a new device as well as the user if it doesn't exist.
 - `POST /recipe/totp/device/verify` to verify a device. This is to ensure that the user has access to the device.
 - `POST /recipe/totp/verify` to verify a code and continue the login flow.
