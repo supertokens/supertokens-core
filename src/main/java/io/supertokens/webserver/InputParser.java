@@ -97,7 +97,7 @@ public class InputParser {
             return Long.parseLong(key);
         } catch (Exception e) {
             throw new ServletException(new WebserverAPI.BadRequestException(
-                    "Field name '" + fieldName + "' must be an long in the GET request"));
+                    "Field name '" + fieldName + "' must be a long in the GET request"));
         }
     }
 

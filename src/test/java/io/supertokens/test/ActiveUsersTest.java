@@ -1,10 +1,12 @@
 package io.supertokens.test;
 
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 
 import com.fasterxml.jackson.databind.jsonFormatVisitors.JsonBooleanFormatVisitor;
 import com.google.gson.JsonObject;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -78,6 +80,70 @@ public class ActiveUsersTest {
         long now = System.currentTimeMillis();
 
         HashMap<String, String> params = new HashMap<>();
+
+        HttpResponseException e  =
+                assertThrows(
+                        HttpResponseException.class,
+                        () -> {
+                            HttpRequestForTesting.sendGETRequest(
+                                    process.getProcess(),
+                                    "",
+                                    "http://localhost:3567/users/count/active",
+                                    params,
+                                    1000,
+                                    1000,
+                                    null,
+                                    Utils.getCdiVersionLatestForTests(),
+                                    "");
+                        }
+                );
+
+        assert e.statusCode == 400;
+        assert e.getMessage().contains("Field name 'since' is missing in GET request");
+
+        params.put("since", "not a number");
+        e  =
+                assertThrows(
+                        HttpResponseException.class,
+                        () -> {
+                            HttpRequestForTesting.sendGETRequest(
+                                    process.getProcess(),
+                                    "",
+                                    "http://localhost:3567/users/count/active",
+                                    params,
+                                    1000,
+                                    1000,
+                                    null,
+                                    Utils.getCdiVersionLatestForTests(),
+                                    "");
+                        }
+                );
+
+        assert e.statusCode == 400;
+        assert e.getMessage().contains("Field name 'since' must be a long in the GET request");
+
+        params.put("since", "-1");
+        e  =
+                assertThrows(
+                        HttpResponseException.class,
+                        () -> {
+                            HttpRequestForTesting.sendGETRequest(
+                                    process.getProcess(),
+                                    "",
+                                    "http://localhost:3567/users/count/active",
+                                    params,
+                                    1000,
+                                    1000,
+                                    null,
+                                    Utils.getCdiVersionLatestForTests(),
+                                    "");
+                        }
+                );
+
+        assert e.statusCode == 400;
+        assert e.getMessage().contains("'since' query parameter must be >= 0");
+
+
         params.put("since", Long.toString(now));
 
         JsonObject res = HttpRequestForTesting.sendGETRequest(
