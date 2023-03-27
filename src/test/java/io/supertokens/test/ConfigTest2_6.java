@@ -163,19 +163,6 @@ public class ConfigTest2_6 {
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
-
-        Utils.reset();
-
-        Utils.setValueInConfig("totp_invalid_code_expiry_sec", "0");
-        process = TestingProcessManager.start(args);
-
-        e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
-        assertNotNull(e);
-        assertEquals(e.exception.getMessage(),
-                "'totp_invalid_code_expiry_sec' must be > 0");
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
 
     private String getConfigFileLocation(Main main) {

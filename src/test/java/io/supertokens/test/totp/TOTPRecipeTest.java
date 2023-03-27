@@ -281,6 +281,8 @@ public class TOTPRecipeTest {
             assert (false);
         }
 
+        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
+
         Main main = process.getProcess();
 
         // Create device

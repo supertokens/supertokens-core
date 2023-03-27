@@ -22,6 +22,7 @@ import io.supertokens.ProcessState;
 import io.supertokens.ResourceDistributor;
 import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.inmemorydb.queries.*;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
@@ -62,6 +63,7 @@ import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
+import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
@@ -80,6 +82,7 @@ import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappi
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.session.Session;
+import io.supertokens.totp.Totp;
 import io.supertokens.usermetadata.UserMetadata;
 import io.supertokens.userroles.UserRoles;
 import org.jetbrains.annotations.NotNull;
@@ -1620,6 +1623,14 @@ public class Start
             }
         } else if (className.equals(JWTRecipeStorage.class.getName())) {
             return false;
+        } else if (className.equals(TOTPStorage.class.getName())) {
+            try{
+                TOTPDevice[] devices = TOTPQueries.getDevices(this, userId);
+                return devices.length > 0;
+            }
+            catch (SQLException e){
+                throw new StorageQueryException(e);
+            }
         } else {
             throw new IllegalStateException("ClassName: " + className + " is not part of NonAuthRecipeStorage");
         }
@@ -1661,7 +1672,15 @@ public class Start
             } catch (StorageTransactionLogicException e) {
                 throw new StorageQueryException(e);
             }
-        } else if (className.equals(JWTRecipeStorage.class.getName())) {
+        } else if (className.equals(TOTPStorage.class.getName())) {
+            try {
+                Totp.registerDevice(this.main, userId, "testDevice", 0, 30);
+            }
+            catch (DeviceAlreadyExistsException | NoSuchAlgorithmException | FeatureNotEnabledException e) {
+                throw new StorageQueryException(e);
+            }
+        }
+        else if (className.equals(JWTRecipeStorage.class.getName())) {
             /* Since JWT recipe tables do not store userId we do not add any data to them */
         } else {
             throw new IllegalStateException("ClassName: " + className + " is not part of NonAuthRecipeStorage");
