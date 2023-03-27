@@ -49,7 +49,7 @@ public class GetDashboardUsersAPI extends WebserverAPI {
         try {
 
             JsonArray arr = new com.google.gson.JsonParser().parse(new Gson().toJson(
-                            Dashboard.getAllDashboardUsers(super.getTenantIdentifier(req).toAppIdentifier(), main)))
+                            Dashboard.getAllDashboardUsers(super.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main)))
                     .getAsJsonArray();
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

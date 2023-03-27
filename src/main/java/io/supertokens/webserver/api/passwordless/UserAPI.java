@@ -72,31 +72,31 @@ public class UserAPI extends WebserverAPI {
             UserInfo user;
             if (userId != null) {
                 UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                        this.getTenantIdentifier(req), main, userId,
-                        UserIdType.ANY);
+                        this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(),
+                        userId, UserIdType.ANY);
                 if (userIdMapping != null) {
                     userId = userIdMapping.superTokensUserId;
                 }
-                user = Passwordless.getUserById(this.getTenantIdentifier(req), main, userId);
+                user = Passwordless.getUserById(this.getTenantIdentifierWithStorageFromRequest(req), main, userId);
                 if (user != null && userIdMapping != null) {
                     user.id = userIdMapping.externalUserId;
                 }
             } else if (email != null) {
                 email = Utils.normaliseEmail(email);
-                user = Passwordless.getUserByEmail(this.getTenantIdentifier(req), main, email);
+                user = Passwordless.getUserByEmail(this.getTenantIdentifierWithStorageFromRequest(req), main, email);
                 if (user != null) {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            this.getTenantIdentifier(req), main,
+                            this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(),
                             user.id, UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
                     }
                 }
             } else {
-                user = Passwordless.getUserByPhoneNumber(this.getTenantIdentifier(req), main, phoneNumber);
+                user = Passwordless.getUserByPhoneNumber(this.getTenantIdentifierWithStorageFromRequest(req), main, phoneNumber);
                 if (user != null) {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            this.getTenantIdentifier(req), main,
+                            this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(),
                             user.id, UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
@@ -139,13 +139,12 @@ public class UserAPI extends WebserverAPI {
         try {
             // if userIdMapping exists, set the externalUserId in the response
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    this.getTenantIdentifier(req), main, userId,
-                    UserIdType.ANY);
+                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(), userId, UserIdType.ANY);
             if (userIdMapping != null) {
                 userId = userIdMapping.superTokensUserId;
             }
 
-            Passwordless.updateUser(this.getTenantIdentifier(req), main, userId, emailUpdate, phoneNumberUpdate);
+            Passwordless.updateUser(this.getTenantIdentifierWithStorageFromRequest(req), main, userId, emailUpdate, phoneNumberUpdate);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

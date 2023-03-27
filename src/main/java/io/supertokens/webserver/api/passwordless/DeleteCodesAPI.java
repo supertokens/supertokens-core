@@ -63,9 +63,9 @@ public class DeleteCodesAPI extends WebserverAPI {
         try {
             if (email != null) {
                 email = Utils.normaliseEmail(email);
-                Passwordless.removeCodesByEmail(this.getTenantIdentifier(req), main, email);
+                Passwordless.removeCodesByEmail(this.getTenantIdentifierWithStorageFromRequest(req), main, email);
             } else {
-                Passwordless.removeCodesByPhoneNumber(this.getTenantIdentifier(req), main, phoneNumber);
+                Passwordless.removeCodesByPhoneNumber(this.getTenantIdentifierWithStorageFromRequest(req), main, phoneNumber);
             }
         } catch (StorageTransactionLogicException | StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);

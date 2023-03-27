@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -319,9 +320,13 @@ public class EmailVerificationTest {
         assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.id, user.email));
 
         StorageLayer.getEmailVerificationStorage(process.getProcess()).startTransaction(con -> {
-            StorageLayer.getEmailVerificationStorage(process.getProcess())
-                    .updateIsEmailVerified_Transaction(new AppIdentifier(null, null), con,
-                            user.id, user.email, false);
+            try {
+                StorageLayer.getEmailVerificationStorage(process.getProcess())
+                        .updateIsEmailVerified_Transaction(new AppIdentifier(null, null), con,
+                                user.id, user.email, false);
+            } catch (TenantOrAppNotFoundException e) {
+                throw new RuntimeException(e);
+            }
             return null;
         });
 
@@ -350,9 +355,13 @@ public class EmailVerificationTest {
         assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.id, user.email));
 
         StorageLayer.getEmailVerificationStorage(process.getProcess()).startTransaction(con -> {
-            StorageLayer.getEmailVerificationStorage(process.getProcess())
-                    .updateIsEmailVerified_Transaction(new AppIdentifier(null, null), con,
-                            user.id, user.email, true);
+            try {
+                StorageLayer.getEmailVerificationStorage(process.getProcess())
+                        .updateIsEmailVerified_Transaction(new AppIdentifier(null, null), con,
+                                user.id, user.email, true);
+            } catch (TenantOrAppNotFoundException e) {
+                throw new RuntimeException(e);
+            }
             return null;
         });
 

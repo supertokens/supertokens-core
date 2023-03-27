@@ -685,6 +685,18 @@ public class ConfigTest {
         try {
             Multitenancy.addNewOrUpdateAppOrTenant(
                     process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            new TenantIdentifier(null, "a1", null),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
+
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
                     new TenantIdentifier(null, "a1", null),
                     new TenantConfig(
                             new TenantIdentifier(null, "a2", null),
@@ -700,6 +712,18 @@ public class ConfigTest {
         }
 
         try {
+            Multitenancy.addNewOrUpdateAppOrTenant(
+                    process.getProcess(),
+                    new TenantIdentifier(null, null, null),
+                    new TenantConfig(
+                            new TenantIdentifier(null, null, "t1"),
+                            new EmailPasswordConfig(true),
+                            new ThirdPartyConfig(true, null),
+                            new PasswordlessConfig(true),
+                            config
+                    )
+            );
+
             Multitenancy.addNewOrUpdateAppOrTenant(
                     process.getProcess(),
                     new TenantIdentifier(null, null, "t1"),
@@ -871,7 +895,7 @@ public class ConfigTest {
 
         TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, null, null),
                 process.getProcess());
-        assertEquals(1, allTenants.length);
+        assertEquals(3, allTenants.length);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

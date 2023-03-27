@@ -61,7 +61,7 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
         // but then changed slightly when extracting this into its own recipe
 
         try {
-            String token = EmailVerification.generateEmailVerificationToken(this.getTenantIdentifier(req), super.main,
+            String token = EmailVerification.generateEmailVerificationToken(this.getTenantIdentifierWithStorageFromRequest(req), super.main,
                     userId, email);
 
             JsonObject result = new JsonObject();

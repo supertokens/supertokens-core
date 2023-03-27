@@ -421,7 +421,8 @@ public class PasswordlessStorageTest {
             try {
                 storage.startTransaction(con -> {
                     try {
-                        storage.updateUserEmail_Transaction(new AppIdentifier(null, null), con, userIdEmail1, email2);
+                        storage.updateUserEmail_Transaction(
+                                new AppIdentifier(null, null), con, userIdEmail1, email2);
                     } catch (UnknownUserIdException | DuplicateEmailException e) {
                         throw new StorageTransactionLogicException(e);
                     }

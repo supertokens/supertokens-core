@@ -20,12 +20,14 @@ import io.supertokens.Main;
 import io.supertokens.config.Config;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.emailverification.exception.EmailVerificationInvalidTokenException;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
@@ -40,7 +42,9 @@ public class EmailVerification {
     @TestOnly
     public static long getEmailVerificationTokenLifetimeForTests(Main main) {
         try {
-            return getEmailVerificationTokenLifetime(new TenantIdentifier(null, null, null), main);
+            Storage storage = StorageLayer.getStorage(main);
+            return getEmailVerificationTokenLifetime(
+                    new TenantIdentifierWithStorage(null, null, null, storage), main);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -59,7 +63,10 @@ public class EmailVerification {
             throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException,
             EmailAlreadyVerifiedException {
         try {
-            return generateEmailVerificationToken(new TenantIdentifier(null, null, null), main, userId, email);
+            Storage storage = StorageLayer.getStorage(main);
+            return generateEmailVerificationToken(
+                    new TenantIdentifierWithStorage(null, null, null, storage),
+                    main, userId, email);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -113,7 +120,9 @@ public class EmailVerification {
             throws StorageQueryException,
             EmailVerificationInvalidTokenException, NoSuchAlgorithmException, StorageTransactionLogicException {
         try {
-            return verifyEmail(new TenantIdentifier(null, null, null), main, token);
+            Storage storage = StorageLayer.getStorage(main);
+            return verifyEmail(new TenantIdentifierWithStorage(null, null, null, storage),
+                    main, token);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -164,8 +173,12 @@ public class EmailVerification {
                     throw new StorageTransactionLogicException(new EmailVerificationInvalidTokenException());
                 }
 
-                storage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con, userId,
-                        tokenInfo.email, true);
+                try {
+                    storage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con, userId,
+                            tokenInfo.email, true);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
 
                 storage.commitTransaction(con);
 
@@ -174,6 +187,8 @@ public class EmailVerification {
         } catch (StorageTransactionLogicException e) {
             if (e.actualException instanceof EmailVerificationInvalidTokenException) {
                 throw (EmailVerificationInvalidTokenException) e.actualException;
+            } else if (e.actualException instanceof TenantOrAppNotFoundException) {
+                throw (TenantOrAppNotFoundException) e.actualException;
             }
             throw e;
         }
@@ -183,7 +198,9 @@ public class EmailVerification {
     public static boolean isEmailVerified(Main main, String userId,
                                           String email) throws StorageQueryException {
         try {
-            return isEmailVerified(new TenantIdentifier(null, null, null), main, userId, email);
+            Storage storage = StorageLayer.getStorage(main);
+            return isEmailVerified(new TenantIdentifierWithStorage(null, null, null, storage),
+                    main, userId, email);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -199,7 +216,9 @@ public class EmailVerification {
     public static void revokeAllTokens(Main main, String userId,
                                        String email) throws StorageQueryException {
         try {
-            revokeAllTokens(new TenantIdentifier(null, null, null), main, userId, email);
+            Storage storage = StorageLayer.getStorage(main);
+            revokeAllTokens(new TenantIdentifierWithStorage(null, null, null, storage),
+                    main, userId, email);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -215,7 +234,9 @@ public class EmailVerification {
     public static void unverifyEmail(Main main, String userId,
                                      String email) throws StorageQueryException {
         try {
-            unverifyEmail(new TenantIdentifier(null, null, null), main, userId, email);
+            Storage storage = StorageLayer.getStorage(main);
+            unverifyEmail(new TenantIdentifierWithStorage(null, null, null, storage),
+                    main, userId, email);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }

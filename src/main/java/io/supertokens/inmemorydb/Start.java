@@ -482,6 +482,17 @@ public class Start
     }
 
     @Override
+    public long getUsersCount(AppIdentifier appIdentifier, RECIPE_ID[] includeRecipeIds)
+            throws StorageQueryException {
+        // TODO:..
+        try {
+            return GeneralQueries.getUsersCount(this, includeRecipeIds);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
     public AuthRecipeUserInfo[] getUsers(TenantIdentifier tenantIdentifier, @NotNull Integer limit,
                                          @NotNull String timeJoinedOrder,
                                          @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
@@ -1876,9 +1887,7 @@ public class Start
     }
 
     @Override
-    public HashMap<String, String> getUserIdMappingForSuperTokensIds(AppIdentifier
-                                                                             appIdentifier,
-                                                                     ArrayList<String> userIds)
+    public HashMap<String, String> getUserIdMappingForSuperTokensIds(ArrayList<String> userIds)
             throws StorageQueryException {
         // TODO..
         try {

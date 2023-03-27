@@ -52,7 +52,7 @@ public class SessionDataAPI extends WebserverAPI {
         assert sessionHandle != null;
 
         try {
-            JsonObject userDataInDatabase = Session.getSessionData(this.getTenantIdentifier(req), main, sessionHandle);
+            JsonObject userDataInDatabase = Session.getSessionData(this.getTenantIdentifierWithStorageFromRequest(req), main, sessionHandle);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -79,7 +79,7 @@ public class SessionDataAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         try {
-            Session.updateSession(this.getTenantIdentifier(req), main, sessionHandle,
+            Session.updateSession(this.getTenantIdentifierWithStorageFromRequest(req), main, sessionHandle,
                     userDataInDatabase, null, null);
 
             JsonObject result = new JsonObject();

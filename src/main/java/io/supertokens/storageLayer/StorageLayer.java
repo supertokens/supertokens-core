@@ -29,23 +29,25 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.MultitenancyStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
+import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
@@ -307,6 +309,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static Storage getStorage(Main main) {
+        // TODO remove this function
         try {
             return getStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
@@ -316,11 +319,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static AuthRecipeStorage getAuthRecipeStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
+        // TODO remove this function
         return (AuthRecipeStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     @TestOnly
     public static AuthRecipeStorage getAuthRecipeStorage(Main main) {
+        // TODO remove this function
         try {
             return getAuthRecipeStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
@@ -330,11 +335,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static SessionStorage getSessionStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
+        // TODO remove this function
         return (SessionStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     @TestOnly
     public static SessionStorage getSessionStorage(Main main) {
+        // TODO remove this function
         try {
             return getSessionStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
@@ -344,6 +351,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static EmailPasswordSQLStorage getEmailPasswordStorage(TenantIdentifier tenantIdentifier,
                                                                   Main main) throws TenantOrAppNotFoundException {
+        // TODO remove this function
         if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
             // we only support SQL for now
             throw new UnsupportedOperationException("");
@@ -353,6 +361,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static EmailPasswordSQLStorage getEmailPasswordStorage(Main main) {
+        // TODO remove this function
         try {
             return getEmailPasswordStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
@@ -363,6 +372,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     public static EmailVerificationSQLStorage getEmailVerificationStorage(TenantIdentifier tenantIdentifier,
                                                                           Main main) throws
             TenantOrAppNotFoundException {
+        // TODO remove this function
         if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
             // we only support SQL for now
             throw new UnsupportedOperationException("");
@@ -372,6 +382,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static EmailVerificationSQLStorage getEmailVerificationStorage(Main main) {
+        // TODO remove this function
         try {
             return getEmailVerificationStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
@@ -381,6 +392,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static ThirdPartySQLStorage getThirdPartyStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
+        // TODO remove this function
         if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
             // we only support SQL for now
             throw new UnsupportedOperationException("");
@@ -390,6 +402,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static ThirdPartySQLStorage getThirdPartyStorage(Main main) {
+        // TODO remove this function
         try {
             return getThirdPartyStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
@@ -399,6 +412,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static PasswordlessSQLStorage getPasswordlessStorage(TenantIdentifier tenantIdentifier,
                                                                 Main main) throws TenantOrAppNotFoundException {
+        // TODO remove this function
         if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
             // we only support SQL for now
             throw new UnsupportedOperationException("");
@@ -408,6 +422,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static PasswordlessSQLStorage getPasswordlessStorage(Main main) {
+        // TODO remove this function
         try {
             return getPasswordlessStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
@@ -417,11 +432,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static JWTRecipeStorage getJWTRecipeStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
+        // TODO remove this function
         return (JWTRecipeStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     @TestOnly
     public static JWTRecipeStorage getJWTRecipeStorage(Main main) {
+        // TODO remove this function
         try {
             return getJWTRecipeStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
@@ -431,6 +448,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static UserMetadataSQLStorage getUserMetadataStorage(TenantIdentifier tenantIdentifier,
                                                                 Main main) throws TenantOrAppNotFoundException {
+        // TODO remove this function
         if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
             // we only support SQL for now
             throw new UnsupportedOperationException("");
@@ -441,6 +459,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static UserMetadataSQLStorage getUserMetadataStorage(Main main) {
+        // TODO remove this function
         try {
             return getUserMetadataStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
@@ -450,6 +469,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static UserRolesSQLStorage getUserRolesStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
+        // TODO remove this function
         if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
             // we only support SQL for now
             throw new UnsupportedOperationException("");
@@ -459,6 +479,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static UserRolesSQLStorage getUserRolesStorage(Main main) {
+        // TODO remove this function
         try {
             return getUserRolesStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
@@ -468,11 +489,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static UserIdMappingStorage getUserIdMappingStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
+        // TODO remove this function
         return (UserIdMappingStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     @TestOnly
     public static UserIdMappingStorage getUserIdMappingStorage(Main main) {
+        // TODO remove this function
         try {
             return getUserIdMappingStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
@@ -482,11 +505,13 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     public static DashboardSQLStorage getDashboardStorage(AppIdentifier appIdentifier, Main main)
             throws TenantOrAppNotFoundException {
+        // TODO remove this function
         return (DashboardSQLStorage) getInstance(appIdentifier.getAsPublicTenantIdentifier(), main).storage;
     }
 
     @TestOnly
     public static DashboardSQLStorage getDashboardStorage(Main main) {
+        // TODO remove this function
         try {
             return (DashboardSQLStorage) getInstance(new TenantIdentifier(null, null, null), main).storage;
         } catch (TenantOrAppNotFoundException e) {
@@ -497,6 +522,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     // This function intentionally doesn't take connectionUriDomain and tenantId
     // cause the data for this is only going to be in the primary db of the core.
     public static MultitenancyStorage getMultitenancyStorage(Main main) {
+        // TODO remove this function
         try {
             return (MultitenancyStorage) getInstance(new TenantIdentifier(null, null, null), main).storage;
         } catch (TenantOrAppNotFoundException e) {
@@ -507,6 +533,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     public static MultitenancyStorage getMultitenancyStorageWithTargetStorage(TenantIdentifier tenantIdentifier,
                                                                               Main main)
             throws TenantOrAppNotFoundException {
+        // TODO remove this function
         return (MultitenancyStorage) getInstance(tenantIdentifier, main).storage;
     }
 
@@ -559,5 +586,72 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             result.add(uniquePoolList.get(s));
         }
         return result;
+    }
+
+    public static Storage[] getStoragesForApp(Main main, AppIdentifier appIdentifier) {
+        Map<String, Storage> userPoolToStorage = new HashMap<>();
+
+        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
+                main.getResourceDistributor()
+                        .getAllResourcesWithResourceKey(RESOURCE_KEY);
+        for (ResourceDistributor.KeyClass key : resources.keySet()) {
+            Storage storage = ((StorageLayer) resources.get(key)).storage;
+            if (key.getTenantIdentifier().toAppIdentifier().equals(appIdentifier)) {
+                userPoolToStorage.put(storage.getUserPoolId(), storage);
+            }
+        }
+        return userPoolToStorage.values().toArray(new Storage[0]);
+    }
+
+    public static TenantIdentifierWithStorageAndUserIdMapping getTenantIdentifierWithStorageAndUserIdMappingForUser(
+            Main main, TenantIdentifier tenantIdentifier, String userId, UserIdType userIdType)
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
+        Storage storage = getStorage(tenantIdentifier, main);
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = tenantIdentifier.withStorage(storage);
+
+        UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                tenantIdentifierWithStorage.toAppIdentifierWithStorage(), userId, userIdType);
+
+        if (mapping != null) {
+            return new TenantIdentifierWithStorageAndUserIdMapping(tenantIdentifierWithStorage, mapping);
+        }
+
+        if (userIdType != UserIdType.EXTERNAL
+                && ((AuthRecipeStorage) storage).doesUserIdExist(tenantIdentifier.toAppIdentifier(), userId)) {
+            return new TenantIdentifierWithStorageAndUserIdMapping(
+                    tenantIdentifierWithStorage, null);
+        }
+
+        throw new UnknownUserIdException();
+    }
+
+    public static AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingForUser(
+            Main main, AppIdentifier appIdentifier, String userId,
+            UserIdType userIdType) throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
+
+        Storage[] storages = getStoragesForApp(main, appIdentifier);
+
+        if (storages.length == 0) {
+            throw new TenantOrAppNotFoundException(appIdentifier);
+        }
+
+        for (Storage storage : storages) {
+            UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                    appIdentifier.withStorage(storage),
+                    userId, userIdType);
+
+            if (mapping != null) {
+                AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(storage);
+                return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, mapping);
+            }
+
+            if (userIdType != UserIdType.EXTERNAL
+                    && ((AuthRecipeStorage) storage).doesUserIdExist(appIdentifier, userId)) {
+                AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(storage);
+                return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, null);
+            }
+        }
+
+        throw new UnknownUserIdException();
     }
 }

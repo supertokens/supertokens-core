@@ -23,8 +23,18 @@ import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
+import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
+import io.supertokens.useridmapping.UserIdType;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -135,7 +145,7 @@ public abstract class WebserverAPI extends HttpServlet {
     private void assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException,
             TenantOrAppNotFoundException {
         String apiKey = req.getHeader("api-key");
-        String[] keys = Config.getConfig(getTenantIdentifier(req), this.main).getAPIKeys();
+        String[] keys = Config.getConfig(getTenantIdentifierWithStorageFromRequest(req), this.main).getAPIKeys();
         if (keys != null) {
             if (apiKey == null) {
                 throw new ServletException(new APIKeyUnauthorisedException());
@@ -224,8 +234,42 @@ public abstract class WebserverAPI extends HttpServlet {
         return connectionUriDomain;
     }
 
-    protected TenantIdentifier getTenantIdentifier(HttpServletRequest req) {
-        return new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
+    protected TenantIdentifierWithStorage getTenantIdentifierWithStorageFromRequest(HttpServletRequest req) {
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
+        try {
+            Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
+            return tenantIdentifier.withStorage(storage);
+        } catch (TenantOrAppNotFoundException e) {
+            // TODO ignore only for now, this function should throw this exception
+            return tenantIdentifier.withStorage(null);
+        }
+    }
+
+    protected AppIdentifierWithStorage enforcePublicTenantAndGetAppIdentifierWithStorageFromRequest(HttpServletRequest req)
+            throws TenantOrAppNotFoundException, BadPermissionException {
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
+                this.getTenantId(req));
+
+        if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            throw new BadPermissionException("Only public tenantId can query across tenants");
+        }
+
+        Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
+        Storage[] storages = StorageLayer.getStoragesForApp(main, tenantIdentifier.toAppIdentifier());
+        return new AppIdentifierWithStorage(tenantIdentifier.getConnectionUriDomain(), tenantIdentifier.getAppId(),
+                storage, storages);
+    }
+
+    protected TenantIdentifierWithStorageAndUserIdMapping getTenantIdentifierWithStorageAndUserIdMappingFromRequest(HttpServletRequest req, String userId, UserIdType userIdType)
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
+        return StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(main, tenantIdentifier, userId, userIdType);
+    }
+
+    protected AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingFromRequest(HttpServletRequest req, String userId, UserIdType userIdType)
+            throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
+        AppIdentifier appIdentifier = new AppIdentifier(this.getConnectionUriDomain(req), this.getAppId(req));
+        return StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(main, appIdentifier, userId, userIdType);
     }
 
     @Override
@@ -252,9 +296,8 @@ public abstract class WebserverAPI extends HttpServlet {
                 main.wakeUpMainThreadToShutdown();
             } else if (e instanceof TenantOrAppNotFoundException) {
                 sendTextResponse(400,
-                        "AppId or tenantId not found => appId: " +
-                                ((TenantOrAppNotFoundException) e).getTenantIdentifier().getAppId() + ", tenantId: " +
-                                ((TenantOrAppNotFoundException) e).getTenantIdentifier().getTenantId(), resp);
+                        "AppId or tenantId not found => " + ((TenantOrAppNotFoundException) e).getMessage(),
+                        resp);
             } else if (e instanceof FeatureNotEnabledException) {
                 sendTextResponse(402, e.getMessage(), resp);
             } else if (e instanceof BadPermissionException) {
@@ -270,10 +313,7 @@ public abstract class WebserverAPI extends HttpServlet {
                     sendTextResponse(401, "Invalid API key", resp);
                 } else if (rootCause instanceof TenantOrAppNotFoundException) {
                     sendTextResponse(400,
-                            "AppId or tenantId not found => appId: " +
-                                    ((TenantOrAppNotFoundException) rootCause).getTenantIdentifier().getAppId() +
-                                    ", tenantId: " +
-                                    ((TenantOrAppNotFoundException) rootCause).getTenantIdentifier().getTenantId(),
+                            "AppId or tenantId not found => " + ((TenantOrAppNotFoundException) e).getMessage(),
                             resp);
                 } else if (rootCause instanceof BadPermissionException) {
                     sendTextResponse(403, e.getMessage(), resp);

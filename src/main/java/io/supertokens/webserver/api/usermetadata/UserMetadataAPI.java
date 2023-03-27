@@ -47,7 +47,7 @@ public class UserMetadataAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         try {
-            JsonObject metadata = UserMetadata.getUserMetadata(this.getTenantIdentifier(req),
+            JsonObject metadata = UserMetadata.getUserMetadata(this.getTenantIdentifierWithStorageFromRequest(req),
                     main, userId);
             JsonObject response = new JsonObject();
             response.add("metadata", metadata);
@@ -64,7 +64,7 @@ public class UserMetadataAPI extends WebserverAPI {
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         JsonObject update = InputParser.parseJsonObjectOrThrowError(input, "metadataUpdate", false);
         try {
-            JsonObject metadata = UserMetadata.updateUserMetadata(this.getTenantIdentifier(req), main, userId, update);
+            JsonObject metadata = UserMetadata.updateUserMetadata(this.getTenantIdentifierWithStorageFromRequest(req), main, userId, update);
             JsonObject response = new JsonObject();
             response.add("metadata", metadata);
             response.addProperty("status", "OK");

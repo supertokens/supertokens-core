@@ -51,7 +51,7 @@ public class UnverifyEmailAPI extends WebserverAPI {
         email = Utils.normaliseEmail(email);
 
         try {
-            EmailVerification.unverifyEmail(this.getTenantIdentifier(req), main, userId,
+            EmailVerification.unverifyEmail(this.getTenantIdentifierWithStorageFromRequest(req), main, userId,
                     email);
 
             JsonObject response = new JsonObject();

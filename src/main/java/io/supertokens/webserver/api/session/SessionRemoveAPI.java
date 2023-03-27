@@ -74,7 +74,7 @@ public class SessionRemoveAPI extends WebserverAPI {
 
         if (userId != null) {
             try {
-                String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(this.getTenantIdentifier(req), main,
+                String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(this.getTenantIdentifierWithStorageFromRequest(req), main,
                         userId);
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
@@ -90,7 +90,7 @@ public class SessionRemoveAPI extends WebserverAPI {
         } else {
             try {
                 String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(
-                        this.getTenantIdentifier(req), main, sessionHandles);
+                        this.getTenantIdentifierWithStorageFromRequest(req), main, sessionHandles);
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();

@@ -17,11 +17,15 @@
 package io.supertokens.useridmapping;
 
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
@@ -40,15 +44,16 @@ import java.util.HashMap;
 
 public class UserIdMapping {
 
-    public static void createUserIdMapping(TenantIdentifier tenantIdentifier, Main main,
+    public static void createUserIdMapping(AppIdentifierWithStorage appIdentifierWithStorage,
                                            String superTokensUserId, String externalUserId,
                                            String externalUserIdInfo, boolean force)
             throws UnknownSuperTokensUserIdException,
             UserIdMappingAlreadyExistsException, StorageQueryException, ServletException, TenantOrAppNotFoundException {
+
         // if a userIdMapping is created with force, then we skip the following checks
         if (!force) {
             // check that none of the non-auth recipes are using the superTokensUserId
-            assertThatUserIdIsNotBeingUsedInNonAuthRecipes(tenantIdentifier, main, superTokensUserId);
+            assertThatUserIdIsNotBeingUsedInNonAuthRecipes(appIdentifierWithStorage, superTokensUserId);
 
             // We do not allow for a UserIdMapping to be created when the externalUserId is a SuperTokens userId.
             // There could be a case where User_1 has a userId mapping and a new SuperTokens User, User_2 is created
@@ -57,17 +62,15 @@ public class UserIdMapping {
             // ignore it.
 
             {
-                if (StorageLayer.getAuthRecipeStorage(tenantIdentifier, main)
-                        .doesUserIdExist(tenantIdentifier.toAppIdentifier(), externalUserId)) {
+                if (((AuthRecipeStorage) appIdentifierWithStorage.getStorage()).doesUserIdExist(appIdentifierWithStorage, externalUserId)) {
                     throw new ServletException(new WebserverAPI.BadRequestException(
                             "Cannot create a userId mapping where the externalId is also a SuperTokens userID"));
                 }
             }
         }
 
-        StorageLayer.getUserIdMappingStorage(tenantIdentifier, main)
-                .createUserIdMapping(tenantIdentifier.toAppIdentifier(), superTokensUserId, externalUserId,
-                        externalUserIdInfo);
+        ((UserIdMappingStorage) appIdentifierWithStorage.getStorage()).createUserIdMapping(appIdentifierWithStorage, superTokensUserId,
+                externalUserId, externalUserIdInfo);
     }
 
     @TestOnly
@@ -77,7 +80,8 @@ public class UserIdMapping {
             throws UnknownSuperTokensUserIdException,
             UserIdMappingAlreadyExistsException, StorageQueryException, ServletException {
         try {
-            createUserIdMapping(new TenantIdentifier(null, null, null), main, superTokensUserId, externalUserId,
+            Storage storage = StorageLayer.getStorage(main);
+            createUserIdMapping(new AppIdentifierWithStorage(null, null, storage), superTokensUserId, externalUserId,
                     externalUserIdInfo, force);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
@@ -85,20 +89,20 @@ public class UserIdMapping {
     }
 
     public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(
-            TenantIdentifier tenantIdentifier, Main main, String userId,
+            AppIdentifierWithStorage appIdentifierWithStorage, String userId,
             UserIdType userIdType)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(tenantIdentifier, main);
+            throws StorageQueryException {
+        UserIdMappingStorage storage = (UserIdMappingStorage) appIdentifierWithStorage.getStorage();
 
         if (userIdType == UserIdType.SUPERTOKENS) {
-            return storage.getUserIdMapping(tenantIdentifier.toAppIdentifier(), userId, true);
+            return storage.getUserIdMapping(appIdentifierWithStorage, userId, true);
         }
         if (userIdType == UserIdType.EXTERNAL) {
-            return storage.getUserIdMapping(tenantIdentifier.toAppIdentifier(), userId, false);
+            return storage.getUserIdMapping(appIdentifierWithStorage, userId, false);
         }
 
         io.supertokens.pluginInterface.useridmapping.UserIdMapping[] userIdMappings = storage.getUserIdMapping(
-                tenantIdentifier.toAppIdentifier(), userId);
+                appIdentifierWithStorage, userId);
 
         if (userIdMappings.length == 0) {
             return null;
@@ -124,30 +128,26 @@ public class UserIdMapping {
             Main main, String userId,
             UserIdType userIdType)
             throws StorageQueryException {
-        try {
-            return getUserIdMapping(new TenantIdentifier(null, null, null), main, userId, userIdType);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return getUserIdMapping(new AppIdentifierWithStorage(null, null, storage), userId, userIdType);
     }
 
-    public static boolean deleteUserIdMapping(TenantIdentifier tenantIdentifier, Main main, String userId,
+    public static boolean deleteUserIdMapping(AppIdentifierWithStorage appIdentifierWithStorage, String userId,
                                               UserIdType userIdType, boolean force)
-            throws StorageQueryException, ServletException, TenantOrAppNotFoundException {
-
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(tenantIdentifier, main);
+            throws StorageQueryException, ServletException {
 
         // referring to
         // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
         // we need to check if db is in A3 or A4.
-        io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = getUserIdMapping(tenantIdentifier, main,
-                userId,
-                UserIdType.ANY);
+        io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = getUserIdMapping(appIdentifierWithStorage,
+                userId, UserIdType.ANY);
+        UserIdMappingStorage storage = (UserIdMappingStorage) appIdentifierWithStorage.getStorage();
+
         if (mapping != null) {
-            if (StorageLayer.getAuthRecipeStorage(tenantIdentifier, main)
-                    .doesUserIdExist(tenantIdentifier.toAppIdentifier(), mapping.externalUserId)) {
+            if (((AuthRecipeStorage) appIdentifierWithStorage.getStorage()).doesUserIdExist(
+                    appIdentifierWithStorage, mapping.externalUserId)) {
                 // this means that the db is in state A4
-                return storage.deleteUserIdMapping(tenantIdentifier.toAppIdentifier(), mapping.superTokensUserId, true);
+                return storage.deleteUserIdMapping(appIdentifierWithStorage, mapping.superTokensUserId, true);
             }
         } else {
             return false;
@@ -158,58 +158,57 @@ public class UserIdMapping {
             String externalId = mapping.externalUserId;
 
             // check if externalId is used in any non-auth recipes
-            assertThatUserIdIsNotBeingUsedInNonAuthRecipes(tenantIdentifier, main, externalId);
+            assertThatUserIdIsNotBeingUsedInNonAuthRecipes(appIdentifierWithStorage, externalId);
         }
 
         // db is in state A3
         if (userIdType == UserIdType.SUPERTOKENS) {
-            return storage.deleteUserIdMapping(tenantIdentifier.toAppIdentifier(), userId, true);
+            return storage.deleteUserIdMapping(appIdentifierWithStorage, userId, true);
         }
         if (userIdType == UserIdType.EXTERNAL) {
-            return storage.deleteUserIdMapping(tenantIdentifier.toAppIdentifier(), userId, false);
+            return storage.deleteUserIdMapping(appIdentifierWithStorage, userId, false);
         }
 
-        AuthRecipeStorage authRecipeStorage = StorageLayer.getAuthRecipeStorage(tenantIdentifier, main);
-        if (authRecipeStorage.doesUserIdExist(tenantIdentifier.toAppIdentifier(), userId)) {
-            return storage.deleteUserIdMapping(tenantIdentifier.toAppIdentifier(), userId, true);
+        if (((AuthRecipeStorage) appIdentifierWithStorage.getStorage()).doesUserIdExist(appIdentifierWithStorage, userId)) {
+            return storage.deleteUserIdMapping(appIdentifierWithStorage, userId, true);
         }
 
-        return storage.deleteUserIdMapping(tenantIdentifier.toAppIdentifier(), userId, false);
+        return storage.deleteUserIdMapping(appIdentifierWithStorage, userId, false);
     }
 
     @TestOnly
     public static boolean deleteUserIdMapping(Main main, String userId,
                                               UserIdType userIdType, boolean force)
             throws StorageQueryException, ServletException {
-        try {
-            return deleteUserIdMapping(new TenantIdentifier(null, null, null), main, userId, userIdType, force);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return deleteUserIdMapping(
+                new AppIdentifierWithStorage(null, null, storage), userId, userIdType, force);
     }
 
-    public static boolean updateOrDeleteExternalUserIdInfo(TenantIdentifier tenantIdentifier, Main main,
+    public static boolean updateOrDeleteExternalUserIdInfo(AppIdentifierWithStorage appIdentifierWithStorage,
                                                            String userId, UserIdType userIdType,
                                                            @Nullable String externalUserIdInfo)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(tenantIdentifier, main);
+            throws StorageQueryException {
+        UserIdMappingStorage storage = (UserIdMappingStorage) appIdentifierWithStorage.getStorage();
 
         if (userIdType == UserIdType.SUPERTOKENS) {
-            return storage.updateOrDeleteExternalUserIdInfo(tenantIdentifier.toAppIdentifier(), userId, true,
+            return storage.updateOrDeleteExternalUserIdInfo(appIdentifierWithStorage, userId, true,
                     externalUserIdInfo);
         }
         if (userIdType == UserIdType.EXTERNAL) {
-            return storage.updateOrDeleteExternalUserIdInfo(tenantIdentifier.toAppIdentifier(), userId, false,
+            return storage.updateOrDeleteExternalUserIdInfo(appIdentifierWithStorage, userId, false,
                     externalUserIdInfo);
         }
 
-        AuthRecipeStorage authRecipeStorage = StorageLayer.getAuthRecipeStorage(tenantIdentifier, main);
-        if (authRecipeStorage.doesUserIdExist(tenantIdentifier.toAppIdentifier(), userId)) {
-            return storage.updateOrDeleteExternalUserIdInfo(tenantIdentifier.toAppIdentifier(), userId, true,
+        // userIdType == UserIdType.ANY
+        // if userId exists in authRecipeStorage, it means it is a UserIdType.SUPERTOKENS
+        if (((AuthRecipeStorage) appIdentifierWithStorage.getStorage()).doesUserIdExist(appIdentifierWithStorage, userId)) {
+            return storage.updateOrDeleteExternalUserIdInfo(appIdentifierWithStorage, userId, true,
                     externalUserIdInfo);
         }
 
-        return storage.updateOrDeleteExternalUserIdInfo(tenantIdentifier.toAppIdentifier(), userId, false,
+        // else treat it as UserIdType.EXTERNAL
+        return storage.updateOrDeleteExternalUserIdInfo(appIdentifierWithStorage, userId, false,
                 externalUserIdInfo);
     }
 
@@ -218,77 +217,70 @@ public class UserIdMapping {
                                                            String userId, UserIdType userIdType,
                                                            @Nullable String externalUserIdInfo)
             throws StorageQueryException {
-        try {
-            return updateOrDeleteExternalUserIdInfo(new TenantIdentifier(null, null, null), main, userId, userIdType,
-                    externalUserIdInfo);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return updateOrDeleteExternalUserIdInfo(new AppIdentifierWithStorage(
+                null, null, storage),
+                userId, userIdType, externalUserIdInfo);
     }
 
-    public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(TenantIdentifier tenantIdentifier,
-                                                                                Main main,
-                                                                                ArrayList<String> userIds)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getUserIdMappingStorage(tenantIdentifier, main)
-                .getUserIdMappingForSuperTokensIds(tenantIdentifier.toAppIdentifier(), userIds);
+    public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(
+            TenantIdentifierWithStorage tenantIdentifierWithStorage,
+            ArrayList<String> userIds)
+            throws StorageQueryException {
+        // userIds are already filtered for a tenant, so this becomes a tenant specific operation.
+        return ((UserIdMappingStorage) tenantIdentifierWithStorage.getStorage()).getUserIdMappingForSuperTokensIds(
+                userIds);
     }
 
     @TestOnly
     public static HashMap<String, String> getUserIdMappingForSuperTokensUserIds(Main main,
                                                                                 ArrayList<String> userIds)
             throws StorageQueryException {
-        try {
-            return getUserIdMappingForSuperTokensUserIds(new TenantIdentifier(null, null, null), main, userIds);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage( main);
+        return getUserIdMappingForSuperTokensUserIds(
+                new TenantIdentifierWithStorage(null, null, null, storage), userIds);
     }
 
-    private static void assertThatUserIdIsNotBeingUsedInNonAuthRecipes(TenantIdentifier tenantIdentifier,
-                                                                       Main main, String userId)
-            throws StorageQueryException, ServletException, TenantOrAppNotFoundException {
+    private static void assertThatUserIdIsNotBeingUsedInNonAuthRecipes(
+            AppIdentifierWithStorage appIdentifierWithStorage, String userId)
+            throws StorageQueryException, ServletException {
+        Storage storage = appIdentifierWithStorage.getStorage();
         {
-            if (StorageLayer.getStorage(tenantIdentifier, main)
-                    .isUserIdBeingUsedInNonAuthRecipe(tenantIdentifier.toAppIdentifier(),
-                            SessionStorage.class.getName(),
-                            userId)) {
+            if (storage.isUserIdBeingUsedInNonAuthRecipe(appIdentifierWithStorage,
+                    SessionStorage.class.getName(),
+                    userId)) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("UserId is already in use in Session recipe"));
             }
         }
         {
-            if (StorageLayer.getStorage(tenantIdentifier, main)
-                    .isUserIdBeingUsedInNonAuthRecipe(tenantIdentifier.toAppIdentifier(),
-                            UserMetadataStorage.class.getName(),
-                            userId)) {
+            if (storage.isUserIdBeingUsedInNonAuthRecipe(appIdentifierWithStorage,
+                    UserMetadataStorage.class.getName(),
+                    userId)) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("UserId is already in use in UserMetadata recipe"));
             }
         }
         {
-            if (StorageLayer.getStorage(tenantIdentifier, main)
-                    .isUserIdBeingUsedInNonAuthRecipe(tenantIdentifier.toAppIdentifier(),
-                            UserRolesStorage.class.getName(),
-                            userId)) {
+            if (storage.isUserIdBeingUsedInNonAuthRecipe(appIdentifierWithStorage,
+                    UserRolesStorage.class.getName(),
+                    userId)) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("UserId is already in use in UserRoles recipe"));
             }
         }
         {
-            if (StorageLayer.getStorage(tenantIdentifier, main)
-                    .isUserIdBeingUsedInNonAuthRecipe(tenantIdentifier.toAppIdentifier(),
-                            EmailVerificationStorage.class.getName(),
-                            userId)) {
+            if (storage.isUserIdBeingUsedInNonAuthRecipe(appIdentifierWithStorage,
+                    EmailVerificationStorage.class.getName(),
+                    userId)) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("UserId is already in use in EmailVerification recipe"));
             }
         }
         {
-            if (StorageLayer.getStorage(tenantIdentifier, main)
-                    .isUserIdBeingUsedInNonAuthRecipe(tenantIdentifier.toAppIdentifier(),
-                            JWTRecipeStorage.class.getName(),
-                            userId)) {
+            if (storage.isUserIdBeingUsedInNonAuthRecipe(appIdentifierWithStorage,
+                    JWTRecipeStorage.class.getName(),
+                    userId)) {
                 throw new ServletException(new WebserverAPI.BadRequestException("Should never come here"));
             }
         }

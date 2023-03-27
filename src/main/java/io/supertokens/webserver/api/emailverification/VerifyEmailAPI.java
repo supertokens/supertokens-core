@@ -64,7 +64,7 @@ public class VerifyEmailAPI extends WebserverAPI {
         }
 
         try {
-            User user = EmailVerification.verifyEmail(this.getTenantIdentifier(req),
+            User user = EmailVerification.verifyEmail(this.getTenantIdentifierWithStorageFromRequest(req),
                     super.main, token);
 
             JsonObject result = new JsonObject();
@@ -92,7 +92,7 @@ public class VerifyEmailAPI extends WebserverAPI {
         assert email != null;
 
         try {
-            boolean isVerified = EmailVerification.isEmailVerified(this.getTenantIdentifier(req), super.main, userId,
+            boolean isVerified = EmailVerification.isEmailVerified(this.getTenantIdentifierWithStorageFromRequest(req), super.main, userId,
                     email);
 
             JsonObject result = new JsonObject();

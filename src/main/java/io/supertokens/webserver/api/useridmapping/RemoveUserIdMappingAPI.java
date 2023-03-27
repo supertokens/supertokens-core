@@ -18,9 +18,11 @@ package io.supertokens.webserver.api.useridmapping;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
@@ -47,6 +49,7 @@ public class RemoveUserIdMappingAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // this API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
@@ -81,14 +84,24 @@ public class RemoveUserIdMappingAPI extends WebserverAPI {
         }
 
         try {
-            boolean didMappingExist = UserIdMapping.deleteUserIdMapping(this.getTenantIdentifier(req), main, userId,
-                    userIdType, force);
+            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, userIdType);
+
+            boolean didMappingExist = UserIdMapping.deleteUserIdMapping(
+                    appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId, userIdType, force);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("didMappingExist", didMappingExist);
             super.sendJsonResponse(200, response, resp);
+
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
+
+        } catch (UnknownUserIdException e) {
+            JsonObject response = new JsonObject();
+            response.addProperty("status", "OK");
+            response.addProperty("didMappingExist", false);
+            super.sendJsonResponse(200, response, resp);
         }
     }
 }

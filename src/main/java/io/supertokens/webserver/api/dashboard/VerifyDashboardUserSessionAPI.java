@@ -55,7 +55,7 @@ public class VerifyDashboardUserSessionAPI extends WebserverAPI {
 
         sessionId = Utils.normalizeAndValidateStringParam(sessionId, "sessionId");
         try {
-            if (Dashboard.isValidUserSession(super.getTenantIdentifier(req).toAppIdentifier(), main, sessionId)) {
+            if (Dashboard.isValidUserSession(super.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main, sessionId)) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 super.sendJsonResponse(200, response, resp);
