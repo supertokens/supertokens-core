@@ -50,6 +50,7 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
@@ -61,8 +62,8 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
         // but then changed slightly when extracting this into its own recipe
 
         try {
-            String token = EmailVerification.generateEmailVerificationToken(this.getTenantIdentifierWithStorageFromRequest(req), super.main,
-                    userId, email);
+            String token = EmailVerification.generateEmailVerificationToken(
+                    this.getTenantIdentifierWithStorageFromRequest(req), main, userId, email);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

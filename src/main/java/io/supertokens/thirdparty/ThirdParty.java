@@ -19,6 +19,7 @@ package io.supertokens.thirdparty;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
@@ -62,12 +63,12 @@ public class ThirdParty {
 
         if (isEmailVerified) {
             try {
-                StorageLayer.getEmailVerificationStorage(tenantIdentifier, main).startTransaction(con -> {
+                ((EmailVerificationSQLStorage) StorageLayer.getStorage(tenantIdentifier, main)).startTransaction(con -> {
                     try {
-                        StorageLayer.getEmailVerificationStorage(tenantIdentifier, main)
+                        ((EmailVerificationSQLStorage) StorageLayer.getStorage(tenantIdentifier, main))
                                 .updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
                                         response.user.id, response.user.email, true);
-                        StorageLayer.getEmailVerificationStorage(tenantIdentifier, main)
+                        ((EmailVerificationSQLStorage) StorageLayer.getStorage(tenantIdentifier, main))
                                 .commitTransaction(con);
                         return null;
                     } catch (TenantOrAppNotFoundException e) {

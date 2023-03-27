@@ -33,6 +33,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.webserver.Webserver;
 import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.AfterClass;
@@ -79,8 +80,13 @@ public class RequestConnectionUriDomainTest {
             }
 
             @Override
-            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-                super.sendTextResponse(200, getTenantIdentifierWithStorageFromRequest(req).getConnectionUriDomain(), resp);
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
+                try {
+                    super.sendTextResponse(200, getTenantIdentifierWithStorageFromRequest(req).getConnectionUriDomain(), resp);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new ServletException(e);
+                }
             }
         });
 
@@ -140,10 +146,15 @@ public class RequestConnectionUriDomainTest {
             }
 
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-                super.sendTextResponse(200,
-                        super.getTenantIdentifierWithStorageFromRequest(req).getConnectionUriDomain() + "," +
-                                super.getTenantIdentifierWithStorageFromRequest(req).getTenantId(), resp);
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
+                try {
+                    super.sendTextResponse(200,
+                            super.getTenantIdentifierWithStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                    super.getTenantIdentifierWithStorageFromRequest(req).getTenantId(), resp);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new ServletException(e);
+                }
             }
         });
 
@@ -240,10 +251,15 @@ public class RequestConnectionUriDomainTest {
             }
 
             @Override
-            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
-                super.sendTextResponse(200,
-                        super.getTenantIdentifierWithStorageFromRequest(req).getConnectionUriDomain() + "," +
-                                super.getTenantIdentifierWithStorageFromRequest(req).getTenantId(), resp);
+            protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+                    ServletException {
+                try {
+                    super.sendTextResponse(200,
+                            super.getTenantIdentifierWithStorageFromRequest(req).getConnectionUriDomain() + "," +
+                                    super.getTenantIdentifierWithStorageFromRequest(req).getTenantId(), resp);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new ServletException(e);
+                }
             }
         });
 
