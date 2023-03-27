@@ -7,6 +7,8 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+## [4.5.0] - 2023-03-27
+
 - Add TOTP recipe
 
 ### Database changes:
