@@ -146,7 +146,9 @@ public abstract class WebserverAPI extends HttpServlet {
     private void assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException,
             TenantOrAppNotFoundException {
         String apiKey = req.getHeader("api-key");
-        String[] keys = Config.getConfig(getTenantIdentifierWithStorageFromRequest(req), this.main).getAPIKeys();
+        String[] keys = Config.getConfig(
+                new TenantIdentifier(getConnectionUriDomain(req), getAppId(req), getTenantId(req)),
+                this.main).getAPIKeys();
         if (keys != null) {
             if (apiKey == null) {
                 throw new ServletException(new APIKeyUnauthorisedException());
