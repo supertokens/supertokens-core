@@ -63,7 +63,11 @@ public class FeatureFlagTest {
         } catch (NoLicenseKeyFoundException ignored) {
         }
 
-        Assert.assertEquals(FeatureFlag.getInstance(process.getProcess()).getPaidFeatureStats().entrySet().size(), 0);
+        JsonObject stats = FeatureFlag.getInstance(process.getProcess()).getPaidFeatureStats();
+        Assert.assertEquals(stats.entrySet().size(), 1);
+        Assert.assertEquals(stats.get("maus").getAsJsonArray().size(), 30);
+        Assert.assertEquals(stats.get("maus").getAsJsonArray().get(0).getAsInt(), 0);
+        Assert.assertEquals(stats.get("maus").getAsJsonArray().get(29).getAsInt(), 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
+import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
 import io.supertokens.pluginInterface.useridmapping.exception.UserIdMappingAlreadyExistsException;
@@ -38,7 +39,8 @@ import java.util.HashMap;
 public class UserIdMapping {
 
     public static void createUserIdMapping(Main main, String superTokensUserId, String externalUserId,
-            String externalUserIdInfo, boolean force) throws UnknownSuperTokensUserIdException,
+                                           String externalUserIdInfo, boolean force)
+            throws UnknownSuperTokensUserIdException,
             UserIdMappingAlreadyExistsException, StorageQueryException, ServletException {
         // if a userIdMapping is created with force, then we skip the following checks
         if (!force) {
@@ -64,7 +66,8 @@ public class UserIdMapping {
     }
 
     public static io.supertokens.pluginInterface.useridmapping.UserIdMapping getUserIdMapping(Main main, String userId,
-            UserIdType userIdType) throws StorageQueryException {
+                                                                                              UserIdType userIdType)
+            throws StorageQueryException {
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
 
         if (userIdType == UserIdType.SUPERTOKENS) {
@@ -139,7 +142,8 @@ public class UserIdMapping {
     }
 
     public static boolean updateOrDeleteExternalUserIdInfo(Main main, String userId, UserIdType userIdType,
-            @Nullable String externalUserIdInfo) throws StorageQueryException {
+                                                           @Nullable String externalUserIdInfo)
+            throws StorageQueryException {
         UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(main);
 
         if (userIdType == UserIdType.SUPERTOKENS) {
@@ -190,6 +194,13 @@ public class UserIdMapping {
                     userId)) {
                 throw new ServletException(
                         new WebserverAPI.BadRequestException("UserId is already in use in EmailVerification recipe"));
+            }
+        }
+        {
+            if (StorageLayer.getStorage(main).isUserIdBeingUsedInNonAuthRecipe(TOTPStorage.class.getName(),
+                    userId)) {
+                throw new ServletException(
+                        new WebserverAPI.BadRequestException("UserId is already in use in TOTP recipe"));
             }
         }
         {

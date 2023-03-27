@@ -172,7 +172,7 @@ public class VerifyTotpAPITest {
                     Utils.getCdiVersionLatestForTests(),
                     "totp");
             assert res3.get("status").getAsString().equals("LIMIT_REACHED_ERROR");
-            assert res3.get("retryAfterSec") != null;
+            assert res3.get("retryAfterMs") != null;
 
             // wait for cooldown to end (1s)
             Thread.sleep(1000);
