@@ -19,20 +19,21 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
-
 import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.session.Session;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class SessionRemoveAPI extends WebserverAPI {
@@ -79,16 +80,18 @@ public class SessionRemoveAPI extends WebserverAPI {
             try {
                 String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(main, userId);
 
-                try {
-                    UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            super.main,
-                            userId, UserIdType.ANY);
-                    if (userIdMapping != null) {
-                        ActiveUsers.updateLastActive(main, userIdMapping.superTokensUserId);
-                    } else {
-                        ActiveUsers.updateLastActive(main, userId);
+                if (StorageLayer.getStorage(main).getType() == STORAGE_TYPE.SQL) {
+                    try {
+                        UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                                super.main,
+                                userId, UserIdType.ANY);
+                        if (userIdMapping != null) {
+                            ActiveUsers.updateLastActive(main, userIdMapping.superTokensUserId);
+                        } else {
+                            ActiveUsers.updateLastActive(main, userId);
+                        }
+                    } catch (StorageQueryException ignored) {
                     }
-                } catch (StorageQueryException ignored) {
                 }
 
                 JsonObject result = new JsonObject();

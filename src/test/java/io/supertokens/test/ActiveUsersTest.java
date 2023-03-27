@@ -1,10 +1,11 @@
 package io.supertokens.test;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-
-import com.fasterxml.jackson.databind.jsonFormatVisitors.JsonBooleanFormatVisitor;
 import com.google.gson.JsonObject;
+import io.supertokens.ActiveUsers;
+import io.supertokens.Main;
+import io.supertokens.ProcessState;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import org.junit.AfterClass;
@@ -13,13 +14,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.ActiveUsers;
-import io.supertokens.Main;
-import io.supertokens.ProcessState;
-
 import java.util.HashMap;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 
 public class ActiveUsersTest {
 
@@ -38,13 +36,13 @@ public class ActiveUsersTest {
 
     @Test
     public void updateAndCountUserLastActiveTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            assert (false);
+            return;
         }
 
         Main main = process.getProcess();
@@ -67,13 +65,13 @@ public class ActiveUsersTest {
 
     @Test
     public void activeUserCountAPITest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            assert (false);
+            return;
         }
 
         Main main = process.getProcess();
@@ -81,7 +79,7 @@ public class ActiveUsersTest {
 
         HashMap<String, String> params = new HashMap<>();
 
-        HttpResponseException e  =
+        HttpResponseException e =
                 assertThrows(
                         HttpResponseException.class,
                         () -> {
@@ -102,7 +100,7 @@ public class ActiveUsersTest {
         assert e.getMessage().contains("Field name 'since' is missing in GET request");
 
         params.put("since", "not a number");
-        e  =
+        e =
                 assertThrows(
                         HttpResponseException.class,
                         () -> {
@@ -123,7 +121,7 @@ public class ActiveUsersTest {
         assert e.getMessage().contains("Field name 'since' must be a long in the GET request");
 
         params.put("since", "-1");
-        e  =
+        e =
                 assertThrows(
                         HttpResponseException.class,
                         () -> {

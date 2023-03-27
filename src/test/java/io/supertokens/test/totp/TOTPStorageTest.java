@@ -1,28 +1,14 @@
 package io.supertokens.test.totp;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-
+import io.supertokens.ProcessState;
+import io.supertokens.cronjobs.deleteExpiredTotpTokens.DeleteExpiredTotpTokens;
 import io.supertokens.featureflag.EE_FEATURES;
-import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
 import io.supertokens.httpRequest.HttpResponseException;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
-import io.supertokens.test.Utils;
-import io.supertokens.ProcessState;
-import io.supertokens.cronjobs.deleteExpiredTotpTokens.DeleteExpiredTotpTokens;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.test.TestingProcessManager;
-
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
@@ -31,8 +17,19 @@ import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
 import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.test.TestingProcessManager;
+import io.supertokens.test.Utils;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
 
 import java.io.IOException;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 
 public class TOTPStorageTest {
 
@@ -62,17 +59,18 @@ public class TOTPStorageTest {
     public TestSetupResult initSteps()
             throws InterruptedException, StorageQueryException, InvalidLicenseKeyException, HttpResponseException,
             IOException {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            assert (false);
+            return null;
         }
         TOTPSQLStorage storage = StorageLayer.getTOTPStorage(process.getProcess());
 
-        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
+        FeatureFlagTestContent.getInstance(process.main)
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.TOTP});
 
         return new TestSetupResult(storage, process);
     }
@@ -119,6 +117,9 @@ public class TOTPStorageTest {
     @Test
     public void createDeviceTests() throws Exception {
         TestSetupResult result = initSteps();
+        if (result == null) {
+            return;
+        }
         TOTPSQLStorage storage = result.storage;
 
         TOTPDevice device1 = new TOTPDevice("user", "d1", "secret", 30, 1, false);
@@ -147,6 +148,9 @@ public class TOTPStorageTest {
     @Test
     public void verifyDeviceTests() throws Exception {
         TestSetupResult result = initSteps();
+        if (result == null) {
+            return;
+        }
         TOTPSQLStorage storage = result.storage;
 
         TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
@@ -173,6 +177,9 @@ public class TOTPStorageTest {
     @Test
     public void getDevicesCount_TransactionTests() throws Exception {
         TestSetupResult result = initSteps();
+        if (result == null) {
+            return;
+        }
         TOTPSQLStorage storage = result.storage;
 
         // Try to get the count for a user that doesn't exist (Should pass because
@@ -201,6 +208,9 @@ public class TOTPStorageTest {
     @Test
     public void removeUser_TransactionTests() throws Exception {
         TestSetupResult result = initSteps();
+        if (result == null) {
+            return;
+        }
         TOTPSQLStorage storage = result.storage;
 
         // Try to remove a user that doesn't exist (Should pass because
@@ -223,7 +233,7 @@ public class TOTPStorageTest {
         TOTPUsedCode usedCode1 = new TOTPUsedCode("user", "code1", true, expiryAfter10mins, now);
         TOTPUsedCode usedCode2 = new TOTPUsedCode("user", "code2", false, expiryAfter10mins, now + 1);
 
-        insertUsedCodesUtil(storage, new TOTPUsedCode[] { usedCode1, usedCode2 });
+        insertUsedCodesUtil(storage, new TOTPUsedCode[]{usedCode1, usedCode2});
 
         TOTPDevice[] storedDevices = storage.getDevices("user");
         assert (storedDevices.length == 2);
@@ -247,6 +257,9 @@ public class TOTPStorageTest {
     @Test
     public void deleteDevice_TransactionTests() throws Exception {
         TestSetupResult result = initSteps();
+        if (result == null) {
+            return;
+        }
         TOTPSQLStorage storage = result.storage;
 
         TOTPDevice device1 = new TOTPDevice("user", "device1", "sk1", 30, 1, false);
@@ -291,6 +304,9 @@ public class TOTPStorageTest {
     @Test
     public void updateDeviceNameTests() throws Exception {
         TestSetupResult result = initSteps();
+        if (result == null) {
+            return;
+        }
         TOTPSQLStorage storage = result.storage;
 
         TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
@@ -326,6 +342,9 @@ public class TOTPStorageTest {
     @Test
     public void getDevicesTest() throws Exception {
         TestSetupResult result = initSteps();
+        if (result == null) {
+            return;
+        }
         TOTPSQLStorage storage = result.storage;
 
         TOTPDevice device1 = new TOTPDevice("user", "d1", "secretKey", 30, 1, false);
@@ -347,6 +366,9 @@ public class TOTPStorageTest {
     @Test
     public void insertUsedCodeTest() throws Exception {
         TestSetupResult result = initSteps();
+        if (result == null) {
+            return;
+        }
         TOTPSQLStorage storage = result.storage;
         long nextDay = System.currentTimeMillis() + 1000 * 60 * 60 * 24; // 1 day from now
         long now = System.currentTimeMillis();
@@ -357,7 +379,7 @@ public class TOTPStorageTest {
             TOTPUsedCode code = new TOTPUsedCode("user", "1234", true, nextDay, now);
 
             storage.createDevice(device);
-            insertUsedCodesUtil(storage, new TOTPUsedCode[] { code });
+            insertUsedCodesUtil(storage, new TOTPUsedCode[]{code});
             TOTPUsedCode[] usedCodes = getAllUsedCodesUtil(storage, "user");
 
             assert (usedCodes.length == 1);
@@ -368,13 +390,13 @@ public class TOTPStorageTest {
         {
             TOTPUsedCode codeWithRepeatedCreatedTime = new TOTPUsedCode("user", "any-code", true, nextDay, now);
             assertThrows(UsedCodeAlreadyExistsException.class,
-                    () -> insertUsedCodesUtil(storage, new TOTPUsedCode[] { codeWithRepeatedCreatedTime }));
+                    () -> insertUsedCodesUtil(storage, new TOTPUsedCode[]{codeWithRepeatedCreatedTime}));
         }
 
         // Try to insert code when user doesn't have any device (i.e. TOTP not enabled)
         {
             assertThrows(TotpNotEnabledException.class,
-                    () -> insertUsedCodesUtil(storage, new TOTPUsedCode[] {
+                    () -> insertUsedCodesUtil(storage, new TOTPUsedCode[]{
                             new TOTPUsedCode("new-user-without-totp", "1234", true, nextDay,
                                     System.currentTimeMillis())
                     }));
@@ -386,14 +408,14 @@ public class TOTPStorageTest {
             storage.createDevice(newDevice);
             insertUsedCodesUtil(
                     storage,
-                    new TOTPUsedCode[] {
+                    new TOTPUsedCode[]{
                             new TOTPUsedCode("user", "1234", true, nextDay, System.currentTimeMillis())
                     });
         }
 
         // Try to insert code when user doesn't exist:
         assertThrows(TotpNotEnabledException.class,
-                () -> insertUsedCodesUtil(storage, new TOTPUsedCode[] {
+                () -> insertUsedCodesUtil(storage, new TOTPUsedCode[]{
                         new TOTPUsedCode("non-existent-user", "1234", true, nextDay,
                                 System.currentTimeMillis())
                 }));
@@ -402,6 +424,9 @@ public class TOTPStorageTest {
     @Test
     public void getAllUsedCodesTest() throws Exception {
         TestSetupResult result = initSteps();
+        if (result == null) {
+            return;
+        }
         TOTPSQLStorage storage = result.storage;
 
         TOTPUsedCode[] usedCodes = getAllUsedCodesUtil(storage, "non-existent-user");
@@ -420,7 +445,7 @@ public class TOTPStorageTest {
         TOTPUsedCode validCode3 = new TOTPUsedCode("user", "valid3", true, nextDay, now + 6);
 
         storage.createDevice(device);
-        insertUsedCodesUtil(storage, new TOTPUsedCode[] {
+        insertUsedCodesUtil(storage, new TOTPUsedCode[]{
                 validCode1, invalidCode,
                 expiredCode, expiredInvalidCode,
                 validCode2, validCode3
@@ -428,7 +453,7 @@ public class TOTPStorageTest {
 
         // Try to create a code with same user and created time. It should fail:
         assertThrows(UsedCodeAlreadyExistsException.class,
-                () -> insertUsedCodesUtil(storage, new TOTPUsedCode[] {
+                () -> insertUsedCodesUtil(storage, new TOTPUsedCode[]{
                         new TOTPUsedCode("user", "any-code", true, nextDay, now + 1)
                 }));
 
@@ -448,6 +473,9 @@ public class TOTPStorageTest {
     @Test
     public void removeExpiredCodesTest() throws Exception {
         TestSetupResult result = initSteps();
+        if (result == null) {
+            return;
+        }
         TOTPSQLStorage storage = result.storage;
 
         long now = System.currentTimeMillis();
@@ -461,7 +489,7 @@ public class TOTPStorageTest {
         TOTPUsedCode invalidCodeToExpire = new TOTPUsedCode("user", "invalid", false, halfSecond, now + 3);
 
         storage.createDevice(device);
-        insertUsedCodesUtil(storage, new TOTPUsedCode[] {
+        insertUsedCodesUtil(storage, new TOTPUsedCode[]{
                 validCodeToLive, invalidCodeToLive,
                 validCodeToExpire, invalidCodeToExpire
         });

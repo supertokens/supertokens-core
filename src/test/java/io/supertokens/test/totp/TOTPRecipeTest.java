@@ -16,45 +16,18 @@
 
 package io.supertokens.test.totp;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThrows;
-
-import java.io.IOException;
-import java.security.InvalidKeyException;
-import java.security.Key;
-import java.time.Duration;
-import java.time.Instant;
-
-import javax.crypto.spec.SecretKeySpec;
-
-import io.supertokens.featureflag.EE_FEATURES;
-import io.supertokens.featureflag.FeatureFlag;
-import io.supertokens.featureflag.FeatureFlagTestContent;
-import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
-import io.supertokens.httpRequest.HttpResponseException;
-import org.apache.commons.codec.binary.Base32;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
 import com.eatthepath.otp.TimeBasedOneTimePasswordGenerator;
-
-import io.supertokens.test.Utils;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.cronjobs.deleteExpiredTotpTokens.DeleteExpiredTotpTokens;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.featureflag.exceptions.InvalidLicenseKeyException;
+import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.test.TestingProcessManager;
-
-import io.supertokens.totp.Totp;
-import io.supertokens.totp.exceptions.InvalidTotpException;
-import io.supertokens.totp.exceptions.LimitReachedException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPStorage;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
@@ -62,6 +35,28 @@ import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsExceptio
 import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.test.TestingProcessManager;
+import io.supertokens.test.Utils;
+import io.supertokens.totp.Totp;
+import io.supertokens.totp.exceptions.InvalidTotpException;
+import io.supertokens.totp.exceptions.LimitReachedException;
+import org.apache.commons.codec.binary.Base32;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
+import javax.crypto.spec.SecretKeySpec;
+import java.io.IOException;
+import java.security.InvalidKeyException;
+import java.security.Key;
+import java.time.Duration;
+import java.time.Instant;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThrows;
 
 // TODO: Add test for UsedCodeAlreadyExistsException once we implement time mocking
 
@@ -93,17 +88,18 @@ public class TOTPRecipeTest {
     public TestSetupResult defaultInit()
             throws InterruptedException, IOException, StorageQueryException, InvalidLicenseKeyException,
             HttpResponseException {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            assert (false);
+            return null;
         }
         TOTPStorage storage = StorageLayer.getTOTPStorage(process.getProcess());
 
-        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
+        FeatureFlagTestContent.getInstance(process.main)
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.TOTP});
 
         return new TestSetupResult(storage, process);
     }
@@ -113,7 +109,9 @@ public class TOTPRecipeTest {
         return generateTotpCode(main, device, 0);
     }
 
-    /** Generates TOTP code similar to apps like Google Authenticator and Authy */
+    /**
+     * Generates TOTP code similar to apps like Google Authenticator and Authy
+     */
     private static String generateTotpCode(Main main, TOTPDevice device, int step)
             throws InvalidKeyException, StorageQueryException {
         final TimeBasedOneTimePasswordGenerator totp = new TimeBasedOneTimePasswordGenerator(
@@ -140,6 +138,9 @@ public class TOTPRecipeTest {
     @Test
     public void createDeviceTest() throws Exception {
         TestSetupResult result = defaultInit();
+        if (result == null) {
+            return;
+        }
         Main main = result.process.getProcess();
 
         // Create device
@@ -154,6 +155,9 @@ public class TOTPRecipeTest {
     @Test
     public void createDeviceAndVerifyCodeTest() throws Exception {
         TestSetupResult result = defaultInit();
+        if (result == null) {
+            return;
+        }
         Main main = result.process.getProcess();
 
         // Create device
@@ -267,7 +271,7 @@ public class TOTPRecipeTest {
 
     @Test
     public void rateLimitCooldownTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         // set rate limiting cooldown time to 1s
         Utils.setValueInConfig("totp_rate_limit_cooldown_sec", "1");
@@ -278,10 +282,11 @@ public class TOTPRecipeTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            assert (false);
+            return;
         }
 
-        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
+        FeatureFlagTestContent.getInstance(process.main)
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.TOTP});
 
         Main main = process.getProcess();
 
@@ -311,6 +316,9 @@ public class TOTPRecipeTest {
     public void cronRemovesCodesDuringRateLimitTest() throws Exception {
         // This test is flaky because of time.
         TestSetupResult result = defaultInit();
+        if (result == null) {
+            return;
+        }
         Main main = result.process.getProcess();
 
         // Create device
@@ -335,6 +343,9 @@ public class TOTPRecipeTest {
     @Test
     public void createAndVerifyDeviceTest() throws Exception {
         TestSetupResult result = defaultInit();
+        if (result == null) {
+            return;
+        }
         Main main = result.process.getProcess();
 
         // Create device
@@ -377,6 +388,9 @@ public class TOTPRecipeTest {
     public void removeDeviceTest() throws Exception {
         // Flaky test.
         TestSetupResult result = defaultInit();
+        if (result == null) {
+            return;
+        }
         Main main = result.process.getProcess();
         TOTPStorage storage = result.storage;
 
@@ -441,6 +455,9 @@ public class TOTPRecipeTest {
     @Test
     public void updateDeviceNameTest() throws Exception {
         TestSetupResult result = defaultInit();
+        if (result == null) {
+            return;
+        }
         Main main = result.process.getProcess();
 
         Totp.registerDevice(main, "user", "device1", 1, 30);
@@ -475,6 +492,9 @@ public class TOTPRecipeTest {
     @Test
     public void getDevicesTest() throws Exception {
         TestSetupResult result = defaultInit();
+        if (result == null) {
+            return;
+        }
         Main main = result.process.getProcess();
 
         // Try get devices for non-existent user:
@@ -492,6 +512,9 @@ public class TOTPRecipeTest {
     @Test
     public void deleteExpiredTokensCronIntervalTest() throws Exception {
         TestSetupResult result = defaultInit();
+        if (result == null) {
+            return;
+        }
         Main main = result.process.getProcess();
 
         // Ensure that delete expired tokens cron runs every hour:

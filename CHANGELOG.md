@@ -10,17 +10,22 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Add TOTP recipe
 
 ### Database changes:
+
 - Add new tables for TOTP recipe:
-  - `totp_users` that stores the users that have enabled TOTP
-  - `totp_user_devices` that stores devices (each device has its own secret) for each user
-  - `totp_used_codes` that stores used codes for each user. This is to implement rate limiting and prevent replay attacks.
+    - `totp_users` that stores the users that have enabled TOTP
+    - `totp_user_devices` that stores devices (each device has its own secret) for each user
+    - `totp_used_codes` that stores used codes for each user. This is to implement rate limiting and prevent replay
+      attacks.
+    - `user_last_active` that stores the last active time for each user.
 
 ### New APIs:
+
 - `GET /users/count/active` to fetch the number of active users after the given timestamp.
 - `POST /recipe/totp/device` to create a new device as well as the user if it doesn't exist.
 - `POST /recipe/totp/device/verify` to verify a device. This is to ensure that the user has access to the device.
 - `POST /recipe/totp/verify` to verify a code and continue the login flow.
-- `PUT /recipe/totp/device` to update the name of a device. Name is just a string that the user can set to identify the device.
+- `PUT /recipe/totp/device` to update the name of a device. Name is just a string that the user can set to identify the
+  device.
 - `GET /recipe/totp/device/list` to get all devices for a user.
 - `POST /recipe/totp/device/remove` to remove a device. If the user has no more devices, the user is also removed.
 

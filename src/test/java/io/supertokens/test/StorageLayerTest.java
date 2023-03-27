@@ -12,7 +12,6 @@ import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
 import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
-
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -61,14 +60,14 @@ public class StorageLayerTest {
 
     @Test
     public void totpCodeLengthTest() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         process.getProcess().setForceInMemoryDB(); // this test is only for SQLite
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            assert (false);
+            return;
         }
         TOTPSQLStorage storage = StorageLayer.getTOTPStorage(process.getProcess());
         long now = System.currentTimeMillis();

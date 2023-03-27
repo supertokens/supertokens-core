@@ -22,7 +22,6 @@ import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
-import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPStorage;
@@ -30,6 +29,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.totp.Totp;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -37,13 +37,13 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-
 import static io.supertokens.test.totp.TOTPRecipeTest.generateTotpCode;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThrows;
 
 public class TotpLicenseTest {
-    public final static String OPAQUE_KEY_WITH_TOTP_FEATURE = "pXhNK=nYiEsb6gJEOYP2kIR6M0kn4XLvNqcwT1XbX8xHtm44K-lQfGCbaeN0Ieeza39fxkXr=tiiUU=DXxDH40Y=4FLT4CE-rG1ETjkXxO4yucLpJvw3uSegPayoISGL";
+    public final static String OPAQUE_KEY_WITH_TOTP_FEATURE = "pXhNK=nYiEsb6gJEOYP2kIR6M0kn4XLvNqcwT1XbX8xHtm44K" +
+            "-lQfGCbaeN0Ieeza39fxkXr=tiiUU=DXxDH40Y=4FLT4CE-rG1ETjkXxO4yucLpJvw3uSegPayoISGL";
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -69,13 +69,13 @@ public class TotpLicenseTest {
     }
 
     public TestSetupResult defaultInit() throws InterruptedException {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
-            assert (false);
+            return null;
         }
         TOTPStorage storage = StorageLayer.getTOTPStorage(process.getProcess());
 
@@ -85,6 +85,9 @@ public class TotpLicenseTest {
     @Test
     public void testTotpWithoutLicense() throws Exception {
         TestSetupResult result = defaultInit();
+        if (result == null) {
+            return;
+        }
         Main main = result.process.getProcess();
 
         // Create device
@@ -153,7 +156,11 @@ public class TotpLicenseTest {
     @Test
     public void testTotpWithLicense() throws Exception {
         TestSetupResult result = defaultInit();
-        FeatureFlagTestContent.getInstance(result.process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
+        if (result == null) {
+            return;
+        }
+        FeatureFlagTestContent.getInstance(result.process.main)
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.TOTP});
 
         Main main = result.process.getProcess();
 
