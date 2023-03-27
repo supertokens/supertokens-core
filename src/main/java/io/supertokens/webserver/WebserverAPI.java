@@ -39,6 +39,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -232,6 +233,11 @@ public abstract class WebserverAPI extends HttpServlet {
             throw new IllegalStateException(e);
         }
         return connectionUriDomain;
+    }
+
+    @TestOnly
+    protected TenantIdentifier getTenantIdentifierFromRequest(HttpServletRequest req) {
+        return new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
     }
 
     protected TenantIdentifierWithStorage getTenantIdentifierWithStorageFromRequest(HttpServletRequest req)
