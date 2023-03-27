@@ -54,7 +54,11 @@ public class UserMetadata {
             JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
             MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, metadataUpdate);
 
-            storage.setUserMetadata_Transaction(tenantIdentifier.toAppIdentifier(), con, userId, updatedMetadata);
+            try {
+                storage.setUserMetadata_Transaction(tenantIdentifier.toAppIdentifier(), con, userId, updatedMetadata);
+            } catch (TenantOrAppNotFoundException e) {
+                throw new StorageTransactionLogicException(e);
+            }
 
             return updatedMetadata;
         });

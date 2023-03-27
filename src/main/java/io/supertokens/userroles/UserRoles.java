@@ -64,7 +64,7 @@ public class UserRoles {
         UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(tenantIdentifier, main);
         return storage.startTransaction(con -> {
             boolean wasANewRoleCreated = storage.createNewRoleOrDoNothingIfExists_Transaction(
-                    tenantIdentifier, con, role);
+                    tenantIdentifier.toAppIdentifier(), con, role);
 
             if (permissions != null) {
                 for (int i = 0; i < permissions.length; i++) {

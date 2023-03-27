@@ -234,15 +234,11 @@ public abstract class WebserverAPI extends HttpServlet {
         return connectionUriDomain;
     }
 
-    protected TenantIdentifierWithStorage getTenantIdentifierWithStorageFromRequest(HttpServletRequest req) {
+    protected TenantIdentifierWithStorage getTenantIdentifierWithStorageFromRequest(HttpServletRequest req)
+            throws TenantOrAppNotFoundException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
-        try {
-            Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
-            return tenantIdentifier.withStorage(storage);
-        } catch (TenantOrAppNotFoundException e) {
-            // TODO ignore only for now, this function should throw this exception
-            return tenantIdentifier.withStorage(null);
-        }
+        Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
+        return tenantIdentifier.withStorage(storage);
     }
 
     protected AppIdentifierWithStorage enforcePublicTenantAndGetAppIdentifierWithStorageFromRequest(HttpServletRequest req)

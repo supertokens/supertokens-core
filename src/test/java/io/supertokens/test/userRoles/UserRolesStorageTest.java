@@ -185,7 +185,7 @@ public class UserRolesStorageTest {
                 storage.startTransaction(con -> {
                     numberOfIterations.incrementAndGet();
                     // create a new Role
-                    storage.createNewRoleOrDoNothingIfExists_Transaction(new TenantIdentifier(null, null, null), con,
+                    storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con,
                             role);
 
                     // wait for some time
@@ -301,7 +301,7 @@ public class UserRolesStorageTest {
         {
             boolean wasRoleCreated = storage
                     .startTransaction(con -> storage.createNewRoleOrDoNothingIfExists_Transaction(
-                            new TenantIdentifier(null, null, null), con, role));
+                            new AppIdentifier(null, null), con, role));
             assertFalse(wasRoleCreated);
         }
         process.kill();
@@ -391,7 +391,7 @@ public class UserRolesStorageTest {
         {
             boolean wasRoleCreated = storage
                     .startTransaction(con -> storage.createNewRoleOrDoNothingIfExists_Transaction(
-                            new TenantIdentifier(null, null, null), con, role));
+                            new AppIdentifier(null, null), con, role));
 
             // check that the role is created
             assertTrue(wasRoleCreated);
@@ -422,7 +422,7 @@ public class UserRolesStorageTest {
         String[] createdRoles = new String[]{"role1", "role2"};
         storage.startTransaction(con -> {
             for (int i = 0; i < createdRoles.length; i++) {
-                storage.createNewRoleOrDoNothingIfExists_Transaction(new TenantIdentifier(null, null, null), con,
+                storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con,
                         createdRoles[i]);
             }
             return null;
@@ -480,7 +480,7 @@ public class UserRolesStorageTest {
         String userId = "userId";
         storage.startTransaction(con -> {
             for (String role : roles) {
-                storage.createNewRoleOrDoNothingIfExists_Transaction(new TenantIdentifier(null, null, null), con, role);
+                storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con, role);
             }
             storage.commitTransaction(con);
             return null;
@@ -516,7 +516,7 @@ public class UserRolesStorageTest {
         String role = "role";
         String userId = "userId";
         storage.startTransaction(con -> {
-            storage.createNewRoleOrDoNothingIfExists_Transaction(new TenantIdentifier(null, null, null), con, role);
+            storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con, role);
             storage.commitTransaction(con);
             return null;
         });
