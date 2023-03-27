@@ -6,10 +6,8 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.RSAKeyProvider;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-import com.google.gson.JsonPrimitive;
+import com.google.gson.*;
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.ProcessState;
 import io.supertokens.cronjobs.Cronjobs;
@@ -21,6 +19,7 @@ import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -144,15 +143,50 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
     @Override
     public JsonObject getPaidFeatureStats() throws StorageQueryException {
-        JsonObject result = new JsonObject();
+        JsonObject usageStats = new JsonObject();
         EE_FEATURES[] features = getEnabledEEFeaturesFromDbOrCache();
-        if (Arrays.stream(features).anyMatch(t -> t == EE_FEATURES.DASHBOARD_LOGIN)) {
-            JsonObject stats = new JsonObject();
-            int userCount = StorageLayer.getDashboardStorage(main).getAllDashboardUsers().length;
-            stats.addProperty("user_count", userCount);
-            result.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), stats);
+        ActiveUsersStorage activeUsersStorage = StorageLayer.getActiveUsersStorage(main);
+
+        for (EE_FEATURES feature : features) {
+            if (feature == EE_FEATURES.DASHBOARD_LOGIN) {
+                JsonObject stats = new JsonObject();
+                int userCount = StorageLayer.getDashboardStorage(main).getAllDashboardUsers().length;
+                stats.addProperty("user_count", userCount);
+                usageStats.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), stats);
+            }
+            if (feature == EE_FEATURES.TOTP) {
+                JsonObject totpStats = new JsonObject();
+                JsonArray totpMauArr = new JsonArray();
+
+                for (int i = 0; i < 30; i++) {
+                    long now = System.currentTimeMillis();
+                    long today = now - (now % (24 * 60 * 60 * 1000L));
+                    long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+
+                    int totpMau = activeUsersStorage.countUsersEnabledTotpAndActiveSince(timestamp);
+                    totpMauArr.add(new JsonPrimitive(totpMau));
+                }
+
+                totpStats.add("maus", totpMauArr);
+
+                int totpTotalUsers = activeUsersStorage.countUsersEnabledTotp();
+                totpStats.addProperty("total_users", totpTotalUsers);
+                usageStats.add(EE_FEATURES.TOTP.toString(), totpStats);
+            }
         }
-        return result;
+
+        JsonArray mauArr = new JsonArray();
+        for (int i = 0; i < 30; i++) {
+            long now = System.currentTimeMillis();
+            long today = now - (now % (24 * 60 * 60 * 1000L));
+            long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+
+            int mau = activeUsersStorage.countUsersActiveSince(timestamp);
+            mauArr.add(new JsonPrimitive(mau));
+        }
+
+        usageStats.add("maus", mauArr);
+        return usageStats;
     }
 
     private EE_FEATURES[] verifyLicenseKey(String licenseKey)

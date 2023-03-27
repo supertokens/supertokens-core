@@ -19,6 +19,8 @@ package io.supertokens.webserver.api.emailpassword;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.emailpassword.exceptions.WrongCredentialsException;
@@ -64,6 +66,8 @@ public class SignInAPI extends WebserverAPI {
 
         try {
             UserInfo user = EmailPassword.signIn(super.main, normalisedEmail, password);
+
+            ActiveUsers.updateLastActive(main, user.id); // use the internal user id
 
             // if a userIdMapping exists, pass the externalUserId to the response
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main,

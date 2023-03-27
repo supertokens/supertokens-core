@@ -19,6 +19,8 @@ package io.supertokens.test.session.api;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -98,6 +100,8 @@ public class SessionRemoveAPITest2_7 {
 
         // remove s2 and s4 and make sure they are returned
 
+        long checkpoint1 = System.currentTimeMillis();
+
         String sessionRemoveBodyString = "{" + " sessionHandles : [ "
                 + s2Info.get("session").getAsJsonObject().get("handle").getAsString() + " ,"
                 + s4Info.get("session").getAsJsonObject().get("handle").getAsString() + " ] " + "}";
@@ -106,6 +110,9 @@ public class SessionRemoveAPITest2_7 {
                 "http://localhost:3567/recipe/session/remove", sessionRemoveBody, 1000, 1000, null,
                 Utils.getCdiVersion2_7ForTests(), "session");
         JsonArray revokedSessions = sessionRemovedResponse.getAsJsonArray("sessionHandlesRevoked");
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), checkpoint1);
+        assert (activeUsers == 0); // user ID is not set so not counted as active (we don't have userId)
 
         for (int i = 0; i < revokedSessions.size(); i++) {
             assertTrue(sessionRemoveBody.getAsJsonArray("sessionHandles").contains(revokedSessions.get(i)));
@@ -120,6 +127,8 @@ public class SessionRemoveAPITest2_7 {
                 + s4Info.get("session").getAsJsonObject().get("handle").getAsString() + " ] " + "}";
         sessionRemoveBody = new JsonParser().parse(sessionRemoveBodyString).getAsJsonObject();
 
+        long checkpoint2 = System.currentTimeMillis();
+
         sessionRemovedResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/remove", sessionRemoveBody, 1000, 1000, null,
                 Utils.getCdiVersion2_7ForTests(), "session");
@@ -130,6 +139,9 @@ public class SessionRemoveAPITest2_7 {
         assertTrue(revokedSessions.contains(s2Info.get("session").getAsJsonObject().get("handle")));
 
         assertEquals(revokedSessions.size(), 2);
+
+        activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), checkpoint2);
+        assert (activeUsers == 0); // user ID is not set so not counted as active (we don't have userId)
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -221,6 +233,8 @@ public class SessionRemoveAPITest2_7 {
                 "session");
         assertEquals(session2Info.get("status").getAsString(), "OK");
 
+        long checkpoint1 = System.currentTimeMillis();
+
         // remove session using user id
         JsonObject removeSessionBody = new JsonObject();
         removeSessionBody.addProperty("userId", userId);
@@ -236,6 +250,9 @@ public class SessionRemoveAPITest2_7 {
                 .contains(sessionInfo.get("session").getAsJsonObject().get("handle")));
         assertTrue(sessionRemovedResponse.getAsJsonArray("sessionHandlesRevoked")
                 .contains(session2Info.get("session").getAsJsonObject().get("handle")));
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), checkpoint1);
+        assert (activeUsers == 1); // user ID is set
 
         // check that the number of sessions for user is 0
         Map<String, String> userParams = new HashMap<>();

@@ -135,6 +135,36 @@ public class ConfigTest2_6 {
 
     }
 
+    @Test
+    public void testInvalidTotpConfigThrowsExpectedError() throws Exception {
+        String[] args = { "../" };
+
+        Utils.setValueInConfig("totp_max_attempts", "0");
+
+        TestingProcess process = TestingProcessManager.start(args);
+
+        ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(e);
+        assertEquals(e.exception.getMessage(),
+                "'totp_max_attempts' must be > 0");
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+
+        Utils.reset();
+
+        Utils.setValueInConfig("totp_rate_limit_cooldown_sec", "0");
+        process = TestingProcessManager.start(args);
+
+        e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
+        assertNotNull(e);
+        assertEquals(e.exception.getMessage(),
+                "'totp_rate_limit_cooldown_sec' must be > 0");
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
     private String getConfigFileLocation(Main main) {
         return new File(CLIOptions.get(main).getConfigFilePath() == null
                 ? CLIOptions.get(main).getInstallationPath() + "config.yaml"
@@ -220,6 +250,9 @@ public class ConfigTest2_6 {
         assertFalse("Config access token blacklisting did not match default", config.getAccessTokenBlacklisting());
         assertEquals("Config refresh token validity did not match default", config.getRefreshTokenValidity(),
                 60 * 2400 * 60 * (long) 1000);
+        assertEquals(5, config.getTotpMaxAttempts()); // 5
+        assertEquals(900, config.getTotpRateLimitCooldownTimeSec()); // 15 minutes
+
         assertEquals("Config info log path did not match default", config.getInfoLogPath(process.getProcess()),
                 CLIOptions.get(process.getProcess()).getInstallationPath() + "logs/info.log");
         assertEquals("Config error log path did not match default", config.getErrorLogPath(process.getProcess()),

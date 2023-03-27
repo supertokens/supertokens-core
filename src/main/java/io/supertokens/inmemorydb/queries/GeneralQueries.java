@@ -94,6 +94,11 @@ public class GeneralQueries {
             update(start, getQueryToCreateUserPaginationIndex(start), NO_OP_SETTER);
         }
 
+        if (!doesTableExists(start, Config.getConfig(start).getUserLastActiveTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, ActiveUsersQueries.getQueryToCreateUserLastActiveTable(start), NO_OP_SETTER);
+        }
+
         if (!doesTableExists(start, Config.getConfig(start).getAccessTokenSigningKeysTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, getQueryToCreateAccessTokenSigningKeysTable(start), NO_OP_SETTER);
@@ -184,6 +189,23 @@ public class GeneralQueries {
         if (!doesTableExists(start, Config.getConfig(start).getUserIdMappingTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, UserIdMappingQueries.getQueryToCreateUserIdMappingTable(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getTotpUsersTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, TOTPQueries.getQueryToCreateUsersTable(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getTotpUserDevicesTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, TOTPQueries.getQueryToCreateUserDevicesTable(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getTotpUsedCodesTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, TOTPQueries.getQueryToCreateUsedCodesTable(start), NO_OP_SETTER);
+            // index:
+            update(start, TOTPQueries.getQueryToCreateUsedCodesExpiryTimeIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getDashboardUsersTable())) {
@@ -306,8 +328,8 @@ public class GeneralQueries {
     }
 
     public static AuthRecipeUserInfo[] getUsers(Start start, @NotNull Integer limit, @NotNull String timeJoinedOrder,
-                                                @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
-                                                @Nullable Long timeJoined)
+            @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
+            @Nullable Long timeJoined)
             throws SQLException, StorageQueryException {
 
         // This list will be used to keep track of the result's order from the db
@@ -416,7 +438,7 @@ public class GeneralQueries {
     }
 
     private static List<? extends AuthRecipeUserInfo> getUserInfoForRecipeIdFromUserIds(Start start, RECIPE_ID recipeId,
-                                                                                        List<String> userIds)
+            List<String> userIds)
             throws StorageQueryException, SQLException {
         if (recipeId == RECIPE_ID.EMAIL_PASSWORD) {
             return EmailPasswordQueries.getUsersInfoUsingIdList(start, userIds);
