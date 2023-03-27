@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -242,6 +243,21 @@ public abstract class WebserverAPI extends HttpServlet {
             // TODO ignore only for now, this function should throw this exception
             return tenantIdentifier.withStorage(null);
         }
+    }
+
+    protected AppIdentifierWithStorage enforcePublicTenantAndGetAppIdentifierWithStorageFromRequest(HttpServletRequest req)
+            throws TenantOrAppNotFoundException, BadPermissionException {
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
+                this.getTenantId(req));
+
+        if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+            throw new BadPermissionException("Only public tenantId can query across tenants");
+        }
+
+        Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
+        Storage[] storages = StorageLayer.getStoragesForApp(main, tenantIdentifier.toAppIdentifier());
+        return new AppIdentifierWithStorage(tenantIdentifier.getConnectionUriDomain(), tenantIdentifier.getAppId(),
+                storage, storages);
     }
 
     protected TenantIdentifierWithStorageAndUserIdMapping getTenantIdentifierWithStorageAndUserIdMappingFromRequest(HttpServletRequest req, String userId, UserIdType userIdType)

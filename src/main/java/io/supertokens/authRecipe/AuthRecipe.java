@@ -55,15 +55,15 @@ public class AuthRecipe {
                     tenantIdentifier, includeRecipeIds);
     }
 
-    public static long getUsersCountAcrossAllTenants(Main main, AppIdentifier appIdentifier,
+    public static long getUsersCountAcrossAllTenants(AppIdentifierWithStorage appIdentifierWithStorage,
                                               RECIPE_ID[] includeRecipeIds)
             throws StorageQueryException,
             TenantOrAppNotFoundException, BadPermissionException {
         long count = 0;
 
-        for (Storage storage : StorageLayer.getStoragesForApp(main, appIdentifier)) {
+        for (Storage storage : appIdentifierWithStorage.getStorages()) {
             count += ((AuthRecipeStorage) storage).getUsersCount(
-                    appIdentifier, includeRecipeIds);
+                    appIdentifierWithStorage, includeRecipeIds);
         }
 
         return count;
