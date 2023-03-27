@@ -73,6 +73,7 @@ public class FeatureFlagTest {
     @Test
     public void missingEEFolderShouldBeSameAsNoLicenseKey()
             throws InterruptedException, StorageQueryException, TenantOrAppNotFoundException {
+        FeatureFlag.clearURLClassLoader();
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
