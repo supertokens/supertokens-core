@@ -86,6 +86,21 @@ public class InputParser {
         }
     }
 
+    public static Long getLongQueryParamOrThrowError(HttpServletRequest request, String fieldName, boolean nullable)
+            throws ServletException {
+        String key = getQueryParamOrThrowError(request, fieldName, nullable);
+        if (key == null && nullable) {
+            return null;
+        }
+        try {
+            assert key != null;
+            return Long.parseLong(key);
+        } catch (Exception e) {
+            throw new ServletException(new WebserverAPI.BadRequestException(
+                    "Field name '" + fieldName + "' must be an long in the GET request"));
+        }
+    }
+
     public static JsonObject parseJsonObjectOrThrowError(JsonObject element, String fieldName, boolean nullable)
             throws ServletException {
         try {
