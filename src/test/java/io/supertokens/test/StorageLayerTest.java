@@ -62,8 +62,9 @@ public class StorageLayerTest {
     public void totpCodeLengthTest() throws Exception {
         String[] args = {"../"};
 
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        process.getProcess().setForceInMemoryDB(); // this test is only for SQLite
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+        process.getProcess().setForceInMemoryDB(); // this test is for SQLite. We have different versions for PSQL and MySQL
+        process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {

@@ -1674,10 +1674,11 @@ public class Start
             }
         } else if (className.equals(TOTPStorage.class.getName())) {
             try {
-                Totp.registerDevice(this.main, userId, "testDevice", 0, 30);
+                TOTPDevice device = new TOTPDevice(userId, "testDevice", "secret", 0, 30, false);
+                TOTPQueries.createDevice(this, device);
             }
-            catch (DeviceAlreadyExistsException | NoSuchAlgorithmException | FeatureNotEnabledException e) {
-                throw new StorageQueryException(e);
+            catch (StorageTransactionLogicException e) {
+                throw new StorageQueryException(e.actualException);
             }
         }
         else if (className.equals(JWTRecipeStorage.class.getName())) {
