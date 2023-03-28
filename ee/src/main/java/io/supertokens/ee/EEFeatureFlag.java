@@ -145,7 +145,9 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
     public JsonObject getPaidFeatureStats() throws StorageQueryException {
         JsonObject usageStats = new JsonObject();
         EE_FEATURES[] features = getEnabledEEFeaturesFromDbOrCache();
-        ActiveUsersStorage activeUsersStorage = StorageLayer.getActiveUsersStorage(main);
+
+        ActiveUsersStorage activeUsersStorage = StorageLayer.getStorage(main).getType().toString().equals("SQL") ?
+                StorageLayer.getActiveUsersStorage(main) : null;
 
         for (EE_FEATURES feature : features) {
             if (feature == EE_FEATURES.DASHBOARD_LOGIN) {
@@ -154,7 +156,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
                 stats.addProperty("user_count", userCount);
                 usageStats.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), stats);
             }
-            if (feature == EE_FEATURES.TOTP) {
+            if (feature == EE_FEATURES.TOTP && activeUsersStorage != null) {
                 JsonObject totpStats = new JsonObject();
                 JsonArray totpMauArr = new JsonArray();
 
@@ -175,17 +177,20 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
             }
         }
 
-        JsonArray mauArr = new JsonArray();
-        for (int i = 0; i < 30; i++) {
-            long now = System.currentTimeMillis();
-            long today = now - (now % (24 * 60 * 60 * 1000L));
-            long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+        if (activeUsersStorage != null) {
+            JsonArray mauArr = new JsonArray();
+            for (int i = 0; i < 30; i++) {
+                long now = System.currentTimeMillis();
+                long today = now - (now % (24 * 60 * 60 * 1000L));
+                long timestamp = today - (i * 24 * 60 * 60 * 1000L);
 
-            int mau = activeUsersStorage.countUsersActiveSince(timestamp);
-            mauArr.add(new JsonPrimitive(mau));
+                int mau = activeUsersStorage.countUsersActiveSince(timestamp);
+                mauArr.add(new JsonPrimitive(mau));
+            }
+
+            usageStats.add("maus", mauArr);
         }
 
-        usageStats.add("maus", mauArr);
         return usageStats;
     }
 
