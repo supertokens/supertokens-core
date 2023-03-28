@@ -140,6 +140,7 @@ public class SignInAPITest2_7 {
         responseBody.addProperty("email", "random@gmail.com");
         responseBody.addProperty("password", "validPass123");
 
+        Thread.sleep(1); // add a small delay to ensure a unique timestamp
         long beforeSignIn = System.currentTimeMillis();
 
         JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",

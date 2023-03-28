@@ -55,7 +55,7 @@ public class ActiveUsersTest {
 
         assert ActiveUsers.countUsersActiveSince(main, now) == 2;
 
-        Thread.sleep(100);
+        Thread.sleep(1);
 
         long now2 = System.currentTimeMillis();
 

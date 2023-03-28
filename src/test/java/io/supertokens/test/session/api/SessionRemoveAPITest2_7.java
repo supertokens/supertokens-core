@@ -93,7 +93,7 @@ public class SessionRemoveAPITest2_7 {
         assertEquals(s2Info.get("status").getAsString(), "OK");
 
         // remove s2 and make sure they are returned
-
+        Thread.sleep(1); // ensures a unique timestamp
         long checkpoint1 = System.currentTimeMillis();
 
         JsonObject sessionRemoveBody = new JsonObject();
@@ -135,6 +135,7 @@ public class SessionRemoveAPITest2_7 {
                     "session");
             assertEquals(session2Info.get("status").getAsString(), "OK");
 
+            Thread.sleep(1); // ensures a unique timestamp
             long checkpoint1 = System.currentTimeMillis();
 
             // remove session using user id
