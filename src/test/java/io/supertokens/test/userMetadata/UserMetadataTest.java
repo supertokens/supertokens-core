@@ -201,7 +201,7 @@ public class UserMetadataTest {
         update2.addProperty("b", 2);
         expected.addProperty("b", 2);
 
-        UserMetadataSQLStorage sqlStorage = StorageLayer.getUserMetadataStorage(process.getProcess());
+        UserMetadataSQLStorage sqlStorage = (UserMetadataSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         AtomicReference<String> t1State = new AtomicReference<>("init");
         AtomicReference<String> t2State = new AtomicReference<>("init");

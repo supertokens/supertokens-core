@@ -47,7 +47,8 @@ public class RemoveUserMetadataAPI extends WebserverAPI {
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         try {
-            UserMetadata.deleteUserMetadata(this.getTenantIdentifierWithStorageFromRequest(req), main, userId);
+            UserMetadata.deleteUserMetadata(
+                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(), userId);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
