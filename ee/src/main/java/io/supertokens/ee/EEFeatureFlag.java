@@ -21,7 +21,7 @@ import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.KeyValueInfo;
-import io.supertokens.pluginInterface.Storage;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.version.Version;
@@ -146,7 +146,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         JsonObject usageStats = new JsonObject();
         EE_FEATURES[] features = getEnabledEEFeaturesFromDbOrCache();
 
-        ActiveUsersStorage activeUsersStorage = StorageLayer.getStorage(main).getType().toString().equals("SQL") ?
+        ActiveUsersStorage activeUsersStorage = StorageLayer.getStorage(main).getType() == STORAGE_TYPE.SQL ?
                 StorageLayer.getActiveUsersStorage(main) : null;
 
         for (EE_FEATURES feature : features) {
