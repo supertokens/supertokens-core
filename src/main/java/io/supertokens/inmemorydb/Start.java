@@ -1950,6 +1950,8 @@ public class Start
                 throw new StorageQueryException(e.actualException);
             } catch (UnknownRoleException e) {
                 throw new StorageQueryException(e);
+            } catch (TenantOrAppNotFoundException e) {
+                throw new IllegalStateException(e);
             }
         } else if (className.equals(EmailVerificationStorage.class.getName())) {
             try {

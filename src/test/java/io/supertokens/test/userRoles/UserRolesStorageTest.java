@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
@@ -185,8 +186,12 @@ public class UserRolesStorageTest {
                 storage.startTransaction(con -> {
                     numberOfIterations.incrementAndGet();
                     // create a new Role
-                    storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con,
-                            role);
+                    try {
+                        storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con,
+                                role);
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new IllegalStateException(e);
+                    }
 
                     // wait for some time
                     try {
@@ -300,8 +305,14 @@ public class UserRolesStorageTest {
         // check that createNewRole_transaction doesn't throw error, and no role was created
         {
             boolean wasRoleCreated = storage
-                    .startTransaction(con -> storage.createNewRoleOrDoNothingIfExists_Transaction(
-                            new AppIdentifier(null, null), con, role));
+                    .startTransaction(con -> {
+                        try {
+                            return storage.createNewRoleOrDoNothingIfExists_Transaction(
+                                    new AppIdentifier(null, null), con, role);
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new IllegalStateException(e);
+                        }
+                    });
             assertFalse(wasRoleCreated);
         }
         process.kill();
@@ -390,8 +401,14 @@ public class UserRolesStorageTest {
         // create a role and call doesRoleExist
         {
             boolean wasRoleCreated = storage
-                    .startTransaction(con -> storage.createNewRoleOrDoNothingIfExists_Transaction(
-                            new AppIdentifier(null, null), con, role));
+                    .startTransaction(con -> {
+                        try {
+                            return storage.createNewRoleOrDoNothingIfExists_Transaction(
+                                    new AppIdentifier(null, null), con, role);
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new IllegalStateException(e);
+                        }
+                    });
 
             // check that the role is created
             assertTrue(wasRoleCreated);
@@ -422,8 +439,12 @@ public class UserRolesStorageTest {
         String[] createdRoles = new String[]{"role1", "role2"};
         storage.startTransaction(con -> {
             for (int i = 0; i < createdRoles.length; i++) {
-                storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con,
-                        createdRoles[i]);
+                try {
+                    storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con,
+                            createdRoles[i]);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new IllegalStateException(e);
+                }
             }
             return null;
         });
@@ -480,7 +501,11 @@ public class UserRolesStorageTest {
         String userId = "userId";
         storage.startTransaction(con -> {
             for (String role : roles) {
-                storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con, role);
+                try {
+                    storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con, role);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new IllegalStateException(e);
+                }
             }
             storage.commitTransaction(con);
             return null;
@@ -516,7 +541,11 @@ public class UserRolesStorageTest {
         String role = "role";
         String userId = "userId";
         storage.startTransaction(con -> {
-            storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con, role);
+            try {
+                storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con, role);
+            } catch (TenantOrAppNotFoundException e) {
+                throw new IllegalStateException(e);
+            }
             storage.commitTransaction(con);
             return null;
         });

@@ -22,6 +22,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.userroles.exception.DuplicateUserRoleMappingException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
@@ -35,7 +36,7 @@ public class UserRoles {
     // the role does not exist, throw an UNKNOWN_ROLE_EXCEPTION error
     public static boolean addRoleToUser(TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId,
                                         String role)
-            throws StorageQueryException, UnknownRoleException {
+            throws StorageQueryException, UnknownRoleException, TenantOrAppNotFoundException {
         try {
             tenantIdentifierWithStorage.getUserRolesStorage().addRoleToUser(tenantIdentifierWithStorage, userId, role);
             return true;
@@ -49,9 +50,13 @@ public class UserRoles {
     public static boolean addRoleToUser(Main main, String userId, String role)
             throws StorageQueryException, UnknownRoleException {
         Storage storage = StorageLayer.getStorage(main);
-        return addRoleToUser(
-                new TenantIdentifierWithStorage(null, null, null, storage),
-                userId, role);
+        try {
+            return addRoleToUser(
+                    new TenantIdentifierWithStorage(null, null, null, storage),
+                    userId, role);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     // create a new role if it doesn't exist and add permissions to the role. This will create the role
@@ -59,31 +64,44 @@ public class UserRoles {
     // be shared across any tenant in that same user pool.
     public static boolean createNewRoleOrModifyItsPermissions(AppIdentifierWithStorage appIdentifierWithStorage,
                                                               String role, String[] permissions)
-            throws StorageQueryException, StorageTransactionLogicException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
         UserRolesSQLStorage storage = appIdentifierWithStorage.getUserRolesStorage();
-        return storage.startTransaction(con -> {
-            boolean wasANewRoleCreated = storage.createNewRoleOrDoNothingIfExists_Transaction(
-                    appIdentifierWithStorage, con, role);
 
-            if (permissions != null) {
-                for (int i = 0; i < permissions.length; i++) {
-                    try {
-                        storage.addPermissionToRoleOrDoNothingIfExists_Transaction(appIdentifierWithStorage,
-                                con, role, permissions[i]);
-                    } catch (UnknownRoleException e) {
-                        // ignore exception, should not come here since role should always exist in this transaction
+        try {
+            return storage.startTransaction(con -> {
+                boolean wasANewRoleCreated = false;
+                try {
+                    wasANewRoleCreated = storage.createNewRoleOrDoNothingIfExists_Transaction(
+                            appIdentifierWithStorage, con, role);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
+
+                if (permissions != null) {
+                    for (int i = 0; i < permissions.length; i++) {
+                        try {
+                            storage.addPermissionToRoleOrDoNothingIfExists_Transaction(appIdentifierWithStorage,
+                                    con, role, permissions[i]);
+                        } catch (UnknownRoleException e) {
+                            // ignore exception, should not come here since role should always exist in this transaction
+                        }
                     }
                 }
+                storage.commitTransaction(con);
+                return wasANewRoleCreated;
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof  TenantOrAppNotFoundException) {
+                throw (TenantOrAppNotFoundException) e.actualException;
             }
-            storage.commitTransaction(con);
-            return wasANewRoleCreated;
-        });
+            throw e;
+        }
     }
 
     @TestOnly
     public static boolean createNewRoleOrModifyItsPermissions(Main main,
                                                               String role, String[] permissions)
-            throws StorageQueryException, StorageTransactionLogicException {
+            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
         Storage storage = StorageLayer.getStorage(main);
         return createNewRoleOrModifyItsPermissions(
                 new AppIdentifierWithStorage(null, null, storage), role,
