@@ -39,6 +39,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jetbrains.annotations.TestOnly;
 
 import java.io.IOException;
 import java.util.HashSet;
@@ -145,7 +146,9 @@ public abstract class WebserverAPI extends HttpServlet {
     private void assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException,
             TenantOrAppNotFoundException {
         String apiKey = req.getHeader("api-key");
-        String[] keys = Config.getConfig(getTenantIdentifierWithStorageFromRequest(req), this.main).getAPIKeys();
+        String[] keys = Config.getConfig(
+                new TenantIdentifier(getConnectionUriDomain(req), getAppId(req), getTenantId(req)),
+                this.main).getAPIKeys();
         if (keys != null) {
             if (apiKey == null) {
                 throw new ServletException(new APIKeyUnauthorisedException());
@@ -234,18 +237,29 @@ public abstract class WebserverAPI extends HttpServlet {
         return connectionUriDomain;
     }
 
-    protected TenantIdentifierWithStorage getTenantIdentifierWithStorageFromRequest(HttpServletRequest req) {
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
-        try {
-            Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
-            return tenantIdentifier.withStorage(storage);
-        } catch (TenantOrAppNotFoundException e) {
-            // TODO ignore only for now, this function should throw this exception
-            return tenantIdentifier.withStorage(null);
-        }
+    @TestOnly
+    protected TenantIdentifier getTenantIdentifierFromRequest(HttpServletRequest req) {
+        return new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
     }
 
-    protected AppIdentifierWithStorage enforcePublicTenantAndGetAppIdentifierWithStorageFromRequest(HttpServletRequest req)
+    protected TenantIdentifierWithStorage getTenantIdentifierWithStorageFromRequest(HttpServletRequest req)
+            throws TenantOrAppNotFoundException {
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
+        Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
+        return tenantIdentifier.withStorage(storage);
+    }
+
+    protected AppIdentifierWithStorage getAppIdentifierWithStorage(HttpServletRequest req)
+            throws TenantOrAppNotFoundException {
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
+
+        Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
+        Storage[] storages = StorageLayer.getStoragesForApp(main, tenantIdentifier.toAppIdentifier());
+        return new AppIdentifierWithStorage(tenantIdentifier.getConnectionUriDomain(), tenantIdentifier.getAppId(),
+                storage, storages);
+    }
+
+    protected AppIdentifierWithStorage getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(HttpServletRequest req)
             throws TenantOrAppNotFoundException, BadPermissionException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));

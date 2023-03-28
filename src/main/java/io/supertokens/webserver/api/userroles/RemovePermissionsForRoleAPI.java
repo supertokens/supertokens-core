@@ -49,6 +49,7 @@ public class RemovePermissionsForRoleAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String role = InputParser.parseStringOrThrowError(input, "role", false);
@@ -79,8 +80,7 @@ public class RemovePermissionsForRoleAPI extends WebserverAPI {
         }
 
         try {
-            UserRoles.deletePermissionsFromRole(this.getTenantIdentifierWithStorageFromRequest(req), main, role,
-                    permissions);
+            UserRoles.deletePermissionsFromRole(this.getAppIdentifierWithStorage(req), role, permissions);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);

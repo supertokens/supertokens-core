@@ -49,6 +49,7 @@ public class GetUsersForRoleAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         String role = InputParser.getQueryParamOrThrowError(req, "role", false);
 
         // normalize roles
@@ -60,8 +61,7 @@ public class GetUsersForRoleAPI extends WebserverAPI {
 
         try {
 
-            String[] roleUsers = UserRoles.getUsersForRole(this.getTenantIdentifierWithStorageFromRequest(req),
-                    main, role);
+            String[] roleUsers = UserRoles.getUsersForRole(this.getTenantIdentifierWithStorageFromRequest(req), role);
             JsonArray arr = new JsonArray();
 
             for (String s : roleUsers) {

@@ -48,6 +48,7 @@ public class AddUserRoleAPI extends WebserverAPI {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         String role = InputParser.parseStringOrThrowError(input, "role", false);
@@ -59,8 +60,8 @@ public class AddUserRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean didUserAlreadyHaveRole = !UserRoles.addRoleToUser(this.getTenantIdentifierWithStorageFromRequest(req), main, userId,
-                    role);
+            boolean didUserAlreadyHaveRole = !UserRoles.addRoleToUser(
+                    this.getTenantIdentifierWithStorageFromRequest(req), userId, role);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.addProperty("didUserAlreadyHaveRole", didUserAlreadyHaveRole);

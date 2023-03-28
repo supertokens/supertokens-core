@@ -67,7 +67,7 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
         String role = "role";
         String[] permissions = new String[]{"permission"};
 
@@ -110,7 +110,7 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         String[] oldPermissions = new String[]{"permission1", "permission2"};
         String role = "role";
@@ -162,7 +162,7 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         {
             // create a role with null permissions
@@ -206,7 +206,7 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
         String role = "role";
 
         {
@@ -263,7 +263,7 @@ public class UserRolesTest {
         }
         String[] roles = new String[]{"role"};
         String userId = "userId";
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // assign an unknown role to a user, it should throw UNKNOWN_ROLE_EXCEPTION
         {
@@ -360,7 +360,7 @@ public class UserRolesTest {
 
         String userId = "userId";
         String[] roles = new String[]{"role"};
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role and assign the role to a user
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
@@ -402,7 +402,7 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         String[] roles = new String[]{"role1", "role2", "role3"};
         String userId = "userId";
@@ -447,7 +447,7 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create multiple roles and add them to a user
         String[] roles = new String[]{"role1", "role2", "role3"};
@@ -829,7 +829,7 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role with permissions and assign it to a user
         String role = "role";
@@ -998,7 +998,7 @@ public class UserRolesTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role
         String role = "role";

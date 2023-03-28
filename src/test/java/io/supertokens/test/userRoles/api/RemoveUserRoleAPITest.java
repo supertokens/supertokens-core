@@ -169,7 +169,7 @@ public class RemoveUserRoleAPITest {
 
         String[] roles = new String[]{"role1"};
         String userId = "userId";
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
@@ -216,7 +216,7 @@ public class RemoveUserRoleAPITest {
 
         String[] roles = new String[]{"role1"};
         String userId = "userId";
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role
         UserRoles.createNewRoleOrModifyItsPermissions(process.main, roles[0], null);
