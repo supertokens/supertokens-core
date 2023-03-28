@@ -1165,7 +1165,6 @@ public class EETest extends Mockito {
             InvalidLicenseKeyException {
         String[] args = {"../../"};
 
-
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         final HttpURLConnection mockCon = mock(HttpURLConnection.class);
@@ -1209,7 +1208,12 @@ public class EETest extends Mockito {
             assertEquals(j.entrySet().size(), 3);
             assertNotNull(j.get("licenseKey"));
             assertNotNull(j.get("superTokensVersion"));
-            assertEquals(j.getAsJsonObject("paidFeatureUsageStats").entrySet().size(), 1);
+            JsonObject paidFeatureUsageStats = j.getAsJsonObject("paidFeatureUsageStats");
+            JsonArray mauArr = paidFeatureUsageStats.get("maus").getAsJsonArray();
+            assertEquals(paidFeatureUsageStats.entrySet().size(), 1);
+            assertEquals(mauArr.size(), 30);
+            assertEquals(mauArr.get(0).getAsInt(), 0);
+            assertEquals(mauArr.get(29).getAsInt(), 0);
         } else {
             assertEquals(j.entrySet().size(), 4);
             assertNotNull(j.get("telemetryId"));
