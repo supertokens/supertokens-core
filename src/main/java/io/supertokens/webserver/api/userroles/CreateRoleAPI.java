@@ -49,6 +49,7 @@ public class CreateRoleAPI extends WebserverAPI {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String role = InputParser.parseStringOrThrowError(input, "role", false);
@@ -80,8 +81,7 @@ public class CreateRoleAPI extends WebserverAPI {
 
         try {
             boolean createdNewRole = UserRoles.createNewRoleOrModifyItsPermissions(
-                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(), role,
-                    permissions);
+                    this.getAppIdentifierWithStorage(req), role, permissions);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

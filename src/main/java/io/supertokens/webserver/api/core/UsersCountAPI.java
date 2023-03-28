@@ -74,7 +74,7 @@ public class UsersCountAPI extends WebserverAPI {
             long count;
 
             if (includeAllTenants) {
-                AppIdentifierWithStorage appIdentifierWithStorage = enforcePublicTenantAndGetAppIdentifierWithStorageFromRequest(req);
+                AppIdentifierWithStorage appIdentifierWithStorage = getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req);
 
                 count = AuthRecipe.getUsersCountAcrossAllTenants(appIdentifierWithStorage,
                         recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));

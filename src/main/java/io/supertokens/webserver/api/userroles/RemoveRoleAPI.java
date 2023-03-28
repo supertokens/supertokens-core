@@ -46,6 +46,7 @@ public class RemoveRoleAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String role = InputParser.parseStringOrThrowError(input, "role", false);
         // normalize and sanitize role
@@ -56,8 +57,7 @@ public class RemoveRoleAPI extends WebserverAPI {
         }
 
         try {
-            boolean didRoleExist = UserRoles.deleteRole(
-                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(), role);
+            boolean didRoleExist = UserRoles.deleteRole(this.getAppIdentifierWithStorage(req), role);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
