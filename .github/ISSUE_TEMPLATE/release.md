@@ -95,8 +95,11 @@ labels:
     - [ ] mongodb-plugin
     - Docker update
        - [ ] MySQL
+          - [ ] check if new env cnofigs need to be added 
        - [ ] Postgres
+          - [ ] check if new env cnofigs need to be added 
        - [ ] MongoDB
+          - [ ] check if new env cnofigs need to be added
     - [ ] try.supertokens.io
       ```
       docker rm try-supertokens -f
