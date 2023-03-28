@@ -336,11 +336,13 @@ public class GeneralQueries {
                                 + " AS emailpasswordTable ON allAuthUsersTable.user_id = emailpasswordTable.user_id";
 
                         // attach email tags to queries
-                        QUERY = QUERY + " WHERE emailpasswordTable.email LIKE ?";
-                        queryList.add("%" + dashboardSearchTags.emails.get(0) + "%");
+                        QUERY = QUERY + " WHERE emailpasswordTable.email LIKE ? OR emailpasswordTable.email LIKE ?";
+                        queryList.add(dashboardSearchTags.emails.get(0) + "%");
+                        queryList.add("%@" + dashboardSearchTags.emails.get(0) + "%");
                         for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
-                            QUERY += " OR emailpasswordTable.email LIKE ?";
-                            queryList.add("%" + dashboardSearchTags.emails.get(i) + "%");
+                            QUERY += " OR emailpasswordTable.email LIKE ? OR emailpasswordTable.email LIKE ?";
+                            queryList.add(dashboardSearchTags.emails.get(i) + "%");
+                            queryList.add("%@" + dashboardSearchTags.emails.get(i) + "%");
                         }
 
                         USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
@@ -362,12 +364,14 @@ public class GeneralQueries {
                         // check if email tag is present
                         if (dashboardSearchTags.emails != null) {
 
-                            QUERY += " WHERE thirdPartyTable.email LIKE ?";
-                            queryList.add("%" + dashboardSearchTags.emails.get(0) + "%");
+                            QUERY += " WHERE thirdPartyTable.email LIKE ? OR thirdPartyTable.email LIKE ?";
+                            queryList.add(dashboardSearchTags.emails.get(0) + "%");
+                            queryList.add("%@" + dashboardSearchTags.emails.get(0) + "%");
 
                             for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
-                                QUERY += " OR thirdPartyTable.email LIKE ?";
-                                queryList.add("%" + dashboardSearchTags.emails.get(i) + "%");
+                                QUERY += " OR thirdPartyTable.email LIKE ? OR thirdPartyTable.email LIKE ?";
+                                queryList.add(dashboardSearchTags.emails.get(i) + "%");
+                                queryList.add("%@" + dashboardSearchTags.emails.get(i) + "%");
                             }
 
                         }
@@ -381,10 +385,10 @@ public class GeneralQueries {
                             }
 
                             QUERY += " thirdPartyTable.third_party_id LIKE ?";
-                            queryList.add("%" + dashboardSearchTags.providers.get(0) + "%");
+                            queryList.add(dashboardSearchTags.providers.get(0) + "%");
                             for (int i = 1; i < dashboardSearchTags.providers.size(); i++) {
                                 QUERY += " OR thirdPartyTable.third_party_id LIKE ?";
-                                queryList.add("%" + dashboardSearchTags.providers.get(i) + "%");
+                                queryList.add(dashboardSearchTags.providers.get(i) + "%");
                             }
                         }
 
@@ -415,11 +419,13 @@ public class GeneralQueries {
                         // check if email tag is present
                         if (dashboardSearchTags.emails != null) {
 
-                            QUERY = QUERY + " WHERE passwordlessTable.email LIKE ?";
-                            queryList.add("%" + dashboardSearchTags.emails.get(0) + "%");
+                            QUERY = QUERY + " WHERE passwordlessTable.email LIKE ? OR passwordlessTable.email LIKE ?";
+                            queryList.add(dashboardSearchTags.emails.get(0) + "%");
+                            queryList.add("%@" + dashboardSearchTags.emails.get(0) + "%");
                             for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
-                                QUERY += " OR passwordlessTable.email LIKE ?";
-                                queryList.add("%" + dashboardSearchTags.emails.get(i) + "%");
+                                QUERY += " OR passwordlessTable.email LIKE ? OR passwordlessTable.email LIKE ?";
+                                queryList.add(dashboardSearchTags.emails.get(i) + "%");
+                                queryList.add("%@" + dashboardSearchTags.emails.get(i) + "%");
                             }
                         }
 

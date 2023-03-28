@@ -193,7 +193,7 @@ public class UsersAPI extends WebserverAPI {
         String[] searchTagArray = searchTag.split(";");
         ArrayList<String> searchTagArrayList = new ArrayList<>();
         for (String searchTagString : searchTagArray) {
-            String normalizedSearchTag = searchTagString.trim();
+            String normalizedSearchTag = searchTagString.toLowerCase().trim();
             if (normalizedSearchTag.length() != 0) {
                 searchTagArrayList.add(normalizedSearchTag);
             }
