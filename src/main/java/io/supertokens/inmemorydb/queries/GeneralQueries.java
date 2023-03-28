@@ -439,10 +439,18 @@ public class GeneralQueries {
                             }
 
                             QUERY += " passwordlessTable.phone_number LIKE ?";
-                            queryList.add("%" + dashboardSearchTags.phoneNumbers.get(0) + "%");
+                            if(dashboardSearchTags.phoneNumbers.get(0).startsWith("+")){
+                                queryList.add(dashboardSearchTags.phoneNumbers.get(0) + "%");
+                            } else {
+                                queryList.add("+" + dashboardSearchTags.phoneNumbers.get(0) + "%");
+                            }
                             for (int i = 1; i < dashboardSearchTags.phoneNumbers.size(); i++) {
                                 QUERY += " OR passwordlessTable.phone_number LIKE ?";
-                                queryList.add("%" + dashboardSearchTags.phoneNumbers.get(i) + "%");
+                                if(dashboardSearchTags.phoneNumbers.get(0).startsWith("+")){
+                                    queryList.add(dashboardSearchTags.phoneNumbers.get(i) + "%");
+                                } else {
+                                    queryList.add("+" + dashboardSearchTags.phoneNumbers.get(i) + "%");
+                                }
                             }
                         }
 
