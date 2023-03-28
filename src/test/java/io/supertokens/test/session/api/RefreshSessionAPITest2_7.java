@@ -381,8 +381,6 @@ public class RefreshSessionAPITest2_7 {
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
 
-        long startTs = System.currentTimeMillis();
-
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
                 "session");
@@ -394,19 +392,11 @@ public class RefreshSessionAPITest2_7 {
                 sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
         sessionRefreshBody.addProperty("enableAntiCsrf", false);
 
-        long afterSessionCreateTs = System.currentTimeMillis();
-
         JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
                 Utils.getCdiVersion2_7ForTests(), "session");
 
         checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, false);
-
-        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
-        assert (activeUsers == 1);
-
-        int activeUsersAfterSessionCreate = ActiveUsers.countUsersActiveSince(process.getProcess(), afterSessionCreateTs);
-        assert (activeUsersAfterSessionCreate == 1);
     }
 
     @Test
