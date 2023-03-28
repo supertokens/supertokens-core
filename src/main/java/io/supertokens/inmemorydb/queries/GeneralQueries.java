@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
+import io.supertokens.pluginInterface.dashboard.DashboardSearchTags.SUPPORTED_SEARCH_TAGS;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import org.jetbrains.annotations.NotNull;
 
@@ -322,15 +323,18 @@ public class GeneralQueries {
             {
                 StringBuilder USER_SEARCH_TAG_CONDITION = new StringBuilder();
 
-                // if recipeIds is null we are searching across all recipes
-                if (dashboardSearchTags.providers == null && dashboardSearchTags.phoneNumbers == null) {
-                    String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
-                            + " AS allAuthUsersTable" +
-                            " JOIN " + getConfig(start).getEmailPasswordUsersTable()
-                            + " AS emailpasswordTable ON allAuthUsersTable.user_id = emailpasswordTable.user_id";
+                {
+                    // check if we should search through the emailpassword table
+                    ArrayList<DashboardSearchTags.SUPPORTED_SEARCH_TAGS> allowedTags = new ArrayList<>();
+                    allowedTags.add(SUPPORTED_SEARCH_TAGS.EMAIL);
 
-                    // check if email tag is preset
-                    if (dashboardSearchTags.emails != null) {
+                    // check that only email tags exist
+                    if (dashboardSearchTags.shouldRecipeBeSearched(allowedTags)) {
+                        String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
+                                + " AS allAuthUsersTable" +
+                                " JOIN " + getConfig(start).getEmailPasswordUsersTable()
+                                + " AS emailpasswordTable ON allAuthUsersTable.user_id = emailpasswordTable.user_id";
+
                         // attach email tags to queries
                         QUERY = QUERY + " WHERE emailpasswordTable.email LIKE ?";
                         queryList.add("%" + dashboardSearchTags.emails.get(0) + "%");
@@ -338,31 +342,45 @@ public class GeneralQueries {
                             QUERY += " OR emailpasswordTable.email LIKE ?";
                             queryList.add("%" + dashboardSearchTags.emails.get(i) + "%");
                         }
-                    }
 
-                    USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
+                        USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
+                    }
                 }
 
-                if (dashboardSearchTags.phoneNumbers == null) {
-                    String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
-                            + " AS allAuthUsersTable" +
-                            " JOIN " + getConfig(start).getThirdPartyUsersTable()
-                            + " AS thirdPartyTable ON allAuthUsersTable.user_id = thirdPartyTable.user_id";
+                {
+                    // check if we should search through the thirdparty table
+                    ArrayList<DashboardSearchTags.SUPPORTED_SEARCH_TAGS> allowedTags = new ArrayList<>();
+                    allowedTags.add(SUPPORTED_SEARCH_TAGS.EMAIL);
+                    allowedTags.add(SUPPORTED_SEARCH_TAGS.PROVIDER);
 
-                    // check if email tag is preset
-                    if (dashboardSearchTags.emails != null) {
+                    if (dashboardSearchTags.shouldRecipeBeSearched(allowedTags)) {
+                        String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
+                                + " AS allAuthUsersTable" +
+                                " JOIN " + getConfig(start).getThirdPartyUsersTable()
+                                + " AS thirdPartyTable ON allAuthUsersTable.user_id = thirdPartyTable.user_id";
 
-                        QUERY += " WHERE thirdPartyTable.email LIKE ?";
-                        queryList.add("%" + dashboardSearchTags.emails.get(0) + "%");
+                        // check if email tag is present
+                        if (dashboardSearchTags.emails != null) {
 
-                        for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
-                            QUERY += " OR thirdPartyTable.email LIKE ?";
-                            queryList.add("%" + dashboardSearchTags.emails.get(i) + "%");
+                            QUERY += " WHERE thirdPartyTable.email LIKE ?";
+                            queryList.add("%" + dashboardSearchTags.emails.get(0) + "%");
+
+                            for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
+                                QUERY += " OR thirdPartyTable.email LIKE ?";
+                                queryList.add("%" + dashboardSearchTags.emails.get(i) + "%");
+                            }
+
                         }
 
-                        // checks if providers tag is present
+                        // check if providers tag is present
                         if (dashboardSearchTags.providers != null) {
-                            QUERY += " AND thirdPartyTable.third_party_id LIKE ?";
+                            if (dashboardSearchTags.emails != null) {
+                                QUERY += " AND ";
+                            } else {
+                                QUERY += " WHERE ";
+                            }
+
+                            QUERY += " thirdPartyTable.third_party_id LIKE ?";
                             queryList.add("%" + dashboardSearchTags.providers.get(0) + "%");
                             for (int i = 1; i < dashboardSearchTags.providers.size(); i++) {
                                 QUERY += " OR thirdPartyTable.third_party_id LIKE ?";
@@ -370,67 +388,67 @@ public class GeneralQueries {
                             }
                         }
 
-                    } else if (dashboardSearchTags.providers != null) {
-                        QUERY += " WHERE thirdPartyTable.third_party_id LIKE ?";
-                        queryList.add("%" + dashboardSearchTags.providers.get(0) + "%");
-                        for (int i = 1; i < dashboardSearchTags.providers.size(); i++) {
-                            QUERY += " OR thirdPartyTable.third_party_id LIKE ?";
-                            queryList.add("%" + dashboardSearchTags.providers.get(i) + "%");
-                        }
-                    }
+                        // check if we need to append this to an existing search query
+                        if (USER_SEARCH_TAG_CONDITION.length() != 0) {
+                            USER_SEARCH_TAG_CONDITION.append(" UNION ").append("SELECT * FROM ( ").append(QUERY)
+                                    .append(" LIMIT 1000)");
 
-                    // check if we need to append this to the existing search query
-                    if (USER_SEARCH_TAG_CONDITION.length() != 0) {
-                        USER_SEARCH_TAG_CONDITION.append(" UNION ").append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
-                        
-                    } else {
-                        USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
-    
+                        } else {
+                            USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
+
+                        }
                     }
                 }
 
-                if (dashboardSearchTags.providers == null) {
-                    String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
-                            + " AS allAuthUsersTable" +
-                            " JOIN " + getConfig(start).getPasswordlessUsersTable()
-                            + " AS passwordlessTable ON allAuthUsersTable.user_id = passwordlessTable.user_id";
+                {
+                    // check if we should search through the passwordless table
+                    ArrayList<DashboardSearchTags.SUPPORTED_SEARCH_TAGS> allowedTags = new ArrayList<>();
+                    allowedTags.add(SUPPORTED_SEARCH_TAGS.EMAIL);
+                    allowedTags.add(SUPPORTED_SEARCH_TAGS.PHONE);
 
-                    // check if email tag is present
-                    if (dashboardSearchTags.emails != null) {
+                    if (dashboardSearchTags.shouldRecipeBeSearched(allowedTags)) {
+                        String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
+                                + " AS allAuthUsersTable" +
+                                " JOIN " + getConfig(start).getPasswordlessUsersTable()
+                                + " AS passwordlessTable ON allAuthUsersTable.user_id = passwordlessTable.user_id";
 
-                        QUERY = QUERY + " WHERE passwordlessTable.email LIKE ?";
-                        queryList.add("%" + dashboardSearchTags.emails.get(0) + "%");
-                        for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
-                            QUERY += " OR passwordlessTable.email LIKE ?";
-                            queryList.add("%" + dashboardSearchTags.emails.get(i) + "%");
+                        // check if email tag is present
+                        if (dashboardSearchTags.emails != null) {
+
+                            QUERY = QUERY + " WHERE passwordlessTable.email LIKE ?";
+                            queryList.add("%" + dashboardSearchTags.emails.get(0) + "%");
+                            for (int i = 1; i < dashboardSearchTags.emails.size(); i++) {
+                                QUERY += " OR passwordlessTable.email LIKE ?";
+                                queryList.add("%" + dashboardSearchTags.emails.get(i) + "%");
+                            }
                         }
 
+                        // check if phone tag is present
                         if (dashboardSearchTags.phoneNumbers != null) {
-                            QUERY += " AND  passwordlessTable.phone_number LIKE ?";
+
+                            if (dashboardSearchTags.emails != null) {
+                                QUERY += " AND ";
+                            } else {
+                                QUERY += " WHERE ";
+                            }
+
+                            QUERY += " passwordlessTable.phone_number LIKE ?";
                             queryList.add("%" + dashboardSearchTags.phoneNumbers.get(0) + "%");
                             for (int i = 1; i < dashboardSearchTags.phoneNumbers.size(); i++) {
                                 QUERY += " OR passwordlessTable.phone_number LIKE ?";
                                 queryList.add("%" + dashboardSearchTags.phoneNumbers.get(i) + "%");
                             }
-
                         }
 
-                    } else if (dashboardSearchTags.phoneNumbers != null) {
+                        // check if we need to append this to an existing search query
+                        if (USER_SEARCH_TAG_CONDITION.length() != 0) {
+                            USER_SEARCH_TAG_CONDITION.append(" UNION ").append("SELECT * FROM ( ").append(QUERY)
+                                    .append(" LIMIT 1000)");
 
-                        QUERY = QUERY + " WHERE passwordlessTable.phone_number LIKE ?";
-                        queryList.add("%" + dashboardSearchTags.phoneNumbers.get(0) + "%");
-                        for (int i = 1; i < dashboardSearchTags.phoneNumbers.size(); i++) {
-                            QUERY += " OR passwordlessTable.phone_number LIKE ?";
-                            queryList.add("%" + dashboardSearchTags.phoneNumbers.get(i) + "%");
+                        } else {
+                            USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
+
                         }
-
-                    }
-
-                    if (USER_SEARCH_TAG_CONDITION.length() != 0) {
-                        USER_SEARCH_TAG_CONDITION.append(" UNION ").append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
-                        ;
-                    } else {
-                        USER_SEARCH_TAG_CONDITION.append("SELECT * FROM ( ").append(QUERY).append(" LIMIT 1000)");
                     }
                 }
 
@@ -439,13 +457,11 @@ public class GeneralQueries {
                 } else {
 
                     String finalQuery = "SELECT * FROM ( " + USER_SEARCH_TAG_CONDITION.toString() + " )"
-                            + " ORDER BY time_joined " + timeJoinedOrder + ", user_id DESC LIMIT ?";
+                            + " ORDER BY time_joined " + timeJoinedOrder + ", user_id DESC ";
                     usersFromQuery = execute(start, finalQuery, pst -> {
-                        int i = 1;
-                        for (; i <= queryList.size(); i++) {
+                        for (int i = 1; i <= queryList.size(); i++) {
                             pst.setString(i, queryList.get(i - 1));
                         }
-                        pst.setInt(i, limit);
                     }, result -> {
                         List<UserInfoPaginationResultHolder> temp = new ArrayList<>();
                         while (result.next()) {
