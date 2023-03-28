@@ -325,11 +325,7 @@ public class GeneralQueries {
 
                 {
                     // check if we should search through the emailpassword table
-                    ArrayList<DashboardSearchTags.SUPPORTED_SEARCH_TAGS> allowedTags = new ArrayList<>();
-                    allowedTags.add(SUPPORTED_SEARCH_TAGS.EMAIL);
-
-                    // check that only email tags exist
-                    if (dashboardSearchTags.shouldRecipeBeSearched(allowedTags)) {
+                    if (dashboardSearchTags.shouldEmailPasswordTableBeSearched()) {
                         String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
                                 + " AS allAuthUsersTable" +
                                 " JOIN " + getConfig(start).getEmailPasswordUsersTable()
@@ -351,11 +347,7 @@ public class GeneralQueries {
 
                 {
                     // check if we should search through the thirdparty table
-                    ArrayList<DashboardSearchTags.SUPPORTED_SEARCH_TAGS> allowedTags = new ArrayList<>();
-                    allowedTags.add(SUPPORTED_SEARCH_TAGS.EMAIL);
-                    allowedTags.add(SUPPORTED_SEARCH_TAGS.PROVIDER);
-
-                    if (dashboardSearchTags.shouldRecipeBeSearched(allowedTags)) {
+                    if (dashboardSearchTags.shouldThirdPartyTableBeSearched()) {
                         String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
                                 + " AS allAuthUsersTable" +
                                 " JOIN " + getConfig(start).getThirdPartyUsersTable()
@@ -406,11 +398,7 @@ public class GeneralQueries {
 
                 {
                     // check if we should search through the passwordless table
-                    ArrayList<DashboardSearchTags.SUPPORTED_SEARCH_TAGS> allowedTags = new ArrayList<>();
-                    allowedTags.add(SUPPORTED_SEARCH_TAGS.EMAIL);
-                    allowedTags.add(SUPPORTED_SEARCH_TAGS.PHONE);
-
-                    if (dashboardSearchTags.shouldRecipeBeSearched(allowedTags)) {
+                    if (dashboardSearchTags.shouldPasswordlessTableBeSearched()) {
                         String QUERY = "SELECT  allAuthUsersTable.*" + " FROM " + getConfig(start).getUsersTable()
                                 + " AS allAuthUsersTable" +
                                 " JOIN " + getConfig(start).getPasswordlessUsersTable()
@@ -439,14 +427,14 @@ public class GeneralQueries {
                             }
 
                             QUERY += " passwordlessTable.phone_number LIKE ?";
-                            if(dashboardSearchTags.phoneNumbers.get(0).startsWith("+")){
+                            if (dashboardSearchTags.phoneNumbers.get(0).startsWith("+")) {
                                 queryList.add(dashboardSearchTags.phoneNumbers.get(0) + "%");
                             } else {
                                 queryList.add("+" + dashboardSearchTags.phoneNumbers.get(0) + "%");
                             }
                             for (int i = 1; i < dashboardSearchTags.phoneNumbers.size(); i++) {
                                 QUERY += " OR passwordlessTable.phone_number LIKE ?";
-                                if(dashboardSearchTags.phoneNumbers.get(0).startsWith("+")){
+                                if (dashboardSearchTags.phoneNumbers.get(0).startsWith("+")) {
                                     queryList.add(dashboardSearchTags.phoneNumbers.get(i) + "%");
                                 } else {
                                     queryList.add("+" + dashboardSearchTags.phoneNumbers.get(i) + "%");
