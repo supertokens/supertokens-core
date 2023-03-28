@@ -78,7 +78,7 @@ public class UserRolesStorageTest {
         boolean didUserAlreadyHaveRole = UserRoles.addRoleToUser(process.main, userId, role);
         assertTrue(didUserAlreadyHaveRole);
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
         AtomicBoolean r1_success = new AtomicBoolean(false);
         AtomicBoolean r2_success = new AtomicBoolean(false);
 
@@ -170,7 +170,7 @@ public class UserRolesStorageTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // thread 1: start transaction -> call createNewRole_Transaction -> wait... ->
         // call addPermissionToRole_Transaction -> commit
@@ -185,7 +185,7 @@ public class UserRolesStorageTest {
                 storage.startTransaction(con -> {
                     numberOfIterations.incrementAndGet();
                     // create a new Role
-                    storage.createNewRoleOrDoNothingIfExists_Transaction(new TenantIdentifier(null, null, null), con,
+                    storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con,
                             role);
 
                     // wait for some time
@@ -284,7 +284,7 @@ public class UserRolesStorageTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a new role
         String role = "testRole";
@@ -301,7 +301,7 @@ public class UserRolesStorageTest {
         {
             boolean wasRoleCreated = storage
                     .startTransaction(con -> storage.createNewRoleOrDoNothingIfExists_Transaction(
-                            new TenantIdentifier(null, null, null), con, role));
+                            new AppIdentifier(null, null), con, role));
             assertFalse(wasRoleCreated);
         }
         process.kill();
@@ -319,7 +319,7 @@ public class UserRolesStorageTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         {
             // add permissions to a role that does not exist
@@ -381,7 +381,7 @@ public class UserRolesStorageTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // call doesRoleExist on a role which doesn't exist
         String role = "role";
@@ -391,7 +391,7 @@ public class UserRolesStorageTest {
         {
             boolean wasRoleCreated = storage
                     .startTransaction(con -> storage.createNewRoleOrDoNothingIfExists_Transaction(
-                            new TenantIdentifier(null, null, null), con, role));
+                            new AppIdentifier(null, null), con, role));
 
             // check that the role is created
             assertTrue(wasRoleCreated);
@@ -411,7 +411,7 @@ public class UserRolesStorageTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // call getRoles when no roles exist
         String[] emptyRoles = storage.getRoles(new AppIdentifier(null, null));
@@ -422,7 +422,7 @@ public class UserRolesStorageTest {
         String[] createdRoles = new String[]{"role1", "role2"};
         storage.startTransaction(con -> {
             for (int i = 0; i < createdRoles.length; i++) {
-                storage.createNewRoleOrDoNothingIfExists_Transaction(new TenantIdentifier(null, null, null), con,
+                storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con,
                         createdRoles[i]);
             }
             return null;
@@ -445,7 +445,7 @@ public class UserRolesStorageTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         Exception error = null;
         try {
@@ -471,7 +471,7 @@ public class UserRolesStorageTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // associate multiple roles with a user and check that the user actually has those roles
 
@@ -480,7 +480,7 @@ public class UserRolesStorageTest {
         String userId = "userId";
         storage.startTransaction(con -> {
             for (String role : roles) {
-                storage.createNewRoleOrDoNothingIfExists_Transaction(new TenantIdentifier(null, null, null), con, role);
+                storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con, role);
             }
             storage.commitTransaction(con);
             return null;
@@ -508,7 +508,7 @@ public class UserRolesStorageTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // associate multiple roles with a user and check that the user actually has those roles
 
@@ -516,7 +516,7 @@ public class UserRolesStorageTest {
         String role = "role";
         String userId = "userId";
         storage.startTransaction(con -> {
-            storage.createNewRoleOrDoNothingIfExists_Transaction(new TenantIdentifier(null, null, null), con, role);
+            storage.createNewRoleOrDoNothingIfExists_Transaction(new AppIdentifier(null, null), con, role);
             storage.commitTransaction(con);
             return null;
         });
@@ -559,7 +559,7 @@ public class UserRolesStorageTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         boolean response = storage
                 .startTransaction(
@@ -581,7 +581,7 @@ public class UserRolesStorageTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         String[] roles = new String[]{"role"};
         String userId = "userId";
@@ -624,7 +624,7 @@ public class UserRolesStorageTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role
         String role = "role";
@@ -654,7 +654,7 @@ public class UserRolesStorageTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role with permissions
         String role = "role";
@@ -678,7 +678,7 @@ public class UserRolesStorageTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role with permissions
         String role = "role";
@@ -713,7 +713,7 @@ public class UserRolesStorageTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role with permissions
         String role = "role";
@@ -746,7 +746,7 @@ public class UserRolesStorageTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create two roles, assign [permission1] to role1 and [permission1, permission2] to role2
         String[] roles = new String[]{"role1", "role2"};
@@ -785,7 +785,7 @@ public class UserRolesStorageTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         String role = "role";
 
@@ -822,7 +822,7 @@ public class UserRolesStorageTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create roles
         String[] roles = new String[]{"role1", "role2", "role3"};
@@ -850,7 +850,7 @@ public class UserRolesStorageTest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create multiple roles and assign them to a user
         String userId = "userId";

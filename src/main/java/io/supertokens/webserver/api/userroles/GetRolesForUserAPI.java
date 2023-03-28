@@ -52,7 +52,7 @@ public class GetRolesForUserAPI extends WebserverAPI {
         try {
 
             String[] userRoles = UserRoles.getRolesForUser(this.getTenantIdentifierWithStorageFromRequest(req),
-                    main, userId);
+                    userId);
             JsonArray arr = new JsonArray();
             for (String s : userRoles) {
                 arr.add(new JsonPrimitive(s));

@@ -467,26 +467,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static UserRolesSQLStorage getUserRolesStorage(TenantIdentifier tenantIdentifier, Main main)
-            throws TenantOrAppNotFoundException {
-        // TODO remove this function
-        if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
-            // we only support SQL for now
-            throw new UnsupportedOperationException("");
-        }
-        return (UserRolesSQLStorage) getInstance(tenantIdentifier, main).storage;
-    }
-
-    @TestOnly
-    public static UserRolesSQLStorage getUserRolesStorage(Main main) {
-        // TODO remove this function
-        try {
-            return getUserRolesStorage(new TenantIdentifier(null, null, null), main);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     public static UserIdMappingStorage getUserIdMappingStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         // TODO remove this function

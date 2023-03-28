@@ -79,7 +79,8 @@ public class RemovePermissionsForRoleAPI extends WebserverAPI {
         }
 
         try {
-            UserRoles.deletePermissionsFromRole(this.getTenantIdentifierWithStorageFromRequest(req), main, role,
+            UserRoles.deletePermissionsFromRole(
+                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(), role,
                     permissions);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");

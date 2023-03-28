@@ -164,7 +164,7 @@ public class AddUserRoleAPITest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role
         String[] role = new String[]{"role"};
@@ -225,7 +225,7 @@ public class AddUserRoleAPITest {
             return;
         }
 
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
 
         // create a role
         String[] role = new String[]{"role"};
@@ -278,7 +278,7 @@ public class AddUserRoleAPITest {
         assertEquals(1, response.entrySet().size());
 
         // check that user has no role associated with them
-        UserRolesSQLStorage storage = StorageLayer.getUserRolesStorage(process.main);
+        UserRolesSQLStorage storage = (UserRolesSQLStorage) StorageLayer.getStorage(process.main);
         String[] userRoles = storage.getRolesForUser(new TenantIdentifier(null, null, null), userId);
         assertEquals(0, userRoles.length);
 

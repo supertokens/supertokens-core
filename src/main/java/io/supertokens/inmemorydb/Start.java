@@ -1693,8 +1693,8 @@ public class Start
     }
 
     @Override
-    public boolean createNewRoleOrDoNothingIfExists_Transaction(TenantIdentifier
-                                                                        tenantIdentifier,
+    public boolean createNewRoleOrDoNothingIfExists_Transaction(AppIdentifier
+                                                                        appIdentifier,
                                                                 TransactionConnection con,
                                                                 String role)
             throws StorageQueryException {
