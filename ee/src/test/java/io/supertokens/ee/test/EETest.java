@@ -1209,7 +1209,7 @@ public class EETest extends Mockito {
             assertEquals(j.entrySet().size(), 3);
             assertNotNull(j.get("licenseKey"));
             assertNotNull(j.get("superTokensVersion"));
-            assertEquals(j.getAsJsonObject("paidFeatureUsageStats").entrySet().size(), 0);
+            assertEquals(j.getAsJsonObject("paidFeatureUsageStats").entrySet().size(), 1);
         } else {
             assertEquals(j.entrySet().size(), 4);
             assertNotNull(j.get("telemetryId"));
