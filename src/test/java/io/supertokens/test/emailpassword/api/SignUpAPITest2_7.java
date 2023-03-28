@@ -70,7 +70,7 @@ public class SignUpAPITest2_7 {
             return;
         }
 
-        long beforeTestTs = System.currentTimeMillis();
+        long startTs = System.currentTimeMillis();
 
         {
             try {
@@ -111,7 +111,7 @@ public class SignUpAPITest2_7 {
             }
         }
 
-        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), beforeTestTs);
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
         assert (activeUsers == 0);
 
         process.kill();
@@ -130,7 +130,7 @@ public class SignUpAPITest2_7 {
             return;
         }
 
-        long beforeSignUpTs = System.currentTimeMillis();
+        long startTS = System.currentTimeMillis();
 
         JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "random@gmail.com", "validPass123");
         assertEquals(signUpResponse.get("status").getAsString(), "OK");
@@ -140,7 +140,7 @@ public class SignUpAPITest2_7 {
         assertEquals(signUpUser.get("email").getAsString(), "random@gmail.com");
         assertNotNull(signUpUser.get("id"));
 
-        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), beforeSignUpTs);
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTS);
         assert (activeUsers == 1);
 
         UserInfo user = StorageLayer.getEmailPasswordStorage(process.getProcess())

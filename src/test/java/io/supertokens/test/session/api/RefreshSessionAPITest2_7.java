@@ -439,6 +439,7 @@ public class RefreshSessionAPITest2_7 {
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
 
+        Thread.sleep(1); // Ensures a unique timestamp
         long startTs = System.currentTimeMillis();
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
@@ -452,6 +453,7 @@ public class RefreshSessionAPITest2_7 {
                 sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
         sessionRefreshBody.addProperty("enableAntiCsrf", false);
 
+        Thread.sleep(1); // ensures a unique timestamp
         long afterSessionCreateTs = System.currentTimeMillis();
 
         JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
