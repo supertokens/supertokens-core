@@ -22,6 +22,8 @@ import com.google.gson.JsonObject;
 
 import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -48,6 +50,59 @@ public class SessionAPITest2_9 {
     public void beforeEach() {
         Utils.reset();
     }
+
+    @Test
+    public void activeUsersTest() throws Exception {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("cookie_domain", "localhost");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        long startTs = System.currentTimeMillis();
+
+        // Failure case:
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        try {
+            JsonObject request = new JsonObject();
+            request.add("userDataInJWT", userDataInJWT);
+            request.add("userDataInDatabase", userDataInDatabase);
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
+                    request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "session");
+            fail();
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertEquals(e.statusCode, 400);
+            assertEquals(e.getMessage(),
+                    "Http error. Status Code: 400. Message: Field name 'userId' is invalid in JSON input");
+        }
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 0);
+
+        // Success case:
+        JsonObject request = new JsonObject();
+        request.addProperty("userId", userId);
+        request.add("userDataInJWT", userDataInJWT);
+        request.add("userDataInDatabase", userDataInDatabase);
+        request.addProperty("enableAntiCsrf", true);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "session");
+
+        activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 1);
+    }
+
 
     @Test
     public void successOutputCheckWithAntiCsrfWithCookieDomain() throws Exception {
@@ -78,9 +133,6 @@ public class SessionAPITest2_9 {
 
         checkSessionResponse(response, process, userId, userDataInJWT);
         assertTrue(response.has("antiCsrfToken"));
-
-        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
-        assert (activeUsers == 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -184,8 +236,6 @@ public class SessionAPITest2_9 {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        long startTs = System.currentTimeMillis();
-
         String userId = "userId";
         JsonObject userDataInJWT = new JsonObject();
         userDataInJWT.addProperty("key", "value");
@@ -260,9 +310,6 @@ public class SessionAPITest2_9 {
                     "Http error. Status Code: 400. Message: Field name 'userDataInDatabase' is invalid in JSON "
                             + "input");
         }
-        
-        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
-        assert (activeUsers == 0);
 
         JsonObject request = new JsonObject();
         request.addProperty("userId", userId);
@@ -279,9 +326,6 @@ public class SessionAPITest2_9 {
         request.addProperty("enableAntiCsrf", false);
         HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
                 request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "session");
-        
-        activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
-        assert (activeUsers == 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
