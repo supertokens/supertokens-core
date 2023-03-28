@@ -18,9 +18,11 @@ package io.supertokens.usermetadata;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -36,28 +38,42 @@ public class UserMetadata {
                                                 @Nonnull String userId, @Nonnull JsonObject metadataUpdate)
             throws StorageQueryException, StorageTransactionLogicException {
         try {
-            return updateUserMetadata(new TenantIdentifier(null, null, null), main, userId, metadataUpdate);
+            Storage storage = StorageLayer.getStorage(main);
+            return updateUserMetadata(
+                    new TenantIdentifierWithStorage(null, null, null, storage), main,
+                    userId, metadataUpdate);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static JsonObject updateUserMetadata(TenantIdentifier tenantIdentifier, Main main,
+    public static JsonObject updateUserMetadata(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
                                                 @Nonnull String userId, @Nonnull JsonObject metadataUpdate)
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        UserMetadataSQLStorage storage = StorageLayer.getUserMetadataStorage(tenantIdentifier, main);
+        UserMetadataSQLStorage storage = StorageLayer.getUserMetadataStorage(tenantIdentifierWithStorage, main);
 
-        return storage.startTransaction((con) -> {
-            JsonObject originalMetadata = storage.getUserMetadata_Transaction(tenantIdentifier.toAppIdentifier(), con,
-                    userId);
+        try {
+            return storage.startTransaction((con) -> {
+                JsonObject originalMetadata = storage.getUserMetadata_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
+                        userId);
 
-            JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
-            MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, metadataUpdate);
+                JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
+                MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, metadataUpdate);
 
-            storage.setUserMetadata_Transaction(tenantIdentifier.toAppIdentifier(), con, userId, updatedMetadata);
+                try {
+                    storage.setUserMetadata_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, userId, updatedMetadata);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
 
-            return updatedMetadata;
-        });
+                return updatedMetadata;
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof TenantOrAppNotFoundException) {
+                throw (TenantOrAppNotFoundException) e.actualException;
+            }
+            throw e;
+        }
     }
 
     @TestOnly

@@ -21,7 +21,9 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -234,11 +236,20 @@ public class UserMetadataTest {
                     JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
                     MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, update1);
 
-                    sqlStorage.setUserMetadata_Transaction(new AppIdentifier(null, null), con, userId, updatedMetadata);
+                    try {
+                        sqlStorage.setUserMetadata_Transaction(new AppIdentifier(null, null), con, userId,
+                                updatedMetadata);
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
                     sqlStorage.commitTransaction(con);
                     success1.set(true); // it should come here because we will try three times.
                     return null;
                 });
+            } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof TenantOrAppNotFoundException) {
+                    throw new IllegalStateException(e.actualException);
+                }
             } catch (Exception ignored) {
             }
         };
@@ -268,12 +279,21 @@ public class UserMetadataTest {
                     JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
                     MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, update2);
 
-                    sqlStorage.setUserMetadata_Transaction(new AppIdentifier(null, null), con, userId, updatedMetadata);
+                    try {
+                        sqlStorage.setUserMetadata_Transaction(new AppIdentifier(null, null), con, userId,
+                                    updatedMetadata);
+                    } catch (TenantOrAppNotFoundException e) {
+                        throw new StorageTransactionLogicException(e);
+                    }
 
                     sqlStorage.commitTransaction(con);
                     success2.set(true); // it should come here because we will try three times.
                     return null;
                 });
+            } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof TenantOrAppNotFoundException) {
+                    throw new IllegalStateException(e.actualException);
+                }
             } catch (Exception ignored) {
             }
         };
