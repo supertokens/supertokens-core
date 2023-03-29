@@ -97,17 +97,6 @@ public class UsersAPI extends WebserverAPI {
             timeJoinedOrder = "ASC";
         }
 
-        if (limit != null) {
-            if (limit > AuthRecipe.USER_PAGINATION_LIMIT) {
-                throw new ServletException(
-                        new BadRequestException("max limit allowed is " + AuthRecipe.USER_PAGINATION_LIMIT));
-            } else if (limit < 1) {
-                throw new ServletException(new BadRequestException("limit must a positive integer with min value 1"));
-            }
-        } else {
-            limit = 100;
-        }
-
         DashboardSearchTags searchTags = null;
 
         String emails = InputParser.getQueryParamOrThrowError(req, "email", true);
@@ -150,6 +139,17 @@ public class UsersAPI extends WebserverAPI {
                     }
                 }
             }
+        }
+
+        if (limit != null) {
+            if (limit > AuthRecipe.USER_PAGINATION_LIMIT && searchTags == null) {
+                throw new ServletException(
+                        new BadRequestException("max limit allowed is " + AuthRecipe.USER_PAGINATION_LIMIT));
+            } else if (limit < 1) {
+                throw new ServletException(new BadRequestException("limit must a positive integer with min value 1"));
+            }
+        } else {
+            limit = 100;
         }
 
         try {
