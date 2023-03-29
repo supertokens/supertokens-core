@@ -1161,10 +1161,8 @@ public class EETest extends Mockito {
 
     @Test
     public void testLicenseKeyCheckAPIInput()
-            throws InterruptedException, StorageQueryException, HttpResponseException, IOException,
-            InvalidLicenseKeyException {
+            throws InterruptedException, IOException {
         String[] args = {"../../"};
-
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         ByteArrayOutputStream output = new ByteArrayOutputStream();
@@ -1204,18 +1202,22 @@ public class EETest extends Mockito {
         String requestBodyStr = output.toString();
         JsonObject j = new JsonParser().parse(requestBodyStr).getAsJsonObject();
 
-        if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL
-                && Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
-            assertEquals(j.entrySet().size(), 3);
+        if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
+            if (Version.getVersion(process.getProcess()).getPluginName().equals("sqlite")) {
+                assertEquals(j.entrySet().size(), 3);
+            } else {
+                assertEquals(j.entrySet().size(), 4);
+                assertNotNull(j.get("telemetryId"));
+            }
+
             assertNotNull(j.get("licenseKey"));
             assertNotNull(j.get("superTokensVersion"));
-            assertEquals(j.getAsJsonObject("paidFeatureUsageStats").entrySet().size(), 0);
-        } else {
-            assertEquals(j.entrySet().size(), 4);
-            assertNotNull(j.get("telemetryId"));
-            assertNotNull(j.get("licenseKey"));
-            assertNotNull(j.get("superTokensVersion"));
-            assertEquals(j.getAsJsonObject("paidFeatureUsageStats").entrySet().size(), 0);
+            JsonObject paidFeatureUsageStats = j.getAsJsonObject("paidFeatureUsageStats");
+            JsonArray mauArr = paidFeatureUsageStats.get("maus").getAsJsonArray();
+            assertEquals(paidFeatureUsageStats.entrySet().size(), 1);
+            assertEquals(mauArr.size(), 30);
+            assertEquals(mauArr.get(0).getAsInt(), 0);
+            assertEquals(mauArr.get(29).getAsInt(), 0);
         }
 
         process.kill();

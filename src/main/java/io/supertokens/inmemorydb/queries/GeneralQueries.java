@@ -96,6 +96,11 @@ public class GeneralQueries {
             update(start, getQueryToCreateUserPaginationIndex(start), NO_OP_SETTER);
         }
 
+        if (!doesTableExists(start, Config.getConfig(start).getUserLastActiveTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, ActiveUsersQueries.getQueryToCreateUserLastActiveTable(start), NO_OP_SETTER);
+        }
+
         if (!doesTableExists(start, Config.getConfig(start).getAccessTokenSigningKeysTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, getQueryToCreateAccessTokenSigningKeysTable(start), NO_OP_SETTER);
@@ -186,6 +191,23 @@ public class GeneralQueries {
         if (!doesTableExists(start, Config.getConfig(start).getUserIdMappingTable())) {
             getInstance(main).addState(CREATING_NEW_TABLE, null);
             update(start, UserIdMappingQueries.getQueryToCreateUserIdMappingTable(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getTotpUsersTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, TOTPQueries.getQueryToCreateUsersTable(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getTotpUserDevicesTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, TOTPQueries.getQueryToCreateUserDevicesTable(start), NO_OP_SETTER);
+        }
+
+        if (!doesTableExists(start, Config.getConfig(start).getTotpUsedCodesTable())) {
+            getInstance(main).addState(CREATING_NEW_TABLE, null);
+            update(start, TOTPQueries.getQueryToCreateUsedCodesTable(start), NO_OP_SETTER);
+            // index:
+            update(start, TOTPQueries.getQueryToCreateUsedCodesExpiryTimeIndex(start), NO_OP_SETTER);
         }
 
         if (!doesTableExists(start, Config.getConfig(start).getDashboardUsersTable())) {

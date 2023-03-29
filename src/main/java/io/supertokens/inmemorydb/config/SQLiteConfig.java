@@ -26,6 +26,10 @@ public class SQLiteConfig {
         return "all_auth_recipe_users";
     }
 
+    public String getUserLastActiveTable() {
+        return "user_last_active";
+    }
+
     public String getAccessTokenSigningKeysTable() {
         return "session_access_token_signing_keys";
     }
@@ -90,11 +94,23 @@ public class SQLiteConfig {
         return "userid_mapping";
     }
 
-    public String getDashboardUsersTable(){
+    public String getTotpUsersTable() {
+        return "totp_users";
+    }
+
+    public String getTotpUserDevicesTable() {
+        return "totp_user_devices";
+    }
+
+    public String getTotpUsedCodesTable() {
+        return "totp_used_codes";
+    }
+
+    public String getDashboardUsersTable() {
         return "dashboard_users";
     }
 
-    public String getDashboardSessionsTable(){
+    public String getDashboardSessionsTable() {
         return "dashboard_user_sessions";
     }
 }

@@ -19,6 +19,8 @@ package io.supertokens.webserver.api.thirdparty;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -70,6 +72,8 @@ public class SignInUpAPI extends WebserverAPI {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(super.main, thirdPartyId,
                         thirdPartyUserId, email, isEmailVerified);
 
+                ActiveUsers.updateLastActive(main, response.user.id);
+
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 result.addProperty("createdNewUser", response.createdNewUser);
@@ -99,6 +103,8 @@ public class SignInUpAPI extends WebserverAPI {
             try {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(super.main, thirdPartyId, thirdPartyUserId,
                         email);
+
+                ActiveUsers.updateLastActive(main, response.user.id);
 
                 //
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
