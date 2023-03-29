@@ -44,10 +44,11 @@ public class RemoveUserMetadataAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         try {
-            UserMetadata.deleteUserMetadata(this.getTenantIdentifierWithStorageFromRequest(req), main, userId);
+            UserMetadata.deleteUserMetadata(this.getAppIdentifierWithStorage(req), userId);
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);

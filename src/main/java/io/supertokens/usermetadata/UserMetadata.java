@@ -18,9 +18,12 @@ package io.supertokens.usermetadata;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
@@ -35,46 +38,57 @@ public class UserMetadata {
     public static JsonObject updateUserMetadata(Main main,
                                                 @Nonnull String userId, @Nonnull JsonObject metadataUpdate)
             throws StorageQueryException, StorageTransactionLogicException {
+        Storage storage = StorageLayer.getStorage(main);
         try {
-            return updateUserMetadata(new TenantIdentifier(null, null, null), main, userId, metadataUpdate);
+            return updateUserMetadata(
+                    new AppIdentifierWithStorage(null, null, storage),
+                    userId, metadataUpdate);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static JsonObject updateUserMetadata(TenantIdentifier tenantIdentifier, Main main,
+    public static JsonObject updateUserMetadata(AppIdentifierWithStorage appIdentifierWithStorage,
                                                 @Nonnull String userId, @Nonnull JsonObject metadataUpdate)
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        UserMetadataSQLStorage storage = StorageLayer.getUserMetadataStorage(tenantIdentifier, main);
+        UserMetadataSQLStorage storage = appIdentifierWithStorage.getUserMetadataStorage();
 
-        return storage.startTransaction((con) -> {
-            JsonObject originalMetadata = storage.getUserMetadata_Transaction(tenantIdentifier.toAppIdentifier(), con,
-                    userId);
+        try {
+            return storage.startTransaction((con) -> {
+                JsonObject originalMetadata = storage.getUserMetadata_Transaction(appIdentifierWithStorage, con,
+                        userId);
 
-            JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
-            MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, metadataUpdate);
+                JsonObject updatedMetadata = originalMetadata == null ? new JsonObject() : originalMetadata;
+                MetadataUtils.shallowMergeMetadataUpdate(updatedMetadata, metadataUpdate);
 
-            storage.setUserMetadata_Transaction(tenantIdentifier.toAppIdentifier(), con, userId, updatedMetadata);
+                try {
+                    storage.setUserMetadata_Transaction(appIdentifierWithStorage, con, userId, updatedMetadata);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new StorageTransactionLogicException(e);
+                }
 
-            return updatedMetadata;
-        });
+                return updatedMetadata;
+            });
+        } catch (StorageTransactionLogicException e) {
+            if (e.actualException instanceof TenantOrAppNotFoundException) {
+                throw (TenantOrAppNotFoundException) e.actualException;
+            }
+            throw e;
+        }
     }
 
     @TestOnly
     public static JsonObject getUserMetadata(Main main, @Nonnull String userId) throws StorageQueryException {
-        try {
-            return getUserMetadata(new TenantIdentifier(null, null, null), main, userId);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return getUserMetadata(new AppIdentifierWithStorage(null, null, storage), userId);
     }
 
-    public static JsonObject getUserMetadata(TenantIdentifier tenantIdentifier, Main main,
+    public static JsonObject getUserMetadata(AppIdentifierWithStorage appIdentifierWithStorage,
                                              @Nonnull String userId)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        UserMetadataSQLStorage storage = StorageLayer.getUserMetadataStorage(tenantIdentifier, main);
+            throws StorageQueryException {
+        UserMetadataSQLStorage storage = appIdentifierWithStorage.getUserMetadataStorage();
 
-        JsonObject metadata = storage.getUserMetadata(tenantIdentifier.toAppIdentifier(), userId);
+        JsonObject metadata = storage.getUserMetadata(appIdentifierWithStorage, userId);
 
         if (metadata == null) {
             return new JsonObject();
@@ -85,17 +99,12 @@ public class UserMetadata {
 
     @TestOnly
     public static void deleteUserMetadata(Main main, @Nonnull String userId) throws StorageQueryException {
-        try {
-            deleteUserMetadata(new TenantIdentifier(null, null, null), main, userId);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        deleteUserMetadata(new AppIdentifierWithStorage(null, null, storage), userId);
     }
 
-    public static void deleteUserMetadata(TenantIdentifier tenantIdentifier, Main main,
-                                          @Nonnull String userId) throws StorageQueryException,
-            TenantOrAppNotFoundException {
-        StorageLayer.getUserMetadataStorage(tenantIdentifier, main)
-                .deleteUserMetadata(tenantIdentifier.toAppIdentifier(), userId);
+    public static void deleteUserMetadata(AppIdentifierWithStorage appIdentifierWithStorage,
+                                          @Nonnull String userId) throws StorageQueryException {
+        appIdentifierWithStorage.getUserMetadataStorage().deleteUserMetadata(appIdentifierWithStorage, userId);
     }
 }

@@ -446,27 +446,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static UserMetadataSQLStorage getUserMetadataStorage(TenantIdentifier tenantIdentifier,
-                                                                Main main) throws TenantOrAppNotFoundException {
-        // TODO remove this function
-        if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
-            // we only support SQL for now
-            throw new UnsupportedOperationException("");
-        }
-
-        return (UserMetadataSQLStorage) getInstance(tenantIdentifier, main).storage;
-    }
-
-    @TestOnly
-    public static UserMetadataSQLStorage getUserMetadataStorage(Main main) {
-        // TODO remove this function
-        try {
-            return getUserMetadataStorage(new TenantIdentifier(null, null, null), main);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     public static UserIdMappingStorage getUserIdMappingStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         // TODO remove this function
