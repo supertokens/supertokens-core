@@ -114,17 +114,77 @@ public class GetUsersWithSearchTagsAPITest {
             return;
         }
 
+        // create emailpassword user
+        ArrayList<String> userIds = new ArrayList<>();
+        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").id);
+
+        // create thirdparty user
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test@example.com").user.id);
+
+        // create passwordless user
+        CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
+                "+101234566907",
+                null, null);
+        userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
+                createCodeResponse.deviceIdHash,
+                createCodeResponse.userInputCode, null).user.id);
+
+        HashMap<String, String> params = new HashMap<>();
+        params.put("email", "test@example.com");
+        params.put("phone", "+101234566907");
+        params.put("provider", "testTPID");
+
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/user/search/tags", null, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(),
+                "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(),
                 null);
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
-        JsonArray tags = response.get("tags").getAsJsonArray();
-        assertEquals(DashboardSearchTags.SUPPORTED_SEARCH_TAGS.values().length, tags.size());
+        assertEquals(0, response.get("users").getAsJsonArray().size());
 
-        for (JsonElement tag : tags) {
-            Arrays.asList(DashboardSearchTags.SUPPORTED_SEARCH_TAGS.values())
-                    .contains(DashboardSearchTags.SUPPORTED_SEARCH_TAGS.fromString(tag.getAsString()));
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testNormalizingSearchInputsWorksCorrectly() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create emailpassword user
+        ArrayList<String> userIds = new ArrayList<>();
+        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").id);
+
+        // create thirdparty user
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testpid", "test", "test@example.com").user.id);
+
+        {
+            // searching for email with upper and lower case combination
+            HashMap<String, String> params = new HashMap<>();
+            params.put("email", "tEsT@example.com");
+
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(),
+                    null);
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(2, response.get("users").getAsJsonArray().size());
+        }
+
+        {
+            // searching for provider with upper and lower case combination
+            HashMap<String, String> params = new HashMap<>();
+            params.put("provider", "TestPid");
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(),
+                    null);
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertEquals(1, response.get("users").getAsJsonArray().size());
         }
 
         process.kill();

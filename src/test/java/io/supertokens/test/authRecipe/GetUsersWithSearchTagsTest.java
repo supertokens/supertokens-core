@@ -78,11 +78,13 @@ public class GetUsersWithSearchTagsTest {
         userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.id);
 
         // create passwordless user
-        CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com", "+123456789012",
+        CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
+                "+123456789012",
                 null, null);
-        userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
-        createCodeResponse.userInputCode, null).user.id);
-        
+        userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
+                createCodeResponse.deviceIdHash,
+                createCodeResponse.userInputCode, null).user.id);
+
         // partial search with input emails as "test"
         {
             ArrayList<String> emailArrayList = new ArrayList<>();
@@ -93,7 +95,7 @@ public class GetUsersWithSearchTagsTest {
             UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
             assertEquals(userIds.size(), info.users.length);
             for (int i = 0; i < info.users.length; i++) {
-                assertEquals(userIds.get(i), info.users[i].user.id);   
+                assertEquals(userIds.get(i), info.users[i].user.id);
             }
         }
 
@@ -123,7 +125,7 @@ public class GetUsersWithSearchTagsTest {
             UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
             assertEquals(1, info.users.length);
             assertEquals(userIds.get(3), info.users[0].user.id);
-            assertEquals("passwordless", info.users[0].recipeId);   
+            assertEquals("passwordless", info.users[0].recipeId);
         }
 
         process.kill();
@@ -149,10 +151,12 @@ public class GetUsersWithSearchTagsTest {
         userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.id);
 
         // create passwordless user
-        CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com", "+123456789012",
+        CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
+                "+123456789012",
                 null, null);
-        userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,
-        createCodeResponse.userInputCode, null).user.id);
+        userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
+                createCodeResponse.deviceIdHash,
+                createCodeResponse.userInputCode, null).user.id);
 
         // test retrieving a user with a phoneNumber and provider
         {
@@ -165,6 +169,98 @@ public class GetUsersWithSearchTagsTest {
             UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
 
             assertEquals(0, info.users.length);
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testSearchParamRegex() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create emailpassword user
+        ArrayList<String> userIds = new ArrayList<>();
+        userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").id);
+        userIds.add(EmailPassword.signUp(process.getProcess(), "abc@example.com", "testPass123").id);
+        userIds.add(EmailPassword.signUp(process.getProcess(), "user@abc.com", "testPass123").id);
+
+        // create thirdparty user
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testTPID", "test", "test2@example.com").user.id);
+
+        // create passwordless user
+        CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
+                "+123456789012",
+                null, null);
+        userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
+                createCodeResponse.deviceIdHash,
+                createCodeResponse.userInputCode, null).user.id);
+
+        // regex for emails: email* and *@email*
+        {
+
+            {
+                // retrieve emails for users whose email start with "test" or have "@test"
+                // domain
+                ArrayList<String> emailList = new ArrayList<>();
+                emailList.add("test");
+
+                DashboardSearchTags tags = new DashboardSearchTags(emailList, null, null);
+                UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
+                assertEquals(3, info.users.length);
+                assertEquals(userIds.get(0), info.users[0].user.id);
+                assertEquals(userIds.get(3), info.users[1].user.id);
+                assertEquals(userIds.get(4), info.users[2].user.id);
+            }
+
+            // retrieve emails for users whose email starts with abc or have domain abc
+            {
+                // retrieve emails for users whose email start with "test" or have "@test"
+                // domain
+                ArrayList<String> emailList = new ArrayList<>();
+                emailList.add("abc");
+
+                DashboardSearchTags tags = new DashboardSearchTags(emailList, null, null);
+                UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
+                assertEquals(2, info.users.length);
+                assertEquals(userIds.get(1), info.users[0].user.id);
+                assertEquals(userIds.get(2), info.users[1].user.id);
+
+            }
+
+            // search for phone number
+            {
+                {
+                    // search with + in the search query
+                    ArrayList<String> phoneList = new ArrayList<>();
+                    phoneList.add("+123");
+
+                    DashboardSearchTags tags = new DashboardSearchTags(null, phoneList, null);
+                    UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null,
+                            tags);
+                    assertEquals(1, info.users.length);
+                    assertEquals(userIds.get(4), info.users[0].user.id);
+                }
+
+                {
+                    // search without + in the search query
+                    ArrayList<String> phoneList = new ArrayList<>();
+                    phoneList.add("123");
+
+                    DashboardSearchTags tags = new DashboardSearchTags(null, phoneList, null);
+                    UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null,
+                            tags);
+                    assertEquals(1, info.users.length);
+                    assertEquals(userIds.get(4), info.users[0].user.id);
+                }
+
+            }
         }
 
         process.kill();

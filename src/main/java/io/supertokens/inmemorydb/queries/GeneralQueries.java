@@ -26,12 +26,10 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.RowMapper;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
-import io.supertokens.pluginInterface.dashboard.DashboardSearchTags.SUPPORTED_SEARCH_TAGS;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
-import javax.management.Query;
 
 import java.sql.Connection;
 import java.sql.ResultSet;
