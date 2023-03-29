@@ -309,7 +309,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
 
     @TestOnly
     public static Storage getStorage(Main main) {
-        // TODO remove this function
         try {
             return getStorage(new TenantIdentifier(null, null, null), main);
         } catch (TenantOrAppNotFoundException e) {
