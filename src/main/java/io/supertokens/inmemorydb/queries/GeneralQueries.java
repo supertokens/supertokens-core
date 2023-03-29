@@ -432,7 +432,7 @@ public class GeneralQueries {
                             }
                             for (int i = 1; i < dashboardSearchTags.phoneNumbers.size(); i++) {
                                 QUERY += " OR passwordlessTable.phone_number LIKE ?";
-                                if (dashboardSearchTags.phoneNumbers.get(0).startsWith("+")) {
+                                if (dashboardSearchTags.phoneNumbers.get(i).startsWith("+")) {
                                     queryList.add(dashboardSearchTags.phoneNumbers.get(i) + "%");
                                 } else {
                                     queryList.add("+" + dashboardSearchTags.phoneNumbers.get(i) + "%");
