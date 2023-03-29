@@ -7,6 +7,15 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+
+## [4.6.0] - 2023-03-29
+
+- Add Optional Search Tags to Pagination API to enable dashboard search
+
+### New APIs:
+  - `GET /user/search/tags` retrieves the available search tags 
+
+
 ## [4.5.0] - 2023-03-27
 
 - Add TOTP recipe
