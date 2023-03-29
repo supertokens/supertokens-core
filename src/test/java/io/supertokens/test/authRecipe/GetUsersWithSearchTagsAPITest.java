@@ -195,27 +195,6 @@ public class GetUsersWithSearchTagsAPITest {
         userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").id);
         userIds.add(EmailPassword.signUp(process.getProcess(), "abc@example.com", "testPass123").id);
 
-        // create thirdparty user
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "testpid", "test", "test@example.com").user.id);
-        userIds.add(ThirdParty.signInUp(process.getProcess(), "newtestpid", "test123", "test@example.com").user.id);
-
-        // create passwordless user
-        {
-            CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
-                    "+121234567890",
-                    null, null);
-            userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
-                    createCodeResponse.deviceIdHash,
-                    createCodeResponse.userInputCode, null).user.id);
-        }
-        {
-            CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test2@example.com",
-                    "+911987654321",
-                    null, null);
-            userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
-                    createCodeResponse.deviceIdHash,
-                    createCodeResponse.userInputCode, null).user.id);
-        }
 
         // search with multiple inputs to email
         {
@@ -225,7 +204,7 @@ public class GetUsersWithSearchTagsAPITest {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(), null);
             assertEquals("OK", response.get("status").getAsString());
-            assertEquals(6, response.get("users").getAsJsonArray().size());
+            assertEquals(2, response.get("users").getAsJsonArray().size());
             JsonArray users = response.get("users").getAsJsonArray();
 
             for (int i = 0; i < userIds.size(); i++) {
@@ -234,6 +213,9 @@ public class GetUsersWithSearchTagsAPITest {
             }
         }
 
+        // create thirdparty user
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "testpid", "test", "test@example.com").user.id);
+        userIds.add(ThirdParty.signInUp(process.getProcess(), "newtestpid", "test123", "test@example.com").user.id);
         // search with multiple inputs to provider
         {
             HashMap<String, String> params = new HashMap<>();
@@ -250,6 +232,24 @@ public class GetUsersWithSearchTagsAPITest {
                     users.get(1).getAsJsonObject().get("user").getAsJsonObject().get("id").getAsString());
 
         }
+
+        // create passwordless user
+        {
+                CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
+                        "+121234567890",
+                        null, null);
+                userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
+                        createCodeResponse.deviceIdHash,
+                        createCodeResponse.userInputCode, null).user.id);
+            }
+            {
+                CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test2@example.com",
+                        "+911987654321",
+                        null, null);
+                userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
+                        createCodeResponse.deviceIdHash,
+                        createCodeResponse.userInputCode, null).user.id);
+            }
 
         // search with multiple inputs to phone
         {
