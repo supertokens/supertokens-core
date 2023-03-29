@@ -47,11 +47,10 @@ public class GetRolesAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-
+        // API is app specific
         try {
 
-            String[] roles = UserRoles.getRoles(
-                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage());
+            String[] roles = UserRoles.getRoles(this.getAppIdentifierWithStorage(req));
             JsonArray arr = new JsonArray();
 
             for (String s : roles) {

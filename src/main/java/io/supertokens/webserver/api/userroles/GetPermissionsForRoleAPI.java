@@ -49,6 +49,7 @@ public class GetPermissionsForRoleAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         String role = InputParser.getQueryParamOrThrowError(req, "role", false);
         // normalize role
         role = role.trim();
@@ -58,8 +59,7 @@ public class GetPermissionsForRoleAPI extends WebserverAPI {
         }
 
         try {
-            String[] permissions = UserRoles.getPermissionsForRole(
-                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(), role);
+            String[] permissions = UserRoles.getPermissionsForRole(this.getAppIdentifierWithStorage(req), role);
             JsonArray arr = new JsonArray();
             for (String permission : permissions) {
                 arr.add(new JsonPrimitive(permission));
