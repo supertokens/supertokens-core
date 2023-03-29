@@ -64,7 +64,7 @@ public class GetUsersAPIWithUserIdMappingTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
         ArrayList<String> externalUserIdList = new ArrayList<>();
 
         for (int i = 1; i <= 10; i++) {
@@ -104,7 +104,7 @@ public class GetUsersAPIWithUserIdMappingTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
         ArrayList<String> externalUserIdList = new ArrayList<>();
 
         for (int i = 1; i <= 20; i++) {

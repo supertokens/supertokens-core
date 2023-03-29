@@ -64,7 +64,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         Exception error = null;
 
@@ -93,7 +93,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a user
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
@@ -126,7 +126,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a user
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
@@ -203,7 +203,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a User
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
@@ -242,7 +242,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         {
             UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), "unknownId",
@@ -276,7 +276,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a user
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
@@ -375,7 +375,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         assertFalse(storage.deleteUserIdMapping(new AppIdentifier(null, null), "unknownUserId", true));
 
@@ -395,7 +395,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a user
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
@@ -457,7 +457,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         String userId = "unknownId";
 
@@ -489,7 +489,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create User
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
@@ -567,7 +567,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
         ArrayList<String> superTokensUserIdList = new ArrayList<>();
         ArrayList<String> externalUserIdList = new ArrayList<>();
 
@@ -603,7 +603,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
         ArrayList<String> emptyList = new ArrayList<>();
 
         HashMap<String, String> response = storage.getUserIdMappingForSuperTokensIds(emptyList);
@@ -623,7 +623,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
         ArrayList<String> superTokensUserIdList = new ArrayList<>();
 
         for (int i = 1; i <= 10; i++) {
@@ -648,7 +648,7 @@ public class UserIdMappingStorageTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
         ArrayList<String> superTokensUserIdList = new ArrayList<>();
         ArrayList<String> userIdList = new ArrayList<>();
 
