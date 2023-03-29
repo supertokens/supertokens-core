@@ -349,26 +349,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static EmailPasswordSQLStorage getEmailPasswordStorage(TenantIdentifier tenantIdentifier,
-                                                                  Main main) throws TenantOrAppNotFoundException {
-        // TODO remove this function
-        if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
-            // we only support SQL for now
-            throw new UnsupportedOperationException("");
-        }
-        return (EmailPasswordSQLStorage) getInstance(tenantIdentifier, main).storage;
-    }
-
-    @TestOnly
-    public static EmailPasswordSQLStorage getEmailPasswordStorage(Main main) {
-        // TODO remove this function
-        try {
-            return getEmailPasswordStorage(new TenantIdentifier(null, null, null), main);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     public static EmailVerificationSQLStorage getEmailVerificationStorage(TenantIdentifier tenantIdentifier,
                                                                           Main main) throws
             TenantOrAppNotFoundException {

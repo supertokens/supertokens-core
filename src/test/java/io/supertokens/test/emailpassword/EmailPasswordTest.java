@@ -29,8 +29,10 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailExc
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicatePasswordResetTokenException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
+import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -77,12 +79,12 @@ public class EmailPasswordTest {
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             try {
-                StorageLayer.getEmailPasswordStorage(process.getProcess());
+                new TenantIdentifierWithStorage(null, null, null, StorageLayer.getStorage(process.getProcess())).getEmailPasswordStorage();
                 throw new Exception("Should not come here");
             } catch (UnsupportedOperationException e) {
             }
         } else {
-            StorageLayer.getEmailPasswordStorage(process.getProcess());
+            new TenantIdentifierWithStorage(null, null, null, StorageLayer.getStorage(process.getProcess())).getEmailPasswordStorage();
         }
 
         process.kill();
@@ -169,7 +171,7 @@ public class EmailPasswordTest {
 
         UserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
-        UserInfo userInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
+        UserInfo userInfo = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .getUserInfoUsingEmail(new TenantIdentifier(null, null, null), user.email);
         assertNotEquals(userInfo.passwordHash, "validPass123");
         assertTrue(PasswordHashing.getInstance(process.getProcess()).verifyPasswordWithHash("validPass123",
@@ -196,7 +198,7 @@ public class EmailPasswordTest {
         UserInfo user = EmailPassword.signUp(process.getProcess(), "random@gmail.com", "validPass123");
 
         String resetToken = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
-        PasswordResetTokenInfo resetTokenInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
+        PasswordResetTokenInfo resetTokenInfo = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .getPasswordResetTokenInfo(new AppIdentifier(null, null),
                         io.supertokens.utils.Utils.hashSHA256(resetToken));
 
@@ -227,7 +229,7 @@ public class EmailPasswordTest {
 
         EmailPassword.resetPassword(process.getProcess(), resetToken, "newValidPass123");
 
-        UserInfo userInfo = StorageLayer.getEmailPasswordStorage(process.getProcess())
+        UserInfo userInfo = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .getUserInfoUsingEmail(new TenantIdentifier(null, null, null), user.email);
         assertNotEquals(userInfo.passwordHash, "newValidPass123");
 
@@ -256,7 +258,7 @@ public class EmailPasswordTest {
 
         String tok = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
 
-        assert (StorageLayer.getEmailPasswordStorage(process.getProcess())
+        assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 1);
 
         Thread.sleep(20);
@@ -268,7 +270,7 @@ public class EmailPasswordTest {
 
         }
 
-        assert (StorageLayer.getEmailPasswordStorage(process.getProcess())
+        assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 0);
 
         process.kill();
@@ -292,14 +294,14 @@ public class EmailPasswordTest {
         String tok = EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
         EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
 
-        PasswordResetTokenInfo[] tokens = StorageLayer.getEmailPasswordStorage(process.getProcess())
+        PasswordResetTokenInfo[] tokens = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id);
 
         assert (tokens.length == 3);
 
         EmailPassword.resetPassword(process.getProcess(), tok, "newPassword");
 
-        tokens = StorageLayer.getEmailPasswordStorage(process.getProcess())
+        tokens = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id);
         assert (tokens.length == 0);
 
@@ -328,7 +330,7 @@ public class EmailPasswordTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        PasswordResetTokenInfo[] tokens = StorageLayer.getEmailPasswordStorage(process.getProcess())
+        PasswordResetTokenInfo[] tokens = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null),
                         "8ed86166-bfd8-4234-9dfe-abca9606dbd5");
 
@@ -374,14 +376,14 @@ public class EmailPasswordTest {
         // we add a user first.
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
-        StorageLayer.getEmailPasswordStorage(process.getProcess())
+        ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .addPasswordResetToken(new AppIdentifier(null, null), new PasswordResetTokenInfo(
                         user.id, "token",
                         System.currentTimeMillis() +
                                 Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime()));
 
         try {
-            StorageLayer.getEmailPasswordStorage(process.getProcess())
+            ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                     .addPasswordResetToken(new AppIdentifier(null, null),
                             new PasswordResetTokenInfo(user.id, "token", System.currentTimeMillis()
                                     + Config.getConfig(process.getProcess()).getPasswordResetTokenLifetime()));
@@ -427,13 +429,13 @@ public class EmailPasswordTest {
             return;
         }
 
-        StorageLayer.getEmailPasswordStorage(process.getProcess())
+        ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .signUp(new TenantIdentifier(null, null, null), new UserInfo(
                         "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test@example.com", "password",
                         System.currentTimeMillis()));
 
         try {
-            StorageLayer.getEmailPasswordStorage(process.getProcess())
+            ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                     .signUp(new TenantIdentifier(null, null, null),
                             new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test1@example.com", "password",
                                     System.currentTimeMillis()));
@@ -480,13 +482,13 @@ public class EmailPasswordTest {
             return;
         }
 
-        StorageLayer.getEmailPasswordStorage(process.getProcess())
+        ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .signUp(new TenantIdentifier(null, null, null), new UserInfo(
                         "8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test@example.com", "password",
                         System.currentTimeMillis()));
 
         try {
-            StorageLayer.getEmailPasswordStorage(process.getProcess())
+            ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                     .signUp(new TenantIdentifier(null, null, null),
                             new UserInfo("8ed86166-bfd8-4234-9dfe-abca9606dbd5", "test@example.com", "password",
                                     System.currentTimeMillis()));

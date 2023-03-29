@@ -331,7 +331,7 @@ public class ImportUserWithPasswordHashAPITest {
         long timeJoined = System.currentTimeMillis();
 
         UserInfo userInfo = new UserInfo("userId", email, combinedPasswordHash, timeJoined);
-        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(process.getProcess());
+        EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         storage.signUp(new TenantIdentifier(null, null, null), userInfo);
 
@@ -374,7 +374,7 @@ public class ImportUserWithPasswordHashAPITest {
         long timeJoined = System.currentTimeMillis();
 
         UserInfo userInfo = new UserInfo("userId", email, combinedPasswordHash, timeJoined);
-        EmailPasswordSQLStorage storage = StorageLayer.getEmailPasswordStorage(process.getProcess());
+        EmailPasswordSQLStorage storage = (EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         storage.signUp(new TenantIdentifier(null, null, null), userInfo);
 

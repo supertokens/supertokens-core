@@ -23,6 +23,7 @@ import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.PasswordResetTokenInfo;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
+import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -73,12 +74,12 @@ public class DeleteExpiredPasswordResetTokensCronjobTest {
         EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
         EmailPassword.generatePasswordResetToken(process.getProcess(), user.id);
 
-        assert (StorageLayer.getEmailPasswordStorage(process.getProcess())
+        assert (((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id).length == 4);
 
         Thread.sleep(3000);
 
-        PasswordResetTokenInfo[] tokens = StorageLayer.getEmailPasswordStorage(process.getProcess())
+        PasswordResetTokenInfo[] tokens = ((EmailPasswordSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .getAllPasswordResetTokenInfoForUser(new AppIdentifier(null, null), user.id);
 
         assert (tokens.length == 2);
