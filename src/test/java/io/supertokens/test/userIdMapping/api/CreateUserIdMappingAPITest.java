@@ -277,7 +277,7 @@ public class CreateUserIdMappingAPITest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a User
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPass123");
@@ -363,7 +363,7 @@ public class CreateUserIdMappingAPITest {
                 "http://localhost:3567/recipe/userid/map", requestBody, 1000, 1000, null,
                 Utils.getCdiVersion2_15ForTests(), "useridmapping");
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         UserIdMapping userIdMapping = storage.getUserIdMapping(new AppIdentifier(null, null), userInfo.id,
                 true);

@@ -69,7 +69,7 @@ public class UserIdMapping {
             }
         }
 
-        ((UserIdMappingStorage) appIdentifierWithStorage.getStorage()).createUserIdMapping(appIdentifierWithStorage, superTokensUserId,
+        appIdentifierWithStorage.getUserIdMappingStorage().createUserIdMapping(appIdentifierWithStorage, superTokensUserId,
                 externalUserId, externalUserIdInfo);
     }
 
@@ -92,7 +92,7 @@ public class UserIdMapping {
             AppIdentifierWithStorage appIdentifierWithStorage, String userId,
             UserIdType userIdType)
             throws StorageQueryException {
-        UserIdMappingStorage storage = (UserIdMappingStorage) appIdentifierWithStorage.getStorage();
+        UserIdMappingStorage storage = appIdentifierWithStorage.getUserIdMappingStorage();
 
         if (userIdType == UserIdType.SUPERTOKENS) {
             return storage.getUserIdMapping(appIdentifierWithStorage, userId, true);
@@ -141,7 +141,7 @@ public class UserIdMapping {
         // we need to check if db is in A3 or A4.
         io.supertokens.pluginInterface.useridmapping.UserIdMapping mapping = getUserIdMapping(appIdentifierWithStorage,
                 userId, UserIdType.ANY);
-        UserIdMappingStorage storage = (UserIdMappingStorage) appIdentifierWithStorage.getStorage();
+        UserIdMappingStorage storage = appIdentifierWithStorage.getUserIdMappingStorage();
 
         if (mapping != null) {
             if (((AuthRecipeStorage) appIdentifierWithStorage.getStorage()).doesUserIdExist(
@@ -189,7 +189,7 @@ public class UserIdMapping {
                                                            String userId, UserIdType userIdType,
                                                            @Nullable String externalUserIdInfo)
             throws StorageQueryException {
-        UserIdMappingStorage storage = (UserIdMappingStorage) appIdentifierWithStorage.getStorage();
+        UserIdMappingStorage storage = appIdentifierWithStorage.getUserIdMappingStorage();
 
         if (userIdType == UserIdType.SUPERTOKENS) {
             return storage.updateOrDeleteExternalUserIdInfo(appIdentifierWithStorage, userId, true,
@@ -228,8 +228,7 @@ public class UserIdMapping {
             ArrayList<String> userIds)
             throws StorageQueryException {
         // userIds are already filtered for a tenant, so this becomes a tenant specific operation.
-        return ((UserIdMappingStorage) tenantIdentifierWithStorage.getStorage()).getUserIdMappingForSuperTokensIds(
-                userIds);
+        return tenantIdentifierWithStorage.getUserIdMappingStorage().getUserIdMappingForSuperTokensIds(userIds);
     }
 
     @TestOnly

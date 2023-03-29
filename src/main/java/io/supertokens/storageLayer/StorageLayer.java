@@ -426,22 +426,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static UserIdMappingStorage getUserIdMappingStorage(TenantIdentifier tenantIdentifier, Main main)
-            throws TenantOrAppNotFoundException {
-        // TODO remove this function
-        return (UserIdMappingStorage) getInstance(tenantIdentifier, main).storage;
-    }
-
-    @TestOnly
-    public static UserIdMappingStorage getUserIdMappingStorage(Main main) {
-        // TODO remove this function
-        try {
-            return getUserIdMappingStorage(new TenantIdentifier(null, null, null), main);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     public static DashboardSQLStorage getDashboardStorage(AppIdentifier appIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         // TODO remove this function

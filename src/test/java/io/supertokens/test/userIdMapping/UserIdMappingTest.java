@@ -174,7 +174,7 @@ public class UserIdMappingTest {
             return;
         }
 
-        UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+        UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
 
         // create a user
         UserInfo userInfo = EmailPassword.signUp(process.main, "test@example.com", "testPassword");
@@ -302,7 +302,7 @@ public class UserIdMappingTest {
                     .getUserIdMapping(process.main, newExternalUserId, UserIdType.ANY);
 
             // query with the storage layer and check that the db returns two entries
-            UserIdMappingStorage storage = StorageLayer.getUserIdMappingStorage(process.main);
+            UserIdMappingStorage storage = (UserIdMappingStorage) StorageLayer.getStorage(process.main);
             io.supertokens.pluginInterface.useridmapping.UserIdMapping[] storageResponse = storage
                     .getUserIdMapping(new AppIdentifier(null, null), newExternalUserId);
             assertEquals(2, storageResponse.length);
