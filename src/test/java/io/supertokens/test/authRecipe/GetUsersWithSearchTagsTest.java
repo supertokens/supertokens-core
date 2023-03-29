@@ -266,4 +266,37 @@ public class GetUsersWithSearchTagsTest {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testThatQueryLimitIsCappedAt1000PerTable() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create 1500 emailpassword users
+        ArrayList<String> userIds = new ArrayList<>();
+
+        for (int i = 0; i < 1500; i++) {
+            userIds.add(EmailPassword.signUp(process.getProcess(), "test" + i + "@example.com", "testPass123").id);
+        }
+        
+        // retrieve users
+        ArrayList<String> emailList = new ArrayList<>();
+        emailList.add("test");
+
+        DashboardSearchTags tags = new DashboardSearchTags(emailList, null, null);
+        UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
+        assertEquals(1000, info.users.length);
+        for (int i = 0; i < info.users.length; i++) {
+           assertEquals(userIds.get(i), info.users[i].user.id);
+
+        }
+        
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
 }
