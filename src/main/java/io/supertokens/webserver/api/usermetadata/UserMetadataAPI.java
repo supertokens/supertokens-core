@@ -45,10 +45,10 @@ public class UserMetadataAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         try {
-            JsonObject metadata = UserMetadata.getUserMetadata(
-                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(), userId);
+            JsonObject metadata = UserMetadata.getUserMetadata(this.getAppIdentifierWithStorage(req), userId);
             JsonObject response = new JsonObject();
             response.add("metadata", metadata);
             response.addProperty("status", "OK");
@@ -60,12 +60,12 @@ public class UserMetadataAPI extends WebserverAPI {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         JsonObject update = InputParser.parseJsonObjectOrThrowError(input, "metadataUpdate", false);
         try {
-            JsonObject metadata = UserMetadata.updateUserMetadata(
-                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(), userId, update);
+            JsonObject metadata = UserMetadata.updateUserMetadata(this.getAppIdentifierWithStorage(req), userId, update);
             JsonObject response = new JsonObject();
             response.add("metadata", metadata);
             response.addProperty("status", "OK");
