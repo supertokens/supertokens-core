@@ -480,13 +480,13 @@ public class TOTPStorageTest {
 
         long now = System.currentTimeMillis();
         long nextDay = System.currentTimeMillis() + 1000 * 60 * 60 * 24; // 1 day from now
-        long halfSecond = System.currentTimeMillis() + 500; // 500ms from now
+        long hundredMs = System.currentTimeMillis() + 100; // 100ms from now
 
         TOTPDevice device = new TOTPDevice("user", "device", "secretKey", 30, 1, false);
         TOTPUsedCode validCodeToLive = new TOTPUsedCode("user", "valid", true, nextDay, now);
         TOTPUsedCode invalidCodeToLive = new TOTPUsedCode("user", "invalid", false, nextDay, now + 1);
-        TOTPUsedCode validCodeToExpire = new TOTPUsedCode("user", "valid", true, halfSecond, now + 2);
-        TOTPUsedCode invalidCodeToExpire = new TOTPUsedCode("user", "invalid", false, halfSecond, now + 3);
+        TOTPUsedCode validCodeToExpire = new TOTPUsedCode("user", "valid", true, hundredMs, now + 2);
+        TOTPUsedCode invalidCodeToExpire = new TOTPUsedCode("user", "invalid", false, hundredMs, now + 3);
 
         storage.createDevice(device);
         insertUsedCodesUtil(storage, new TOTPUsedCode[]{
@@ -497,10 +497,11 @@ public class TOTPStorageTest {
         TOTPUsedCode[] usedCodes = getAllUsedCodesUtil(storage, "user");
         assert (usedCodes.length == 4);
 
-        // After 500ms seconds pass:
-        Thread.sleep(500);
+        // After 250ms seconds pass: (Ensure that the codes are expired)
+        Thread.sleep(250);
 
-        storage.removeExpiredCodes(System.currentTimeMillis());
+        now = System.currentTimeMillis();
+        storage.removeExpiredCodes(now);
 
         usedCodes = getAllUsedCodesUtil(storage, "user");
         assert (usedCodes.length == 2);
