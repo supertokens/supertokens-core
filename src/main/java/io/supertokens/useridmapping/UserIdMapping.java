@@ -50,11 +50,11 @@ public class UserIdMapping {
                                            String superTokensUserId, String externalUserId,
                                            String externalUserIdInfo, boolean force)
             throws UnknownSuperTokensUserIdException,
-            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException, TenantOrAppNotFoundException,
-            UnknownUserIdException {
+            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException,
+            TenantOrAppNotFoundException {
 
         // Check if mapping already exists app wide
-        { // with supertokens id
+        try { // with supertokens id
             AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
                     main, appIdentifierWithStorage, superTokensUserId, UserIdType.ANY);
@@ -64,6 +64,8 @@ public class UserIdMapping {
                         externalUserId == mappingAndStorage.userIdMapping.externalUserId
                 );
             }
+        } catch (UnknownUserIdException e) {
+            throw new UnknownSuperTokensUserIdException();
         }
         try { // with external id
             AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
