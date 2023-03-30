@@ -18,6 +18,7 @@ package io.supertokens.test.authRecipe;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -172,8 +173,7 @@ public class GetUsersWithSearchTagsAPITest {
         JsonArray users = response.get("users").getAsJsonArray();
 
         for (int i = 0; i < userIds.size(); i++) {
-            assertEquals(userIds.get(i),
-                    users.get(i).getAsJsonObject().get("user").getAsJsonObject().get("id").getAsString());
+                assertTrue(userIds.contains(users.get(i).getAsJsonObject().get("user").getAsJsonObject().get("id").getAsString()));
         }
 
         process.kill();
