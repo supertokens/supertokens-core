@@ -59,17 +59,10 @@ public class UserIdMapping {
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
                             main, appIdentifierWithStorage, externalUserId, UserIdType.EXTERNAL);
             if (mappingAndStorage.userIdMapping != null) {
-                if (superTokensUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId)) {
-                    throw new UserIdMappingAlreadyExistsException(
-                            superTokensUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId),
-                            externalUserId.equals(mappingAndStorage.userIdMapping.externalUserId)
-                    );
-                } else {
-                    throw new UserIdMappingAlreadyExistsException(
-                            externalUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId),
-                            superTokensUserId.equals(mappingAndStorage.userIdMapping.externalUserId)
-                    );
-                }
+                throw new UserIdMappingAlreadyExistsException(
+                        superTokensUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId),
+                        externalUserId.equals(mappingAndStorage.userIdMapping.externalUserId)
+                );
             }
         } catch (UnknownUserIdException e) {
             // ignore
