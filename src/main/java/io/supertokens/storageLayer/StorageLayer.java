@@ -551,7 +551,12 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             Main main, AppIdentifier appIdentifier, String userId,
             UserIdType userIdType) throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
 
-        Storage[] storages = getStoragesForApp(main, appIdentifier);
+        Storage[] storages;
+        if (appIdentifier instanceof AppIdentifierWithStorage) {
+            storages = ((AppIdentifierWithStorage) appIdentifier).getStorages();
+        } else {
+            storages = getStoragesForApp(main, appIdentifier);
+        }
 
         if (storages.length == 0) {
             throw new TenantOrAppNotFoundException(appIdentifier);

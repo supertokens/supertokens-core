@@ -16,9 +16,11 @@
 
 package io.supertokens.useridmapping;
 
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
@@ -44,11 +46,38 @@ import java.util.HashMap;
 
 public class UserIdMapping {
 
-    public static void createUserIdMapping(AppIdentifierWithStorage appIdentifierWithStorage,
+    public static void createUserIdMapping(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
                                            String superTokensUserId, String externalUserId,
                                            String externalUserIdInfo, boolean force)
             throws UnknownSuperTokensUserIdException,
-            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException, TenantOrAppNotFoundException {
+            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException, TenantOrAppNotFoundException,
+            UnknownUserIdException {
+
+        // Check if mapping already exists app wide
+        { // with supertokens id
+            AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
+                    StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
+                    main, appIdentifierWithStorage, superTokensUserId, UserIdType.ANY);
+            if (mappingAndStorage.userIdMapping != null) {
+                throw new UserIdMappingAlreadyExistsException(
+                        superTokensUserId == mappingAndStorage.userIdMapping.superTokensUserId,
+                        externalUserId == mappingAndStorage.userIdMapping.externalUserId
+                );
+            }
+        }
+        try { // with external id
+            AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
+                    StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
+                            main, appIdentifierWithStorage, externalUserId, UserIdType.ANY);
+            if (mappingAndStorage.userIdMapping != null) {
+                throw new UserIdMappingAlreadyExistsException(
+                        superTokensUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId),
+                        externalUserId.equals(mappingAndStorage.userIdMapping.externalUserId)
+                );
+            }
+        } catch (UnknownUserIdException e) {
+            // ignore
+        }
 
         // if a userIdMapping is created with force, then we skip the following checks
         if (!force) {
@@ -78,10 +107,10 @@ public class UserIdMapping {
                                            String superTokensUserId, String externalUserId,
                                            String externalUserIdInfo, boolean force)
             throws UnknownSuperTokensUserIdException,
-            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException {
+            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException, UnknownUserIdException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            createUserIdMapping(new AppIdentifierWithStorage(null, null, storage), superTokensUserId, externalUserId,
+            createUserIdMapping(main, new AppIdentifierWithStorage(null, null, storage), superTokensUserId, externalUserId,
                     externalUserIdInfo, force);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);

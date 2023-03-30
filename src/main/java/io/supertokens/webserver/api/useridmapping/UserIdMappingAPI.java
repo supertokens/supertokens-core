@@ -96,7 +96,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
                     this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, superTokensUserId, UserIdType.SUPERTOKENS);
 
-            UserIdMapping.createUserIdMapping(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
+            UserIdMapping.createUserIdMapping(main, appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
                     superTokensUserId, externalUserId, externalUserIdInfo, force);
 
             JsonObject response = new JsonObject();
