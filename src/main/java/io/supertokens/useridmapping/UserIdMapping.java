@@ -78,8 +78,9 @@ public class UserIdMapping {
                 );
             }
 
-            // Update `appIdentifierWithStorage` from `mappingAndStorage` so that mapping is created on the
-            // right storage and not on the storage of tenant of interest
+            // Update `appIdentifierWithStorage` with the one from `mappingAndStorage` so that mapping is created
+            // on the right storage for the `supertokensUserId` and not on the storage of tenant from where the
+            // query came from
             appIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
         } catch (UnknownUserIdException e) {
             throw new UnknownSuperTokensUserIdException();
