@@ -54,31 +54,42 @@ public class UserIdMapping {
             TenantOrAppNotFoundException {
 
         // Check if mapping already exists app wide
-        try { // with supertokens id
-            AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                    StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                    main, appIdentifierWithStorage, superTokensUserId, UserIdType.SUPERTOKENS);
-            if (mappingAndStorage.userIdMapping != null) {
-                throw new UserIdMappingAlreadyExistsException(
-                        superTokensUserId == mappingAndStorage.userIdMapping.superTokensUserId,
-                        externalUserId == mappingAndStorage.userIdMapping.externalUserId
-                );
-            }
-        } catch (UnknownUserIdException e) {
-            throw new UnknownSuperTokensUserIdException();
-        }
         try { // with external id
             AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                            main, appIdentifierWithStorage, externalUserId, UserIdType.ANY);
+                            main, appIdentifierWithStorage, externalUserId, UserIdType.EXTERNAL);
+            if (mappingAndStorage.userIdMapping != null) {
+                if (superTokensUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId)) {
+                    throw new UserIdMappingAlreadyExistsException(
+                            superTokensUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId),
+                            externalUserId.equals(mappingAndStorage.userIdMapping.externalUserId)
+                    );
+                } else {
+                    throw new UserIdMappingAlreadyExistsException(
+                            externalUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId),
+                            superTokensUserId.equals(mappingAndStorage.userIdMapping.externalUserId)
+                    );
+                }
+            }
+        } catch (UnknownUserIdException e) {
+            // ignore
+        }
+        try { // with supertokens id
+            AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
+                    StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
+                            main, appIdentifierWithStorage, superTokensUserId, UserIdType.SUPERTOKENS);
             if (mappingAndStorage.userIdMapping != null) {
                 throw new UserIdMappingAlreadyExistsException(
                         superTokensUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId),
                         externalUserId.equals(mappingAndStorage.userIdMapping.externalUserId)
                 );
             }
+
+            // Update `appIdentifierWithStorage` from `mappingAndStorage` so that mapping is created on the
+            // right storage and not on the storage of tenant of interest
+            appIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
         } catch (UnknownUserIdException e) {
-            // ignore
+            throw new UnknownSuperTokensUserIdException();
         }
 
         // if a userIdMapping is created with force, then we skip the following checks

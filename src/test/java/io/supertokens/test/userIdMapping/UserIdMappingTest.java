@@ -800,8 +800,10 @@ public class UserIdMappingTest {
             }
         }
 
-        String userId = "testUserId";
         for (String className : classNames) {
+            UserInfo user = EmailPassword.signUp(process.main, "test@example.com", "password");
+            String userId = user.id;
+
             // create entry in nonAuth table
             StorageLayer.getStorage(process.main).addInfoToNonAuthRecipesBasedOnUserId(className, userId);
             // try to create the mapping with superTokensId
