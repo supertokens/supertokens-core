@@ -282,6 +282,7 @@ public class GetUsersWithSearchTagsTest {
 
         for (int i = 0; i < 1500; i++) {
             userIds.add(EmailPassword.signUp(process.getProcess(), "test" + i + "@example.com", "testPass123").id);
+            Thread.sleep(2);
         }
         
         // retrieve users
