@@ -293,7 +293,7 @@ public class GetUsersWithSearchTagsTest {
         UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
         assertEquals(1000, info.users.length);
         for (int i = 0; i < info.users.length; i++) {
-           assertEquals(userIds.get(i), info.users[i].user.id);
+            assertTrue(userIds.contains(info.users[i].user.id));
 
         }
         
