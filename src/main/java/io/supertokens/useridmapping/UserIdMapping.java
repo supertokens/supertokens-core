@@ -53,37 +53,25 @@ public class UserIdMapping {
             UserIdMappingAlreadyExistsException, StorageQueryException, ServletException,
             TenantOrAppNotFoundException {
 
-        // Check if mapping already exists app wide
+        // We first need to check if the external user id exists across all app storages because we do not want
+        // 2 users from different user pool but same app to point to same external user id.
+        // We may still end up having that situation due to race conditions, as we are not taking any app level lock,
+        // but we are okay with it as of now, by returning prioritized mapping based on which the tenant the request
+        // came from.
+        // This issue - https://github.com/supertokens/supertokens-core/issues/610 - must be resolved when the
+        // race condition is fixed.
         try { // with external id
             AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                            main, appIdentifierWithStorage, externalUserId, UserIdType.EXTERNAL);
-            if (mappingAndStorage.userIdMapping != null) {
-                throw new UserIdMappingAlreadyExistsException(
-                        superTokensUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId),
-                        externalUserId.equals(mappingAndStorage.userIdMapping.externalUserId)
-                );
-            }
-        } catch (UnknownUserIdException e) {
-            // ignore
-        }
-        try { // with supertokens id
-            AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                    StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                            main, appIdentifierWithStorage, superTokensUserId, UserIdType.SUPERTOKENS);
-            if (mappingAndStorage.userIdMapping != null) {
-                throw new UserIdMappingAlreadyExistsException(
-                        superTokensUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId),
-                        externalUserId.equals(mappingAndStorage.userIdMapping.externalUserId)
-                );
-            }
+                            main, appIdentifierWithStorage, null, externalUserId, UserIdType.EXTERNAL);
 
-            // Update `appIdentifierWithStorage` with the one from `mappingAndStorage` so that mapping is created
-            // on the right storage for the `supertokensUserId` and not on the storage of tenant from where the
-            // query came from
-            appIdentifierWithStorage = mappingAndStorage.appIdentifierWithStorage;
+            assert(mappingAndStorage.userIdMapping != null); // externalUserId can exist only through an userIdMapping
+            throw new UserIdMappingAlreadyExistsException(
+                    superTokensUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId),
+                    externalUserId.equals(mappingAndStorage.userIdMapping.externalUserId)
+            );
         } catch (UnknownUserIdException e) {
-            throw new UnknownSuperTokensUserIdException();
+            // ignore this as we do not want external user id to exist
         }
 
         // if a userIdMapping is created with force, then we skip the following checks

@@ -256,14 +256,6 @@ public abstract class WebserverAPI extends HttpServlet {
         Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
         Storage[] storages = StorageLayer.getStoragesForApp(main, tenantIdentifier.toAppIdentifier());
 
-        // Make the `storage` is the first item in the `storages` array, to prioritize the tenant of interest
-        for (int i = 1; i < storages.length; i++) {
-            if (storages[i] == storage) {
-                storages[i] = storages[0];
-                storages[0] = storage;
-                break;
-            }
-        }
         return new AppIdentifierWithStorage(tenantIdentifier.getConnectionUriDomain(), tenantIdentifier.getAppId(),
                 storage, storages);
     }
@@ -292,7 +284,7 @@ public abstract class WebserverAPI extends HttpServlet {
     protected AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingFromRequest(HttpServletRequest req, String userId, UserIdType userIdType)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
         AppIdentifierWithStorage appIdentifierWithStorage = getAppIdentifierWithStorage(req);
-        return StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(main, appIdentifierWithStorage, userId, userIdType);
+        return StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(main, appIdentifierWithStorage, appIdentifierWithStorage.getStorage(), userId, userIdType);
     }
 
     @Override

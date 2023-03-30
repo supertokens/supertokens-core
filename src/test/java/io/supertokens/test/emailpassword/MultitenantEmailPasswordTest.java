@@ -249,7 +249,7 @@ public class MultitenantEmailPasswordTest {
         {
             UserInfo userInfo = EmailPassword.getUserUsingId(
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                            process.getProcess(), new AppIdentifier(null, "a1"), user1.id,
+                            process.getProcess(), new AppIdentifier(null, "a1"), null, user1.id,
                             UserIdType.SUPERTOKENS).appIdentifierWithStorage, user1.id);
             assertEquals(user1, userInfo);
         }
@@ -257,7 +257,7 @@ public class MultitenantEmailPasswordTest {
         {
             UserInfo userInfo = EmailPassword.getUserUsingId(
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                            process.getProcess(), new AppIdentifier(null, "a1"), user2.id,
+                            process.getProcess(), new AppIdentifier(null, "a1"), null, user2.id,
                             UserIdType.SUPERTOKENS).appIdentifierWithStorage, user2.id);
             assertEquals(user2, userInfo);
         }
@@ -265,7 +265,7 @@ public class MultitenantEmailPasswordTest {
         {
             UserInfo userInfo = EmailPassword.getUserUsingId(
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                            process.getProcess(), new AppIdentifier(null, "a1"), user3.id,
+                            process.getProcess(), new AppIdentifier(null, "a1"), null, user3.id,
                             UserIdType.SUPERTOKENS).appIdentifierWithStorage, user3.id);
             assertEquals(user3, userInfo);
         }
@@ -348,17 +348,17 @@ public class MultitenantEmailPasswordTest {
 
         EmailPassword.updateUsersEmailOrPassword(
                 StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                        process.getProcess(), new AppIdentifier(null, "a1"), user1.id,
+                        process.getProcess(), new AppIdentifier(null, "a1"), null, user1.id,
                         UserIdType.SUPERTOKENS).appIdentifierWithStorage,
                 process.getProcess(), user1.id, null, "newpassword1");
         EmailPassword.updateUsersEmailOrPassword(
                 StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                        process.getProcess(), new AppIdentifier(null, "a1"), user2.id,
+                        process.getProcess(), new AppIdentifier(null, "a1"), null, user2.id,
                         UserIdType.SUPERTOKENS).appIdentifierWithStorage,
                 process.getProcess(), user2.id, null, "newpassword2");
         EmailPassword.updateUsersEmailOrPassword(
                 StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                        process.getProcess(), new AppIdentifier(null, "a1"), user3.id,
+                        process.getProcess(), new AppIdentifier(null, "a1"), null, user3.id,
                         UserIdType.SUPERTOKENS).appIdentifierWithStorage,
                 process.getProcess(), user3.id, null, "newpassword3");
 

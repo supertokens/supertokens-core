@@ -19,7 +19,6 @@ package io.supertokens.webserver.api.useridmapping;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -94,16 +93,17 @@ public class UserIdMappingAPI extends WebserverAPI {
         }
 
         try {
-            AppIdentifierWithStorage appIdentifierWithStorage = this.getAppIdentifierWithStorage(req);
+            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, superTokensUserId, UserIdType.SUPERTOKENS);
 
-            UserIdMapping.createUserIdMapping(main, appIdentifierWithStorage, superTokensUserId, externalUserId,
-                    externalUserIdInfo, force);
+            UserIdMapping.createUserIdMapping(main, appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
+                    superTokensUserId, externalUserId, externalUserIdInfo, force);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             super.sendJsonResponse(200, response, resp);
 
-        } catch (UnknownSuperTokensUserIdException e) {
+        } catch (UnknownSuperTokensUserIdException | UnknownUserIdException e) {
             JsonObject response = new JsonObject();
             response.addProperty("status", "UNKNOWN_SUPERTOKENS_USER_ID_ERROR");
             super.sendJsonResponse(200, response, resp);
