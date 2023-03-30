@@ -16,15 +16,15 @@
 
 package io.supertokens.useridmapping;
 
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
@@ -44,11 +44,37 @@ import java.util.HashMap;
 
 public class UserIdMapping {
 
-    public static void createUserIdMapping(AppIdentifierWithStorage appIdentifierWithStorage,
+    public static void createUserIdMapping(Main main, AppIdentifierWithStorage appIdentifierWithStorage,
                                            String superTokensUserId, String externalUserId,
                                            String externalUserIdInfo, boolean force)
             throws UnknownSuperTokensUserIdException,
-            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException, TenantOrAppNotFoundException {
+            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException,
+            TenantOrAppNotFoundException {
+
+        // We first need to check if the external user id exists across all app storages because we do not want
+        // 2 users from different user pool but same app to point to same external user id.
+        // We may still end up having that situation due to race conditions, as we are not taking any app level lock,
+        // but we are okay with it as of now, by returning prioritized mapping based on which the tenant the request
+        // came from.
+        // This issue - https://github.com/supertokens/supertokens-core/issues/610 - must be resolved when the
+        // race condition is fixed.
+        try { // with external id
+            AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
+                    StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
+                            main, appIdentifierWithStorage, appIdentifierWithStorage.getStorage(), externalUserId,
+                            UserIdType.EXTERNAL);
+
+            // externalUserId can exist only through an userIdMapping. the above method will raise an
+            // UnknownUserIdException if the external user was not found. we won't have a case where the user is found
+            // and the mapping is null. Hence, the following assert.
+            assert(mappingAndStorage.userIdMapping != null);
+            throw new UserIdMappingAlreadyExistsException(
+                    superTokensUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId),
+                    externalUserId.equals(mappingAndStorage.userIdMapping.externalUserId)
+            );
+        } catch (UnknownUserIdException e) {
+            // ignore this as we do not want external user id to exist
+        }
 
         // if a userIdMapping is created with force, then we skip the following checks
         if (!force) {
@@ -78,10 +104,10 @@ public class UserIdMapping {
                                            String superTokensUserId, String externalUserId,
                                            String externalUserIdInfo, boolean force)
             throws UnknownSuperTokensUserIdException,
-            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException {
+            UserIdMappingAlreadyExistsException, StorageQueryException, ServletException, UnknownUserIdException {
         try {
             Storage storage = StorageLayer.getStorage(main);
-            createUserIdMapping(new AppIdentifierWithStorage(null, null, storage), superTokensUserId, externalUserId,
+            createUserIdMapping(main, new AppIdentifierWithStorage(null, null, storage), superTokensUserId, externalUserId,
                     externalUserIdInfo, force);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);

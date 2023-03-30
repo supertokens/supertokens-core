@@ -96,7 +96,7 @@ public class UserIdMappingAPI extends WebserverAPI {
             AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
                     this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, superTokensUserId, UserIdType.SUPERTOKENS);
 
-            UserIdMapping.createUserIdMapping(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
+            UserIdMapping.createUserIdMapping(main, appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
                     superTokensUserId, externalUserId, externalUserIdInfo, force);
 
             JsonObject response = new JsonObject();
@@ -151,6 +151,16 @@ public class UserIdMappingAPI extends WebserverAPI {
         }
 
         try {
+            // If there exists a situation where 2 users on different user pools point to same external user id,
+            // this API tries to be deterministic by considering the storage for the tenant on which this request was
+            // made. if the user does not exist on the storage for the tenant on which this request was made,
+            // this API will just return the first mapping it can find. It won't be deterministic
+
+            // Example
+            // (app1, tenant1, user1) -> externaluserid and (app1, tenant2, user2) -> externaluserid
+            // Request from (app1, tenant1) will return user1 and request from (app1, tenant2) will return user2
+            // Request from (app1, tenant3) may result in either user1 or user2
+
             AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
                     this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, userIdType);
 
