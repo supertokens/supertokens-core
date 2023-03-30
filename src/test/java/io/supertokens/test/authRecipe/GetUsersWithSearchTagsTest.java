@@ -290,7 +290,7 @@ public class GetUsersWithSearchTagsTest {
         emailList.add("test");
 
         DashboardSearchTags tags = new DashboardSearchTags(emailList, null, null);
-        UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), null, "ASC", null, null, tags);
+        UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
         assertEquals(1000, info.users.length);
         for (int i = 0; i < info.users.length; i++) {
            assertEquals(userIds.get(i), info.users[i].user.id);
