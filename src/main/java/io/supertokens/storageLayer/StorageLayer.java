@@ -30,7 +30,6 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
-import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
@@ -42,9 +41,6 @@ import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLSto
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
-import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
-import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
@@ -527,8 +523,8 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         throw new UnknownUserIdException();
     }
 
-    public static AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingForUser(
-            Main main, AppIdentifier appIdentifier, String userId,
+    public static AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
+            Main main, AppIdentifier appIdentifier, Storage priorityStorage, String userId,
             UserIdType userIdType) throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
 
         Storage[] storages = getStoragesForApp(main, appIdentifier);
@@ -537,7 +533,30 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             throw new TenantOrAppNotFoundException(appIdentifier);
         }
 
+        // We look for userId in the priorityStorage first just in case multiple storages have the mapping, we
+        // return the mapping from the storage of the tenant from which the request came from.
+        {
+            UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                    appIdentifier.withStorage(priorityStorage),
+                    userId, userIdType);
+
+            if (mapping != null) {
+                AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(priorityStorage);
+                return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, mapping);
+            }
+
+            if (userIdType != UserIdType.EXTERNAL
+                    && ((AuthRecipeStorage) priorityStorage).doesUserIdExist(appIdentifier, userId)) {
+                AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(priorityStorage);
+                return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, null);
+            }
+        }
+
         for (Storage storage : storages) {
+            if (storage == priorityStorage) {
+                continue; // Already checked previously
+            }
+
             UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                     appIdentifier.withStorage(storage),
                     userId, userIdType);

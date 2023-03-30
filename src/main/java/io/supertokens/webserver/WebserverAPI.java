@@ -26,7 +26,6 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
@@ -255,6 +254,7 @@ public abstract class WebserverAPI extends HttpServlet {
 
         Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
         Storage[] storages = StorageLayer.getStoragesForApp(main, tenantIdentifier.toAppIdentifier());
+
         return new AppIdentifierWithStorage(tenantIdentifier.getConnectionUriDomain(), tenantIdentifier.getAppId(),
                 storage, storages);
     }
@@ -282,8 +282,10 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingFromRequest(HttpServletRequest req, String userId, UserIdType userIdType)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
-        AppIdentifier appIdentifier = new AppIdentifier(this.getConnectionUriDomain(req), this.getAppId(req));
-        return StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(main, appIdentifier, userId, userIdType);
+        // This function uses storage of the tenent from which the request came from as a priorityStorage
+        // while searching for the user across all storages for the app
+        AppIdentifierWithStorage appIdentifierWithStorage = getAppIdentifierWithStorage(req);
+        return StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(main, appIdentifierWithStorage, appIdentifierWithStorage.getStorage(), userId, userIdType);
     }
 
     @Override
