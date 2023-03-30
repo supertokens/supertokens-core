@@ -19,7 +19,6 @@ package io.supertokens.test.passwordless;
 import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.passwordless.PasswordlessStorage;
 import io.supertokens.pluginInterface.passwordless.UserInfo;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -54,9 +53,6 @@ public class PasswordlessGetUserTest {
 
     /**
      * getUserById
-     */
-
-    /**
      * with email set
      *
      * @throws Exception
@@ -72,12 +68,9 @@ public class PasswordlessGetUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
-
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
 
-        user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
+        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
         assertNotNull(user);
         assertEquals(user.email, EMAIL);
 
@@ -102,12 +95,9 @@ public class PasswordlessGetUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
-
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
 
-        user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
+        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
         assertNotNull(user);
         assertEquals(user.phoneNumber, PHONE_NUMBER);
 
@@ -132,12 +122,9 @@ public class PasswordlessGetUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
-
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, PHONE_NUMBER);
 
-        user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
+        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id);
         assertNotNull(user);
         assertEquals(user.email, EMAIL);
         assertEquals(user.phoneNumber, PHONE_NUMBER);
@@ -163,12 +150,9 @@ public class PasswordlessGetUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
-
         Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, EMAIL, null);
 
-        user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id + "1");
+        UserInfo user = Passwordless.getUserById(process.getProcess(), consumeCodeResponse.user.id + "1");
         assertNull(user);
 
         process.kill();
@@ -192,12 +176,9 @@ public class PasswordlessGetUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
-
         createUserWith(process, EMAIL, null);
 
-        user = Passwordless.getUserByEmail(process.getProcess(), EMAIL);
+        UserInfo user = Passwordless.getUserByEmail(process.getProcess(), EMAIL);
         assertNotNull(user);
         assertEquals(user.email, EMAIL);
 
@@ -222,12 +203,9 @@ public class PasswordlessGetUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
-
         createUserWith(process, EMAIL, null);
 
-        user = Passwordless.getUserByEmail(process.getProcess(), EMAIL + "a");
+        UserInfo user = Passwordless.getUserByEmail(process.getProcess(), EMAIL + "a");
         assertNull(user);
 
         process.kill();
@@ -251,12 +229,9 @@ public class PasswordlessGetUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
-
         createUserWith(process, null, PHONE_NUMBER);
 
-        user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER);
+        UserInfo user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER);
         assertNotNull(user);
         assertEquals(user.phoneNumber, PHONE_NUMBER);
 
@@ -280,12 +255,9 @@ public class PasswordlessGetUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
-
         createUserWith(process, null, PHONE_NUMBER);
 
-        user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER + "1");
+        UserInfo user = Passwordless.getUserByPhoneNumber(process.getProcess(), PHONE_NUMBER + "1");
         assertNull(user);
 
         process.kill();

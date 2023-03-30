@@ -71,7 +71,7 @@ public class PasswordlessStorageTest {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String email = "test@example.com";
         PasswordlessCode code1 = getRandomCodeInfo();
@@ -163,7 +163,7 @@ public class PasswordlessStorageTest {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String email = "test@example.com";
         PasswordlessCode code1 = getRandomCodeInfo();
@@ -240,7 +240,7 @@ public class PasswordlessStorageTest {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String email = "test@example.com";
         String email2 = "test2@example.com";
@@ -344,7 +344,7 @@ public class PasswordlessStorageTest {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String email = "test@example.com";
         String email2 = "test2@example.com";
@@ -502,7 +502,7 @@ public class PasswordlessStorageTest {
             assert (error instanceof DuplicatePhoneNumberException);
             UserInfo userInDb = storage.getUserById(new AppIdentifier(null, null), userIdEmail1);
             assertEquals(email, userInDb.email);
-            assertEquals(null, userInDb.phoneNumber);
+            assertNull(userInDb.phoneNumber);
         }
 
         {
@@ -524,7 +524,7 @@ public class PasswordlessStorageTest {
             assertNotNull(error);
             assert (error instanceof DuplicateEmailException);
             UserInfo userInDb = storage.getUserById(new AppIdentifier(null, null), userIdPhone1);
-            assertEquals(null, userInDb.email);
+            assertNull(userInDb.email);
             assertEquals(phoneNumber, userInDb.phoneNumber);
         }
 
@@ -543,7 +543,7 @@ public class PasswordlessStorageTest {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String email = "test@example.com";
         String email2 = "test2@example.com";
@@ -628,7 +628,7 @@ public class PasswordlessStorageTest {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String email = "test@example.com";
         PasswordlessCode code1 = getRandomCodeInfo();
@@ -664,7 +664,7 @@ public class PasswordlessStorageTest {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String email = "test@example.com";
         String email2 = "test2@example.com";
@@ -704,7 +704,7 @@ public class PasswordlessStorageTest {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String phoneNumber = "+442071838750";
         String phoneNumber2 = "+442082949861";
@@ -741,7 +741,7 @@ public class PasswordlessStorageTest {
         process.startProcess();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String email = "test@example.com";
         String phoneNumber = "+442071838750";

@@ -157,7 +157,7 @@ public class PasswordlessDeleteCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String email = "test@example.com";
         String codeId = "codeId";
@@ -200,7 +200,7 @@ public class PasswordlessDeleteCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String phoneNumber = "+442071838750";
         String codeId = "codeId";

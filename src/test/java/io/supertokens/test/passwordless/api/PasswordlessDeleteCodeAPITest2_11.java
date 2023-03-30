@@ -60,7 +60,7 @@ public class PasswordlessDeleteCodeAPITest2_11 {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         String phoneNumber = "+442071838750";
         String codeId = "codeId";
@@ -132,7 +132,7 @@ public class PasswordlessDeleteCodeAPITest2_11 {
 
         HttpResponseException error = null;
         try {
-            JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/code/remove", createCodeRequestBody, 1000, 1000, null,
                     Utils.getCdiVersion2_10ForTests(), "passwordless");
 

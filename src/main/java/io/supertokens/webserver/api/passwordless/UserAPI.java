@@ -77,13 +77,13 @@ public class UserAPI extends WebserverAPI {
                 if (userIdMapping != null) {
                     userId = userIdMapping.superTokensUserId;
                 }
-                user = Passwordless.getUserById(this.getTenantIdentifierWithStorageFromRequest(req), main, userId);
+                user = Passwordless.getUserById(this.getTenantIdentifierWithStorageFromRequest(req), userId);
                 if (user != null && userIdMapping != null) {
                     user.id = userIdMapping.externalUserId;
                 }
             } else if (email != null) {
                 email = Utils.normaliseEmail(email);
-                user = Passwordless.getUserByEmail(this.getTenantIdentifierWithStorageFromRequest(req), main, email);
+                user = Passwordless.getUserByEmail(this.getTenantIdentifierWithStorageFromRequest(req), email);
                 if (user != null) {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                             this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(),
@@ -93,7 +93,7 @@ public class UserAPI extends WebserverAPI {
                     }
                 }
             } else {
-                user = Passwordless.getUserByPhoneNumber(this.getTenantIdentifierWithStorageFromRequest(req), main, phoneNumber);
+                user = Passwordless.getUserByPhoneNumber(this.getTenantIdentifierWithStorageFromRequest(req), phoneNumber);
                 if (user != null) {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                             this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(),
@@ -144,7 +144,7 @@ public class UserAPI extends WebserverAPI {
                 userId = userIdMapping.superTokensUserId;
             }
 
-            Passwordless.updateUser(this.getTenantIdentifierWithStorageFromRequest(req), main, userId, emailUpdate, phoneNumberUpdate);
+            Passwordless.updateUser(this.getTenantIdentifierWithStorageFromRequest(req), userId, emailUpdate, phoneNumberUpdate);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

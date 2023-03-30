@@ -65,7 +65,7 @@ public class DeleteExpiredPasswordlessDevicesTest {
             return;
         }
 
-        PasswordlessStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage passwordlessStorage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         long codeLifetime = Config.getConfig(process.getProcess()).getPasswordlessCodeLifetime();
 
@@ -98,7 +98,7 @@ public class DeleteExpiredPasswordlessDevicesTest {
             return;
         }
 
-        PasswordlessStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage passwordlessStorage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         long codeLifetime = Config.getConfig(process.getProcess()).getPasswordlessCodeLifetime();
 

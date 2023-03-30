@@ -67,7 +67,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String email2 = "test2@example.com";
         String phoneNumber = "+442071838750";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
                 new UserInfo(userId, email, null, System.currentTimeMillis()));
         storage.createUser(new TenantIdentifier(null, null, null),
@@ -79,7 +79,7 @@ public class PasswordlessUserPutAPITest2_11 {
             JsonObject updateUserRequestBody = new JsonObject();
             Exception ex = null;
             try {
-                JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+                HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
                         Utils.getCdiVersion2_10ForTests(), "passwordless");
             } catch (Exception e) {
@@ -148,7 +148,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String userId = "userId";
         String phoneNumber = "+442071838750";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String email = "email";
         storage.createUser(new TenantIdentifier(null, null, null),
                 new UserInfo(userId, email, null, System.currentTimeMillis()));
@@ -190,7 +190,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String phoneNumber = "+442071838750";
         String email = "email";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
                 new UserInfo(userId, null, phoneNumber, System.currentTimeMillis()));
 
@@ -233,7 +233,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String updatedPhoneNumber = "+442071838751";
         String updatedEmail = "test@example.com";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
                 new UserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
 
@@ -278,7 +278,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String phoneNumber = "+442071838750";
         String email = "email";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
                 new UserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
 
@@ -289,7 +289,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         Exception ex = null;
         try {
-            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
                     Utils.getCdiVersion2_10ForTests(), "passwordless");
 
@@ -326,7 +326,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String userId = "userId";
         String email = "email";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
                 new UserInfo(userId, email, null, System.currentTimeMillis()));
 
@@ -336,7 +336,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         Exception ex = null;
         try {
-            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
                     Utils.getCdiVersion2_10ForTests(), "passwordless");
 
@@ -374,7 +374,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String userId = "userId";
         String phoneNumber = "+91898989898";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
                 new UserInfo(userId, null, phoneNumber, System.currentTimeMillis()));
 
@@ -384,7 +384,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         Exception ex = null;
         try {
-            JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
+            HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
                     Utils.getCdiVersion2_10ForTests(), "passwordless");
 
@@ -422,7 +422,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String email = "email";
         String phoneNumber = "+9189898989";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
                 new UserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
 
@@ -463,7 +463,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String email = "email";
         String phoneNumber = "+9189898989";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
                 new UserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
 
@@ -504,7 +504,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String email = "email";
         String phoneNumber = "+9189898989";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
                 new UserInfo(userId, email, phoneNumber, System.currentTimeMillis()));
 
@@ -541,9 +541,8 @@ public class PasswordlessUserPutAPITest2_11 {
         }
 
         String userId = "userId";
-        String phoneNumber = "+442071838750";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String email = "email";
         String updated_email = "test@example.com";
         storage.createUser(new TenantIdentifier(null, null, null),
@@ -586,7 +585,7 @@ public class PasswordlessUserPutAPITest2_11 {
         String phoneNumber = "+442071838750";
         String updatedPhoneNumber = "+442071838751";
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         storage.createUser(new TenantIdentifier(null, null, null),
                 new UserInfo(userId, null, phoneNumber, System.currentTimeMillis()));
 
