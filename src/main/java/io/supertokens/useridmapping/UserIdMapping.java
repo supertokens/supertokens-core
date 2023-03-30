@@ -24,9 +24,7 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdExce
 import io.supertokens.pluginInterface.emailverification.EmailVerificationStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionStorage;
@@ -63,9 +61,13 @@ public class UserIdMapping {
         try { // with external id
             AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
-                            main, appIdentifierWithStorage, appIdentifierWithStorage.getStorage(), externalUserId, UserIdType.EXTERNAL);
+                            main, appIdentifierWithStorage, appIdentifierWithStorage.getStorage(), externalUserId,
+                            UserIdType.EXTERNAL);
 
-            assert(mappingAndStorage.userIdMapping != null); // externalUserId can exist only through an userIdMapping
+            // externalUserId can exist only through an userIdMapping. the above method will raise an
+            // UnknownUserIdException if the external user was not found. we won't have a case where the user is found
+            // and the mapping is null. Hence, the following assert.
+            assert(mappingAndStorage.userIdMapping != null);
             throw new UserIdMappingAlreadyExistsException(
                     superTokensUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId),
                     externalUserId.equals(mappingAndStorage.userIdMapping.externalUserId)
