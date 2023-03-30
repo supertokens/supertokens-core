@@ -277,12 +277,12 @@ public class GetUsersWithSearchTagsTest {
             return;
         }
 
-        // create 1500 emailpassword users
+        // create 1005 emailpassword users
         ArrayList<String> userIds = new ArrayList<>();
 
-        for (int i = 0; i < 1500; i++) {
+        for (int i = 0; i < 1005; i++) {
             userIds.add(EmailPassword.signUp(process.getProcess(), "test" + i + "@example.com", "testPass123").id);
-            Thread.sleep(2);
+            Thread.sleep(10);
         }
         
         // retrieve users
@@ -290,7 +290,7 @@ public class GetUsersWithSearchTagsTest {
         emailList.add("test");
 
         DashboardSearchTags tags = new DashboardSearchTags(emailList, null, null);
-        UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null, tags);
+        UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), null, "ASC", null, null, tags);
         assertEquals(1000, info.users.length);
         for (int i = 0; i < info.users.length; i++) {
            assertEquals(userIds.get(i), info.users[i].user.id);
