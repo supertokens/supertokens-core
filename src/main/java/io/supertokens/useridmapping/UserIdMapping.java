@@ -57,7 +57,7 @@ public class UserIdMapping {
         try { // with supertokens id
             AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                    main, appIdentifierWithStorage, superTokensUserId, UserIdType.ANY);
+                    main, appIdentifierWithStorage, superTokensUserId, UserIdType.SUPERTOKENS);
             if (mappingAndStorage.userIdMapping != null) {
                 throw new UserIdMappingAlreadyExistsException(
                         superTokensUserId == mappingAndStorage.userIdMapping.superTokensUserId,
