@@ -62,8 +62,8 @@ public class UserIdMapping {
         // race condition is fixed.
         try { // with external id
             AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
-                    StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUser(
-                            main, appIdentifierWithStorage, null, externalUserId, UserIdType.EXTERNAL);
+                    StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
+                            main, appIdentifierWithStorage, appIdentifierWithStorage.getStorage(), externalUserId, UserIdType.EXTERNAL);
 
             assert(mappingAndStorage.userIdMapping != null); // externalUserId can exist only through an userIdMapping
             throw new UserIdMappingAlreadyExistsException(

@@ -543,7 +543,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         throw new UnknownUserIdException();
     }
 
-    public static AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingForUser(
+    public static AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
             Main main, AppIdentifier appIdentifier, Storage priorityStorage, String userId,
             UserIdType userIdType) throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
 
@@ -552,7 +552,10 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         if (storages.length == 0) {
             throw new TenantOrAppNotFoundException(appIdentifier);
         }
-        if (priorityStorage != null) {
+
+        // We look for userId in the priorityStorage first just in case multiple storages have the mapping, we
+        // return the mapping from the storage of the tenant from which the request came from.
+        {
             UserIdMapping mapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                     appIdentifier.withStorage(priorityStorage),
                     userId, userIdType);
