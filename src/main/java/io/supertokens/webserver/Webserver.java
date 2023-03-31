@@ -274,6 +274,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new RevokeSessionAPI(main));
         addAPI(new GetDashboardUsersAPI(main));
         addAPI(new GetDashboardSessionsForUserAPI(main));
+        addAPI(new SearchTagsAPI(main));
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),
                 new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));
