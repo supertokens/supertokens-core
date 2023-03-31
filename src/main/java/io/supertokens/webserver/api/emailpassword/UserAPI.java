@@ -104,8 +104,7 @@ public class UserAPI extends WebserverAPI {
                     if (user != null) {
                         io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping =
                                 UserIdMapping.getUserIdMapping(
-                                        tenantIdentifierWithStorage.toAppIdentifierWithStorage(), user.id,
-                                        UserIdType.ANY);
+                                        getAppIdentifierWithStorage(req), user.id, UserIdType.SUPERTOKENS);
                         if (userIdMapping != null) {
                             user.id = userIdMapping.externalUserId;
                         }
