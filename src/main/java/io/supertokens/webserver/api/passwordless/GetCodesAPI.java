@@ -56,6 +56,7 @@ public class GetCodesAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         // logic based on: https://app.code2flow.com/Odo88u7TNKIk
 
         String email = InputParser.getQueryParamOrThrowError(req, "email", true);

@@ -59,6 +59,8 @@ public class UserAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific for get by email or phone
+        // API is app specific for get by id
         // logic based on: https://app.code2flow.com/flowcharts/617a9aafdc97ee415448db74
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", true);
         String email = InputParser.getQueryParamOrThrowError(req, "email", true);
@@ -131,6 +133,7 @@ public class UserAPI extends WebserverAPI {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         // logic based on: https://app.code2flow.com/TXloWHJOwWKg
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);

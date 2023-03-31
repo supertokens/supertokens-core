@@ -47,6 +47,7 @@ public class DeleteCodesAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         // Logic based on: https://app.code2flow.com/0493FY2rkyZm
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
