@@ -77,7 +77,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -112,7 +112,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -148,9 +148,9 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
-        UserInfo user = null;
+        UserInfo user;
         {
             Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL,
                     null, null, null);
@@ -201,9 +201,9 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
-        UserInfo user = null;
+        UserInfo user;
         {
             Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL,
                     null, null, null);
@@ -252,9 +252,9 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
-        UserInfo user = null;
+        UserInfo user;
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -271,17 +271,17 @@ public class PasswordlessConsumeCodeTest {
 
         // create code with email twice
         {
-            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
+            Passwordless.createCode(process.getProcess(), EMAIL, null,
                     null, null);
         }
         {
-            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
+            Passwordless.createCode(process.getProcess(), EMAIL, null,
                     null, null);
         }
 
         // create code with phone number twice
         {
-            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), null,
+            Passwordless.createCode(process.getProcess(), null,
                     PHONE_NUMBER, null, null);
         }
 
@@ -297,7 +297,7 @@ public class PasswordlessConsumeCodeTest {
         assertEquals(2, devices.length);
 
         // consume code
-        Passwordless.ConsumeCodeResponse consumeCode = Passwordless.consumeCode(process.getProcess(),
+        Passwordless.consumeCode(process.getProcess(),
                 codeResponse.deviceId, codeResponse.deviceIdHash, codeResponse.userInputCode, null);
 
         devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
@@ -326,9 +326,9 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
-        UserInfo user = null;
+        UserInfo user;
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -345,17 +345,17 @@ public class PasswordlessConsumeCodeTest {
 
         // create code with email twice
         {
-            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
+            Passwordless.createCode(process.getProcess(), EMAIL, null,
                     null, null);
         }
         {
-            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
+            Passwordless.createCode(process.getProcess(), EMAIL, null,
                     null, null);
         }
 
         // create code with phone number twice
         {
-            Passwordless.CreateCodeResponse codeResponse = Passwordless.createCode(process.getProcess(), null,
+            Passwordless.createCode(process.getProcess(), null,
                     PHONE_NUMBER, null, null);
         }
 
@@ -371,7 +371,7 @@ public class PasswordlessConsumeCodeTest {
         assertEquals(2, devices.length);
 
         // consume code
-        Passwordless.ConsumeCodeResponse consumeCode = Passwordless.consumeCode(process.getProcess(),
+        Passwordless.consumeCode(process.getProcess(),
                 codeResponse.deviceId, codeResponse.deviceIdHash, null, codeResponse.linkCode);
 
         devices = storage.getDevicesByEmail(new TenantIdentifier(null, null, null), EMAIL);
@@ -401,7 +401,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -440,7 +440,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -481,7 +481,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -522,7 +522,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -564,7 +564,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -601,7 +601,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -651,7 +651,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -706,7 +706,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -754,7 +754,7 @@ public class PasswordlessConsumeCodeTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
                 null, null);
@@ -796,7 +796,7 @@ public class PasswordlessConsumeCodeTest {
             return;
         }
 
-        storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         try {
             Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId, createCodeResponse.deviceIdHash,

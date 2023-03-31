@@ -73,7 +73,7 @@ public class PasswordlessCreateCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         // create code
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), EMAIL, null,
@@ -121,7 +121,7 @@ public class PasswordlessCreateCodeTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         // create 'n' devices
         for (int counter = 1; counter <= NUMBER_OF_DEVICES_TO_CREATE; counter++) {
@@ -168,7 +168,7 @@ public class PasswordlessCreateCodeTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
                 PHONE_NUMBER, null, null);
@@ -214,7 +214,7 @@ public class PasswordlessCreateCodeTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         for (int counter = 1; counter <= NUMBER_OF_DEVICES_TO_CREATE; counter++) {
 
@@ -262,7 +262,7 @@ public class PasswordlessCreateCodeTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
                 PHONE_NUMBER, null, null);

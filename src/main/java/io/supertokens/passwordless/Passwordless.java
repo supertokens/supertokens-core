@@ -21,13 +21,15 @@ import io.supertokens.config.Config;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.exceptions.*;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.PasswordlessCode;
 import io.supertokens.pluginInterface.passwordless.PasswordlessDevice;
@@ -61,35 +63,36 @@ public class Passwordless {
             throws RestartFlowException, DuplicateLinkCodeHashException,
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException {
         try {
-            return createCode(new TenantIdentifier(null, null, null), main, email, phoneNumber, deviceId,
-                    userInputCode);
+            Storage storage = StorageLayer.getStorage(main);
+            return createCode(
+                    new TenantIdentifierWithStorage(null, null, null, storage),
+                    main, email, phoneNumber, deviceId, userInputCode);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static CreateCodeResponse createCode(TenantIdentifier tenantIdentifier, Main main, String email,
+    public static CreateCodeResponse createCode(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main, String email,
                                                 String phoneNumber, @Nullable String deviceId,
                                                 @Nullable String userInputCode)
             throws RestartFlowException, DuplicateLinkCodeHashException,
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
             TenantOrAppNotFoundException, BadPermissionException {
 
-        TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
+        TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifierWithStorage);
         if (config == null) {
-            throw new TenantOrAppNotFoundException(tenantIdentifier);
+            throw new TenantOrAppNotFoundException(tenantIdentifierWithStorage);
         }
         if (!config.passwordlessConfig.enabled) {
             throw new BadPermissionException("Passwordless login not enabled for tenant");
         }
 
-        PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(tenantIdentifier,
-                main);
+        PasswordlessSQLStorage passwordlessStorage = tenantIdentifierWithStorage.getPasswordlessStorage();
         if (deviceId == null) {
             while (true) {
                 CreateCodeInfo info = CreateCodeInfo.generate(userInputCode);
                 try {
-                    passwordlessStorage.createDeviceWithCode(tenantIdentifier, email, phoneNumber,
+                    passwordlessStorage.createDeviceWithCode(tenantIdentifierWithStorage, email, phoneNumber,
                             info.linkCodeSalt.encode(), info.code);
 
                     return info.resp;
@@ -102,7 +105,7 @@ public class Passwordless {
         } else {
             PasswordlessDeviceId parsedDeviceId = PasswordlessDeviceId.decodeString(deviceId);
 
-            PasswordlessDevice device = passwordlessStorage.getDevice(tenantIdentifier,
+            PasswordlessDevice device = passwordlessStorage.getDevice(tenantIdentifierWithStorage,
                     parsedDeviceId.getHash().encode());
             if (device == null) {
                 throw new RestartFlowException();
@@ -110,7 +113,7 @@ public class Passwordless {
             while (true) {
                 CreateCodeInfo info = CreateCodeInfo.generate(userInputCode, deviceId, device.linkCodeSalt);
                 try {
-                    passwordlessStorage.createCode(tenantIdentifier, info.code);
+                    passwordlessStorage.createCode(tenantIdentifierWithStorage, info.code);
 
                     return info.resp;
                 } catch (DuplicateLinkCodeHashException e) {
@@ -139,61 +142,55 @@ public class Passwordless {
         return sb.toString();
     }
 
-    public static DeviceWithCodes getDeviceWithCodesById(TenantIdentifier tenantIdentifier, Main main,
-                                                         String deviceId) throws StorageQueryException,
-            StorageTransactionLogicException, NoSuchAlgorithmException, Base64EncodingException,
-            TenantOrAppNotFoundException {
-        return getDeviceWithCodesByIdHash(tenantIdentifier, main,
+    public static DeviceWithCodes getDeviceWithCodesById(
+            TenantIdentifierWithStorage tenantIdentifierWithStorage, String deviceId)
+            throws StorageQueryException, NoSuchAlgorithmException, Base64EncodingException {
+        return getDeviceWithCodesByIdHash(tenantIdentifierWithStorage,
                 PasswordlessDeviceId.decodeString(deviceId).getHash().encode());
     }
 
     @TestOnly
     public static DeviceWithCodes getDeviceWithCodesById(Main main, String deviceId) throws StorageQueryException,
-            StorageTransactionLogicException, NoSuchAlgorithmException, Base64EncodingException {
-        try {
-            return getDeviceWithCodesById(new TenantIdentifier(null, null, null), main, deviceId);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+            NoSuchAlgorithmException, Base64EncodingException {
+        Storage storage = StorageLayer.getStorage(main);
+        return getDeviceWithCodesById(
+                new TenantIdentifierWithStorage(null, null, null, storage),
+                deviceId);
     }
 
     @TestOnly
-    public static DeviceWithCodes getDeviceWithCodesByIdHash(Main main,
-                                                             String deviceIdHash)
-            throws StorageQueryException, StorageTransactionLogicException {
-        try {
-            return getDeviceWithCodesByIdHash(new TenantIdentifier(null, null, null), main, deviceIdHash);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+    public static DeviceWithCodes getDeviceWithCodesByIdHash(Main main, String deviceIdHash)
+            throws StorageQueryException {
+        Storage storage = StorageLayer.getStorage(main);
+        return getDeviceWithCodesByIdHash(
+                new TenantIdentifierWithStorage(null, null, null, storage),
+                deviceIdHash);
     }
 
-    public static DeviceWithCodes getDeviceWithCodesByIdHash(TenantIdentifier tenantIdentifier, Main main,
+    public static DeviceWithCodes getDeviceWithCodesByIdHash(TenantIdentifierWithStorage tenantIdentifierWithStorage,
                                                              String deviceIdHash)
-            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(tenantIdentifier,
-                main);
+            throws StorageQueryException {
+        PasswordlessSQLStorage passwordlessStorage = tenantIdentifierWithStorage.getPasswordlessStorage();
 
-        PasswordlessDevice device = passwordlessStorage.getDevice(tenantIdentifier, deviceIdHash);
+        PasswordlessDevice device = passwordlessStorage.getDevice(tenantIdentifierWithStorage, deviceIdHash);
 
         if (device == null) {
             return null;
         }
-        PasswordlessCode[] codes = passwordlessStorage.getCodesOfDevice(tenantIdentifier, deviceIdHash);
+        PasswordlessCode[] codes = passwordlessStorage.getCodesOfDevice(tenantIdentifierWithStorage, deviceIdHash);
 
         return new DeviceWithCodes(device, codes);
     }
 
-    public static List<DeviceWithCodes> getDevicesWithCodesByEmail(TenantIdentifier tenantIdentifier,
-                                                                   Main main, String email)
-            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(tenantIdentifier,
-                main);
+    public static List<DeviceWithCodes> getDevicesWithCodesByEmail(
+            TenantIdentifierWithStorage tenantIdentifierWithStorage, String email)
+            throws StorageQueryException {
+        PasswordlessSQLStorage passwordlessStorage = tenantIdentifierWithStorage.getPasswordlessStorage();
 
-        PasswordlessDevice[] devices = passwordlessStorage.getDevicesByEmail(tenantIdentifier, email);
+        PasswordlessDevice[] devices = passwordlessStorage.getDevicesByEmail(tenantIdentifierWithStorage, email);
         ArrayList<DeviceWithCodes> result = new ArrayList<DeviceWithCodes>();
         for (PasswordlessDevice device : devices) {
-            PasswordlessCode[] codes = passwordlessStorage.getCodesOfDevice(tenantIdentifier, device.deviceIdHash);
+            PasswordlessCode[] codes = passwordlessStorage.getCodesOfDevice(tenantIdentifierWithStorage, device.deviceIdHash);
             result.add(new DeviceWithCodes(device, codes));
         }
 
@@ -202,24 +199,21 @@ public class Passwordless {
 
     @TestOnly
     public static List<DeviceWithCodes> getDevicesWithCodesByEmail(Main main, String email)
-            throws StorageQueryException, StorageTransactionLogicException {
-        try {
-            return getDevicesWithCodesByEmail(new TenantIdentifier(null, null, null), main, email);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+            throws StorageQueryException {
+        Storage storage = StorageLayer.getStorage(main);
+        return getDevicesWithCodesByEmail(
+                new TenantIdentifierWithStorage(null, null, null, storage), email);
     }
 
-    public static List<DeviceWithCodes> getDevicesWithCodesByPhoneNumber(TenantIdentifier tenantIdentifier,
-                                                                         Main main, String phoneNumber)
-            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(tenantIdentifier,
-                main);
+    public static List<DeviceWithCodes> getDevicesWithCodesByPhoneNumber(
+            TenantIdentifierWithStorage tenantIdentifierWithStorage, String phoneNumber)
+            throws StorageQueryException {
+        PasswordlessSQLStorage passwordlessStorage = tenantIdentifierWithStorage.getPasswordlessStorage();
 
-        PasswordlessDevice[] devices = passwordlessStorage.getDevicesByPhoneNumber(tenantIdentifier, phoneNumber);
+        PasswordlessDevice[] devices = passwordlessStorage.getDevicesByPhoneNumber(tenantIdentifierWithStorage, phoneNumber);
         ArrayList<DeviceWithCodes> result = new ArrayList<DeviceWithCodes>();
         for (PasswordlessDevice device : devices) {
-            PasswordlessCode[] codes = passwordlessStorage.getCodesOfDevice(tenantIdentifier, device.deviceIdHash);
+            PasswordlessCode[] codes = passwordlessStorage.getCodesOfDevice(tenantIdentifierWithStorage, device.deviceIdHash);
             result.add(new DeviceWithCodes(device, codes));
         }
 
@@ -228,12 +222,11 @@ public class Passwordless {
 
     @TestOnly
     public static List<DeviceWithCodes> getDevicesWithCodesByPhoneNumber(Main main, String phoneNumber)
-            throws StorageQueryException, StorageTransactionLogicException {
-        try {
-            return getDevicesWithCodesByPhoneNumber(new TenantIdentifier(null, null, null), main, phoneNumber);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+            throws StorageQueryException {
+        Storage storage = StorageLayer.getStorage(main);
+        return getDevicesWithCodesByPhoneNumber(
+                new TenantIdentifierWithStorage(null, null, null, storage),
+                phoneNumber);
     }
 
     @TestOnly
@@ -244,14 +237,16 @@ public class Passwordless {
             IncorrectUserInputCodeException, DeviceIdHashMismatchException, StorageTransactionLogicException,
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException {
         try {
-            return consumeCode(new TenantIdentifier(null, null, null), main, deviceId, deviceIdHashFromUser,
-                    userInputCode, linkCode);
+            Storage storage = StorageLayer.getStorage(main);
+            return consumeCode(
+                    new TenantIdentifierWithStorage(null, null, null, storage),
+                    main, deviceId, deviceIdHashFromUser, userInputCode, linkCode);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static ConsumeCodeResponse consumeCode(TenantIdentifier tenantIdentifier, Main main,
+    public static ConsumeCodeResponse consumeCode(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
                                                   String deviceId, String deviceIdHashFromUser,
                                                   String userInputCode, String linkCode)
             throws RestartFlowException, ExpiredUserInputCodeException,
@@ -259,19 +254,18 @@ public class Passwordless {
             StorageQueryException, NoSuchAlgorithmException, InvalidKeyException, IOException, Base64EncodingException,
             TenantOrAppNotFoundException, BadPermissionException {
 
-        TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
+        TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifierWithStorage);
         if (config == null) {
-            throw new TenantOrAppNotFoundException(tenantIdentifier);
+            throw new TenantOrAppNotFoundException(tenantIdentifierWithStorage);
         }
         if (!config.passwordlessConfig.enabled) {
             throw new BadPermissionException("Passwordless login not enabled for tenant");
         }
 
-        PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(tenantIdentifier,
-                main);
-        long passwordlessCodeLifetime = Config.getConfig(tenantIdentifier, main)
+        PasswordlessSQLStorage passwordlessStorage = tenantIdentifierWithStorage.getPasswordlessStorage();
+        long passwordlessCodeLifetime = Config.getConfig(tenantIdentifierWithStorage, main)
                 .getPasswordlessCodeLifetime();
-        int maxCodeInputAttempts = Config.getConfig(tenantIdentifier, main)
+        int maxCodeInputAttempts = Config.getConfig(tenantIdentifierWithStorage, main)
                 .getPasswordlessMaxCodeInputAttempts();
 
         PasswordlessDeviceIdHash deviceIdHash;
@@ -280,7 +274,7 @@ public class Passwordless {
             PasswordlessLinkCode parsedCode = PasswordlessLinkCode.decodeString(linkCode);
             linkCodeHash = parsedCode.getHash();
 
-            PasswordlessCode code = passwordlessStorage.getCodeByLinkCodeHash(tenantIdentifier, linkCodeHash.encode());
+            PasswordlessCode code = passwordlessStorage.getCodeByLinkCodeHash(tenantIdentifierWithStorage, linkCodeHash.encode());
             if (code == null || code.createdAt < (System.currentTimeMillis() - passwordlessCodeLifetime)) {
                 throw new RestartFlowException();
             }
@@ -290,7 +284,7 @@ public class Passwordless {
             PasswordlessDeviceId parsedDeviceId = PasswordlessDeviceId.decodeString(deviceId);
 
             deviceIdHash = parsedDeviceId.getHash();
-            PasswordlessDevice device = passwordlessStorage.getDevice(tenantIdentifier, deviceIdHash.encode());
+            PasswordlessDevice device = passwordlessStorage.getDevice(tenantIdentifierWithStorage, deviceIdHash.encode());
             if (device == null) {
                 throw new RestartFlowException();
             }
@@ -305,19 +299,19 @@ public class Passwordless {
         PasswordlessDevice consumedDevice;
         try {
             consumedDevice = passwordlessStorage.startTransaction(con -> {
-                PasswordlessDevice device = passwordlessStorage.getDevice_Transaction(tenantIdentifier, con,
+                PasswordlessDevice device = passwordlessStorage.getDevice_Transaction(tenantIdentifierWithStorage, con,
                         deviceIdHash.encode());
                 if (device == null) {
                     throw new StorageTransactionLogicException(new RestartFlowException());
                 }
                 if (device.failedAttempts >= maxCodeInputAttempts) {
                     // This can happen if the configured maxCodeInputAttempts changes
-                    passwordlessStorage.deleteDevice_Transaction(tenantIdentifier, con, deviceIdHash.encode());
+                    passwordlessStorage.deleteDevice_Transaction(tenantIdentifierWithStorage, con, deviceIdHash.encode());
                     passwordlessStorage.commitTransaction(con);
                     throw new StorageTransactionLogicException(new RestartFlowException());
                 }
 
-                PasswordlessCode code = passwordlessStorage.getCodeByLinkCodeHash_Transaction(tenantIdentifier, con,
+                PasswordlessCode code = passwordlessStorage.getCodeByLinkCodeHash_Transaction(tenantIdentifierWithStorage, con,
                         linkCodeHash.encode());
                 if (code == null || code.createdAt < System.currentTimeMillis() - passwordlessCodeLifetime) {
                     if (deviceId != null) {
@@ -325,11 +319,11 @@ public class Passwordless {
                         // the code expired. This means that we need to increment failedAttempts or clean up the device
                         // if it would exceed the configured max.
                         if (device.failedAttempts + 1 >= maxCodeInputAttempts) {
-                            passwordlessStorage.deleteDevice_Transaction(tenantIdentifier, con, deviceIdHash.encode());
+                            passwordlessStorage.deleteDevice_Transaction(tenantIdentifierWithStorage, con, deviceIdHash.encode());
                             passwordlessStorage.commitTransaction(con);
                             throw new StorageTransactionLogicException(new RestartFlowException());
                         } else {
-                            passwordlessStorage.incrementDeviceFailedAttemptCount_Transaction(tenantIdentifier, con,
+                            passwordlessStorage.incrementDeviceFailedAttemptCount_Transaction(tenantIdentifierWithStorage, con,
                                     deviceIdHash.encode());
                             passwordlessStorage.commitTransaction(con);
 
@@ -346,9 +340,9 @@ public class Passwordless {
                 }
 
                 if (device.email != null) {
-                    passwordlessStorage.deleteDevicesByEmail_Transaction(tenantIdentifier, con, device.email);
+                    passwordlessStorage.deleteDevicesByEmail_Transaction(tenantIdentifierWithStorage, con, device.email);
                 } else if (device.phoneNumber != null) {
-                    passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(tenantIdentifier, con,
+                    passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(tenantIdentifierWithStorage, con,
                             device.phoneNumber);
                 }
 
@@ -370,15 +364,15 @@ public class Passwordless {
 
         // Getting here means that we successfully consumed the code
         UserInfo user = consumedDevice.email != null ?
-                passwordlessStorage.getUserByEmail(tenantIdentifier, consumedDevice.email)
-                : passwordlessStorage.getUserByPhoneNumber(tenantIdentifier, consumedDevice.phoneNumber);
+                passwordlessStorage.getUserByEmail(tenantIdentifierWithStorage, consumedDevice.email)
+                : passwordlessStorage.getUserByPhoneNumber(tenantIdentifierWithStorage, consumedDevice.phoneNumber);
         if (user == null) {
             while (true) {
                 try {
                     String userId = Utils.getUUID();
                     long timeJoined = System.currentTimeMillis();
                     user = new UserInfo(userId, consumedDevice.email, consumedDevice.phoneNumber, timeJoined);
-                    passwordlessStorage.createUser(tenantIdentifier, user);
+                    passwordlessStorage.createUser(tenantIdentifierWithStorage, user);
                     return new ConsumeCodeResponse(true, user);
                 } catch (DuplicateEmailException | DuplicatePhoneNumberException e) {
                     // Getting these would mean that between getting the user and trying creating it:
@@ -396,10 +390,10 @@ public class Passwordless {
             // We do not need this cleanup if we are creating the user, since it uses the email/phoneNumber of the
             // device, which has already been cleaned up
             if (user.email != null && !user.email.equals(consumedDevice.email)) {
-                removeCodesByEmail(tenantIdentifier, main, user.email);
+                removeCodesByEmail(tenantIdentifierWithStorage, user.email);
             }
             if (user.phoneNumber != null && !user.phoneNumber.equals(consumedDevice.phoneNumber)) {
-                removeCodesByPhoneNumber(tenantIdentifier, main, user.phoneNumber);
+                removeCodesByPhoneNumber(tenantIdentifierWithStorage, user.phoneNumber);
             }
         }
         return new ConsumeCodeResponse(false, user);
@@ -408,19 +402,16 @@ public class Passwordless {
     @TestOnly
     public static void removeCode(Main main, String codeId)
             throws StorageQueryException, StorageTransactionLogicException {
-        try {
-            removeCode(new TenantIdentifier(null, null, null), main, codeId);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        removeCode(new TenantIdentifierWithStorage(null, null, null, storage),
+                codeId);
     }
 
-    public static void removeCode(TenantIdentifier tenantIdentifier, Main main, String codeId)
-            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(tenantIdentifier,
-                main);
+    public static void removeCode(TenantIdentifierWithStorage tenantIdentifierWithStorage, String codeId)
+            throws StorageQueryException, StorageTransactionLogicException {
+        PasswordlessSQLStorage passwordlessStorage = tenantIdentifierWithStorage.getPasswordlessStorage();
 
-        PasswordlessCode code = passwordlessStorage.getCode(tenantIdentifier, codeId);
+        PasswordlessCode code = passwordlessStorage.getCode(tenantIdentifierWithStorage, codeId);
 
         if (code == null) {
             return;
@@ -428,9 +419,9 @@ public class Passwordless {
 
         passwordlessStorage.startTransaction(con -> {
             // Locking the device
-            passwordlessStorage.getDevice_Transaction(tenantIdentifier, con, code.deviceIdHash);
+            passwordlessStorage.getDevice_Transaction(tenantIdentifierWithStorage, con, code.deviceIdHash);
 
-            PasswordlessCode[] allCodes = passwordlessStorage.getCodesOfDevice_Transaction(tenantIdentifier, con,
+            PasswordlessCode[] allCodes = passwordlessStorage.getCodesOfDevice_Transaction(tenantIdentifierWithStorage, con,
                     code.deviceIdHash);
             if (!Stream.of(allCodes).anyMatch(code::equals)) {
                 // Already deleted
@@ -439,10 +430,10 @@ public class Passwordless {
 
             if (allCodes.length == 1) {
                 // If the device contains only the current code we should delete the device as well.
-                passwordlessStorage.deleteDevice_Transaction(tenantIdentifier, con, code.deviceIdHash);
+                passwordlessStorage.deleteDevice_Transaction(tenantIdentifierWithStorage, con, code.deviceIdHash);
             } else {
                 // Otherwise we can just delete the code
-                passwordlessStorage.deleteCode_Transaction(tenantIdentifier, con, codeId);
+                passwordlessStorage.deleteCode_Transaction(tenantIdentifierWithStorage, con, codeId);
             }
             passwordlessStorage.commitTransaction(con);
             return null;
@@ -452,20 +443,17 @@ public class Passwordless {
     @TestOnly
     public static void removeCodesByEmail(Main main, String email)
             throws StorageQueryException, StorageTransactionLogicException {
-        try {
-            removeCodesByEmail(new TenantIdentifier(null, null, null), main, email);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        removeCodesByEmail(
+                new TenantIdentifierWithStorage(null, null, null, storage), email);
     }
 
-    public static void removeCodesByEmail(TenantIdentifier tenantIdentifier, Main main, String email)
-            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(tenantIdentifier,
-                main);
+    public static void removeCodesByEmail(TenantIdentifierWithStorage tenantIdentifierWithStorage, String email)
+            throws StorageQueryException, StorageTransactionLogicException {
+        PasswordlessSQLStorage passwordlessStorage = tenantIdentifierWithStorage.getPasswordlessStorage();
 
         passwordlessStorage.startTransaction(con -> {
-            passwordlessStorage.deleteDevicesByEmail_Transaction(tenantIdentifier, con, email);
+            passwordlessStorage.deleteDevicesByEmail_Transaction(tenantIdentifierWithStorage, con, email);
             passwordlessStorage.commitTransaction(con);
             return null;
         });
@@ -475,21 +463,19 @@ public class Passwordless {
     public static void removeCodesByPhoneNumber(Main main,
                                                 String phoneNumber)
             throws StorageQueryException, StorageTransactionLogicException {
-        try {
-            removeCodesByPhoneNumber(new TenantIdentifier(null, null, null), main, phoneNumber);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        removeCodesByPhoneNumber(
+                new TenantIdentifierWithStorage(null, null, null, storage),
+                phoneNumber);
     }
 
-    public static void removeCodesByPhoneNumber(TenantIdentifier tenantIdentifier, Main main,
+    public static void removeCodesByPhoneNumber(TenantIdentifierWithStorage tenantIdentifierWithStorage,
                                                 String phoneNumber)
-            throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        PasswordlessSQLStorage passwordlessStorage = StorageLayer.getPasswordlessStorage(tenantIdentifier,
-                main);
+            throws StorageQueryException, StorageTransactionLogicException {
+        PasswordlessSQLStorage passwordlessStorage = tenantIdentifierWithStorage.getPasswordlessStorage();
 
         passwordlessStorage.startTransaction(con -> {
-            passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(tenantIdentifier, con, phoneNumber);
+            passwordlessStorage.deleteDevicesByPhoneNumber_Transaction(tenantIdentifierWithStorage, con, phoneNumber);
             passwordlessStorage.commitTransaction(con);
             return null;
         });
@@ -498,50 +484,43 @@ public class Passwordless {
     @TestOnly
     public static UserInfo getUserById(Main main, String userId)
             throws StorageQueryException {
-        try {
-            return getUserById(new TenantIdentifier(null, null, null), main, userId);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return getUserById(
+                new AppIdentifierWithStorage(null, null, storage), userId);
     }
 
-    public static UserInfo getUserById(TenantIdentifier tenantIdentifier, Main main, String userId)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getPasswordlessStorage(tenantIdentifier, main)
-                .getUserById(tenantIdentifier.toAppIdentifier(), userId);
+    public static UserInfo getUserById(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
+            throws StorageQueryException {
+        return appIdentifierWithStorage.getPasswordlessStorage()
+                .getUserById(appIdentifierWithStorage, userId);
     }
 
     @TestOnly
     public static UserInfo getUserByPhoneNumber(Main main,
                                                 String phoneNumber) throws StorageQueryException {
-        try {
-            return getUserByPhoneNumber(new TenantIdentifier(null, null, null), main, phoneNumber);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return getUserByPhoneNumber(
+                new TenantIdentifierWithStorage(null, null, null, storage),
+                phoneNumber);
     }
 
-    public static UserInfo getUserByPhoneNumber(TenantIdentifier tenantIdentifier, Main main,
-                                                String phoneNumber)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getPasswordlessStorage(tenantIdentifier, main)
-                .getUserByPhoneNumber(tenantIdentifier, phoneNumber);
+    public static UserInfo getUserByPhoneNumber(TenantIdentifierWithStorage tenantIdentifierWithStorage,
+                                                String phoneNumber) throws StorageQueryException {
+        return tenantIdentifierWithStorage.getPasswordlessStorage()
+                .getUserByPhoneNumber(tenantIdentifierWithStorage, phoneNumber);
     }
 
     @TestOnly
     public static UserInfo getUserByEmail(Main main, String email)
             throws StorageQueryException {
-        try {
-            return getUserByEmail(new TenantIdentifier(null, null, null), main, email);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return getUserByEmail(
+                new TenantIdentifierWithStorage(null, null, null,storage), email);
     }
 
-
-    public static UserInfo getUserByEmail(TenantIdentifier tenantIdentifier, Main main, String email)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getPasswordlessStorage(tenantIdentifier, main).getUserByEmail(tenantIdentifier, email);
+    public static UserInfo getUserByEmail(TenantIdentifierWithStorage tenantIdentifierWithStorage, String email)
+            throws StorageQueryException {
+        return tenantIdentifierWithStorage.getPasswordlessStorage().getUserByEmail(tenantIdentifierWithStorage, email);
     }
 
     @TestOnly
@@ -549,22 +528,20 @@ public class Passwordless {
                                   FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
             DuplicatePhoneNumberException, UserWithoutContactInfoException {
-        try {
-            updateUser(new TenantIdentifier(null, null, null), main, userId, emailUpdate, phoneNumberUpdate);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        updateUser(new AppIdentifierWithStorage(null, null, storage),
+                userId, emailUpdate, phoneNumberUpdate);
     }
 
-    public static void updateUser(TenantIdentifier tenantIdentifier, Main main, String userId,
+    public static void updateUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId,
                                   FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
-            DuplicatePhoneNumberException, UserWithoutContactInfoException, TenantOrAppNotFoundException {
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(tenantIdentifier, main);
+            DuplicatePhoneNumberException, UserWithoutContactInfoException {
+        PasswordlessSQLStorage storage = appIdentifierWithStorage.getPasswordlessStorage();
 
         // We do not lock the user here, because we decided that even if the device cleanup used outdated information
         // it wouldn't leave the system in an incosistent state/cause problems.
-        UserInfo user = storage.getUserById(tenantIdentifier.toAppIdentifier(), userId);
+        UserInfo user = storage.getUserById(appIdentifierWithStorage, userId);
         if (user == null) {
             throw new UnknownUserIdException();
         }
@@ -578,33 +555,33 @@ public class Passwordless {
             storage.startTransaction(con -> {
                 if (emailUpdate != null && !Objects.equals(emailUpdate.newValue, user.email)) {
                     try {
-                        storage.updateUserEmail_Transaction(tenantIdentifier.toAppIdentifier(), con, userId,
+                        storage.updateUserEmail_Transaction(appIdentifierWithStorage, con, userId,
                                 emailUpdate.newValue);
                     } catch (UnknownUserIdException | DuplicateEmailException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     if (user.email != null) {
-                        storage.deleteDevicesByEmail_Transaction(tenantIdentifier.toAppIdentifier(), con, user.email,
+                        storage.deleteDevicesByEmail_Transaction(appIdentifierWithStorage, con, user.email,
                                 userId);
                     }
                     if (emailUpdate.newValue != null) {
-                        storage.deleteDevicesByEmail_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                        storage.deleteDevicesByEmail_Transaction(appIdentifierWithStorage, con,
                                 emailUpdate.newValue, userId);
                     }
                 }
                 if (phoneNumberUpdate != null && !Objects.equals(phoneNumberUpdate.newValue, user.phoneNumber)) {
                     try {
-                        storage.updateUserPhoneNumber_Transaction(tenantIdentifier.toAppIdentifier(), con, userId,
+                        storage.updateUserPhoneNumber_Transaction(appIdentifierWithStorage, con, userId,
                                 phoneNumberUpdate.newValue);
                     } catch (UnknownUserIdException | DuplicatePhoneNumberException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     if (user.phoneNumber != null) {
-                        storage.deleteDevicesByPhoneNumber_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                        storage.deleteDevicesByPhoneNumber_Transaction(appIdentifierWithStorage, con,
                                 user.phoneNumber, userId);
                     }
                     if (phoneNumberUpdate.newValue != null) {
-                        storage.deleteDevicesByPhoneNumber_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                        storage.deleteDevicesByPhoneNumber_Transaction(appIdentifierWithStorage, con,
                                 phoneNumberUpdate.newValue, userId);
                     }
                 }

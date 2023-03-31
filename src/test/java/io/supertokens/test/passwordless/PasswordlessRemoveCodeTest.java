@@ -34,8 +34,7 @@ import org.junit.rules.TestRule;
 
 import static io.supertokens.test.passwordless.PasswordlessUtility.EMAIL;
 import static io.supertokens.test.passwordless.PasswordlessUtility.PHONE_NUMBER;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /**
  * This UT encompasses all tests related to remove code
@@ -75,7 +74,7 @@ public class PasswordlessRemoveCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
                 PHONE_NUMBER, null, null);
@@ -101,7 +100,7 @@ public class PasswordlessRemoveCodeTest {
             // verify device retrieved
             assertNotNull(device);
             assertEquals(createCodeResponse.deviceIdHash, device.deviceIdHash);
-            assertEquals(null, device.email);
+            assertNull(device.email);
             assertEquals(PHONE_NUMBER, device.phoneNumber);
             assertEquals(0, device.failedAttempts);
 
@@ -139,7 +138,7 @@ public class PasswordlessRemoveCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
                 PHONE_NUMBER, null, null);
@@ -173,7 +172,7 @@ public class PasswordlessRemoveCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         Passwordless.CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), null,
                 PHONE_NUMBER, null, null);
@@ -196,9 +195,6 @@ public class PasswordlessRemoveCodeTest {
 
     /**
      * removeCodesByEmail
-     */
-
-    /**
      * removes devices with matching email (leaving others)
      *
      * @throws Exception
@@ -215,7 +211,7 @@ public class PasswordlessRemoveCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         String alternate_email = "alternateTest@example.com";
 
@@ -248,9 +244,6 @@ public class PasswordlessRemoveCodeTest {
 
     /**
      * removeCodesByPhoneNumber
-     */
-
-    /**
      * removes devices with matching phone number (leaving others)
      *
      * @throws Exception
@@ -267,7 +260,7 @@ public class PasswordlessRemoveCodeTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         String alternate_phoneNumber = "+442071838751";
 

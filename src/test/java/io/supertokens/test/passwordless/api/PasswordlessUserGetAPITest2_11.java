@@ -159,7 +159,7 @@ public class PasswordlessUserGetAPITest2_11 {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         // length of user ID needs to be 36 character long, otherwise it throws error
         // with postgres DB

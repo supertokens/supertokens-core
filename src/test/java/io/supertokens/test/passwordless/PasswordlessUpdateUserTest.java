@@ -36,8 +36,7 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import static io.supertokens.test.passwordless.PasswordlessUtility.*;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.*;
 
 /**
  * This UT encompasses tests related to update user
@@ -74,16 +73,15 @@ public class PasswordlessUpdateUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null, user_two = null;
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         createUserWith(process, EMAIL, null);
         createUserWith(process, alternate_email, null);
 
-        user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        UserInfo user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertNotNull(user);
 
-        user_two = storage.getUserByEmail(new TenantIdentifier(null, null, null), alternate_email);
+        UserInfo user_two = storage.getUserByEmail(new TenantIdentifier(null, null, null), alternate_email);
         assertNotNull(user_two);
 
         Exception ex = null;
@@ -119,15 +117,14 @@ public class PasswordlessUpdateUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null, user_two = null;
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         createUserWith(process, null, PHONE_NUMBER);
         createUserWith(process, null, alternate_phoneNumber);
 
-        user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
+        UserInfo user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
         assertNotNull(user);
-        user_two = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), alternate_phoneNumber);
+        UserInfo user_two = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), alternate_phoneNumber);
         assertNotNull(user_two);
 
         Exception ex = null;
@@ -166,12 +163,11 @@ public class PasswordlessUpdateUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         createUserWith(process, EMAIL, null);
 
-        user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        UserInfo user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertNotNull(user);
 
         Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(alternate_email), null);
@@ -200,12 +196,11 @@ public class PasswordlessUpdateUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
-        Passwordless.ConsumeCodeResponse consumeCodeResponse = createUserWith(process, null, PHONE_NUMBER);
+        createUserWith(process, null, PHONE_NUMBER);
 
-        user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
+        UserInfo user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
         assertNotNull(user);
 
         Passwordless.updateUser(process.getProcess(), user.id, null,
@@ -234,19 +229,18 @@ public class PasswordlessUpdateUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         createUserWith(process, EMAIL, null);
 
-        user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        UserInfo user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertNotNull(user);
 
         Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(null),
                 new Passwordless.FieldUpdate(PHONE_NUMBER));
 
         assertEquals(PHONE_NUMBER, storage.getUserById(new AppIdentifier(null, null), user.id).phoneNumber);
-        assertEquals(null, storage.getUserById(new AppIdentifier(null, null), user.id).email);
+        assertNull(storage.getUserById(new AppIdentifier(null, null), user.id).email);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -269,19 +263,18 @@ public class PasswordlessUpdateUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         createUserWith(process, null, PHONE_NUMBER);
 
-        user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
+        UserInfo user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
         assertNotNull(user);
 
         Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(EMAIL),
                 new Passwordless.FieldUpdate(null));
 
         assertEquals(EMAIL, storage.getUserById(new AppIdentifier(null, null), user.id).email);
-        assertEquals(null, storage.getUserById(new AppIdentifier(null, null), user.id).phoneNumber);
+        assertNull(storage.getUserById(new AppIdentifier(null, null), user.id).phoneNumber);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -304,12 +297,11 @@ public class PasswordlessUpdateUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         createUserWith(process, null, PHONE_NUMBER);
 
-        user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
+        UserInfo user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
         assertNotNull(user);
         Exception ex = null;
 
@@ -344,12 +336,11 @@ public class PasswordlessUpdateUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         createUserWith(process, EMAIL, null);
 
-        user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
+        UserInfo user = storage.getUserByEmail(new TenantIdentifier(null, null, null), EMAIL);
         assertNotNull(user);
 
         Exception ex = null;
@@ -384,12 +375,11 @@ public class PasswordlessUpdateUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         createUserWith(process, null, PHONE_NUMBER);
 
-        user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
+        UserInfo user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
         assertNotNull(user);
 
         Exception ex = null;
@@ -425,12 +415,11 @@ public class PasswordlessUpdateUserTest {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
-        UserInfo user = null;
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         createUserWith(process, null, PHONE_NUMBER);
 
-        user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
+        UserInfo user = storage.getUserByPhoneNumber(new TenantIdentifier(null, null, null), PHONE_NUMBER);
         assertNotNull(user);
 
         Passwordless.updateUser(process.getProcess(), user.id, new Passwordless.FieldUpdate(EMAIL),

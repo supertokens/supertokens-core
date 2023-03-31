@@ -47,6 +47,7 @@ public class DeleteCodesAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         // Logic based on: https://app.code2flow.com/0493FY2rkyZm
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
@@ -63,9 +64,9 @@ public class DeleteCodesAPI extends WebserverAPI {
         try {
             if (email != null) {
                 email = Utils.normaliseEmail(email);
-                Passwordless.removeCodesByEmail(this.getTenantIdentifierWithStorageFromRequest(req), main, email);
+                Passwordless.removeCodesByEmail(this.getTenantIdentifierWithStorageFromRequest(req), email);
             } else {
-                Passwordless.removeCodesByPhoneNumber(this.getTenantIdentifierWithStorageFromRequest(req), main, phoneNumber);
+                Passwordless.removeCodesByPhoneNumber(this.getTenantIdentifierWithStorageFromRequest(req), phoneNumber);
             }
         } catch (StorageTransactionLogicException | StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);

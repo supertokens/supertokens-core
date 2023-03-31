@@ -161,7 +161,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
 
         String email = "test@example.com";
         String codeId = io.supertokens.utils.Utils.getUUID();
@@ -220,7 +220,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String email = "test@example.com";
         String codeId = io.supertokens.utils.Utils.getUUID();
 
@@ -277,7 +277,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String phoneNumber = "+918989898989";
         String codeId = io.supertokens.utils.Utils.getUUID();
 
@@ -335,7 +335,7 @@ public class PasswordlessGetCodesAPITest2_11 {
             return;
         }
 
-        PasswordlessStorage storage = StorageLayer.getPasswordlessStorage(process.getProcess());
+        PasswordlessStorage storage = (PasswordlessStorage) StorageLayer.getStorage(process.getProcess());
         String deviceID = "randomDeviceID";
         String phoneNumber = "+918989898989";
 

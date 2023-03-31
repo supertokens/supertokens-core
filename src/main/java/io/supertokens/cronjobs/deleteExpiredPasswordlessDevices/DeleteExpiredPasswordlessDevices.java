@@ -60,7 +60,7 @@ public class DeleteExpiredPasswordlessDevices extends CronTask {
             return;
         }
 
-        PasswordlessSQLStorage storage = StorageLayer.getPasswordlessStorage(tenantIdentifier, this.main);
+        PasswordlessSQLStorage storage = (PasswordlessSQLStorage) StorageLayer.getStorage(tenantIdentifier, this.main);
 
         long codeExpirationCutoff = System.currentTimeMillis() -
                 Config.getConfig(tenantIdentifier, main).getPasswordlessCodeLifetime();
