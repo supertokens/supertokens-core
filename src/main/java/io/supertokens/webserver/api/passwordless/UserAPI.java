@@ -95,7 +95,7 @@ public class UserAPI extends WebserverAPI {
                 user = Passwordless.getUserByEmail(this.getTenantIdentifierWithStorageFromRequest(req), email);
                 if (user != null) {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(),
+                            this.getAppIdentifierWithStorage(req),
                             user.id, UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
@@ -105,7 +105,7 @@ public class UserAPI extends WebserverAPI {
                 user = Passwordless.getUserByPhoneNumber(this.getTenantIdentifierWithStorageFromRequest(req), phoneNumber);
                 if (user != null) {
                     UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                            this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(),
+                            this.getAppIdentifierWithStorage(req),
                             user.id, UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;

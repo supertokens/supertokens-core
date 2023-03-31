@@ -85,7 +85,7 @@ public class ConsumeCodeAPI extends WebserverAPI {
                     userInputCode, linkCode);
 
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(),
+                    this.getAppIdentifierWithStorage(req),
                     consumeCodeResponse.user.id, UserIdType.ANY);
             if (userIdMapping != null) {
                 consumeCodeResponse.user.id = userIdMapping.externalUserId;
