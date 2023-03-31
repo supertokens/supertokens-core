@@ -19,11 +19,10 @@ package io.supertokens.thirdparty;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.TenantConfig;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.ThirdPartyConfig;
+import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
@@ -53,21 +52,21 @@ public class ThirdParty {
     // as seen below. But then, in newer versions, we stopped doing that cause of
     // https://github.com/supertokens/supertokens-core/issues/295, so we changed the API spec.
     @Deprecated
-    public static SignInUpResponse signInUp2_7(TenantIdentifier tenantIdentifier, Main main,
+    public static SignInUpResponse signInUp2_7(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
                                                String thirdPartyId, String thirdPartyUserId, String email,
                                                boolean isEmailVerified)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        SignInUpResponse response = signInUpHelper(tenantIdentifier, main, thirdPartyId, thirdPartyUserId,
+        SignInUpResponse response = signInUpHelper(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId,
                 email);
 
         if (isEmailVerified) {
             try {
-                StorageLayer.getEmailVerificationStorage(tenantIdentifier, main).startTransaction(con -> {
+                StorageLayer.getEmailVerificationStorage(tenantIdentifierWithStorage, main).startTransaction(con -> {
                     try {
-                        StorageLayer.getEmailVerificationStorage(tenantIdentifier, main)
-                                .updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                        StorageLayer.getEmailVerificationStorage(tenantIdentifierWithStorage, main)
+                                .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
                                         response.user.id, response.user.email, true);
-                        StorageLayer.getEmailVerificationStorage(tenantIdentifier, main)
+                        StorageLayer.getEmailVerificationStorage(tenantIdentifierWithStorage, main)
                                 .commitTransaction(con);
                         return null;
                     } catch (TenantOrAppNotFoundException e) {
@@ -91,8 +90,10 @@ public class ThirdParty {
                                                String thirdPartyId, String thirdPartyUserId, String email,
                                                boolean isEmailVerified) throws StorageQueryException {
         try {
-            return signInUp2_7(new TenantIdentifier(null, null, null), main, thirdPartyId, thirdPartyUserId, email,
-                    isEmailVerified);
+            Storage storage = StorageLayer.getStorage(main);
+            return signInUp2_7(
+                    new TenantIdentifierWithStorage(null, null, null, storage), main,
+                    thirdPartyId, thirdPartyUserId, email, isEmailVerified);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -102,32 +103,35 @@ public class ThirdParty {
     public static SignInUpResponse signInUp(Main main, String thirdPartyId, String thirdPartyUserId, String email)
             throws StorageQueryException {
         try {
-            return signInUp(new TenantIdentifier(null, null, null), main, thirdPartyId, thirdPartyUserId, email);
+            Storage storage = StorageLayer.getStorage(main);
+            return signInUp(
+                    new TenantIdentifierWithStorage(null, null, null, storage), main,
+                    thirdPartyId, thirdPartyUserId, email);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static SignInUpResponse signInUp(TenantIdentifier tenantIdentifier, Main main, String thirdPartyId,
+    public static SignInUpResponse signInUp(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main, String thirdPartyId,
                                             String thirdPartyUserId, String email)
             throws StorageQueryException, TenantOrAppNotFoundException, BadPermissionException {
 
-        TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifier);
+        TenantConfig config = Multitenancy.getTenantInfo(main, tenantIdentifierWithStorage);
         if (config == null) {
-            throw new TenantOrAppNotFoundException(tenantIdentifier);
+            throw new TenantOrAppNotFoundException(tenantIdentifierWithStorage);
         }
         if (!config.thirdPartyConfig.enabled) {
             throw new BadPermissionException("Third Party login not enabled for tenant");
         }
 
-        return signInUpHelper(tenantIdentifier, main, thirdPartyId, thirdPartyUserId, email);
+        return signInUpHelper(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId, email);
     }
 
-    private static SignInUpResponse signInUpHelper(TenantIdentifier tenantIdentifier, Main main,
+    private static SignInUpResponse signInUpHelper(TenantIdentifierWithStorage tenantIdentifierWithStorage,
                                                    String thirdPartyId, String thirdPartyUserId,
                                                    String email) throws StorageQueryException,
             TenantOrAppNotFoundException {
-        ThirdPartySQLStorage storage = StorageLayer.getThirdPartyStorage(tenantIdentifier, main);
+        ThirdPartySQLStorage storage = tenantIdentifierWithStorage.getThirdPartyStorage();
         while (true) {
             // loop for sign in + sign up
 
@@ -140,7 +144,7 @@ public class ThirdParty {
                     UserInfo user = new UserInfo(userId, email, new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId),
                             timeJoined);
 
-                    storage.signUp(tenantIdentifier, user);
+                    storage.signUp(tenantIdentifierWithStorage, user);
 
                     return new SignInUpResponse(true, user);
                 } catch (DuplicateUserIdException e) {
@@ -155,7 +159,7 @@ public class ThirdParty {
             SignInUpResponse response = null;
             try {
                 response = storage.startTransaction(con -> {
-                    UserInfo user = storage.getUserInfoUsingId_Transaction(tenantIdentifier, con, thirdPartyId,
+                    UserInfo user = storage.getUserInfoUsingId_Transaction(tenantIdentifierWithStorage, con, thirdPartyId,
                             thirdPartyUserId);
 
                     if (user == null) {
@@ -165,7 +169,7 @@ public class ThirdParty {
                     }
 
                     if (!email.equals(user.email)) {
-                        storage.updateUserEmail_Transaction(tenantIdentifier, con, thirdPartyId, thirdPartyUserId,
+                        storage.updateUserEmail_Transaction(tenantIdentifierWithStorage, con, thirdPartyId, thirdPartyUserId,
                                 email);
 
                         user = new UserInfo(user.id, email,
@@ -186,46 +190,39 @@ public class ThirdParty {
         }
     }
 
-    public static UserInfo getUser(TenantIdentifier tenantIdentifier, Main main, String userId)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getThirdPartyStorage(tenantIdentifier, main)
-                .getThirdPartyUserInfoUsingId(tenantIdentifier.toAppIdentifier(), userId);
+    public static UserInfo getUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
+            throws StorageQueryException {
+        return appIdentifierWithStorage.getThirdPartyStorage()
+                .getThirdPartyUserInfoUsingId(appIdentifierWithStorage, userId);
     }
 
     @TestOnly
-    public static UserInfo getUser(Main main, String userId)
-            throws StorageQueryException {
-        try {
-            return getUser(new TenantIdentifier(null, null, null), main, userId);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+    public static UserInfo getUser(Main main, String userId) throws StorageQueryException {
+        Storage storage = StorageLayer.getStorage(main);
+        return getUser(new AppIdentifierWithStorage(null, null, storage), userId);
     }
 
-
-    public static UserInfo getUser(TenantIdentifier tenantIdentifier, Main main, String thirdPartyId,
+    public static UserInfo getUser(TenantIdentifierWithStorage tenantIdentifierWithStorage, String thirdPartyId,
                                    String thirdPartyUserId)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getThirdPartyStorage(tenantIdentifier, main)
-                .getThirdPartyUserInfoUsingId(tenantIdentifier, thirdPartyId, thirdPartyUserId);
+            throws StorageQueryException {
+        return tenantIdentifierWithStorage.getThirdPartyStorage()
+                .getThirdPartyUserInfoUsingId(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId);
     }
 
     @TestOnly
-    public static UserInfo getUser(Main main, String thirdPartyId,
-                                   String thirdPartyUserId)
+    public static UserInfo getUser(Main main, String thirdPartyId, String thirdPartyUserId)
             throws StorageQueryException {
-        try {
-            return getUser(new TenantIdentifier(null, null, null), main, thirdPartyId, thirdPartyUserId);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return getUser(
+                new TenantIdentifierWithStorage(null, null, null, storage),
+                thirdPartyId, thirdPartyUserId);
     }
 
-    public static UserInfo[] getUsersByEmail(TenantIdentifier tenantIdentifier, Main main,
+    public static UserInfo[] getUsersByEmail(TenantIdentifierWithStorage tenantIdentifierWithStorage,
                                              @Nonnull String email)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getThirdPartyStorage(tenantIdentifier, main)
-                .getThirdPartyUsersByEmail(tenantIdentifier, email);
+            throws StorageQueryException {
+        return tenantIdentifierWithStorage.getThirdPartyStorage()
+                .getThirdPartyUsersByEmail(tenantIdentifierWithStorage, email);
     }
 
     public static void verifyThirdPartyProvidersArray(ThirdPartyConfig.Provider[] providers)

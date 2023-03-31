@@ -23,6 +23,7 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.thirdparty.UserInfo;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateUserIdException;
+import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -290,7 +291,7 @@ public class ThirdPartyTest {
         try {
             UserInfo userInfo = new UserInfo(io.supertokens.utils.Utils.getUUID(), email,
                     new UserInfo.ThirdParty(thirdPartyId, thirdPartyUserId), System.currentTimeMillis());
-            StorageLayer.getThirdPartyStorage(process.getProcess())
+            ((ThirdPartySQLStorage) StorageLayer.getStorage(process.getProcess()))
                     .signUp(new TenantIdentifier(null, null, null), userInfo);
             throw new Exception("Should not come here");
         } catch (DuplicateThirdPartyUserException ignored) {
@@ -324,7 +325,7 @@ public class ThirdPartyTest {
         try {
             UserInfo userInfo = new UserInfo(signUpResponse.user.id, email,
                     new UserInfo.ThirdParty("newThirdParty", "newThirdPartyUserId"), System.currentTimeMillis());
-            StorageLayer.getThirdPartyStorage(process.getProcess())
+            ((ThirdPartySQLStorage) StorageLayer.getStorage(process.getProcess()))
                     .signUp(new TenantIdentifier(null, null, null), userInfo);
             throw new Exception("Should not come here");
         } catch (DuplicateUserIdException ignored) {

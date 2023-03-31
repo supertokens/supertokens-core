@@ -19,7 +19,9 @@ package io.supertokens.webserver.api.thirdparty;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -50,6 +52,8 @@ public class UserAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific for get by thirdPartyUserId
+        // API is app specific for get by userId
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", true);
         String thirdPartyId = InputParser.getQueryParamOrThrowError(req, "thirdPartyId", true);
         String thirdPartyUserId = InputParser.getQueryParamOrThrowError(req, "thirdPartyUserId", true);
@@ -69,25 +73,28 @@ public class UserAPI extends WebserverAPI {
         try {
             UserInfo user = null;
             if (userId != null) {
-                io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(
-                                this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(),
-                                userId, UserIdType.ANY);
-                if (userIdMapping != null) {
-                    userId = userIdMapping.superTokensUserId;
-                }
-                user = ThirdParty.getUser(this.getTenantIdentifierWithStorageFromRequest(req), main, userId);
-                if (user != null && userIdMapping != null) {
-                    user.id = userIdMapping.externalUserId;
+                // Query by userId
+                try {
+                    AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+                            this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+                    // if a userIdMapping exists, pass the superTokensUserId to the getUserUsingId function
+                    if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
+                        userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
+                    }
+
+                    user = ThirdParty.getUser(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId);
+                    if (user != null && appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
+                        user.id = appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId;
+                    }
+                } catch (UnknownUserIdException e) {
+                    // let the user be null
                 }
             } else {
-                user = ThirdParty.getUser(this.getTenantIdentifierWithStorageFromRequest(req), main, thirdPartyId,
+                user = ThirdParty.getUser(this.getTenantIdentifierWithStorageFromRequest(req), thirdPartyId,
                         thirdPartyUserId);
                 if (user != null) {
                     io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                            .getUserIdMapping(
-                                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(),
-                                    user.id, UserIdType.ANY);
+                            .getUserIdMapping(this.getAppIdentifierWithStorage(req), user.id, UserIdType.ANY);
                     if (userIdMapping != null) {
                         user.id = userIdMapping.externalUserId;
                     }

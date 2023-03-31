@@ -365,26 +365,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static ThirdPartySQLStorage getThirdPartyStorage(TenantIdentifier tenantIdentifier, Main main)
-            throws TenantOrAppNotFoundException {
-        // TODO remove this function
-        if (getInstance(tenantIdentifier, main).storage.getType() != STORAGE_TYPE.SQL) {
-            // we only support SQL for now
-            throw new UnsupportedOperationException("");
-        }
-        return (ThirdPartySQLStorage) getInstance(tenantIdentifier, main).storage;
-    }
-
-    @TestOnly
-    public static ThirdPartySQLStorage getThirdPartyStorage(Main main) {
-        // TODO remove this function
-        try {
-            return getThirdPartyStorage(new TenantIdentifier(null, null, null), main);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     public static JWTRecipeStorage getJWTRecipeStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         // TODO remove this function
