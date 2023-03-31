@@ -149,7 +149,7 @@ public class UserAPI extends WebserverAPI {
         try {
             AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
                     this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
-            // if a userIdMapping exists, pass the superTokensUserId to the updateUsersEmailOrPassword
+            // if a userIdMapping exists, pass the superTokensUserId to the updateUser
             if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
                 userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
             }
