@@ -56,7 +56,7 @@ public abstract class WebserverAPI extends HttpServlet {
     }
 
     public static String getLatestCDIVersion() {
-        return "2.19";
+        return "2.20";
     }
 
     public WebserverAPI(Main main, String rid) {

@@ -96,7 +96,8 @@ public class GetUsersWithSearchTagsAPITest {
             JsonArray users = response.get("users").getAsJsonArray();
 
             for (int i = 0; i < userIds.size(); i++) {
-                assertTrue(userIds.contains(users.get(i).getAsJsonObject().get("user").getAsJsonObject().get("id").getAsString()));
+                assertTrue(userIds.contains(
+                        users.get(i).getAsJsonObject().get("user").getAsJsonObject().get("id").getAsString()));
             }
         }
 
@@ -111,7 +112,8 @@ public class GetUsersWithSearchTagsAPITest {
             JsonArray users = response.get("users").getAsJsonArray();
 
             for (int i = 0; i < userIds.size(); i++) {
-                assertTrue(userIds.contains(users.get(i).getAsJsonObject().get("user").getAsJsonObject().get("id").getAsString()));
+                assertTrue(userIds.contains(
+                        users.get(i).getAsJsonObject().get("user").getAsJsonObject().get("id").getAsString()));
             }
         }
 
@@ -126,7 +128,8 @@ public class GetUsersWithSearchTagsAPITest {
             JsonArray users = response.get("users").getAsJsonArray();
 
             for (int i = 0; i < userIds.size(); i++) {
-                assertTrue(userIds.contains(users.get(i).getAsJsonObject().get("user").getAsJsonObject().get("id").getAsString()));
+                assertTrue(userIds.contains(
+                        users.get(i).getAsJsonObject().get("user").getAsJsonObject().get("id").getAsString()));
             }
         }
 
@@ -170,7 +173,8 @@ public class GetUsersWithSearchTagsAPITest {
         JsonArray users = response.get("users").getAsJsonArray();
 
         for (int i = 0; i < userIds.size(); i++) {
-                assertTrue(userIds.contains(users.get(i).getAsJsonObject().get("user").getAsJsonObject().get("id").getAsString()));
+            assertTrue(userIds
+                    .contains(users.get(i).getAsJsonObject().get("user").getAsJsonObject().get("id").getAsString()));
         }
 
         process.kill();
@@ -191,7 +195,6 @@ public class GetUsersWithSearchTagsAPITest {
         ArrayList<String> userIds = new ArrayList<>();
         userIds.add(EmailPassword.signUp(process.getProcess(), "test@example.com", "testPass123").id);
         userIds.add(EmailPassword.signUp(process.getProcess(), "abc@example.com", "testPass123").id);
-
 
         // search with multiple inputs to email
         {
@@ -232,21 +235,21 @@ public class GetUsersWithSearchTagsAPITest {
 
         // create passwordless user
         {
-                CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
-                        "+121234567890",
-                        null, null);
-                userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
-                        createCodeResponse.deviceIdHash,
-                        createCodeResponse.userInputCode, null).user.id);
-            }
-            {
-                CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test2@example.com",
-                        "+911987654321",
-                        null, null);
-                userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
-                        createCodeResponse.deviceIdHash,
-                        createCodeResponse.userInputCode, null).user.id);
-            }
+            CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test@example.com",
+                    "+121234567890",
+                    null, null);
+            userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
+                    createCodeResponse.deviceIdHash,
+                    createCodeResponse.userInputCode, null).user.id);
+        }
+        {
+            CreateCodeResponse createCodeResponse = Passwordless.createCode(process.getProcess(), "test2@example.com",
+                    "+911987654321",
+                    null, null);
+            userIds.add(Passwordless.consumeCode(process.getProcess(), createCodeResponse.deviceId,
+                    createCodeResponse.deviceIdHash,
+                    createCodeResponse.userInputCode, null).user.id);
+        }
 
         // search with multiple inputs to phone
         {
@@ -349,6 +352,44 @@ public class GetUsersWithSearchTagsAPITest {
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(1, response.get("users").getAsJsonArray().size());
         }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testMultipleParams() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        EmailPassword.signUp(process.getProcess(), "a@supertokens.com", "password");
+
+        EmailPassword.signUp(process.getProcess(), "b@supertokens.com", "password");
+
+        EmailPassword.signUp(process.getProcess(), "c@supertokens.com", "password");
+
+        EmailPassword.signUp(process.getProcess(), "johndoe@testing.weird", "password");
+
+        ThirdParty.signInUp(process.getProcess(), "kakao", "305773f6-2857-4591-93e9-9ed68c1936c6",
+                "johndoe@testing.weird");
+        ThirdParty.signInUp(process.getProcess(), "google", "648f3b76-4a5e-4f62-a181-ee09b6f3f1bb",
+                "thirdparty+ABC@gmail.com");
+
+        HashMap<String, String> params = new HashMap<>();
+        params.put("email", "a;g;b");
+        params.put("provider", "k");
+
+        JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(),
+                null);
+        
+        assertEquals("OK", response.get("status").getAsString());
+        assertEquals(0, response.get("users").getAsJsonArray().size());
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
