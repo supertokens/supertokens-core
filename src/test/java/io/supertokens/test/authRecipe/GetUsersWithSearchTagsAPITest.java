@@ -254,7 +254,7 @@ public class GetUsersWithSearchTagsAPITest {
         // search with multiple inputs to phone
         {
             HashMap<String, String> params = new HashMap<>();
-            params.put("phone", "+121;911");
+            params.put("phone", "+121;+911");
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(), null);
