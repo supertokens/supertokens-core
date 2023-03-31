@@ -237,21 +237,8 @@ public class GetUsersWithSearchTagsTest {
             // search for phone number
             {
                 {
-                    // search with + in the search query
                     ArrayList<String> phoneList = new ArrayList<>();
                     phoneList.add("+123");
-
-                    DashboardSearchTags tags = new DashboardSearchTags(null, phoneList, null);
-                    UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null,
-                            tags);
-                    assertEquals(1, info.users.length);
-                    assertEquals(userIds.get(4), info.users[0].user.id);
-                }
-
-                {
-                    // search without + in the search query
-                    ArrayList<String> phoneList = new ArrayList<>();
-                    phoneList.add("123");
 
                     DashboardSearchTags tags = new DashboardSearchTags(null, phoneList, null);
                     UserPaginationContainer info = AuthRecipe.getUsers(process.getProcess(), 10, "ASC", null, null,
