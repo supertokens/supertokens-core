@@ -61,12 +61,12 @@ public class ThirdParty {
 
         if (isEmailVerified) {
             try {
-                StorageLayer.getEmailVerificationStorage(tenantIdentifierWithStorage, main).startTransaction(con -> {
+                tenantIdentifierWithStorage.getEmailVerificationStorage().startTransaction(con -> {
                     try {
-                        StorageLayer.getEmailVerificationStorage(tenantIdentifierWithStorage, main)
+                        tenantIdentifierWithStorage.getEmailVerificationStorage()
                                 .updateIsEmailVerified_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
                                         response.user.id, response.user.email, true);
-                        StorageLayer.getEmailVerificationStorage(tenantIdentifierWithStorage, main)
+                        tenantIdentifierWithStorage.getEmailVerificationStorage()
                                 .commitTransaction(con);
                         return null;
                     } catch (TenantOrAppNotFoundException e) {

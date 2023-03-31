@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmail
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -72,13 +73,13 @@ public class EmailVerification {
         }
     }
 
-    public static String generateEmailVerificationToken(TenantIdentifier tenantIdentifier, Main main,
+    public static String generateEmailVerificationToken(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
                                                         String userId, String email)
             throws InvalidKeySpecException, NoSuchAlgorithmException, StorageQueryException,
             EmailAlreadyVerifiedException, TenantOrAppNotFoundException {
 
-        if (StorageLayer.getEmailVerificationStorage(tenantIdentifier, main)
-                .isEmailVerified(tenantIdentifier.toAppIdentifier(), userId, email)) {
+        if (tenantIdentifierWithStorage.getEmailVerificationStorage()
+                .isEmailVerified(tenantIdentifierWithStorage.toAppIdentifier(), userId, email)) {
             throw new EmailAlreadyVerifiedException();
         }
 
@@ -104,11 +105,11 @@ public class EmailVerification {
             String hashedToken = getHashedToken(token);
 
             try {
-                StorageLayer.getEmailVerificationStorage(tenantIdentifier, main)
-                        .addEmailVerificationToken(tenantIdentifier.toAppIdentifier(),
+                tenantIdentifierWithStorage.getEmailVerificationStorage()
+                        .addEmailVerificationToken(tenantIdentifierWithStorage.toAppIdentifier(),
                                 new EmailVerificationTokenInfo(userId, hashedToken,
                                         System.currentTimeMillis() +
-                                                getEmailVerificationTokenLifetime(tenantIdentifier, main), email));
+                                                getEmailVerificationTokenLifetime(tenantIdentifierWithStorage, main), email));
                 return token;
             } catch (DuplicateEmailVerificationTokenException ignored) {
             }
@@ -128,18 +129,17 @@ public class EmailVerification {
         }
     }
 
-    public static User verifyEmail(TenantIdentifier tenantIdentifier, Main main, String token)
+    public static User verifyEmail(AppIdentifierWithStorage appIdentifierWithStorage, String token)
             throws StorageQueryException,
             EmailVerificationInvalidTokenException, NoSuchAlgorithmException, StorageTransactionLogicException,
             TenantOrAppNotFoundException {
 
         String hashedToken = getHashedToken(token);
 
-        EmailVerificationSQLStorage storage = StorageLayer.getEmailVerificationStorage(tenantIdentifier,
-                main);
+        EmailVerificationSQLStorage storage = appIdentifierWithStorage.getEmailVerificationStorage();
 
         final EmailVerificationTokenInfo tokenInfo = storage.getEmailVerificationTokenInfo(
-                tenantIdentifier.toAppIdentifier(), hashedToken);
+                appIdentifierWithStorage, hashedToken);
         if (tokenInfo == null) {
             throw new EmailVerificationInvalidTokenException();
         }
@@ -150,7 +150,7 @@ public class EmailVerification {
             return storage.startTransaction(con -> {
 
                 EmailVerificationTokenInfo[] allTokens = storage
-                        .getAllEmailVerificationTokenInfoForUser_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                        .getAllEmailVerificationTokenInfoForUser_Transaction(appIdentifierWithStorage, con,
                                 userId, tokenInfo.email);
 
                 EmailVerificationTokenInfo matchedToken = null;
@@ -165,7 +165,7 @@ public class EmailVerification {
                     throw new StorageTransactionLogicException(new EmailVerificationInvalidTokenException());
                 }
 
-                storage.deleteAllEmailVerificationTokensForUser_Transaction(tenantIdentifier.toAppIdentifier(), con,
+                storage.deleteAllEmailVerificationTokensForUser_Transaction(appIdentifierWithStorage, con,
                         userId, tokenInfo.email);
 
                 if (matchedToken.tokenExpiry < System.currentTimeMillis()) {
@@ -174,7 +174,7 @@ public class EmailVerification {
                 }
 
                 try {
-                    storage.updateIsEmailVerified_Transaction(tenantIdentifier.toAppIdentifier(), con, userId,
+                    storage.updateIsEmailVerified_Transaction(appIdentifierWithStorage, con, userId,
                             tokenInfo.email, true);
                 } catch (TenantOrAppNotFoundException e) {
                     throw new StorageTransactionLogicException(e);
