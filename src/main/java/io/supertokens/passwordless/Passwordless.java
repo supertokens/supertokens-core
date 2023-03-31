@@ -27,6 +27,7 @@ import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateUserIdEx
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantConfig;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -485,13 +486,13 @@ public class Passwordless {
             throws StorageQueryException {
         Storage storage = StorageLayer.getStorage(main);
         return getUserById(
-                new TenantIdentifierWithStorage(null, null, null, storage), userId);
+                new AppIdentifierWithStorage(null, null, storage), userId);
     }
 
-    public static UserInfo getUserById(TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId)
+    public static UserInfo getUserById(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
             throws StorageQueryException {
-        return tenantIdentifierWithStorage.getPasswordlessStorage()
-                .getUserById(tenantIdentifierWithStorage.toAppIdentifier(), userId);
+        return appIdentifierWithStorage.getPasswordlessStorage()
+                .getUserById(appIdentifierWithStorage, userId);
     }
 
     @TestOnly
@@ -528,19 +529,19 @@ public class Passwordless {
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
             DuplicatePhoneNumberException, UserWithoutContactInfoException {
         Storage storage = StorageLayer.getStorage(main);
-        updateUser(new TenantIdentifierWithStorage(null, null, null, storage),
+        updateUser(new AppIdentifierWithStorage(null, null, storage),
                 userId, emailUpdate, phoneNumberUpdate);
     }
 
-    public static void updateUser(TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId,
+    public static void updateUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId,
                                   FieldUpdate emailUpdate, FieldUpdate phoneNumberUpdate)
             throws StorageQueryException, UnknownUserIdException, DuplicateEmailException,
             DuplicatePhoneNumberException, UserWithoutContactInfoException {
-        PasswordlessSQLStorage storage = tenantIdentifierWithStorage.getPasswordlessStorage();
+        PasswordlessSQLStorage storage = appIdentifierWithStorage.getPasswordlessStorage();
 
         // We do not lock the user here, because we decided that even if the device cleanup used outdated information
         // it wouldn't leave the system in an incosistent state/cause problems.
-        UserInfo user = storage.getUserById(tenantIdentifierWithStorage.toAppIdentifier(), userId);
+        UserInfo user = storage.getUserById(appIdentifierWithStorage, userId);
         if (user == null) {
             throw new UnknownUserIdException();
         }
@@ -554,33 +555,33 @@ public class Passwordless {
             storage.startTransaction(con -> {
                 if (emailUpdate != null && !Objects.equals(emailUpdate.newValue, user.email)) {
                     try {
-                        storage.updateUserEmail_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, userId,
+                        storage.updateUserEmail_Transaction(appIdentifierWithStorage, con, userId,
                                 emailUpdate.newValue);
                     } catch (UnknownUserIdException | DuplicateEmailException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     if (user.email != null) {
-                        storage.deleteDevicesByEmail_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, user.email,
+                        storage.deleteDevicesByEmail_Transaction(appIdentifierWithStorage, con, user.email,
                                 userId);
                     }
                     if (emailUpdate.newValue != null) {
-                        storage.deleteDevicesByEmail_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
+                        storage.deleteDevicesByEmail_Transaction(appIdentifierWithStorage, con,
                                 emailUpdate.newValue, userId);
                     }
                 }
                 if (phoneNumberUpdate != null && !Objects.equals(phoneNumberUpdate.newValue, user.phoneNumber)) {
                     try {
-                        storage.updateUserPhoneNumber_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con, userId,
+                        storage.updateUserPhoneNumber_Transaction(appIdentifierWithStorage, con, userId,
                                 phoneNumberUpdate.newValue);
                     } catch (UnknownUserIdException | DuplicatePhoneNumberException e) {
                         throw new StorageTransactionLogicException(e);
                     }
                     if (user.phoneNumber != null) {
-                        storage.deleteDevicesByPhoneNumber_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
+                        storage.deleteDevicesByPhoneNumber_Transaction(appIdentifierWithStorage, con,
                                 user.phoneNumber, userId);
                     }
                     if (phoneNumberUpdate.newValue != null) {
-                        storage.deleteDevicesByPhoneNumber_Transaction(tenantIdentifierWithStorage.toAppIdentifier(), con,
+                        storage.deleteDevicesByPhoneNumber_Transaction(appIdentifierWithStorage, con,
                                 phoneNumberUpdate.newValue, userId);
                     }
                 }

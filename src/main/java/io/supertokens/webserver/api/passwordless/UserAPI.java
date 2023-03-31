@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.passwordless;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.passwordless.Passwordless;
@@ -71,15 +72,21 @@ public class UserAPI extends WebserverAPI {
         try {
             UserInfo user;
             if (userId != null) {
-                UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                        this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(),
-                        userId, UserIdType.ANY);
-                if (userIdMapping != null) {
-                    userId = userIdMapping.superTokensUserId;
-                }
-                user = Passwordless.getUserById(this.getTenantIdentifierWithStorageFromRequest(req), userId);
-                if (user != null && userIdMapping != null) {
-                    user.id = userIdMapping.externalUserId;
+                try {
+                    AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+                            this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+                    if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
+                        userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
+                    }
+                    user = Passwordless.getUserById(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
+                            userId);
+
+                    // if the userIdMapping exists set the userId in the response to the externalUserId
+                    if (user != null && appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
+                        user.id = appIdentifierWithStorageAndUserIdMapping.userIdMapping.externalUserId;
+                    }
+                } catch (UnknownUserIdException e) {
+                    user = null;
                 }
             } else if (email != null) {
                 email = Utils.normaliseEmail(email);
@@ -137,14 +144,15 @@ public class UserAPI extends WebserverAPI {
                         : InputParser.parseStringOrThrowError(input, "phoneNumber", false));
 
         try {
-            // if userIdMapping exists, set the externalUserId in the response
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
-                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(), userId, UserIdType.ANY);
-            if (userIdMapping != null) {
-                userId = userIdMapping.superTokensUserId;
+            AppIdentifierWithStorageAndUserIdMapping appIdentifierWithStorageAndUserIdMapping =
+                    this.getAppIdentifierWithStorageAndUserIdMappingFromRequest(req, userId, UserIdType.ANY);
+            // if a userIdMapping exists, pass the superTokensUserId to the updateUsersEmailOrPassword
+            if (appIdentifierWithStorageAndUserIdMapping.userIdMapping != null) {
+                userId = appIdentifierWithStorageAndUserIdMapping.userIdMapping.superTokensUserId;
             }
 
-            Passwordless.updateUser(this.getTenantIdentifierWithStorageFromRequest(req), userId, emailUpdate, phoneNumberUpdate);
+            Passwordless.updateUser(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage,
+                    userId, emailUpdate, phoneNumberUpdate);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
