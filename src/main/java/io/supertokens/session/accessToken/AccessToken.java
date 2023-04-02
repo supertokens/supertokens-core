@@ -196,7 +196,7 @@ public class AccessToken {
             token = JWT.createAndSignLegacyAccessToken(accessToken.toJSON(), signingKey.privateKey, version);
         }
 
-        return new TokenInfo(token, expires, now);
+        return new TokenInfo(token, accessToken.expiryTime, accessToken.timeCreated);
     }
 
     public static TokenInfo createNewAccessTokenV1(@Nonnull Main main, @Nonnull String sessionHandle,
@@ -214,7 +214,7 @@ public class AccessToken {
                 userData, antiCsrfToken, now, VERSION.V1);
 
         String token = JWT.createAndSignLegacyAccessToken(Utils.toJsonTreeWithNulls(accessToken), signingKey.privateKey, VERSION.V1);
-        return new TokenInfo(token, expiryTime, now);
+        return new TokenInfo(token, accessToken.expiryTime, accessToken.timeCreated);
 
     }
 
@@ -278,11 +278,21 @@ public class AccessToken {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.refreshTokenHash1 = refreshTokenHash1;
-            this.expiryTime = expiryTime;
+            if (version == VERSION.V2 || version == VERSION.V1) {
+                this.expiryTime = expiryTime;
+            } else {
+                // We round this down to match the data in the JWT which is truncated to seconds instead of MS
+                this.expiryTime = expiryTime - (expiryTime % 1000);
+            }
             this.parentRefreshTokenHash1 = parentRefreshTokenHash1;
             this.userData = userData;
             this.antiCsrfToken = antiCsrfToken;
-            this.timeCreated = timeCreated;
+            if (version == VERSION.V2 || version == VERSION.V1) {
+                this.timeCreated = timeCreated;
+            } else {
+                // We round this down to match the data in the JWT which is truncated to seconds instead of MS
+                this.timeCreated = timeCreated - (timeCreated % 1000);
+            }
             this.version = version;
         }
 
