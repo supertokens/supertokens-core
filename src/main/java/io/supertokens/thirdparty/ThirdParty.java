@@ -171,7 +171,6 @@ public class ThirdParty {
                                 thirdPartyId, thirdPartyUserId);
 
                         if (user == null) {
-                            // we retry everything..
                             storage.commitTransaction(con);
                             return null;
                         }
