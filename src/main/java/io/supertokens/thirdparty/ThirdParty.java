@@ -124,11 +124,11 @@ public class ThirdParty {
             throw new BadPermissionException("Third Party login not enabled for tenant");
         }
 
-        return signInUpHelper(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId, email);
+        return signInUpHelper(tenantIdentifierWithStorage, main, thirdPartyId, thirdPartyUserId, email);
     }
 
     private static SignInUpResponse signInUpHelper(TenantIdentifierWithStorage tenantIdentifierWithStorage,
-                                                   String thirdPartyId, String thirdPartyUserId,
+                                                   Main main, String thirdPartyId, String thirdPartyUserId,
                                                    String email) throws StorageQueryException,
             TenantOrAppNotFoundException {
         ThirdPartySQLStorage storage = tenantIdentifierWithStorage.getThirdPartyStorage();
