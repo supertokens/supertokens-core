@@ -77,7 +77,7 @@ public class ResetPasswordAPI extends WebserverAPI {
             String userId = EmailPassword.resetPassword(tenantIdentifierWithStorage, super.main, token, newPassword);
 
             io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping.getUserIdMapping(
-                    tenantIdentifierWithStorage.toAppIdentifierWithStorage(), userId, UserIdType.ANY);
+                    getAppIdentifierWithStorage(req), userId, UserIdType.SUPERTOKENS);
 
             // if userIdMapping exists, pass the externalUserId to the response
             if (userIdMapping != null) {

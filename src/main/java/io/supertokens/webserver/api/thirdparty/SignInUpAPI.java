@@ -51,6 +51,7 @@ public class SignInUpAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         if (super.getVersionFromRequest(req).equals("2.7")) {
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
             String thirdPartyId = InputParser.parseStringOrThrowError(input, "thirdPartyId", false);
@@ -103,15 +104,12 @@ public class SignInUpAPI extends WebserverAPI {
             email = Utils.normaliseEmail(email);
 
             try {
-                ThirdParty.SignInUpResponse response = ThirdParty.signInUp(this.getTenantIdentifierWithStorageFromRequest(req), super.main,
-                        thirdPartyId, thirdPartyUserId,
-                        email);
+                ThirdParty.SignInUpResponse response = ThirdParty.signInUp(
+                        this.getTenantIdentifierWithStorageFromRequest(req), super.main, thirdPartyId,
+                        thirdPartyUserId, email);
 
-                //
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(
-                                this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifierWithStorage(),
-                                response.user.id, UserIdType.ANY);
+                        .getUserIdMapping(this.getAppIdentifierWithStorage(req), response.user.id, UserIdType.SUPERTOKENS);
                 if (userIdMapping != null) {
                     response.user.id = userIdMapping.externalUserId;
                 }
