@@ -26,6 +26,7 @@ import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -76,13 +77,13 @@ public class DeleteExpiredEmailVerificationTokensCronjobTest {
         EmailVerification.generateEmailVerificationToken(process.getProcess(), user.id, user.email);
 
         assert (((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllEmailVerificationTokenInfoForUser(new AppIdentifier(null, null), user.id, user.email).length ==
+                .getAllEmailVerificationTokenInfoForUser(new TenantIdentifier(null, null, null), user.id, user.email).length ==
                 4);
 
         Thread.sleep(3000);
 
         EmailVerificationTokenInfo[] tokens = ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllEmailVerificationTokenInfoForUser(new AppIdentifier(null, null), user.id, user.email);
+                .getAllEmailVerificationTokenInfoForUser(new TenantIdentifier(null, null, null), user.id, user.email);
 
         assert (tokens.length == 2);
 

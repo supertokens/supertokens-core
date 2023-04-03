@@ -50,7 +50,7 @@ public class VerifyEmailAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is app specific
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String method = InputParser.parseStringOrThrowError(input, "method", false);
         String token = InputParser.parseStringOrThrowError(input, "token", false);
@@ -65,7 +65,7 @@ public class VerifyEmailAPI extends WebserverAPI {
         }
 
         try {
-            User user = EmailVerification.verifyEmail(this.getAppIdentifierWithStorage(req), token);
+            User user = EmailVerification.verifyEmail(this.getTenantIdentifierWithStorageFromRequest(req), token);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

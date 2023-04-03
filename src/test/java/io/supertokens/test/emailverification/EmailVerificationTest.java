@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenIn
 import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -85,7 +86,7 @@ public class EmailVerificationTest {
         assertNotEquals(token1, token2);
 
         EmailVerificationTokenInfo[] tokenInfo = ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .getAllEmailVerificationTokenInfoForUser(new AppIdentifier(null, null), user.id, user.email);
+                .getAllEmailVerificationTokenInfoForUser(new TenantIdentifier(null, null, null), user.id, user.email);
 
         assertEquals(tokenInfo.length, 2);
         assertTrue((tokenInfo[0].token.equals(io.supertokens.utils.Utils.hashSHA256(token1)))
@@ -252,7 +253,7 @@ public class EmailVerificationTest {
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
         ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                .addEmailVerificationToken(new AppIdentifier(null, null),
+                .addEmailVerificationToken(new TenantIdentifier(null, null, null),
                         new EmailVerificationTokenInfo(user.id, "token",
                                 System.currentTimeMillis()
                                         + Config.getConfig(process.getProcess()).getEmailVerificationTokenLifetime(),
@@ -260,7 +261,7 @@ public class EmailVerificationTest {
 
         try {
             ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
-                    .addEmailVerificationToken(new AppIdentifier(null, null),
+                    .addEmailVerificationToken(new TenantIdentifier(null, null, null),
                             new EmailVerificationTokenInfo(user.id, "token",
                                     System.currentTimeMillis()
                                             +

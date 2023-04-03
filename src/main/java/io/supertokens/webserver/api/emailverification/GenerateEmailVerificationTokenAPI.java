@@ -50,8 +50,7 @@ public class GenerateEmailVerificationTokenAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is app specific for token generation, but emailVerificationLifetime is for the tenant. Hence,
-        // getTenantIdentifierWithStorageFromRequest is being used below
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
