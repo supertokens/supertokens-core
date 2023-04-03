@@ -26,7 +26,9 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.emailverification.EmailVerificationTokenInfo;
 import io.supertokens.pluginInterface.emailverification.exception.DuplicateEmailVerificationTokenException;
+import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -83,8 +85,8 @@ public class EmailVerificationTest {
 
         assertNotEquals(token1, token2);
 
-        EmailVerificationTokenInfo[] tokenInfo = StorageLayer.getEmailVerificationStorage(process.getProcess())
-                .getAllEmailVerificationTokenInfoForUser(new AppIdentifier(null, null), user.id, user.email);
+        EmailVerificationTokenInfo[] tokenInfo = ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .getAllEmailVerificationTokenInfoForUser(new TenantIdentifier(null, null, null), user.id, user.email);
 
         assertEquals(tokenInfo.length, 2);
         assertTrue((tokenInfo[0].token.equals(io.supertokens.utils.Utils.hashSHA256(token1)))
@@ -250,16 +252,16 @@ public class EmailVerificationTest {
         // we add a user first.
         UserInfo user = EmailPassword.signUp(process.getProcess(), "test1@example.com", "password");
 
-        StorageLayer.getEmailVerificationStorage(process.getProcess())
-                .addEmailVerificationToken(new AppIdentifier(null, null),
+        ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                .addEmailVerificationToken(new TenantIdentifier(null, null, null),
                         new EmailVerificationTokenInfo(user.id, "token",
                                 System.currentTimeMillis()
                                         + Config.getConfig(process.getProcess()).getEmailVerificationTokenLifetime(),
                                 "test1@example.com"));
 
         try {
-            StorageLayer.getEmailVerificationStorage(process.getProcess())
-                    .addEmailVerificationToken(new AppIdentifier(null, null),
+            ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
+                    .addEmailVerificationToken(new TenantIdentifier(null, null, null),
                             new EmailVerificationTokenInfo(user.id, "token",
                                     System.currentTimeMillis()
                                             +
@@ -319,9 +321,9 @@ public class EmailVerificationTest {
         EmailVerification.verifyEmail(process.getProcess(), token);
         assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.id, user.email));
 
-        StorageLayer.getEmailVerificationStorage(process.getProcess()).startTransaction(con -> {
+        ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess())).startTransaction(con -> {
             try {
-                StorageLayer.getEmailVerificationStorage(process.getProcess())
+                ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
                         .updateIsEmailVerified_Transaction(new AppIdentifier(null, null), con,
                                 user.id, user.email, false);
             } catch (TenantOrAppNotFoundException e) {
@@ -354,9 +356,9 @@ public class EmailVerificationTest {
         EmailVerification.verifyEmail(process.getProcess(), token);
         assertTrue(EmailVerification.isEmailVerified(process.getProcess(), user.id, user.email));
 
-        StorageLayer.getEmailVerificationStorage(process.getProcess()).startTransaction(con -> {
+        ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess())).startTransaction(con -> {
             try {
-                StorageLayer.getEmailVerificationStorage(process.getProcess())
+                ((EmailVerificationSQLStorage) StorageLayer.getStorage(process.getProcess()))
                         .updateIsEmailVerified_Transaction(new AppIdentifier(null, null), con,
                                 user.id, user.email, true);
             } catch (TenantOrAppNotFoundException e) {

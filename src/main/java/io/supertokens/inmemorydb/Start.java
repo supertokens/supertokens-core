@@ -763,8 +763,8 @@ public class Start
     }
 
     @Override
-    public EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser_Transaction(AppIdentifier
-                                                                                                    appIdentifier,
+    public EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser_Transaction(TenantIdentifier
+                                                                                                    tenantIdentifier,
                                                                                             TransactionConnection con,
                                                                                             String userId, String email)
             throws StorageQueryException {
@@ -780,7 +780,7 @@ public class Start
     }
 
     @Override
-    public void addEmailVerificationToken(AppIdentifier appIdentifier, EmailVerificationTokenInfo
+    public void addEmailVerificationToken(TenantIdentifier tenantIdentifier, EmailVerificationTokenInfo
             emailVerificationInfo)
             throws StorageQueryException, DuplicateEmailVerificationTokenException {
         try {
@@ -802,7 +802,7 @@ public class Start
     }
 
     @Override
-    public void deleteAllEmailVerificationTokensForUser_Transaction(AppIdentifier appIdentifier,
+    public void deleteAllEmailVerificationTokensForUser_Transaction(TenantIdentifier tenantIdentifier,
                                                                     TransactionConnection con, String userId,
                                                                     String email) throws StorageQueryException {
         // TODO..
@@ -848,8 +848,8 @@ public class Start
     }
 
     @Override
-    public EmailVerificationTokenInfo getEmailVerificationTokenInfo(AppIdentifier
-                                                                            appIdentifier, String token)
+    public EmailVerificationTokenInfo getEmailVerificationTokenInfo(TenantIdentifier
+                                                                            tenantIdentifier, String token)
             throws StorageQueryException {
         try {
             // TODO..
@@ -860,7 +860,7 @@ public class Start
     }
 
     @Override
-    public void revokeAllTokens(AppIdentifier appIdentifier, String userId, String email) throws
+    public void revokeAllTokens(TenantIdentifier tenantIdentifier, String userId, String email) throws
             StorageQueryException {
         try {
             // TODO..
@@ -891,8 +891,8 @@ public class Start
     }
 
     @Override
-    public EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser(AppIdentifier
-                                                                                        appIdentifier,
+    public EmailVerificationTokenInfo[] getAllEmailVerificationTokenInfoForUser(TenantIdentifier
+                                                                                        tenantIdentifier,
                                                                                 String userId, String email)
             throws StorageQueryException {
         // TODO..
