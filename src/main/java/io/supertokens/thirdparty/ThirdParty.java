@@ -56,7 +56,7 @@ public class ThirdParty {
                                                String thirdPartyId, String thirdPartyUserId, String email,
                                                boolean isEmailVerified)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        SignInUpResponse response = signInUpHelper(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId,
+        SignInUpResponse response = signInUpHelper(tenantIdentifierWithStorage, main, thirdPartyId, thirdPartyUserId,
                 email);
 
         if (isEmailVerified) {
@@ -158,27 +158,35 @@ public class ThirdParty {
             // we try to get user and update their email
             SignInUpResponse response = null;
             try {
-                response = storage.startTransaction(con -> {
-                    UserInfo user = storage.getUserInfoUsingId_Transaction(tenantIdentifierWithStorage, con, thirdPartyId,
-                            thirdPartyUserId);
+                // We should update the user email based on thirdPartyId and thirdPartyUserId across all apps,
+                // so we iterate through all the app storages and do the update.
+                // Note that we are only locking for each storage, and no global app wide lock, but should be okay
+                // because same user parallelly logging into different tenants at the same time with different email
+                // is a rare situation
+                AppIdentifier appIdentifier = tenantIdentifierWithStorage.toAppIdentifier();
+                Storage[] storages = StorageLayer.getStoragesForApp(main, appIdentifier);
+                for (Storage st : storages) {
+                    storage.startTransaction(con -> {
+                        UserInfo user = storage.getUserInfoUsingId_Transaction(appIdentifier.withStorage(st), con,
+                                thirdPartyId, thirdPartyUserId);
 
-                    if (user == null) {
-                        // we retry everything..
+                        if (user == null) {
+                            storage.commitTransaction(con);
+                            return null;
+                        }
+
+                        if (!email.equals(user.email)) {
+                            storage.updateUserEmail_Transaction(appIdentifier.withStorage(st), con,
+                                    thirdPartyId, thirdPartyUserId, email);
+                        }
+
                         storage.commitTransaction(con);
                         return null;
-                    }
+                    });
+                }
 
-                    if (!email.equals(user.email)) {
-                        storage.updateUserEmail_Transaction(tenantIdentifierWithStorage, con, thirdPartyId, thirdPartyUserId,
-                                email);
-
-                        user = new UserInfo(user.id, email,
-                                new UserInfo.ThirdParty(user.thirdParty.id, user.thirdParty.userId), user.timeJoined);
-                    }
-
-                    storage.commitTransaction(con);
-                    return new SignInUpResponse(false, user);
-                });
+                UserInfo user = getUser(tenantIdentifierWithStorage, thirdPartyId, thirdPartyUserId);
+                return new SignInUpResponse(false, user);
             } catch (StorageTransactionLogicException ignored) {
             }
 

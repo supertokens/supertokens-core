@@ -917,7 +917,7 @@ public class Start
 
     @Override
     public io.supertokens.pluginInterface.thirdparty.UserInfo getUserInfoUsingId_Transaction(
-            TenantIdentifier tenantIdentifier, TransactionConnection con,
+            AppIdentifier appIdentifier, TransactionConnection con,
             String thirdPartyId,
             String thirdPartyUserId)
             throws StorageQueryException {
@@ -932,8 +932,8 @@ public class Start
     }
 
     @Override
-    public void updateUserEmail_Transaction(TenantIdentifier
-                                                    tenantIdentifier, TransactionConnection con,
+    public void updateUserEmail_Transaction(AppIdentifier
+                                                    appIdentifier, TransactionConnection con,
                                             String thirdPartyId, String thirdPartyUserId,
                                             String newEmail) throws StorageQueryException {
         Connection sqlCon = (Connection) con.getConnection();
