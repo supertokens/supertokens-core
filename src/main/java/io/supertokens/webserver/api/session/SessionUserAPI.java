@@ -51,8 +51,8 @@ public class SessionUserAPI extends WebserverAPI {
         assert userId != null;
 
         try {
-            String[] sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(this.getTenantIdentifierWithStorageFromRequest(req), main,
-                    userId);
+            String[] sessionHandles = Session.getAllNonExpiredSessionHandlesForUser(
+                    this.getTenantIdentifierWithStorageFromRequest(req), userId);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

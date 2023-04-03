@@ -201,19 +201,19 @@ public class RefreshToken {
         @Nullable
         public final String antiCsrfToken;
         @Nonnull
-        public final TenantIdentifierWithStorage tenantIdentifierWithStorage;
+        public final TenantIdentifier tenantIdentifier;
 
         RefreshTokenInfo(@Nonnull String sessionHandle, @Nullable String userId,
                          @Nullable String parentRefreshTokenHash1, @Nullable String parentRefreshTokenHash2,
                          @Nullable String antiCsrfToken, @Nonnull TYPE type,
-                         @Nullable TenantIdentifierWithStorage tenantIdentifierWithStorage) {
+                         @Nullable TenantIdentifier tenantIdentifier) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.parentRefreshTokenHash1 = parentRefreshTokenHash1;
             this.parentRefreshTokenHash2 = parentRefreshTokenHash2;
             this.antiCsrfToken = antiCsrfToken;
             this.type = type;
-            this.tenantIdentifierWithStorage = tenantIdentifierWithStorage;
+            this.tenantIdentifier = tenantIdentifier;
         }
     }
 

@@ -63,7 +63,7 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
+        SessionStorage sessionStorage = (SessionStorage) StorageLayer.getStorage(process.getProcess());
 
         if (sessionStorage.getType() != STORAGE_TYPE.SQL) {
             return;
@@ -123,7 +123,7 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
 
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
+        SessionStorage sessionStorage = (SessionStorage) StorageLayer.getStorage(process.getProcess());
 
         if (sessionStorage.getType() != STORAGE_TYPE.SQL) {
             return;

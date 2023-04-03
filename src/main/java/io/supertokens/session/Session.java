@@ -29,7 +29,6 @@ import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.noSqlStorage.SessionNoSQLStorage_1;
@@ -179,7 +178,8 @@ public class Session {
         // We assume the token has already been verified at this point. It may be expired or JWT signing key may have
         // changed for it...
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessTokenWithoutVerifying(appIdentifier, main, token);
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = accessToken.tenantIdentifierWithStorage;
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = accessToken.tenantIdentifier.withStorage(
+                StorageLayer.getStorage(accessToken.tenantIdentifier, main));
         if (!tenantIdentifierWithStorage.toAppIdentifier().equals(appIdentifier)) {
             throw new UnauthorisedException("Access token is from an incorrect app");
         }
@@ -236,7 +236,8 @@ public class Session {
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessToken(appIdentifier, main,
                 token,
                 doAntiCsrfCheck && enableAntiCsrf);
-        TenantIdentifierWithStorage tenantIdentifierWithStorage = accessToken.tenantIdentifierWithStorage;
+        TenantIdentifierWithStorage tenantIdentifierWithStorage = accessToken.tenantIdentifier.withStorage(
+                StorageLayer.getStorage(accessToken.tenantIdentifier, main));
 
         if (enableAntiCsrf && doAntiCsrfCheck
                 && (antiCsrfToken == null || !antiCsrfToken.equals(accessToken.antiCsrfToken))) {
@@ -429,7 +430,10 @@ public class Session {
             }
         }
 
-        return refreshSessionHelper(refreshTokenInfo.tenantIdentifierWithStorage, main, refreshToken, refreshTokenInfo,
+        return refreshSessionHelper(
+                refreshTokenInfo.tenantIdentifier.withStorage(
+                        StorageLayer.getStorage(refreshTokenInfo.tenantIdentifier, main)),
+                main, refreshToken, refreshTokenInfo,
                 enableAntiCsrf);
     }
 

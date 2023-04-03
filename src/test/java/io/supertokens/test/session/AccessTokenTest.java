@@ -95,7 +95,7 @@ public class AccessTokenTest {
         // get access token without verifying
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfo = AccessToken
-                .getInfoFromAccessTokenWithoutVerifying(sessionInfo.accessToken.token);
+                .getInfoFromAccessTokenWithoutVerifying(process.getProcess(), sessionInfo.accessToken.token);
 
         // check payload is fine
         assertEquals(accessTokenInfo.userData, userDataInJWT);
@@ -138,7 +138,7 @@ public class AccessTokenTest {
                 accessTokenInfo.lmrt, value);
 
         AccessTokenInfo customAccessToken = AccessToken
-                .getInfoFromAccessTokenWithoutVerifying(newAccessTokenInfo.token);
+                .getInfoFromAccessTokenWithoutVerifying(process.getProcess(), newAccessTokenInfo.token);
         assertEquals(customAccessToken.expiryTime, value);
 
     }

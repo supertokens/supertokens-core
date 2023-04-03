@@ -27,7 +27,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 import io.supertokens.session.info.TokenInfo;
@@ -329,12 +328,12 @@ public class AccessToken {
         @Nullable
         public final Long lmrt; // lastManualRegenerationTime - nullable since v1 of JWT does not have this
         @Nonnull
-        public TenantIdentifierWithStorage tenantIdentifierWithStorage;
+        public TenantIdentifier tenantIdentifier;
 
         AccessTokenInfo(@Nonnull String sessionHandle, @Nonnull String userId, @Nonnull String refreshTokenHash1,
                         long expiryTime, @Nullable String parentRefreshTokenHash1, @Nonnull JsonObject userData,
                         @Nullable String antiCsrfToken, long timeCreated, @Nullable Long lmrt,
-                        @Nonnull TenantIdentifierWithStorage tenantIdentifierWithStorage) {
+                        @Nonnull TenantIdentifier tenantIdentifier) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.refreshTokenHash1 = refreshTokenHash1;
@@ -344,7 +343,7 @@ public class AccessToken {
             this.antiCsrfToken = antiCsrfToken;
             this.timeCreated = timeCreated;
             this.lmrt = lmrt;
-            this.tenantIdentifierWithStorage = tenantIdentifierWithStorage;
+            this.tenantIdentifier = tenantIdentifier;
         }
     }
 

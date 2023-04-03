@@ -57,7 +57,7 @@ public class JWTDataAPI extends WebserverAPI {
         assert userDataInJWT != null;
 
         try {
-            Session.updateSession(this.getTenantIdentifierWithStorageFromRequest(req), main, sessionHandle, null,
+            Session.updateSession(this.getTenantIdentifierWithStorageFromRequest(req), sessionHandle, null,
                     userDataInJWT, null);
 
             JsonObject result = new JsonObject();
@@ -83,8 +83,7 @@ public class JWTDataAPI extends WebserverAPI {
         assert sessionHandle != null;
 
         try {
-            JsonElement jwtPayload = Session.getJWTData(this.getTenantIdentifierWithStorageFromRequest(req), main,
-                    sessionHandle);
+            JsonElement jwtPayload = Session.getJWTData(this.getTenantIdentifierWithStorageFromRequest(req), sessionHandle);
 
             JsonObject result = new JsonObject();
 
