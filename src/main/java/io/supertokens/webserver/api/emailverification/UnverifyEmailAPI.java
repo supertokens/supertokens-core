@@ -45,14 +45,14 @@ public class UnverifyEmailAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         String email = InputParser.parseStringOrThrowError(input, "email", false);
         email = Utils.normaliseEmail(email);
 
         try {
-            EmailVerification.unverifyEmail(this.getTenantIdentifierWithStorageFromRequest(req), main, userId,
-                    email);
+            EmailVerification.unverifyEmail(this.getAppIdentifierWithStorage(req), userId, email);
 
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
