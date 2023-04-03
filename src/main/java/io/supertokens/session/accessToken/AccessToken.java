@@ -27,11 +27,13 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 import io.supertokens.session.info.TokenInfo;
 import io.supertokens.session.jwt.JWT;
 import io.supertokens.session.jwt.JWT.JWTException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
@@ -128,11 +130,13 @@ public class AccessToken {
             throw new TryRefreshTokenException("Access token expired");
         }
 
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                appIdentifier.getAppId(), tokenInfo.tenantId);
+
         return new AccessTokenInfo(tokenInfo.sessionHandle, tokenInfo.userId, tokenInfo.refreshTokenHash1,
                 tokenInfo.expiryTime, tokenInfo.parentRefreshTokenHash1, tokenInfo.userData, tokenInfo.antiCsrfToken,
                 tokenInfo.timeCreated, tokenInfo.lmrt,
-                new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
-                        tokenInfo.tenantId));
+                tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main)));
     }
 
     @TestOnly
@@ -155,19 +159,26 @@ public class AccessToken {
     }
 
     @TestOnly
-    public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(@Nonnull String token) {
-        return getInfoFromAccessTokenWithoutVerifying(new AppIdentifier(null, null), token);
+    public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(Main main, @Nonnull String token) {
+        try {
+            return getInfoFromAccessTokenWithoutVerifying(
+                    new AppIdentifier(null, null), main, token);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
-    public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(AppIdentifier appIdentifier,
-                                                                         @Nonnull String token) {
+    public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(AppIdentifier appIdentifier, Main main,
+                                                                         @Nonnull String token)
+            throws TenantOrAppNotFoundException {
         AccessTokenPayload tokenInfo = new Gson().fromJson(JWT.getPayloadWithoutVerifying(token).payload,
                 AccessTokenPayload.class);
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                appIdentifier.getAppId(), tokenInfo.tenantId);
         return new AccessTokenInfo(tokenInfo.sessionHandle, tokenInfo.userId, tokenInfo.refreshTokenHash1,
                 tokenInfo.expiryTime, tokenInfo.parentRefreshTokenHash1, tokenInfo.userData, tokenInfo.antiCsrfToken,
                 tokenInfo.timeCreated, tokenInfo.lmrt,
-                new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
-                        tokenInfo.tenantId));
+                tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main)));
     }
 
     @TestOnly
@@ -318,12 +329,12 @@ public class AccessToken {
         @Nullable
         public final Long lmrt; // lastManualRegenerationTime - nullable since v1 of JWT does not have this
         @Nonnull
-        public TenantIdentifier tenantIdentifier;
+        public TenantIdentifierWithStorage tenantIdentifierWithStorage;
 
         AccessTokenInfo(@Nonnull String sessionHandle, @Nonnull String userId, @Nonnull String refreshTokenHash1,
                         long expiryTime, @Nullable String parentRefreshTokenHash1, @Nonnull JsonObject userData,
                         @Nullable String antiCsrfToken, long timeCreated, @Nullable Long lmrt,
-                        @Nonnull TenantIdentifier tenantIdentifier) {
+                        @Nonnull TenantIdentifierWithStorage tenantIdentifierWithStorage) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.refreshTokenHash1 = refreshTokenHash1;
@@ -333,7 +344,7 @@ public class AccessToken {
             this.antiCsrfToken = antiCsrfToken;
             this.timeCreated = timeCreated;
             this.lmrt = lmrt;
-            this.tenantIdentifier = tenantIdentifier;
+            this.tenantIdentifierWithStorage = tenantIdentifierWithStorage;
         }
     }
 

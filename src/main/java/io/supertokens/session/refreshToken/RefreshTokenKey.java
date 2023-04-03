@@ -126,7 +126,7 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
 
     private String maybeGenerateNewKeyAndUpdateInDb()
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        SessionStorage storage = StorageLayer.getSessionStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
+        SessionStorage storage = (SessionStorage) StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
 

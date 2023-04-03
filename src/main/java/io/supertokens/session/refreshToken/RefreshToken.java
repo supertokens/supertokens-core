@@ -24,8 +24,10 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.info.TokenInfo;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
 import org.jetbrains.annotations.TestOnly;
 
@@ -73,10 +75,11 @@ public class RefreshToken {
                     || !nonce.equals(tokenPayload.nonce)) {
                 throw new UnauthorisedException("Invalid refresh token");
             }
+            TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
+                    appIdentifier.getAppId(), tokenPayload.tenantId);
             return new RefreshTokenInfo(tokenPayload.sessionHandle, tokenPayload.userId,
-                    tokenPayload.parentRefreshTokenHash1, null, tokenPayload.antiCsrfToken, tokenType,
-                    new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
-                            tokenPayload.tenantId));
+                    tokenPayload.parentRefreshTokenHash1, null, tokenPayload.antiCsrfToken,
+                    tokenType, tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main)));
 
         } catch (Exception e) {
             throw new UnauthorisedException(e);
@@ -198,19 +201,19 @@ public class RefreshToken {
         @Nullable
         public final String antiCsrfToken;
         @Nonnull
-        public final TenantIdentifier tenantIdentifier;
+        public final TenantIdentifierWithStorage tenantIdentifierWithStorage;
 
         RefreshTokenInfo(@Nonnull String sessionHandle, @Nullable String userId,
                          @Nullable String parentRefreshTokenHash1, @Nullable String parentRefreshTokenHash2,
                          @Nullable String antiCsrfToken, @Nonnull TYPE type,
-                         @Nullable TenantIdentifier tenantIdentifier) {
+                         @Nullable TenantIdentifierWithStorage tenantIdentifierWithStorage) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.parentRefreshTokenHash1 = parentRefreshTokenHash1;
             this.parentRefreshTokenHash2 = parentRefreshTokenHash2;
             this.antiCsrfToken = antiCsrfToken;
             this.type = type;
-            this.tenantIdentifier = tenantIdentifier;
+            this.tenantIdentifierWithStorage = tenantIdentifierWithStorage;
         }
     }
 
