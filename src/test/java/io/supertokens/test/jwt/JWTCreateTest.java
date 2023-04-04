@@ -71,6 +71,28 @@ public class JWTCreateTest {
     }
 
     /**
+     * Call JWTSigningFunctions.createJWTToken with valid params twice and ensure that it does not throw any errors
+     */
+    @Test
+    public void testCreateTokenWithAlreadyExistingKey() throws Exception {
+        String[] args = { "../" };
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String algorithm = "RS256";
+        JsonObject payload = new JsonObject();
+        payload.addProperty("customClaim", "customValue");
+        String jwksDomain = "http://localhost";
+        long validity = 3600;
+
+        JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity, false);
+        JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity, false);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    /**
      * Call JWTSigningFunctions.createJWTToken with valid params and long validity and ensure that it does not throw any
      * errors
      */

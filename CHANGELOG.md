@@ -7,6 +7,10 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [unreleased]
 
+### Fixes
+
+- Fixed creating JWTs using MongoDB if a key already exists
+
 ### Breaking changes
 
 - Using an internal `SemVer` class to handle version numbers. This will make handling CDI version ranges easier.
