@@ -19,6 +19,8 @@ package io.supertokens.webserver.api.emailpassword;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.emailpassword.EmailPassword;
 import io.supertokens.output.Logging;
@@ -66,6 +68,8 @@ public class SignUpAPI extends WebserverAPI {
 
         try {
             UserInfo user = EmailPassword.signUp(super.main, normalisedEmail, password);
+
+            ActiveUsers.updateLastActive(main, user.id);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");

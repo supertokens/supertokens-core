@@ -45,6 +45,11 @@ import io.supertokens.webserver.api.passwordless.*;
 import io.supertokens.webserver.api.session.*;
 import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
 import io.supertokens.webserver.api.thirdparty.SignInUpAPI;
+import io.supertokens.webserver.api.totp.CreateOrUpdateTotpDeviceAPI;
+import io.supertokens.webserver.api.totp.GetTotpDevicesAPI;
+import io.supertokens.webserver.api.totp.RemoveTotpDeviceAPI;
+import io.supertokens.webserver.api.totp.VerifyTotpAPI;
+import io.supertokens.webserver.api.totp.VerifyTotpDeviceAPI;
 import io.supertokens.webserver.api.useridmapping.RemoveUserIdMappingAPI;
 import io.supertokens.webserver.api.useridmapping.UpdateExternalUserIdInfoAPI;
 import io.supertokens.webserver.api.useridmapping.UserIdMappingAPI;
@@ -234,6 +239,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new ConsumeCodeAPI(main));
         addAPI(new TelemetryAPI(main));
         addAPI(new UsersCountAPI(main));
+        addAPI(new ActiveUsersCountAPI(main));
         addAPI(new UsersAPI(main));
         addAPI(new DeleteUserAPI(main));
         addAPI(new RevokeAllTokensForUserAPI(main));
@@ -254,6 +260,11 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new GetRolesAPI(main));
         addAPI(new UserIdMappingAPI(main));
         addAPI(new RemoveUserIdMappingAPI(main));
+        addAPI(new CreateOrUpdateTotpDeviceAPI(main));
+        addAPI(new VerifyTotpDeviceAPI(main));
+        addAPI(new VerifyTotpAPI(main));
+        addAPI(new RemoveTotpDeviceAPI(main));
+        addAPI(new GetTotpDevicesAPI(main));
         addAPI(new UpdateExternalUserIdInfoAPI(main));
         addAPI(new ImportUserWithPasswordHashAPI(main));
         addAPI(new LicenseKeyAPI(main));
@@ -264,6 +275,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new RevokeSessionAPI(main));
         addAPI(new GetDashboardUsersAPI(main));
         addAPI(new GetDashboardSessionsForUserAPI(main));
+        addAPI(new SearchTagsAPI(main));
         // deprecated APIs:
         addAPI(new RecipeRouter(main, new io.supertokens.webserver.api.emailpassword.UsersAPI(main),
                 new io.supertokens.webserver.api.thirdparty.UsersAPI(main)));

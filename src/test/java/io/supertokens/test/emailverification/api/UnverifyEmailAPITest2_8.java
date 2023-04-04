@@ -32,6 +32,8 @@ import org.junit.rules.TestRule;
 
 import java.io.IOException;
 
+import static org.junit.Assert.assertFalse;
+
 public class UnverifyEmailAPITest2_8 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
@@ -80,10 +82,12 @@ public class UnverifyEmailAPITest2_8 {
             // given
             JsonObject body = new JsonObject();
             body.addProperty("userId", "mockUserId");
-            body.addProperty("email", "john.doe@example.com");
+            body.addProperty("email", "john.doE@example.com");
 
             String token = EmailVerification.generateEmailVerificationToken(main, "mockUserId", "john.doe@example.com");
             EmailVerification.verifyEmail(main, token);
+
+            assert (EmailVerification.isEmailVerified(process.main, "mockUserId", "john.doe@example.com"));
 
             // when
             JsonObject response = unverifyEmail(main, body);
@@ -92,6 +96,8 @@ public class UnverifyEmailAPITest2_8 {
 
             // then
             Assert.assertEquals("OK", responseStatus);
+
+            assertFalse(EmailVerification.isEmailVerified(process.main, "mockUserId", "john.doe@example.com"));
         });
     }
 

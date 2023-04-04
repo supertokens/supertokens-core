@@ -18,7 +18,11 @@ package io.supertokens.test.session.api;
 
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -36,7 +40,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 public class RefreshSessionAPITest2_7 {
-    @Rule
+        @Rule
     public TestRule watchman = Utils.getOnFailure();
 
     @AfterClass
@@ -196,6 +200,8 @@ public class RefreshSessionAPITest2_7 {
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals("Http error. Status Code: 400. Message: Invalid Json Input", e.getMessage());
         }
+
+        
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
 
@@ -392,9 +398,76 @@ public class RefreshSessionAPITest2_7 {
                 SemVer.v2_7.get(), "session");
 
         checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, false);
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 
+    @Test
+    public void activeUsersTest() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // Failure case:
+        long start1 = System.currentTimeMillis();
+
+        try {
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/session/refresh", null, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "session");
+            fail();
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertEquals("Http error. Status Code: 400. Message: Invalid Json Input", e.getMessage());
+        }
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), start1);
+        assert (activeUsers == 0);
+
+        // Success case:
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.add("nullProp", JsonNull.INSTANCE);
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        JsonObject request = new JsonObject();
+        request.addProperty("userId", userId);
+        request.add("userDataInJWT", userDataInJWT);
+        request.add("userDataInDatabase", userDataInDatabase);
+        request.addProperty("enableAntiCsrf", false);
+
+        Thread.sleep(1); // Ensures a unique timestamp
+        long startTs = System.currentTimeMillis();
+
+        JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "session");
+        assertEquals(sessionInfo.get("status").getAsString(), "OK");
+
+        JsonObject sessionRefreshBody = new JsonObject();
+
+        sessionRefreshBody.addProperty("refreshToken",
+                sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
+        sessionRefreshBody.addProperty("enableAntiCsrf", false);
+
+        Thread.sleep(1); // ensures a unique timestamp
+        long afterSessionCreateTs = System.currentTimeMillis();
+
+        JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "session");
+
+        checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, false);
+
+        activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 1);
+
+        int activeUsersAfterSessionCreate = ActiveUsers.countUsersActiveSince(process.getProcess(), afterSessionCreateTs);
+        assert (activeUsersAfterSessionCreate == 1);
     }
 
     @Test

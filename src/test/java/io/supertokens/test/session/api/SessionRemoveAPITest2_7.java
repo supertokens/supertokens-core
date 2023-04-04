@@ -19,7 +19,12 @@ package io.supertokens.test.session.api;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import com.google.gson.JsonPrimitive;
+import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -48,6 +53,112 @@ public class SessionRemoveAPITest2_7 {
     @Before
     public void beforeEach() {
         Utils.reset();
+    }
+
+    @Test
+    public void activeUsersTest() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // Case where we don't have userId:
+        {
+        // create sessions s1, s2
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        JsonObject sessionRequest = new JsonObject();
+        sessionRequest.addProperty("userId", userId);
+        sessionRequest.add("userDataInJWT", userDataInJWT);
+        sessionRequest.add("userDataInDatabase", userDataInDatabase);
+        sessionRequest.addProperty("enableAntiCsrf", false);
+
+        // create session s1
+        JsonObject s1Info = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, 2, Utils.getCdiVersion2_7ForTests(),
+                "session");
+        assertEquals(s1Info.get("status").getAsString(), "OK");
+
+        // create session s2
+        JsonObject s2Info = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, 2, Utils.getCdiVersion2_7ForTests(),
+                "session");
+        assertEquals(s2Info.get("status").getAsString(), "OK");
+
+        // remove s2 and make sure they are returned
+        Thread.sleep(1); // ensures a unique timestamp
+        long checkpoint1 = System.currentTimeMillis();
+
+        JsonObject sessionRemoveBody = new JsonObject();
+        JsonArray sessionHandles = new JsonArray();
+        sessionHandles.add(new JsonPrimitive(s2Info.get("session").getAsJsonObject().get("handle").getAsString()));
+        sessionRemoveBody.add("sessionHandles", sessionHandles);
+
+        HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/remove", sessionRemoveBody, 1000, 1000, null,
+                Utils.getCdiVersion2_7ForTests(), "session");
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), checkpoint1);
+        assert (activeUsers == 0); // user ID is not set so not counted as active (we don't have userId)
+        }
+
+        // Case where we have UserId:
+        {
+            // create new Session
+            String userId = "userId2";
+            JsonObject userDataInJWT = new JsonObject();
+            userDataInJWT.addProperty("key", "value");
+            JsonObject userDataInDatabase = new JsonObject();
+            userDataInDatabase.addProperty("key", "value");
+
+            JsonObject sessionRequest = new JsonObject();
+            sessionRequest.addProperty("userId", userId);
+            sessionRequest.add("userDataInJWT", userDataInJWT);
+            sessionRequest.add("userDataInDatabase", userDataInDatabase);
+            sessionRequest.addProperty("enableAntiCsrf", false);
+
+            // create Session
+            JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, 2, Utils.getCdiVersion2_7ForTests(),
+                    "session");
+            assertEquals(sessionInfo.get("status").getAsString(), "OK");
+
+            JsonObject session2Info = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, 2, Utils.getCdiVersion2_7ForTests(),
+                    "session");
+            assertEquals(session2Info.get("status").getAsString(), "OK");
+
+            Thread.sleep(1); // ensures a unique timestamp
+            long checkpoint1 = System.currentTimeMillis();
+
+            // remove session using user id
+            JsonObject removeSessionBody = new JsonObject();
+            removeSessionBody.addProperty("userId", userId);
+
+            JsonObject sessionRemovedResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                    "http://localhost:3567/recipe/session/remove", removeSessionBody, 1000, 1000, null,
+                    Utils.getCdiVersion2_7ForTests(), "session");
+            assertEquals(sessionRemovedResponse.get("status").getAsString(), "OK");
+
+            assertEquals(sessionRemovedResponse.get("sessionHandlesRevoked").getAsJsonArray().size(), 2);
+
+            assertTrue(sessionRemovedResponse.getAsJsonArray("sessionHandlesRevoked")
+                    .contains(sessionInfo.get("session").getAsJsonObject().get("handle")));
+            assertTrue(sessionRemovedResponse.getAsJsonArray("sessionHandlesRevoked")
+                    .contains(session2Info.get("session").getAsJsonObject().get("handle")));
+
+            int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), checkpoint1);
+            assert (activeUsers == 1); // user ID is set
+        }
+
     }
 
     // * - create session s1, s2, s3, s4. Remove s2 and s4 - make sure they are returned. Remove s1, s2, s3, s4,
@@ -99,6 +210,8 @@ public class SessionRemoveAPITest2_7 {
 
         // remove s2 and s4 and make sure they are returned
 
+        long checkpoint1 = System.currentTimeMillis();
+
         String sessionRemoveBodyString = "{" + " sessionHandles : [ "
                 + s2Info.get("session").getAsJsonObject().get("handle").getAsString() + " ,"
                 + s4Info.get("session").getAsJsonObject().get("handle").getAsString() + " ] " + "}";
@@ -107,6 +220,7 @@ public class SessionRemoveAPITest2_7 {
                 "http://localhost:3567/recipe/session/remove", sessionRemoveBody, 1000, 1000, null,
                 SemVer.v2_7.get(), "session");
         JsonArray revokedSessions = sessionRemovedResponse.getAsJsonArray("sessionHandlesRevoked");
+
 
         for (int i = 0; i < revokedSessions.size(); i++) {
             assertTrue(sessionRemoveBody.getAsJsonArray("sessionHandles").contains(revokedSessions.get(i)));
@@ -120,6 +234,8 @@ public class SessionRemoveAPITest2_7 {
                 + s3Info.get("session").getAsJsonObject().get("handle").getAsString() + " ,"
                 + s4Info.get("session").getAsJsonObject().get("handle").getAsString() + " ] " + "}";
         sessionRemoveBody = new JsonParser().parse(sessionRemoveBodyString).getAsJsonObject();
+
+        long checkpoint2 = System.currentTimeMillis();
 
         sessionRemovedResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/remove", sessionRemoveBody, 1000, 1000, null,
@@ -221,6 +337,8 @@ public class SessionRemoveAPITest2_7 {
                 "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, 2, SemVer.v2_7.get(),
                 "session");
         assertEquals(session2Info.get("status").getAsString(), "OK");
+
+        long checkpoint1 = System.currentTimeMillis();
 
         // remove session using user id
         JsonObject removeSessionBody = new JsonObject();

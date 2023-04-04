@@ -28,7 +28,6 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import com.google.gson.JsonObject;
-
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.emailpassword.PasswordHashing;
@@ -55,7 +54,7 @@ public class SignInAPITest {
 
     @Test
     public void testSigningInAUserAndVerifyingTheirSession() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -72,7 +71,7 @@ public class SignInAPITest {
 
         // signin user
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("email", email);
+        requestBody.addProperty("email", "tesT@example.com");
         requestBody.addProperty("password", password);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/dashboard/signin", requestBody, 1000, 1000, null,
@@ -91,7 +90,7 @@ public class SignInAPITest {
 
     @Test
     public void testSigningInASuspendedUser() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -139,7 +138,9 @@ public class SignInAPITest {
                     SemVer.v2_18.get(), "dashboard");
             assertEquals(2, response.entrySet().size());
             assertEquals("USER_SUSPENDED_ERROR", response.get("status").getAsString());
-            assertEquals("User is currently suspended, please sign in with another account, or reactivate the SuperTokens core license key",
+            assertEquals(
+                    "User is currently suspended, please sign in with another account, or reactivate the SuperTokens " +
+                            "core license key",
                     response.get("message").getAsString());
         }
 

@@ -19,6 +19,8 @@ package io.supertokens.webserver.api.thirdparty;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -29,10 +31,10 @@ import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 
 public class SignInUpAPI extends WebserverAPI {
@@ -65,11 +67,13 @@ public class SignInUpAPI extends WebserverAPI {
 
             // logic according to https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
 
-            String normalisedEmail = Utils.normaliseEmail(email);
+            email = Utils.normaliseEmail(email);
 
             try {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(super.main, thirdPartyId,
-                        thirdPartyUserId, normalisedEmail, isEmailVerified);
+                        thirdPartyUserId, email, isEmailVerified);
+
+                ActiveUsers.updateLastActive(main, response.user.id);
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
@@ -95,11 +99,13 @@ public class SignInUpAPI extends WebserverAPI {
             // logic according to https://github.com/supertokens/supertokens-core/issues/190#issuecomment-774671873
             // and modifed according to https://github.com/supertokens/supertokens-core/issues/295
 
-            String normalisedEmail = Utils.normaliseEmail(email);
+            email = Utils.normaliseEmail(email);
 
             try {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(super.main, thirdPartyId, thirdPartyUserId,
-                        normalisedEmail);
+                        email);
+
+                ActiveUsers.updateLastActive(main, response.user.id);
 
                 //
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping

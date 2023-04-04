@@ -285,7 +285,12 @@ public class DashboardTest {
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(0, response.get("features").getAsJsonArray().size());
-            assertEquals(0, response.get("usageStats").getAsJsonObject().entrySet().size());
+            JsonObject usageStats = response.get("usageStats").getAsJsonObject();
+            JsonArray mauArr = usageStats.get("maus").getAsJsonArray();
+            assertEquals(1, usageStats.entrySet().size());
+            assertEquals(30, mauArr.size());
+            assertEquals(0, mauArr.get(0).getAsInt());
+            assertEquals(0, mauArr.get(29).getAsInt());
         }
 
         // create a dashboard user
@@ -298,7 +303,12 @@ public class DashboardTest {
             assertEquals(3, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(0, response.get("features").getAsJsonArray().size());
-            assertEquals(0, response.get("usageStats").getAsJsonObject().entrySet().size());
+            JsonObject usageStats = response.get("usageStats").getAsJsonObject();
+            JsonArray mauArr = usageStats.get("maus").getAsJsonArray();
+            assertEquals(1, usageStats.entrySet().size());
+            assertEquals(30, mauArr.size());
+            assertEquals(0, mauArr.get(0).getAsInt());
+            assertEquals(0, mauArr.get(29).getAsInt());
         }
 
         // enable the dashboard feature
@@ -315,9 +325,9 @@ public class DashboardTest {
             assertEquals(1, featuresArray.size());
             assertEquals(EE_FEATURES.DASHBOARD_LOGIN.toString(), featuresArray.get(0).getAsString());
             JsonObject usageStats = response.get("usageStats").getAsJsonObject();
-            assertEquals(1,
-                    usageStats.entrySet().size());
             JsonObject dashboardLoginObject = usageStats.get("dashboard_login").getAsJsonObject();
+            assertEquals(2, usageStats.entrySet().size());
+            assertEquals(30, usageStats.get("maus").getAsJsonArray().size());
             assertEquals(1, dashboardLoginObject.entrySet().size());
             assertEquals(1, dashboardLoginObject.get("user_count").getAsInt());
         }
@@ -338,9 +348,9 @@ public class DashboardTest {
             assertEquals(1, featuresArray.size());
             assertEquals(EE_FEATURES.DASHBOARD_LOGIN.toString(), featuresArray.get(0).getAsString());
             JsonObject usageStats = response.get("usageStats").getAsJsonObject();
-            assertEquals(1,
-                    usageStats.entrySet().size());
             JsonObject dashboardLoginObject = usageStats.get("dashboard_login").getAsJsonObject();
+            assertEquals(2, usageStats.entrySet().size());
+            assertEquals(30, usageStats.get("maus").getAsJsonArray().size());
             assertEquals(1, dashboardLoginObject.entrySet().size());
             assertEquals(4, dashboardLoginObject.get("user_count").getAsInt());
         }

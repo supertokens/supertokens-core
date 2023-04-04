@@ -16,13 +16,9 @@
 
 package io.supertokens.webserver.api.dashboard;
 
-import java.io.IOException;
-import java.io.Serial;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-
 import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
@@ -38,6 +34,9 @@ import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
+import java.io.Serial;
 
 public class DashboardUserAPI extends WebserverAPI {
 
@@ -63,6 +62,7 @@ public class DashboardUserAPI extends WebserverAPI {
 
             // normalize email
             email = Utils.normalizeAndValidateStringParam(email, "email");
+            email = io.supertokens.utils.Utils.normaliseEmail(email);
 
             // check if input email is invalid
             if (!Dashboard.isValidEmail(email)) {
@@ -112,6 +112,7 @@ public class DashboardUserAPI extends WebserverAPI {
         if (newEmail != null) {
             // normalize new email
             newEmail = Utils.normalizeAndValidateStringParam(newEmail, "newEmail");
+            newEmail = io.supertokens.utils.Utils.normaliseEmail(newEmail);
 
             // check if the newEmail is in valid format
             if (!Dashboard.isValidEmail(newEmail)) {
@@ -158,6 +159,7 @@ public class DashboardUserAPI extends WebserverAPI {
             if (email != null) {
                 // normalize email
                 email = Utils.normalizeAndValidateStringParam(email, "email");
+                email = io.supertokens.utils.Utils.normaliseEmail(email);
 
                 // check if the user exists
                 DashboardUser user = Dashboard.getDashboardUserByEmail(main, email);
@@ -215,6 +217,7 @@ public class DashboardUserAPI extends WebserverAPI {
             if (email != null) {
                 // normalize email
                 email = Utils.normalizeAndValidateStringParam(email, "email");
+                email = io.supertokens.utils.Utils.normaliseEmail(email);
                 boolean didUserExist = Dashboard.deleteUserWithEmail(main, email);
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");

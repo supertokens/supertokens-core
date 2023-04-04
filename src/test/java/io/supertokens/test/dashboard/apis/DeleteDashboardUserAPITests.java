@@ -31,7 +31,6 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import com.google.gson.JsonObject;
-
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -58,7 +57,7 @@ public class DeleteDashboardUserAPITests {
 
     @Test
     public void BadInputTests() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -71,24 +70,25 @@ public class DeleteDashboardUserAPITests {
             // calling API with neither email or userId
             try {
                 HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
-                    "http://localhost:3567/recipe/dashboard/user", null, 1000, 1000, null,
-                    SemVer.v2_18.get(), "dashboard");
+                        "http://localhost:3567/recipe/dashboard/user", null, 1000, 1000, null,
+                        SemVer.v2_18.get(), "dashboard");
                 throw new Exception("Should never come here");
 
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
-                        "Http error. Status Code: 400. Message:" + " Either field 'email' or 'userId' must be present"));
+                        "Http error. Status Code: 400. Message:" +
+                                " Either field 'email' or 'userId' must be present"));
             }
         }
 
         {
             // calling API with userId as an empty string
             HashMap<String, String> inputParams = new HashMap<>();
-            inputParams.put("userId", "  "); 
+            inputParams.put("userId", "  ");
             try {
                 HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
-                    "http://localhost:3567/recipe/dashboard/user", inputParams, 1000, 1000, null,
-                    SemVer.v2_18.get(), "dashboard");
+                        "http://localhost:3567/recipe/dashboard/user", inputParams, 1000, 1000, null,
+                        SemVer.v2_18.get(), "dashboard");
                 throw new Exception("Should never come here");
 
             } catch (HttpResponseException e) {
@@ -99,11 +99,11 @@ public class DeleteDashboardUserAPITests {
 
         // calling API with email as an empty string
         HashMap<String, String> inputParams = new HashMap<>();
-        inputParams.put("email", "  "); 
+        inputParams.put("email", "  ");
         try {
             HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
-                "http://localhost:3567/recipe/dashboard/user", inputParams, 1000, 1000, null,
-                SemVer.v2_18.get(), "dashboard");
+                    "http://localhost:3567/recipe/dashboard/user", inputParams, 1000, 1000, null,
+                    SemVer.v2_18.get(), "dashboard");
             throw new Exception("Should never come here");
 
         } catch (HttpResponseException e) {
@@ -117,7 +117,7 @@ public class DeleteDashboardUserAPITests {
 
     @Test
     public void testSuccessfullyDeletingAUserWithUserId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -142,7 +142,7 @@ public class DeleteDashboardUserAPITests {
                     SemVer.v2_18.get(), "dashboard");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
-            assertTrue(response.get("didUserExist").getAsBoolean());            
+            assertTrue(response.get("didUserExist").getAsBoolean());
         }
 
         // try deleting user again
@@ -154,7 +154,53 @@ public class DeleteDashboardUserAPITests {
                     SemVer.v2_18.get(), "dashboard");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
-            assertFalse(response.get("didUserExist").getAsBoolean());  
+            assertFalse(response.get("didUserExist").getAsBoolean());
+        }
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
+    }
+
+    @Test
+    public void testSuccessfullyDeletingAUserWithEmail() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // create a user
+        DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), "test@example.com", "password123");
+
+        // check that user exists
+        assertEquals(1, Dashboard.getAllDashboardUsers(process.getProcess()).length);
+
+        // delete user
+
+        {
+            HashMap<String, String> inputParams = new HashMap<>();
+            inputParams.put("email", user.email.toUpperCase());
+            JsonObject response = HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
+                    "http://localhost:3567/recipe/dashboard/user", inputParams, 1000, 1000, null,
+                    SemVer.v2_18.get(), "dashboard");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertTrue(response.get("didUserExist").getAsBoolean());
+        }
+
+        // try deleting user again
+        {
+            HashMap<String, String> inputParams = new HashMap<>();
+            inputParams.put("email", user.email);
+            JsonObject response = HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
+                    "http://localhost:3567/recipe/dashboard/user", inputParams, 1000, 1000, null,
+                    SemVer.v2_18.get(), "dashboard");
+            assertEquals(2, response.entrySet().size());
+            assertEquals("OK", response.get("status").getAsString());
+            assertFalse(response.get("didUserExist").getAsBoolean());
         }
 
         process.kill();

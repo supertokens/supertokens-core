@@ -26,17 +26,16 @@ import io.supertokens.authRecipe.UserPaginationContainer;
 import io.supertokens.authRecipe.UserPaginationToken;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -47,7 +46,7 @@ public class UsersAPI extends WebserverAPI {
     private static final long serialVersionUID = -2225750492558064634L;
 
     public UsersAPI(Main main) {
-        super(main, RECIPE_ID.EMAIL_PASSWORD.toString());
+        super(main, "");
     }
 
     @Override
@@ -98,8 +97,52 @@ public class UsersAPI extends WebserverAPI {
             timeJoinedOrder = "ASC";
         }
 
+        DashboardSearchTags searchTags = null;
+
+        String emails = InputParser.getQueryParamOrThrowError(req, "email", true);
+        {
+            if (emails != null) {
+                ArrayList<String> emailArrayList = normalizeSearchTags(emails);
+
+                if (emailArrayList.size() != 0) {
+                    searchTags = new DashboardSearchTags(emailArrayList, null, null);
+                }
+            }
+        }
+
+        String phoneNumbers = InputParser.getQueryParamOrThrowError(req, "phone", true);
+        {
+            if (phoneNumbers != null) {
+                ArrayList<String> phoneNumberArrayList = normalizeSearchTags(phoneNumbers);
+
+                if (phoneNumberArrayList.size() != 0) {
+                    if (searchTags == null) {
+                        searchTags = new DashboardSearchTags(null, phoneNumberArrayList, null);
+                    } else {
+                        searchTags.phoneNumbers = phoneNumberArrayList;
+                    }
+
+                }
+            }
+        }
+
+        String providers = InputParser.getQueryParamOrThrowError(req, "provider", true);
+        {
+            if (providers != null) {
+                ArrayList<String> providerArrayList = normalizeSearchTags(providers);
+
+                if (providerArrayList.size() != 0) {
+                    if (searchTags == null) {
+                        searchTags = new DashboardSearchTags(null, null, providerArrayList);
+                    } else {
+                        searchTags.providers = providerArrayList;
+                    }
+                }
+            }
+        }
+
         if (limit != null) {
-            if (limit > AuthRecipe.USER_PAGINATION_LIMIT) {
+            if (limit > AuthRecipe.USER_PAGINATION_LIMIT && searchTags == null) {
                 throw new ServletException(
                         new BadRequestException("max limit allowed is " + AuthRecipe.USER_PAGINATION_LIMIT));
             } else if (limit < 1) {
@@ -111,7 +154,7 @@ public class UsersAPI extends WebserverAPI {
 
         try {
             UserPaginationContainer users = AuthRecipe.getUsers(super.main, limit, timeJoinedOrder, paginationToken,
-                    recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new));
+                    recipeIdsEnumBuilder.build().toArray(RECIPE_ID[]::new), searchTags);
 
             ArrayList<String> userIds = new ArrayList<>();
             for (int i = 0; i < users.users.length; i++) {
@@ -144,5 +187,17 @@ public class UsersAPI extends WebserverAPI {
         } catch (StorageQueryException e) {
             throw new ServletException(e);
         }
+    }
+
+    private static ArrayList<String> normalizeSearchTags(String searchTag) {
+        String[] searchTagArray = searchTag.split(";");
+        ArrayList<String> searchTagArrayList = new ArrayList<>();
+        for (String searchTagString : searchTagArray) {
+            String normalizedSearchTag = searchTagString.toLowerCase().trim();
+            if (normalizedSearchTag.length() != 0) {
+                searchTagArrayList.add(normalizedSearchTag);
+            }
+        }
+        return searchTagArrayList;
     }
 }

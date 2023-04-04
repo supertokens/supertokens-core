@@ -16,12 +16,15 @@
 
 package io.supertokens.test;
 
+import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.webserver.WebserverAPI;
 import org.junit.*;
@@ -52,6 +55,10 @@ public class FeatureFlagTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         Assert.assertNotNull(FeatureFlag.getInstance(process.main).getEeFeatureFlagInstance());
 
         Assert.assertEquals(FeatureFlag.getInstance(process.getProcess()).getEnabledFeatures().length, 0);
@@ -62,7 +69,11 @@ public class FeatureFlagTest {
         } catch (NoLicenseKeyFoundException ignored) {
         }
 
-        Assert.assertEquals(FeatureFlag.getInstance(process.getProcess()).getPaidFeatureStats().entrySet().size(), 0);
+        JsonObject stats = FeatureFlag.getInstance(process.getProcess()).getPaidFeatureStats();
+        Assert.assertEquals(stats.entrySet().size(), 1);
+        Assert.assertEquals(stats.get("maus").getAsJsonArray().size(), 30);
+        Assert.assertEquals(stats.get("maus").getAsJsonArray().get(0).getAsInt(), 0);
+        Assert.assertEquals(stats.get("maus").getAsJsonArray().get(29).getAsInt(), 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -101,12 +112,117 @@ public class FeatureFlagTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/featureflag",
                 null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
         Assert.assertEquals("OK", response.get("status").getAsString());
         Assert.assertNotNull(response.get("features"));
         Assert.assertEquals(0, response.get("features").getAsJsonArray().size());
+
+        process.kill();
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    private final String OPAQUE_KEY_WITH_TOTP_FEATURE = "pXhNK=nYiEsb6gJEOYP2kIR6M0kn4XLvNqcwT1XbX8xHtm44K-lQfGCbaeN0Ieeza39fxkXr=tiiUU=DXxDH40Y=4FLT4CE-rG1ETjkXxO4yucLpJvw3uSegPayoISGL";
+
+    @Test
+    public void testThatCallingGetFeatureFlagAPIReturnsTotpStats() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(OPAQUE_KEY_WITH_TOTP_FEATURE);
+
+        // Get the stats without any users/activity
+        {
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/ee/featureflag",
+                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+            Assert.assertEquals("OK", response.get("status").getAsString());
+
+            JsonArray features = response.get("features").getAsJsonArray();
+            JsonObject usageStats = response.get("usageStats").getAsJsonObject();
+            JsonArray maus = usageStats.get("maus").getAsJsonArray();
+
+            assert features.size() == 1;
+            assert features.get(0).getAsString().equals("totp");
+            assert maus.size() == 30;
+            assert maus.get(0).getAsInt() == 0;
+            assert maus.get(29).getAsInt() == 0;
+
+            JsonObject totpStats = usageStats.get("totp").getAsJsonObject();
+            JsonArray totpMaus = totpStats.get("maus").getAsJsonArray();
+            int totalTotpUsers = totpStats.get("total_users").getAsInt();
+
+            assert totpMaus.size() == 30;
+            assert totpMaus.get(0).getAsInt() == 0;
+            assert totpMaus.get(29).getAsInt() == 0;
+
+            assert totalTotpUsers == 0;
+        }
+
+        // First register 2 users for emailpassword recipe.
+        // This also marks them as active.
+        JsonObject signUpResponse = Utils.signUpRequest_2_5(process, "random@gmail.com", "validPass123");
+        assert signUpResponse.get("status").getAsString().equals("OK");
+
+        JsonObject signUpResponse2 = Utils.signUpRequest_2_5(process, "random2@gmail.com", "validPass123");
+        assert signUpResponse2.get("status").getAsString().equals("OK");
+
+        // Now enable TOTP for the first user by registering a device.
+        JsonObject body = new JsonObject();
+        body.addProperty("userId", signUpResponse.get("user").getAsJsonObject().get("id").getAsString());
+        body.addProperty("deviceName", "d1");
+        body.addProperty("skew", 0);
+        body.addProperty("period", 30);
+        JsonObject res = HttpRequestForTesting.sendJsonPOSTRequest(
+                process.getProcess(),
+                "",
+                "http://localhost:3567/recipe/totp/device",
+                body,
+                1000,
+                1000,
+                null,
+                Utils.getCdiVersionLatestForTests(),
+                "totp");
+        assert res.get("status").getAsString().equals("OK");
+
+        // Now check the stats again:
+        {
+            JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
+                    "http://localhost:3567/ee/featureflag",
+                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+            Assert.assertEquals("OK", response.get("status").getAsString());
+
+            JsonArray features = response.get("features").getAsJsonArray();
+            JsonObject usageStats = response.get("usageStats").getAsJsonObject();
+            JsonArray maus = usageStats.get("maus").getAsJsonArray();
+
+            assert features.size() == 1;
+            assert features.get(0).getAsString().equals("totp");
+            assert maus.size() == 30;
+            assert maus.get(0).getAsInt() == 2; // 2 users have signed up
+            assert maus.get(29).getAsInt() == 2;
+
+            JsonObject totpStats = usageStats.get("totp").getAsJsonObject();
+            JsonArray totpMaus = totpStats.get("maus").getAsJsonArray();
+            int totalTotpUsers = totpStats.get("total_users").getAsInt();
+
+            assert totpMaus.size() == 30;
+            assert totpMaus.get(0).getAsInt() == 1; // only 1 user has TOTP enabled
+            assert totpMaus.get(29).getAsInt() == 1;
+
+            assert totalTotpUsers == 1;
+        }
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

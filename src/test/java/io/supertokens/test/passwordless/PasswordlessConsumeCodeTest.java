@@ -234,7 +234,8 @@ public class PasswordlessConsumeCodeTest {
     }
 
     /**
-     * Check device clean up when user input code is generated via email & phone number
+     * Check device clean up when user input code is generated via email & phone
+     * number
      *
      * @throws Exception
      */
@@ -732,7 +733,8 @@ public class PasswordlessConsumeCodeTest {
     }
 
     /**
-     * user input code with too many failedAttempts (changed maxCodeInputAttempts configuration between consumes)
+     * user input code with too many failedAttempts (changed maxCodeInputAttempts
+     * configuration between consumes)
      * TODO: review -> do we need to create code again post restart ?
      *
      * @throws Exception

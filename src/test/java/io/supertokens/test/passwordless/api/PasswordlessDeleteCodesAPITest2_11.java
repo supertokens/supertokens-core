@@ -52,7 +52,7 @@ public class PasswordlessDeleteCodesAPITest2_11 {
 
     @Test
     public void testBadInput() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -101,7 +101,7 @@ public class PasswordlessDeleteCodesAPITest2_11 {
 
     @Test
     public void testDeleteByEmailWithoutCodes() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -125,7 +125,7 @@ public class PasswordlessDeleteCodesAPITest2_11 {
 
     @Test
     public void testDeleteByPhoneWithoutCodes() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -149,7 +149,7 @@ public class PasswordlessDeleteCodesAPITest2_11 {
 
     @Test
     public void testDeleteByEmail() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -173,7 +173,7 @@ public class PasswordlessDeleteCodesAPITest2_11 {
         storage.createCode(new PasswordlessCode(codeId2, deviceIdHash, linkCodeHash2, System.currentTimeMillis()));
 
         JsonObject createCodeRequestBody = new JsonObject();
-        createCodeRequestBody.addProperty("email", email);
+        createCodeRequestBody.addProperty("email", "test@examplE.com");
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/codes/remove", createCodeRequestBody, 1000, 1000, null,
@@ -191,7 +191,7 @@ public class PasswordlessDeleteCodesAPITest2_11 {
 
     @Test
     public void testDeleteByPhoneNumber() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));

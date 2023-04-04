@@ -18,7 +18,6 @@ package io.supertokens.test.dashboard.apis;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import io.supertokens.utils.SemVer;
@@ -29,7 +28,6 @@ import org.junit.Test;
 import org.junit.rules.TestRule;
 
 import com.google.gson.JsonObject;
-
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
@@ -57,7 +55,7 @@ public class UpdateUserAPITest {
 
     @Test
     public void BadInputTests() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -167,7 +165,7 @@ public class UpdateUserAPITest {
 
     @Test
     public void testSuccessfullyUpdatingUserDataWithUserId() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -187,12 +185,12 @@ public class UpdateUserAPITest {
 
         // update the user's email and password
 
-        String newEmail = "newTest@example.com";
+        String newEmail = "newtest@example.com";
         String newPassword = "newPassword123";
 
         JsonObject requestBody = new JsonObject();
-        requestBody.addProperty("email", email);
-        requestBody.addProperty("newEmail", newEmail);
+        requestBody.addProperty("email", email.toUpperCase());
+        requestBody.addProperty("newEmail", newEmail.toUpperCase());
         requestBody.addProperty("newPassword", newPassword);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
