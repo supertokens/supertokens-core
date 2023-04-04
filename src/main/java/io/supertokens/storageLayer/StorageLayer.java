@@ -17,32 +17,24 @@
 package io.supertokens.storageLayer;
 
 import com.google.gson.JsonObject;
-import io.supertokens.Main;
-import io.supertokens.ProcessState;
-import io.supertokens.ResourceDistributor;
+import io.supertokens.*;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
-import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
-import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
-import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import org.jetbrains.annotations.TestOnly;
 
@@ -365,6 +357,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         // TODO remove this function
         return (DashboardSQLStorage) getInstance(appIdentifier.getAsPublicTenantIdentifier(), main).storage;
     }
+
 
     @TestOnly
     public static DashboardSQLStorage getDashboardStorage(Main main) {

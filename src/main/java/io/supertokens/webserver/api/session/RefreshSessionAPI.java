@@ -17,16 +17,21 @@
 package io.supertokens.webserver.api.session;
 
 import com.google.gson.JsonObject;
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.exceptions.TokenTheftDetectedException;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -59,9 +64,26 @@ public class RefreshSessionAPI extends WebserverAPI {
 
         try {
             SessionInformationHolder sessionInfo = Session.refreshSession(
-                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main,
+                    this.getAppIdentifierWithStorage(req), main,
                     refreshToken, antiCsrfToken,
                     enableAntiCsrf);
+
+            if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
+                    STORAGE_TYPE.SQL) {
+                try {
+                    UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                            this.getAppIdentifierWithStorage(req),
+                            sessionInfo.session.userId, UserIdType.ANY);
+                    if (userIdMapping != null) {
+                        ActiveUsers.updateLastActive(main, userIdMapping.superTokensUserId);
+                    } else {
+                        ActiveUsers.updateLastActive(main, sessionInfo.session.userId);
+                    }
+                } catch (StorageQueryException ignored) {
+                }
+            }
+
+
             JsonObject result = sessionInfo.toJsonObject();
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);

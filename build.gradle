@@ -19,7 +19,7 @@ compileTestJava { options.encoding = "UTF-8" }
 //    }
 //}
 
-version = "4.4.2"
+version = "4.6.0"
 
 
 repositories {
@@ -64,6 +64,12 @@ dependencies {
 
     // https://mvnrepository.com/artifact/com.lambdaworks/scrypt
     implementation group: 'com.lambdaworks', name: 'scrypt', version: '1.4.0'
+
+    // https://mvnrepository.com/artifact/com.eatthepath/java-otp
+    implementation group: 'com.eatthepath', name: 'java-otp', version: '0.4.0'
+
+    // https://mvnrepository.com/artifact/commons-codec/commons-codec
+    implementation group: 'commons-codec', name: 'commons-codec', version: '1.15'
 
     compileOnly project(":supertokens-plugin-interface")
     testImplementation project(":supertokens-plugin-interface")
@@ -159,4 +165,3 @@ tasks.withType(Test) {
         }
     }
 }
-  

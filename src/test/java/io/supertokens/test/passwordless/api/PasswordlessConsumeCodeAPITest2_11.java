@@ -27,6 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
+import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
 import io.supertokens.passwordless.Passwordless;
 import io.supertokens.passwordless.Passwordless.CreateCodeResponse;
@@ -61,6 +62,8 @@ public class PasswordlessConsumeCodeAPITest2_11 {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
+
+        long startTs = System.currentTimeMillis();
 
         String email = "test@example.com";
         CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
@@ -276,6 +279,9 @@ public class PasswordlessConsumeCodeAPITest2_11 {
                     error.getMessage());
         }
 
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 0);
+
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
@@ -291,6 +297,8 @@ public class PasswordlessConsumeCodeAPITest2_11 {
             return;
         }
 
+        long startTs = System.currentTimeMillis();
+
         String email = "test@example.com";
         CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
 
@@ -303,6 +311,9 @@ public class PasswordlessConsumeCodeAPITest2_11 {
                 Utils.getCdiVersion2_10ForTests(), "passwordless");
 
         checkResponse(response, true, email, null);
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -321,6 +332,8 @@ public class PasswordlessConsumeCodeAPITest2_11 {
             return;
         }
 
+        long startTs = System.currentTimeMillis();
+
         String email = "test@example.com";
         CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
         Thread.sleep(150);
@@ -333,6 +346,9 @@ public class PasswordlessConsumeCodeAPITest2_11 {
                 Utils.getCdiVersion2_10ForTests(), "passwordless");
 
         assertEquals("RESTART_FLOW_ERROR", response.get("status").getAsString());
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -349,6 +365,8 @@ public class PasswordlessConsumeCodeAPITest2_11 {
             return;
         }
 
+        long startTs = System.currentTimeMillis();
+
         String email = "test@example.com";
         CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
 
@@ -362,6 +380,9 @@ public class PasswordlessConsumeCodeAPITest2_11 {
                 Utils.getCdiVersion2_10ForTests(), "passwordless");
 
         checkResponse(response, true, email, null);
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 1);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -379,6 +400,8 @@ public class PasswordlessConsumeCodeAPITest2_11 {
             return;
         }
 
+        long startTs = System.currentTimeMillis();
+
         String email = "test@example.com";
         CreateCodeResponse createResp = Passwordless.createCode(process.getProcess(), email, null, null, null);
         Thread.sleep(150);
@@ -393,6 +416,9 @@ public class PasswordlessConsumeCodeAPITest2_11 {
                 Utils.getCdiVersion2_10ForTests(), "passwordless");
 
         assertEquals("EXPIRED_USER_INPUT_CODE_ERROR", response.get("status").getAsString());
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 0);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));

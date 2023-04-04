@@ -26,6 +26,7 @@ import io.supertokens.cronjobs.deleteExpiredEmailVerificationTokens.DeleteExpire
 import io.supertokens.cronjobs.deleteExpiredPasswordResetTokens.DeleteExpiredPasswordResetTokens;
 import io.supertokens.cronjobs.deleteExpiredPasswordlessDevices.DeleteExpiredPasswordlessDevices;
 import io.supertokens.cronjobs.deleteExpiredSessions.DeleteExpiredSessions;
+import io.supertokens.cronjobs.deleteExpiredTotpTokens.DeleteExpiredTotpTokens;
 import io.supertokens.cronjobs.telemetry.Telemetry;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.exceptions.QuitProgramException;
@@ -237,6 +238,9 @@ public class Main {
 
         // removes passwordless devices with only expired codes
         Cronjobs.addCronjob(this, DeleteExpiredPasswordlessDevices.init(this, uniqueUserPoolIdsTenants));
+
+        // removes expired TOTP used tokens
+        Cronjobs.addCronjob(this, DeleteExpiredTotpTokens.getInstance(this));
 
         // removes expired dashboard session
         Cronjobs.addCronjob(this, DeleteExpiredDashboardSessions.init(this, uniqueUserPoolIdsTenants));

@@ -1,0 +1,74 @@
+package io.supertokens.webserver.api.totp;
+
+import java.io.IOException;
+
+import com.google.gson.JsonObject;
+
+import io.supertokens.Main;
+import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
+import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
+import io.supertokens.totp.Totp;
+import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.webserver.InputParser;
+import io.supertokens.webserver.WebserverAPI;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+
+public class RemoveTotpDeviceAPI extends WebserverAPI {
+    private static final long serialVersionUID = -4641988458637882374L;
+
+    public RemoveTotpDeviceAPI(Main main) {
+        super(main, RECIPE_ID.TOTP.toString());
+    }
+
+    @Override
+    public String getPath() {
+        return "/recipe/totp/device/remove";
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
+
+        String userId = InputParser.parseStringOrThrowError(input, "userId", false);
+        String deviceName = InputParser.parseStringOrThrowError(input, "deviceName", false);
+
+        if (userId.isEmpty()) {
+            throw new ServletException(new BadRequestException("userId cannot be empty"));
+        }
+        if (deviceName.isEmpty()) {
+            throw new ServletException(new BadRequestException("deviceName cannot be empty"));
+        }
+
+        JsonObject result = new JsonObject();
+
+        try {
+            // This step is required only because user_last_active table stores supertokens internal user id.
+            // While sending the usage stats we do a join, so totp tables also must use internal user id.
+            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main, userId, UserIdType.ANY);
+            if (userIdMapping != null) {
+                userId = userIdMapping.superTokensUserId;
+            }
+
+            Totp.removeDevice(main, userId, deviceName);
+
+            result.addProperty("status", "OK");
+            result.addProperty("didDeviceExist", true);
+            super.sendJsonResponse(200, result, resp);
+        } catch (TotpNotEnabledException e) {
+            result.addProperty("status", "TOTP_NOT_ENABLED_ERROR");
+            super.sendJsonResponse(200, result, resp);
+        } catch (UnknownDeviceException e) {
+            result.addProperty("status", "OK");
+            result.addProperty("didDeviceExist", false);
+            super.sendJsonResponse(200, result, resp);
+        } catch (StorageQueryException | StorageTransactionLogicException e) {
+            throw new ServletException(e);
+        }
+    }
+}

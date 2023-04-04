@@ -17,12 +17,13 @@
 package io.supertokens.webserver.api.core;
 
 import com.google.gson.JsonObject;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -56,7 +57,7 @@ public class DeleteUserAPI extends WebserverAPI {
 
             AuthRecipe.deleteUser(appIdentifierWithStorageAndUserIdMapping.appIdentifierWithStorage, userId,
                     appIdentifierWithStorageAndUserIdMapping.userIdMapping);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | StorageTransactionLogicException e) {
             throw new ServletException(e);
         } catch (UnknownUserIdException e) {
             // Do nothing

@@ -2,6 +2,9 @@ package io.supertokens.ee.test.api;
 
 import static org.junit.Assert.assertEquals;
 
+import com.google.gson.JsonArray;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.Before;
@@ -46,7 +49,17 @@ public class GetFeatureFlagAPITest {
         assertEquals(3, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(0, response.get("features").getAsJsonArray().size());
-        assertEquals(0, response.get("usageStats").getAsJsonObject().entrySet().size());
+        JsonObject usageStats = response.get("usageStats").getAsJsonObject();
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
+            JsonArray mauArr = usageStats.get("maus").getAsJsonArray();
+            assertEquals(1, usageStats.entrySet().size());
+            assertEquals(30, mauArr.size());
+            assertEquals(0, mauArr.get(0).getAsInt());
+            assertEquals(0, mauArr.get(29).getAsInt());
+        } else {
+            assertEquals(0, usageStats.entrySet().size());
+        }
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
@@ -69,7 +82,18 @@ public class GetFeatureFlagAPITest {
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(1, response.get("features").getAsJsonArray().size());
         assertEquals("test", response.get("features").getAsJsonArray().get(0).getAsString());
-        assertEquals(0, response.get("usageStats").getAsJsonObject().entrySet().size());
+        JsonObject usageStats = response.get("usageStats").getAsJsonObject();
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() == STORAGE_TYPE.SQL) {
+            JsonArray mauArr = usageStats.get("maus").getAsJsonArray();
+            assertEquals(1, usageStats.entrySet().size());
+            assertEquals(30, mauArr.size());
+            assertEquals(0, mauArr.get(0).getAsInt());
+            assertEquals(0, mauArr.get(29).getAsInt());
+        } else {
+            assertEquals(0, usageStats.entrySet().size());
+        }
+
 
         process.kill();
         Assert.assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));

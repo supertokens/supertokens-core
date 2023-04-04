@@ -19,18 +19,23 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.session.SessionInfo;
+import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
 import io.supertokens.session.info.SessionInformationHolder;
+import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -74,9 +79,25 @@ public class SessionAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         try {
-            SessionInformationHolder sessionInfo = Session.createNewSession(this.getTenantIdentifierWithStorageFromRequest(req), main, userId,
+            SessionInformationHolder sessionInfo = Session.createNewSession(
+                    this.getTenantIdentifierWithStorageFromRequest(req), main, userId,
                     userDataInJWT,
                     userDataInDatabase, enableAntiCsrf);
+
+            if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
+                    STORAGE_TYPE.SQL) {
+                try {
+                    UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
+                            this.getAppIdentifierWithStorage(req),
+                            sessionInfo.session.userId, UserIdType.ANY);
+                    if (userIdMapping != null) {
+                        ActiveUsers.updateLastActive(main, userIdMapping.superTokensUserId);
+                    } else {
+                        ActiveUsers.updateLastActive(main, sessionInfo.session.userId);
+                    }
+                } catch (StorageQueryException ignored) {
+                }
+            }
 
             JsonObject result = sessionInfo.toJsonObject();
 
@@ -84,14 +105,17 @@ public class SessionAPI extends WebserverAPI {
 
             result.addProperty("jwtSigningPublicKey",
                     new Utils.PubPriKey(
-                            AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main)
+                            AccessTokenSigningKey.getInstance(
+                                            this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main)
                                     .getLatestIssuedKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main)
+                    AccessTokenSigningKey.getInstance(
+                                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main)
                             .getKeyExpiryTime());
 
             if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
-                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(),
+                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(
+                                this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(),
                                 main)
                         .getAllKeys();
                 JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
@@ -110,7 +134,8 @@ public class SessionAPI extends WebserverAPI {
         assert sessionHandle != null;
 
         try {
-            SessionInfo sessionInfo = Session.getSession(this.getTenantIdentifierWithStorageFromRequest(req), main, sessionHandle);
+            SessionInfo sessionInfo = Session.getSession(this.getTenantIdentifierWithStorageFromRequest(req), main,
+                    sessionHandle);
 
             JsonObject result = new Gson().toJsonTree(sessionInfo).getAsJsonObject();
             result.add("userDataInJWT", Utils.toJsonTreeWithNulls(sessionInfo.userDataInJWT));

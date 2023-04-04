@@ -20,6 +20,8 @@ import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.authRecipe.AuthRecipe;
 import io.supertokens.emailpassword.EmailPassword;
+import io.supertokens.featureflag.EE_FEATURES;
+import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.emailpassword.UserInfo;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -786,6 +788,9 @@ public class UserIdMappingTest {
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
         }
+
+        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
+
         // this list contains the package names for recipes which dont use UserIdMapping
         ArrayList<String> nonAuthRecipesWhichDontNeedUserIdMapping = new ArrayList<>(
                 List.of("io.supertokens.pluginInterface.jwt.JWTRecipeStorage"));
