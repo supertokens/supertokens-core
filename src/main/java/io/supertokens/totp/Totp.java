@@ -477,10 +477,10 @@ public class Totp {
     }
 
     @TestOnly
-    public static void getDevices(Main main, String userId)
+    public static TOTPDevice[] getDevices(Main main, String userId)
             throws StorageQueryException, TotpNotEnabledException {
         try {
-            getDevices(new AppIdentifierWithStorage(null, null, StorageLayer.getStorage(main)),
+            return getDevices(new AppIdentifierWithStorage(null, null, StorageLayer.getStorage(main)),
                     userId);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
