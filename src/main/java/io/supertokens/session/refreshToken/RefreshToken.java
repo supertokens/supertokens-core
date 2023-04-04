@@ -76,9 +76,9 @@ public class RefreshToken {
                 throw new UnauthorisedException("Invalid refresh token");
             }
             return new RefreshTokenInfo(tokenPayload.sessionHandle, tokenPayload.userId,
-                    tokenPayload.parentRefreshTokenHash1, null, tokenPayload.antiCsrfToken,
-                    tokenType, new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
-                    tokenPayload.tenantId));
+                    tokenPayload.parentRefreshTokenHash1, null, tokenPayload.antiCsrfToken, tokenType,
+                    new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
+                            tokenPayload.tenantId));
 
         } catch (Exception e) {
             throw new UnauthorisedException(e);
