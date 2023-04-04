@@ -170,8 +170,6 @@ public class AccessToken {
             throws TenantOrAppNotFoundException {
         AccessTokenPayload tokenInfo = new Gson().fromJson(JWT.getPayloadWithoutVerifying(token).payload,
                 AccessTokenPayload.class);
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
-                appIdentifier.getAppId(), tokenInfo.tenantId);
         return new AccessTokenInfo(tokenInfo.sessionHandle, tokenInfo.userId, tokenInfo.refreshTokenHash1,
                 tokenInfo.expiryTime, tokenInfo.parentRefreshTokenHash1, tokenInfo.userData, tokenInfo.antiCsrfToken,
                 tokenInfo.timeCreated, tokenInfo.lmrt,
