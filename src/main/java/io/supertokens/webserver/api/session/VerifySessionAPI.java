@@ -68,7 +68,7 @@ public class VerifySessionAPI extends WebserverAPI {
         assert enableAntiCsrf != null;
 
         boolean checkDatabase = Config.getConfig(main).getAccessTokenBlacklisting();
-        if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_19)) {
+        if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_20)) {
             checkDatabase = Boolean.TRUE.equals(InputParser.parseBooleanOrThrowError(input, "checkDatabase", false));
         }
         try {
@@ -78,13 +78,13 @@ public class VerifySessionAPI extends WebserverAPI {
             JsonObject result = sessionInfo.toJsonObject();
             result.addProperty("status", "OK");
 
-            if (!super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_19) ) {
+            if (!super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_20) ) {
                 result.addProperty("jwtSigningPublicKey",
                         new Utils.PubPriKey(SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
                 result.addProperty("jwtSigningPublicKeyExpiryTime",
                         SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
 
-                Utils.addLegacySigningKeyInfos(main, result, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_19));
+                Utils.addLegacySigningKeyInfos(main, result, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_20));
             }
 
             super.sendJsonResponse(200, result, resp);
@@ -104,13 +104,13 @@ public class VerifySessionAPI extends WebserverAPI {
                 JsonObject reply = new JsonObject();
                 reply.addProperty("status", "TRY_REFRESH_TOKEN");
 
-                if (!super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_19)) {
+                if (!super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_20)) {
                     reply.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(
                             SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
                     reply.addProperty("jwtSigningPublicKeyExpiryTime",
                             SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
 
-                    Utils.addLegacySigningKeyInfos(main, reply, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_19));
+                    Utils.addLegacySigningKeyInfos(main, reply, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_20));
                 }
 
                 reply.addProperty("message", e.getMessage());

@@ -33,7 +33,7 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
-public class SessionRegenerateAPITest2_19 {
+public class SessionRegenerateAPITest2_20 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -86,7 +86,7 @@ public class SessionRegenerateAPITest2_19 {
 
         JsonObject sessionRegenerateResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
-                SemVer.v2_19.get(), "session");
+                SemVer.v2_20.get(), "session");
 
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
 
@@ -125,7 +125,7 @@ public class SessionRegenerateAPITest2_19 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_19.get(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_20.get(),
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
@@ -145,7 +145,7 @@ public class SessionRegenerateAPITest2_19 {
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
             "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
-            SemVer.v2_19.get(), "session");
+            SemVer.v2_20.get(), "session");
         } catch (HttpResponseException e) {
             caught = e;
         }

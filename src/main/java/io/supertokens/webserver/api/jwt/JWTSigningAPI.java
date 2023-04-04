@@ -70,7 +70,7 @@ public class JWTSigningAPI extends WebserverAPI {
         }
 
         boolean useDynamicKey = false;
-        if (version.greaterThanOrEqualTo(SemVer.v2_19)) {
+        if (version.greaterThanOrEqualTo(SemVer.v2_20)) {
             Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
             // useStaticKeyInput defaults to true, so we check if it has been explicitly set to false
             useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);

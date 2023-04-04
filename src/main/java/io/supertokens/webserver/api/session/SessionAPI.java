@@ -79,7 +79,7 @@ public class SessionAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         boolean useStaticSigningKey = !Config.getConfig(main).getAccessTokenSigningKeyDynamic();
-        if (version.greaterThanOrEqualTo(SemVer.v2_19)) {
+        if (version.greaterThanOrEqualTo(SemVer.v2_20)) {
             Boolean useDynamicSigningKey = InputParser.parseBooleanOrThrowError(input, "useDynamicSigningKey", true);
 
             // useDynamicSigningKey defaults to true, so we check if it has been explicitly set to true
@@ -88,16 +88,16 @@ public class SessionAPI extends WebserverAPI {
 
         try {
             SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
-                    userDataInDatabase, enableAntiCsrf, version.greaterThanOrEqualTo(SemVer.v2_19), useStaticSigningKey);
+                    userDataInDatabase, enableAntiCsrf, version.greaterThanOrEqualTo(SemVer.v2_20), useStaticSigningKey);
 
             JsonObject result = sessionInfo.toJsonObject();
 
             result.addProperty("status", "OK");
 
-            if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_19)) {
+            if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_20)) {
                 result.remove("idRefreshToken");
             } else {
-                Utils.addLegacySigningKeyInfos(main, result, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_19));
+                Utils.addLegacySigningKeyInfos(main, result, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_20));
             }
 
             super.sendJsonResponse(200, result, resp);

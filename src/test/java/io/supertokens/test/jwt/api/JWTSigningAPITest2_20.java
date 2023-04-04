@@ -19,28 +19,21 @@ package io.supertokens.test.jwt.api;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.Claim;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.google.gson.JsonArray;
-import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.utils.SemVer;
-import io.supertokens.webserver.api.jwt.JWTSigningAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.junit.Assert.*;
 
-public class JWTSigningAPITest2_19 {
+public class JWTSigningAPITest2_20 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -69,7 +62,7 @@ public class JWTSigningAPITest2_19 {
         requestBody.addProperty("validity", 3600);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_19.get(),
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_20.get(),
                 "jwt");
 
         String jwt = response.get("jwt").getAsString();
@@ -104,7 +97,7 @@ public class JWTSigningAPITest2_19 {
         requestBody.addProperty("validity", 3600);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_19.get(),
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_20.get(),
                 "jwt");
 
         String jwt = response.get("jwt").getAsString();
