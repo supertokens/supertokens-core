@@ -25,6 +25,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
@@ -55,6 +56,7 @@ public class VerifySessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific, tenantId is obtained from the accessToken instead of the request
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String accessToken = InputParser.parseStringOrThrowError(input, "accessToken", false);
         assert accessToken != null;
@@ -64,8 +66,17 @@ public class VerifySessionAPI extends WebserverAPI {
         Boolean enableAntiCsrf = InputParser.parseBooleanOrThrowError(input, "enableAntiCsrf", false);
         assert enableAntiCsrf != null;
 
+        AppIdentifier appIdentifier;
         try {
-            SessionInformationHolder sessionInfo = Session.getSession(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(),
+            // We actually don't use the storage because tenantId is obtained from the accessToken,
+            // and appropriate storage is obtained later
+            appIdentifier = this.getAppIdentifierWithStorage(req);
+        } catch (TenantOrAppNotFoundException e) {
+            throw new ServletException(e);
+        }
+
+        try {
+            SessionInformationHolder sessionInfo = Session.getSession(appIdentifier,
                     main, accessToken,
                     antiCsrfToken, enableAntiCsrf,
                     doAntiCsrfCheck);
@@ -75,15 +86,13 @@ public class VerifySessionAPI extends WebserverAPI {
 
             result.addProperty("jwtSigningPublicKey",
                     new Utils.PubPriKey(
-                            AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main)
+                            AccessTokenSigningKey.getInstance(appIdentifier, main)
                                     .getLatestIssuedKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main)
-                            .getKeyExpiryTime());
+                    AccessTokenSigningKey.getInstance(appIdentifier, main).getKeyExpiryTime());
 
             if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
-                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(),
-                                main)
+                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(appIdentifier, main)
                         .getAllKeys();
                 JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                 result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
@@ -105,17 +114,16 @@ public class VerifySessionAPI extends WebserverAPI {
                 reply.addProperty("status", "TRY_REFRESH_TOKEN");
 
                 reply.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(
-                        AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main)
+                        AccessTokenSigningKey.getInstance(appIdentifier, main)
                                 .getLatestIssuedKey().value).publicKey);
                 reply.addProperty("jwtSigningPublicKeyExpiryTime",
-                        AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main)
+                        AccessTokenSigningKey.getInstance(appIdentifier, main)
                                 .getKeyExpiryTime());
 
                 if (!super.getVersionFromRequest(req).equals("2.7")
                         && !super.getVersionFromRequest(req).equals("2.8")) {
                     List<KeyInfo> keys = AccessTokenSigningKey.getInstance(
-                                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main)
-                            .getAllKeys();
+                                    appIdentifier, main).getAllKeys();
                     JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                     reply.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
                 }

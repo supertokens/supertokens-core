@@ -47,6 +47,7 @@ public class SessionUserAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         String userId = InputParser.getQueryParamOrThrowError(req, "userId", false);
         assert userId != null;
 

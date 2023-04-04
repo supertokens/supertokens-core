@@ -48,6 +48,7 @@ public class JWTDataAPI extends WebserverAPI {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String sessionHandle = InputParser.parseStringOrThrowError(input, "sessionHandle", false);
@@ -79,6 +80,7 @@ public class JWTDataAPI extends WebserverAPI {
     @Override
     @Deprecated
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
         assert sessionHandle != null;
 

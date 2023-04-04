@@ -63,6 +63,7 @@ public class SessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         assert userId != null;
@@ -74,8 +75,8 @@ public class SessionAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         try {
-            SessionInformationHolder sessionInfo = Session.createNewSession(this.getTenantIdentifierWithStorageFromRequest(req), main, userId,
-                    userDataInJWT,
+            SessionInformationHolder sessionInfo = Session.createNewSession(
+                    this.getTenantIdentifierWithStorageFromRequest(req), main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf);
 
             JsonObject result = sessionInfo.toJsonObject();
@@ -106,6 +107,7 @@ public class SessionAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
         assert sessionHandle != null;
 
