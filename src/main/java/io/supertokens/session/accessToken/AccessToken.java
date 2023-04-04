@@ -175,7 +175,8 @@ public class AccessToken {
         return new AccessTokenInfo(tokenInfo.sessionHandle, tokenInfo.userId, tokenInfo.refreshTokenHash1,
                 tokenInfo.expiryTime, tokenInfo.parentRefreshTokenHash1, tokenInfo.userData, tokenInfo.antiCsrfToken,
                 tokenInfo.timeCreated, tokenInfo.lmrt,
-                tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main)));
+                new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
+                        tokenInfo.tenantId));
     }
 
     @TestOnly
