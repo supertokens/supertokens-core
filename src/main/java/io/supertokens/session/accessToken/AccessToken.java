@@ -129,13 +129,11 @@ public class AccessToken {
             throw new TryRefreshTokenException("Access token expired");
         }
 
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(appIdentifier.getConnectionUriDomain(),
-                appIdentifier.getAppId(), tokenInfo.tenantId);
-
         return new AccessTokenInfo(tokenInfo.sessionHandle, tokenInfo.userId, tokenInfo.refreshTokenHash1,
                 tokenInfo.expiryTime, tokenInfo.parentRefreshTokenHash1, tokenInfo.userData, tokenInfo.antiCsrfToken,
                 tokenInfo.timeCreated, tokenInfo.lmrt,
-                tenantIdentifier.withStorage(StorageLayer.getStorage(tenantIdentifier, main)));
+                new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
+                        tokenInfo.tenantId));
     }
 
     @TestOnly
