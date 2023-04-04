@@ -50,7 +50,7 @@ public class RefreshSessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is tenant specific
+        // API is app specific, but session is updated based on tenantId obtained from the refreshToken
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String refreshToken = InputParser.parseStringOrThrowError(input, "refreshToken", false);
         String antiCsrfToken = InputParser.parseStringOrThrowError(input, "antiCsrfToken", true);
@@ -60,7 +60,7 @@ public class RefreshSessionAPI extends WebserverAPI {
 
         try {
             SessionInformationHolder sessionInfo = Session.refreshSession(
-                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main,
+                    this.getAppIdentifierWithStorage(req), main,
                     refreshToken, antiCsrfToken,
                     enableAntiCsrf);
             JsonObject result = sessionInfo.toJsonObject();

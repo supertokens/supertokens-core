@@ -56,7 +56,7 @@ public class VerifySessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is tenant specific, tenantId is obtained from the accessToken instead of the request
+        // API is app specific, but the session is fetched based on tenantId obtained from the accessToken
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String accessToken = InputParser.parseStringOrThrowError(input, "accessToken", false);
         assert accessToken != null;
