@@ -302,7 +302,8 @@ public class MultitenantAPITest {
         return response.get("token").getAsString();
     }
 
-    private void successfulResetPasswordUsingToken(TenantIdentifier tenantIdentifier, String userId, String token, String password)
+    private void successfulResetPasswordUsingToken(TenantIdentifier tenantIdentifier, String userId, String token,
+                                                   String password)
             throws HttpResponseException, IOException {
         JsonObject resetPasswordBody = new JsonObject();
         resetPasswordBody.addProperty("method", "token");
@@ -361,7 +362,8 @@ public class MultitenantAPITest {
     }
 
     @Test
-    public void testGetUserUsingIdReturnsUserFromTheRightTenantWhileQueryingFromAnyTenantInTheSameApp() throws Exception  {
+    public void testGetUserUsingIdReturnsUserFromTheRightTenantWhileQueryingFromAnyTenantInTheSameApp()
+            throws Exception {
         createTenants();
 
         JsonObject user1 = signUp(t1, "user@example.com", "password1");
@@ -389,7 +391,7 @@ public class MultitenantAPITest {
     }
 
     @Test
-    public void testUpdatePasswordWorksCorrectlyAcrossTenants() throws Exception  {
+    public void testUpdatePasswordWorksCorrectlyAcrossTenants() throws Exception {
         createTenants();
 
         JsonObject user1 = signUp(t1, "user@example.com", "password1");
@@ -419,7 +421,7 @@ public class MultitenantAPITest {
     }
 
     @Test
-    public void testUpdateEmailWorksCorrectlyAcrossTenants() throws Exception  {
+    public void testUpdateEmailWorksCorrectlyAcrossTenants() throws Exception {
         createTenants();
 
         JsonObject user1 = signUp(t1, "user@example.com", "password");
@@ -451,7 +453,7 @@ public class MultitenantAPITest {
     }
 
     @Test
-    public void testUpdateEmailAndPasswordWorksCorrectlyAcrossTenants() throws Exception  {
+    public void testUpdateEmailAndPasswordWorksCorrectlyAcrossTenants() throws Exception {
         createTenants();
 
         JsonObject user1 = signUp(t1, "user@example.com", "password1");
@@ -461,7 +463,7 @@ public class MultitenantAPITest {
         JsonObject[] users = new JsonObject[]{user1, user2, user3};
         TenantIdentifier[] tenants = new TenantIdentifier[]{t1, t2, t3};
 
-        for (int i =0; i < users.length; i++) {
+        for (int i = 0; i < users.length; i++) {
             JsonObject user = users[i];
             TenantIdentifier userTenant = tenants[i];
 
@@ -501,7 +503,8 @@ public class MultitenantAPITest {
 
             String newPassword = generateRandomString(16);
             String token = generatePasswordResetToken(userTenant, user.getAsJsonPrimitive("id").getAsString());
-            successfulResetPasswordUsingToken(userTenant, user.getAsJsonPrimitive("id").getAsString(), token, newPassword);
+            successfulResetPasswordUsingToken(userTenant, user.getAsJsonPrimitive("id").getAsString(), token,
+                    newPassword);
 
             for (TenantIdentifier loginTenant : tenants) {
                 if (loginTenant.equals(userTenant)) {
@@ -514,7 +517,7 @@ public class MultitenantAPITest {
     }
 
     @Test
-    public void testCrossTenantPasswordResetCombinations() throws Exception  {
+    public void testCrossTenantPasswordResetCombinations() throws Exception {
         createTenants();
 
         JsonObject user1 = signUp(t1, "user@example.com", "password1");
@@ -535,7 +538,8 @@ public class MultitenantAPITest {
                     String token = generatePasswordResetToken(userTenant, user.getAsJsonPrimitive("id").getAsString());
 
                     if (tenant.equals(userTenant)) {
-                        successfulResetPasswordUsingToken(tenant, user.getAsJsonPrimitive("id").getAsString(), token, newPassword);
+                        successfulResetPasswordUsingToken(tenant, user.getAsJsonPrimitive("id").getAsString(), token,
+                                newPassword);
 
                         for (TenantIdentifier loginTenant : tenants) {
                             if (loginTenant.equals(userTenant)) {
@@ -565,7 +569,8 @@ public class MultitenantAPITest {
                     String token = generatePasswordResetToken(userTenant, user.getAsJsonPrimitive("id").getAsString());
 
                     if (tenant.equals(userTenant)) {
-                        successfulResetPasswordUsingToken(tenant, user.getAsJsonPrimitive("id").getAsString(), token, newPassword);
+                        successfulResetPasswordUsingToken(tenant, user.getAsJsonPrimitive("id").getAsString(), token,
+                                newPassword);
 
                         for (TenantIdentifier loginTenant : tenants) {
                             if (loginTenant.equals(userTenant)) {
@@ -594,7 +599,8 @@ public class MultitenantAPITest {
                     String newPassword = generateRandomString(16);
                     String token = generatePasswordResetToken(userTenant, user.getAsJsonPrimitive("id").getAsString());
 
-                    successfulResetPasswordUsingToken(tenant, user.getAsJsonPrimitive("id").getAsString(), token, newPassword);
+                    successfulResetPasswordUsingToken(tenant, user.getAsJsonPrimitive("id").getAsString(), token,
+                            newPassword);
 
                     for (TenantIdentifier loginTenant : tenants) {
                         if (loginTenant.equals(userTenant)) {
@@ -609,12 +615,7 @@ public class MultitenantAPITest {
     }
 
     @Test
-    public void testUsersWithSameEmailVerifiedInOneTenantIsNotVerifiedInAnother() throws Exception  {
-        throw new Exception("Test not implemented");
-    }
-
-    @Test
-    public void testImportUsersWorksCorrectlyAcrossTenants() throws Exception  {
+    public void testImportUsersWorksCorrectlyAcrossTenants() throws Exception {
         createTenants(true);
 
         int firebaseMemCost = 14;

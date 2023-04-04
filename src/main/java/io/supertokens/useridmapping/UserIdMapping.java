@@ -272,7 +272,7 @@ public class UserIdMapping {
                 new TenantIdentifierWithStorage(null, null, null, storage), userIds);
     }
 
-    private static void assertThatUserIdIsNotBeingUsedInNonAuthRecipes(
+    public static void assertThatUserIdIsNotBeingUsedInNonAuthRecipes(
             AppIdentifierWithStorage appIdentifierWithStorage, String userId)
             throws StorageQueryException, ServletException {
         Storage storage = appIdentifierWithStorage.getStorage();

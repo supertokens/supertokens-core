@@ -137,7 +137,7 @@ public class ConfigTest2_6 {
 
     @Test
     public void testInvalidTotpConfigThrowsExpectedError() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         Utils.setValueInConfig("totp_max_attempts", "0");
 
@@ -145,7 +145,7 @@ public class ConfigTest2_6 {
 
         ProcessState.EventAndException e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
-        assertEquals(e.exception.getMessage(),
+        assertEquals(e.exception.getCause().getMessage(),
                 "'totp_max_attempts' must be > 0");
 
         process.kill();
@@ -158,7 +158,7 @@ public class ConfigTest2_6 {
 
         e = process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.INIT_FAILURE);
         assertNotNull(e);
-        assertEquals(e.exception.getMessage(),
+        assertEquals(e.exception.getCause().getMessage(),
                 "'totp_rate_limit_cooldown_sec' must be > 0");
 
         process.kill();

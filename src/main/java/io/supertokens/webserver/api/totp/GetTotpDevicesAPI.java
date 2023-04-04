@@ -68,16 +68,11 @@ public class GetTotpDevicesAPI extends WebserverAPI {
             result.addProperty("status", "OK");
             result.add("devices", devicesArray);
             super.sendJsonResponse(200, result, resp);
-        } catch (TotpNotEnabledException e) {
+        } catch (TotpNotEnabledException | UnknownUserIdException e) {
             result.addProperty("status", "TOTP_NOT_ENABLED_ERROR");
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
-        } catch (UnknownUserIdException e) {
-            JsonArray devicesArray = new JsonArray();
-            result.addProperty("status", "OK");
-            result.add("devices", devicesArray);
-            super.sendJsonResponse(200, result, resp);
         }
     }
 }
