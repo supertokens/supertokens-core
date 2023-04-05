@@ -23,7 +23,6 @@ import io.supertokens.ProcessState;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.TryRefreshTokenException;
-import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
@@ -53,7 +52,7 @@ public class AccessToken {
                                                           @Nonnull Main main, @Nonnull String token, boolean retry,
                                                           boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException,
-            TenantOrAppNotFoundException, NoSuchAlgorithmException, UnauthorisedException {
+            TenantOrAppNotFoundException {
         List<AccessTokenSigningKey.KeyInfo> keyInfoList = AccessTokenSigningKey.getInstance(appIdentifier, main)
                 .getAllKeys();
 
@@ -129,10 +128,9 @@ public class AccessToken {
             throw new TryRefreshTokenException("Access token expired");
         }
 
-        if (!tokenInfo.appIdHash.equals(Utils.hashSHA256(appIdentifier.getConnectionUriDomain() + "|" + appIdentifier.getAppId()))) {
-            throw new UnauthorisedException("Access token is from an incorrect app");
-        }
-
+        // There is no need to check if the appIdentifier is the same app in which the accessToken was created,
+        // because, each app has a different accessTokenSigningKey and a cross app request would not be possible
+        // Hence, we don't bother storing any info related to app in the accessTokenPayload
         return new AccessTokenInfo(tokenInfo.sessionHandle, tokenInfo.userId, tokenInfo.refreshTokenHash1,
                 tokenInfo.expiryTime, tokenInfo.parentRefreshTokenHash1, tokenInfo.userData, tokenInfo.antiCsrfToken,
                 tokenInfo.timeCreated, tokenInfo.lmrt,
@@ -143,8 +141,7 @@ public class AccessToken {
     @TestOnly
     public static AccessTokenInfo getInfoFromAccessToken(@Nonnull Main main, @Nonnull String token,
                                                          boolean doAntiCsrfCheck)
-            throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException,
-            UnauthorisedException, NoSuchAlgorithmException {
+            throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException {
         try {
             return getInfoFromAccessToken(new AppIdentifier(null, null), main, token, doAntiCsrfCheck);
         } catch (TenantOrAppNotFoundException e) {
@@ -156,7 +153,7 @@ public class AccessToken {
                                                          @Nonnull Main main, @Nonnull String token,
                                                          boolean doAntiCsrfCheck)
             throws StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException,
-            TenantOrAppNotFoundException, UnauthorisedException, NoSuchAlgorithmException {
+            TenantOrAppNotFoundException {
         return getInfoFromAccessToken(appIdentifier, main, token, true, doAntiCsrfCheck);
     }
 
@@ -165,20 +162,16 @@ public class AccessToken {
         try {
             return getInfoFromAccessTokenWithoutVerifying(
                     new AppIdentifier(null, null), main, token);
-        } catch (TenantOrAppNotFoundException | NoSuchAlgorithmException | UnauthorisedException e) {
+        } catch (TenantOrAppNotFoundException | NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }
     }
 
     public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(AppIdentifier appIdentifier, Main main,
                                                                          @Nonnull String token)
-            throws TenantOrAppNotFoundException, NoSuchAlgorithmException, UnauthorisedException {
+            throws TenantOrAppNotFoundException, NoSuchAlgorithmException {
         AccessTokenPayload tokenInfo = new Gson().fromJson(JWT.getPayloadWithoutVerifying(token).payload,
                 AccessTokenPayload.class);
-
-        if (!tokenInfo.appIdHash.equals(Utils.hashSHA256(appIdentifier.getConnectionUriDomain() + "|" + appIdentifier.getAppId()))) {
-            throw new UnauthorisedException("Access token is from an incorrect app");
-        }
 
         return new AccessTokenInfo(tokenInfo.sessionHandle, tokenInfo.userId, tokenInfo.refreshTokenHash1,
                 tokenInfo.expiryTime, tokenInfo.parentRefreshTokenHash1, tokenInfo.userData, tokenInfo.antiCsrfToken,
@@ -224,9 +217,7 @@ public class AccessToken {
                     now + Config.getConfig(tenantIdentifier, main).getAccessTokenValidity();
         }
         AccessTokenPayload accessToken = new AccessTokenPayload(sessionHandle, userId, refreshTokenHash1, expiryTime,
-                parentRefreshTokenHash1, userData, antiCsrfToken, now, lmrt,
-                Utils.hashSHA256(tenantIdentifier.getConnectionUriDomain() + "|" + tenantIdentifier.getAppId()),
-                tenantIdentifier.getTenantId());
+                parentRefreshTokenHash1, userData, antiCsrfToken, now, lmrt, tenantIdentifier.getTenantId());
 
         String token = JWT.createJWT(Utils.toJsonTreeWithNulls(accessToken), signingKey.privateKey, VERSION.V2);
         return new TokenInfo(token, expiryTime, now);
@@ -268,9 +259,7 @@ public class AccessToken {
                 now + Config.getConfig(tenantIdentifier, main).getAccessTokenValidity();
         accessToken = new AccessTokenPayload(sessionHandle, userId, refreshTokenHash1, expiryTime,
                 parentRefreshTokenHash1,
-                userData, antiCsrfToken, now, null,
-                Utils.hashSHA256(tenantIdentifier.getConnectionUriDomain() + "|" + tenantIdentifier.getAppId()),
-                tenantIdentifier.getTenantId());
+                userData, antiCsrfToken, now, null, tenantIdentifier.getTenantId());
 
         String token = JWT.createJWT(Utils.toJsonTreeWithNulls(accessToken), signingKey.privateKey, VERSION.V1);
         return new TokenInfo(token, expiryTime, now);
@@ -301,15 +290,13 @@ public class AccessToken {
         final long timeCreated;
         @Nullable
         public final Long lmrt; // lastManualRegenerationTime - nullable since v1 of JWT does not have this
-        @Nonnull
-        public final String appIdHash;
         @Nullable
         public final String tenantId;
 
         AccessTokenPayload(@Nonnull String sessionHandle, @Nonnull String userId, @Nonnull String refreshTokenHash1,
                            long expiryTime, @Nullable String parentRefreshTokenHash1, @Nonnull JsonObject userData,
                            @Nullable String antiCsrfToken, long timeCreated, @Nullable Long lmrt,
-                           @Nonnull String appIdHash, @Nullable String tenantId) {
+                           @Nullable String tenantId) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.refreshTokenHash1 = refreshTokenHash1;
@@ -319,7 +306,6 @@ public class AccessToken {
             this.antiCsrfToken = antiCsrfToken;
             this.timeCreated = timeCreated;
             this.lmrt = lmrt;
-            this.appIdHash = appIdHash;
             this.tenantId = tenantId == null || tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID) ? null : tenantId;
         }
     }

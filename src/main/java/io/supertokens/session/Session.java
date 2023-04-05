@@ -229,7 +229,7 @@ public class Session {
                                                       boolean enableAntiCsrf, Boolean doAntiCsrfCheck)
             throws StorageQueryException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException,
-            TenantOrAppNotFoundException, NoSuchAlgorithmException {
+            TenantOrAppNotFoundException {
 
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessToken(appIdentifier, main,
                 token,
