@@ -18,7 +18,6 @@ package io.supertokens.webserver.api.jwt;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.config.Config;
 import io.supertokens.jwt.JWTSigningFunctions;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -70,7 +69,7 @@ public class JWTSigningAPI extends WebserverAPI {
         }
 
         boolean useDynamicKey = false;
-        if (version.greaterThanOrEqualTo(SemVer.v2_20)) {
+        if (version.greaterThanOrEqualTo(SemVer.v2_21)) {
             Boolean useStaticKeyInput = InputParser.parseBooleanOrThrowError(input, "useStaticSigningKey", true);
             // useStaticKeyInput defaults to true, so we check if it has been explicitly set to false
             useDynamicKey = Boolean.FALSE.equals(useStaticKeyInput);

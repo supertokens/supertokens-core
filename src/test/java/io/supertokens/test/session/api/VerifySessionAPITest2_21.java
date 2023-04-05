@@ -33,7 +33,7 @@ import org.junit.rules.TestRule;
 import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotNull;
 
-public class VerifySessionAPITest2_20 {
+public class VerifySessionAPITest2_21 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -216,7 +216,7 @@ public class VerifySessionAPITest2_20 {
         sessionRequest.addProperty("enableAntiCsrf", false);
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session", sessionRequest, 1000, 1000, null,
-                SemVer.v2_20.get(), "session");
+                SemVer.v2_21.get(), "session");
 
         String sessionRemoveBodyString = "{" + " sessionHandles : [ "
                 + sessionInfo.get("session").getAsJsonObject().get("handle").getAsString() + " ] " + "}";
@@ -224,7 +224,7 @@ public class VerifySessionAPITest2_20 {
 
         HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/remove", deleteRequest, 1000, 1000, null,
-                SemVer.v2_20.get(), "session");
+                SemVer.v2_21.get(), "session");
         {
             JsonObject request = new JsonObject();
             request.addProperty("accessToken",
@@ -234,7 +234,7 @@ public class VerifySessionAPITest2_20 {
             request.addProperty("enableAntiCsrf", false);
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/verify", request, 1000, 1000, null,
-                    SemVer.v2_20.get(), "session");
+                    SemVer.v2_21.get(), "session");
 
             assertEquals(response.get("status").getAsString(), "UNAUTHORISED");
             assertEquals(response.get("message").getAsString(), "Either the session has ended or has been blacklisted");

@@ -33,7 +33,7 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
-public class JWTSigningAPITest2_20 {
+public class JWTSigningAPITest2_21 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -62,7 +62,7 @@ public class JWTSigningAPITest2_20 {
         requestBody.addProperty("validity", 3600);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_20.get(),
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_21.get(),
                 "jwt");
 
         String jwt = response.get("jwt").getAsString();
@@ -97,7 +97,7 @@ public class JWTSigningAPITest2_20 {
         requestBody.addProperty("validity", 3600);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_20.get(),
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_21.get(),
                 "jwt");
 
         String jwt = response.get("jwt").getAsString();

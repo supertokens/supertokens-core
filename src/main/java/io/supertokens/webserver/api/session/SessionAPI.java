@@ -52,7 +52,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.List;
 
 public class SessionAPI extends WebserverAPI {
     private static final long serialVersionUID = 7142317017402226537L;
@@ -81,7 +80,7 @@ public class SessionAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         boolean useStaticSigningKey = !Config.getConfig(main).getAccessTokenSigningKeyDynamic();
-        if (version.greaterThanOrEqualTo(SemVer.v2_20)) {
+        if (version.greaterThanOrEqualTo(SemVer.v2_21)) {
             Boolean useDynamicSigningKey = InputParser.parseBooleanOrThrowError(input, "useDynamicSigningKey", true);
 
             // useDynamicSigningKey defaults to true, so we check if it has been explicitly set to true
@@ -90,7 +89,7 @@ public class SessionAPI extends WebserverAPI {
 
         try {
             SessionInformationHolder sessionInfo = Session.createNewSession(main, userId, userDataInJWT,
-                    userDataInDatabase, enableAntiCsrf, version.greaterThanOrEqualTo(SemVer.v2_20), useStaticSigningKey);
+                    userDataInDatabase, enableAntiCsrf, version.greaterThanOrEqualTo(SemVer.v2_21), useStaticSigningKey);
 
             if (StorageLayer.getStorage(main).getType() == STORAGE_TYPE.SQL) {
                 try {
@@ -110,10 +109,10 @@ public class SessionAPI extends WebserverAPI {
 
             result.addProperty("status", "OK");
 
-            if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_20)) {
+            if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
                 result.remove("idRefreshToken");
             } else {
-                Utils.addLegacySigningKeyInfos(main, result, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_20));
+                Utils.addLegacySigningKeyInfos(main, result, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
             }
 
             super.sendJsonResponse(200, result, resp);

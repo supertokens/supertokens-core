@@ -26,7 +26,7 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.assertNotNull;
 
-public class ConfigTest2_20 {
+public class ConfigTest2_21 {
 
     @Rule
     public TestRule watchman = Utils.getOnFailure();

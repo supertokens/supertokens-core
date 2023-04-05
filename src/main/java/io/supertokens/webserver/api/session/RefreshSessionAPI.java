@@ -67,7 +67,7 @@ public class RefreshSessionAPI extends WebserverAPI {
         SemVer version = super.getVersionFromRequest(req);
         try {
             SessionInformationHolder sessionInfo = Session.refreshSession(main, refreshToken, antiCsrfToken,
-                    enableAntiCsrf,  version.greaterThanOrEqualTo((SemVer.v2_20)));
+                    enableAntiCsrf,  version.greaterThanOrEqualTo((SemVer.v2_21)));
 
             if (StorageLayer.getStorage(main).getType() == STORAGE_TYPE.SQL) {
                 try {
@@ -85,7 +85,7 @@ public class RefreshSessionAPI extends WebserverAPI {
 
             JsonObject result = sessionInfo.toJsonObject();
 
-            if (version.greaterThanOrEqualTo(SemVer.v2_20)) {
+            if (version.greaterThanOrEqualTo(SemVer.v2_21)) {
                 result.remove("idRefreshToken");
             }
             result.addProperty("status", "OK");

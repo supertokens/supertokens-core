@@ -16,7 +16,6 @@
 
 package io.supertokens.webserver.api.session;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
@@ -30,7 +29,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.session.Session;
 import io.supertokens.signingkeys.SigningKeys;
-import io.supertokens.signingkeys.SigningKeys.KeyInfo;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
@@ -41,7 +39,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.List;
 
 public class VerifySessionAPI extends WebserverAPI {
 
@@ -68,7 +65,7 @@ public class VerifySessionAPI extends WebserverAPI {
         assert enableAntiCsrf != null;
 
         boolean checkDatabase = Config.getConfig(main).getAccessTokenBlacklisting();
-        if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_20)) {
+        if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
             checkDatabase = Boolean.TRUE.equals(InputParser.parseBooleanOrThrowError(input, "checkDatabase", false));
         }
         try {
@@ -78,13 +75,13 @@ public class VerifySessionAPI extends WebserverAPI {
             JsonObject result = sessionInfo.toJsonObject();
             result.addProperty("status", "OK");
 
-            if (!super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_20) ) {
+            if (!super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21) ) {
                 result.addProperty("jwtSigningPublicKey",
                         new Utils.PubPriKey(SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
                 result.addProperty("jwtSigningPublicKeyExpiryTime",
                         SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
 
-                Utils.addLegacySigningKeyInfos(main, result, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_20));
+                Utils.addLegacySigningKeyInfos(main, result, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
             }
 
             super.sendJsonResponse(200, result, resp);
@@ -104,13 +101,13 @@ public class VerifySessionAPI extends WebserverAPI {
                 JsonObject reply = new JsonObject();
                 reply.addProperty("status", "TRY_REFRESH_TOKEN");
 
-                if (!super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_20)) {
+                if (!super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
                     reply.addProperty("jwtSigningPublicKey", new Utils.PubPriKey(
                             SigningKeys.getInstance(main).getLatestIssuedDynamicKey().value).publicKey);
                     reply.addProperty("jwtSigningPublicKeyExpiryTime",
                             SigningKeys.getInstance(main).getDynamicSigningKeyExpiryTime());
 
-                    Utils.addLegacySigningKeyInfos(main, reply, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_20));
+                    Utils.addLegacySigningKeyInfos(main, reply, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
                 }
 
                 reply.addProperty("message", e.getMessage());

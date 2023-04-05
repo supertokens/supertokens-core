@@ -38,7 +38,7 @@ import java.util.List;
 import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotNull;
 
-public class JWKSAPITest2_20 {
+public class JWKSAPITest2_21 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 
@@ -138,7 +138,7 @@ public class JWKSAPITest2_20 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject createResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_20.get(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 "session");
         DecodedJWT decodedJWT = JWT.decode(createResponse.get("accessToken").getAsJsonObject().get("token").getAsString());
         String keyIdFromHeader = decodedJWT.getHeaderClaim("kid").asString();
@@ -185,7 +185,7 @@ public class JWKSAPITest2_20 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject createResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_20.get(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_21.get(),
                 "session");
         DecodedJWT decodedJWT = JWT.decode(createResponse.get("accessToken").getAsJsonObject().get("token").getAsString());
         String keyIdFromHeader = decodedJWT.getHeaderClaim("kid").asString();

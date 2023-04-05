@@ -16,8 +16,6 @@
 
 package io.supertokens.utils;
 
-import java.util.Objects;
-
 public class SemVer implements Comparable<SemVer> {
     public static final SemVer v2_7 = new SemVer("2.7");
     public static final SemVer v2_8 = new SemVer("2.8");
@@ -33,6 +31,7 @@ public class SemVer implements Comparable<SemVer> {
     public static final SemVer v2_18 = new SemVer("2.18");
     public static final SemVer v2_19 = new SemVer("2.19");
     public static final SemVer v2_20 = new SemVer("2.20");
+    public static final SemVer v2_21 = new SemVer("2.21");
 
     final private String version;
 

@@ -47,7 +47,7 @@ public class HandshakeAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_20)) {
+        if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
             super.sendTextResponse(404, "Not found", resp);
             return;
         }
@@ -55,7 +55,7 @@ public class HandshakeAPI extends WebserverAPI {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
-            Utils.addLegacySigningKeyInfos(main, result, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_20));
+            Utils.addLegacySigningKeyInfos(main, result, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
 
             result.addProperty("accessTokenBlacklistingEnabled", Config.getConfig(main).getAccessTokenBlacklisting());
             result.addProperty("accessTokenValidity", Config.getConfig(main).getAccessTokenValidity());
