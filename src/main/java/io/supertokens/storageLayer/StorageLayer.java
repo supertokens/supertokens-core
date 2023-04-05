@@ -52,6 +52,10 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     private final Storage storage;
     private static URLClassLoader ucl = null;
 
+    public Storage getUnderlyingStorage() {
+        return storage;
+    }
+
     public static Storage getNewStorageInstance(Main main, JsonObject config) throws InvalidConfigException {
         Storage result;
         if (StorageLayer.ucl == null) {
