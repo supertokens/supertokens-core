@@ -132,28 +132,40 @@ public class RefreshTokenKey extends ResourceDistributor.SingletonResource {
 
             SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
 
-            // start transaction
-            return sqlStorage.startTransaction(con -> {
-                String key = null;
-                KeyValueInfo keyFromStorage = sqlStorage.getRefreshTokenSigningKey_Transaction(appIdentifier, con);
-                if (keyFromStorage != null) {
-                    key = keyFromStorage.value;
-                }
-
-                if (key == null) {
-                    try {
-                        key = Utils.generateNewSigningKey();
-                    } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
-                        throw new StorageTransactionLogicException(e);
+            try {
+                // start transaction
+                return sqlStorage.startTransaction(con -> {
+                    String key = null;
+                    KeyValueInfo keyFromStorage = sqlStorage.getRefreshTokenSigningKey_Transaction(appIdentifier, con);
+                    if (keyFromStorage != null) {
+                        key = keyFromStorage.value;
                     }
-                    sqlStorage.setRefreshTokenSigningKey_Transaction(appIdentifier, con,
-                            new KeyValueInfo(key, System.currentTimeMillis()));
+
+                    if (key == null) {
+                        try {
+                            key = Utils.generateNewSigningKey();
+                        } catch (NoSuchAlgorithmException | InvalidKeySpecException e) {
+                            throw new StorageTransactionLogicException(e);
+                        }
+                        try {
+                            sqlStorage.setRefreshTokenSigningKey_Transaction(appIdentifier, con,
+                                    new KeyValueInfo(key, System.currentTimeMillis()));
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new StorageTransactionLogicException(e);
+                        }
+                    }
+
+                    sqlStorage.commitTransaction(con);
+                    return key;
+
+                });
+            } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof TenantOrAppNotFoundException) {
+                    throw (TenantOrAppNotFoundException) e.actualException;
                 }
+                throw e;
+            }
 
-                sqlStorage.commitTransaction(con);
-                return key;
-
-            });
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             SessionNoSQLStorage_1 noSQLStorage = (SessionNoSQLStorage_1) storage;
 
