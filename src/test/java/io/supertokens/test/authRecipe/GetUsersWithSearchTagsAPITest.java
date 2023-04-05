@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -91,7 +92,7 @@ public class GetUsersWithSearchTagsAPITest {
             params.put("email", ";;  ;");
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(), null);
+                    "http://localhost:3567/users", params, 1000, 1000, null, SemVer.v2_18.get(), null);
             assertEquals("OK", response.get("status").getAsString());
             JsonArray users = response.get("users").getAsJsonArray();
 
@@ -107,7 +108,7 @@ public class GetUsersWithSearchTagsAPITest {
             params.put("phone", ";;  ;");
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(), null);
+                    "http://localhost:3567/users", params, 1000, 1000, null, SemVer.v2_18.get(), null);
             assertEquals("OK", response.get("status").getAsString());
             JsonArray users = response.get("users").getAsJsonArray();
 
@@ -123,7 +124,7 @@ public class GetUsersWithSearchTagsAPITest {
             params.put("phone", ";;  ;");
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(), null);
+                    "http://localhost:3567/users", params, 1000, 1000, null, SemVer.v2_18.get(), null);
             assertEquals("OK", response.get("status").getAsString());
             JsonArray users = response.get("users").getAsJsonArray();
 
@@ -167,7 +168,7 @@ public class GetUsersWithSearchTagsAPITest {
         params.put("email", "test");
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(), null);
+                "http://localhost:3567/users", params, 1000, 1000, null, SemVer.v2_18.get(), null);
         assertEquals("OK", response.get("status").getAsString());
         assertEquals(4, response.get("users").getAsJsonArray().size());
         JsonArray users = response.get("users").getAsJsonArray();
@@ -202,7 +203,7 @@ public class GetUsersWithSearchTagsAPITest {
             params.put("email", "test;abc");
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(), null);
+                    "http://localhost:3567/users", params, 1000, 1000, null, SemVer.v2_18.get(), null);
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.get("users").getAsJsonArray().size());
             JsonArray users = response.get("users").getAsJsonArray();
@@ -222,7 +223,7 @@ public class GetUsersWithSearchTagsAPITest {
             params.put("provider", "test;newtest");
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(), null);
+                    "http://localhost:3567/users", params, 1000, 1000, null, SemVer.v2_18.get(), null);
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.get("users").getAsJsonArray().size());
             JsonArray users = response.get("users").getAsJsonArray();
@@ -257,7 +258,7 @@ public class GetUsersWithSearchTagsAPITest {
             params.put("phone", "+121;+911");
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(), null);
+                    "http://localhost:3567/users", params, 1000, 1000, null, SemVer.v2_18.get(), null);
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(2, response.get("users").getAsJsonArray().size());
             JsonArray users = response.get("users").getAsJsonArray();
@@ -301,7 +302,7 @@ public class GetUsersWithSearchTagsAPITest {
         params.put("provider", "testTPID");
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(),
+                "http://localhost:3567/users", params, 1000, 1000, null, SemVer.v2_18.get(),
                 null);
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
@@ -334,7 +335,7 @@ public class GetUsersWithSearchTagsAPITest {
             params.put("email", "tEsT@example.com");
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(),
+                    "http://localhost:3567/users", params, 1000, 1000, null, SemVer.v2_18.get(),
                     null);
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
@@ -346,7 +347,7 @@ public class GetUsersWithSearchTagsAPITest {
             HashMap<String, String> params = new HashMap<>();
             params.put("provider", "TestPid");
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(),
+                    "http://localhost:3567/users", params, 1000, 1000, null, SemVer.v2_18.get(),
                     null);
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
@@ -385,7 +386,7 @@ public class GetUsersWithSearchTagsAPITest {
         params.put("provider", "k");
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/users", params, 1000, 1000, null, Utils.getCdiVersion2_18ForTests(),
+                "http://localhost:3567/users", params, 1000, 1000, null, SemVer.v2_18.get(),
                 null);
         
         assertEquals("OK", response.get("status").getAsString());

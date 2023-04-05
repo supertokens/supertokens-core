@@ -105,7 +105,7 @@ public class UserPutAPITest2_8 {
             body.addProperty("email", "someemail+TEST@gmail.com");
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(),
+                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, SemVer.v2_8.get(),
                     RECIPE_ID.EMAIL_PASSWORD.toString());
 
             assertEquals("OK", response.get("status").getAsString());
@@ -175,7 +175,7 @@ public class UserPutAPITest2_8 {
             body.addProperty("password", "somePass123");
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(),
+                    "http://localhost:3567/recipe/user", body, 1000, 1000, null, SemVer.v2_8.get(),
                     RECIPE_ID.EMAIL_PASSWORD.toString());
 
             assertEquals("OK", response.get("status").getAsString());

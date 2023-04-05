@@ -83,7 +83,7 @@ public class SessionAPITest2_9 {
             request.add("userDataInJWT", userDataInJWT);
             request.add("userDataInDatabase", userDataInDatabase);
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                    request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "session");
+                    request, 1000, 1000, null, SemVer.v2_9.get(), "session");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals(e.statusCode, 400);
@@ -102,7 +102,7 @@ public class SessionAPITest2_9 {
         request.addProperty("enableAntiCsrf", true);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_9.get(),
                 "session");
 
         activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);

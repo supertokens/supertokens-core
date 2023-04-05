@@ -46,7 +46,7 @@ public class RemoveTotpDeviceAPITest {
                         1000,
                         1000,
                         null,
-                        Utils.getCdiVersionLatestForTests(),
+                        Utils.getCdiVersionStringLatestForTests(),
                         "totp"));
     }
 
@@ -93,7 +93,7 @@ public class RemoveTotpDeviceAPITest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
         assertEquals(createDeviceRes.get("status").getAsString(), "OK");
 
@@ -107,7 +107,7 @@ public class RemoveTotpDeviceAPITest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
         assertEquals(createDeviceRes2.get("status").getAsString(), "OK");
 
@@ -147,7 +147,7 @@ public class RemoveTotpDeviceAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res.get("status").getAsString().equals("OK");
             assert res.get("didDeviceExist").getAsBoolean() == true;
@@ -161,7 +161,7 @@ public class RemoveTotpDeviceAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res2.get("status").getAsString().equals("OK");
             assert res2.get("didDeviceExist").getAsBoolean() == false;
@@ -176,7 +176,7 @@ public class RemoveTotpDeviceAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res3.get("status").getAsString().equals("TOTP_NOT_ENABLED_ERROR");
         }

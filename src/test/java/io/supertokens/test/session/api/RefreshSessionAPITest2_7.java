@@ -417,7 +417,7 @@ public class RefreshSessionAPITest2_7 {
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/session/refresh", null, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "session");
+                    SemVer.v2_7.get(), "session");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertEquals("Http error. Status Code: 400. Message: Invalid Json Input", e.getMessage());
@@ -444,7 +444,7 @@ public class RefreshSessionAPITest2_7 {
         long startTs = System.currentTimeMillis();
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
 
@@ -459,7 +459,7 @@ public class RefreshSessionAPITest2_7 {
 
         JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "session");
+                SemVer.v2_7.get(), "session");
 
         checkRefreshSessionResponse(sessionRefreshResponse, process, userId, userDataInJWT, false);
 
