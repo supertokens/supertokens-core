@@ -177,7 +177,7 @@ public class Session {
 
         // We assume the token has already been verified at this point. It may be expired or JWT signing key may have
         // changed for it...
-        AccessTokenInfo accessToken = AccessToken.getInfoFromAccessTokenWithoutVerifying(appIdentifier, main, token);
+        AccessTokenInfo accessToken = AccessToken.getInfoFromAccessTokenWithoutVerifying(appIdentifier, token);
         TenantIdentifierWithStorage tenantIdentifierWithStorage = accessToken.tenantIdentifier.withStorage(
                 StorageLayer.getStorage(accessToken.tenantIdentifier, main));
         JsonObject newJWTUserPayload = userDataInJWT == null ?

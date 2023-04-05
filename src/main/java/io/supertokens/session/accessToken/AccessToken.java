@@ -161,13 +161,13 @@ public class AccessToken {
     public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(Main main, @Nonnull String token) {
         try {
             return getInfoFromAccessTokenWithoutVerifying(
-                    new AppIdentifier(null, null), main, token);
+                    new AppIdentifier(null, null), token);
         } catch (TenantOrAppNotFoundException | NoSuchAlgorithmException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(AppIdentifier appIdentifier, Main main,
+    public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(AppIdentifier appIdentifier,
                                                                          @Nonnull String token)
             throws TenantOrAppNotFoundException, NoSuchAlgorithmException {
         AccessTokenPayload tokenInfo = new Gson().fromJson(JWT.getPayloadWithoutVerifying(token).payload,
