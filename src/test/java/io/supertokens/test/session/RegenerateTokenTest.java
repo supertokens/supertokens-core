@@ -253,7 +253,7 @@ public class RegenerateTokenTest {
 
         assert getSessionResponse.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken
-                .getInfoFromAccessTokenWithoutVerifying(getSessionResponse.accessToken.token);
+                .getInfoFromAccessTokenWithoutVerifying(process.getProcess(), getSessionResponse.accessToken.token);
 
         assertEquals(accessTokenInfoAfter.userData, newUserDataInJWT);
         assertNotEquals(accessTokenInfoAfter.expiryTime, accessTokenInfoBefore.expiryTime); // expiry time is different

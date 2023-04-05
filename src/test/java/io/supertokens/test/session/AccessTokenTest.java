@@ -19,6 +19,7 @@ package io.supertokens.test.session;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState.EventAndException;
 import io.supertokens.ProcessState.PROCESS_STATE;
+import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.exceptions.TryRefreshTokenException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -95,7 +96,7 @@ public class AccessTokenTest {
         // get access token without verifying
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfo = AccessToken
-                .getInfoFromAccessTokenWithoutVerifying(sessionInfo.accessToken.token);
+                .getInfoFromAccessTokenWithoutVerifying(process.getProcess(), sessionInfo.accessToken.token);
 
         // check payload is fine
         assertEquals(accessTokenInfo.userData, userDataInJWT);
@@ -138,7 +139,7 @@ public class AccessTokenTest {
                 accessTokenInfo.lmrt, value);
 
         AccessTokenInfo customAccessToken = AccessToken
-                .getInfoFromAccessTokenWithoutVerifying(newAccessTokenInfo.token);
+                .getInfoFromAccessTokenWithoutVerifying(process.getProcess(), newAccessTokenInfo.token);
         assertEquals(customAccessToken.expiryTime, value);
 
     }
@@ -176,7 +177,7 @@ public class AccessTokenTest {
     @Test
     public void inputOutputTest() throws InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
             StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException,
-            UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
+            UnsupportedEncodingException, InvalidKeySpecException, SignatureException, UnauthorisedException {
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
@@ -205,7 +206,7 @@ public class AccessTokenTest {
     @Test
     public void inputOutputTestv1() throws InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
             StorageQueryException, StorageTransactionLogicException, TryRefreshTokenException,
-            UnsupportedEncodingException, InvalidKeySpecException, SignatureException {
+            UnsupportedEncodingException, InvalidKeySpecException, SignatureException, UnauthorisedException {
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         EventAndException e = process.checkOrWaitForEvent(PROCESS_STATE.STARTED);
@@ -249,7 +250,8 @@ public class AccessTokenTest {
     @Test
     public void signingKeyChangeDoesNotThrow()
             throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
-            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException {
+            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException,
+            UnauthorisedException {
         Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 second
 
         String[] args = {"../"};
@@ -276,7 +278,8 @@ public class AccessTokenTest {
     @Test
     public void accessTokenShortLifetimeThrowsRefreshTokenError()
             throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
-            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException {
+            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException,
+            UnauthorisedException {
         Utils.setValueInConfig("access_token_validity", "1"); // 1 second
 
         String[] args = {"../"};
@@ -305,7 +308,8 @@ public class AccessTokenTest {
 
     @Test
     public void verifyRandomAccessTokenFailure()
-            throws InterruptedException, StorageQueryException, StorageTransactionLogicException {
+            throws InterruptedException, StorageQueryException, StorageTransactionLogicException, UnauthorisedException,
+            NoSuchAlgorithmException {
         String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));

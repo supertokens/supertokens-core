@@ -46,6 +46,7 @@ public class SessionRemoveAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", true);
@@ -74,8 +75,8 @@ public class SessionRemoveAPI extends WebserverAPI {
 
         if (userId != null) {
             try {
-                String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(this.getTenantIdentifierWithStorageFromRequest(req), main,
-                        userId);
+                String[] sessionHandlesRevoked = Session.revokeAllSessionsForUser(
+                        this.getTenantIdentifierWithStorageFromRequest(req), userId);
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();
@@ -90,7 +91,7 @@ public class SessionRemoveAPI extends WebserverAPI {
         } else {
             try {
                 String[] sessionHandlesRevoked = Session.revokeSessionUsingSessionHandles(
-                        this.getTenantIdentifierWithStorageFromRequest(req), main, sessionHandles);
+                        this.getTenantIdentifierWithStorageFromRequest(req), sessionHandles);
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonArray sessionHandlesRevokedJSON = new JsonArray();

@@ -48,6 +48,7 @@ public class JWTDataAPI extends WebserverAPI {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String sessionHandle = InputParser.parseStringOrThrowError(input, "sessionHandle", false);
@@ -57,7 +58,7 @@ public class JWTDataAPI extends WebserverAPI {
         assert userDataInJWT != null;
 
         try {
-            Session.updateSession(this.getTenantIdentifierWithStorageFromRequest(req), main, sessionHandle, null,
+            Session.updateSession(this.getTenantIdentifierWithStorageFromRequest(req), sessionHandle, null,
                     userDataInJWT, null);
 
             JsonObject result = new JsonObject();
@@ -79,12 +80,12 @@ public class JWTDataAPI extends WebserverAPI {
     @Override
     @Deprecated
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
         assert sessionHandle != null;
 
         try {
-            JsonElement jwtPayload = Session.getJWTData(this.getTenantIdentifierWithStorageFromRequest(req), main,
-                    sessionHandle);
+            JsonElement jwtPayload = Session.getJWTData(this.getTenantIdentifierWithStorageFromRequest(req), sessionHandle);
 
             JsonObject result = new JsonObject();
 
