@@ -73,6 +73,10 @@ public class RefreshToken {
                     || !nonce.equals(tokenPayload.nonce)) {
                 throw new UnauthorisedException("Invalid refresh token");
             }
+            if (!tokenPayload.appIdHash.equals(Utils.hashSHA256(appIdentifier.getConnectionUriDomain() + "|" + appIdentifier.getAppId()))) {
+                throw new UnauthorisedException("Refresh token is from an incorrect app");
+            }
+
             return new RefreshTokenInfo(tokenPayload.sessionHandle, tokenPayload.userId,
                     tokenPayload.parentRefreshTokenHash1, null, tokenPayload.antiCsrfToken, tokenType,
                     new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),
@@ -109,7 +113,9 @@ public class RefreshToken {
         String key = RefreshTokenKey.getInstance(tenantIdentifier.toAppIdentifier(), main).getKey();
         String nonce = Utils.hashSHA256(UUID.randomUUID().toString());
         RefreshTokenPayload payload = new RefreshTokenPayload(sessionHandle, userId, parentRefreshTokenHash1, nonce,
-                antiCsrfToken, tenantIdentifier.getTenantId());
+                antiCsrfToken,
+                Utils.hashSHA256(tenantIdentifier.getConnectionUriDomain() + "|" + tenantIdentifier.getAppId()),
+                tenantIdentifier.getTenantId());
         String payloadSerialised = new Gson().toJson(payload);
         String encryptedPayload = Utils.encrypt(payloadSerialised, key);
         String token = encryptedPayload + "." + nonce + "." + TYPE.FREE_OPTIMISED.toString();
@@ -169,17 +175,20 @@ public class RefreshToken {
         final String nonce;
         @Nullable
         public final String antiCsrfToken;
+        @Nonnull
+        public final String appIdHash;
         @Nullable
         public final String tenantId;
 
         RefreshTokenPayload(@Nonnull String sessionHandle, @Nonnull String userId,
                             @Nullable String parentRefreshTokenHash1, @Nonnull String nonce,
-                            @Nullable String antiCsrfToken, @Nullable String tenantId) {
+                            @Nullable String antiCsrfToken, @Nonnull String appIdHash, @Nullable String tenantId) {
             this.sessionHandle = sessionHandle;
             this.userId = userId;
             this.parentRefreshTokenHash1 = parentRefreshTokenHash1;
             this.nonce = nonce;
             this.antiCsrfToken = antiCsrfToken;
+            this.appIdHash = appIdHash;
             this.tenantId = tenantId == null || tenantId.equals(TenantIdentifier.DEFAULT_TENANT_ID) ? null : tenantId;
         }
     }

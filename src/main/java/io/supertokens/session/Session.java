@@ -180,9 +180,6 @@ public class Session {
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessTokenWithoutVerifying(appIdentifier, main, token);
         TenantIdentifierWithStorage tenantIdentifierWithStorage = accessToken.tenantIdentifier.withStorage(
                 StorageLayer.getStorage(accessToken.tenantIdentifier, main));
-        if (!tenantIdentifierWithStorage.toAppIdentifier().equals(appIdentifier)) {
-            throw new UnauthorisedException("Access token is from an incorrect app");
-        }
         JsonObject newJWTUserPayload = userDataInJWT == null ?
                 getSession(tenantIdentifierWithStorage, accessToken.sessionHandle).userDataInJWT
                 : userDataInJWT;
@@ -216,7 +213,8 @@ public class Session {
     public static SessionInformationHolder getSession(Main main, @Nonnull String token, @Nullable String antiCsrfToken,
                                                       boolean enableAntiCsrf, Boolean doAntiCsrfCheck)
             throws StorageQueryException,
-            StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException {
+            StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException,
+            NoSuchAlgorithmException {
         try {
             return getSession(new AppIdentifier(null, null), main, token, antiCsrfToken, enableAntiCsrf,
                     doAntiCsrfCheck);
@@ -231,7 +229,7 @@ public class Session {
                                                       boolean enableAntiCsrf, Boolean doAntiCsrfCheck)
             throws StorageQueryException,
             StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException,
-            TenantOrAppNotFoundException {
+            TenantOrAppNotFoundException, NoSuchAlgorithmException {
 
         AccessTokenInfo accessToken = AccessToken.getInfoFromAccessToken(appIdentifier, main,
                 token,
