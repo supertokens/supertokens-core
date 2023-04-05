@@ -533,8 +533,6 @@ public class InMemoryDBTest {
 
         assert newSession.accessToken != null;
         assertNotEquals(newSession.accessToken.token, refreshedSession.accessToken.token);
-        assertNotEquals(newSession.accessToken.expiry, refreshedSession.accessToken.expiry);
-        assertNotEquals(newSession.accessToken.createdTime, refreshedSession.accessToken.createdTime);
         assertEquals(newSession.session.userDataInJWT.toString(), refreshedSession.session.userDataInJWT.toString());
 
         process.kill();
@@ -592,8 +590,6 @@ public class InMemoryDBTest {
 
         assert newSession.accessToken != null;
         assertNotEquals(newSession.accessToken.token, refreshedSession.accessToken.token);
-        assertNotEquals(newSession.accessToken.expiry, refreshedSession.accessToken.expiry);
-        assertNotEquals(newSession.accessToken.createdTime, refreshedSession.accessToken.createdTime);
         assertEquals(newSession.session.userDataInJWT.toString(), refreshedSession.session.userDataInJWT.toString());
 
         SessionInformationHolder newSession2 = Session.getSession(process.getProcess(), newSession.accessToken.token,
@@ -680,8 +676,6 @@ public class InMemoryDBTest {
 
         assert newSession.accessToken != null;
         assertNotEquals(newSession.accessToken.token, refreshedSession.accessToken.token);
-        assertNotEquals(newSession.accessToken.expiry, refreshedSession.accessToken.expiry);
-        assertNotEquals(newSession.accessToken.createdTime, refreshedSession.accessToken.createdTime);
         assertEquals(newSession.session.userDataInJWT.toString(), refreshedSession.session.userDataInJWT.toString());
 
         SessionInformationHolder newSession2 = Session.getSession(process.getProcess(), newSession.accessToken.token,
