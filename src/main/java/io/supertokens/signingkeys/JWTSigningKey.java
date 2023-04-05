@@ -214,9 +214,9 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                         // Retry with a new key id
                     }
                 }
-
-                return keyInfo;
             }
+
+            return keyInfo;
         }
 
         throw new QuitProgramException("Unsupported storage type detected");
