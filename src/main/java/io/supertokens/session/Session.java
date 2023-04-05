@@ -213,8 +213,7 @@ public class Session {
     public static SessionInformationHolder getSession(Main main, @Nonnull String token, @Nullable String antiCsrfToken,
                                                       boolean enableAntiCsrf, Boolean doAntiCsrfCheck)
             throws StorageQueryException,
-            StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException,
-            NoSuchAlgorithmException {
+            StorageTransactionLogicException, TryRefreshTokenException, UnauthorisedException {
         try {
             return getSession(new AppIdentifier(null, null), main, token, antiCsrfToken, enableAntiCsrf,
                     doAntiCsrfCheck);
