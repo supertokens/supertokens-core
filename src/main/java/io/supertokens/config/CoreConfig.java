@@ -16,6 +16,7 @@
 
 package io.supertokens.config;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.supertokens.Main;
@@ -72,7 +73,8 @@ public class CoreConfig {
     @JsonProperty
     private boolean access_token_signing_key_dynamic = true;
 
-    @JsonProperty
+    @JsonProperty("access_token_dynamic_signing_key_update_interval")
+    @JsonAlias({"access_token_dynamic_signing_key_update_interval", "access_token_signing_key_update_interval"})
     private double access_token_dynamic_signing_key_update_interval = 168; // in hours
 
     @JsonProperty
