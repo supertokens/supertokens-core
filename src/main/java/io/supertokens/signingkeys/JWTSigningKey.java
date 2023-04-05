@@ -44,20 +44,24 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         // We want to control when/which key is generated during testing to test migration scenarios with exact DB setups.
         if (!Main.isTesting) {
             // init JWT signing keys, we create one key for each supported algorithm type
-            for (int i = 0; i < JWTSigningKey.SupportedAlgorithms.values().length; i++) {
-                JWTSigningKey.SupportedAlgorithms currentAlgorithm = JWTSigningKey.SupportedAlgorithms.values()[i];
-                try {
-                    JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(currentAlgorithm);
-                } catch (StorageQueryException | StorageTransactionLogicException e) {
-                    // Do nothing, when a call to /recipe/jwt POST is made the core will attempt to create a new key
-                } catch (UnsupportedJWTSigningAlgorithmException e) {
-                    /*
-                     * In this case UnsupportedJWTSigningAlgorithmException should never be thrown because we use
-                     * the enum to iterate all the supported algorithm values. If this does get thrown this should be
-                     * considered a failure.
-                     */
-                    throw new QuitProgramException("Trying to create signing key for unsupported JWT signing algorithm");
-                }
+            generateKeysForSupportedAlgos(main);
+        }
+    }
+
+    private static void generateKeysForSupportedAlgos(Main main) {
+        for (int i = 0; i < SupportedAlgorithms.values().length; i++) {
+            SupportedAlgorithms currentAlgorithm = SupportedAlgorithms.values()[i];
+            try {
+                JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(currentAlgorithm);
+            } catch (StorageQueryException | StorageTransactionLogicException e) {
+                // Do nothing, when a call to /recipe/jwt POST is made the core will attempt to create a new key
+            } catch (UnsupportedJWTSigningAlgorithmException e) {
+                /*
+                 * In this case UnsupportedJWTSigningAlgorithmException should never be thrown because we use
+                 * the enum to iterate all the supported algorithm values. If this does get thrown this should be
+                 * considered a failure.
+                 */
+                throw new QuitProgramException("Trying to create signing key for unsupported JWT signing algorithm");
             }
         }
     }
@@ -104,10 +108,11 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     public List<JWTSigningKeyInfo> getAllSigningKeys() throws StorageQueryException, StorageTransactionLogicException {
         JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(main);
 
+        List<JWTSigningKeyInfo> res;
         if (storage.getType() == STORAGE_TYPE.SQL) {
             JWTRecipeSQLStorage sqlStorage = (JWTRecipeSQLStorage) storage;
 
-            return sqlStorage.startTransaction(con -> {
+            res = sqlStorage.startTransaction(con -> {
                 List<JWTSigningKeyInfo> keys = sqlStorage.getJWTSigningKeys_Transaction(con);
 
                 sqlStorage.commitTransaction(con);
@@ -116,10 +121,17 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             JWTRecipeNoSQLStorage_1 noSQLStorage = (JWTRecipeNoSQLStorage_1) storage;
 
-            return noSQLStorage.getJWTSigningKeys_Transaction();
+            res = noSQLStorage.getJWTSigningKeys_Transaction();
+        } else {
+            throw new QuitProgramException("Unsupported storage type detected");
         }
 
-        throw new QuitProgramException("Unsupported storage type detected");
+        if (res.size() == 0) {
+            generateKeysForSupportedAlgos(main);
+            return getAllSigningKeys();
+        }
+
+        return res;
     }
 
     /**
