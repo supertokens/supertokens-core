@@ -17,7 +17,11 @@
 package io.supertokens.test.session.api;
 
 import com.google.gson.JsonObject;
+
+import io.supertokens.ActiveUsers;
 import io.supertokens.ProcessState;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
@@ -150,6 +154,8 @@ public class SessionAPITest2_7 {
         JsonObject userDataInDatabase = new JsonObject();
         userDataInDatabase.addProperty("key", "value");
 
+        long startTs = System.currentTimeMillis();
+
         try {
             JsonObject request = new JsonObject();
             request.add("userDataInJWT", userDataInJWT);
@@ -264,5 +270,57 @@ public class SessionAPITest2_7 {
 
         assertTrue(response.has("jwtSigningPublicKey"));
         assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));
+    }
+
+    @Test
+    public void activeUsersTest() throws Exception {
+        String[] args = {"../"};
+
+        Utils.setValueInConfig("cookie_domain", "localhost");
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
+            return;
+        }
+
+        // Failure case:
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        long startTs = System.currentTimeMillis();
+
+        try {
+            JsonObject request = new JsonObject();
+            request.add("userDataInJWT", userDataInJWT);
+            request.add("userDataInDatabase", userDataInDatabase);
+            HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
+                    request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "session");
+            fail();
+        } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
+            assertEquals(e.statusCode, 400);
+            assertEquals(e.getMessage(),
+                    "Http error. Status Code: 400. Message: Field name 'userId' is invalid in JSON input");
+        }
+
+        int activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 0);
+
+        // Success case:
+        JsonObject request = new JsonObject();
+        request.addProperty("userId", userId);
+        request.add("userDataInJWT", userDataInJWT);
+        request.add("userDataInDatabase", userDataInDatabase);
+        request.addProperty("enableAntiCsrf", true);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "session");
+
+        activeUsers = ActiveUsers.countUsersActiveSince(process.getProcess(), startTs);
+        assert (activeUsers == 1);
     }
 }

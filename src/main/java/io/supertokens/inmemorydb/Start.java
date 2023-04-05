@@ -23,11 +23,9 @@ import io.supertokens.emailverification.EmailVerification;
 import io.supertokens.emailverification.exception.EmailAlreadyVerifiedException;
 import io.supertokens.inmemorydb.config.Config;
 import io.supertokens.inmemorydb.queries.*;
-import io.supertokens.pluginInterface.KeyValueInfo;
-import io.supertokens.pluginInterface.LOG_LEVEL;
-import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.*;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.UserIdNotFoundException;
@@ -67,6 +65,14 @@ import io.supertokens.pluginInterface.session.sqlStorage.SessionSQLStorage;
 import io.supertokens.pluginInterface.sqlStorage.TransactionConnection;
 import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
+import io.supertokens.pluginInterface.totp.TOTPDevice;
+import io.supertokens.pluginInterface.totp.TOTPStorage;
+import io.supertokens.pluginInterface.totp.TOTPUsedCode;
+import io.supertokens.pluginInterface.totp.exception.DeviceAlreadyExistsException;
+import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
+import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
+import io.supertokens.pluginInterface.totp.exception.UsedCodeAlreadyExistsException;
+import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.useridmapping.UserIdMappingStorage;
 import io.supertokens.pluginInterface.useridmapping.exception.UnknownSuperTokensUserIdException;
@@ -98,7 +104,7 @@ import java.util.Set;
 public class Start
         implements SessionSQLStorage, EmailPasswordSQLStorage, EmailVerificationSQLStorage, ThirdPartySQLStorage,
         JWTRecipeSQLStorage, PasswordlessSQLStorage, UserMetadataSQLStorage, UserRolesSQLStorage, UserIdMappingStorage,
-        MultitenancyStorage, DashboardSQLStorage {
+        MultitenancyStorage, TOTPSQLStorage, ActiveUsersStorage, DashboardSQLStorage {
 
     private static final Object appenderLock = new Object();
     private static final String APP_ID_KEY_NAME = "app_id";
@@ -341,6 +347,7 @@ public class Start
         ConnectionPool.close(this);
     }
 
+
     @Override
     public void createNewSession(TenantIdentifier tenantIdentifier, String sessionHandle, String userId,
                                  String refreshTokenHash2, JsonObject userDataInDatabase, long expiry,
@@ -496,11 +503,12 @@ public class Start
     public AuthRecipeUserInfo[] getUsers(TenantIdentifier tenantIdentifier, @NotNull Integer limit,
                                          @NotNull String timeJoinedOrder,
                                          @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
-                                         @Nullable Long timeJoined)
+                                         @Nullable Long timeJoined, @Nullable DashboardSearchTags dashboardSearchTags)
             throws StorageQueryException {
         // TODO..
         try {
-            return GeneralQueries.getUsers(this, limit, timeJoinedOrder, includeRecipeIds, userId, timeJoined);
+            return GeneralQueries.getUsers(this, limit, timeJoinedOrder, includeRecipeIds, userId, timeJoined,
+                    dashboardSearchTags);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -511,6 +519,47 @@ public class Start
         // TODO..
         try {
             return GeneralQueries.doesUserIdExist(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void updateLastActive(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
+        try {
+            // TODO..
+            ActiveUsersQueries.updateUserLastActive(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public int countUsersActiveSince(AppIdentifier appIdentifier, long time) throws StorageQueryException {
+        try {
+            // TODO,
+            return ActiveUsersQueries.countUsersActiveSince(this, time);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public int countUsersEnabledTotp(AppIdentifier appIdentifier) throws StorageQueryException {
+        try {
+            // TODO..
+            return ActiveUsersQueries.countUsersEnabledTotp(this);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public int countUsersEnabledTotpAndActiveSince(AppIdentifier appIdentifier, long time)
+            throws StorageQueryException {
+        try {
+            // TODO..
+            return ActiveUsersQueries.countUsersEnabledTotpAndActiveSince(this, time);
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
@@ -979,7 +1028,8 @@ public class Start
     }
 
     @Override
-    public void deleteThirdPartyUser(AppIdentifier appIdentifier, String userId) throws StorageQueryException {
+    public void deleteThirdPartyUser(AppIdentifier appIdentifier, String userId) throws
+            StorageQueryException {
         try {
             // TODO..
             ThirdPartyQueries.deleteUser(this, userId);
@@ -1181,11 +1231,14 @@ public class Start
         }
     }
 
+
     @Override
     public void createDeviceWithCode(TenantIdentifier tenantIdentifier, @Nullable String
             email, @Nullable String phoneNumber, String linkCodeSalt, PasswordlessCode code)
             throws StorageQueryException, DuplicateDeviceIdHashException,
-            DuplicateCodeIdException, DuplicateLinkCodeHashException {
+            DuplicateCodeIdException,
+
+            DuplicateLinkCodeHashException {
         // TODO..
         if (email == null && phoneNumber == null) {
             throw new IllegalArgumentException("Both email and phoneNumber can't be null");
@@ -1713,7 +1766,9 @@ public class Start
                                                                            appIdentifier,
                                                                    TransactionConnection con, String role,
                                                                    String permission)
-            throws StorageQueryException, UnknownRoleException {
+            throws StorageQueryException,
+
+            UnknownRoleException {
         Connection sqlCon = (Connection) con.getConnection();
         // TODO..
         try {
@@ -1777,7 +1832,9 @@ public class Start
     public void createUserIdMapping(AppIdentifier appIdentifier, String
             superTokensUserId, String externalUserId,
                                     @Nullable String externalUserIdInfo)
-            throws StorageQueryException, UnknownSuperTokensUserIdException, UserIdMappingAlreadyExistsException {
+            throws StorageQueryException, UnknownSuperTokensUserIdException,
+
+            UserIdMappingAlreadyExistsException {
         try {
             UserIdMappingQueries.createUserIdMapping(this, superTokensUserId,
                     externalUserId, externalUserIdInfo);
@@ -1868,7 +1925,8 @@ public class Start
 
     @Override
     public boolean updateOrDeleteExternalUserIdInfo(AppIdentifier appIdentifier, String
-            userId, boolean isSuperTokensUserId, @Nullable String externalUserIdInfo) throws StorageQueryException {
+            userId, boolean isSuperTokensUserId, @Nullable String externalUserIdInfo) throws
+            StorageQueryException {
         // TODO..
         try {
             if (isSuperTokensUserId) {
@@ -1887,7 +1945,8 @@ public class Start
     }
 
     @Override
-    public HashMap<String, String> getUserIdMappingForSuperTokensIds(ArrayList<String> userIds)
+    public HashMap<String, String> getUserIdMappingForSuperTokensIds
+            (ArrayList<String> userIds)
             throws StorageQueryException {
         // TODO..
         try {
@@ -1922,6 +1981,13 @@ public class Start
             }
         } else if (className.equals(JWTRecipeStorage.class.getName())) {
             return false;
+        } else if (className.equals(TOTPStorage.class.getName())) {
+            try {
+                TOTPDevice[] devices = TOTPQueries.getDevices(this, userId);
+                return devices.length > 0;
+            } catch (SQLException e) {
+                throw new StorageQueryException(e);
+            }
         } else {
             throw new IllegalStateException("ClassName: " + className +
                     " is not part of NonAuthRecipeStorage");
@@ -1971,8 +2037,15 @@ public class Start
                 throw new StorageQueryException(e);
             }
         } else if (className.equals(JWTRecipeStorage.class.getName())) {
-                                                /* Since JWT recipe tables do not store userId we do not add any data
-                                                 to them */
+            /* Since JWT recipe tables do not store userId we do not add any data to them */
+        } else if (className.equals(TOTPStorage.class.getName())) {
+            try {
+                TOTPDevice device = new TOTPDevice(userId, "testDevice", "secret", 0,
+                        30, false);
+                TOTPQueries.createDevice(this, device);
+            } catch (StorageTransactionLogicException e) {
+                throw new StorageQueryException(e.actualException);
+            }
         } else {
             throw new IllegalStateException("ClassName: " + className +
                     " is not part of NonAuthRecipeStorage");
@@ -1980,7 +2053,8 @@ public class Start
     }
 
     @Override
-    public void createNewDashboardUser(AppIdentifier appIdentifier, DashboardUser userInfo)
+    public void createNewDashboardUser(AppIdentifier appIdentifier, DashboardUser
+            userInfo)
             throws StorageQueryException, io.supertokens.pluginInterface.dashboard.exceptions.DuplicateUserIdException,
             io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException {
         // TODO:..
@@ -2009,7 +2083,8 @@ public class Start
     }
 
     @Override
-    public DashboardUser[] getAllDashboardUsers(AppIdentifier appIdentifier) throws StorageQueryException {
+    public DashboardUser[] getAllDashboardUsers(AppIdentifier appIdentifier) throws
+            StorageQueryException {
         try {
             // TODO..
             return DashboardQueries.getAllDashBoardUsers(this);
@@ -2020,7 +2095,8 @@ public class Start
     }
 
     @Override
-    public boolean deleteDashboardUserWithUserId(AppIdentifier appIdentifier, String userId) throws
+    public boolean deleteDashboardUserWithUserId(AppIdentifier appIdentifier, String
+            userId) throws
             StorageQueryException {
         // TODO..
         try {
@@ -2031,7 +2107,8 @@ public class Start
     }
 
     @Override
-    public DashboardUser getDashboardUserByEmail(AppIdentifier appIdentifier, String email) throws
+    public DashboardUser getDashboardUserByEmail(AppIdentifier appIdentifier, String
+            email) throws
             StorageQueryException {
         // TODO..
         try {
@@ -2062,7 +2139,6 @@ public class Start
                             ".email)")) {
                 throw new io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException();
             }
-            throw new StorageQueryException(e);
         }
     }
 
@@ -2070,7 +2146,9 @@ public class Start
     public void updateDashboardUsersPasswordWithUserId_Transaction
             (AppIdentifier appIdentifier, TransactionConnection con, String userId,
              String newPassword)
-            throws StorageQueryException, UserIdNotFoundException {
+            throws StorageQueryException,
+
+            UserIdNotFoundException {
         // TODO..
         Connection sqlCon = (Connection) con.getConnection();
         try {
@@ -2084,8 +2162,10 @@ public class Start
         }
     }
 
+
     @Override
-    public DashboardSessionInfo[] getAllSessionsForUserId(AppIdentifier appIdentifier, String userId) throws
+    public DashboardSessionInfo[] getAllSessionsForUserId(AppIdentifier
+                                                                  appIdentifier, String userId) throws
             StorageQueryException {
         // TODO..
         try {
@@ -2105,7 +2185,6 @@ public class Start
         } catch (SQLException e) {
             throw new StorageQueryException(e);
         }
-
     }
 
     @Override
@@ -2121,7 +2200,8 @@ public class Start
     }
 
     @Override
-    public void createNewDashboardUserSession(AppIdentifier appIdentifier, String userId, String sessionId,
+    public void createNewDashboardUserSession(AppIdentifier
+                                                      appIdentifier, String userId, String sessionId,
                                               long timeCreated, long expiry)
             throws StorageQueryException, UserIdNotFoundException {
         // TODO..
@@ -2136,7 +2216,6 @@ public class Start
             }
             throw new StorageQueryException(e);
         }
-
     }
 
     @Override
@@ -2149,7 +2228,8 @@ public class Start
     }
 
     @Override
-    public DashboardUser getDashboardUserByUserId(AppIdentifier appIdentifier, String userId) throws
+    public DashboardUser getDashboardUserByUserId(AppIdentifier
+                                                          appIdentifier, String userId) throws
             StorageQueryException {
         // TODO..
         try {
@@ -2166,7 +2246,8 @@ public class Start
     }
 
     @Override
-    public void createTenant(TenantConfig config) throws DuplicateTenantException {
+    public void createTenant(TenantConfig config) throws
+            DuplicateTenantException {
         // TODO:
     }
 
@@ -2201,7 +2282,8 @@ public class Start
     }
 
     @Override
-    public void deleteConnectionUriDomainMapping(TenantIdentifier tenantIdentifier) throws
+    public void deleteConnectionUriDomainMapping(TenantIdentifier
+                                                         tenantIdentifier) throws
             TenantOrAppNotFoundException {
         // TODO:
     }
@@ -2213,19 +2295,22 @@ public class Start
     }
 
     @Override
-    public void addUserIdToTenant(TenantIdentifier tenantIdentifier, String userId)
+    public void addUserIdToTenant(TenantIdentifier tenantIdentifier, String
+            userId)
             throws TenantOrAppNotFoundException, UnknownUserIdException {
         // TODO:
     }
 
     @Override
-    public void addRoleToTenant(TenantIdentifier tenantIdentifier, String role)
+    public void addRoleToTenant(TenantIdentifier tenantIdentifier, String
+            role)
             throws TenantOrAppNotFoundException, UnknownRoleException {
         // TODO:
     }
 
     @Override
-    public void deleteAppId(String appId) throws TenantOrAppNotFoundException {
+    public void deleteAppId(String appId) throws
+            TenantOrAppNotFoundException {
         // TODO:
     }
 
@@ -2233,5 +2318,184 @@ public class Start
     public void deleteConnectionUriDomain(String connectionUriDomain) throws
             TenantOrAppNotFoundException {
         // TODO:
+    }
+
+    // TOTP recipe:
+    @Override
+    public void createDevice(AppIdentifier appIdentifier, TOTPDevice device) throws
+            StorageQueryException, DeviceAlreadyExistsException {
+        try {
+            // TODO..
+            TOTPQueries.createDevice(this, device);
+        } catch (StorageTransactionLogicException e) {
+            String message = e.actualException.getMessage();
+            if (message.equals(
+                    "[SQLITE_CONSTRAINT]  Abort due to constraint " +
+                            "violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this)
+                            .getTotpUserDevicesTable() + ".user_id, "
+                            + Config.getConfig(this)
+                            .getTotpUserDevicesTable() +
+                            ".device_name" + ")")) {
+                throw new DeviceAlreadyExistsException();
+            }
+
+            throw new StorageQueryException(e.actualException);
+        }
+    }
+
+    @Override
+    public void markDeviceAsVerified(AppIdentifier appIdentifier, String userId, String deviceName)
+            throws StorageQueryException, UnknownDeviceException {
+        try {
+            // TODO..
+            int matchedCount = TOTPQueries.markDeviceAsVerified(this,
+                    userId, deviceName);
+            if (matchedCount == 0) {
+                // Note matchedCount != updatedCount
+                throw new UnknownDeviceException();
+            }
+            return; // Device was marked as verified
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public int deleteDevice_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId,
+                                        String deviceName)
+            throws StorageQueryException {
+        // TODO..
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return TOTPQueries.deleteDevice_Transaction(this, sqlCon,
+                    userId, deviceName);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void removeUser_Transaction(TransactionConnection con, AppIdentifier appIdentifier, String userId)
+            throws StorageQueryException {
+        // TODO..
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            TOTPQueries.removeUser_Transaction(this, sqlCon, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void updateDeviceName(AppIdentifier appIdentifier, String userId, String
+            oldDeviceName, String newDeviceName)
+            throws StorageQueryException, DeviceAlreadyExistsException,
+            UnknownDeviceException {
+        // TODO..
+        try {
+            int updatedCount = TOTPQueries.updateDeviceName(this,
+                    userId, oldDeviceName, newDeviceName);
+            if (updatedCount == 0) {
+                throw new UnknownDeviceException();
+            }
+        } catch (SQLException e) {
+            if (e.getMessage().equals(
+                    "[SQLITE_CONSTRAINT]  Abort due to constraint " +
+                            "violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this)
+                            .getTotpUserDevicesTable() + ".user_id, "
+                            + Config.getConfig(this)
+                            .getTotpUserDevicesTable() +
+                            ".device_name" + ")")) {
+                throw new DeviceAlreadyExistsException();
+            }
+        }
+    }
+
+    @Override
+    public TOTPDevice[] getDevices(AppIdentifier appIdentifier, String userId)
+            throws StorageQueryException {
+        // TODO..
+        try {
+            return TOTPQueries.getDevices(this, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public TOTPDevice[] getDevices_Transaction(TransactionConnection
+                                                       con, AppIdentifier appIdentifier, String userId)
+            throws StorageQueryException {
+        // TODO..
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return TOTPQueries.getDevices_Transaction(this, sqlCon,
+                    userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public void insertUsedCode_Transaction(TransactionConnection con, TenantIdentifier tenantIdentifier,
+                                           TOTPUsedCode usedCodeObj)
+            throws StorageQueryException, TotpNotEnabledException, UsedCodeAlreadyExistsException {
+        // TODO..
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            TOTPQueries.insertUsedCode_Transaction(this, sqlCon,
+                    usedCodeObj);
+        } catch (SQLException e) {
+            String message = e.getMessage();
+            // No user/device exists for the given usedCodeObj.userId
+
+            if (message
+                    .equals("[SQLITE_CONSTRAINT]  Abort due to " +
+                            "constraint violation (FOREIGN KEY " +
+                            "constraint " +
+                            "failed)")) {
+                throw new TotpNotEnabledException();
+            }
+            // Failed due to primary key on (userId, created_time)
+            if (message.equals(
+                    "[SQLITE_CONSTRAINT]  Abort due to constraint " +
+                            "violation (UNIQUE constraint failed: "
+                            + Config.getConfig(this)
+                            .getTotpUsedCodesTable() + ".user_id, "
+                            + Config.getConfig(this)
+                            .getTotpUsedCodesTable() +
+                            ".created_time_ms" + ")")) {
+                throw new UsedCodeAlreadyExistsException();
+            }
+
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public TOTPUsedCode[] getAllUsedCodesDescOrder_Transaction
+            (TransactionConnection con, TenantIdentifier tenantIdentifier, String userId)
+            throws StorageQueryException {
+        // TODO..
+        Connection sqlCon = (Connection) con.getConnection();
+        try {
+            return TOTPQueries.getAllUsedCodesDescOrder_Transaction(
+                    this, sqlCon, userId);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
+    }
+
+    @Override
+    public int removeExpiredCodes(TenantIdentifier tenantIdentifier, long expiredBefore)
+            throws StorageQueryException {
+        try {
+            // TODO..
+            return TOTPQueries.removeExpiredCodes(this, expiredBefore);
+        } catch (SQLException e) {
+            throw new StorageQueryException(e);
+        }
     }
 }

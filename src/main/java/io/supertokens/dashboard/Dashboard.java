@@ -277,7 +277,8 @@ public class Dashboard {
                     .revokeSessionWithSessionId(appIdentifier, sessionInfo[i].sessionId);
         }
 
-        return StorageLayer.getDashboardStorage(appIdentifier, main).getDashboardUserByUserId(appIdentifier, userId);
+        return StorageLayer.getDashboardStorage(appIdentifier, main)
+                .getDashboardUserByUserId(appIdentifier, userId);
     }
 
     @TestOnly
@@ -290,10 +291,12 @@ public class Dashboard {
         }
     }
 
-    public static DashboardUser getDashboardUserByEmail(AppIdentifier appIdentifier, Main main, String email)
+    public static DashboardUser getDashboardUserByEmail(AppIdentifier appIdentifier, Main main, String
+            email)
             throws StorageQueryException, TenantOrAppNotFoundException {
 
-        return StorageLayer.getDashboardStorage(appIdentifier, main).getDashboardUserByEmail(appIdentifier, email);
+        return StorageLayer.getDashboardStorage(appIdentifier, main)
+                .getDashboardUserByEmail(appIdentifier, email);
     }
 
     @TestOnly
@@ -306,7 +309,8 @@ public class Dashboard {
         }
     }
 
-    public static boolean revokeSessionWithSessionId(AppIdentifier appIdentifier, Main main, String sessionId)
+    public static boolean revokeSessionWithSessionId(AppIdentifier appIdentifier, Main main, String
+            sessionId)
             throws StorageQueryException, TenantOrAppNotFoundException {
         return StorageLayer.getDashboardStorage(appIdentifier, main)
                 .revokeSessionWithSessionId(appIdentifier, sessionId);
@@ -323,10 +327,12 @@ public class Dashboard {
         }
     }
 
-    public static DashboardSessionInfo[] getAllDashboardSessionsForUser(AppIdentifier appIdentifier, Main main,
+    public static DashboardSessionInfo[] getAllDashboardSessionsForUser(AppIdentifier appIdentifier, Main
+            main,
                                                                         String userId)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getDashboardStorage(appIdentifier, main).getAllSessionsForUserId(appIdentifier, userId);
+        return StorageLayer.getDashboardStorage(appIdentifier, main)
+                .getAllSessionsForUserId(appIdentifier, userId);
     }
 
     private static boolean isDashboardFeatureFlagEnabled(Main main, AppIdentifier appIdentifier)
@@ -339,7 +345,8 @@ public class Dashboard {
         }
     }
 
-    private static String createSessionForDashboardUser(AppIdentifier appIdentifier, Main main, DashboardUser user)
+    private static String createSessionForDashboardUser(AppIdentifier appIdentifier, Main
+            main, DashboardUser user)
             throws StorageQueryException, UserIdNotFoundException, TenantOrAppNotFoundException {
         String sessionId = UUID.randomUUID().toString();
         long timeCreated = System.currentTimeMillis();
@@ -353,8 +360,9 @@ public class Dashboard {
     public static boolean isValidEmail(String email) {
         // We use the same regex as the backend SDK
         // https://github.com/supertokens/supertokens-node/blob/master/lib/ts/recipe/emailpassword/utils.ts#L250
-        String regexPatternForEmail = "((^<>()[].,;:@]+(.^<>()[].,;:@]+)*)|(.+))@(([[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" +
-                ".[0-9]{1,3}])|(([a-zA-Z-0-9]+.)+[a-zA-Z]{2,}))$";
+        String regexPatternForEmail =
+                "((^<>()[].,;:@]+(.^<>()[].,;:@]+)*)|(.+))@(([[0-9]{1,3}.[0-9]{1,3}.[0-9]{1,3}" +
+                        ".[0-9]{1,3}])|(([a-zA-Z-0-9]+.)+[a-zA-Z]{2,}))$";
         return patternMatcher(email, regexPatternForEmail);
     }
 

@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.thirdparty;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -71,9 +72,12 @@ public class SignInUpAPI extends WebserverAPI {
             email = Utils.normaliseEmail(email);
 
             try {
-                ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(this.getTenantIdentifierWithStorageFromRequest(req), super.main,
+                ThirdParty.SignInUpResponse response = ThirdParty.signInUp2_7(
+                        this.getTenantIdentifierWithStorageFromRequest(req), super.main,
                         thirdPartyId,
                         thirdPartyUserId, email, isEmailVerified);
+
+                ActiveUsers.updateLastActive(main, response.user.id);
 
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
@@ -107,9 +111,11 @@ public class SignInUpAPI extends WebserverAPI {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(
                         this.getTenantIdentifierWithStorageFromRequest(req), super.main, thirdPartyId,
                         thirdPartyUserId, email);
-
+                
+                ActiveUsers.updateLastActive(main, response.user.id);
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
-                        .getUserIdMapping(this.getAppIdentifierWithStorage(req), response.user.id, UserIdType.SUPERTOKENS);
+                        .getUserIdMapping(this.getAppIdentifierWithStorage(req), response.user.id,
+                                UserIdType.SUPERTOKENS);
                 if (userIdMapping != null) {
                     response.user.id = userIdMapping.externalUserId;
                 }

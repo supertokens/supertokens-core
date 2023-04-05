@@ -21,12 +21,13 @@ import io.supertokens.featureflag.exceptions.NoLicenseKeyFoundException;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.output.Logging;
+import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.KeyValueInfo;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.utils.Utils;
 import io.supertokens.version.Version;
 import org.jetbrains.annotations.TestOnly;
 
@@ -152,20 +153,59 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
 
     @Override
     public JsonObject getPaidFeatureStats() throws StorageQueryException, TenantOrAppNotFoundException {
-        JsonObject result = new JsonObject();
+        JsonObject usageStats = new JsonObject();
         EE_FEATURES[] features = getEnabledEEFeaturesFromDbOrCache();
-        if (Arrays.stream(features).anyMatch(t -> t == EE_FEATURES.DASHBOARD_LOGIN)) {
-            try {
+
+        ActiveUsersStorage activeUsersStorage =
+                StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main).getType() ==
+                        STORAGE_TYPE.SQL ?
+                        (ActiveUsersStorage) StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(),
+                                main) : null;
+
+        for (EE_FEATURES feature : features) {
+            if (feature == EE_FEATURES.DASHBOARD_LOGIN) {
                 JsonObject stats = new JsonObject();
                 int userCount = StorageLayer.getDashboardStorage(this.appIdentifier, main)
                         .getAllDashboardUsers(this.appIdentifier).length;
                 stats.addProperty("user_count", userCount);
-                result.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), stats);
-            } catch (TenantOrAppNotFoundException e) {
-                Logging.error(main, Utils.exceptionStacktraceToString(e), false);
+                usageStats.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), stats);
+            }
+            if (feature == EE_FEATURES.TOTP && activeUsersStorage != null) {
+                JsonObject totpStats = new JsonObject();
+                JsonArray totpMauArr = new JsonArray();
+
+                for (int i = 0; i < 30; i++) {
+                    long now = System.currentTimeMillis();
+                    long today = now - (now % (24 * 60 * 60 * 1000L));
+                    long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+
+                    int totpMau = activeUsersStorage.countUsersEnabledTotpAndActiveSince(this.appIdentifier, timestamp);
+                    totpMauArr.add(new JsonPrimitive(totpMau));
+                }
+
+                totpStats.add("maus", totpMauArr);
+
+                int totpTotalUsers = activeUsersStorage.countUsersEnabledTotp(this.appIdentifier);
+                totpStats.addProperty("total_users", totpTotalUsers);
+                usageStats.add(EE_FEATURES.TOTP.toString(), totpStats);
             }
         }
-        return result;
+
+        if (activeUsersStorage != null) {
+            JsonArray mauArr = new JsonArray();
+            for (int i = 0; i < 30; i++) {
+                long now = System.currentTimeMillis();
+                long today = now - (now % (24 * 60 * 60 * 1000L));
+                long timestamp = today - (i * 24 * 60 * 60 * 1000L);
+
+                int mau = activeUsersStorage.countUsersActiveSince(this.appIdentifier, timestamp);
+                mauArr.add(new JsonPrimitive(mau));
+            }
+
+            usageStats.add("maus", mauArr);
+        }
+
+        return usageStats;
     }
 
     private EE_FEATURES[] verifyLicenseKey(String licenseKey)

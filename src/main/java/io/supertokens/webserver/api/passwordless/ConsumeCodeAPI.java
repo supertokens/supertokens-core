@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.passwordless;
 import com.google.gson.Gson;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.passwordless.Passwordless;
@@ -80,10 +81,13 @@ public class ConsumeCodeAPI extends WebserverAPI {
         }
 
         try {
-            ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(this.getTenantIdentifierWithStorageFromRequest(req), main,
+            ConsumeCodeResponse consumeCodeResponse = Passwordless.consumeCode(
+                    this.getTenantIdentifierWithStorageFromRequest(req), main,
                     deviceId, deviceIdHash,
                     userInputCode, linkCode);
 
+            ActiveUsers.updateLastActive(main, consumeCodeResponse.user.id);
+            
             UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(
                     this.getAppIdentifierWithStorage(req),
                     consumeCodeResponse.user.id, UserIdType.ANY);

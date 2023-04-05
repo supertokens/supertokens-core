@@ -17,33 +17,26 @@
 package io.supertokens.storageLayer;
 
 import com.google.gson.JsonObject;
-import io.supertokens.Main;
-import io.supertokens.ProcessState;
-import io.supertokens.ResourceDistributor;
+import io.supertokens.*;
 import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.inmemorydb.Start;
 import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
-import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
-import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
-import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import jakarta.servlet.ServletException;
 import org.jetbrains.annotations.TestOnly;
 
 import java.io.File;
@@ -58,6 +51,10 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     public static final String RESOURCE_KEY = "io.supertokens.storageLayer.StorageLayer";
     private final Storage storage;
     private static URLClassLoader ucl = null;
+
+    public Storage getUnderlyingStorage() {
+        return storage;
+    }
 
     public static Storage getNewStorageInstance(Main main, JsonObject config) throws InvalidConfigException {
         Storage result;
@@ -350,6 +347,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         return (DashboardSQLStorage) getInstance(appIdentifier.getAsPublicTenantIdentifier(), main).storage;
     }
 
+
     @TestOnly
     public static DashboardSQLStorage getDashboardStorage(Main main) {
         // TODO remove this function
@@ -462,6 +460,16 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
             return new TenantIdentifierWithStorageAndUserIdMapping(
                     tenantIdentifierWithStorage, null);
         }
+        if (userIdType != UserIdType.SUPERTOKENS) {
+            try {
+                io.supertokens.useridmapping.UserIdMapping.assertThatUserIdIsNotBeingUsedInNonAuthRecipes(
+                        tenantIdentifierWithStorage.toAppIdentifierWithStorage(), userId);
+            } catch (ServletException e) {
+                // this means that the userId is being used for a non auth recipe.
+                return new TenantIdentifierWithStorageAndUserIdMapping(
+                        tenantIdentifierWithStorage, null);
+            }
+        }
 
         throw new UnknownUserIdException();
     }
@@ -493,6 +501,16 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(priorityStorage);
                 return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, null);
             }
+            if (userIdType != UserIdType.SUPERTOKENS) {
+                AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(priorityStorage);
+                try {
+                    io.supertokens.useridmapping.UserIdMapping.assertThatUserIdIsNotBeingUsedInNonAuthRecipes(
+                            appIdentifierWithStorage, userId);
+                } catch (ServletException e) {
+                    // this means that the userId is being used for a non auth recipe.
+                    return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, null);
+                }
+            }
         }
 
         for (Storage storage : storages) {
@@ -513,6 +531,16 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                     && ((AuthRecipeStorage) storage).doesUserIdExist(appIdentifier, userId)) {
                 AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(storage);
                 return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, null);
+            }
+            if (userIdType != UserIdType.SUPERTOKENS) {
+                AppIdentifierWithStorage appIdentifierWithStorage = appIdentifier.withStorage(storage);
+                try {
+                    io.supertokens.useridmapping.UserIdMapping.assertThatUserIdIsNotBeingUsedInNonAuthRecipes(
+                            appIdentifierWithStorage, userId);
+                } catch (ServletException e) {
+                    // this means that the userId is being used for a non auth recipe.
+                    return new AppIdentifierWithStorageAndUserIdMapping(appIdentifierWithStorage, null);
+                }
             }
         }
 

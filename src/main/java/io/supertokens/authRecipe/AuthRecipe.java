@@ -22,16 +22,18 @@ import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
+import io.supertokens.pluginInterface.dashboard.DashboardSearchTags;
 import io.supertokens.pluginInterface.emailpassword.sqlStorage.EmailPasswordSQLStorage;
 import io.supertokens.pluginInterface.emailverification.sqlStorage.EmailVerificationSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.passwordless.sqlStorage.PasswordlessSQLStorage;
 import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.thirdparty.sqlStorage.ThirdPartySQLStorage;
+import io.supertokens.pluginInterface.totp.sqlStorage.TOTPSQLStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.pluginInterface.usermetadata.sqlStorage.UserMetadataSQLStorage;
 import io.supertokens.pluginInterface.userroles.sqlStorage.UserRolesSQLStorage;
@@ -51,12 +53,12 @@ public class AuthRecipe {
                                               RECIPE_ID[] includeRecipeIds)
             throws StorageQueryException,
             TenantOrAppNotFoundException, BadPermissionException {
-            return ((AuthRecipeStorage) tenantIdentifier.getStorage()).getUsersCount(
-                    tenantIdentifier, includeRecipeIds);
+        return ((AuthRecipeStorage) tenantIdentifier.getStorage()).getUsersCount(
+                tenantIdentifier, includeRecipeIds);
     }
 
     public static long getUsersCountAcrossAllTenants(AppIdentifierWithStorage appIdentifierWithStorage,
-                                              RECIPE_ID[] includeRecipeIds)
+                                                     RECIPE_ID[] includeRecipeIds)
             throws StorageQueryException,
             TenantOrAppNotFoundException, BadPermissionException {
         long count = 0;
@@ -76,7 +78,7 @@ public class AuthRecipe {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return getUsersCountForTenant(new TenantIdentifierWithStorage(
-                    null, null, null, storage),
+                            null, null, null, storage),
                     includeRecipeIds);
         } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new IllegalStateException(e);
@@ -86,24 +88,31 @@ public class AuthRecipe {
     public static UserPaginationContainer getUsers(TenantIdentifierWithStorage tenantIdentifierWithStorage,
                                                    Integer limit, String timeJoinedOrder,
                                                    @Nullable String paginationToken,
-                                                   @Nullable RECIPE_ID[] includeRecipeIds)
+                                                   @Nullable RECIPE_ID[] includeRecipeIds,
+                                                   @Nullable DashboardSearchTags dashboardSearchTags)
             throws StorageQueryException, UserPaginationToken.InvalidTokenException, TenantOrAppNotFoundException {
         AuthRecipeUserInfo[] users;
         if (paginationToken == null) {
             users = ((AuthRecipeStorage) tenantIdentifierWithStorage.getStorage())
                     .getUsers(tenantIdentifierWithStorage, limit + 1, timeJoinedOrder, includeRecipeIds, null,
-                            null);
+                            null, dashboardSearchTags);
         } else {
             UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
             users = ((AuthRecipeStorage) tenantIdentifierWithStorage.getStorage())
                     .getUsers(tenantIdentifierWithStorage, limit + 1, timeJoinedOrder, includeRecipeIds,
-                            tokenInfo.userId, tokenInfo.timeJoined);
+                            tokenInfo.userId, tokenInfo.timeJoined, dashboardSearchTags);
         }
+
+        if (dashboardSearchTags != null) {
+            return new UserPaginationContainer(users, null);
+        }
+
         String nextPaginationToken = null;
         int maxLoop = users.length;
         if (users.length == limit + 1) {
             maxLoop = limit;
-            nextPaginationToken = new UserPaginationToken(users[limit].id, users[limit].timeJoined).generateToken();
+            nextPaginationToken = new UserPaginationToken(users[limit].id,
+                    users[limit].timeJoined).generateToken();
         }
         AuthRecipeUserInfo[] resultUsers = new AuthRecipeUserInfo[maxLoop];
         System.arraycopy(users, 0, resultUsers, 0, maxLoop);
@@ -114,13 +123,14 @@ public class AuthRecipe {
     public static UserPaginationContainer getUsers(Main main,
                                                    Integer limit, String timeJoinedOrder,
                                                    @Nullable String paginationToken,
-                                                   @Nullable RECIPE_ID[] includeRecipeIds)
+                                                   @Nullable RECIPE_ID[] includeRecipeIds,
+                                                   @Nullable DashboardSearchTags dashboardSearchTags)
             throws StorageQueryException, UserPaginationToken.InvalidTokenException {
         try {
             Storage storage = StorageLayer.getStorage(main);
             return getUsers(new TenantIdentifierWithStorage(
-                    null, null, null, storage),
-                    limit, timeJoinedOrder, paginationToken, includeRecipeIds);
+                            null, null, null, storage),
+                    limit, timeJoinedOrder, paginationToken, includeRecipeIds, dashboardSearchTags);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
@@ -128,20 +138,28 @@ public class AuthRecipe {
 
     public static void deleteUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId,
                                   UserIdMapping userIdMapping)
-            throws StorageQueryException {
-        // We clean up the user last so that if anything before that throws an error, then that will throw a 500 to the
-        // developer. In this case, they expect that the user has not been deleted (which will be true). This is as
-        // opposed to deleting the user first, in which case if something later throws an error, then the user has
+            throws StorageQueryException, StorageTransactionLogicException {
+        // We clean up the user last so that if anything before that throws an error, then that will throw a
+        // 500 to the
+        // developer. In this case, they expect that the user has not been deleted (which will be true). This
+        // is as
+        // opposed to deleting the user first, in which case if something later throws an error, then the
+        // user has
+
         // actually been deleted already (which is not expected by the dev)
 
-        // For things created after the intial cleanup and before finishing the operation:
+        // For things created after the intial cleanup and before finishing the
+        // operation:
         // - session: the session will expire anyway
-        // - email verification: email verification tokens can be created for any userId anyway
+        // - email verification: email verification tokens can be created for any userId
+        // anyway
 
-        // If userId mapping exists then delete entries with superTokensUserId from auth related tables and
+        // If userId mapping exists then delete entries with superTokensUserId from auth
+        // related tables and
         // externalUserid from non-auth tables
         if (userIdMapping != null) {
-            // We check if the mapped externalId is another SuperTokens UserId, this could come up when migrating
+            // We check if the mapped externalId is another SuperTokens UserId, this could
+            // come up when migrating
             // recipes.
             // in reference to
             // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
@@ -164,9 +182,10 @@ public class AuthRecipe {
         }
     }
 
+
     @TestOnly
     public static void deleteUser(Main main, String userId)
-            throws StorageQueryException {
+            throws StorageQueryException, StorageTransactionLogicException {
         Storage storage = StorageLayer.getStorage(main);
         AppIdentifierWithStorage appIdentifier = new AppIdentifierWithStorage(
                 null, null, storage);
@@ -176,8 +195,9 @@ public class AuthRecipe {
         deleteUser(appIdentifier, userId, mapping);
     }
 
-    private static void deleteNonAuthRecipeUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
-            throws StorageQueryException {
+    private static void deleteNonAuthRecipeUser(AppIdentifierWithStorage
+                                                        appIdentifierWithStorage, String userId)
+            throws StorageQueryException, StorageTransactionLogicException {
         ((UserMetadataSQLStorage) appIdentifierWithStorage.getStorage())
                 .deleteUserMetadata(appIdentifierWithStorage, userId);
         ((SessionStorage) appIdentifierWithStorage.getStorage())
@@ -186,9 +206,17 @@ public class AuthRecipe {
                 .deleteEmailVerificationUserInfo(appIdentifierWithStorage, userId);
         ((UserRolesSQLStorage) appIdentifierWithStorage.getStorage())
                 .deleteAllRolesForUser(appIdentifierWithStorage, userId);
+
+        TOTPSQLStorage storage = (TOTPSQLStorage) appIdentifierWithStorage.getStorage();
+        storage.startTransaction(con -> {
+            storage.removeUser_Transaction(con, appIdentifierWithStorage, userId);
+            storage.commitTransaction(con);
+            return null;
+        });
     }
 
-    private static void deleteAuthRecipeUser(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
+    private static void deleteAuthRecipeUser(AppIdentifierWithStorage appIdentifierWithStorage, String
+            userId)
             throws StorageQueryException {
         // auth recipe deletions here only
         Storage storage = appIdentifierWithStorage.getStorage();

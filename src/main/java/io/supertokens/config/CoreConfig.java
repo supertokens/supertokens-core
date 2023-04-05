@@ -57,6 +57,12 @@ public class CoreConfig {
     @JsonProperty
     private long passwordless_code_lifetime = 900000; // in MS
 
+    @JsonProperty
+    private int totp_max_attempts = 5;
+
+    @JsonProperty
+    private int totp_rate_limit_cooldown_sec = 900; // in seconds (Default 15 mins)
+
     private final String logDefault = "asdkfahbdfk3kjHS";
     @JsonProperty
     private String info_log_path = logDefault;
@@ -107,10 +113,13 @@ public class CoreConfig {
     private int bcrypt_log_rounds = 11;
 
     // TODO: add https in later version
-//	# (OPTIONAL) boolean value (true or false). Set to true if you want to enable https requests to SuperTokens.
-//	# If you are not running SuperTokens within a closed network along with your API process, for 
-//	# example if you are using multiple cloud vendors, then it is recommended to set this to true.
-//	# webserver_https_enabled:
+    // # (OPTIONAL) boolean value (true or false). Set to true if you want to enable
+    // https requests to SuperTokens.
+    // # If you are not running SuperTokens within a closed network along with your
+    // API process, for
+    // # example if you are using multiple cloud vendors, then it is recommended to
+    // set this to true.
+    // # webserver_https_enabled:
     @JsonProperty
     private boolean webserver_https_enabled = false;
 
@@ -192,9 +201,11 @@ public class CoreConfig {
     }
 
     public int getArgon2HashingPoolSize() {
-        // the reason we do Math.max below is that if the password hashing algo is bcrypt,
+        // the reason we do Math.max below is that if the password hashing algo is
+        // bcrypt,
         // then we don't check the argon2 hashing pool size config at all. In this case,
-        // if the user gives a <= 0 number, it crashes the core (since it creates a blockedqueue in PaswordHashing
+        // if the user gives a <= 0 number, it crashes the core (since it creates a
+        // blockedqueue in PaswordHashing
         // .java with length <= 0). So we do a Math.max
         return Math.max(1, argon2_hashing_pool_size);
     }
@@ -265,6 +276,17 @@ public class CoreConfig {
 
     public long getPasswordlessCodeLifetime() {
         return passwordless_code_lifetime;
+    }
+
+    public int getTotpMaxAttempts() {
+        return totp_max_attempts;
+    }
+
+    /**
+     * TOTP rate limit cooldown time (in seconds)
+     */
+    public int getTotpRateLimitCooldownTimeSec() {
+        return totp_rate_limit_cooldown_sec;
     }
 
     public boolean isTelemetryDisabled() {
@@ -385,6 +407,14 @@ public class CoreConfig {
             throw new InvalidConfigException("'passwordless_max_code_input_attempts' must be > 0");
         }
 
+        if (totp_max_attempts <= 0) {
+            throw new InvalidConfigException("'totp_max_attempts' must be > 0");
+        }
+
+        if (totp_rate_limit_cooldown_sec <= 0) {
+            throw new InvalidConfigException("'totp_rate_limit_cooldown_sec' must be > 0");
+        }
+
         if (max_server_pool_size <= 0) {
             throw new InvalidConfigException(
                     "'max_server_pool_size' must be >= 1. The config file can be found here: "
@@ -479,6 +509,7 @@ public class CoreConfig {
             }
         }
     }
+
 
     static void assertThatCertainConfigIsNotSetForAppOrTenants(JsonObject config) throws InvalidConfigException {
         // these are all configs that are per core. So we do not allow the developer to set these dynamically.
@@ -585,3 +616,4 @@ public class CoreConfig {
     }
 
 }
+
