@@ -22,6 +22,12 @@ import io.supertokens.ProcessState;
 import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
+import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.multitenancy.Multitenancy;
+import io.supertokens.multitenancy.MultitenancyHelper;
+import io.supertokens.multitenancy.exception.BadPermissionException;
+import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
+import io.supertokens.multitenancy.exception.DeletionInProgressException;
 import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -32,6 +38,7 @@ import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.thirdparty.InvalidProviderConfigException;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -83,7 +90,9 @@ public class SigningKeysTest {
     @Test
     public void keysAreGeneratedForAllUserPoolIds()
             throws InterruptedException, IOException, StorageQueryException, StorageTransactionLogicException,
-            InvalidConfigException, DbInitException, TenantOrAppNotFoundException {
+            InvalidConfigException, DbInitException, TenantOrAppNotFoundException, InvalidProviderConfigException,
+            DeletionInProgressException, FeatureNotEnabledException, CannotModifyBaseConfigException,
+            BadPermissionException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -103,9 +112,9 @@ public class SigningKeysTest {
                         new PasswordlessConfig(false),
                         tenantConfig)};
 
-        Config.loadAllTenantConfig(process.getProcess(), tenants);
-
-        StorageLayer.loadAllTenantStorage(process.getProcess(), tenants);
+        for (TenantConfig config : tenants) {
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null), config);
+        }
 
         List<AppIdentifier> apps = new ArrayList<>();
         for (TenantConfig t : tenants) {
@@ -138,7 +147,9 @@ public class SigningKeysTest {
     @Test
     public void signingKeyClassesAreThereForAllTenants()
             throws InterruptedException, IOException, InvalidConfigException, DbInitException, StorageQueryException,
-            StorageTransactionLogicException, TenantOrAppNotFoundException {
+            StorageTransactionLogicException, TenantOrAppNotFoundException, InvalidProviderConfigException,
+            DeletionInProgressException, FeatureNotEnabledException, CannotModifyBaseConfigException,
+            BadPermissionException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -166,9 +177,9 @@ public class SigningKeysTest {
                         new PasswordlessConfig(false),
                         tenantConfig2)};
 
-        Config.loadAllTenantConfig(process.getProcess(), tenants);
-
-        StorageLayer.loadAllTenantStorage(process.getProcess(), tenants);
+        for (TenantConfig config : tenants) {
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null), config);
+        }
 
         List<AppIdentifier> apps = new ArrayList<>();
         for (TenantConfig t : tenants) {

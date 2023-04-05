@@ -150,23 +150,35 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
 
     public synchronized void transferLegacyKeyToNewTable()
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        Storage storage = StorageLayer.getSessionStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
+        Storage storage = StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
 
-            // start transaction
-            sqlStorage.startTransaction(con -> {
-                KeyValueInfo legacyKey = sqlStorage.getLegacyAccessTokenSigningKey_Transaction(
-                        appIdentifier, con);
+            try {
+                // start transaction
+                sqlStorage.startTransaction(con -> {
+                    KeyValueInfo legacyKey = sqlStorage.getLegacyAccessTokenSigningKey_Transaction(
+                            appIdentifier, con);
 
-                if (legacyKey != null) {
-                    sqlStorage.addAccessTokenSigningKey_Transaction(appIdentifier, con, legacyKey);
-                    sqlStorage.removeLegacyAccessTokenSigningKey_Transaction(appIdentifier, con);
-                    sqlStorage.commitTransaction(con);
+                    if (legacyKey != null) {
+                        try {
+                            sqlStorage.addAccessTokenSigningKey_Transaction(appIdentifier, con, legacyKey);
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new StorageTransactionLogicException(e);
+                        }
+                        sqlStorage.removeLegacyAccessTokenSigningKey_Transaction(appIdentifier, con);
+                        sqlStorage.commitTransaction(con);
+                    }
+                    return legacyKey;
+                });
+            } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof TenantOrAppNotFoundException) {
+                    throw (TenantOrAppNotFoundException) e.actualException;
                 }
-                return legacyKey;
-            });
+                throw e;
+            }
+
         } else {
             SessionNoSQLStorage_1 noSQLStorage = (SessionNoSQLStorage_1) storage;
             KeyValueInfoWithLastUpdated legacyKey = noSQLStorage.getLegacyAccessTokenSigningKey_Transaction();
@@ -186,7 +198,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
 
     public synchronized void cleanExpiredAccessTokenSigningKeys() throws StorageQueryException,
             TenantOrAppNotFoundException {
-        SessionStorage storage = StorageLayer.getSessionStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
+        SessionStorage storage = (SessionStorage) StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
         CoreConfig config = Config.getConfig(this.appIdentifier.getAsPublicTenantIdentifier(), main);
 
         if (config.getAccessTokenSigningKeyDynamic()) {
@@ -232,7 +244,7 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
 
     private List<KeyInfo> maybeGenerateNewKeyAndUpdateInDb()
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        Storage storage = StorageLayer.getSessionStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
+        Storage storage = StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main);
         CoreConfig config = Config.getConfig(this.appIdentifier.getAsPublicTenantIdentifier(), main);
 
         // Access token signing keys older than this are deleted (ms)
@@ -250,42 +262,54 @@ public class AccessTokenSigningKey extends ResourceDistributor.SingletonResource
         if (storage.getType() == STORAGE_TYPE.SQL) {
             SessionSQLStorage sqlStorage = (SessionSQLStorage) storage;
 
-            // start transaction
-            validKeys = sqlStorage.startTransaction(con -> {
-                List<KeyInfo> validKeysFromSQL = new ArrayList<KeyInfo>();
+            try {
+                // start transaction
+                validKeys = sqlStorage.startTransaction(con -> {
+                    List<KeyInfo> validKeysFromSQL = new ArrayList<KeyInfo>();
 
-                // We have to generate a new key if we couldn't find one we can use for signing
-                boolean generateNewKey = true;
+                    // We have to generate a new key if we couldn't find one we can use for signing
+                    boolean generateNewKey = true;
 
-                KeyValueInfo[] keysFromStorage = sqlStorage.getAccessTokenSigningKeys_Transaction(appIdentifier,
-                        con);
+                    KeyValueInfo[] keysFromStorage = sqlStorage.getAccessTokenSigningKeys_Transaction(appIdentifier,
+                            con);
 
-                for (KeyValueInfo key : keysFromStorage) {
-                    if (keysCreatedAfterCanVerify <= key.createdAtTime) {
-                        if (keysCreatedAfterCanSign <= key.createdAtTime) {
-                            generateNewKey = false;
+                    for (KeyValueInfo key : keysFromStorage) {
+                        if (keysCreatedAfterCanVerify <= key.createdAtTime) {
+                            if (keysCreatedAfterCanSign <= key.createdAtTime) {
+                                generateNewKey = false;
+                            }
+                            validKeysFromSQL.add(new KeyInfo(key.value, key.createdAtTime, signingKeyLifetime));
                         }
-                        validKeysFromSQL.add(new KeyInfo(key.value, key.createdAtTime, signingKeyLifetime));
                     }
-                }
 
-                if (generateNewKey) {
-                    String signingKey;
-                    try {
-                        Utils.PubPriKey rsaKeys = Utils.generateNewPubPriKey();
-                        signingKey = rsaKeys.toString();
-                    } catch (NoSuchAlgorithmException e) {
-                        throw new StorageTransactionLogicException(e);
+                    if (generateNewKey) {
+                        String signingKey;
+                        try {
+                            Utils.PubPriKey rsaKeys = Utils.generateNewPubPriKey();
+                            signingKey = rsaKeys.toString();
+                        } catch (NoSuchAlgorithmException e) {
+                            throw new StorageTransactionLogicException(e);
+                        }
+                        KeyInfo newKey = new KeyInfo(signingKey, System.currentTimeMillis(), signingKeyLifetime);
+                        try {
+                            sqlStorage.addAccessTokenSigningKey_Transaction(appIdentifier, con,
+                                    new KeyValueInfo(newKey.value, newKey.createdAtTime));
+                        } catch (TenantOrAppNotFoundException e) {
+                            throw new StorageTransactionLogicException(e);
+                        }
+                        validKeysFromSQL.add(newKey);
                     }
-                    KeyInfo newKey = new KeyInfo(signingKey, System.currentTimeMillis(), signingKeyLifetime);
-                    sqlStorage.addAccessTokenSigningKey_Transaction(appIdentifier, con,
-                            new KeyValueInfo(newKey.value, newKey.createdAtTime));
-                    validKeysFromSQL.add(newKey);
-                }
 
-                sqlStorage.commitTransaction(con);
-                return validKeysFromSQL;
-            });
+                    sqlStorage.commitTransaction(con);
+                    return validKeysFromSQL;
+                });
+            } catch (StorageTransactionLogicException e) {
+                if (e.actualException instanceof TenantOrAppNotFoundException) {
+                    throw (TenantOrAppNotFoundException) e.actualException;
+                }
+                throw e;
+            }
+
         } else if (storage.getType() == STORAGE_TYPE.NOSQL_1) {
             SessionNoSQLStorage_1 noSQLStorage = (SessionNoSQLStorage_1) storage;
 

@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.session.Session;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.info.SessionInformationHolder;
@@ -107,7 +108,7 @@ public class SessionTest4 {
         }
         assertTrue(revokedAll);
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                 .getNumberOfSessions(new TenantIdentifier(null, null, null)), 2);
 
         Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
@@ -116,12 +117,12 @@ public class SessionTest4 {
 
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), userId).length, 4);
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                 .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), "userId2").length, 1);
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                 .getNumberOfSessions(new TenantIdentifier(null, null, null)), 0);
 
         assertEquals(Session.revokeSessionUsingSessionHandles(process.getProcess(), handles).length, 0);
@@ -184,7 +185,7 @@ public class SessionTest4 {
                 userDataInDatabase, false);
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                 .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
         assert sessionInfo.accessToken != null;
         assert sessionInfo.refreshToken != null;
@@ -219,7 +220,7 @@ public class SessionTest4 {
             assert sessionInfo.refreshToken != null;
             assert sessionInfo.accessToken != null;
 
-            assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+            assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                     .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
         }
 
@@ -248,7 +249,7 @@ public class SessionTest4 {
                 userDataInDatabase, false);
         assertEquals(sessionInfo.session.userId, userId);
         assertEquals(sessionInfo.session.userDataInJWT.toString(), userDataInJWT.toString());
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                 .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
         assert sessionInfo.accessToken != null;
         assert sessionInfo.refreshToken != null;

@@ -23,6 +23,7 @@ import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
@@ -49,35 +50,34 @@ public class HandshakeAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         try {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
+            TenantIdentifier tenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
+
             result.addProperty("jwtSigningPublicKey",
                     new Utils.PubPriKey(
-                            AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(),
+                            AccessTokenSigningKey.getInstance(tenantIdentifier.toAppIdentifier(),
                                     main).getLatestIssuedKey().value).publicKey);
             result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main)
+                    AccessTokenSigningKey.getInstance(tenantIdentifier.toAppIdentifier(), main)
                             .getKeyExpiryTime());
 
             if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
-                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(),
-                                main)
+                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(tenantIdentifier.toAppIdentifier(), main)
                         .getAllKeys();
                 JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
                 result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
             }
 
             result.addProperty("accessTokenBlacklistingEnabled",
-                    Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
-                            .getAccessTokenBlacklisting());
+                    Config.getConfig(tenantIdentifier, main).getAccessTokenBlacklisting());
             result.addProperty("accessTokenValidity",
-                    Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
-                            .getAccessTokenValidity());
+                    Config.getConfig(tenantIdentifier, main).getAccessTokenValidity());
             result.addProperty("refreshTokenValidity",
-                    Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
-                            .getRefreshTokenValidity());
+                    Config.getConfig(tenantIdentifier, main).getRefreshTokenValidity());
             super.sendJsonResponse(200, result, resp);
         } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);

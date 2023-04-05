@@ -128,6 +128,10 @@ public class AccessToken {
             throw new TryRefreshTokenException("Access token expired");
         }
 
+        // There is no need to check if the appIdentifier (from request) is the same app in which the
+        // accessToken was created, because, each app has a different accessTokenSigningKey and
+        // when a cross app request is made, token decoding will fail and result in TRY_REFRESH_TOKEN
+        // Hence, we don't bother storing any info related to app in the accessTokenPayload.
         return new AccessTokenInfo(tokenInfo.sessionHandle, tokenInfo.userId, tokenInfo.refreshTokenHash1,
                 tokenInfo.expiryTime, tokenInfo.parentRefreshTokenHash1, tokenInfo.userData, tokenInfo.antiCsrfToken,
                 tokenInfo.timeCreated, tokenInfo.lmrt,
@@ -155,14 +159,21 @@ public class AccessToken {
     }
 
     @TestOnly
-    public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(@Nonnull String token) {
-        return getInfoFromAccessTokenWithoutVerifying(new AppIdentifier(null, null), token);
+    public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(Main main, @Nonnull String token) {
+        try {
+            return getInfoFromAccessTokenWithoutVerifying(
+                    new AppIdentifier(null, null), token);
+        } catch (TenantOrAppNotFoundException | NoSuchAlgorithmException e) {
+            throw new IllegalStateException(e);
+        }
     }
 
     public static AccessTokenInfo getInfoFromAccessTokenWithoutVerifying(AppIdentifier appIdentifier,
-                                                                         @Nonnull String token) {
+                                                                         @Nonnull String token)
+            throws TenantOrAppNotFoundException, NoSuchAlgorithmException {
         AccessTokenPayload tokenInfo = new Gson().fromJson(JWT.getPayloadWithoutVerifying(token).payload,
                 AccessTokenPayload.class);
+
         return new AccessTokenInfo(tokenInfo.sessionHandle, tokenInfo.userId, tokenInfo.refreshTokenHash1,
                 tokenInfo.expiryTime, tokenInfo.parentRefreshTokenHash1, tokenInfo.userData, tokenInfo.antiCsrfToken,
                 tokenInfo.timeCreated, tokenInfo.lmrt,

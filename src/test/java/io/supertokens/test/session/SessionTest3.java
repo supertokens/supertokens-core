@@ -26,6 +26,7 @@ import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.session.Session;
 import io.supertokens.session.info.SessionInformationHolder;
 import io.supertokens.storageLayer.StorageLayer;
@@ -92,11 +93,11 @@ public class SessionTest3 {
 
         Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                 .getNumberOfSessions(new TenantIdentifier(null, null, null)), 2);
 
         Session.revokeSessionUsingSessionHandles(process.getProcess(), new String[]{sessionInfo.session.handle});
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                 .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
         try {
@@ -204,12 +205,12 @@ public class SessionTest3 {
 
         Session.createNewSession(process.getProcess(), "userId2", userDataInJWT, userDataInDatabase, false);
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                 .getNumberOfSessions(new TenantIdentifier(null, null, null)), 4);
 
         assertEquals(Session.revokeAllSessionsForUser(process.getProcess(), userId).length, 3);
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                 .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
         Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
@@ -260,13 +261,13 @@ public class SessionTest3 {
         assert sessionInfo3.refreshToken != null;
         assert sessionInfo3.accessToken != null;
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                 .getNumberOfSessions(new TenantIdentifier(null, null, null)), 3);
 
         Thread.sleep(2500);
         Session.createNewSession(process.getProcess(), userId, userDataInJWT, userDataInDatabase, false);
 
-        assertEquals(StorageLayer.getSessionStorage(process.getProcess())
+        assertEquals(((SessionStorage) StorageLayer.getStorage(process.getProcess()))
                 .getNumberOfSessions(new TenantIdentifier(null, null, null)), 1);
 
         process.kill();

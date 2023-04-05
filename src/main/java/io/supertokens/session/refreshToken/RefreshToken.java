@@ -73,6 +73,7 @@ public class RefreshToken {
                     || !nonce.equals(tokenPayload.nonce)) {
                 throw new UnauthorisedException("Invalid refresh token");
             }
+
             return new RefreshTokenInfo(tokenPayload.sessionHandle, tokenPayload.userId,
                     tokenPayload.parentRefreshTokenHash1, null, tokenPayload.antiCsrfToken, tokenType,
                     new TenantIdentifier(appIdentifier.getConnectionUriDomain(), appIdentifier.getAppId(),

@@ -55,6 +55,7 @@ public class RefreshSessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific, but session is updated based on tenantId obtained from the refreshToken
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String refreshToken = InputParser.parseStringOrThrowError(input, "refreshToken", false);
         String antiCsrfToken = InputParser.parseStringOrThrowError(input, "antiCsrfToken", true);

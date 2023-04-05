@@ -331,7 +331,7 @@ public abstract class WebserverAPI extends HttpServlet {
                     sendTextResponse(401, "Invalid API key", resp);
                 } else if (rootCause instanceof TenantOrAppNotFoundException) {
                     sendTextResponse(400,
-                            "AppId or tenantId not found => " + ((TenantOrAppNotFoundException) e).getMessage(),
+                            "AppId or tenantId not found => " + ((TenantOrAppNotFoundException) rootCause).getMessage(),
                             resp);
                 } else if (rootCause instanceof BadPermissionException) {
                     sendTextResponse(403, e.getMessage(), resp);

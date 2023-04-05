@@ -325,22 +325,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static SessionStorage getSessionStorage(TenantIdentifier tenantIdentifier, Main main)
-            throws TenantOrAppNotFoundException {
-        // TODO remove this function
-        return (SessionStorage) getInstance(tenantIdentifier, main).storage;
-    }
-
-    @TestOnly
-    public static SessionStorage getSessionStorage(Main main) {
-        // TODO remove this function
-        try {
-            return getSessionStorage(new TenantIdentifier(null, null, null), main);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     public static JWTRecipeStorage getJWTRecipeStorage(TenantIdentifier tenantIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         // TODO remove this function

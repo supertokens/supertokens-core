@@ -71,7 +71,7 @@ public class AccessTokenSigningKeyTest {
         io.supertokens.utils.Utils.PubPriKey rsaKeys = io.supertokens.utils.Utils.generateNewPubPriKey();
         String signingKey = rsaKeys.toString();
         KeyValueInfo newKey = new KeyValueInfo(signingKey, System.currentTimeMillis());
-        SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
+        SessionStorage sessionStorage = (SessionStorage) StorageLayer.getStorage(process.getProcess());
         sessionStorage.setKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key", newKey);
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
         accessTokenSigningKeyInstance.transferLegacyKeyToNewTable();
@@ -103,7 +103,7 @@ public class AccessTokenSigningKeyTest {
         KeyValueInfo legacyKey = new KeyValueInfo(signingKey, System.currentTimeMillis() - 2000); // 2 seconds in the
         // past
 
-        SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
+        SessionStorage sessionStorage = (SessionStorage) StorageLayer.getStorage(process.getProcess());
         sessionStorage.setKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key", legacyKey);
 
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());
@@ -183,7 +183,7 @@ public class AccessTokenSigningKeyTest {
         String signingKey = rsaKeys.toString();
         KeyValueInfo legacyKey = new KeyValueInfo(signingKey, System.currentTimeMillis() - 2629743830l); // 1 month old
 
-        SessionStorage sessionStorage = StorageLayer.getSessionStorage(process.getProcess());
+        SessionStorage sessionStorage = (SessionStorage) StorageLayer.getStorage(process.getProcess());
         sessionStorage.setKeyValue(new TenantIdentifier(null, null, null), "access_token_signing_key", legacyKey);
 
         AccessTokenSigningKey accessTokenSigningKeyInstance = AccessTokenSigningKey.getInstance(process.getProcess());

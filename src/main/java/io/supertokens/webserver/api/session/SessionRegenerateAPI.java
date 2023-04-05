@@ -54,6 +54,7 @@ public class SessionRegenerateAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific, but the session is updated based on tenantId obtained from the accessToken
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String accessToken = InputParser.parseStringOrThrowError(input, "accessToken", false);
@@ -63,7 +64,7 @@ public class SessionRegenerateAPI extends WebserverAPI {
 
         try {
             SessionInformationHolder sessionInfo = Session.regenerateToken(
-                    this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main,
+                    this.getAppIdentifierWithStorage(req), main,
                     accessToken, userDataInJWT);
 
             JsonObject result = sessionInfo.toJsonObject();

@@ -48,11 +48,12 @@ public class SessionDataAPI extends WebserverAPI {
     @Override
     @Deprecated
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
         assert sessionHandle != null;
 
         try {
-            JsonObject userDataInDatabase = Session.getSessionData(this.getTenantIdentifierWithStorageFromRequest(req), main, sessionHandle);
+            JsonObject userDataInDatabase = Session.getSessionData(this.getTenantIdentifierWithStorageFromRequest(req), sessionHandle);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -79,7 +80,7 @@ public class SessionDataAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         try {
-            Session.updateSession(this.getTenantIdentifierWithStorageFromRequest(req), main, sessionHandle,
+            Session.updateSession(this.getTenantIdentifierWithStorageFromRequest(req), sessionHandle,
                     userDataInDatabase, null, null);
 
             JsonObject result = new JsonObject();

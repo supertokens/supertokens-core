@@ -68,6 +68,7 @@ public class SessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
         assert userId != null;
@@ -80,8 +81,7 @@ public class SessionAPI extends WebserverAPI {
 
         try {
             SessionInformationHolder sessionInfo = Session.createNewSession(
-                    this.getTenantIdentifierWithStorageFromRequest(req), main, userId,
-                    userDataInJWT,
+                    this.getTenantIdentifierWithStorageFromRequest(req), main, userId, userDataInJWT,
                     userDataInDatabase, enableAntiCsrf);
 
             if (StorageLayer.getStorage(this.getTenantIdentifierWithStorageFromRequest(req), main).getType() ==
@@ -130,12 +130,12 @@ public class SessionAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         String sessionHandle = InputParser.getQueryParamOrThrowError(req, "sessionHandle", false);
         assert sessionHandle != null;
 
         try {
-            SessionInfo sessionInfo = Session.getSession(this.getTenantIdentifierWithStorageFromRequest(req), main,
-                    sessionHandle);
+            SessionInfo sessionInfo = Session.getSession(this.getTenantIdentifierWithStorageFromRequest(req), sessionHandle);
 
             JsonObject result = new Gson().toJsonTree(sessionInfo).getAsJsonObject();
             result.add("userDataInJWT", Utils.toJsonTreeWithNulls(sessionInfo.userDataInJWT));
