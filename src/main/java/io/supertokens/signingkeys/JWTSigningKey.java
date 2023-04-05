@@ -200,8 +200,6 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
             // If no key was found create a new one
             if (keyInfo == null) {
-                new Error().printStackTrace();
-
                 while (true) {
                     try {
                         keyInfo = generateKeyForAlgorithm(algorithm);
