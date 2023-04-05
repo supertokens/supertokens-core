@@ -164,9 +164,7 @@ public class AccessTokenSigningKeyTest {
     }
 
     @Test
-    public void migratingStaticSigningKeys()
-            throws IOException, InterruptedException, InvalidKeyException, NoSuchAlgorithmException,
-            StorageQueryException, StorageTransactionLogicException, InvalidKeySpecException, SignatureException {
+    public void migratingStaticSigningKeys() throws Exception {
         Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
 
         String[] args = { "../" };
@@ -187,10 +185,11 @@ public class AccessTokenSigningKeyTest {
 
         accessTokenSigningKeyInstance.cleanExpiredAccessTokenSigningKeys();
         List<JWTSigningKeyInfo> keys = SigningKeys.getInstance(process.getProcess()).getStaticKeys();
-        assertEquals(keys.size(), 2);
 
-        assertEquals(legacyKey.value, keys.get(1).keyString);
-        assertEquals(keys.get(1).keyId.substring(0, 2), "s-");
+        assertEquals(keys.size(), 1);
+
+        assertEquals(legacyKey.value, keys.get(0).keyString);
+        assertEquals(keys.get(0).keyId.substring(0, 2), "s-");
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STOPPED));
     }

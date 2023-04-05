@@ -41,20 +41,23 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     private final Main main;
 
     public static void init(Main main) {
-        // init JWT signing keys, we create one key for each supported algorithm type
-        for (int i = 0; i < JWTSigningKey.SupportedAlgorithms.values().length; i++) {
-            JWTSigningKey.SupportedAlgorithms currentAlgorithm = JWTSigningKey.SupportedAlgorithms.values()[i];
-            try {
-                JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(currentAlgorithm);
-            } catch (StorageQueryException | StorageTransactionLogicException e) {
-                // Do nothing, when a call to /recipe/jwt POST is made the core will attempt to create a new key
-            } catch (UnsupportedJWTSigningAlgorithmException e) {
-                /*
-                 * In this case UnsupportedJWTSigningAlgorithmException should never be thrown because we use
-                 * the enum to iterate all the supported algorithm values. If this does get thrown this should be
-                 * considered a failure.
-                 */
-                throw new QuitProgramException("Trying to create signing key for unsupported JWT signing algorithm");
+        // We want to control when/which key is generated during testing to test migration scenarios with exact DB setups.
+        if (!Main.isTesting) {
+            // init JWT signing keys, we create one key for each supported algorithm type
+            for (int i = 0; i < JWTSigningKey.SupportedAlgorithms.values().length; i++) {
+                JWTSigningKey.SupportedAlgorithms currentAlgorithm = JWTSigningKey.SupportedAlgorithms.values()[i];
+                try {
+                    JWTSigningKey.getInstance(main).getOrCreateAndGetKeyForAlgorithm(currentAlgorithm);
+                } catch (StorageQueryException | StorageTransactionLogicException e) {
+                    // Do nothing, when a call to /recipe/jwt POST is made the core will attempt to create a new key
+                } catch (UnsupportedJWTSigningAlgorithmException e) {
+                    /*
+                     * In this case UnsupportedJWTSigningAlgorithmException should never be thrown because we use
+                     * the enum to iterate all the supported algorithm values. If this does get thrown this should be
+                     * considered a failure.
+                     */
+                    throw new QuitProgramException("Trying to create signing key for unsupported JWT signing algorithm");
+                }
             }
         }
     }
