@@ -27,6 +27,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -77,7 +78,7 @@ public class PasswordlessUserPutAPITest2_11 {
             try {
                 JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_10ForTests(), "passwordless");
+                        SemVer.v2_10.get(), "passwordless");
             } catch (Exception e) {
                 ex = e;
             }
@@ -97,7 +98,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("UNKNOWN_USER_ID_ERROR", response.get("status").getAsString());
         }
@@ -109,7 +110,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("EMAIL_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
         }
@@ -121,7 +122,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
             assertEquals("PHONE_NUMBER_ALREADY_EXISTS_ERROR", response.get("status").getAsString());
         }
@@ -155,7 +156,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 
@@ -195,7 +196,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 
@@ -237,7 +238,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 
@@ -283,7 +284,7 @@ public class PasswordlessUserPutAPITest2_11 {
         try {
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
         } catch (Exception e) {
             ex = e;
@@ -329,7 +330,7 @@ public class PasswordlessUserPutAPITest2_11 {
         try {
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
         } catch (Exception e) {
             ex = e;
@@ -376,7 +377,7 @@ public class PasswordlessUserPutAPITest2_11 {
         try {
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
 
         } catch (Exception e) {
             ex = e;
@@ -421,7 +422,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 
@@ -461,7 +462,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 
@@ -500,7 +501,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 
@@ -541,7 +542,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 
@@ -581,7 +582,7 @@ public class PasswordlessUserPutAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("OK", response.get("status").getAsString());
 

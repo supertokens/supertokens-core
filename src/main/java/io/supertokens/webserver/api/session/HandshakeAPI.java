@@ -16,15 +16,14 @@
 
 package io.supertokens.webserver.api.session;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
-import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
 
@@ -32,8 +31,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.List;
 
+@Deprecated
 public class HandshakeAPI extends WebserverAPI {
     private static final long serialVersionUID = -3647598432179106404L;
 
@@ -48,26 +47,21 @@ public class HandshakeAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
+            super.sendTextResponse(404, "Not found", resp);
+            return;
+        }
         try {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
-            result.addProperty("jwtSigningPublicKey",
-                    new Utils.PubPriKey(AccessTokenSigningKey.getInstance(main).getLatestIssuedKey().value).publicKey);
-            result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(main).getKeyExpiryTime());
-
-            if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
-                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(main).getAllKeys();
-                JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
-                result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
-            }
+            Utils.addLegacySigningKeyInfos(main, result, super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
 
             result.addProperty("accessTokenBlacklistingEnabled", Config.getConfig(main).getAccessTokenBlacklisting());
             result.addProperty("accessTokenValidity", Config.getConfig(main).getAccessTokenValidity());
             result.addProperty("refreshTokenValidity", Config.getConfig(main).getRefreshTokenValidity());
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
     }

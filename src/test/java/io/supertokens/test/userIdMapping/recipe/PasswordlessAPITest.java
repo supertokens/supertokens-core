@@ -30,6 +30,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -100,7 +101,7 @@ public class PasswordlessAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/code/consume", consumeCodeRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "passwordless");
+                    SemVer.v2_15.get(), "passwordless");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("user").getAsJsonObject().get("id").getAsString(), externalId);
 
@@ -161,7 +162,7 @@ public class PasswordlessAPITest {
             query.put("email", email);
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", query, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                    "http://localhost:3567/recipe/user", query, 1000, 1000, null, SemVer.v2_15.get(),
                     "passwordless");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalId, response.get("user").getAsJsonObject().get("id").getAsString());
@@ -175,7 +176,7 @@ public class PasswordlessAPITest {
                 query.put("userId", superTokensUserId);
 
                 JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/user", query, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                        "http://localhost:3567/recipe/user", query, 1000, 1000, null, SemVer.v2_15.get(),
                         "passwordless");
                 assertEquals("OK", response.get("status").getAsString());
                 assertEquals(externalId, response.get("user").getAsJsonObject().get("id").getAsString());
@@ -187,7 +188,7 @@ public class PasswordlessAPITest {
                 query.put("userId", externalId);
 
                 JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/user", query, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                        "http://localhost:3567/recipe/user", query, 1000, 1000, null, SemVer.v2_15.get(),
                         "passwordless");
                 assertEquals("OK", response.get("status").getAsString());
                 assertEquals(externalId, response.get("user").getAsJsonObject().get("id").getAsString());
@@ -239,7 +240,7 @@ public class PasswordlessAPITest {
             query.put("phoneNumber", phoneNumber);
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/user", query, 1000, 1000, null, Utils.getCdiVersion2_15ForTests(),
+                    "http://localhost:3567/recipe/user", query, 1000, 1000, null, SemVer.v2_15.get(),
                     "passwordless");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalId, response.get("user").getAsJsonObject().get("id").getAsString());
@@ -282,7 +283,7 @@ public class PasswordlessAPITest {
 
             JsonObject updateUserResponse = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", updateUserRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "passwordless");
+                    SemVer.v2_15.get(), "passwordless");
             assertEquals(updateUserResponse.get("status").getAsString(), "OK");
 
             // check that user got updated

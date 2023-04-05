@@ -163,7 +163,7 @@ public class APIKeysTest {
 
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                    request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), null);
+                    request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 401
@@ -171,14 +171,14 @@ public class APIKeysTest {
         }
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
                 apiKey, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                    request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), "abd#%034t0g4in40t40v0j");
+                    request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "abd#%034t0g4in40t40v0j");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 401
@@ -201,14 +201,14 @@ public class APIKeysTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
         String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/hello", null, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), "");
+                "http://localhost:3567/hello", null, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
         assertEquals(response, "Hello");
 
         // map to store pid as parameter
         Map<String, String> map = new HashMap<>();
         map.put("pid", ProcessHandle.current().pid() + "");
         JsonObject response2 = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/config", map, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), "");
+                "http://localhost:3567/config", map, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "");
 
         File f = new File(CLIOptions.get(process.getProcess()).getInstallationPath() + "config.yaml");
         String path = f.getAbsolutePath();
@@ -249,19 +249,19 @@ public class APIKeysTest {
 
         // check that any one of the keys can be used
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
                 apiKey1, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
                 apiKey2, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
                 apiKey3, "");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
@@ -269,7 +269,7 @@ public class APIKeysTest {
         // sending request with no api key
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                    request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), null);
+                    request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), null);
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 401
@@ -279,7 +279,7 @@ public class APIKeysTest {
         // sending request with invalid api key
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/session",
-                    request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(), "abd#%034t0g4in40t40v0j");
+                    request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(), "abd#%034t0g4in40t40v0j");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.statusCode == 401
@@ -318,31 +318,32 @@ public class APIKeysTest {
         request.add("userDataInJWT", userDataInJWT);
         request.add("userDataInDatabase", userDataInDatabase);
         request.addProperty("enableAntiCsrf", false);
+        request.addProperty("useStaticKey", false);
 
         // check that any one of the keys can be used
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
                 " " + apiKey1 + " ", "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
                 " " + apiKey2, "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
                 apiKey3, "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         checkSessionResponse(sessionInfo, process, userId, userDataInJWT);
 
         sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
                 apiKey4, "");
 
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
@@ -369,21 +370,5 @@ public class APIKeysTest {
         assertTrue(response.get("refreshToken").getAsJsonObject().has("expiry"));
         assertTrue(response.get("refreshToken").getAsJsonObject().has("createdTime"));
         assertEquals(response.get("refreshToken").getAsJsonObject().entrySet().size(), 3);
-
-        assertTrue(response.get("idRefreshToken").getAsJsonObject().has("token"));
-        assertTrue(response.get("idRefreshToken").getAsJsonObject().has("expiry"));
-        assertTrue(response.get("idRefreshToken").getAsJsonObject().has("createdTime"));
-        assertEquals(response.get("idRefreshToken").getAsJsonObject().entrySet().size(), 3);
-
-        assertTrue(response.has("jwtSigningPublicKey"));
-        assertTrue(response.has("jwtSigningPublicKeyExpiryTime"));
-        assertTrue(response.has("jwtSigningPublicKeyList"));
-        JsonArray respPubKeyList = response.get("jwtSigningPublicKeyList").getAsJsonArray();
-        for (int i = 0; i < respPubKeyList.size(); ++i) {
-            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("publicKey"));
-            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("expiryTime"));
-            assertTrue(respPubKeyList.get(i).getAsJsonObject().has("createdAt"));
-            assertEquals(respPubKeyList.get(i).getAsJsonObject().entrySet().size(), 3);
-        }
     }
 }

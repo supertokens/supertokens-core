@@ -63,7 +63,7 @@ public class RegenerateTokenTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -81,14 +81,13 @@ public class RegenerateTokenTest {
         // Verify
         assert newSessionInfo.accessToken != null;
         SessionInformationHolder getSessionResponse = Session.getSession(process.getProcess(),
-                newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
+                newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
 
         // check payload and lmrt is different.
         assertEquals(getSessionResponse.session.userDataInJWT, newUserDataInJWT);
 
         AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
                 newSessionInfo.accessToken.token, false);
-        assertNotEquals(accessTokenInfoBefore.lmrt, accessTokenInfoAfter.lmrt);
 
         assertNotEquals(accessTokenInfoAfter.userData, accessTokenInfoBefore.userData);
 
@@ -114,7 +113,7 @@ public class RegenerateTokenTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -132,7 +131,7 @@ public class RegenerateTokenTest {
         // Verify
         assert newSessionInfo.accessToken != null;
         SessionInformationHolder getSessionResponse = Session.getSession(process.getProcess(),
-                newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
+                newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
         assertEquals(getSessionResponse.session.userDataInJWT, emptyUserDataInJWT);
 
         AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -140,7 +139,6 @@ public class RegenerateTokenTest {
 
         // check payload and lmrt is different & expiry time is same.
         assertEquals(accessTokenInfoAfter.userData, emptyUserDataInJWT);
-        assertNotEquals(accessTokenInfoAfter.lmrt, accessTokenInfoBefore.lmrt);
         assertEquals(accessTokenInfoAfter.expiryTime, accessTokenInfoBefore.expiryTime);
 
         process.kill();
@@ -164,7 +162,7 @@ public class RegenerateTokenTest {
         userDataInDatabase.addProperty("key", "value");
 
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -180,7 +178,7 @@ public class RegenerateTokenTest {
 
         assert newSessionInfo.accessToken != null;
         SessionInformationHolder getSessionResponse = Session.getSession(process.getProcess(),
-                newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true);
+                newSessionInfo.accessToken.token, sessionInfo.antiCsrfToken, false, true, false);
 
         assertEquals(getSessionResponse.session.userDataInJWT, userDataInJWT);
 
@@ -189,7 +187,6 @@ public class RegenerateTokenTest {
         // check payload & expiry time is same nd lmrt is different.
 
         assertEquals(accessTokenInfoAfter.userData, userDataInJWT);
-        assertNotEquals(accessTokenInfoAfter.lmrt, accessTokenInfoBefore.lmrt);
         assertEquals(accessTokenInfoAfter.expiryTime, accessTokenInfoBefore.expiryTime);
 
         process.kill();
@@ -203,7 +200,7 @@ public class RegenerateTokenTest {
     public void testSessionRegenerateWithTokenExpiryAndRefresh() throws Exception {
         String[] args = { "../" };
 
-        Utils.setValueInConfig("access_token_validity", "1");// 1 second validity
+        Utils.setValueInConfig("access_token_validity", "2");// 1 second validity
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -216,7 +213,7 @@ public class RegenerateTokenTest {
 
         // - create session with some payload
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -226,7 +223,7 @@ public class RegenerateTokenTest {
         assertEquals(accessTokenInfoBefore.userData, userDataInJWT);
 
         // let it expire
-        Thread.sleep(2000);
+        Thread.sleep(2500);
 
         // regenerate with different payload (should return accessToken as null)
 
@@ -240,27 +237,24 @@ public class RegenerateTokenTest {
 
         assert sessionInfo.refreshToken != null;
         SessionInformationHolder refreshSessionInfo = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
 
         // Verify
         assert refreshSessionInfo.accessToken != null;
         SessionInformationHolder getSessionResponse = Session.getSession(process.getProcess(),
-                refreshSessionInfo.accessToken.token, refreshSessionInfo.antiCsrfToken, false, true);
+                refreshSessionInfo.accessToken.token, refreshSessionInfo.antiCsrfToken, false, true, false);
 
         assertEquals(getSessionResponse.session.userDataInJWT, newUserDataInJWT);
 
-        // check payload and lmrt is different & expiry time is same.
+        // check payload is different & expiry time is same.
 
         assert getSessionResponse.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken
                 .getInfoFromAccessTokenWithoutVerifying(getSessionResponse.accessToken.token);
 
         assertEquals(accessTokenInfoAfter.userData, newUserDataInJWT);
-        assertNotEquals(accessTokenInfoAfter.expiryTime, accessTokenInfoBefore.expiryTime); // expiry time is different
-                                                                                            // for now, but later we
-                                                                                            // will fix this
-        // and then this test will fail
-        assertNotEquals(accessTokenInfoAfter.lmrt, accessTokenInfoBefore.lmrt);
+        // expiry time is different for now, but later we will fix this and then this test will fail
+        assertNotEquals(accessTokenInfoAfter.expiryTime, accessTokenInfoBefore.expiryTime);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -275,7 +269,7 @@ public class RegenerateTokenTest {
     public void testChangeJWTSigningKeyAndRegenerateWithDifferentPayload() throws Exception {
         String[] args = { "../" };
 
-        Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00027"); // 1 second
+        Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00027"); // 1 second
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
@@ -287,7 +281,7 @@ public class RegenerateTokenTest {
 
         // - create session with some payload
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -296,7 +290,7 @@ public class RegenerateTokenTest {
         // verify payload exists
         assertEquals(accessTokenInfoBefore.userData, userDataInJWT);
 
-        // change JWT signing key by waiting for 1.5 seconds, access_token_signing_key_update_interval set to 1 second
+        // change JWT signing key by waiting for 1.5 seconds, access_token_dynamic_signing_key_update_interval set to 1 second
         Thread.sleep(2000);
 
         // regenerate with different payload
@@ -311,19 +305,18 @@ public class RegenerateTokenTest {
         // refresh
         assert sessionInfo.refreshToken != null;
         SessionInformationHolder refreshSessionInfo = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
 
         // Verify
         assert refreshSessionInfo.accessToken != null;
         SessionInformationHolder getSessionResponse = Session.getSession(process.getProcess(),
-                refreshSessionInfo.accessToken.token, refreshSessionInfo.antiCsrfToken, false, true);
+                refreshSessionInfo.accessToken.token, refreshSessionInfo.antiCsrfToken, false, true, false);
 
         assertEquals(getSessionResponse.session.userDataInJWT, newUserDataInJWT);
 
         AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
                 refreshSessionInfo.accessToken.token, false);
 
-        assertNotEquals(accessTokenInfoAfter.lmrt, accessTokenInfoBefore.lmrt);
         assertEquals(accessTokenInfoAfter.userData, newUserDataInJWT);
 
         assertNotEquals(accessTokenInfoAfter.expiryTime, accessTokenInfoBefore.expiryTime);// expiry time is different
@@ -354,7 +347,7 @@ public class RegenerateTokenTest {
 
         // - create session with some payload
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase);
 
         // verify payload exists
         assertEquals(sessionInfo.session.userDataInJWT, userDataInJWT);
@@ -384,7 +377,7 @@ public class RegenerateTokenTest {
     // * check lmrt & payload is
     // * same & expiry time is same -> verify -> check payload and lmrt are same & expiry time is different.
     @Test
-    public void testCreateSessionRefreshAndCheckAccessToken() throws Exception {
+    public void testCreateSessionRefreshAndCheckAccessTokenV2() throws Exception {
         String[] args = { "../" };
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -398,7 +391,7 @@ public class RegenerateTokenTest {
 
         // - create session with some payload
         SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
-                userDataInDatabase, false);
+                userDataInDatabase, false, false, false);
 
         assert sessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
@@ -409,47 +402,41 @@ public class RegenerateTokenTest {
 
         // verify
         SessionInformationHolder getSession = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
-                sessionInfo.antiCsrfToken, false, true);
+                sessionInfo.antiCsrfToken, false, true, false);
         assertEquals(getSession.session.userDataInJWT, userDataInJWT);
 
         AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
                 sessionInfo.accessToken.token, false);
 
-        // check lmrt & payload is same & expiry time is same
-        assertEquals(accessTokenInfoAfter.lmrt, accessTokenInfoBefore.lmrt);
+        // check payload is same & expiry time is same
         assertEquals(accessTokenInfoAfter.userData, userDataInJWT);
         assertEquals(accessTokenInfoAfter.expiryTime, accessTokenInfoBefore.expiryTime);
 
         // refresh
         assert sessionInfo.refreshToken != null;
         SessionInformationHolder refreshSessionInfo = Session.refreshSession(process.getProcess(),
-                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false);
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, false);
 
         assert refreshSessionInfo.accessToken != null;
         AccessToken.AccessTokenInfo accessTokenInfoAfterRefresh = AccessToken
                 .getInfoFromAccessToken(process.getProcess(), refreshSessionInfo.accessToken.token, false);
 
-        // check lmrt & payload is same & expiry time is same
+        // check payload is same & expiry time is same
 
-        assertNotEquals(accessTokenInfoAfterRefresh.lmrt, accessTokenInfoBefore.lmrt); // this is supposed to be the
-                                                                                       // same. But for now, the feature
-                                                                                       // is not
-        // implemented fully yet.
         assertEquals(accessTokenInfoAfterRefresh.userData, userDataInJWT);
         assertNotEquals(accessTokenInfoAfterRefresh.expiryTime, accessTokenInfoBefore.expiryTime);
 
         // verify
         getSession = Session.getSession(process.getProcess(), refreshSessionInfo.accessToken.token,
-                refreshSessionInfo.antiCsrfToken, false, true);
+                refreshSessionInfo.antiCsrfToken, false, true, false);
 
         assert getSession.accessToken != null;
 
         AccessToken.AccessTokenInfo accessTokenInfoAfterVerify = AccessToken
                 .getInfoFromAccessToken(process.getProcess(), getSession.accessToken.token, false);
 
-        // check payload and lmrt are same & expiry time is same.
+        // check payload are same & expiry time is same.
 
-        assertEquals(accessTokenInfoAfterVerify.lmrt, accessTokenInfoAfterRefresh.lmrt);
         assertEquals(accessTokenInfoAfterVerify.userData, userDataInJWT);
         assertNotEquals(accessTokenInfoAfterVerify.expiryTime, accessTokenInfoAfterRefresh.expiryTime);
 
@@ -458,4 +445,150 @@ public class RegenerateTokenTest {
 
     }
 
+    // * - create session with some payload -> verify -> check lmrt & payload is same & expiry time is same ->
+    // refresh ->
+    // * check lmrt & payload is
+    // * same & expiry time is same -> verify -> check payload and lmrt are same & expiry time is different.
+    @Test
+    public void testCreateSessionRefreshAndCheckAccessTokenV3() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        // - create session with some payload
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase, false, true,false);
+
+        assert sessionInfo.accessToken != null;
+        AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                sessionInfo.accessToken.token, false);
+
+        // verify payload exists
+        assertEquals(accessTokenInfoBefore.userData, userDataInJWT);
+
+        // verify
+        SessionInformationHolder getSession = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
+                sessionInfo.antiCsrfToken, false, true, false);
+        assertEquals(getSession.session.userDataInJWT, userDataInJWT);
+
+        AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                sessionInfo.accessToken.token, false);
+
+        // check payload is same & expiry time is same
+        assertEquals(accessTokenInfoAfter.userData, userDataInJWT);
+        assertEquals(accessTokenInfoAfter.expiryTime, accessTokenInfoBefore.expiryTime);
+
+        // We need to wait at least a second to make sure the expiry times are different
+        Thread.sleep(1000);
+        // refresh
+        assert sessionInfo.refreshToken != null;
+        SessionInformationHolder refreshSessionInfo = Session.refreshSession(process.getProcess(),
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
+
+        assert refreshSessionInfo.accessToken != null;
+        AccessToken.AccessTokenInfo accessTokenInfoAfterRefresh = AccessToken
+                .getInfoFromAccessToken(process.getProcess(), refreshSessionInfo.accessToken.token, false);
+
+        // check payload is same & expiry time is same
+        assertEquals(accessTokenInfoAfterRefresh.userData, userDataInJWT);
+        assertNotEquals(accessTokenInfoAfterRefresh.expiryTime, accessTokenInfoBefore.expiryTime);
+
+        Thread.sleep(1000);
+
+        // verify
+        getSession = Session.getSession(process.getProcess(), refreshSessionInfo.accessToken.token,
+                refreshSessionInfo.antiCsrfToken, false, true, false);
+
+        assert getSession.accessToken != null;
+
+        AccessToken.AccessTokenInfo accessTokenInfoAfterVerify = AccessToken
+                .getInfoFromAccessToken(process.getProcess(), getSession.accessToken.token, false);
+
+        // check payload & expiry time is same.
+        assertEquals(accessTokenInfoAfterVerify.userData, userDataInJWT);
+        assertNotEquals(accessTokenInfoAfterVerify.expiryTime, accessTokenInfoAfterRefresh.expiryTime);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+
+    }
+
+
+    // * - create session with some payload -> verify -> check lmrt & payload is same & expiry time is same ->
+    // refresh ->
+    // * check lmrt & payload is
+    // * same & expiry time is same -> verify -> check payload and lmrt are same & expiry time is different.
+    @Test
+    public void testCreateSessionRefreshAndCheckAccessTokenMigrationToV3() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        // - create session with some payload
+        SessionInformationHolder sessionInfo = Session.createNewSession(process.getProcess(), userId, userDataInJWT,
+                userDataInDatabase, false, false, false);
+
+        assert sessionInfo.accessToken != null;
+        AccessToken.AccessTokenInfo accessTokenInfoBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                sessionInfo.accessToken.token, false);
+
+        // verify payload exists
+        assertEquals(accessTokenInfoBefore.userData, userDataInJWT);
+
+        // verify
+        SessionInformationHolder getSession = Session.getSession(process.getProcess(), sessionInfo.accessToken.token,
+                sessionInfo.antiCsrfToken, false, true, false);
+        assertEquals(getSession.session.userDataInJWT, userDataInJWT);
+
+        AccessToken.AccessTokenInfo accessTokenInfoAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                sessionInfo.accessToken.token, false);
+
+        // check payload is same & expiry time is same
+        assertEquals(accessTokenInfoAfter.userData, userDataInJWT);
+        assertEquals(accessTokenInfoAfter.expiryTime, accessTokenInfoBefore.expiryTime);
+
+        // refresh
+        assert sessionInfo.refreshToken != null;
+        SessionInformationHolder refreshSessionInfo = Session.refreshSession(process.getProcess(),
+                sessionInfo.refreshToken.token, sessionInfo.antiCsrfToken, false, true);
+
+        assert refreshSessionInfo.accessToken != null;
+        AccessToken.AccessTokenInfo accessTokenInfoAfterRefresh = AccessToken
+                .getInfoFromAccessToken(process.getProcess(), refreshSessionInfo.accessToken.token, false);
+
+        // check payload is same & expiry time is same
+        assertEquals(accessTokenInfoAfterRefresh.userData, userDataInJWT);
+        assertNotEquals(accessTokenInfoAfterRefresh.expiryTime, accessTokenInfoBefore.expiryTime);
+        Thread.sleep(1000);
+
+        // verify
+        getSession = Session.getSession(process.getProcess(), refreshSessionInfo.accessToken.token,
+                refreshSessionInfo.antiCsrfToken, false, true, false);
+
+        assert getSession.accessToken != null;
+
+        AccessToken.AccessTokenInfo accessTokenInfoAfterVerify = AccessToken
+                .getInfoFromAccessToken(process.getProcess(), getSession.accessToken.token, false);
+
+        // check payload is same & expiry time is same.
+        assertEquals(accessTokenInfoAfterVerify.userData, userDataInJWT);
+        assertNotEquals(accessTokenInfoAfterVerify.expiryTime, accessTokenInfoAfterRefresh.expiryTime);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
 }

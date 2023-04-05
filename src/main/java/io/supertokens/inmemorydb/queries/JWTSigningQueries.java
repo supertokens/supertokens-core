@@ -86,7 +86,7 @@ public class JWTSigningQueries {
             long createdAt = result.getLong("created_at");
             String algorithm = result.getString("algorithm");
 
-            if (keyString.contains("|")) {
+            if (keyString.contains("|") || keyString.contains(";")) {
                 return new JWTAsymmetricSigningKeyInfo(keyId, createdAt, algorithm, keyString);
             } else {
                 return new JWTSymmetricSigningKeyInfo(keyId, createdAt, algorithm, keyString);

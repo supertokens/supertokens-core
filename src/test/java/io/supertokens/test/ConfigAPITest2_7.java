@@ -23,6 +23,7 @@ import io.supertokens.cliOptions.CLIOptions;
 import io.supertokens.httpRequest.HttpRequest;
 import io.supertokens.httpRequest.HttpResponseException;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -94,7 +95,7 @@ public class ConfigAPITest2_7 {
         // null for parameters
         try {
             HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", null, 1000,
-                    1000, null, Utils.getCdiVersion2_7ForTests(), "");
+                    1000, null, SemVer.v2_7.get(), "");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.getMessage()
@@ -107,7 +108,7 @@ public class ConfigAPITest2_7 {
             HashMap<String, String> map = new HashMap<>();
             map.put("pd", ProcessHandle.current().pid() + "");
             HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map, 1000,
-                    1000, null, Utils.getCdiVersion2_7ForTests(), "");
+                    1000, null, SemVer.v2_7.get(), "");
             fail();
         } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
             assertTrue(e.getMessage()
@@ -158,7 +159,7 @@ public class ConfigAPITest2_7 {
 
         // check regular output
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/config", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "");
+                "http://localhost:3567/config", map, 1000, 1000, null, SemVer.v2_7.get(), "");
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.get("path").getAsString(), path);
@@ -228,7 +229,7 @@ public class ConfigAPITest2_7 {
 
         // check regular output
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/config", map, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "");
+                "http://localhost:3567/config", map, 1000, 1000, null, SemVer.v2_7.get(), "");
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.get("path").getAsString(), path);
@@ -239,7 +240,7 @@ public class ConfigAPITest2_7 {
         map.put("pid", "-1");
 
         response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/config", map,
-                1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "");
+                1000, 1000, null, SemVer.v2_7.get(), "");
 
         assertEquals(response.get("status").getAsString(), "NOT_ALLOWED");
         assertEquals(response.entrySet().size(), 1);

@@ -25,6 +25,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,7 +67,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         checkResponse(response);
 
@@ -91,7 +92,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         checkResponse(response, exampleCode);
 
@@ -115,7 +116,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
         checkResponse(response);
 
         process.kill();
@@ -139,7 +140,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         checkResponse(response, exampleCode);
 
@@ -163,14 +164,14 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
         JsonObject createResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         JsonObject resendCodeRequestBody = new JsonObject();
         resendCodeRequestBody.addProperty("deviceId", createResp.get("deviceId").getAsString());
 
         JsonObject resendResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/code", resendCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         checkResponse(resendResp);
 
@@ -195,7 +196,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
         JsonObject createResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         JsonObject resendCodeRequestBody = new JsonObject();
         resendCodeRequestBody.addProperty("deviceId", createResp.get("deviceId").getAsString());
@@ -203,7 +204,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
         JsonObject resendResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/code", resendCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         checkResponse(resendResp, exampleCode);
 
@@ -229,7 +230,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
         JsonObject createResp = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         JsonObject resendCodeRequestBody = new JsonObject();
         resendCodeRequestBody.addProperty("deviceId", createResp.get("deviceId").getAsString());
@@ -237,7 +238,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
         JsonObject resendResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/code", resendCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("USER_INPUT_CODE_ALREADY_USED_ERROR", resendResponse.get("status").getAsString());
 
@@ -261,7 +262,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
 
         JsonObject resendResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup/code", resendCodeRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_10ForTests(), "passwordless");
+                SemVer.v2_10.get(), "passwordless");
 
         assertEquals("RESTART_FLOW_ERROR", resendResponse.get("status").getAsString());
 
@@ -289,7 +290,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
         } catch (HttpResponseException ex) {
             error = ex;
         }
@@ -323,7 +324,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
         } catch (HttpResponseException ex) {
             error = ex;
         }
@@ -357,7 +358,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
         } catch (HttpResponseException ex) {
             error = ex;
         }
@@ -391,7 +392,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
         } catch (HttpResponseException ex) {
             error = ex;
         }
@@ -429,7 +430,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
         } catch (HttpResponseException ex) {
             error = ex;
         }
@@ -465,7 +466,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
         } catch (HttpResponseException ex) {
             error = ex;
         }
@@ -497,7 +498,7 @@ public class PasswordlessCreateCodeAPITest2_11 {
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signinup/code", createCodeRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_10ForTests(), "passwordless");
+                    SemVer.v2_10.get(), "passwordless");
         } catch (HttpResponseException ex) {
             error = ex;
         }

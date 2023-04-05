@@ -330,8 +330,8 @@ public class GeneralQueries {
     }
 
     public static AuthRecipeUserInfo[] getUsers(Start start, @NotNull Integer limit, @NotNull String timeJoinedOrder,
-            @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
-            @Nullable Long timeJoined,
+                                                @Nullable RECIPE_ID[] includeRecipeIds, @Nullable String userId,
+                                                @Nullable Long timeJoined,
             @Nullable DashboardSearchTags dashboardSearchTags)
             throws SQLException, StorageQueryException {
 
@@ -596,7 +596,7 @@ public class GeneralQueries {
     }
 
     private static List<? extends AuthRecipeUserInfo> getUserInfoForRecipeIdFromUserIds(Start start, RECIPE_ID recipeId,
-            List<String> userIds)
+                                                                                        List<String> userIds)
             throws StorageQueryException, SQLException {
         if (recipeId == RECIPE_ID.EMAIL_PASSWORD) {
             return EmailPasswordQueries.getUsersInfoUsingIdList(start, userIds);

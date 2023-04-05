@@ -16,6 +16,20 @@
 
 package io.supertokens.test.dashboard.apis;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import java.util.HashMap;
+
+import io.supertokens.utils.SemVer;
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.TestRule;
+
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
@@ -26,15 +40,6 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TestRule;
-
-import java.util.HashMap;
-
-import static org.junit.Assert.*;
 
 public class DeleteDashboardUserAPITests {
     @Rule
@@ -66,7 +71,7 @@ public class DeleteDashboardUserAPITests {
             try {
                 HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
                         "http://localhost:3567/recipe/dashboard/user", null, 1000, 1000, null,
-                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                        SemVer.v2_18.get(), "dashboard");
                 throw new Exception("Should never come here");
 
             } catch (HttpResponseException e) {
@@ -83,7 +88,7 @@ public class DeleteDashboardUserAPITests {
             try {
                 HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
                         "http://localhost:3567/recipe/dashboard/user", inputParams, 1000, 1000, null,
-                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                        SemVer.v2_18.get(), "dashboard");
                 throw new Exception("Should never come here");
 
             } catch (HttpResponseException e) {
@@ -98,7 +103,7 @@ public class DeleteDashboardUserAPITests {
         try {
             HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
                     "http://localhost:3567/recipe/dashboard/user", inputParams, 1000, 1000, null,
-                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+                    SemVer.v2_18.get(), "dashboard");
             throw new Exception("Should never come here");
 
         } catch (HttpResponseException e) {
@@ -134,7 +139,7 @@ public class DeleteDashboardUserAPITests {
             inputParams.put("userId", user.userId);
             JsonObject response = HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
                     "http://localhost:3567/recipe/dashboard/user", inputParams, 1000, 1000, null,
-                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+                    SemVer.v2_18.get(), "dashboard");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("didUserExist").getAsBoolean());
@@ -146,7 +151,7 @@ public class DeleteDashboardUserAPITests {
             inputParams.put("userId", user.userId);
             JsonObject response = HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
                     "http://localhost:3567/recipe/dashboard/user", inputParams, 1000, 1000, null,
-                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+                    SemVer.v2_18.get(), "dashboard");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("didUserExist").getAsBoolean());
@@ -180,7 +185,7 @@ public class DeleteDashboardUserAPITests {
             inputParams.put("email", user.email.toUpperCase());
             JsonObject response = HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
                     "http://localhost:3567/recipe/dashboard/user", inputParams, 1000, 1000, null,
-                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+                    SemVer.v2_18.get(), "dashboard");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("didUserExist").getAsBoolean());
@@ -192,7 +197,7 @@ public class DeleteDashboardUserAPITests {
             inputParams.put("email", user.email);
             JsonObject response = HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
                     "http://localhost:3567/recipe/dashboard/user", inputParams, 1000, 1000, null,
-                    Utils.getCdiVersion2_18ForTests(), "dashboard");
+                    SemVer.v2_18.get(), "dashboard");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("didUserExist").getAsBoolean());

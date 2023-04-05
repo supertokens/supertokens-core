@@ -23,6 +23,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -60,7 +61,7 @@ public class EmailPasswordUsersCountAPITest2_7 {
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/users/count", null, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                    SemVer.v2_7.get(), "emailpassword");
             assertEquals(response.get("status").getAsString(), "OK");
             assertEquals(response.get("count").getAsLong(), 0);
         }

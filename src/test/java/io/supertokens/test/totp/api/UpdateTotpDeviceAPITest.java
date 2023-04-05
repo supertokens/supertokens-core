@@ -46,7 +46,7 @@ public class UpdateTotpDeviceAPITest {
                         1000,
                         1000,
                         null,
-                        Utils.getCdiVersionLatestForTests(),
+                        Utils.getCdiVersionStringLatestForTests(),
                         "totp"));
     }
 
@@ -93,7 +93,7 @@ public class UpdateTotpDeviceAPITest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
         assertEquals(createDeviceRes.get("status").getAsString(), "OK");
 
@@ -107,7 +107,7 @@ public class UpdateTotpDeviceAPITest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
         assertEquals(createDeviceRes2.get("status").getAsString(), "OK");
 
@@ -155,7 +155,7 @@ public class UpdateTotpDeviceAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res.get("status").getAsString().equals("OK");
 
@@ -168,7 +168,7 @@ public class UpdateTotpDeviceAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res2.get("status").getAsString().equals("UNKNOWN_DEVICE_ERROR");
 
@@ -183,7 +183,7 @@ public class UpdateTotpDeviceAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res3.get("status").getAsString().equals("DEVICE_ALREADY_EXISTS_ERROR");
 
@@ -197,7 +197,7 @@ public class UpdateTotpDeviceAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res4.get("status").getAsString().equals("TOTP_NOT_ENABLED_ERROR");
         }

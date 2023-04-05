@@ -24,6 +24,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.thirdparty.ThirdParty;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -65,7 +66,7 @@ public class ThirdPartyGetUsersByEmailAPITest2_7 {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/users/by-email",
-                        QueryParams, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        QueryParams, 1000, 1000, null, SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400
@@ -111,7 +112,7 @@ public class ThirdPartyGetUsersByEmailAPITest2_7 {
             queryParams.put("email", "test@examplE.com");
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/users/by-email", queryParams, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                    SemVer.v2_7.get(), "thirdparty");
 
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(5, response.getAsJsonArray("users").size());

@@ -75,7 +75,7 @@ public class TotpUserIdMappingTest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
         assert res1.get("status").getAsString().equals("OK");
         String d1Secret = res1.get("secret").getAsString();
@@ -91,7 +91,7 @@ public class TotpUserIdMappingTest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
         assert res2.get("status").getAsString().equals("OK");
         String d2Secret = res2.get("secret").getAsString();
@@ -112,7 +112,7 @@ public class TotpUserIdMappingTest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
 
         assert verifyD1Res.get("status").getAsString().equals("OK");
@@ -133,7 +133,7 @@ public class TotpUserIdMappingTest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
 
         assert loginRes.get("status").getAsString().equals("OK");
@@ -152,7 +152,7 @@ public class TotpUserIdMappingTest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
 
         assert updateDeviceNameRes.get("status").getAsString().equals("OK");
@@ -170,7 +170,7 @@ public class TotpUserIdMappingTest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
 
 
