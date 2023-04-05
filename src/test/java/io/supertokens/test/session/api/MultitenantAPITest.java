@@ -219,6 +219,20 @@ public class MultitenantAPITest {
         return response;
     }
 
+    private JsonObject refreshSession(TenantIdentifier tenantIdentifier, String refreshToken)
+            throws HttpResponseException, IOException {
+        JsonObject sessionRefreshBody = new JsonObject();
+
+        sessionRefreshBody.addProperty("refreshToken", refreshToken);
+        sessionRefreshBody.addProperty("enableAntiCsrf", false);
+
+        JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session/refresh"),
+                sessionRefreshBody, 1000, 1000, null,
+                Utils.getCdiVersionLatestForTests(), "session");
+        return response;
+    }
+
     @Test
     public void testSessionCreatedIsAccessableFromTheSameTenantOnly() throws Exception {
         JsonObject user1DataInJWT = new JsonObject();
@@ -325,5 +339,29 @@ public class MultitenantAPITest {
                 assertEquals(session.get("session"), sessionResponse.get("session"));
             }
         }
+    }
+
+    @Test
+    public void testVerifySessionDoesNotWorkFromDifferentApp() throws Exception {
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("foo", "val1");
+        JsonObject userDataInDb = new JsonObject();
+        userDataInJWT.addProperty("bar", "val1");
+
+        JsonObject session = createSession(t1, "userid", userDataInJWT, userDataInDb);
+        JsonObject sessionResponse = verifySession(new TenantIdentifier(null, null, null), session.get("accessToken").getAsJsonObject().get("token").getAsString());
+        assertEquals("TRY_REFRESH_TOKEN", sessionResponse.get("status").getAsString());
+    }
+
+    @Test
+    public void testRefreshSessionDoesNotWorkFromDifferentApp() throws Exception {
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("foo", "val1");
+        JsonObject userDataInDb = new JsonObject();
+        userDataInJWT.addProperty("bar", "val1");
+
+        JsonObject session = createSession(t1, "userid", userDataInJWT, userDataInDb);
+        JsonObject sessionResponse = refreshSession(new TenantIdentifier(null, null, null), session.get("refreshToken").getAsJsonObject().get("token").getAsString());
+        assertEquals("UNAUTHORISED", sessionResponse.get("status").getAsString());
     }
 }
