@@ -24,6 +24,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.Session;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -32,6 +33,9 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
+
+import static io.supertokens.session.accessToken.AccessToken.AccessTokenInfo.protectedPropNames;
 
 public class JWTDataAPI extends WebserverAPI {
     private static final long serialVersionUID = -4989144736402314280L;
@@ -54,6 +58,11 @@ public class JWTDataAPI extends WebserverAPI {
 
         JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", false);
         assert userDataInJWT != null;
+
+        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21) &&
+                Arrays.stream(protectedPropNames).anyMatch(name -> userDataInJWT.has(name))) {
+            throw new ServletException(new BadRequestException("The user payload contains protected field"));
+        }
 
         try {
             Session.updateSession(main, sessionHandle, null, userDataInJWT);
