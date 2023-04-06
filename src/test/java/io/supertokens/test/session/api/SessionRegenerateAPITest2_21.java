@@ -154,6 +154,17 @@ public class SessionRegenerateAPITest2_21 {
         assertEquals(caught.statusCode, 400);
         assertEquals(caught.getMessage(), "Http error. Status Code: 400. Message:" + " The user payload contains protected field");
 
+        JsonObject sessionRefreshBody = new JsonObject();
+
+        sessionRefreshBody.addProperty("refreshToken",
+                sessionInfo.get("refreshToken").getAsJsonObject().get("token").getAsString());
+        sessionRefreshBody.addProperty("enableAntiCsrf", false);
+
+        JsonObject sessionRefreshResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/refresh", sessionRefreshBody, 1000, 1000, null,
+                Utils.getCdiVersionStringLatestForTests(), "session");
+
+        assertEquals("OK", sessionRefreshResponse.get("status").getAsString());
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }

@@ -28,7 +28,7 @@ import org.junit.rules.TestRule;
 
 import static org.junit.Assert.*;
 
-public class HandshakeAPITest2_19 {
+public class HandshakeAPITest2_21 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

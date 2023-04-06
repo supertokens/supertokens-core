@@ -92,8 +92,7 @@ public class SessionGetSessionDataTest {
     // * Try getting and updating session information for a non-existent session handle -> Verify that both throw
     // * UnauthorisedException for session not existing
     @Test
-    public void gettingAndUpdatingSessionDataForNonExistentSession()
-            throws InterruptedException, StorageQueryException {
+    public void gettingAndUpdatingSessionDataForNonExistentSession() throws Exception {
 
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);

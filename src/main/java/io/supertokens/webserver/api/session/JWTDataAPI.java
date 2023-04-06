@@ -19,11 +19,13 @@ package io.supertokens.webserver.api.session;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
+import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.session.Session;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -56,7 +58,11 @@ public class JWTDataAPI extends WebserverAPI {
         assert userDataInJWT != null;
 
         try {
-            Session.updateSession(main, sessionHandle, null, userDataInJWT);
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
+                Session.updateSession(main, sessionHandle, null, userDataInJWT);
+            } else {
+                Session.updateSessionBeforeCDI2_21(main, sessionHandle, null, userDataInJWT);
+            }
 
             JsonObject result = new JsonObject();
 
@@ -65,6 +71,8 @@ public class JWTDataAPI extends WebserverAPI {
 
         } catch (StorageQueryException e) {
             throw new ServletException(e);
+        } catch(AccessTokenPayloadError e) {
+            throw new ServletException(new BadRequestException(e.getMessage()));
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();

@@ -223,7 +223,7 @@ public class AccessToken {
     }
 
     public static class AccessTokenInfo {
-        static String[] protectedPropNames = {
+        public static String[] protectedPropNames = {
                 "sub",
                 "exp",
                 "iat",
