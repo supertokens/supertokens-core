@@ -52,9 +52,6 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
-import java.util.Arrays;
-
-import static io.supertokens.session.accessToken.AccessToken.AccessTokenInfo.protectedPropNames;
 
 public class SessionAPI extends WebserverAPI {
     private static final long serialVersionUID = 7142317017402226537L;

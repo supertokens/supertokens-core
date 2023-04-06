@@ -34,9 +34,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Arrays;
-
-import static io.supertokens.session.accessToken.AccessToken.AccessTokenInfo.protectedPropNames;
 
 public class JWTDataAPI extends WebserverAPI {
     private static final long serialVersionUID = -4989144736402314280L;
