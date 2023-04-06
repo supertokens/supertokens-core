@@ -88,10 +88,6 @@ public class SessionAPI extends WebserverAPI {
 
             // useDynamicSigningKey defaults to true, so we check if it has been explicitly set to true
             useStaticSigningKey = Boolean.FALSE.equals(useDynamicSigningKey);
-
-            if (Arrays.stream(protectedPropNames).anyMatch(userDataInJWT::has)) {
-                throw new ServletException(new BadRequestException("The user payload contains protected field"));
-            }
         }
 
         try {

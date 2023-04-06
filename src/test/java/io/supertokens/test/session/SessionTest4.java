@@ -120,8 +120,7 @@ public class SessionTest4 {
     }
 
     @Test
-    public void gettingAndUpdatingSessionDataForNonExistantSession()
-            throws InterruptedException, StorageQueryException {
+    public void gettingAndUpdatingSessionDataForNonExistantSession() throws Exception {
 
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);

@@ -46,8 +46,6 @@ import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 
-import static io.supertokens.session.accessToken.AccessToken.AccessTokenInfo.protectedPropNames;
-
 public class SessionRegenerateAPI extends WebserverAPI {
 
     private static final long serialVersionUID = -6614427303762598143L;
@@ -70,14 +68,10 @@ public class SessionRegenerateAPI extends WebserverAPI {
 
         JsonObject userDataInJWT = InputParser.parseJsonObjectOrThrowError(input, "userDataInJWT", true);
 
-        if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21) &&
-                userDataInJWT != null &&
-                Arrays.stream(protectedPropNames).anyMatch(userDataInJWT::has)) {
-            throw new ServletException(new BadRequestException("The user payload contains protected field"));
-        }
-
         try {
-            SessionInformationHolder sessionInfo = Session.regenerateToken(main, accessToken, userDataInJWT);
+            SessionInformationHolder sessionInfo = getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21) ?
+                    Session.regenerateToken(main, accessToken, userDataInJWT) :
+                    Session.regenerateTokenBeforeCDI2_21(main, accessToken, userDataInJWT);
 
             JsonObject result = sessionInfo.toJsonObject();
 

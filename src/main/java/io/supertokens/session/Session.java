@@ -52,6 +52,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
 import java.util.UUID;
 
 public class Session {
@@ -121,6 +122,43 @@ public class Session {
         JsonObject newJWTUserPayload = userDataInJWT == null ? sessionInfo.userDataInJWT
                 : userDataInJWT;
         updateSession(main, accessToken.sessionHandle, null, newJWTUserPayload);
+
+        // if the above succeeds but the below fails, it's OK since the client will get server error and will try
+        // again. In this case, the JWT data will be updated again since the API will get the old JWT. In case there
+        // is a refresh call, the new JWT will get the new data.
+        if (accessToken.expiryTime < System.currentTimeMillis()) {
+            // in this case, we set the should not set the access token in the response since they will have to call
+            // the refresh API anyway.
+            return new SessionInformationHolder(
+                    new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload), null, null, null,
+                    null);
+        }
+
+        TokenInfo newAccessToken = AccessToken.createNewAccessToken(main, accessToken.sessionHandle, accessToken.userId,
+                accessToken.refreshTokenHash1, accessToken.parentRefreshTokenHash1, newJWTUserPayload,
+                accessToken.antiCsrfToken, accessToken.expiryTime, accessToken.version, sessionInfo.useStaticKey);
+
+        return new SessionInformationHolder(
+                new SessionInfo(accessToken.sessionHandle, accessToken.userId, newJWTUserPayload),
+                new TokenInfo(newAccessToken.token, newAccessToken.expiry, newAccessToken.createdTime), null, null,
+                null);
+    }
+
+    @Deprecated
+    public static SessionInformationHolder regenerateTokenBeforeCDI2_21(Main main, @Nonnull String token,
+                                                           @Nullable JsonObject userDataInJWT) throws StorageQueryException, StorageTransactionLogicException,
+            UnauthorisedException, InvalidKeySpecException, SignatureException, NoSuchAlgorithmException,
+            InvalidKeyException, UnsupportedEncodingException, JWT.JWTException, TryRefreshTokenException, UnsupportedJWTSigningAlgorithmException,
+            AccessTokenPayloadError {
+
+        // We assume the token has already been verified at this point. It may be expired or JWT signing key may have
+        // changed for it...
+        AccessTokenInfo accessToken = AccessToken.getInfoFromAccessTokenWithoutVerifying(token);
+
+        io.supertokens.pluginInterface.session.SessionInfo sessionInfo = getSession(main, accessToken.sessionHandle);
+        JsonObject newJWTUserPayload = userDataInJWT == null ? sessionInfo.userDataInJWT
+                : userDataInJWT;
+        updateSessionBeforeCDI2_21(main, accessToken.sessionHandle, null, newJWTUserPayload);
 
         // if the above succeeds but the below fails, it's OK since the client will get server error and will try
         // again. In this case, the JWT data will be updated again since the API will get the old JWT. In case there
@@ -541,7 +579,28 @@ public class Session {
     }
 
     public static void updateSession(Main main, String sessionHandle, @Nullable JsonObject sessionData,
-            @Nullable JsonObject jwtData) throws StorageQueryException, UnauthorisedException {
+            @Nullable JsonObject jwtData) throws StorageQueryException, UnauthorisedException, AccessTokenPayloadError {
+        if (jwtData != null && Arrays.stream(AccessTokenInfo.protectedPropNames).anyMatch(jwtData::has)) {
+            throw new AccessTokenPayloadError("The user payload contains protected field");
+        }
+
+        io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
+                .getSession(sessionHandle);
+        // If there is no session, or session is expired
+        if (session == null || session.expiry <= System.currentTimeMillis()) {
+            throw new UnauthorisedException("Session does not exist.");
+        }
+
+        int numberOfRowsAffected = StorageLayer.getSessionStorage(main).updateSession(sessionHandle, sessionData, jwtData);
+        if (numberOfRowsAffected != 1) {
+            throw new UnauthorisedException("Session does not exist.");
+        }
+    }
+
+    @Deprecated
+    public static void updateSessionBeforeCDI2_21(Main main, String sessionHandle, @Nullable JsonObject sessionData,
+                                     @Nullable JsonObject jwtData) throws StorageQueryException, UnauthorisedException {
+
         io.supertokens.pluginInterface.session.SessionInfo session = StorageLayer.getSessionStorage(main)
                 .getSession(sessionHandle);
         // If there is no session, or session is expired
