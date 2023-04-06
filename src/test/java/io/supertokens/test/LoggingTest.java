@@ -52,8 +52,36 @@ public class LoggingTest {
     }
 
     @Test
+    public void noErrorLogsOnCoreStart() throws Exception {
+        String[] args = {"../"};
+        TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
+
+        boolean errorFlag = false;
+
+        File errorLog = new File(Config.getConfig(process.getProcess()).getErrorLogPath(process.getProcess()));
+
+        try (Scanner errorScanner = new Scanner(errorLog, StandardCharsets.UTF_8)) {
+            while (errorScanner.hasNextLine()) {
+                String line = errorScanner.nextLine();
+                if (line.contains(process.getProcess().getProcessId())) {
+                    errorFlag = true;
+                    break;
+                }
+            }
+        }
+
+        assertFalse(errorFlag);
+
+        process.kill();
+        EventAndException event1 = process.checkOrWaitForEvent(PROCESS_STATE.STOPPED);
+        assertNotNull(event1);
+
+    }
+
+    @Test
     public void defaultLogging() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
 
@@ -96,7 +124,7 @@ public class LoggingTest {
     @Test
     public void customLogging() throws Exception {
         try {
-            String[] args = { "../" };
+            String[] args = {"../"};
 
             Utils.setValueInConfig("info_log_path", "\"tempLogging/info.log\"");
             Utils.setValueInConfig("error_log_path", "\"tempLogging/error.log\"");
@@ -148,7 +176,7 @@ public class LoggingTest {
     @Test
     public void confirmLoggerClosed() throws Exception {
 
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
 
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));
@@ -170,7 +198,7 @@ public class LoggingTest {
 
     @Test
     public void testStandardOutLoggingWithNullStr() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();
         ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
 
@@ -204,7 +232,7 @@ public class LoggingTest {
 
     @Test
     public void testStandardOutLoggingWithNull() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         ByteArrayOutputStream stdOutput = new ByteArrayOutputStream();
         ByteArrayOutputStream errorOutput = new ByteArrayOutputStream();
 
@@ -238,7 +266,7 @@ public class LoggingTest {
 
     @Test
     public void testThatSubFoldersAreCreated() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcess process = TestingProcessManager.start(args, false);
         try {
@@ -267,7 +295,7 @@ public class LoggingTest {
 
     @Test
     public void testDefaultLoggingFilePath() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
         TestingProcess process = TestingProcessManager.start(args);
 
         assertNotNull(process.checkOrWaitForEvent(PROCESS_STATE.STARTED));

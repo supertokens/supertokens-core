@@ -64,15 +64,13 @@ public class UserIdMapping {
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
                             main, appIdentifierWithStorage, appIdentifierWithStorage.getStorage(), externalUserId,
                             UserIdType.EXTERNAL);
-
-            // externalUserId can exist only through an userIdMapping. the above method will raise an
-            // UnknownUserIdException if the external user was not found. we won't have a case where the user is found
-            // and the mapping is null. Hence, the following assert.
-            assert (mappingAndStorage.userIdMapping != null);
-            throw new UserIdMappingAlreadyExistsException(
-                    superTokensUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId),
-                    externalUserId.equals(mappingAndStorage.userIdMapping.externalUserId)
-            );
+            
+            if (mappingAndStorage.userIdMapping != null) {
+                throw new UserIdMappingAlreadyExistsException(
+                        superTokensUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId),
+                        externalUserId.equals(mappingAndStorage.userIdMapping.externalUserId)
+                );
+            }
         } catch (UnknownUserIdException e) {
             // ignore this as we do not want external user id to exist
         }

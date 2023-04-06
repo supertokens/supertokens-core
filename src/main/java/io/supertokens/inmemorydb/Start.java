@@ -175,12 +175,12 @@ public class Start
     }
 
     @Override
-    public void initStorage() throws DbInitException {
+    public void initStorage(boolean shouldWait) throws DbInitException {
         if (ConnectionPool.isAlreadyInitialised(this)) {
             return;
         }
         try {
-            ConnectionPool.initPool(this);
+            ConnectionPool.initPool(this, shouldWait);
             GeneralQueries.createTablesIfNotExists(this, this.main);
         } catch (SQLException | StorageQueryException e) {
             throw new DbInitException(e);

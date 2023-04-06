@@ -184,7 +184,7 @@ public class Main {
             }
         }
         try {
-            StorageLayer.getBaseStorage(this).initStorage();
+            StorageLayer.getBaseStorage(this).initStorage(true);
         } catch (DbInitException e) {
             throw new QuitProgramException(e);
         }
@@ -208,7 +208,7 @@ public class Main {
 
             // init storage layers for each unique db connection based on unique (user pool ID, connection pool ID).
             MultitenancyHelper.getInstance(this).loadStorageLayer();
-        } catch (InvalidConfigException | DbInitException e) {
+        } catch (InvalidConfigException e) {
             throw new QuitProgramException(e);
         }
 

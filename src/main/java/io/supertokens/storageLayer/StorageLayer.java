@@ -33,7 +33,6 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.jwt.JWTRecipeStorage;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.pluginInterface.session.SessionStorage;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
 import jakarta.servlet.ServletException;
@@ -182,7 +181,7 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     }
 
     public static void loadAllTenantStorage(Main main, TenantConfig[] tenants)
-            throws InvalidConfigException, IOException, DbInitException {
+            throws InvalidConfigException, IOException {
         ProcessState.getInstance(main).addState(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_STORAGE, null);
 
         Map<ResourceDistributor.KeyClass, JsonObject> normalisedConfigs = Config.getNormalisedConfigsForAllTenants(
@@ -261,28 +260,24 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
                 }
 
                 // we call init on all the newly saved storage objects.
-                DbInitException lastError = null;
                 Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> resources =
                         main.getResourceDistributor()
                                 .getAllResourcesWithResourceKey(RESOURCE_KEY);
                 for (ResourceDistributor.SingletonResource resource : resources.values()) {
                     try {
-                        ((StorageLayer) resource).storage.initStorage();
+                        ((StorageLayer) resource).storage.initStorage(false);
                         ((StorageLayer) resource).storage.initFileLogging(
                                 Config.getBaseConfig(main).getInfoLogPath(main),
                                 Config.getBaseConfig(main).getErrorLogPath(main));
                     } catch (DbInitException e) {
-                        lastError = e;
+                        Logging.error(main, e.getMessage(), false, e);
+                        // we ignore any exceptions from db here cause it's not the base tenant's db that
+                        // would throw and only tenants belonging to a specific tenant / app. In this case,
+                        // we still want other tenants to continue to work
                     }
-                }
-                if (lastError != null) {
-                    throw new ResourceDistributor.FuncException(lastError);
                 }
             });
         } catch (ResourceDistributor.FuncException e) {
-            if (e.getCause() instanceof DbInitException) {
-                throw (DbInitException) e.getCause();
-            }
             throw new RuntimeException(e);
         }
     }

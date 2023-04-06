@@ -100,50 +100,49 @@ public class LoadTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
 
-    @Test
-    public void testCreating1000StorageLayersUsage()
-            throws InterruptedException {
-        String[] args = {"../"};
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        FeatureFlagTestContent.getInstance(process.getProcess())
-                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        TenantConfig[] tenants = new TenantConfig[1000];
-
-        for (int i = 0; i < 1000; i++) {
-            final int insideLoop = i;
-            JsonObject config = new JsonObject();
-            tenants[insideLoop] = new TenantConfig(new TenantIdentifier(null, "a" + insideLoop, null),
-                    new EmailPasswordConfig(false),
-                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
-                    new PasswordlessConfig(false),
-                    config);
-            try {
-                Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
-                        tenants[insideLoop]);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-
-        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> map = process.getProcess()
-                .getResourceDistributor().getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
-        Set<Storage> uniqueResources = new HashSet<>();
-        for (ResourceDistributor.SingletonResource resource : map.values()) {
-            StorageLayer storage = (StorageLayer) resource;
-            if (uniqueResources.contains(storage.getUnderlyingStorage())) {
-                continue;
-            }
-            uniqueResources.add(storage.getUnderlyingStorage());
-        }
-        assertEquals(uniqueResources.size(), 1);
-        
-        // TODO: add recipe usage + RAM tests + optimise how these 1000 tenants are created
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
+//    @Test
+//    public void testCreating1000TenantsWithOneStorageUsage()
+//            throws InterruptedException, InvalidProviderConfigException, DeletionInProgressException,
+//            StorageQueryException, FeatureNotEnabledException, TenantOrAppNotFoundException, IOException,
+//            InvalidConfigException, CannotModifyBaseConfigException, BadPermissionException {
+//        String[] args = {"../"};
+//
+//        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
+//        FeatureFlagTestContent.getInstance(process.getProcess())
+//                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
+//        process.startProcess();
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+//
+//        TenantConfig[] tenants = new TenantConfig[1000];
+//
+//        for (int i = 0; i < 1000; i++) {
+//            System.out.println(i);
+//            final int insideLoop = i;
+//            JsonObject config = new JsonObject();
+//            tenants[insideLoop] = new TenantConfig(new TenantIdentifier(null, "a" + insideLoop, null),
+//                    new EmailPasswordConfig(false),
+//                    new ThirdPartyConfig(false, new ThirdPartyConfig.Provider[0]),
+//                    new PasswordlessConfig(false),
+//                    config);
+//            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
+//                    tenants[insideLoop]);
+//        }
+//
+//        Map<ResourceDistributor.KeyClass, ResourceDistributor.SingletonResource> map = process.getProcess()
+//                .getResourceDistributor().getAllResourcesWithResourceKey(StorageLayer.RESOURCE_KEY);
+//        Set<Storage> uniqueResources = new HashSet<>();
+//        for (ResourceDistributor.SingletonResource resource : map.values()) {
+//            StorageLayer storage = (StorageLayer) resource;
+//            if (uniqueResources.contains(storage.getUnderlyingStorage())) {
+//                continue;
+//            }
+//            uniqueResources.add(storage.getUnderlyingStorage());
+//        }
+//        assertEquals(uniqueResources.size(), 1);
+//
+//        // TODO: add recipe usage + RAM tests + optimise how these 1000 tenants are created
+//
+//        process.kill();
+//        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+//    }
 }

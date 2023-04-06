@@ -29,7 +29,6 @@ import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.multitenancy.exception.DeletionInProgressException;
 import io.supertokens.output.Logging;
-import io.supertokens.pluginInterface.exceptions.DbInitException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
@@ -85,7 +84,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         return StorageLayer.getMultitenancyStorage(main).getAllTenants();
     }
 
-    public void refreshTenantsInCoreIfRequired() {
+    public void refreshTenantsInCoreIfRequired(boolean reloadAllResources) {
         try {
             main.getResourceDistributor().withResourceDistributorLock(() -> {
                 try {
@@ -115,6 +114,27 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
 
                     // this order is important. For example, storageLayer depends on config, and cronjobs depends on
                     // storageLayer
+                    if (reloadAllResources) {
+                        forceReloadAllResources();
+                    } else {
+                        // we do these two here cause they don't really depend on any table in the db, and these
+                        // two are required for allocating any further resource for this tenant
+                        loadConfig();
+                        loadStorageLayer();
+                    }
+                } catch (Exception e) {
+                    Logging.error(main, e.getMessage(), false, e);
+                }
+            });
+        } catch (ResourceDistributor.FuncException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    public void forceReloadAllResources() {
+        try {
+            main.getResourceDistributor().withResourceDistributorLock(() -> {
+                try {
                     loadConfig();
                     loadStorageLayer();
                     loadFeatureFlag();
@@ -133,7 +153,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         Config.loadAllTenantConfig(main, this.tenantConfigs);
     }
 
-    public void loadStorageLayer() throws DbInitException, IOException, InvalidConfigException {
+    public void loadStorageLayer() throws IOException, InvalidConfigException {
         StorageLayer.loadAllTenantStorage(main, this.tenantConfigs);
     }
 

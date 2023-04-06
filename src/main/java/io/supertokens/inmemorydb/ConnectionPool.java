@@ -41,7 +41,7 @@ public class ConnectionPool extends ResourceDistributor.SingletonResource {
         return getInstance(start) != null;
     }
 
-    static void initPool(Start start) throws SQLException {
+    static void initPool(Start start, boolean ignored) throws SQLException {
         start.getResourceDistributor()
                 .setResource(RESOURCE_KEY, new ConnectionPool());
     }

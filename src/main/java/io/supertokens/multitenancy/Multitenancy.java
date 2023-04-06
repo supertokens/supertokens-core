@@ -136,7 +136,12 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         try {
             StorageLayer.getMultitenancyStorage(main).createTenant(newTenant);
             creationInSharedDbSucceeded = true;
-            MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
+            // we do not want to refresh the resources for this new tenant here cause
+            // it will cause creation of signing keys in the key_value table, which depends on
+            // the tenant being there in the tenants table. But that insertion is done in the addTenantIdInUserPool
+            // function below. So in order to actually refresh the resources, we have a finally block here which
+            // calls the forceReloadAllResources function.
+            MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(false);
             try {
                 StorageLayer.getMultitenancyStorageWithTargetStorage(newTenant.tenantIdentifier, main)
                         .addTenantIdInUserPool(newTenant.tenantIdentifier);
@@ -149,7 +154,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             if (!creationInSharedDbSucceeded) {
                 try {
                     StorageLayer.getMultitenancyStorage(main).overwriteTenantConfig(newTenant);
-                    MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
+                    MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(false);
 
                     // we do this extra step cause if previously an attempt to add a tenant failed midway,
                     // such that the main tenant was added in the user pool, but did not get created
@@ -181,6 +186,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throw new InvalidProviderConfigException("Duplicate ThirdPartyId was specified in the providers list.");
         } catch (DuplicateClientTypeException e) {
             throw new InvalidProviderConfigException("Duplicate clientType was specified in the clients list.");
+        } finally {
+            MultitenancyHelper.getInstance(main).forceReloadAllResources();
         }
     }
 
@@ -197,7 +204,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             // but not from the main table.
         }
         StorageLayer.getMultitenancyStorage(main).deleteTenant(tenantIdentifier);
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
     }
 
     public static void deleteApp(TenantIdentifier tenantIdentifier, Main main)
@@ -213,7 +220,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     "Please delete all tenants except the public tenant for this app before calling the delete API");
         }
         StorageLayer.getMultitenancyStorage(main).deleteAppId(tenantIdentifier.getAppId());
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
     }
 
     public static void deleteConnectionUriDomain(TenantIdentifier tenantIdentifier, Main main)
@@ -239,7 +246,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
         }
         StorageLayer.getMultitenancyStorage(main)
                 .deleteConnectionUriDomain(tenantIdentifier.getConnectionUriDomain());
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
     }
 
     // TODO: removeUserIdFromTenant
@@ -291,7 +298,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
             throw new BadPermissionException(
                     "Only the public tenantId is allowed to list all tenants associated with this app");
         }
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
         TenantConfig[] tenants = MultitenancyHelper.getInstance(main).getAllTenants();
         List<TenantConfig> tenantList = new ArrayList<>();
 
@@ -318,7 +325,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                     "Only the public tenantId and public appId is allowed to list all apps associated with this " +
                             "connectionUriDomain");
         }
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
         TenantConfig[] tenants = MultitenancyHelper.getInstance(main).getAllTenants();
         List<TenantConfig> tenantList = new ArrayList<>();
 
@@ -344,7 +351,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                             "connectionUriDomains and appIds associated with this " +
                             "core");
         }
-        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired();
+        MultitenancyHelper.getInstance(main).refreshTenantsInCoreIfRequired(true);
         return MultitenancyHelper.getInstance(main).getAllTenants();
     }
 }
