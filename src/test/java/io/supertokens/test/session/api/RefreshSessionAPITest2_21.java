@@ -22,7 +22,6 @@ import io.supertokens.ProcessState;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
-import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.utils.SemVer;
 import org.junit.*;
 import org.junit.rules.TestRule;
@@ -32,7 +31,7 @@ import static junit.framework.TestCase.assertTrue;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
-public class RefreshSessionAPITest2_19 {
+public class RefreshSessionAPITest2_21 {
     @Rule
     public TestRule watchman = Utils.getOnFailure();
 

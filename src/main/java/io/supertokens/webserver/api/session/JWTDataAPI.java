@@ -60,7 +60,7 @@ public class JWTDataAPI extends WebserverAPI {
         assert userDataInJWT != null;
 
         if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21) &&
-                Arrays.stream(protectedPropNames).anyMatch(name -> userDataInJWT.has(name))) {
+                Arrays.stream(protectedPropNames).anyMatch(userDataInJWT::has)) {
             throw new ServletException(new BadRequestException("The user payload contains protected field"));
         }
 

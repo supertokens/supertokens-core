@@ -52,6 +52,9 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.SignatureException;
 import java.security.spec.InvalidKeySpecException;
+import java.util.Arrays;
+
+import static io.supertokens.session.accessToken.AccessToken.AccessTokenInfo.protectedPropNames;
 
 public class SessionAPI extends WebserverAPI {
     private static final long serialVersionUID = 7142317017402226537L;
@@ -85,6 +88,10 @@ public class SessionAPI extends WebserverAPI {
 
             // useDynamicSigningKey defaults to true, so we check if it has been explicitly set to true
             useStaticSigningKey = Boolean.FALSE.equals(useDynamicSigningKey);
+
+            if (Arrays.stream(protectedPropNames).anyMatch(userDataInJWT::has)) {
+                throw new ServletException(new BadRequestException("The user payload contains protected field"));
+            }
         }
 
         try {
