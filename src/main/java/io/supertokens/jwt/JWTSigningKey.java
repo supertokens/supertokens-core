@@ -244,7 +244,7 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
 
             JWTSigningKeyInfo keyInfo = null;
 
-            {
+            while (true) {
                 List<JWTSigningKeyInfo> keysFromStorage = noSQLStorage.getJWTSigningKeys_Transaction();
 
                 // Loop through the keys and find the first one for the algorithm, if the list is empty a new key
