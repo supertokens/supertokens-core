@@ -31,10 +31,8 @@ import io.supertokens.test.Utils;
 import org.junit.*;
 import org.junit.rules.TestRule;
 
-import java.io.IOException;
 import java.time.Instant;
 import java.util.Base64;
-import java.util.Date;
 
 import static junit.framework.TestCase.*;
 import static org.junit.Assert.assertNotEquals;
@@ -332,13 +330,13 @@ public class SessionTest5 {
 
     @Test
     public void checkDynamicKeyOverlap() throws Exception {
-        Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00027"); // 1 second
+        Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00081"); // 3 seconds
 
         String[] args = { "../" };
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        AccessTokenSigningKey.getInstance(process.getProcess()).setDynamicSigningKeyOverlapMS(500);
+        AccessTokenSigningKey.getInstance(process.getProcess()).setDynamicSigningKeyOverlapMS(1000);
         SigningKeys signingKeysInstance = SigningKeys.getInstance(process.getProcess());
         assertEquals(2, signingKeysInstance.getAllKeys().size());
         assertEquals(1, signingKeysInstance.getDynamicKeys().size());
@@ -353,7 +351,7 @@ public class SessionTest5 {
                 userDataInDatabase, false, true, false);
         JWT.JWTPreParseInfo preParseInfoCreate = JWT.preParseJWTInfo(createInfo.accessToken.token);
 
-        Thread.sleep(750);
+        Thread.sleep(2000);
         assertEquals(3, signingKeysInstance.getAllKeys().size());
         assertEquals(2, signingKeysInstance.getDynamicKeys().size());
 
@@ -361,7 +359,7 @@ public class SessionTest5 {
                 userDataInDatabase, false, true, false);
         JWT.JWTPreParseInfo preParseInfoCreateDuringOverlap = JWT.preParseJWTInfo(createInfoDuringOverlap.accessToken.token);
 
-        Thread.sleep(300);
+        Thread.sleep(1000);
         assertEquals(2, signingKeysInstance.getDynamicKeys().size());
         assertEquals(3, signingKeysInstance.getAllKeys().size());
 
