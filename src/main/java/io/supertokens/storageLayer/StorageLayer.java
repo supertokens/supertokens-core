@@ -320,28 +320,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static JWTRecipeStorage getJWTRecipeStorage(TenantIdentifier tenantIdentifier, Main main)
-            throws TenantOrAppNotFoundException {
-        // TODO remove this function
-        return (JWTRecipeStorage) getInstance(tenantIdentifier, main).storage;
-    }
-
-    @TestOnly
-    public static JWTRecipeStorage getJWTRecipeStorage(Main main) {
-        // TODO remove this function
-        try {
-            return getJWTRecipeStorage(new TenantIdentifier(null, null, null), main);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     public static DashboardSQLStorage getDashboardStorage(AppIdentifier appIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         // TODO remove this function
         return (DashboardSQLStorage) getInstance(appIdentifier.getAsPublicTenantIdentifier(), main).storage;
     }
-
 
     @TestOnly
     public static DashboardSQLStorage getDashboardStorage(Main main) {

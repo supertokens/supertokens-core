@@ -151,8 +151,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
      */
     public List<JWTSigningKeyInfo> getAllSigningKeys()
             throws StorageQueryException, StorageTransactionLogicException, TenantOrAppNotFoundException {
-        JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(this.appIdentifier.getAsPublicTenantIdentifier(),
-                main);
+        JWTRecipeStorage storage = (JWTRecipeStorage) StorageLayer.getStorage(
+                this.appIdentifier.getAsPublicTenantIdentifier(), main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
             JWTRecipeSQLStorage sqlStorage = (JWTRecipeSQLStorage) storage;
@@ -186,8 +186,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
     public JWTSigningKeyInfo getOrCreateAndGetKeyForAlgorithm(SupportedAlgorithms algorithm)
             throws UnsupportedJWTSigningAlgorithmException, StorageQueryException, StorageTransactionLogicException,
             TenantOrAppNotFoundException {
-        JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(this.appIdentifier.getAsPublicTenantIdentifier(),
-                main);
+        JWTRecipeStorage storage = (JWTRecipeStorage) StorageLayer.getStorage(
+                this.appIdentifier.getAsPublicTenantIdentifier(), main);
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
             JWTRecipeSQLStorage sqlStorage = (JWTRecipeSQLStorage) storage;
@@ -220,6 +220,8 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
                                 throw new StorageTransactionLogicException(e);
                             } catch (DuplicateKeyIdException e) {
                                 // Retry with a new key id
+                            } catch (TenantOrAppNotFoundException e) {
+                                throw new StorageTransactionLogicException(e);
                             }
                         }
                     }
@@ -230,6 +232,9 @@ public class JWTSigningKey extends ResourceDistributor.SingletonResource {
             } catch (StorageTransactionLogicException e) {
                 if (e.actualException instanceof UnsupportedJWTSigningAlgorithmException) {
                     throw (UnsupportedJWTSigningAlgorithmException) e.actualException;
+                }
+                if (e.actualException instanceof TenantOrAppNotFoundException) {
+                    throw (TenantOrAppNotFoundException) e.actualException;
                 }
 
                 throw e;
