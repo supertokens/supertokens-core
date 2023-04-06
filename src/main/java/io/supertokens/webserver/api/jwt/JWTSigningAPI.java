@@ -49,6 +49,7 @@ public class JWTSigningAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String algorithm = InputParser.parseStringOrThrowError(input, "algorithm", false);
         assert algorithm != null;
@@ -67,9 +68,8 @@ public class JWTSigningAPI extends WebserverAPI {
         }
 
         try {
-            String jwt = JWTSigningFunctions.createJWTToken(this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(),
-                    main, algorithm.toUpperCase(), payload, jwksDomain,
-                    validity);
+            String jwt = JWTSigningFunctions.createJWTToken(this.getAppIdentifierWithStorage(req), main,
+                    algorithm.toUpperCase(), payload, jwksDomain, validity);
             JsonObject reply = new JsonObject();
             reply.addProperty("status", "OK");
             reply.addProperty("jwt", jwt);

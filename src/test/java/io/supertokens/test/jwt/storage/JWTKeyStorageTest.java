@@ -25,6 +25,7 @@ import io.supertokens.pluginInterface.jwt.exceptions.DuplicateKeyIdException;
 import io.supertokens.pluginInterface.jwt.nosqlstorage.JWTRecipeNoSQLStorage_1;
 import io.supertokens.pluginInterface.jwt.sqlstorage.JWTRecipeSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -73,7 +74,7 @@ public class JWTKeyStorageTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(process.getProcess());
+        JWTRecipeStorage storage = (JWTRecipeStorage) StorageLayer.getStorage(process.getProcess());
 
         if (storage.getType() == STORAGE_TYPE.SQL) {
             JWTRecipeSQLStorage sqlStorage = (JWTRecipeSQLStorage) storage;
@@ -84,6 +85,8 @@ public class JWTKeyStorageTest {
                     sqlStorage.setJWTSigningKey_Transaction(new AppIdentifier(null, null), con, keyToSet);
                 } catch (DuplicateKeyIdException e) {
                     return false;
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new IllegalStateException(e);
                 }
 
                 try {
@@ -91,6 +94,8 @@ public class JWTKeyStorageTest {
                     return false;
                 } catch (DuplicateKeyIdException e) {
                     return true;
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new IllegalStateException(e);
                 }
             });
 
@@ -156,7 +161,7 @@ public class JWTKeyStorageTest {
         for (int i = 0; i < 10; i++) {
             String algorithm = "alg" + i;
 
-            JWTRecipeStorage storage = StorageLayer.getJWTRecipeStorage(process.getProcess());
+            JWTRecipeStorage storage = (JWTRecipeStorage) StorageLayer.getStorage(process.getProcess());
 
             if (storage.getType() != STORAGE_TYPE.NOSQL_1) {
                 return;
