@@ -47,13 +47,11 @@ public class EEFeatureFlagAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific and can be queried only from public tenant
         try {
-            if (!this.getTenantIdentifierWithStorageFromRequest(req).getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-                throw new BadPermissionException("This API can only be queried using the public tenant of the app");
-            }
-            EE_FEATURES[] features = FeatureFlag.getInstance(main, this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier())
+            EE_FEATURES[] features = FeatureFlag.getInstance(main, this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req))
                     .getEnabledFeatures();
-            JsonObject stats = FeatureFlag.getInstance(main, this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier())
+            JsonObject stats = FeatureFlag.getInstance(main, this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req))
                     .getPaidFeatureStats();
             JsonObject result = new JsonObject();
             JsonArray featuresJson = new JsonArray();
