@@ -203,16 +203,16 @@ public class AuthRecipe {
     private static void deleteNonAuthRecipeUser(AppIdentifierWithStorage
                                                         appIdentifierWithStorage, String userId)
             throws StorageQueryException, StorageTransactionLogicException {
-        ((UserMetadataSQLStorage) appIdentifierWithStorage.getStorage())
+        appIdentifierWithStorage.getUserMetadataStorage()
                 .deleteUserMetadata(appIdentifierWithStorage, userId);
-        ((SessionStorage) appIdentifierWithStorage.getStorage())
+        appIdentifierWithStorage.getSessionStorage()
                 .deleteSessionsOfUser(appIdentifierWithStorage, userId);
-        ((EmailVerificationSQLStorage) appIdentifierWithStorage.getStorage())
+        appIdentifierWithStorage.getEmailVerificationStorage()
                 .deleteEmailVerificationUserInfo(appIdentifierWithStorage, userId);
-        ((UserRolesSQLStorage) appIdentifierWithStorage.getStorage())
+        appIdentifierWithStorage.getUserRolesStorage()
                 .deleteAllRolesForUser(appIdentifierWithStorage, userId);
 
-        TOTPSQLStorage storage = (TOTPSQLStorage) appIdentifierWithStorage.getStorage();
+        TOTPSQLStorage storage = appIdentifierWithStorage.getTOTPStorage();
         storage.startTransaction(con -> {
             storage.removeUser_Transaction(con, appIdentifierWithStorage, userId);
             storage.commitTransaction(con);
@@ -224,9 +224,8 @@ public class AuthRecipe {
             userId)
             throws StorageQueryException {
         // auth recipe deletions here only
-        Storage storage = appIdentifierWithStorage.getStorage();
-        ((EmailPasswordSQLStorage) storage).deleteEmailPasswordUser(appIdentifierWithStorage, userId);
-        ((ThirdPartySQLStorage) storage).deleteThirdPartyUser(appIdentifierWithStorage, userId);
-        ((PasswordlessSQLStorage) storage).deletePasswordlessUser(appIdentifierWithStorage, userId);
+        appIdentifierWithStorage.getEmailPasswordStorage().deleteEmailPasswordUser(appIdentifierWithStorage, userId);
+        appIdentifierWithStorage.getThirdPartyStorage().deleteThirdPartyUser(appIdentifierWithStorage, userId);
+        appIdentifierWithStorage.getPasswordlessStorage().deletePasswordlessUser(appIdentifierWithStorage, userId);
     }
 }
