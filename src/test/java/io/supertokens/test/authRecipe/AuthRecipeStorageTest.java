@@ -57,7 +57,7 @@ public class AuthRecipeStorageTest {
             return;
         }
 
-        AuthRecipeStorage storage = StorageLayer.getAuthRecipeStorage(process.main);
+        AuthRecipeStorage storage = (AuthRecipeStorage) StorageLayer.getStorage(process.main);
 
         // check with an unknown Userid
 

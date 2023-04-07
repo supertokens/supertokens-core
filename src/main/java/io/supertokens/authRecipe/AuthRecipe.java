@@ -19,6 +19,7 @@ package io.supertokens.authRecipe;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeStorage;
 import io.supertokens.pluginInterface.authRecipe.AuthRecipeUserInfo;
@@ -53,7 +54,7 @@ public class AuthRecipe {
                                               RECIPE_ID[] includeRecipeIds)
             throws StorageQueryException,
             TenantOrAppNotFoundException, BadPermissionException {
-        return ((AuthRecipeStorage) tenantIdentifier.getStorage()).getUsersCount(
+        return tenantIdentifier.getAuthRecipeStorage().getUsersCount(
                 tenantIdentifier, includeRecipeIds);
     }
 
@@ -64,13 +65,17 @@ public class AuthRecipe {
         long count = 0;
 
         for (Storage storage : appIdentifierWithStorage.getStorages()) {
+            if (storage.getType() != STORAGE_TYPE.SQL) {
+                // we only support SQL for now
+                throw new UnsupportedOperationException("");
+            }
+
             count += ((AuthRecipeStorage) storage).getUsersCount(
                     appIdentifierWithStorage, includeRecipeIds);
         }
 
         return count;
     }
-
 
     @TestOnly
     public static long getUsersCount(Main main,
@@ -93,12 +98,12 @@ public class AuthRecipe {
             throws StorageQueryException, UserPaginationToken.InvalidTokenException, TenantOrAppNotFoundException {
         AuthRecipeUserInfo[] users;
         if (paginationToken == null) {
-            users = ((AuthRecipeStorage) tenantIdentifierWithStorage.getStorage())
+            users = tenantIdentifierWithStorage.getAuthRecipeStorage()
                     .getUsers(tenantIdentifierWithStorage, limit + 1, timeJoinedOrder, includeRecipeIds, null,
                             null, dashboardSearchTags);
         } else {
             UserPaginationToken tokenInfo = UserPaginationToken.extractTokenInfo(paginationToken);
-            users = ((AuthRecipeStorage) tenantIdentifierWithStorage.getStorage())
+            users = tenantIdentifierWithStorage.getAuthRecipeStorage()
                     .getUsers(tenantIdentifierWithStorage, limit + 1, timeJoinedOrder, includeRecipeIds,
                             tokenInfo.userId, tokenInfo.timeJoined, dashboardSearchTags);
         }
@@ -164,7 +169,7 @@ public class AuthRecipe {
             // in reference to
             // https://docs.google.com/spreadsheets/d/17hYV32B0aDCeLnSxbZhfRN2Y9b0LC2xUF44vV88RNAA/edit?usp=sharing
             // we want to check which state the db is in
-            if (((AuthRecipeStorage) appIdentifierWithStorage.getStorage())
+            if (appIdentifierWithStorage.getAuthRecipeStorage()
                     .doesUserIdExist(appIdentifierWithStorage, userIdMapping.externalUserId)) {
                 // db is in state A4
                 // delete only from auth tables
