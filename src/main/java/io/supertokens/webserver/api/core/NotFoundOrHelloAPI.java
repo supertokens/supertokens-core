@@ -72,6 +72,8 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
                 AppIdentifierWithStorage appIdentifierWithStorage =  getAppIdentifierWithStorage(req);
 
                 for (Storage storage : appIdentifierWithStorage.getStorages()) {
+                    // even if the public tenant does not exist, the following function will return a null
+                    // idea here is to test that the storage is working
                     storage.getKeyValue(appIdentifierWithStorage.getAsPublicTenantIdentifier(), "Test");
                 }
                 super.sendTextResponse(200, "Hello", resp);
