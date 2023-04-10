@@ -22,6 +22,7 @@ import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
@@ -31,6 +32,7 @@ import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.utils.Utils;
@@ -52,25 +54,27 @@ public class Dashboard {
                                                     String password)
             throws StorageQueryException, DuplicateEmailException, FeatureNotEnabledException {
         try {
-            return signUpDashboardUser(new AppIdentifier(null, null), main, email, password);
+            Storage storage = StorageLayer.getStorage(main);
+            return signUpDashboardUser(new AppIdentifierWithStorage(null, null, storage),
+                    main, email, password);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static DashboardUser signUpDashboardUser(AppIdentifier appIdentifier, Main main, String email,
+    public static DashboardUser signUpDashboardUser(AppIdentifierWithStorage appIdentifierWithStorage, Main main, String email,
                                                     String password)
             throws StorageQueryException, DuplicateEmailException, FeatureNotEnabledException,
             TenantOrAppNotFoundException {
 
-        if (StorageLayer.getDashboardStorage(appIdentifier, main).getDashboardUserByEmail(appIdentifier, email) !=
+        if (appIdentifierWithStorage.getDashboardStorage().getDashboardUserByEmail(appIdentifierWithStorage, email) !=
                 null) {
             throw new DuplicateEmailException();
         }
 
-        if (!isDashboardFeatureFlagEnabled(main, appIdentifier)) {
-            DashboardUser[] users = StorageLayer.getDashboardStorage(appIdentifier, main)
-                    .getAllDashboardUsers(appIdentifier);
+        if (!isDashboardFeatureFlagEnabled(main, appIdentifierWithStorage)) {
+            DashboardUser[] users = appIdentifierWithStorage.getDashboardStorage()
+                    .getAllDashboardUsers(appIdentifierWithStorage);
             if (users.length >= MAX_NUMBER_OF_FREE_DASHBOARD_USERS) {
                 throw new FeatureNotEnabledException(
                         "Free user limit reached. Please subscribe to a SuperTokens core license key to allow more " +
@@ -78,7 +82,7 @@ public class Dashboard {
             }
         }
 
-        String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(appIdentifier, password);
+        String hashedPassword = PasswordHashing.getInstance(main).createHashWithSalt(appIdentifierWithStorage, password);
         while (true) {
 
             String userId = Utils.getUUID();
@@ -86,7 +90,7 @@ public class Dashboard {
 
             try {
                 DashboardUser user = new DashboardUser(userId, email, hashedPassword, timeJoined);
-                StorageLayer.getDashboardStorage(appIdentifier, main).createNewDashboardUser(appIdentifier, user);
+                appIdentifierWithStorage.getDashboardStorage().createNewDashboardUser(appIdentifierWithStorage, user);
                 return user;
             } catch (DuplicateUserIdException ignored) {
                 // we retry with a new userId (while loop)
@@ -97,19 +101,16 @@ public class Dashboard {
     @TestOnly
     public static DashboardUser[] getAllDashboardUsers(Main main)
             throws StorageQueryException {
-        try {
-            return getAllDashboardUsers(new AppIdentifier(null, null), main);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return getAllDashboardUsers(new AppIdentifierWithStorage(null, null, storage), main);
     }
 
-    public static DashboardUser[] getAllDashboardUsers(AppIdentifier appIdentifier, Main main)
-            throws StorageQueryException, TenantOrAppNotFoundException {
+    public static DashboardUser[] getAllDashboardUsers(AppIdentifierWithStorage appIdentifierWithStorage, Main main)
+            throws StorageQueryException {
 
-        DashboardUser[] dashboardUsers = StorageLayer.getDashboardStorage(appIdentifier, main)
-                .getAllDashboardUsers(appIdentifier);
-        if (isDashboardFeatureFlagEnabled(main, appIdentifier)) {
+        DashboardUser[] dashboardUsers = appIdentifierWithStorage.getDashboardStorage()
+                .getAllDashboardUsers(appIdentifierWithStorage);
+        if (isDashboardFeatureFlagEnabled(main, appIdentifierWithStorage)) {
             return dashboardUsers;
         } else {
             List<DashboardUser> validDashboardUsers = new ArrayList<>();
@@ -124,24 +125,27 @@ public class Dashboard {
     public static String signInDashboardUser(Main main, String email, String password)
             throws StorageQueryException, UserSuspendedException {
         try {
-            return signInDashboardUser(new AppIdentifier(null, null), main, email, password);
+            Storage storage = StorageLayer.getStorage(main);
+            return signInDashboardUser(new AppIdentifierWithStorage(null, null, storage),
+                    main, email, password);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static String signInDashboardUser(AppIdentifier appIdentifier, Main main, String email, String password)
+    public static String signInDashboardUser(AppIdentifierWithStorage appIdentifierWithStorage, Main main,
+                                             String email, String password)
             throws StorageQueryException, UserSuspendedException, TenantOrAppNotFoundException {
-        DashboardUser user = StorageLayer.getDashboardStorage(appIdentifier, main)
-                .getDashboardUserByEmail(appIdentifier, email);
+        DashboardUser user = appIdentifierWithStorage.getDashboardStorage()
+                .getDashboardUserByEmail(appIdentifierWithStorage, email);
         if (user != null) {
-            if (isUserSuspended(appIdentifier, main, email, null)) {
+            if (isUserSuspended(appIdentifierWithStorage, main, email, null)) {
                 throw new UserSuspendedException();
             }
-            if (PasswordHashing.getInstance(main).verifyPasswordWithHash(appIdentifier, password, user.passwordHash)) {
+            if (PasswordHashing.getInstance(main).verifyPasswordWithHash(appIdentifierWithStorage, password, user.passwordHash)) {
                 // create a new session for the user
                 try {
-                    return createSessionForDashboardUser(appIdentifier, main, user);
+                    return createSessionForDashboardUser(appIdentifierWithStorage, user);
                 } catch (UserIdNotFoundException e) {
                     throw new IllegalStateException(e);
                 }
@@ -152,26 +156,23 @@ public class Dashboard {
 
     @TestOnly
     public static boolean deleteUserWithUserId(Main main, String userId)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        try {
-            return deleteUserWithUserId(new AppIdentifier(null, null), main, userId);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+            throws StorageQueryException {
+        Storage storage = StorageLayer.getStorage(main);
+        return deleteUserWithUserId(new AppIdentifierWithStorage(null, null, storage), userId);
     }
 
-    public static boolean deleteUserWithUserId(AppIdentifier appIdentifier, Main main, String userId)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getDashboardStorage(appIdentifier, main)
-                .deleteDashboardUserWithUserId(appIdentifier, userId);
+    public static boolean deleteUserWithUserId(AppIdentifierWithStorage appIdentifierWithStorage, String userId)
+            throws StorageQueryException {
+        return appIdentifierWithStorage.getDashboardStorage()
+                .deleteDashboardUserWithUserId(appIdentifierWithStorage, userId);
     }
 
-    private static boolean isUserSuspended(AppIdentifier appIdentifier, Main main, @Nullable String email,
+    private static boolean isUserSuspended(AppIdentifierWithStorage appIdentifierWithStorage, Main main, @Nullable String email,
                                            @Nullable String userId)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        if (!isDashboardFeatureFlagEnabled(main, appIdentifier)) {
-            DashboardUser[] users = StorageLayer.getDashboardStorage(appIdentifier, main)
-                    .getAllDashboardUsers(appIdentifier);
+            throws StorageQueryException {
+        if (!isDashboardFeatureFlagEnabled(main, appIdentifierWithStorage)) {
+            DashboardUser[] users = appIdentifierWithStorage.getDashboardStorage()
+                    .getAllDashboardUsers(appIdentifierWithStorage);
 
             if (email != null) {
                 for (int i = 0; i < MAX_NUMBER_OF_FREE_DASHBOARD_USERS; i++) {
@@ -197,19 +198,16 @@ public class Dashboard {
     @TestOnly
     public static boolean deleteUserWithEmail(Main main, String email)
             throws StorageQueryException {
-        try {
-            return deleteUserWithEmail(new AppIdentifier(null, null), main, email);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return deleteUserWithEmail(new AppIdentifierWithStorage(null, null, storage), email);
     }
 
-    public static boolean deleteUserWithEmail(AppIdentifier appIdentifier, Main main, String email)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        DashboardUser user = StorageLayer.getDashboardStorage(appIdentifier, main)
-                .getDashboardUserByEmail(appIdentifier, email);
+    public static boolean deleteUserWithEmail(AppIdentifierWithStorage appIdentifierWithStorage, String email)
+            throws StorageQueryException {
+        DashboardUser user = appIdentifierWithStorage.getDashboardStorage()
+                .getDashboardUserByEmail(appIdentifierWithStorage, email);
         if (user != null) {
-            return deleteUserWithUserId(appIdentifier, main, user.userId);
+            return deleteUserWithUserId(appIdentifierWithStorage, user.userId);
         }
         return false;
     }
@@ -221,23 +219,27 @@ public class Dashboard {
             throws StorageQueryException, DuplicateEmailException, UserIdNotFoundException,
             StorageTransactionLogicException {
         try {
-            return updateUsersCredentialsWithUserId(new AppIdentifier(null, null), main, userId, newEmail, newPassword);
+            Storage storage = StorageLayer.getStorage(main);
+            return updateUsersCredentialsWithUserId(
+                    new AppIdentifierWithStorage(null, null, storage), main, userId,
+                    newEmail, newPassword);
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
     }
 
-    public static DashboardUser updateUsersCredentialsWithUserId(AppIdentifier appIdentifier, Main main, String userId,
+    public static DashboardUser updateUsersCredentialsWithUserId(AppIdentifierWithStorage appIdentifierWithStorage,
+                                                                 Main main, String userId,
                                                                  String newEmail,
                                                                  String newPassword)
             throws StorageQueryException, DuplicateEmailException, UserIdNotFoundException,
             StorageTransactionLogicException, TenantOrAppNotFoundException {
-        DashboardSQLStorage storage = StorageLayer.getDashboardStorage(appIdentifier, main);
+        DashboardSQLStorage storage = appIdentifierWithStorage.getDashboardStorage();
         try {
             storage.startTransaction(transaction -> {
                 if (newEmail != null) {
                     try {
-                        storage.updateDashboardUsersEmailWithUserId_Transaction(appIdentifier, transaction, userId,
+                        storage.updateDashboardUsersEmailWithUserId_Transaction(appIdentifierWithStorage, transaction, userId,
                                 newEmail);
                     } catch (DuplicateEmailException | UserIdNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
@@ -247,8 +249,8 @@ public class Dashboard {
                 if (newPassword != null) {
                     try {
                         String hashedPassword = PasswordHashing.getInstance(main)
-                                .createHashWithSalt(appIdentifier, newPassword);
-                        storage.updateDashboardUsersPasswordWithUserId_Transaction(appIdentifier, transaction, userId,
+                                .createHashWithSalt(appIdentifierWithStorage, newPassword);
+                        storage.updateDashboardUsersPasswordWithUserId_Transaction(appIdentifierWithStorage, transaction, userId,
                                 hashedPassword);
                     } catch (UserIdNotFoundException | TenantOrAppNotFoundException e) {
                         throw new StorageTransactionLogicException(e);
@@ -271,72 +273,60 @@ public class Dashboard {
         }
 
         // revoke sessions for the user
-        DashboardSessionInfo[] sessionInfo = Dashboard.getAllDashboardSessionsForUser(appIdentifier, main, userId);
+        DashboardSessionInfo[] sessionInfo = Dashboard.getAllDashboardSessionsForUser(appIdentifierWithStorage, userId);
         for (int i = 0; i < sessionInfo.length; i++) {
-            StorageLayer.getDashboardStorage(appIdentifier, main)
-                    .revokeSessionWithSessionId(appIdentifier, sessionInfo[i].sessionId);
+            appIdentifierWithStorage.getDashboardStorage()
+                    .revokeSessionWithSessionId(appIdentifierWithStorage, sessionInfo[i].sessionId);
         }
 
-        return StorageLayer.getDashboardStorage(appIdentifier, main)
-                .getDashboardUserByUserId(appIdentifier, userId);
+        return appIdentifierWithStorage.getDashboardStorage()
+                .getDashboardUserByUserId(appIdentifierWithStorage, userId);
     }
 
     @TestOnly
     public static DashboardUser getDashboardUserByEmail(Main main, String email)
             throws StorageQueryException {
-        try {
-            return getDashboardUserByEmail(new AppIdentifier(null, null), main, email);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return getDashboardUserByEmail(new AppIdentifierWithStorage(null, null, storage), email);
     }
 
-    public static DashboardUser getDashboardUserByEmail(AppIdentifier appIdentifier, Main main, String
-            email)
-            throws StorageQueryException, TenantOrAppNotFoundException {
+    public static DashboardUser getDashboardUserByEmail(AppIdentifierWithStorage appIdentifierWithStorage, String email)
+            throws StorageQueryException {
 
-        return StorageLayer.getDashboardStorage(appIdentifier, main)
-                .getDashboardUserByEmail(appIdentifier, email);
+        return appIdentifierWithStorage.getDashboardStorage()
+                .getDashboardUserByEmail(appIdentifierWithStorage, email);
     }
 
     @TestOnly
     public static boolean revokeSessionWithSessionId(Main main, String sessionId)
             throws StorageQueryException {
-        try {
-            return revokeSessionWithSessionId(new AppIdentifier(null, null), main, sessionId);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return revokeSessionWithSessionId(new AppIdentifierWithStorage(null, null, storage), sessionId);
     }
 
-    public static boolean revokeSessionWithSessionId(AppIdentifier appIdentifier, Main main, String
-            sessionId)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getDashboardStorage(appIdentifier, main)
-                .revokeSessionWithSessionId(appIdentifier, sessionId);
+    public static boolean revokeSessionWithSessionId(AppIdentifierWithStorage appIdentifierWithStorage, String sessionId)
+            throws StorageQueryException {
+        return appIdentifierWithStorage.getDashboardStorage()
+                .revokeSessionWithSessionId(appIdentifierWithStorage, sessionId);
     }
 
     @TestOnly
     public static DashboardSessionInfo[] getAllDashboardSessionsForUser(Main main,
                                                                         String userId)
             throws StorageQueryException {
-        try {
-            return getAllDashboardSessionsForUser(new AppIdentifier(null, null), main, userId);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return getAllDashboardSessionsForUser(
+                new AppIdentifierWithStorage(null, null, storage), userId);
     }
 
-    public static DashboardSessionInfo[] getAllDashboardSessionsForUser(AppIdentifier appIdentifier, Main
-            main,
+    public static DashboardSessionInfo[] getAllDashboardSessionsForUser(AppIdentifierWithStorage appIdentifierWithStorage,
                                                                         String userId)
-            throws StorageQueryException, TenantOrAppNotFoundException {
-        return StorageLayer.getDashboardStorage(appIdentifier, main)
-                .getAllSessionsForUserId(appIdentifier, userId);
+            throws StorageQueryException {
+        return appIdentifierWithStorage.getDashboardStorage()
+                .getAllSessionsForUserId(appIdentifierWithStorage, userId);
     }
 
-    private static boolean isDashboardFeatureFlagEnabled(Main main, AppIdentifier appIdentifier)
-            throws StorageQueryException {
+    private static boolean isDashboardFeatureFlagEnabled(Main main, AppIdentifier appIdentifier) {
         try {
             return Arrays.stream(FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures())
                     .anyMatch(t -> t == EE_FEATURES.DASHBOARD_LOGIN);
@@ -345,14 +335,14 @@ public class Dashboard {
         }
     }
 
-    private static String createSessionForDashboardUser(AppIdentifier appIdentifier, Main
-            main, DashboardUser user)
-            throws StorageQueryException, UserIdNotFoundException, TenantOrAppNotFoundException {
+    private static String createSessionForDashboardUser(AppIdentifierWithStorage appIdentifierWithStorage,
+                                                        DashboardUser user)
+            throws StorageQueryException, UserIdNotFoundException {
         String sessionId = UUID.randomUUID().toString();
         long timeCreated = System.currentTimeMillis();
         long expiry = timeCreated + DASHBOARD_SESSION_DURATION;
-        StorageLayer.getDashboardStorage(appIdentifier, main)
-                .createNewDashboardUserSession(appIdentifier, user.userId, sessionId, timeCreated,
+        appIdentifierWithStorage.getDashboardStorage()
+                .createNewDashboardUserSession(appIdentifierWithStorage, user.userId, sessionId, timeCreated,
                         expiry);
         return sessionId;
     }
@@ -395,20 +385,17 @@ public class Dashboard {
     @TestOnly
     public static boolean isValidUserSession(Main main, String sessionId)
             throws StorageQueryException, UserSuspendedException {
-        try {
-            return isValidUserSession(new AppIdentifier(null, null), main, sessionId);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
+        Storage storage = StorageLayer.getStorage(main);
+        return isValidUserSession(new AppIdentifierWithStorage(null, null, storage), main, sessionId);
     }
 
-    public static boolean isValidUserSession(AppIdentifier appIdentifier, Main main, String sessionId)
-            throws StorageQueryException, UserSuspendedException, TenantOrAppNotFoundException {
-        DashboardSessionInfo sessionInfo = StorageLayer.getDashboardStorage(appIdentifier, main)
-                .getSessionInfoWithSessionId(appIdentifier, sessionId);
+    public static boolean isValidUserSession(AppIdentifierWithStorage appIdentifierWithStorage, Main main, String sessionId)
+            throws StorageQueryException, UserSuspendedException {
+        DashboardSessionInfo sessionInfo = appIdentifierWithStorage.getDashboardStorage()
+                .getSessionInfoWithSessionId(appIdentifierWithStorage, sessionId);
         if (sessionInfo != null) {
             // check if user is suspended
-            if (isUserSuspended(appIdentifier, main, null, sessionInfo.userId)) {
+            if (isUserSuspended(appIdentifierWithStorage, main, null, sessionInfo.userId)) {
                 throw new UserSuspendedException();
             }
             return true;

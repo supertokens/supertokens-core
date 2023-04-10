@@ -20,6 +20,7 @@ import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.dashboard.exceptions.UserSuspendedException;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -49,13 +50,15 @@ public class VerifyDashboardUserSessionAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String sessionId = InputParser.parseStringOrThrowError(input, "sessionId", false);
 
         sessionId = Utils.normalizeAndValidateStringParam(sessionId, "sessionId");
         try {
-            if (Dashboard.isValidUserSession(super.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main, sessionId)) {
+            if (Dashboard.isValidUserSession(
+                    super.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req), main, sessionId)) {
                 JsonObject response = new JsonObject();
                 response.addProperty("status", "OK");
                 super.sendJsonResponse(200, response, resp);
@@ -71,7 +74,7 @@ public class VerifyDashboardUserSessionAPI extends WebserverAPI {
             response.addProperty("message",
                     "User is suspended.");
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
 
