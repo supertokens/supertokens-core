@@ -304,22 +304,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static AuthRecipeStorage getAuthRecipeStorage(TenantIdentifier tenantIdentifier, Main main)
-            throws TenantOrAppNotFoundException {
-        // TODO remove this function
-        return (AuthRecipeStorage) getInstance(tenantIdentifier, main).storage;
-    }
-
-    @TestOnly
-    public static AuthRecipeStorage getAuthRecipeStorage(Main main) {
-        // TODO remove this function
-        try {
-            return getAuthRecipeStorage(new TenantIdentifier(null, null, null), main);
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     public static DashboardSQLStorage getDashboardStorage(AppIdentifier appIdentifier, Main main)
             throws TenantOrAppNotFoundException {
         // TODO remove this function

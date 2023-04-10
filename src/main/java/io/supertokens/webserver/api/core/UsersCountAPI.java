@@ -48,6 +48,8 @@ public class UsersCountAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific is includeAllTenants is false
+        // API is app specific if includeAllTenants is true
         String[] recipeIds = InputParser.getCommaSeparatedStringArrayQueryParamOrThrowError(req, "includeRecipeIds",
                 true);
 

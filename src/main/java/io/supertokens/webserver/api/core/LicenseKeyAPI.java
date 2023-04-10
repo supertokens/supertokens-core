@@ -47,18 +47,16 @@ public class LicenseKeyAPI extends WebserverAPI {
 
     @Override
     protected void doPut(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific and can be queried only from public tenant
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
         String licenseKey = InputParser.parseStringOrThrowError(input, "licenseKey", true);
         try {
-            if (!this.getTenantIdentifierWithStorageFromRequest(req).getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-                throw new BadPermissionException("This API can only be queried using the public tenant of the app");
-            }
             boolean success = false;
             if (licenseKey != null) {
-                success = FeatureFlag.getInstance(main, this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier())
+                success = FeatureFlag.getInstance(main, this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req))
                         .setLicenseKeyAndSyncFeatures(licenseKey);
             } else {
-                success = FeatureFlag.getInstance(main, this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier())
+                success = FeatureFlag.getInstance(main, this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req))
                         .syncFeatureFlagWithLicenseKey();
             }
             JsonObject result = new JsonObject();
@@ -75,11 +73,9 @@ public class LicenseKeyAPI extends WebserverAPI {
 
     @Override
     protected void doDelete(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific and can be queried only from public tenant
         try {
-            if (!this.getTenantIdentifierWithStorageFromRequest(req).getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-                throw new BadPermissionException("This API can only be queried using the public tenant of the app");
-            }
-            FeatureFlag.getInstance(main, this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier())
+            FeatureFlag.getInstance(main, this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req))
                     .removeLicenseKeyAndSyncFeatures();
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -91,11 +87,9 @@ public class LicenseKeyAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific and can be queried only from public tenant
         try {
-            if (!this.getTenantIdentifierWithStorageFromRequest(req).getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
-                throw new BadPermissionException("This API can only be queried using the public tenant of the app");
-            }
-            String licenseKey = FeatureFlag.getInstance(main, this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier())
+            String licenseKey = FeatureFlag.getInstance(main, this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req))
                     .getLicenseKey();
             JsonObject result = new JsonObject();
             result.addProperty("licenseKey", licenseKey);

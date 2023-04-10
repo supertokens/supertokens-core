@@ -20,8 +20,8 @@ import io.supertokens.Main;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
-import io.supertokens.storageLayer.StorageLayer;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -62,17 +62,25 @@ public class NotFoundOrHelloAPI extends WebserverAPI {
         handleRequest(req, resp);
     }
 
-    protected void handleRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    protected void handleRequest(HttpServletRequest req, HttpServletResponse resp) throws IOException,
+            ServletException {
         // getServletPath returns the path without the base path.
         if (req.getServletPath().equals("/")) {
-            // TODO: need to get the right storage based on TenantIdentifier input.
-            Storage storage = StorageLayer.getBaseStorage(main);
+            // API is app specific
+            // TODO add rate limiter to this API based on appIdentifier
             try {
-                storage.getKeyValue(new TenantIdentifier(null, null, null), "Test");
+                AppIdentifierWithStorage appIdentifierWithStorage =  getAppIdentifierWithStorage(req);
+
+                for (Storage storage : appIdentifierWithStorage.getStorages()) {
+                    // even if the public tenant does not exist, the following function will return a null
+                    // idea here is to test that the storage is working
+                    storage.getKeyValue(appIdentifierWithStorage.getAsPublicTenantIdentifier(), "Test");
+                }
                 super.sendTextResponse(200, "Hello", resp);
-            } catch (StorageQueryException e) {
+
+            } catch (StorageQueryException | TenantOrAppNotFoundException e) {
                 // we send 500 status code
-                throw new IOException(e);
+                throw new ServletException(e);
             }
         } else {
             super.sendTextResponse(404, "Not found", resp);

@@ -19,6 +19,7 @@ package io.supertokens.webserver.api.core;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.cronjobs.telemetry.Telemetry;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -43,8 +44,10 @@ public class TelemetryAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         try {
-            KeyValueInfo telemetryId = Telemetry.getTelemetryId(main, this.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier());
+            KeyValueInfo telemetryId = Telemetry.getTelemetryId(main,
+                    this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req));
 
             JsonObject result = new JsonObject();
             if (telemetryId == null) {
@@ -54,7 +57,7 @@ public class TelemetryAPI extends WebserverAPI {
                 result.addProperty("telemetryId", telemetryId.value);
             }
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }
