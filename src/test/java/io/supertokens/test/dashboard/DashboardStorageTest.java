@@ -70,7 +70,7 @@ public class DashboardStorageTest {
         String email = "test@example.com";
         String passwordHash = "testPasswordHash";
 
-        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+        DashboardSQLStorage dashboardSQLStorage = (DashboardSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         {
             DashboardUser user = new DashboardUser(userId, email, passwordHash, System.currentTimeMillis());
@@ -133,7 +133,7 @@ public class DashboardStorageTest {
         String email = "test@example.com";
         String passwordHash = "testPasswordHash";
 
-        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+        DashboardSQLStorage dashboardSQLStorage = (DashboardSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a dashboardUser
         DashboardUser user = new DashboardUser(userId, email, passwordHash, System.currentTimeMillis());
@@ -174,7 +174,7 @@ public class DashboardStorageTest {
 
             DashboardUser user = new DashboardUser(io.supertokens.utils.Utils.getUUID(), "test" + i + "@example.com",
                     "testPasswordHash", System.currentTimeMillis());
-            StorageLayer.getDashboardStorage(process.getProcess())
+            ((DashboardSQLStorage) StorageLayer.getStorage(process.getProcess()))
                     .createNewDashboardUser(new AppIdentifier(null, null), user);
             Thread.sleep(2);
         }
@@ -182,7 +182,7 @@ public class DashboardStorageTest {
         // retrieve all dashboard users, check that correctly created and returned in
         // the correct order.
 
-        DashboardUser[] users = StorageLayer.getDashboardStorage(process.getProcess())
+        DashboardUser[] users = ((DashboardSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .getAllDashboardUsers(new AppIdentifier(null, null));
         assertEquals(10, users.length);
 
@@ -206,7 +206,7 @@ public class DashboardStorageTest {
             return;
         }
 
-        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+        DashboardSQLStorage dashboardSQLStorage = (DashboardSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // check no user exists
         assertEquals(0, dashboardSQLStorage.getAllDashboardUsers(new AppIdentifier(null, null)).length);
@@ -239,7 +239,7 @@ public class DashboardStorageTest {
             return;
         }
 
-        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+        DashboardSQLStorage dashboardSQLStorage = (DashboardSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a dashboard session for a user that does not exist
         Exception error = null;
@@ -280,7 +280,7 @@ public class DashboardStorageTest {
             return;
         }
 
-        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+        DashboardSQLStorage dashboardSQLStorage = (DashboardSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a user
         DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), "test@example.com", "password123");
@@ -337,7 +337,7 @@ public class DashboardStorageTest {
             return;
         }
 
-        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+        DashboardSQLStorage dashboardSQLStorage = (DashboardSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         // create a user
         DashboardUser user = Dashboard.signUpDashboardUser(process.getProcess(), "test@example.com", "password123");
@@ -402,7 +402,7 @@ public class DashboardStorageTest {
             return;
         }
 
-        DashboardSQLStorage dashboardSQLStorage = StorageLayer.getDashboardStorage(process.getProcess());
+        DashboardSQLStorage dashboardSQLStorage = (DashboardSQLStorage) StorageLayer.getStorage(process.getProcess());
 
         {
             // try updating the email for a user that does not exist

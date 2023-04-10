@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.dashboard.Dashboard;
+import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -49,13 +50,14 @@ public class GetDashboardUsersAPI extends WebserverAPI {
         try {
 
             JsonArray arr = new com.google.gson.JsonParser().parse(new Gson().toJson(
-                            Dashboard.getAllDashboardUsers(super.getTenantIdentifierWithStorageFromRequest(req).toAppIdentifier(), main)))
+                            Dashboard.getAllDashboardUsers(
+                                    super.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req), main)))
                     .getAsJsonArray();
             JsonObject response = new JsonObject();
             response.addProperty("status", "OK");
             response.add("users", arr);
             super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

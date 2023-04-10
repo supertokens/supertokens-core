@@ -24,6 +24,7 @@ import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.ActiveUsersStorage;
 import io.supertokens.pluginInterface.KeyValueInfo;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
+import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
@@ -165,7 +166,7 @@ public class EEFeatureFlag implements io.supertokens.featureflag.EEFeatureFlagIn
         for (EE_FEATURES feature : features) {
             if (feature == EE_FEATURES.DASHBOARD_LOGIN) {
                 JsonObject stats = new JsonObject();
-                int userCount = StorageLayer.getDashboardStorage(this.appIdentifier, main)
+                int userCount = ((DashboardSQLStorage) StorageLayer.getStorage(this.appIdentifier.getAsPublicTenantIdentifier(), main))
                         .getAllDashboardUsers(this.appIdentifier).length;
                 stats.addProperty("user_count", userCount);
                 usageStats.add(EE_FEATURES.DASHBOARD_LOGIN.toString(), stats);

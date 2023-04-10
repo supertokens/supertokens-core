@@ -304,22 +304,6 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
         }
     }
 
-    public static DashboardSQLStorage getDashboardStorage(AppIdentifier appIdentifier, Main main)
-            throws TenantOrAppNotFoundException {
-        // TODO remove this function
-        return (DashboardSQLStorage) getInstance(appIdentifier.getAsPublicTenantIdentifier(), main).storage;
-    }
-
-    @TestOnly
-    public static DashboardSQLStorage getDashboardStorage(Main main) {
-        // TODO remove this function
-        try {
-            return (DashboardSQLStorage) getInstance(new TenantIdentifier(null, null, null), main).storage;
-        } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
-        }
-    }
-
     // This function intentionally doesn't take connectionUriDomain and tenantId
     // cause the data for this is only going to be in the primary db of the core.
     public static MultitenancyStorage getMultitenancyStorage(Main main) {

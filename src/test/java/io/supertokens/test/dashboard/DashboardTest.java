@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.dashboard.DashboardSessionInfo;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
 import io.supertokens.pluginInterface.dashboard.exceptions.DuplicateEmailException;
+import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -196,7 +197,7 @@ public class DashboardTest {
         String sessionId = "test";
 
         // create a session with low expiry
-        StorageLayer.getDashboardStorage(process.getProcess())
+        ((DashboardSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .createNewDashboardUserSession(new AppIdentifier(null, null), user.userId, sessionId,
                         System.currentTimeMillis(), 0);
 

@@ -21,6 +21,7 @@ import io.supertokens.ProcessState.PROCESS_STATE;
 import io.supertokens.dashboard.Dashboard;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
+import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -177,7 +178,7 @@ public class UpdateUserAPITest {
 
         Dashboard.signUpDashboardUser(process.getProcess(), email, password);
 
-        DashboardUser user = StorageLayer.getDashboardStorage(process.getProcess())
+        DashboardUser user = ((DashboardSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .getDashboardUserByEmail(new AppIdentifier(null, null), email);
         assertNotNull(user);
 

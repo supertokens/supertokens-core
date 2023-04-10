@@ -22,6 +22,7 @@ import io.supertokens.dashboard.Dashboard;
 import io.supertokens.emailpassword.PasswordHashing;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.pluginInterface.dashboard.DashboardUser;
+import io.supertokens.pluginInterface.dashboard.sqlStorage.DashboardSQLStorage;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
@@ -110,7 +111,7 @@ public class SignInAPITest {
         DashboardUser user = new DashboardUser(io.supertokens.utils.Utils.getUUID(), email,
                 PasswordHashing.getInstance(process.getProcess()).createHashWithSalt(password),
                 System.currentTimeMillis());
-        StorageLayer.getDashboardStorage(process.getProcess())
+        ((DashboardSQLStorage) StorageLayer.getStorage(process.getProcess()))
                 .createNewDashboardUser(new AppIdentifier(null, null), user);
 
         // try signing in with the valid user
