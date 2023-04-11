@@ -70,9 +70,9 @@ public class Totp {
         return false;
     }
 
-    private static boolean isTotpEnabled(AppIdentifier appIdentifiere, Main main)
+    private static boolean isTotpEnabled(AppIdentifier appIdentifier, Main main)
             throws StorageQueryException, TenantOrAppNotFoundException {
-        EE_FEATURES[] features = FeatureFlag.getInstance(main, appIdentifiere).getEnabledFeatures();
+        EE_FEATURES[] features = FeatureFlag.getInstance(main, appIdentifier).getEnabledFeatures();
         for (EE_FEATURES f : features) {
             if (f == EE_FEATURES.TOTP) {
                 return true;
