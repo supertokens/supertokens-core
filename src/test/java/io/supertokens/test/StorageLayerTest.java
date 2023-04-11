@@ -8,6 +8,7 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.TOTPDevice;
 import io.supertokens.pluginInterface.totp.TOTPUsedCode;
 import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
@@ -48,6 +49,8 @@ public class StorageLayerTest {
                     return null;
                 } catch (TotpNotEnabledException | UsedCodeAlreadyExistsException e) {
                     throw new StorageTransactionLogicException(e);
+                } catch (TenantOrAppNotFoundException e) {
+                    throw new IllegalStateException(e);
                 }
             });
         } catch (StorageTransactionLogicException e) {

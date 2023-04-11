@@ -4,11 +4,17 @@ import java.io.IOException;
 
 import com.google.gson.JsonObject;
 
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
+import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.totp.Totp;
@@ -35,6 +41,7 @@ public class VerifyTotpAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is tenant specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
@@ -52,14 +59,24 @@ public class VerifyTotpAPI extends WebserverAPI {
         JsonObject result = new JsonObject();
 
         try {
-            // This step is required only because user_last_active table stores supertokens internal user id.
-            // While sending the usage stats we do a join, so totp tables also must use internal user id.
-            UserIdMapping userIdMapping = io.supertokens.useridmapping.UserIdMapping.getUserIdMapping(super.main, userId, UserIdType.ANY);
-            if (userIdMapping != null) {
-                userId = userIdMapping.superTokensUserId;
+            TenantIdentifierWithStorage tenantIdentifierWithStorage;
+            try {
+                // This step is required only because user_last_active table stores supertokens internal user id.
+                // While sending the usage stats we do a join, so totp tables also must use internal user id.
+
+                TenantIdentifierWithStorageAndUserIdMapping mappingAndStorage = getTenantIdentifierWithStorageAndUserIdMappingFromRequest(
+                        req, userId, UserIdType.ANY);
+
+                if (mappingAndStorage.userIdMapping != null) {
+                    userId = mappingAndStorage.userIdMapping.superTokensUserId;
+                }
+                tenantIdentifierWithStorage = mappingAndStorage.tenantIdentifierWithStorage;
+            } catch (UnknownUserIdException e) {
+                // if the user is not found, just use the storage of the tenant of interest
+                tenantIdentifierWithStorage = getTenantIdentifierWithStorageFromRequest(req);
             }
 
-            Totp.verifyCode(main, userId, totp, allowUnverifiedDevices);
+            Totp.verifyCode(tenantIdentifierWithStorage, main, userId, totp, allowUnverifiedDevices);
 
             result.addProperty("status", "OK");
             super.sendJsonResponse(200, result, resp);
@@ -73,7 +90,8 @@ public class VerifyTotpAPI extends WebserverAPI {
             result.addProperty("status", "LIMIT_REACHED_ERROR");
             result.addProperty("retryAfterMs", e.retryAfterMs);
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | FeatureNotEnabledException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | FeatureNotEnabledException |
+                 TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
     }
