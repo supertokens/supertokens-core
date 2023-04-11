@@ -37,6 +37,7 @@ public class RemoveTotpDeviceAPI extends WebserverAPI {
 
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        // API is app specific
         JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
         String userId = InputParser.parseStringOrThrowError(input, "userId", false);
