@@ -59,11 +59,11 @@ public class VerifyTotpDeviceAPI extends WebserverAPI {
         JsonObject result = new JsonObject();
 
         try {
-            // This step is required only because user_last_active table stores supertokens internal user id.
-            // While sending the usage stats we do a join, so totp tables also must use internal user id.
             TenantIdentifierWithStorage tenantIdentifierWithStorage;
             try {
-                // Try to find the appIdentifier with right storage based on the userId
+                // This step is required only because user_last_active table stores supertokens internal user id.
+                // While sending the usage stats we do a join, so totp tables also must use internal user id.
+
                 TenantIdentifierWithStorageAndUserIdMapping mappingAndStorage = getTenantIdentifierWithStorageAndUserIdMappingFromRequest(
                         req, userId, UserIdType.ANY);
 

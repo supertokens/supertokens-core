@@ -45,10 +45,11 @@ public class GetTotpDevicesAPI extends WebserverAPI {
         JsonObject result = new JsonObject();
 
         try {
-            // This step is required only because user_last_active table stores supertokens internal user id.
-            // While sending the usage stats we do a join, so totp tables also must use internal user id.
             AppIdentifierWithStorage appIdentifierWithStorage;
             try {
+                // This step is required only because user_last_active table stores supertokens internal user id.
+                // While sending the usage stats we do a join, so totp tables also must use internal user id.
+
                 // Try to find the appIdentifier with right storage based on the userId
                 AppIdentifierWithStorageAndUserIdMapping mappingAndStorage = getAppIdentifierWithStorageAndUserIdMappingFromRequest(
                         req, userId, UserIdType.ANY);
