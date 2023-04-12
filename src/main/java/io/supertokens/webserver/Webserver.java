@@ -200,6 +200,7 @@ public class Webserver extends ResourceDistributor.SingletonResource {
     private void setupRoutes() {
         addAPI(new NotFoundOrHelloAPI(main));
         addAPI(new HelloAPI(main));
+        addAPI(new JWKSPublicAPI(main));
         addAPI(new SessionAPI(main));
         addAPI(new VerifySessionAPI(main));
         addAPI(new RefreshSessionAPI(main));

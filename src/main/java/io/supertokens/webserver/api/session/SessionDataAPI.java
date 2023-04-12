@@ -18,12 +18,14 @@ package io.supertokens.webserver.api.session;
 
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.exceptions.AccessTokenPayloadError;
 import io.supertokens.exceptions.UnauthorisedException;
 import io.supertokens.output.Logging;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.session.Session;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -53,7 +55,8 @@ public class SessionDataAPI extends WebserverAPI {
         assert sessionHandle != null;
 
         try {
-            JsonObject userDataInDatabase = Session.getSessionData(this.getTenantIdentifierWithStorageFromRequest(req), sessionHandle);
+            JsonObject userDataInDatabase = Session.getSessionData(this.getTenantIdentifierWithStorageFromRequest(req),
+                    sessionHandle);
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -80,8 +83,15 @@ public class SessionDataAPI extends WebserverAPI {
         assert userDataInDatabase != null;
 
         try {
-            Session.updateSession(this.getTenantIdentifierWithStorageFromRequest(req), sessionHandle,
-                    userDataInDatabase, null, null);
+            // This is only here for consistency: the difference between the two versions is the handling of jwtData
+            // which is always null here
+            if (getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
+                Session.updateSession(this.getTenantIdentifierWithStorageFromRequest(req), sessionHandle,
+                        userDataInDatabase, null);
+            } else {
+                Session.updateSessionBeforeCDI2_21(this.getTenantIdentifierWithStorageFromRequest(req), sessionHandle,
+                        userDataInDatabase, null);
+            }
 
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
@@ -89,6 +99,8 @@ public class SessionDataAPI extends WebserverAPI {
 
         } catch (StorageQueryException | TenantOrAppNotFoundException e) {
             throw new ServletException(e);
+        } catch (AccessTokenPayloadError e) {
+            throw new ServletException(new BadRequestException(e.getMessage()));
         } catch (UnauthorisedException e) {
             Logging.debug(main, Utils.exceptionStacktraceToString(e));
             JsonObject reply = new JsonObject();

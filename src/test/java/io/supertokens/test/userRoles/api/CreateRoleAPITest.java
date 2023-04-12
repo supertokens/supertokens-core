@@ -27,6 +27,7 @@ import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,7 +67,7 @@ public class CreateRoleAPITest {
             // request body is empty
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/role",
-                        new JsonObject(), 1000, 1000, null, Utils.getCdiVersion2_14ForTests(), "userroles");
+                        new JsonObject(), 1000, 1000, null, SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -83,7 +84,7 @@ public class CreateRoleAPITest {
 
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/role",
-                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_14ForTests(), "userroles");
+                        requestBody, 1000, 1000, null, SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -99,7 +100,7 @@ public class CreateRoleAPITest {
 
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/role",
-                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_14ForTests(), "userroles");
+                        requestBody, 1000, 1000, null, SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -117,7 +118,7 @@ public class CreateRoleAPITest {
             requestBody.addProperty("role", 1);
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/role",
-                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_14ForTests(), "userroles");
+                        requestBody, 1000, 1000, null, SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -133,7 +134,7 @@ public class CreateRoleAPITest {
             requestBody.addProperty("role", "testRole");
             try {
                 HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "", "http://localhost:3567/recipe/role",
-                        requestBody, 1000, 1000, null, Utils.getCdiVersion2_14ForTests(), "userroles");
+                        requestBody, 1000, 1000, null, SemVer.v2_14.get(), "userroles");
                 throw new Exception("should not come here");
             } catch (HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals("Http error. Status Code: 400. Message:"
@@ -163,7 +164,7 @@ public class CreateRoleAPITest {
             requestBody.addProperty("role", role);
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "userroles");
+                    SemVer.v2_14.get(), "userroles");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("createdNewRole").getAsBoolean());
@@ -183,7 +184,7 @@ public class CreateRoleAPITest {
             requestBody.addProperty("role", role);
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "userroles");
+                    SemVer.v2_14.get(), "userroles");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertFalse(response.get("createdNewRole").getAsBoolean());
@@ -216,7 +217,7 @@ public class CreateRoleAPITest {
         String role = "testRole";
         requestBody.addProperty("role", role);
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null, Utils.getCdiVersion2_14ForTests(),
+                "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null, SemVer.v2_14.get(),
                 "userroles");
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
@@ -251,7 +252,7 @@ public class CreateRoleAPITest {
         requestBody.addProperty("role", role);
 
         JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null, Utils.getCdiVersion2_14ForTests(),
+                "http://localhost:3567/recipe/role", requestBody, 1000, 1000, null, SemVer.v2_14.get(),
                 "userroles");
 
         assertEquals(2, response.entrySet().size());

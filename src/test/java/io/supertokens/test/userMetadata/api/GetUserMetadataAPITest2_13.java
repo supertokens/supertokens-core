@@ -16,16 +16,10 @@
 
 package io.supertokens.test.userMetadata.api;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonNull;
 import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
 import io.supertokens.ProcessState;
-import io.supertokens.config.Config;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
-import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -33,6 +27,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.usermetadata.UserMetadata;
 
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -74,7 +69,7 @@ public class GetUserMetadataAPITest2_13 {
         QueryParams.put("userId", userId);
         JsonObject resp = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/metadata", QueryParams, 1000, 1000, null,
-                Utils.getCdiVersion2_13ForTests(), "usermetadata");
+                SemVer.v2_13.get(), "usermetadata");
 
         assertEquals(2, resp.entrySet().size());
         assertEquals("OK", resp.get("status").getAsString());
@@ -114,7 +109,7 @@ public class GetUserMetadataAPITest2_13 {
         QueryParams.put("userId", userId);
         JsonObject resp = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/metadata", QueryParams, 1000, 1000, null,
-                Utils.getCdiVersion2_13ForTests(), "usermetadata");
+                SemVer.v2_13.get(), "usermetadata");
 
         assertEquals(2, resp.entrySet().size());
         assertEquals("OK", resp.get("status").getAsString());
@@ -155,7 +150,7 @@ public class GetUserMetadataAPITest2_13 {
         QueryParams.put("userId", userId);
         JsonObject resp = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/metadata", QueryParams, 1000, 1000, null,
-                Utils.getCdiVersion2_13ForTests(), "usermetadata");
+                SemVer.v2_13.get(), "usermetadata");
 
         assertEquals(2, resp.entrySet().size());
         assertEquals("OK", resp.get("status").getAsString());
@@ -183,7 +178,7 @@ public class GetUserMetadataAPITest2_13 {
         HttpResponseException error = null;
         try {
             HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/user/metadata",
-                    QueryParams, 1000, 1000, null, Utils.getCdiVersion2_13ForTests(), "usermetadata");
+                    QueryParams, 1000, 1000, null, SemVer.v2_13.get(), "usermetadata");
         } catch (HttpResponseException ex) {
             error = ex;
         }

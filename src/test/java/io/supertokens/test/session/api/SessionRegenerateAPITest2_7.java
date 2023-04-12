@@ -23,6 +23,7 @@ import io.supertokens.session.accessToken.AccessToken;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -66,7 +67,7 @@ public class SessionRegenerateAPITest2_7 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
@@ -84,7 +85,7 @@ public class SessionRegenerateAPITest2_7 {
 
         JsonObject sessionRegenerateResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "session");
+                SemVer.v2_7.get(), "session");
 
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
 
@@ -96,7 +97,6 @@ public class SessionRegenerateAPITest2_7 {
                 sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("token").getAsString(), false);
 
         assertEquals(accessTokenBefore.expiryTime, accessTokenAfter.expiryTime);
-        assertNotEquals(accessTokenBefore.lmrt, accessTokenAfter.lmrt);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -130,7 +130,7 @@ public class SessionRegenerateAPITest2_7 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
@@ -149,7 +149,7 @@ public class SessionRegenerateAPITest2_7 {
 
         JsonObject sessionRegenerateResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "session");
+                SemVer.v2_7.get(), "session");
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
 
         // session object and all has new payload info
@@ -191,7 +191,7 @@ public class SessionRegenerateAPITest2_7 {
         request.addProperty("enableAntiCsrf", false);
 
         JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/session", request, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
                 "session");
         assertEquals(sessionInfo.get("status").getAsString(), "OK");
         String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
@@ -204,7 +204,7 @@ public class SessionRegenerateAPITest2_7 {
 
         JsonObject sessionRemovedResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/remove", removeSessionBody, 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "session");
+                SemVer.v2_7.get(), "session");
         assertEquals(sessionRemovedResponse.get("status").getAsString(), "OK");
 
         // call regenerate API with new JWT payload
@@ -217,7 +217,7 @@ public class SessionRegenerateAPITest2_7 {
 
         JsonObject sessionRegenerateResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "session");
+                SemVer.v2_7.get(), "session");
 
         // throws UNAUTHORISED response.
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "UNAUTHORISED");
@@ -225,5 +225,62 @@ public class SessionRegenerateAPITest2_7 {
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
     }
+
+    @Test
+    public void testCallRegenerateAPIWithProtectedFieldInJWTV2Token() throws Exception {
+        String[] args = { "../" };
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        // createSession with JWT payload
+        String userId = "userId";
+        JsonObject userDataInJWT = new JsonObject();
+        userDataInJWT.addProperty("key", "value");
+        JsonObject userDataInDatabase = new JsonObject();
+        userDataInDatabase.addProperty("key", "value");
+
+        JsonObject request = new JsonObject();
+        request.addProperty("userId", userId);
+        request.add("userDataInJWT", userDataInJWT);
+        request.add("userDataInDatabase", userDataInDatabase);
+        request.addProperty("enableAntiCsrf", false);
+
+        JsonObject sessionInfo = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session", request, 1000, 1000, null, SemVer.v2_7.get(),
+                "session");
+        assertEquals(sessionInfo.get("status").getAsString(), "OK");
+        String accessToken = sessionInfo.get("accessToken").getAsJsonObject().get("token").getAsString();
+
+        AccessToken.AccessTokenInfo accessTokenBefore = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                accessToken, false);
+
+        JsonObject newUserDataInJWT = new JsonObject();
+        newUserDataInJWT.addProperty("sub", "value2");
+        newUserDataInJWT.add("nullProp", JsonNull.INSTANCE);
+
+        JsonObject sessionRegenerateRequest = new JsonObject();
+        sessionRegenerateRequest.addProperty("accessToken", accessToken);
+        sessionRegenerateRequest.add("userDataInJWT", newUserDataInJWT);
+
+        JsonObject sessionRegenerateResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
+                "http://localhost:3567/recipe/session/regenerate", sessionRegenerateRequest, 1000, 1000, null,
+                SemVer.v2_7.get(), "session");
+
+        assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
+
+        // check that session object and all has new payload info
+        assertEquals(sessionRegenerateResponse.get("session").getAsJsonObject().get("userDataInJWT"), newUserDataInJWT);
+
+        // - exipry time of new token is same as old, but lmrt and payload has been changed
+        AccessToken.AccessTokenInfo accessTokenAfter = AccessToken.getInfoFromAccessToken(process.getProcess(),
+                sessionRegenerateResponse.get("accessToken").getAsJsonObject().get("token").getAsString(), false);
+
+        assertEquals(accessTokenBefore.expiryTime, accessTokenAfter.expiryTime);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
 
 }

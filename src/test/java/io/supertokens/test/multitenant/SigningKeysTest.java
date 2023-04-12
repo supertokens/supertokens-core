@@ -19,12 +19,11 @@ package io.supertokens.test.multitenant;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.ProcessState;
-import io.supertokens.config.Config;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlagTestContent;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.Multitenancy;
-import io.supertokens.multitenancy.MultitenancyHelper;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
 import io.supertokens.multitenancy.exception.DeletionInProgressException;
@@ -34,7 +33,8 @@ import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
@@ -68,7 +68,7 @@ public class SigningKeysTest {
     @Test
     public void normalConfigContinuesToWork()
             throws InterruptedException, IOException, StorageQueryException, StorageTransactionLogicException,
-            TenantOrAppNotFoundException {
+            TenantOrAppNotFoundException, UnsupportedJWTSigningAlgorithmException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -80,8 +80,8 @@ public class SigningKeysTest {
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.LOADING_ALL_TENANT_CONFIG));
 
         assertEquals(
-                AccessTokenSigningKey.getInstance(new AppIdentifier(null, null), process.main).getAllKeys()
-                        .size(), 1);
+                SigningKeys.getInstance(new AppIdentifier(null, null), process.main).getAllKeys()
+                        .size(), 2);
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -92,7 +92,7 @@ public class SigningKeysTest {
             throws InterruptedException, IOException, StorageQueryException, StorageTransactionLogicException,
             InvalidConfigException, DbInitException, TenantOrAppNotFoundException, InvalidProviderConfigException,
             DeletionInProgressException, FeatureNotEnabledException, CannotModifyBaseConfigException,
-            BadPermissionException {
+            BadPermissionException, UnsupportedJWTSigningAlgorithmException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -113,7 +113,8 @@ public class SigningKeysTest {
                         tenantConfig)};
 
         for (TenantConfig config : tenants) {
-            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null), config);
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
+                    config);
         }
 
         List<AppIdentifier> apps = new ArrayList<>();
@@ -123,17 +124,17 @@ public class SigningKeysTest {
         AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps);
 
         assertEquals(
-                AccessTokenSigningKey.getInstance(new AppIdentifier(null, null), process.main).getAllKeys()
+                SigningKeys.getInstance(new AppIdentifier(null, null), process.main).getDynamicKeys()
                         .size(), 1);
         assertEquals(
-                AccessTokenSigningKey.getInstance(new AppIdentifier("c1", null), process.main).getAllKeys()
+                SigningKeys.getInstance(new AppIdentifier("c1", null), process.main).getDynamicKeys()
                         .size(), 1);
-        AccessTokenSigningKey.KeyInfo baseTenant = AccessTokenSigningKey.getInstance(
+        SigningKeys.KeyInfo baseTenant = SigningKeys.getInstance(
                         new AppIdentifier(null, null), process.main)
-                .getAllKeys().get(0);
-        AccessTokenSigningKey.KeyInfo c1Tenant = AccessTokenSigningKey.getInstance(
+                .getDynamicKeys().get(0);
+        SigningKeys.KeyInfo c1Tenant = SigningKeys.getInstance(
                         new AppIdentifier("c1", null), process.main)
-                .getAllKeys().get(0);
+                .getDynamicKeys().get(0);
 
         assertNotEquals(baseTenant.createdAtTime, c1Tenant.createdAtTime);
         assertNotEquals(baseTenant.expiryTime, c1Tenant.expiryTime);
@@ -149,7 +150,7 @@ public class SigningKeysTest {
             throws InterruptedException, IOException, InvalidConfigException, DbInitException, StorageQueryException,
             StorageTransactionLogicException, TenantOrAppNotFoundException, InvalidProviderConfigException,
             DeletionInProgressException, FeatureNotEnabledException, CannotModifyBaseConfigException,
-            BadPermissionException {
+            BadPermissionException, UnsupportedJWTSigningAlgorithmException {
         String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
@@ -178,7 +179,8 @@ public class SigningKeysTest {
                         tenantConfig2)};
 
         for (TenantConfig config : tenants) {
-            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null), config);
+            Multitenancy.addNewOrUpdateAppOrTenant(process.getProcess(), new TenantIdentifier(null, null, null),
+                    config);
         }
 
         List<AppIdentifier> apps = new ArrayList<>();
@@ -188,23 +190,23 @@ public class SigningKeysTest {
         AccessTokenSigningKey.loadForAllTenants(process.getProcess(), apps);
 
         assertEquals(
-                AccessTokenSigningKey.getInstance(new AppIdentifier(null, null), process.main).getAllKeys()
+                SigningKeys.getInstance(new AppIdentifier(null, null), process.main).getDynamicKeys()
                         .size(), 1);
         assertEquals(
-                AccessTokenSigningKey.getInstance(new AppIdentifier("c1", null), process.main).getAllKeys()
+                SigningKeys.getInstance(new AppIdentifier("c1", null), process.main).getDynamicKeys()
                         .size(), 1);
-        AccessTokenSigningKey.KeyInfo baseTenant = AccessTokenSigningKey.getInstance(
+        SigningKeys.KeyInfo baseTenant = SigningKeys.getInstance(
                         new AppIdentifier(null, null), process.main)
-                .getAllKeys().get(0);
-        AccessTokenSigningKey.KeyInfo c1Tenant = AccessTokenSigningKey.getInstance(
+                .getDynamicKeys().get(0);
+        SigningKeys.KeyInfo c1Tenant = SigningKeys.getInstance(
                         new AppIdentifier("c1", null), process.main)
-                .getAllKeys().get(0);
-        AccessTokenSigningKey.KeyInfo c2Tenant = AccessTokenSigningKey.getInstance(
+                .getDynamicKeys().get(0);
+        SigningKeys.KeyInfo c2Tenant = SigningKeys.getInstance(
                         new AppIdentifier("c2", null), process.main)
-                .getAllKeys().get(0);
-        AccessTokenSigningKey.KeyInfo c3Tenant = AccessTokenSigningKey.getInstance(
+                .getDynamicKeys().get(0);
+        SigningKeys.KeyInfo c3Tenant = SigningKeys.getInstance(
                         new AppIdentifier("c3", null), process.main)
-                .getAllKeys().get(0);
+                .getDynamicKeys().get(0);
 
         assertNotEquals(baseTenant.createdAtTime, c1Tenant.createdAtTime);
         assertNotEquals(baseTenant.expiryTime, c1Tenant.expiryTime);

@@ -16,17 +16,15 @@
 
 package io.supertokens.webserver.api.session;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.config.Config;
+import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.pluginInterface.RECIPE_ID;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.exceptions.StorageTransactionLogicException;
-import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
-import io.supertokens.session.accessToken.AccessTokenSigningKey.KeyInfo;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -34,8 +32,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
-import java.util.List;
 
+@Deprecated
 public class HandshakeAPI extends WebserverAPI {
     private static final long serialVersionUID = -3647598432179106404L;
 
@@ -51,35 +49,28 @@ public class HandshakeAPI extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is tenant specific
+        if (super.getVersionFromRequest(req).greaterThanOrEqualTo(SemVer.v2_21)) {
+            super.sendTextResponse(404, "Not found", resp);
+            return;
+        }
         try {
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
 
-            TenantIdentifier tenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
-
-            result.addProperty("jwtSigningPublicKey",
-                    new Utils.PubPriKey(
-                            AccessTokenSigningKey.getInstance(tenantIdentifier.toAppIdentifier(),
-                                    main).getLatestIssuedKey().value).publicKey);
-            result.addProperty("jwtSigningPublicKeyExpiryTime",
-                    AccessTokenSigningKey.getInstance(tenantIdentifier.toAppIdentifier(), main)
-                            .getKeyExpiryTime());
-
-            if (!super.getVersionFromRequest(req).equals("2.7") && !super.getVersionFromRequest(req).equals("2.8")) {
-                List<KeyInfo> keys = AccessTokenSigningKey.getInstance(tenantIdentifier.toAppIdentifier(), main)
-                        .getAllKeys();
-                JsonArray jwtSigningPublicKeyListJSON = Utils.keyListToJson(keys);
-                result.add("jwtSigningPublicKeyList", jwtSigningPublicKeyListJSON);
-            }
+            Utils.addLegacySigningKeyInfos(this.getAppIdentifierWithStorage(req), main, result,
+                    super.getVersionFromRequest(req).betweenInclusive(SemVer.v2_9, SemVer.v2_21));
 
             result.addProperty("accessTokenBlacklistingEnabled",
-                    Config.getConfig(tenantIdentifier, main).getAccessTokenBlacklisting());
+                    Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
+                            .getAccessTokenBlacklisting());
             result.addProperty("accessTokenValidity",
-                    Config.getConfig(tenantIdentifier, main).getAccessTokenValidity());
+                    Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
+                            .getAccessTokenValidity());
             result.addProperty("refreshTokenValidity",
-                    Config.getConfig(tenantIdentifier, main).getRefreshTokenValidity());
+                    Config.getConfig(this.getTenantIdentifierWithStorageFromRequest(req), main)
+                            .getRefreshTokenValidity());
             super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | StorageTransactionLogicException | TenantOrAppNotFoundException | UnsupportedJWTSigningAlgorithmException e) {
             throw new ServletException(e);
         }
     }

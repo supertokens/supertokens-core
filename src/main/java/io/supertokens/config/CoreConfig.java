@@ -16,6 +16,7 @@
 
 package io.supertokens.config;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.gson.JsonObject;
@@ -73,8 +74,9 @@ public class CoreConfig {
     @JsonProperty
     private boolean access_token_signing_key_dynamic = true;
 
-    @JsonProperty
-    private double access_token_signing_key_update_interval = 168; // in hours
+    @JsonProperty("access_token_dynamic_signing_key_update_interval")
+    @JsonAlias({"access_token_dynamic_signing_key_update_interval", "access_token_signing_key_update_interval"})
+    private double access_token_dynamic_signing_key_update_interval = 168; // in hours
 
     @JsonProperty
     private int port = 3567;
@@ -201,11 +203,9 @@ public class CoreConfig {
     }
 
     public int getArgon2HashingPoolSize() {
-        // the reason we do Math.max below is that if the password hashing algo is
-        // bcrypt,
+        // the reason we do Math.max below is that if the password hashing algo is bcrypt,
         // then we don't check the argon2 hashing pool size config at all. In this case,
-        // if the user gives a <= 0 number, it crashes the core (since it creates a
-        // blockedqueue in PaswordHashing
+        // if the user gives a <= 0 number, it crashes the core (since it creates a blockedqueue in PaswordHashing
         // .java with length <= 0). So we do a Math.max
         return Math.max(1, argon2_hashing_pool_size);
     }
@@ -319,9 +319,8 @@ public class CoreConfig {
         return access_token_signing_key_dynamic;
     }
 
-    public long getAccessTokenSigningKeyUpdateInterval() {
-        return access_token_signing_key_dynamic ? (long) (access_token_signing_key_update_interval * 3600 * 1000)
-                : (10L * 365 * 24 * 3600 * 1000);
+    public long getAccessTokenDynamicSigningKeyUpdateInterval() {
+        return (long) (access_token_dynamic_signing_key_update_interval * 3600 * 1000);
     }
 
     public String[] getAPIKeys() {
@@ -384,9 +383,9 @@ public class CoreConfig {
         }
 
         if (!Main.isTesting || validityTesting) { // since in testing we make this really small
-            if (access_token_signing_key_update_interval < 1) {
+            if (access_token_dynamic_signing_key_update_interval < 1) {
                 throw new InvalidConfigException(
-                        "'access_token_signing_key_update_interval' must be greater than, equal to 1 hour. The "
+                        "'access_token_dynamic_signing_key_update_interval' must be greater than, equal to 1 hour. The "
                                 + "config file can be found here: " + getConfigFileLocation(main));
             }
         }
@@ -569,9 +568,11 @@ public class CoreConfig {
 
         // we do not allow different values for this across tenants in the same app cause the keys are shared
         // across all tenants
-        if (other.getAccessTokenSigningKeyUpdateInterval() != this.getAccessTokenSigningKeyUpdateInterval()) {
+        if (other.getAccessTokenDynamicSigningKeyUpdateInterval() !=
+                this.getAccessTokenDynamicSigningKeyUpdateInterval()) {
             throw new InvalidConfigException(
-                    "You cannot set different values for access_token_signing_key_update_interval for the same appId");
+                    "You cannot set different values for access_token_dynamic_signing_key_update_interval for the " +
+                            "same appId");
         }
 
         if (other.getAccessTokenValidity() != this.getAccessTokenValidity()) {

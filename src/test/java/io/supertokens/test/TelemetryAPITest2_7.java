@@ -19,6 +19,7 @@ package io.supertokens.test;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import io.supertokens.version.Version;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -60,7 +61,7 @@ public class TelemetryAPITest2_7 {
         }
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/telemetry", new HashMap<>(), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/telemetry", new HashMap<>(), 1000, 1000, null, SemVer.v2_7.get(),
                 "");
         assertFalse(response.get("exists").getAsBoolean());
 
@@ -80,7 +81,7 @@ public class TelemetryAPITest2_7 {
         }
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/telemetry", new HashMap<>(), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/telemetry", new HashMap<>(), 1000, 1000, null, SemVer.v2_7.get(),
                 "");
         assertTrue(response.get("exists").getAsBoolean());
         assertNotNull(response.get("telemetryId"));
@@ -102,7 +103,7 @@ public class TelemetryAPITest2_7 {
         }
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/telemetry", new HashMap<>(), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/telemetry", new HashMap<>(), 1000, 1000, null, SemVer.v2_7.get(),
                 "");
         assertFalse(response.get("exists").getAsBoolean());
 
@@ -123,7 +124,7 @@ public class TelemetryAPITest2_7 {
         }
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                "http://localhost:3567/telemetry", new HashMap<>(), 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/telemetry", new HashMap<>(), 1000, 1000, null, SemVer.v2_7.get(),
                 "");
         assertTrue(response.get("exists").getAsBoolean());
         assertNotNull(response.get("telemetryId"));

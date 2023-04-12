@@ -123,9 +123,6 @@ public class UserAPI extends WebserverAPI {
                 JsonObject result = new JsonObject();
                 result.addProperty("status", "OK");
                 JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
-                if (super.getVersionFromRequest(req).equals("2.4")) {
-                    userJson.remove("timeJoined");
-                }
                 result.add("user", userJson);
                 super.sendJsonResponse(200, result, resp);
             }

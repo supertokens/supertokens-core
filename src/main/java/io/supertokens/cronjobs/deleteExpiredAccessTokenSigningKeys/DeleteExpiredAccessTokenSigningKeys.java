@@ -17,13 +17,12 @@
 package io.supertokens.cronjobs.deleteExpiredAccessTokenSigningKeys;
 
 import io.supertokens.Main;
-import io.supertokens.config.Config;
 import io.supertokens.cronjobs.CronTask;
 import io.supertokens.cronjobs.CronTaskTest;
 import io.supertokens.pluginInterface.multitenancy.AppIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
 import org.jetbrains.annotations.TestOnly;
 
 import java.util.List;
@@ -55,10 +54,7 @@ public class DeleteExpiredAccessTokenSigningKeys extends CronTask {
 
     @Override
     protected void doTaskPerApp(AppIdentifier app) throws Exception {
-        if (Config.getConfig(app.getAsPublicTenantIdentifier(), main)
-                .getAccessTokenSigningKeyDynamic()) {
-            AccessTokenSigningKey.getInstance(app, main).cleanExpiredAccessTokenSigningKeys();
-        }
+        AccessTokenSigningKey.getInstance(app, main).cleanExpiredAccessTokenSigningKeys();
     }
 
     @Override

@@ -307,8 +307,8 @@ public class InMemoryDBStorageTest {
 
     @Test
     public void multipleParallelTransactionTest() throws InterruptedException, IOException {
-        String[] args = {"../"};
-        Utils.setValueInConfig("access_token_signing_key_update_interval", "0.00005");
+        String[] args = { "../" };
+        Utils.setValueInConfig("access_token_dynamic_signing_key_update_interval", "0.00005");
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
         process.getProcess().setForceInMemoryDB();
         process.startProcess();

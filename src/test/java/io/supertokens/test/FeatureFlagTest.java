@@ -122,7 +122,7 @@ public class FeatureFlagTest {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/ee/featureflag",
-                null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+                null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
         Assert.assertEquals("OK", response.get("status").getAsString());
         Assert.assertNotNull(response.get("features"));
         Assert.assertEquals(0, response.get("features").getAsJsonArray().size());
@@ -151,7 +151,7 @@ public class FeatureFlagTest {
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/ee/featureflag",
-                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
             Assert.assertEquals("OK", response.get("status").getAsString());
 
             JsonArray features = response.get("features").getAsJsonArray();
@@ -197,7 +197,7 @@ public class FeatureFlagTest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
         assert res.get("status").getAsString().equals("OK");
 
@@ -205,7 +205,7 @@ public class FeatureFlagTest {
         {
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/ee/featureflag",
-                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion(), "");
+                    null, 1000, 1000, null, WebserverAPI.getLatestCDIVersion().get(), "");
             Assert.assertEquals("OK", response.get("status").getAsString());
 
             JsonArray features = response.get("features").getAsJsonArray();

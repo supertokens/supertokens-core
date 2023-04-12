@@ -53,6 +53,20 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
     }
 
     @Test
+    public void intervalTimeSecondsCleanExpiredAccessTokenSigningKeysTest() throws Exception {
+        String[] args = {"../"};
+
+        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
+
+        assertEquals(DeleteExpiredAccessTokenSigningKeys.getInstance(process.getProcess()).getIntervalTimeSeconds(),
+                86400);
+
+        process.kill();
+        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
+    }
+
+    @Test
     public void jobCleansOldKeysTest() throws Exception {
         String[] args = {"../"};
 
@@ -69,7 +83,8 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
             return;
         }
         long accessTokenValidity = Config.getConfig(process.getProcess()).getAccessTokenValidity();
-        long signingKeyUpdateInterval = Config.getConfig(process.getProcess()).getAccessTokenSigningKeyUpdateInterval();
+        long signingKeyUpdateInterval = Config.getConfig(process.getProcess())
+                .getAccessTokenDynamicSigningKeyUpdateInterval();
 
         SessionSQLStorage sqlStorage = (SessionSQLStorage) sessionStorage;
         sqlStorage.startTransaction(con -> {
@@ -103,63 +118,6 @@ public class DeleteExpiredAccessTokenSigningKeysTest {
             for (KeyValueInfo key : keys) {
                 assertEquals("keep!", key.value);
             }
-            return true;
-        });
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
-    public void jobKeepsOldKeysIfNotDynamicTest() throws Exception {
-        String[] args = {"../"};
-
-        Utils.setValueInConfig("access_token_signing_key_dynamic", "false");
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
-        CronTaskTest.getInstance(process.getProcess())
-                .setIntervalInSeconds(DeleteExpiredAccessTokenSigningKeys.RESOURCE_KEY, 1);
-        process.startProcess();
-
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        SessionStorage sessionStorage = (SessionStorage) StorageLayer.getStorage(process.getProcess());
-
-        if (sessionStorage.getType() != STORAGE_TYPE.SQL) {
-            return;
-        }
-        long accessTokenValidity = Config.getConfig(process.getProcess()).getAccessTokenValidity();
-        long signingKeyUpdateInterval = Config.getConfig(process.getProcess()).getAccessTokenSigningKeyUpdateInterval();
-
-        SessionSQLStorage sqlStorage = (SessionSQLStorage) sessionStorage;
-        sqlStorage.startTransaction(con -> {
-            try {
-                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
-                        new KeyValueInfo("clean!", 100));
-                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
-                        new KeyValueInfo("clean!",
-                                System.currentTimeMillis() - signingKeyUpdateInterval - 3 * accessTokenValidity));
-                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
-                        new KeyValueInfo("clean!",
-                                System.currentTimeMillis() - signingKeyUpdateInterval - 2 * accessTokenValidity));
-                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
-                        new KeyValueInfo("keep!",
-                                System.currentTimeMillis() - signingKeyUpdateInterval - 1 * accessTokenValidity));
-                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
-                        new KeyValueInfo("keep!", System.currentTimeMillis() - signingKeyUpdateInterval));
-                sqlStorage.addAccessTokenSigningKey_Transaction(new AppIdentifier(null, null), con,
-                        new KeyValueInfo("keep!", System.currentTimeMillis()));
-            } catch (TenantOrAppNotFoundException e) {
-                throw new IllegalStateException(e);
-            }
-            return true;
-        });
-
-        Thread.sleep(1500);
-
-        sqlStorage.startTransaction(con -> {
-            KeyValueInfo[] keys = sqlStorage.getAccessTokenSigningKeys_Transaction(new AppIdentifier(null, null), con);
-            assertEquals(keys.length, 6);
             return true;
         });
 

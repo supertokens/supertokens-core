@@ -30,6 +30,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -92,7 +93,7 @@ public class EmailPasswordAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signin", signUpRequestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+                    SemVer.v2_15.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalUserId, response.get("user").getAsJsonObject().get("id").getAsString());
         }
@@ -139,7 +140,7 @@ public class EmailPasswordAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/password/reset/token", passwordResetTokenBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+                    SemVer.v2_15.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
 
             passwordResetToken = response.get("token").getAsString();
@@ -155,7 +156,7 @@ public class EmailPasswordAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+                    SemVer.v2_15.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalUserId, response.get("userId").getAsString());
         }
@@ -195,7 +196,7 @@ public class EmailPasswordAPITest {
             queryParam.put("userId", externalUserId);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", queryParam, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+                    SemVer.v2_15.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalUserId, response.get("user").getAsJsonObject().get("id").getAsString());
         }
@@ -206,7 +207,7 @@ public class EmailPasswordAPITest {
             queryParam.put("email", email);
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", queryParam, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+                    SemVer.v2_15.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
             assertEquals(externalUserId, response.get("user").getAsJsonObject().get("id").getAsString());
         }
@@ -244,7 +245,7 @@ public class EmailPasswordAPITest {
 
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_15ForTests(), "emailpassword");
+                    SemVer.v2_15.get(), "emailpassword");
             assertEquals("OK", response.get("status").getAsString());
         }
 

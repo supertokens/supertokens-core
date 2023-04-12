@@ -25,6 +25,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 import org.apache.tomcat.util.http.fileupload.FileUtils;
 import org.junit.rules.TestRule;
@@ -74,56 +75,8 @@ public abstract class Utils extends Mockito {
         }
     }
 
-    public static String getCdiVersion2_7ForTests() {
-        return "2.7";
-    }
-
-    public static String getCdiVersion2_8ForTests() {
-        return "2.8";
-    }
-
-    public static String getCdiVersion2_9ForTests() {
-        return "2.9";
-    }
-
-    public static String getCdiVersion2_10ForTests() {
-        return "2.10";
-    }
-
-    public static String getCdiVersion2_11ForTests() {
-        return "2.11";
-    }
-
-    public static String getCdiVersion2_12ForTests() {
-        return "2.12";
-    }
-
-    public static String getCdiVersion2_13ForTests() {
-        return "2.13";
-    }
-
-    public static String getCdiVersion2_14ForTests() {
-        return "2.14";
-    }
-
-    public static String getCdiVersion2_15ForTests() {
-        return "2.15";
-    }
-
-    public static String getCdiVersion2_16ForTests() {
-        return "2.16";
-    }
-
-    public static String getCdiVersion2_17ForTests() {
-        return "2.17";
-    }
-
-    public static String getCdiVersion2_18ForTests() {
-        return "2.18";
-    }
-
-    public static String getCdiVersionLatestForTests() {
-        return WebserverAPI.getLatestCDIVersion();
+    public static String getCdiVersionStringLatestForTests() {
+        return WebserverAPI.getLatestCDIVersion().get();
     }
 
     public static void reset() {
@@ -224,7 +177,7 @@ public abstract class Utils extends Mockito {
         signUpRequestBody.addProperty("password", password);
 
         return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signup", signUpRequestBody, 1000, 1000, null, getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/signup", signUpRequestBody, 1000, 1000, null, SemVer.v2_7.get(),
                 "emailpassword");
     }
 
@@ -236,7 +189,7 @@ public abstract class Utils extends Mockito {
         signUpRequestBody.addProperty("password", password);
 
         return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signup", signUpRequestBody, 1000, 1000, null, getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/signup", signUpRequestBody, 1000, 1000, null, SemVer.v2_7.get(),
                 "emailpassword");
     }
 
@@ -255,7 +208,7 @@ public abstract class Utils extends Mockito {
 
         return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000, 1000, null,
-                getCdiVersion2_7ForTests(), "thirdparty");
+                SemVer.v2_7.get(), "thirdparty");
     }
 
     public static JsonObject signInUpRequest_2_8(TestingProcessManager.TestingProcess process, String email,
@@ -272,7 +225,7 @@ public abstract class Utils extends Mockito {
 
         return HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signinup", signUpRequestBody, 1000, 1000, null,
-                getCdiVersion2_8ForTests(), "thirdparty");
+                SemVer.v2_8.get(), "thirdparty");
     }
 
     public static void checkThatArraysAreEqual(String[] arr1, String[] arr2) {

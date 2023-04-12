@@ -151,7 +151,8 @@ public class MultitenantAPITest {
         t3 = new TenantIdentifier(null, "a1", "t2");
     }
 
-    private JsonObject createSession(TenantIdentifier tenantIdentifier, String userId, JsonObject userDataInJWT, JsonObject userDataInDatabase)
+    private JsonObject createSession(TenantIdentifier tenantIdentifier, String userId, JsonObject userDataInJWT,
+                                     JsonObject userDataInDatabase)
             throws HttpResponseException, IOException {
         JsonObject request = new JsonObject();
         request.addProperty("userId", userId);
@@ -161,7 +162,7 @@ public class MultitenantAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session"), request,
-                1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
                 "session");
 
         return response;
@@ -173,7 +174,7 @@ public class MultitenantAPITest {
         map.put("sessionHandle", sessionHandle);
         JsonObject sessionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session"),
-                map, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                map, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
                 "session");
 
         assertEquals("OK", sessionResponse.getAsJsonPrimitive("status").getAsString());
@@ -186,7 +187,7 @@ public class MultitenantAPITest {
         map.put("sessionHandle", sessionHandle);
         JsonObject sessionResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session"),
-                map, 1000, 1000, null, Utils.getCdiVersionLatestForTests(),
+                map, 1000, 1000, null, Utils.getCdiVersionStringLatestForTests(),
                 "session");
 
         assertEquals("UNAUTHORISED", sessionResponse.getAsJsonPrimitive("status").getAsString());
@@ -201,7 +202,7 @@ public class MultitenantAPITest {
         JsonObject sessionRegenerateResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session/regenerate"),
                 sessionRegenerateRequest, 1000, 1000, null,
-                Utils.getCdiVersionLatestForTests(), "session");
+                Utils.getCdiVersionStringLatestForTests(), "session");
 
         assertEquals(sessionRegenerateResponse.get("status").getAsString(), "OK");
     }
@@ -212,10 +213,11 @@ public class MultitenantAPITest {
         request.addProperty("accessToken", accessToken);
         request.addProperty("doAntiCsrfCheck", true);
         request.addProperty("enableAntiCsrf", false);
+        request.addProperty("checkDatabase", false);
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session/verify"), request,
                 1000, 1000, null,
-                Utils.getCdiVersionLatestForTests(), "session");
+                Utils.getCdiVersionStringLatestForTests(), "session");
         return response;
     }
 
@@ -229,7 +231,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/session/refresh"),
                 sessionRefreshBody, 1000, 1000, null,
-                Utils.getCdiVersionLatestForTests(), "session");
+                Utils.getCdiVersionStringLatestForTests(), "session");
         return response;
     }
 
@@ -250,9 +252,12 @@ public class MultitenantAPITest {
         JsonObject user3DataInDb = new JsonObject();
         user1DataInJWT.addProperty("bar", "val3");
 
-        JsonObject session1 = createSession(t1, "userid", user1DataInJWT, user1DataInDb).get("session").getAsJsonObject();
-        JsonObject session2 = createSession(t2, "userid", user2DataInJWT, user2DataInDb).get("session").getAsJsonObject();
-        JsonObject session3 = createSession(t3, "userid", user3DataInJWT, user3DataInDb).get("session").getAsJsonObject();
+        JsonObject session1 = createSession(t1, "userid", user1DataInJWT, user1DataInDb).get("session")
+                .getAsJsonObject();
+        JsonObject session2 = createSession(t2, "userid", user2DataInJWT, user2DataInDb).get("session")
+                .getAsJsonObject();
+        JsonObject session3 = createSession(t3, "userid", user3DataInJWT, user3DataInDb).get("session")
+                .getAsJsonObject();
 
         {
             JsonObject getSession = getSession(t1, session1.get("handle").getAsString());
@@ -293,7 +298,8 @@ public class MultitenantAPITest {
                 JsonObject userDataInDb = new JsonObject();
                 userDataInJWT.addProperty("bar", "val1");
 
-                JsonObject session = createSession(tenant1, "userid", userDataInJWT, userDataInDb).get("session").getAsJsonObject();
+                JsonObject session = createSession(tenant1, "userid", userDataInJWT, userDataInDb).get("session")
+                        .getAsJsonObject();
                 getSessionUnauthorised(tenant2, session.get("handle").getAsString());
             }
         }
@@ -313,9 +319,11 @@ public class MultitenantAPITest {
                 JsonObject session = createSession(tenant1, "userid", userDataInJWT, userDataInDb);
                 userDataInJWT.addProperty("hello", "world");
 
-                regenerateSession(tenant2, session.get("accessToken").getAsJsonObject().get("token").getAsString(), userDataInJWT);
+                regenerateSession(tenant2, session.get("accessToken").getAsJsonObject().get("token").getAsString(),
+                        userDataInJWT);
 
-                JsonObject getSession = getSession(tenant1, session.get("session").getAsJsonObject().get("handle").getAsString());
+                JsonObject getSession = getSession(tenant1,
+                        session.get("session").getAsJsonObject().get("handle").getAsString());
                 assertEquals(userDataInJWT, getSession.get("userDataInJWT"));
             }
         }
@@ -335,7 +343,8 @@ public class MultitenantAPITest {
                 JsonObject session = createSession(tenant1, "userid", userDataInJWT, userDataInDb);
                 userDataInJWT.addProperty("hello", "world");
 
-                JsonObject sessionResponse = verifySession(tenant2, session.get("accessToken").getAsJsonObject().get("token").getAsString());
+                JsonObject sessionResponse = verifySession(tenant2,
+                        session.get("accessToken").getAsJsonObject().get("token").getAsString());
                 assertEquals(session.get("session"), sessionResponse.get("session"));
             }
         }
@@ -349,7 +358,8 @@ public class MultitenantAPITest {
         userDataInJWT.addProperty("bar", "val1");
 
         JsonObject session = createSession(t1, "userid", userDataInJWT, userDataInDb);
-        JsonObject sessionResponse = verifySession(new TenantIdentifier(null, null, null), session.get("accessToken").getAsJsonObject().get("token").getAsString());
+        JsonObject sessionResponse = verifySession(new TenantIdentifier(null, null, null),
+                session.get("accessToken").getAsJsonObject().get("token").getAsString());
         assertEquals("TRY_REFRESH_TOKEN", sessionResponse.get("status").getAsString());
     }
 
@@ -361,7 +371,8 @@ public class MultitenantAPITest {
         userDataInJWT.addProperty("bar", "val1");
 
         JsonObject session = createSession(t1, "userid", userDataInJWT, userDataInDb);
-        JsonObject sessionResponse = refreshSession(new TenantIdentifier(null, null, null), session.get("refreshToken").getAsJsonObject().get("token").getAsString());
+        JsonObject sessionResponse = refreshSession(new TenantIdentifier(null, null, null),
+                session.get("refreshToken").getAsJsonObject().get("token").getAsString());
         assertEquals("UNAUTHORISED", sessionResponse.get("status").getAsString());
     }
 }
