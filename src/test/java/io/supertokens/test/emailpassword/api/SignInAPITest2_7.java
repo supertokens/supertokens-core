@@ -25,6 +25,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -75,7 +76,7 @@ public class SignInAPITest2_7 {
         {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                        "http://localhost:3567/recipe/signin", null, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                        "http://localhost:3567/recipe/signin", null, 1000, 1000, null, SemVer.v2_7.get(),
                         "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
@@ -90,7 +91,7 @@ public class SignInAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signin", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                        SemVer.v2_7.get(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -103,7 +104,7 @@ public class SignInAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signin", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                        SemVer.v2_7.get(), "emailpassword");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage().equals(
@@ -144,7 +145,7 @@ public class SignInAPITest2_7 {
         long beforeSignIn = System.currentTimeMillis();
 
         JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, SemVer.v2_7.get(),
                 "emailpassword");
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");
@@ -188,7 +189,7 @@ public class SignInAPITest2_7 {
         responseBody.addProperty("password", "validPass123");
 
         JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, Utils.getCdiVersion2_7ForTests(),
+                "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null, SemVer.v2_7.get(),
                 "emailpassword");
 
         assertEquals(signInResponse.get("status").getAsString(), "OK");
@@ -225,7 +226,7 @@ public class SignInAPITest2_7 {
 
             JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                    SemVer.v2_7.get(), "emailpassword");
 
             assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
             assertEquals(signInResponse.entrySet().size(), 1);
@@ -238,7 +239,7 @@ public class SignInAPITest2_7 {
 
             JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                    SemVer.v2_7.get(), "emailpassword");
 
             assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
             assertEquals(signInResponse.entrySet().size(), 1);
@@ -251,7 +252,7 @@ public class SignInAPITest2_7 {
 
             JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                    SemVer.v2_7.get(), "emailpassword");
 
             assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
             assertEquals(signInResponse.entrySet().size(), 1);
@@ -268,7 +269,7 @@ public class SignInAPITest2_7 {
 
             JsonObject signInResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signin", responseBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_7ForTests(), "emailpassword");
+                    SemVer.v2_7.get(), "emailpassword");
 
             assertEquals(signInResponse.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
             assertEquals(signInResponse.entrySet().size(), 1);

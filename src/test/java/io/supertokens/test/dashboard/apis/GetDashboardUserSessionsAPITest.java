@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
 
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -72,7 +73,7 @@ public class GetDashboardUserSessionsAPITest {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/dashboard/user/sessions", new HashMap<>(), 1000, 1000, null,
-                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                        SemVer.v2_18.get(), "dashboard");
                 throw new Exception("Should never come here");
 
             } catch (HttpResponseException e) {
@@ -87,7 +88,7 @@ public class GetDashboardUserSessionsAPITest {
             try {
                 HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/dashboard/user/sessions", requestParams, 1000, 1000, null,
-                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                        SemVer.v2_18.get(), "dashboard");
                 throw new Exception("Should never come here");
 
             } catch (HttpResponseException e) {
@@ -128,7 +129,7 @@ public class GetDashboardUserSessionsAPITest {
 
         JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/dashboard/user/sessions", requestParams, 1000, 1000, null,
-                Utils.getCdiVersion2_18ForTests(), "dashboard");
+                SemVer.v2_18.get(), "dashboard");
         assertEquals(2, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
 

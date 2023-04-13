@@ -22,6 +22,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -65,7 +66,7 @@ public class APITestsWithTrailingSlash {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signup/", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
 
             assertEquals(response.get("status").getAsString(), "OK");
         }
@@ -78,7 +79,7 @@ public class APITestsWithTrailingSlash {
 
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/signup////////", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                    SemVer.v2_16.get(), "emailpassword");
 
             assertEquals(response.get("status").getAsString(), "OK");
         }
@@ -94,7 +95,7 @@ public class APITestsWithTrailingSlash {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signup/random", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_16ForTests(), "emailpassword");
+                        SemVer.v2_16.get(), "emailpassword");
             } catch (HttpResponseException e) {
                 error = e;
             }
@@ -124,7 +125,7 @@ public class APITestsWithTrailingSlash {
             requestBody.addProperty("role", role);
             JsonObject response = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/role/", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_14ForTests(), "userroles");
+                    SemVer.v2_14.get(), "userroles");
             assertEquals(2, response.entrySet().size());
             assertEquals("OK", response.get("status").getAsString());
             assertTrue(response.get("createdNewRole").getAsBoolean());
@@ -141,7 +142,7 @@ public class APITestsWithTrailingSlash {
             requestBody.add("metadataUpdate", metadata);
             JsonObject resp = HttpRequestForTesting.sendJsonPUTRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/user/metadata/", requestBody, 1000, 1000, null,
-                    Utils.getCdiVersion2_13ForTests(), "usermetadata");
+                    SemVer.v2_13.get(), "usermetadata");
 
             assertEquals("OK", resp.get("status").getAsString());
         }

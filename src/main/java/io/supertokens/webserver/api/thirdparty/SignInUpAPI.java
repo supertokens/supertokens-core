@@ -28,6 +28,7 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoun
 import io.supertokens.thirdparty.ThirdParty;
 import io.supertokens.useridmapping.UserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import io.supertokens.utils.Utils;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -53,7 +54,7 @@ public class SignInUpAPI extends WebserverAPI {
     @Override
     protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
         // API is tenant specific
-        if (super.getVersionFromRequest(req).equals("2.7")) {
+        if (super.getVersionFromRequest(req).equals(SemVer.v2_7)) {
             JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
             String thirdPartyId = InputParser.parseStringOrThrowError(input, "thirdPartyId", false);
             String thirdPartyUserId = InputParser.parseStringOrThrowError(input, "thirdPartyUserId", false);
@@ -109,10 +110,12 @@ public class SignInUpAPI extends WebserverAPI {
 
             try {
                 ThirdParty.SignInUpResponse response = ThirdParty.signInUp(
-                        this.getTenantIdentifierWithStorageFromRequest(req), super.main, thirdPartyId,
-                        thirdPartyUserId, email);
-                
-                ActiveUsers.updateLastActive(main, response.user.id);
+                        this.getTenantIdentifierWithStorageFromRequest(req), super.main, thirdPartyId, thirdPartyUserId,
+                        email);
+
+                ActiveUsers.updateLastActive(this.getAppIdentifierWithStorage(req), main, response.user.id);
+
+                //
                 io.supertokens.pluginInterface.useridmapping.UserIdMapping userIdMapping = UserIdMapping
                         .getUserIdMapping(this.getAppIdentifierWithStorage(req), response.user.id,
                                 UserIdType.SUPERTOKENS);

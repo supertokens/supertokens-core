@@ -26,6 +26,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -140,7 +141,7 @@ public class ThirdPartySignInUpAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup", null, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400
@@ -161,7 +162,7 @@ public class ThirdPartySignInUpAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400
@@ -177,7 +178,7 @@ public class ThirdPartySignInUpAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400 && e.getMessage()
@@ -217,7 +218,7 @@ public class ThirdPartySignInUpAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400
@@ -232,7 +233,7 @@ public class ThirdPartySignInUpAPITest2_7 {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/recipe/signinup", requestBody, 1000, 1000, null,
-                        Utils.getCdiVersion2_7ForTests(), "thirdparty");
+                        SemVer.v2_7.get(), "thirdparty");
                 throw new Exception("Should not come here");
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
                 assertTrue(e.statusCode == 400

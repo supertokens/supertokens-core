@@ -23,7 +23,6 @@ import io.supertokens.config.Config;
 import io.supertokens.cronjobs.Cronjobs;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
-import io.supertokens.jwt.JWTSigningKey;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.multitenancy.exception.CannotModifyBaseConfigException;
@@ -33,8 +32,10 @@ import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.*;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
-import io.supertokens.session.accessToken.AccessTokenSigningKey;
 import io.supertokens.session.refreshToken.RefreshTokenKey;
+import io.supertokens.signingkeys.AccessTokenSigningKey;
+import io.supertokens.signingkeys.JWTSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
 
@@ -183,6 +184,7 @@ public class MultitenancyHelper extends ResourceDistributor.SingletonResource {
         AccessTokenSigningKey.loadForAllTenants(main, apps);
         RefreshTokenKey.loadForAllTenants(main, apps);
         JWTSigningKey.loadForAllTenants(main, apps);
+        SigningKeys.loadForAllTenants(main, apps);
     }
 
     private void refreshCronjobs() {

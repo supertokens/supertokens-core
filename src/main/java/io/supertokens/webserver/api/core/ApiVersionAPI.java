@@ -20,6 +20,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 import io.supertokens.Main;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.WebserverAPI;
 
 import jakarta.servlet.http.HttpServletRequest;
@@ -47,8 +48,8 @@ public class ApiVersionAPI extends WebserverAPI {
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
         JsonObject result = new JsonObject();
         JsonArray versions = new JsonArray();
-        for (String s : WebserverAPI.supportedVersions) {
-            versions.add(new JsonPrimitive(s));
+        for (SemVer s : WebserverAPI.supportedVersions) {
+            versions.add(new JsonPrimitive(s.get()));
         }
         result.add("versions", versions);
         super.sendJsonResponse(200, result, resp);

@@ -5,12 +5,12 @@ import io.supertokens.ProcessState;
 import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.FeatureFlagTestContent;
-import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.pluginInterface.STORAGE_TYPE;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.test.totp.TotpLicenseTest;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -46,7 +46,7 @@ public class CreateTotpDeviceAPITest {
                         1000,
                         1000,
                         null,
-                        Utils.getCdiVersionLatestForTests(),
+                        Utils.getCdiVersionStringLatestForTests(),
                         "totp"));
     }
 
@@ -68,7 +68,7 @@ public class CreateTotpDeviceAPITest {
 
     @Test
     public void testApi() throws Exception {
-        String[] args = { "../" };
+        String[] args = {"../"};
 
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
@@ -77,8 +77,10 @@ public class CreateTotpDeviceAPITest {
             return;
         }
 
-        FeatureFlag.getInstance(process.main).setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_TOTP_FEATURE);
-        FeatureFlagTestContent.getInstance(process.main).setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[] { EE_FEATURES.TOTP });
+        FeatureFlag.getInstance(process.main)
+                .setLicenseKeyAndSyncFeatures(TotpLicenseTest.OPAQUE_KEY_WITH_TOTP_FEATURE);
+        FeatureFlagTestContent.getInstance(process.main)
+                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.TOTP});
 
         if (StorageLayer.getStorage(process.getProcess()).getType() != STORAGE_TYPE.SQL) {
             return;
@@ -133,7 +135,7 @@ public class CreateTotpDeviceAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res.get("status").getAsString().equals("OK");
 
@@ -146,7 +148,7 @@ public class CreateTotpDeviceAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res2.get("status").getAsString().equals("DEVICE_ALREADY_EXISTS_ERROR");
         }

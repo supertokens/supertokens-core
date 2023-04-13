@@ -168,7 +168,7 @@ public class MultitenantAPITest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
         assertEquals("OK", res.get("status").getAsString());
         return res;
@@ -190,7 +190,7 @@ public class MultitenantAPITest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
         assertEquals("DEVICE_ALREADY_EXISTS_ERROR", res.get("status").getAsString());
     }
@@ -209,7 +209,7 @@ public class MultitenantAPITest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
         assert res.get("status").getAsString().equals("OK");
     }
@@ -229,7 +229,7 @@ public class MultitenantAPITest {
                 1000,
                 1000,
                 null,
-                Utils.getCdiVersionLatestForTests(),
+                Utils.getCdiVersionStringLatestForTests(),
                 "totp");
         assertEquals("OK", res.get("status").getAsString());
     }

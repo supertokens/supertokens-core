@@ -22,6 +22,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.HashMap;
 
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -71,7 +72,7 @@ public class DeleteDashboardUserSessionAPITest {
             try {
                 HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
                         "http://localhost:3567/recipe/dashboard/session", new HashMap<>(), 1000, 1000, null,
-                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                        Utils.getCdiVersionStringLatestForTests(), "dashboard");
                 throw new Exception("Should never come here");
 
             } catch (HttpResponseException e) {
@@ -86,7 +87,7 @@ public class DeleteDashboardUserSessionAPITest {
             try {
                 HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
                         "http://localhost:3567/recipe/dashboard/session", requestParams, 1000, 1000, null,
-                        Utils.getCdiVersion2_18ForTests(), "dashboard");
+                        SemVer.v2_18.get(), "dashboard");
                 throw new Exception("Should never come here");
 
             } catch (HttpResponseException e) {
@@ -134,7 +135,7 @@ public class DeleteDashboardUserSessionAPITest {
 
         JsonObject response = HttpRequestForTesting.sendJsonDELETERequestWithQueryParams(process.getProcess(), "",
                 "http://localhost:3567/recipe/dashboard/session", requestParams, 1000, 1000, null,
-                Utils.getCdiVersion2_18ForTests(), "dashboard");
+                SemVer.v2_18.get(), "dashboard");
         assertEquals(1, response.entrySet().size());
         assertEquals("OK", response.get("status").getAsString());
 

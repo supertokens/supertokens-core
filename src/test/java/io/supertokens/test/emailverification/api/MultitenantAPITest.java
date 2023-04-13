@@ -35,6 +35,7 @@ import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
+import io.supertokens.utils.SemVer;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -150,7 +151,8 @@ public class MultitenantAPITest {
         t3 = new TenantIdentifier(null, "a1", "t2");
     }
 
-    private void verifyEmail(TenantIdentifier tenantIdentifier, String userId, String email) throws HttpResponseException, IOException {
+    private void verifyEmail(TenantIdentifier tenantIdentifier, String userId, String email)
+            throws HttpResponseException, IOException {
 
         JsonObject requestBody = new JsonObject();
         requestBody.addProperty("userId", userId);
@@ -159,7 +161,7 @@ public class MultitenantAPITest {
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify/token"),
                 requestBody, 1000, 1000, null,
-                Utils.getCdiVersionLatestForTests(), "emailverification");
+                Utils.getCdiVersionStringLatestForTests(), "emailverification");
 
         assertEquals(response.entrySet().size(), 2);
         assertEquals(response.get("status").getAsString(), "OK");
@@ -172,7 +174,7 @@ public class MultitenantAPITest {
         JsonObject response2 = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify"),
                 verifyResponseBody, 1000, 1000, null,
-                Utils.getCdiVersionLatestForTests(), "emailverification");
+                Utils.getCdiVersionStringLatestForTests(), "emailverification");
 
         assertEquals(response2.entrySet().size(), 3);
         assertEquals(response2.get("status").getAsString(), "OK");
@@ -188,8 +190,9 @@ public class MultitenantAPITest {
         map.put("email", email);
 
         JsonObject verifyResponse = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
-                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify"), map, 1000, 1000, null,
-                Utils.getCdiVersion2_7ForTests(), "emailverification");
+                HttpRequestForTesting.getMultitenantUrl(tenantIdentifier, "/recipe/user/email/verify"), map, 1000, 1000,
+                null,
+                SemVer.v2_7.get(), "emailverification");
         assertEquals(verifyResponse.entrySet().size(), 2);
         assertEquals(verifyResponse.get("status").getAsString(), "OK");
         return verifyResponse.get("isVerified").getAsBoolean();

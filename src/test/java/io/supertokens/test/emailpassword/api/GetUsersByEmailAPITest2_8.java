@@ -25,6 +25,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -83,7 +84,7 @@ public class GetUsersByEmailAPITest2_8 {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/users/by-email", query, 1000, 1000, null,
-                    Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
+                    SemVer.v2_8.get(), RECIPE_ID.THIRD_PARTY.toString());
 
             // then
             JsonArray jsonUsers = response.get("users").getAsJsonArray();
@@ -134,7 +135,7 @@ public class GetUsersByEmailAPITest2_8 {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/users/by-email", query, 1000, 1000, null,
-                    Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
+                    SemVer.v2_8.get(), RECIPE_ID.THIRD_PARTY.toString());
 
             JsonArray users = response.getAsJsonArray("users");
             JsonElement status = response.get("status");
@@ -171,7 +172,7 @@ public class GetUsersByEmailAPITest2_8 {
 
             JsonObject response = HttpRequestForTesting.sendGETRequest(process.getProcess(), "",
                     "http://localhost:3567/recipe/users/by-email", query, 1000, 1000, null,
-                    Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
+                    SemVer.v2_8.get(), RECIPE_ID.THIRD_PARTY.toString());
 
             JsonArray users = response.getAsJsonArray("users");
             JsonElement status = response.get("status");
@@ -206,7 +207,7 @@ public class GetUsersByEmailAPITest2_8 {
     private void testBadInput(TestingProcessManager.TestingProcess process, Map<String, String> query)
             throws Exception {
         HttpRequestForTesting.sendGETRequest(process.getProcess(), "", "http://localhost:3567/recipe/users/by-email",
-                query, 1000, 1000, null, Utils.getCdiVersion2_8ForTests(), RECIPE_ID.THIRD_PARTY.toString());
+                query, 1000, 1000, null, SemVer.v2_8.get(), RECIPE_ID.THIRD_PARTY.toString());
 
         throw new Exception("Request didn't throw as expected");
     }

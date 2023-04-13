@@ -118,7 +118,7 @@ public class TotpLicenseTest {
                             1000,
                             1000,
                             null,
-                            Utils.getCdiVersionLatestForTests(),
+                            Utils.getCdiVersionStringLatestForTests(),
                             "totp");
                 }
         );
@@ -144,7 +144,7 @@ public class TotpLicenseTest {
                             1000,
                             1000,
                             null,
-                            Utils.getCdiVersionLatestForTests(),
+                            Utils.getCdiVersionStringLatestForTests(),
                             "totp");
                 }
         );

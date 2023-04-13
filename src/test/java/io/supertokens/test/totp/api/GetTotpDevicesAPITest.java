@@ -51,7 +51,7 @@ public class GetTotpDevicesAPITest {
                         1000,
                         1000,
                         null,
-                        Utils.getCdiVersionLatestForTests(),
+                        Utils.getCdiVersionStringLatestForTests(),
                         "totp"));
     }
 
@@ -98,7 +98,7 @@ public class GetTotpDevicesAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res.get("status").getAsString().equals("OK");
         }
@@ -128,7 +128,7 @@ public class GetTotpDevicesAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res.get("status").getAsString().equals("OK");
 
@@ -151,7 +151,7 @@ public class GetTotpDevicesAPITest {
                     1000,
                     1000,
                     null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "totp");
             assert res2.get("status").getAsString().equals("TOTP_NOT_ENABLED_ERROR");
         }

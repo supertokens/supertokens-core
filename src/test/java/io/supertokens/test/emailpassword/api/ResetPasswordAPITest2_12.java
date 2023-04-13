@@ -23,6 +23,7 @@ import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import io.supertokens.test.httpRequest.HttpRequestForTesting;
+import io.supertokens.utils.SemVer;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Rule;
@@ -79,7 +80,7 @@ public class ResetPasswordAPITest2_12 {
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/password/reset/token", requestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_12ForTests(), "emailpassword");
+                SemVer.v2_12.get(), "emailpassword");
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.entrySet().size(), 2);
@@ -93,7 +94,7 @@ public class ResetPasswordAPITest2_12 {
 
         JsonObject passwordResetResponse = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/user/password/reset", resetPasswordBody, 1000, 1000, null,
-                Utils.getCdiVersion2_12ForTests(), "emailpassword");
+                SemVer.v2_12.get(), "emailpassword");
         assertEquals(passwordResetResponse.get("status").getAsString(), "OK");
         assertEquals(passwordResetResponse.get("userId").getAsString(), userId);
         assertEquals(passwordResetResponse.entrySet().size(), 2);
@@ -104,7 +105,7 @@ public class ResetPasswordAPITest2_12 {
 
         response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signin", signInRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_12ForTests(), "emailpassword");
+                SemVer.v2_12.get(), "emailpassword");
 
         assertEquals(response.get("status").getAsString(), "WRONG_CREDENTIALS_ERROR");
         assertEquals(response.entrySet().size(), 1);
@@ -115,7 +116,7 @@ public class ResetPasswordAPITest2_12 {
 
         response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                 "http://localhost:3567/recipe/signin", signInRequestBody, 1000, 1000, null,
-                Utils.getCdiVersion2_12ForTests(), "emailpassword");
+                SemVer.v2_12.get(), "emailpassword");
 
         assertEquals(response.get("status").getAsString(), "OK");
         assertEquals(response.entrySet().size(), 2);

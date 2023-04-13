@@ -150,7 +150,7 @@ public class RequestConnectionUriDomainTest {
         {
             String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "abctijenbogweg=-2438243u98", "");
             assertEquals("localhost:3567,public", response);
         }
@@ -158,7 +158,7 @@ public class RequestConnectionUriDomainTest {
         {
             String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://127.0.0.1:3567/test", new JsonObject(), 1000, 1000, null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "abcasdfaliojmo3jenbogweg=-9382923", "");
             assertEquals("127.0.0.1:3567,public", response);
         }
@@ -166,7 +166,7 @@ public class RequestConnectionUriDomainTest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersionLatestForTests(),
+                        Utils.getCdiVersionStringLatestForTests(),
                         "", "");
                 fail();
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
@@ -179,7 +179,7 @@ public class RequestConnectionUriDomainTest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://127.0.0.1:3567/test", new JsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersionLatestForTests(),
+                        Utils.getCdiVersionStringLatestForTests(),
                         "abctijenbogweg=-2438243u98", "");
                 fail();
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
@@ -250,7 +250,7 @@ public class RequestConnectionUriDomainTest {
         {
             String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "abctijenbogweg=-2438243u98", "");
             assertEquals("localhost:3567,public", response);
         }
@@ -258,14 +258,14 @@ public class RequestConnectionUriDomainTest {
         {
             String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://127.0.0.1:3567/test", new JsonObject(), 1000, 1000, null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "abcasdfaliojmo3jenbogweg=-9382923", "");
             assertEquals("127.0.0.1:3567,public", response);
         }
         {
             String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://localhost:3567/t1/test", new JsonObject(), 1000, 1000, null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "abctijenbogweg=-2438243u98", "");
             assertEquals("localhost:3567,t1", response);
         }
@@ -273,7 +273,7 @@ public class RequestConnectionUriDomainTest {
         {
             String response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                     "http://127.0.0.1:3567/t1/test", new JsonObject(), 1000, 1000, null,
-                    Utils.getCdiVersionLatestForTests(),
+                    Utils.getCdiVersionStringLatestForTests(),
                     "abcasdfaliojmo3jenbogweg=-9382923", "");
             assertEquals("127.0.0.1:3567,t1", response);
         }
@@ -282,7 +282,7 @@ public class RequestConnectionUriDomainTest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://localhost:3567/test", new JsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersionLatestForTests(),
+                        Utils.getCdiVersionStringLatestForTests(),
                         "", "");
                 fail();
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {
@@ -295,7 +295,7 @@ public class RequestConnectionUriDomainTest {
             try {
                 HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
                         "http://127.0.0.1:3567/test", new JsonObject(), 1000, 1000, null,
-                        Utils.getCdiVersionLatestForTests(),
+                        Utils.getCdiVersionStringLatestForTests(),
                         "abctijenbogweg=-2438243u98", "");
                 fail();
             } catch (io.supertokens.test.httpRequest.HttpResponseException e) {

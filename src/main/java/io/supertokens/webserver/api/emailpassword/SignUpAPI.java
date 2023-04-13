@@ -74,12 +74,11 @@ public class SignUpAPI extends WebserverAPI {
 
             ActiveUsers.updateLastActive(main, user.id);
 
+            ActiveUsers.updateLastActive(main, user.id);
+
             JsonObject result = new JsonObject();
             result.addProperty("status", "OK");
             JsonObject userJson = new JsonParser().parse(new Gson().toJson(user)).getAsJsonObject();
-            if (super.getVersionFromRequest(req).equals("2.4")) {
-                userJson.remove("timeJoined");
-            }
             result.add("user", userJson);
             super.sendJsonResponse(200, result, resp);
 

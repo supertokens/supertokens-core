@@ -64,7 +64,7 @@ public class UserIdMapping {
                     StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(
                             main, appIdentifierWithStorage, appIdentifierWithStorage.getStorage(), externalUserId,
                             UserIdType.EXTERNAL);
-            
+
             if (mappingAndStorage.userIdMapping != null) {
                 throw new UserIdMappingAlreadyExistsException(
                         superTokensUserId.equals(mappingAndStorage.userIdMapping.superTokensUserId),

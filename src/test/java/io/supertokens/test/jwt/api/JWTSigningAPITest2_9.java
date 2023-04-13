@@ -27,6 +27,7 @@ import io.supertokens.test.httpRequest.HttpRequestForTesting;
 import io.supertokens.test.httpRequest.HttpResponseException;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
+import io.supertokens.utils.SemVer;
 import io.supertokens.webserver.api.jwt.JWTSigningAPI;
 import org.junit.AfterClass;
 import org.junit.Before;
@@ -71,7 +72,7 @@ public class JWTSigningAPITest2_9 {
 
         try {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                    "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_9.get(),
                     "jwt");
             fail();
         } catch (HttpResponseException e) {
@@ -100,7 +101,7 @@ public class JWTSigningAPITest2_9 {
         requestBody.addProperty("validity", 3600);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_9.get(),
                 "jwt");
         assertEquals(response.get("status").getAsString(), JWTSigningAPI.UNSUPPORTED_ALGORITHM_ERROR_STATUS);
 
@@ -125,7 +126,7 @@ public class JWTSigningAPITest2_9 {
 
         try {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                    "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_9.get(),
                     "jwt");
             fail();
         } catch (HttpResponseException e) {
@@ -154,7 +155,7 @@ public class JWTSigningAPITest2_9 {
 
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                    requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+                    requestBody, 1000, 1000, null, SemVer.v2_9.get(), "jwt");
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -183,7 +184,7 @@ public class JWTSigningAPITest2_9 {
 
         try {
             HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "", "http://localhost:3567/recipe/jwt",
-                    requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(), "jwt");
+                    requestBody, 1000, 1000, null, SemVer.v2_9.get(), "jwt");
             fail();
         } catch (HttpResponseException e) {
             assertTrue(e.statusCode == 400 && e.getMessage()
@@ -211,7 +212,7 @@ public class JWTSigningAPITest2_9 {
 
         try {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                    "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_9.get(),
                     "jwt");
             fail();
         } catch (HttpResponseException e) {
@@ -241,7 +242,7 @@ public class JWTSigningAPITest2_9 {
 
         try {
             JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                    "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                    "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_9.get(),
                     "jwt");
             fail();
         } catch (HttpResponseException e) {
@@ -270,7 +271,7 @@ public class JWTSigningAPITest2_9 {
         requestBody.addProperty("validity", 3600);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_9.get(),
                 "jwt");
 
         assertEquals(response.get("status").getAsString(), "OK");
@@ -297,7 +298,7 @@ public class JWTSigningAPITest2_9 {
         requestBody.addProperty("validity", 3600);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_9.get(),
                 "jwt");
 
         String jwt = response.get("jwt").getAsString();
@@ -338,7 +339,7 @@ public class JWTSigningAPITest2_9 {
         requestBody.addProperty("validity", 3600);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_9.get(),
                 "jwt");
 
         String jwt = response.get("jwt").getAsString();
@@ -391,7 +392,7 @@ public class JWTSigningAPITest2_9 {
         requestBody.addProperty("validity", 3600);
 
         JsonObject response = HttpRequestForTesting.sendJsonPOSTRequest(process.getProcess(), "",
-                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, Utils.getCdiVersion2_9ForTests(),
+                "http://localhost:3567/recipe/jwt", requestBody, 1000, 1000, null, SemVer.v2_9.get(),
                 "jwt");
 
         String jwt = response.get("jwt").getAsString();

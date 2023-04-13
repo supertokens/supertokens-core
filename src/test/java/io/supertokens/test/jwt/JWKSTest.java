@@ -24,7 +24,8 @@ import com.auth0.jwt.interfaces.RSAKeyProvider;
 import com.google.gson.JsonObject;
 import io.supertokens.ProcessState;
 import io.supertokens.jwt.JWTSigningFunctions;
-import io.supertokens.jwt.JWTSigningKey;
+import io.supertokens.signingkeys.JWTSigningKey;
+import io.supertokens.signingkeys.SigningKeys;
 import io.supertokens.test.TestingProcessManager;
 import io.supertokens.test.Utils;
 import org.junit.AfterClass;
@@ -66,8 +67,9 @@ public class JWKSTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        List<JsonObject> keysFromStorage = JWTSigningFunctions.getJWKS(process.getProcess());
-        assert keysFromStorage.size() == JWTSigningKey.SupportedAlgorithms.values().length;
+        List<JsonObject> keysFromStorage = SigningKeys.getInstance(process.getProcess()).getJWKS();
+        // We also get a dynamic key in the JWKs list
+        assert keysFromStorage.size() == JWTSigningKey.SupportedAlgorithms.values().length + 1;
 
         process.kill();
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
@@ -83,8 +85,9 @@ public class JWKSTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        List<JsonObject> keysFromStorageBeforeJWTCreation = JWTSigningFunctions.getJWKS(process.getProcess());
-        assert keysFromStorageBeforeJWTCreation.size() == JWTSigningKey.SupportedAlgorithms.values().length;
+        List<JsonObject> keysFromStorageBeforeJWTCreation = SigningKeys.getInstance(process.getProcess()).getJWKS();
+        // We also get a dynamic key in the JWKs list
+        assert keysFromStorageBeforeJWTCreation.size() == JWTSigningKey.SupportedAlgorithms.values().length + 1;
         int numberOfKeysBeforeJWTCreation = keysFromStorageBeforeJWTCreation.size();
 
         String algorithm = "RS256";
@@ -93,9 +96,9 @@ public class JWKSTest {
         String jwksDomain = "http://localhost";
         long validity = 3600;
 
-        JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
+        JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity, false);
 
-        List<JsonObject> keysFromStorageAfterJWTCreation = JWTSigningFunctions.getJWKS(process.getProcess());
+        List<JsonObject> keysFromStorageAfterJWTCreation = SigningKeys.getInstance(process.getProcess()).getJWKS();
         assert keysFromStorageAfterJWTCreation.size() == numberOfKeysBeforeJWTCreation;
 
         process.kill();
@@ -117,13 +120,13 @@ public class JWKSTest {
         String jwksDomain = "http://localhost";
         long validity = 3600;
 
-        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
+        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity, false);
         DecodedJWT decodedJWT = JWT.decode(jwt);
 
         String headerKeyId = decodedJWT.getHeaderClaim("kid").asString();
         boolean didFindKey = false;
 
-        List<JsonObject> keysFromStorage = JWTSigningFunctions.getJWKS(process.getProcess());
+        List<JsonObject> keysFromStorage = SigningKeys.getInstance(process.getProcess()).getJWKS();
         for (int i = 0; i < keysFromStorage.size(); i++) {
             JsonObject key = keysFromStorage.get(i);
             if (key.get("kid").getAsString().equals(headerKeyId) && key.get("kty").getAsString().equalsIgnoreCase("rsa")
@@ -153,9 +156,9 @@ public class JWKSTest {
         String jwksDomain = "http://localhost";
         long validity = 3600;
 
-        JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
+        JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity, false);
 
-        List<JsonObject> keysFromStorage = JWTSigningFunctions.getJWKS(process.getProcess());
+        List<JsonObject> keysFromStorage = SigningKeys.getInstance(process.getProcess()).getJWKS();
 
         // TODO: In the future when more algorithm types (EC etc) are supported this part of the test will need to be
         // updated
@@ -189,13 +192,13 @@ public class JWKSTest {
         String jwksDomain = "http://localhost";
         long validity = 3600;
 
-        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity);
+        String jwt = JWTSigningFunctions.createJWTToken(process.getProcess(), algorithm, payload, jwksDomain, validity, false);
         DecodedJWT decodedJWT = JWT.decode(jwt);
 
         String headerKeyId = decodedJWT.getHeaderClaim("kid").asString();
         RSAPublicKey publicKey = null;
 
-        List<JsonObject> keysFromStorage = JWTSigningFunctions.getJWKS(process.getProcess());
+        List<JsonObject> keysFromStorage = SigningKeys.getInstance(process.getProcess()).getJWKS();
         for (int i = 0; i < keysFromStorage.size(); i++) {
             JsonObject key = keysFromStorage.get(i);
             if (key.get("kid").getAsString().equals(headerKeyId) && key.get("kty").getAsString().equalsIgnoreCase("rsa")
@@ -248,7 +251,7 @@ public class JWKSTest {
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
         assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
 
-        List<JsonObject> keysFromStorage = JWTSigningFunctions.getJWKS(process.getProcess());
+        List<JsonObject> keysFromStorage = SigningKeys.getInstance(process.getProcess()).getJWKS();
 
         for (int i = 0; i < keysFromStorage.size(); i++) {
             JsonObject key = keysFromStorage.get(i);

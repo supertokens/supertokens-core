@@ -1,9 +1,6 @@
 package io.supertokens.webserver.api.totp;
 
-import java.io.IOException;
-
 import com.google.gson.JsonObject;
-
 import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
 import io.supertokens.pluginInterface.RECIPE_ID;
@@ -14,7 +11,6 @@ import io.supertokens.pluginInterface.multitenancy.AppIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.pluginInterface.totp.exception.TotpNotEnabledException;
 import io.supertokens.pluginInterface.totp.exception.UnknownDeviceException;
-import io.supertokens.pluginInterface.useridmapping.UserIdMapping;
 import io.supertokens.totp.Totp;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
@@ -22,6 +18,8 @@ import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
 
 public class RemoveTotpDeviceAPI extends WebserverAPI {
     private static final long serialVersionUID = -4641988458637882374L;
@@ -59,7 +57,8 @@ public class RemoveTotpDeviceAPI extends WebserverAPI {
                 // While sending the usage stats we do a join, so totp tables also must use internal user id.
 
                 // Try to find the appIdentifier with right storage based on the userId
-                AppIdentifierWithStorageAndUserIdMapping mappingAndStorage = getAppIdentifierWithStorageAndUserIdMappingFromRequest(
+                AppIdentifierWithStorageAndUserIdMapping mappingAndStorage =
+                        getAppIdentifierWithStorageAndUserIdMappingFromRequest(
                         req, userId, UserIdType.ANY);
 
                 if (mappingAndStorage.userIdMapping != null) {
