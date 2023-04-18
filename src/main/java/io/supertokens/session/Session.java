@@ -734,7 +734,6 @@ public class Session {
     }
 
     @TestOnly
-    @Deprecated
     public static JsonObject getSessionData(Main main, String sessionHandle)
             throws StorageQueryException, UnauthorisedException {
         Storage storage = StorageLayer.getStorage(main);
@@ -756,7 +755,6 @@ public class Session {
     }
 
     @TestOnly
-    @Deprecated
     public static JsonObject getJWTData(Main main, String sessionHandle)
             throws StorageQueryException, UnauthorisedException {
         Storage storage = StorageLayer.getStorage(main);
