@@ -140,6 +140,9 @@ public class CoreConfig {
     @JsonProperty
     private String ip_deny_regex = null;
 
+    @JsonProperty
+    private String supertokens_saas_secret = null;
+
     private Set<LOG_LEVEL> allowedLogLevels = null;
 
     public String getIpAllowRegex() {
@@ -330,6 +333,13 @@ public class CoreConfig {
         return api_keys.trim().replaceAll("\\s", "").split(",");
     }
 
+    public String getSuperTokensSaaSSecret() {
+        if (supertokens_saas_secret != null) {
+            return supertokens_saas_secret.trim();
+        }
+        return null;
+    }
+
     public int getPort(Main main) {
         Integer cliPort = CLIOptions.get(main).getPort();
         if (cliPort != null) {
@@ -436,6 +446,27 @@ public class CoreConfig {
                                 "Invalid characters in API key. Please only use '=', '-' and alpha-numeric (including"
                                         + " capitals)");
                     }
+                }
+            }
+        }
+
+        if (supertokens_saas_secret != null) {
+            if (api_keys == null) {
+                throw new InvalidConfigException(
+                        "supertokens_saas_secret can only be used when api_key is also defined");
+            }
+            if (supertokens_saas_secret.length() < 40) {
+                throw new InvalidConfigException(
+                        "supertokens_saas_secret is too short. Please use at least 40 characters");
+            }
+            for (int y = 0; y < supertokens_saas_secret.length(); y++) {
+                char currChar = supertokens_saas_secret.charAt(y);
+                if (!(currChar == '=' || currChar == '-' || (currChar >= '0' && currChar <= '9')
+                        || (currChar >= 'a' && currChar <= 'z') || (currChar >= 'A' && currChar <= 'Z'))) {
+                    throw new InvalidConfigException(
+                            "Invalid characters in supertokens_saas_secret key. Please only use '=', '-' and " +
+                                    "alpha-numeric (including"
+                                    + " capitals)");
                 }
             }
         }
@@ -555,6 +586,11 @@ public class CoreConfig {
         if (config.has("webserver_https_enabled")) {
             throw new InvalidConfigException(
                     "webserver_https_enabled can only be set via the core's base config setting");
+        }
+
+        if (config.has("supertokens_saas_secret")) {
+            throw new InvalidConfigException(
+                    "supertokens_saas_secret can only be set via the core's base config setting");
         }
     }
 

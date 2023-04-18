@@ -2246,6 +2246,11 @@ public class Start
     }
 
     @Override
+    public String[] getProtectedConfigsFromSuperTokensSaaSUsers() {
+        return new String[0];
+    }
+
+    @Override
     public void createTenant(TenantConfig config) throws
             DuplicateTenantException {
         // TODO:

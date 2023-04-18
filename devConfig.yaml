@@ -127,3 +127,8 @@ disable_telemetry: true
 # (OPTIONAL | Default: null). Regex for denying requests from IP addresses that match with the value. Comment this
 # value to deny no IP address.
 # ip_deny_regex:
+
+# (OPTIONAL | Default: null). This is used when deploying the core in SuperTokens SaaS infrastructure. If set, limits
+# what database information is shown to / modifiable by the dev when they query the core to get the information about
+#  their tenants. It only exposes that information when this key is used instead of the regular api_keys config.
+# supertokens_saas_secret:
