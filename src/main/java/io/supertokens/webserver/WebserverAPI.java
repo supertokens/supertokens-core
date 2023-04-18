@@ -17,13 +17,14 @@
 package io.supertokens.webserver;
 
 import com.google.gson.JsonElement;
+import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.Main;
+import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.config.Config;
 import io.supertokens.exceptions.QuitProgramException;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.output.Logging;
-import io.supertokens.utils.SemVer;
 import io.supertokens.pluginInterface.Storage;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -32,9 +33,8 @@ import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.TenantIdentifierWithStorage;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.storageLayer.StorageLayer;
-import io.supertokens.AppIdentifierWithStorageAndUserIdMapping;
-import io.supertokens.TenantIdentifierWithStorageAndUserIdMapping;
 import io.supertokens.useridmapping.UserIdType;
+import io.supertokens.utils.SemVer;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
@@ -149,6 +149,8 @@ public abstract class WebserverAPI extends HttpServlet {
     private void assertThatAPIKeyCheckPasses(HttpServletRequest req) throws ServletException,
             TenantOrAppNotFoundException {
         String apiKey = req.getHeader("api-key");
+
+        // first we try the normal API key
         String[] keys = Config.getConfig(
                 new TenantIdentifier(getConnectionUriDomain(req), getAppId(req), getTenantId(req)),
                 this.main).getAPIKeys();
@@ -161,9 +163,27 @@ public abstract class WebserverAPI extends HttpServlet {
             for (String key : keys) {
                 isAuthorised = isAuthorised || key.equals(apiKey);
             }
-            if (!isAuthorised) {
+            if (isAuthorised) {
+                return;
+            }
+        }
+
+        // if the normal API key did not exist, or did not match the api key from the header, we try the
+        // supertokens_saas_secret
+        String superTokensSaaSSecret = Config.getConfig(new TenantIdentifier(null, null, null), this.main)
+                .getSuperTokensSaaSSecret();
+        if (superTokensSaaSSecret != null) {
+            if (apiKey == null) {
                 throw new ServletException(new APIKeyUnauthorisedException());
             }
+            if (apiKey.equals(superTokensSaaSSecret)) {
+                return;
+            }
+        }
+
+        // if either were defined, and both failed, we throw an exception
+        if (superTokensSaaSSecret != null || keys != null) {
+            throw new ServletException(new APIKeyUnauthorisedException());
         }
     }
 
@@ -247,14 +267,16 @@ public abstract class WebserverAPI extends HttpServlet {
 
     protected TenantIdentifierWithStorage getTenantIdentifierWithStorageFromRequest(HttpServletRequest req)
             throws TenantOrAppNotFoundException {
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
+                this.getTenantId(req));
         Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
         return tenantIdentifier.withStorage(storage);
     }
 
     protected AppIdentifierWithStorage getAppIdentifierWithStorage(HttpServletRequest req)
             throws TenantOrAppNotFoundException {
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
+                this.getTenantId(req));
 
         Storage storage = StorageLayer.getStorage(tenantIdentifier, main);
         Storage[] storages = StorageLayer.getStoragesForApp(main, tenantIdentifier.toAppIdentifier());
@@ -263,7 +285,8 @@ public abstract class WebserverAPI extends HttpServlet {
                 storage, storages);
     }
 
-    protected AppIdentifierWithStorage getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(HttpServletRequest req)
+    protected AppIdentifierWithStorage getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(
+            HttpServletRequest req)
             throws TenantOrAppNotFoundException, BadPermissionException {
         TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
                 this.getTenantId(req));
@@ -278,18 +301,23 @@ public abstract class WebserverAPI extends HttpServlet {
                 storage, storages);
     }
 
-    protected TenantIdentifierWithStorageAndUserIdMapping getTenantIdentifierWithStorageAndUserIdMappingFromRequest(HttpServletRequest req, String userId, UserIdType userIdType)
+    protected TenantIdentifierWithStorageAndUserIdMapping getTenantIdentifierWithStorageAndUserIdMappingFromRequest(
+            HttpServletRequest req, String userId, UserIdType userIdType)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
-        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req), this.getTenantId(req));
-        return StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(main, tenantIdentifier, userId, userIdType);
+        TenantIdentifier tenantIdentifier = new TenantIdentifier(this.getConnectionUriDomain(req), this.getAppId(req),
+                this.getTenantId(req));
+        return StorageLayer.getTenantIdentifierWithStorageAndUserIdMappingForUser(main, tenantIdentifier, userId,
+                userIdType);
     }
 
-    protected AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingFromRequest(HttpServletRequest req, String userId, UserIdType userIdType)
+    protected AppIdentifierWithStorageAndUserIdMapping getAppIdentifierWithStorageAndUserIdMappingFromRequest(
+            HttpServletRequest req, String userId, UserIdType userIdType)
             throws StorageQueryException, TenantOrAppNotFoundException, UnknownUserIdException {
         // This function uses storage of the tenent from which the request came from as a priorityStorage
         // while searching for the user across all storages for the app
         AppIdentifierWithStorage appIdentifierWithStorage = getAppIdentifierWithStorage(req);
-        return StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(main, appIdentifierWithStorage, appIdentifierWithStorage.getStorage(), userId, userIdType);
+        return StorageLayer.getAppIdentifierWithStorageAndUserIdMappingForUserWithPriorityForTenantStorage(main,
+                appIdentifierWithStorage, appIdentifierWithStorage.getStorage(), userId, userIdType);
     }
 
     @Override
