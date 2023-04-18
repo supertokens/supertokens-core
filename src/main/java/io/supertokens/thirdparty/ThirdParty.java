@@ -83,8 +83,7 @@ public class ThirdParty {
 
         return response;
     }
-
-    @Deprecated
+    
     @TestOnly
     public static SignInUpResponse signInUp2_7(Main main,
                                                String thirdPartyId, String thirdPartyUserId, String email,
@@ -112,7 +111,8 @@ public class ThirdParty {
         }
     }
 
-    public static SignInUpResponse signInUp(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main, String thirdPartyId,
+    public static SignInUpResponse signInUp(TenantIdentifierWithStorage tenantIdentifierWithStorage, Main main,
+                                            String thirdPartyId,
                                             String thirdPartyUserId, String email)
             throws StorageQueryException, TenantOrAppNotFoundException, BadPermissionException {
 
@@ -238,7 +238,7 @@ public class ThirdParty {
 
         HashSet<String> thirdPartyIds = new HashSet<>();
 
-        for (ThirdPartyConfig.Provider provider: providers) {
+        for (ThirdPartyConfig.Provider provider : providers) {
             if (thirdPartyIds.contains(provider.thirdPartyId)) {
                 throw new InvalidProviderConfigException("Duplicate ThirdPartyId was specified in the providers list.");
             }
@@ -278,7 +278,8 @@ public class ThirdParty {
         }
 
         if (thirdPartyId.startsWith("active-directory")) {
-            String errorMessage = "a non empty string value must be specified for directoryId in the additionalConfig for Active Directory provider";
+            String errorMessage = "a non empty string value must be specified for directoryId in the additionalConfig" +
+                    " for Active Directory provider";
             try {
                 if (client.additionalConfig == null || !client.additionalConfig.has("directoryId") ||
                         client.additionalConfig.get("directoryId").isJsonNull() ||
@@ -291,7 +292,8 @@ public class ThirdParty {
                 throw new InvalidProviderConfigException(errorMessage);
             }
         } else if (thirdPartyId.startsWith("apple")) {
-            String errorMessage = "a non empty string value must be specified for keyId, teamId and privateKey in the additionalConfig for Apple provider";
+            String errorMessage = "a non empty string value must be specified for keyId, teamId and privateKey in the" +
+                    " additionalConfig for Apple provider";
 
             try {
                 if (
@@ -339,7 +341,8 @@ public class ThirdParty {
         } else if (thirdPartyId.startsWith("linkedin")) {
             // Nothing here
         } else if (thirdPartyId.startsWith("okta")) {
-            String errorMessage = "a non empty string value must be specified for oktaDomain in the additionalConfig for Okta provider";
+            String errorMessage = "a non empty string value must be specified for oktaDomain in the additionalConfig " +
+                    "for Okta provider";
             try {
                 if (client.additionalConfig == null || !client.additionalConfig.has("oktaDomain") ||
                         client.additionalConfig.get("oktaDomain").isJsonNull() ||
@@ -352,7 +355,8 @@ public class ThirdParty {
                 throw new InvalidProviderConfigException(errorMessage);
             }
         } else if (thirdPartyId.startsWith("boxy-saml")) {
-            String errorMessage = "a non empty string value must be specified for boxyURL in the additionalConfig for Boxy SAML provider";
+            String errorMessage = "a non empty string value must be specified for boxyURL in the additionalConfig for" +
+                    " Boxy SAML provider";
 
             try {
                 if (client.additionalConfig == null ||
