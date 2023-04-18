@@ -145,7 +145,7 @@ public class SessionTest4 {
 
     @Test
     public void createVerifyRefreshVerifyRefresh() throws Exception {
-        Utils.setValueInConfig("access_token_validity", "1");
+        Utils.setValueInConfig("access_token_validity", "3");
 
         String[] args = {"../"};
         TestingProcessManager.TestingProcess process = TestingProcessManager.start(args);
@@ -182,7 +182,7 @@ public class SessionTest4 {
             assertEquals(verifiedSession.session.userId, userId);
             assertEquals(verifiedSession.session.handle, sessionInfo.session.handle);
 
-            Thread.sleep(1500);
+            Thread.sleep(3500);
 
             try {
                 Session.getSession(process.getProcess(), sessionInfo.accessToken.token, sessionInfo.antiCsrfToken,
