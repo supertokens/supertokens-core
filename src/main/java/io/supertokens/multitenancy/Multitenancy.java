@@ -232,7 +232,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
     public static void deleteApp(AppIdentifier appIdentifier, Main main)
             throws TenantOrAppNotFoundException, CannotDeleteNullAppIdException, BadPermissionException {
-        if (appIdentifier.getAppId().equals(TenantIdentifier.DEFAULT_APP_ID)) {
+        if (appIdentifier.getAppId().equals(AppIdentifier.DEFAULT_APP_ID)) {
             throw new CannotDeleteNullAppIdException();
         }
         if (getAllTenantsForApp(appIdentifier, main).length > 1) {

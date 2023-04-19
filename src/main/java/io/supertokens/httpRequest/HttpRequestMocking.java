@@ -42,7 +42,8 @@ public class HttpRequestMocking extends ResourceDistributor.SingletonResource {
             instance = main.getResourceDistributor()
                     .getResource(new TenantIdentifier(null, null, null), RESOURCE_KEY);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
+            instance = main.getResourceDistributor()
+                    .setResource(new TenantIdentifier(null, null, null), RESOURCE_KEY, new HttpRequestMocking());
         }
         if (instance == null) {
             instance = main.getResourceDistributor()

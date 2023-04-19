@@ -40,13 +40,19 @@ public class CoreConfigTestContent extends ResourceDistributor.SingletonResource
             resource = main.getResourceDistributor()
                     .getResource(new TenantIdentifier(null, null, null), RESOURCE_ID);
         } catch (TenantOrAppNotFoundException e) {
-            throw new IllegalStateException(e);
+            return loadBaseCoreConfigTestContent(main);
         }
         if (resource == null) {
             resource = main.getResourceDistributor()
                     .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new CoreConfigTestContent());
         }
         return (CoreConfigTestContent) resource;
+    }
+
+    public static CoreConfigTestContent loadBaseCoreConfigTestContent(Main main) {
+        return (CoreConfigTestContent) main.getResourceDistributor()
+                .setResource(new TenantIdentifier(null, null, null), RESOURCE_ID, new CoreConfigTestContent());
+
     }
 
     public void setKeyValue(String key, Object value) {
