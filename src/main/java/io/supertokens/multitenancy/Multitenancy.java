@@ -24,6 +24,7 @@ import io.supertokens.featureflag.EE_FEATURES;
 import io.supertokens.featureflag.FeatureFlag;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.exception.*;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.InvalidConfigException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
@@ -32,6 +33,8 @@ import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateClientTyp
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateTenantException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.DuplicateThirdPartyIdException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
+import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.pluginInterface.userroles.exception.UnknownRoleException;
 import io.supertokens.storageLayer.StorageLayer;
 import io.supertokens.thirdparty.InvalidProviderConfigException;
@@ -285,7 +288,8 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
 
     public static boolean addUserIdToTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId)
             throws TenantOrAppNotFoundException, UnknownUserIdException, StorageQueryException,
-            FeatureNotEnabledException {
+            FeatureNotEnabledException, DuplicateEmailException, DuplicatePhoneNumberException,
+            DuplicateThirdPartyUserException {
         if (Arrays.stream(FeatureFlag.getInstance(main, tenantIdentifierWithStorage.toAppIdentifier()).getEnabledFeatures())
                 .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
             throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
@@ -295,7 +299,13 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 .addUserIdToTenant(tenantIdentifierWithStorage, userId);
     }
 
-    public static boolean removeUserFromTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId) {
+    public static boolean removeUserFromTenant(Main main, TenantIdentifierWithStorage tenantIdentifierWithStorage, String userId)
+            throws FeatureNotEnabledException, TenantOrAppNotFoundException, StorageQueryException {
+        if (Arrays.stream(FeatureFlag.getInstance(main, tenantIdentifierWithStorage.toAppIdentifier()).getEnabledFeatures())
+                .noneMatch(ee_features -> ee_features == EE_FEATURES.MULTI_TENANCY)) {
+            throw new FeatureNotEnabledException(EE_FEATURES.MULTI_TENANCY);
+        }
+
         return tenantIdentifierWithStorage.getMultitenancyStorageWithTargetStorage()
                 .removeUserIdFromTenant(tenantIdentifierWithStorage, userId);
     }

@@ -71,7 +71,7 @@ public class DisassociateUserFromTenant extends WebserverAPI {
             result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             super.sendJsonResponse(200, result, resp);
 
-        } catch (StorageQueryException | TenantOrAppNotFoundException e) {
+        } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException e) {
             throw new ServletException(e);
         }
 

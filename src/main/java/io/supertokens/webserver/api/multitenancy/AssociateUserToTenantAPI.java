@@ -22,9 +22,12 @@ import io.supertokens.Main;
 import io.supertokens.featureflag.exceptions.FeatureNotEnabledException;
 import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.pluginInterface.RECIPE_ID;
+import io.supertokens.pluginInterface.emailpassword.exceptions.DuplicateEmailException;
 import io.supertokens.pluginInterface.emailpassword.exceptions.UnknownUserIdException;
 import io.supertokens.pluginInterface.exceptions.StorageQueryException;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
+import io.supertokens.pluginInterface.passwordless.exception.DuplicatePhoneNumberException;
+import io.supertokens.pluginInterface.thirdparty.exception.DuplicateThirdPartyUserException;
 import io.supertokens.useridmapping.UserIdType;
 import io.supertokens.webserver.InputParser;
 import io.supertokens.webserver.WebserverAPI;
@@ -69,11 +72,26 @@ public class AssociateUserToTenantAPI extends WebserverAPI {
 
         } catch (StorageQueryException | TenantOrAppNotFoundException | FeatureNotEnabledException e) {
             throw new ServletException(e);
+
         } catch (UnknownUserIdException e) {
             JsonObject result = new JsonObject();
             result.addProperty("status", "UNKNOWN_USER_ID_ERROR");
             super.sendJsonResponse(200, result, resp);
-        }
 
+        } catch (DuplicateEmailException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "EMAIL_ALREADY_EXISTS_ERROR");
+            super.sendJsonResponse(200, result, resp);
+
+        } catch (DuplicatePhoneNumberException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "PHONE_NUMBER_ALREADY_EXISTS_ERROR");
+            super.sendJsonResponse(200, result, resp);
+
+        } catch (DuplicateThirdPartyUserException e) {
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "THIRD_PARTY_USER_ALREADY_EXISTS_ERROR");
+            super.sendJsonResponse(200, result, resp);
+        }
     }
 }
