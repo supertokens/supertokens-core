@@ -20,6 +20,7 @@ import com.auth0.jwt.JWTCreator;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTCreationException;
 import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
 import io.supertokens.jwt.exceptions.UnsupportedJWTSigningAlgorithmException;
@@ -99,21 +100,18 @@ public class JWTSigningFunctions {
         headerClaims.put("kid", keyToUse.keyId);
 
         // Add relevant claims to the payload, note we only add/override ones that we absolutely need to.
-        Map<String, Object> jwtPayload = new Gson().fromJson(payload, HashMap.class);
-        if (jwksDomain != null ) {
-            jwtPayload.putIfAbsent("iss", jwksDomain);
-        }
 
         JWTCreator.Builder builder = com.auth0.jwt.JWT.create();
-        builder.withKeyId(keyToUse.keyId);
         builder.withHeader(headerClaims);
+        builder.withKeyId(keyToUse.keyId);
+
+        builder.withPayload(payload.toString());
         builder.withIssuedAt(new Date(jwtIssuedAtInMs));
         builder.withExpiresAt(new Date(jwtExpiryInMs));
 
-        if (jwksDomain != null) {
+        if (jwksDomain != null && !payload.has("iss")) {
             builder.withIssuer(jwksDomain);
         }
-        builder.withPayload(jwtPayload);
 
         return builder.sign(signingAlgorithm);
     }
