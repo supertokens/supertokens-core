@@ -127,7 +127,7 @@ public class Multitenancy extends ResourceDistributor.SingletonResource {
                 }
             }
 
-            TenantConfig[] existingTenants = getAllTenants(new TenantIdentifier(null, null, null), main);
+            TenantConfig[] existingTenants = getAllTenants(main);
             boolean updated = false;
             for (int i = 0; i < existingTenants.length; i++) {
                 if (existingTenants[i].tenantIdentifier.equals(newTenant.tenantIdentifier)) {

@@ -345,7 +345,7 @@ public class SuperTokensSaaSSecretTest {
                         new PasswordlessConfig(false),
                         new JsonObject()));
 
-        TenantConfig[] tenantConfigs = Multitenancy.getAllTenants(new TenantIdentifier(null, null, null), process.main);
+        TenantConfig[] tenantConfigs = Multitenancy.getAllTenants(process.main);
 
         assertEquals(tenantConfigs.length, 2);
         assertEquals(tenantConfigs[0].tenantIdentifier, new TenantIdentifier(null, null, null));
