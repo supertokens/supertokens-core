@@ -16,5 +16,5 @@
 
 package io.supertokens.multitenancy.exception;
 
-public class CannotDeleteNulConnectionUriDomainException extends Exception {
+public class CannotDeleteNullConnectionUriDomainException extends Exception {
 }

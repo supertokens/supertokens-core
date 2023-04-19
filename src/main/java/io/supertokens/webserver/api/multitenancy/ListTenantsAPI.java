@@ -13,16 +13,17 @@
  *    License for the specific language governing permissions and limitations
  *    under the License.
  */
-package io.supertokens.webserver.api.dashboard;
 
-import com.google.gson.Gson;
+package io.supertokens.webserver.api.multitenancy;
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import io.supertokens.Main;
-import io.supertokens.dashboard.Dashboard;
+import io.supertokens.multitenancy.Multitenancy;
 import io.supertokens.multitenancy.exception.BadPermissionException;
 import io.supertokens.pluginInterface.RECIPE_ID;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantConfig;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.WebserverAPI;
 import jakarta.servlet.ServletException;
@@ -31,33 +32,43 @@ import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-public class GetDashboardUsersAPI extends WebserverAPI {
+public class ListTenantsAPI extends WebserverAPI {
+    private static final long serialVersionUID = -4641988458637882374L;
 
-    private static final long serialVersionUID = -3243982612116134273L;
-
-    public GetDashboardUsersAPI(Main main) {
-        super(main, RECIPE_ID.DASHBOARD.toString());
+    public ListTenantsAPI(Main main) {
+        super(main, RECIPE_ID.MULTITENANCY.toString());
     }
 
     @Override
     public String getPath() {
-        return "/recipe/dashboard/users";
+        return "/recipe/multitenancy/tenant/list";
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is app specific
+        TenantIdentifier tenantIdentifier;
         try {
+            tenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
 
-            JsonArray arr = new com.google.gson.JsonParser().parse(new Gson().toJson(
-                            Dashboard.getAllDashboardUsers(
-                                    super.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req), main)))
-                    .getAsJsonArray();
-            JsonObject response = new JsonObject();
-            response.addProperty("status", "OK");
-            response.add("users", arr);
-            super.sendJsonResponse(200, response, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+            if (!tenantIdentifier.getTenantId().equals(TenantIdentifier.DEFAULT_TENANT_ID)) {
+                throw new BadPermissionException("Only the public tenantId is allowed to list all tenants " +
+                        "associated with this app");
+            }
+
+            TenantConfig[] tenantConfigs = Multitenancy.getAllTenantsForApp(tenantIdentifier.toAppIdentifier(), main);
+            JsonArray tenantsArray = new JsonArray();
+
+            for (TenantConfig tenantConfig : tenantConfigs) {
+                tenantsArray.add(tenantConfig.toJson());
+            }
+
+            JsonObject result = new JsonObject();
+            result.addProperty("status", "OK");
+            result.add("tenants", tenantsArray);
+
+            super.sendJsonResponse(200, result, resp);
+
+        } catch (TenantOrAppNotFoundException | BadPermissionException e) {
             throw new ServletException(e);
         }
     }

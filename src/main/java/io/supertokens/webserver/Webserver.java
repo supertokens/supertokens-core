@@ -36,6 +36,13 @@ import io.supertokens.webserver.api.emailverification.UnverifyEmailAPI;
 import io.supertokens.webserver.api.emailverification.VerifyEmailAPI;
 import io.supertokens.webserver.api.jwt.JWKSAPI;
 import io.supertokens.webserver.api.jwt.JWTSigningAPI;
+import io.supertokens.webserver.api.multitenancy.*;
+import io.supertokens.webserver.api.multitenancy.CreateOrUpdateAppAPI;
+import io.supertokens.webserver.api.multitenancy.CreateOrUpdateConnectionUriDomainAPI;
+import io.supertokens.webserver.api.multitenancy.CreateOrUpdateTenantAPI;
+import io.supertokens.webserver.api.multitenancy.RemoveTenantAPI;
+import io.supertokens.webserver.api.multitenancy.thirdparty.CreateOrUpdateThirdPartyConfigAPI;
+import io.supertokens.webserver.api.multitenancy.thirdparty.RemoveThirdPartyConfigAPI;
 import io.supertokens.webserver.api.passwordless.*;
 import io.supertokens.webserver.api.session.*;
 import io.supertokens.webserver.api.thirdparty.GetUsersByEmailAPI;
@@ -265,6 +272,24 @@ public class Webserver extends ResourceDistributor.SingletonResource {
         addAPI(new GetDashboardUsersAPI(main));
         addAPI(new GetDashboardSessionsForUserAPI(main));
         addAPI(new SearchTagsAPI(main));
+
+        addAPI(new CreateOrUpdateConnectionUriDomainAPI(main));
+        addAPI(new RemoveConnectionUriDomainAPI(main));
+        addAPI(new ListConnectionUriDomainsAPI(main));
+
+        addAPI(new CreateOrUpdateAppAPI(main));
+        addAPI(new RemoveAppAPI(main));
+        addAPI(new ListAppsAPI(main));
+
+        addAPI(new CreateOrUpdateTenantAPI(main));
+        addAPI(new RemoveTenantAPI(main));
+        addAPI(new ListTenantsAPI(main));
+
+        addAPI(new CreateOrUpdateThirdPartyConfigAPI(main));
+        addAPI(new RemoveThirdPartyConfigAPI(main));
+
+        addAPI(new AssociateUserToTenantAPI(main));
+        addAPI(new DisassociateUserFromTenant(main));
 
         StandardContext context = tomcatReference.getContext();
         Tomcat tomcat = tomcatReference.getTomcat();

@@ -420,54 +420,6 @@ public class ConfigTest {
     }
 
     @Test
-    public void testThatOnlyDefaultConnectionURIAppAndTenantIsAllowedToGetAllTenants()
-            throws InterruptedException {
-        String[] args = {"../"};
-
-        TestingProcessManager.TestingProcess process = TestingProcessManager.start(args, false);
-        FeatureFlagTestContent.getInstance(process.getProcess())
-                .setKeyValue(FeatureFlagTestContent.ENABLED_FEATURES, new EE_FEATURES[]{EE_FEATURES.MULTI_TENANCY});
-        process.startProcess();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STARTED));
-
-        try {
-            Multitenancy.getAllTenants(new TenantIdentifier("c1", null, null),
-                    process.getProcess());
-            fail();
-        } catch (BadPermissionException e) {
-            assertEquals(
-                    "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
-                            "connectionUriDomains and appIds associated with this core",
-                    e.getMessage());
-        }
-
-        try {
-            Multitenancy.getAllTenants(new TenantIdentifier(null, "a1", null),
-                    process.getProcess());
-            fail();
-        } catch (BadPermissionException e) {
-            assertEquals(
-                    "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
-                            "connectionUriDomains and appIds associated with this core",
-                    e.getMessage());
-        }
-
-        try {
-            Multitenancy.getAllTenants(new TenantIdentifier(null, null, "t1"),
-                    process.getProcess());
-            fail();
-        } catch (BadPermissionException e) {
-            assertEquals(
-                    "Only the public tenantId, public appId and default connectionUriDomain is allowed to list all " +
-                            "connectionUriDomains and appIds associated with this core",
-                    e.getMessage());
-        }
-
-        process.kill();
-        assertNotNull(process.checkOrWaitForEvent(ProcessState.PROCESS_STATE.STOPPED));
-    }
-
-    @Test
     public void testCreationOfTenantsUsingValidSourceTenant()
             throws InterruptedException, BadPermissionException, InvalidProviderConfigException,
             DeletionInProgressException, StorageQueryException, FeatureNotEnabledException, IOException,
@@ -640,8 +592,7 @@ public class ConfigTest {
                 )
         );
 
-        TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, null, null),
-                process.getProcess());
+        TenantConfig[] allTenants = Multitenancy.getAllTenants(process.getProcess());
         assertEquals(14, allTenants.length);
 
         process.kill();
@@ -893,8 +844,7 @@ public class ConfigTest {
             assertEquals("You must use the same app to create new tenant", e.getMessage());
         }
 
-        TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, null, null),
-                process.getProcess());
+        TenantConfig[] allTenants = Multitenancy.getAllTenants(process.getProcess());
         assertEquals(3, allTenants.length);
 
         process.kill();
@@ -926,8 +876,7 @@ public class ConfigTest {
                 )
         );
 
-        TenantConfig[] allTenants = Multitenancy.getAllTenants(new TenantIdentifier(null, null, null),
-                process.getProcess());
+        TenantConfig[] allTenants = Multitenancy.getAllTenants(process.getProcess());
         assertEquals(1, allTenants.length);
         assertFalse(allTenants[0].passwordlessConfig.enabled);
 

@@ -14,53 +14,48 @@
  *    under the License.
  */
 
-package io.supertokens.webserver.api.core;
+package io.supertokens.webserver.api.multitenancy;
 
 import com.google.gson.JsonObject;
-import io.supertokens.ActiveUsers;
 import io.supertokens.Main;
 import io.supertokens.multitenancy.exception.BadPermissionException;
-import io.supertokens.pluginInterface.exceptions.StorageQueryException;
+import io.supertokens.pluginInterface.multitenancy.TenantIdentifier;
 import io.supertokens.pluginInterface.multitenancy.exceptions.TenantOrAppNotFoundException;
 import io.supertokens.webserver.InputParser;
-import io.supertokens.webserver.WebserverAPI;
+import io.supertokens.webserver.api.multitenancy.BaseRemove;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 import java.io.IOException;
 
-public class ActiveUsersCountAPI extends WebserverAPI {
-    private static final long serialVersionUID = -2225750492558064634L;
+public class RemoveAppAPI extends BaseRemove {
+    private static final long serialVersionUID = -4641988458637882374L;
 
-    public ActiveUsersCountAPI(Main main) {
-        super(main, "");
+    public RemoveAppAPI(Main main) {
+        super(main);
     }
 
     @Override
     public String getPath() {
-        return "/users/count/active";
+        return "/recipe/multitenancy/app/remove";
     }
 
     @Override
-    protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is app specific
-        Long sinceTimestamp = InputParser.getLongQueryParamOrThrowError(req, "since", false);
+    protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
+        JsonObject input = InputParser.parseJsonObjectOrThrowError(req);
 
-        if (sinceTimestamp < 0) {
-            throw new ServletException(new BadRequestException("'since' query parameter must be >= 0"));
-        }
+        String appId = InputParser.parseStringOrThrowError(input, "appId", false);
 
         try {
-            int count = ActiveUsers.countUsersActiveSince(
-                    this.getAppIdentifierWithStorageFromRequestAndEnforcePublicTenant(req), main, sinceTimestamp);
-            JsonObject result = new JsonObject();
-            result.addProperty("status", "OK");
-            result.addProperty("count", count);
-            super.sendJsonResponse(200, result, resp);
-        } catch (StorageQueryException | TenantOrAppNotFoundException | BadPermissionException e) {
+            TenantIdentifier sourceTenantIdentifier = this.getTenantIdentifierWithStorageFromRequest(req);
+            super.handle(
+                    sourceTenantIdentifier,
+                    new TenantIdentifier(sourceTenantIdentifier.getConnectionUriDomain(), appId, null), resp);
+
+        } catch (TenantOrAppNotFoundException e) {
             throw new ServletException(e);
         }
+
     }
 }
-

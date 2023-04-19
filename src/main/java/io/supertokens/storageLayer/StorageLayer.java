@@ -307,19 +307,11 @@ public class StorageLayer extends ResourceDistributor.SingletonResource {
     // This function intentionally doesn't take connectionUriDomain and tenantId
     // cause the data for this is only going to be in the primary db of the core.
     public static MultitenancyStorage getMultitenancyStorage(Main main) {
-        // TODO remove this function
         try {
             return (MultitenancyStorage) getInstance(new TenantIdentifier(null, null, null), main).storage;
         } catch (TenantOrAppNotFoundException e) {
             throw new IllegalStateException(e);
         }
-    }
-
-    public static MultitenancyStorage getMultitenancyStorageWithTargetStorage(TenantIdentifier tenantIdentifier,
-                                                                              Main main)
-            throws TenantOrAppNotFoundException {
-        // TODO remove this function
-        return (MultitenancyStorage) getInstance(tenantIdentifier, main).storage;
     }
 
     public static boolean isInMemDb(Main main) {

@@ -2295,10 +2295,17 @@ public class Start
     }
 
     @Override
-    public void addUserIdToTenant(TenantIdentifier tenantIdentifier, String
+    public boolean addUserIdToTenant(TenantIdentifier tenantIdentifier, String
             userId)
             throws TenantOrAppNotFoundException, UnknownUserIdException {
         // TODO:
+        return true;
+    }
+
+    @Override
+    public boolean removeUserIdFromTenant(TenantIdentifier tenantIdentifier, String userId) {
+        // TODO:
+        return true;
     }
 
     @Override

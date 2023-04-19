@@ -48,7 +48,7 @@ public class GetRolesForPermissionAPI extends WebserverAPI {
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException, ServletException {
-        // API is tenant specific
+        // API is app specific
         String permission = InputParser.getQueryParamOrThrowError(req, "permission", false);
 
         // normalize permission
